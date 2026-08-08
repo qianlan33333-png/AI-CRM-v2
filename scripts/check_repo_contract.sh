@@ -19,8 +19,30 @@ required=(
   CONTRIBUTING.md
   SECURITY.md
   NOTICE
+  .tool-versions
+  Makefile
+  go.mod
+  go.sum
+  tools/go.mod
+  tools/go.sum
   .github/CODEOWNERS
   .github/pull_request_template.md
+  .github/workflows/application-go.yml
+  .github/workflows/repo-contract.yml
+  .github/workflows/secret-scan.yml
+  api/openapi.yaml
+  api/oapi-codegen.yaml
+  sqlc.yaml
+  migrations/00001_bootstrap.sql
+  internal/platform/runtime/contract.go
+  acceptance/p0s01/runtime_contract_test.go
+  acceptance/p0s01/process_blackbox.sh
+  acceptance/p0s01/static_contract.sh
+  scripts/build_slice_bundle.sh
+  scripts/check_repo_contract.sh
+  scripts/scan_sensitive_paths.sh
+  scripts/test_build_slice_bundle.sh
+  scripts/test_repo_contract.sh
   docs/architecture/canonical.md
   docs/architecture/port-contracts.md
   docs/architecture/table-ownership.yml
@@ -34,7 +56,42 @@ required=(
 
 for path in "${required[@]}"; do
   [[ -f "$path" ]] || fail "missing required file: $path"
+  [[ "$(git ls-files -s -- "$path" | wc -l | tr -d ' ')" = "1" ]] ||
+    fail "required file is missing or has an ambiguous index entry: $path"
+  index_mode="$(git ls-files -s -- "$path" | awk '{print $1}')"
+  case "$index_mode" in
+    100644|100755) ;;
+    *) fail "required path must be a regular tracked file: $path (mode $index_mode)" ;;
+  esac
 done
+
+verify_index_sha256() {
+  local path="$1"
+  local expected="$2"
+  local actual
+  actual="$(git show ":$path" | sha256sum | awk '{print $1}')"
+  [[ "$actual" = "$expected" ]] ||
+    fail "central workflow content drifted: $path ($actual)"
+}
+
+verify_index_sha256 .github/workflows/application-go.yml \
+  a1b7e630a7a92554c7e8edeac02cc80a809c07dbb689f6a83592b570d676042b
+verify_index_sha256 .github/workflows/repo-contract.yml \
+  df8c2bcf69cdd2e3750c20cd5825a6be471e0c4dd48c51254107c93e59fb8ec4
+verify_index_sha256 .github/workflows/secret-scan.yml \
+  2e39242e53d25d443e1c5e1b0048d3ec637ea066657ab4efde881bb710f3809f
+
+expected_workflows="$({
+  printf '%s\n' .github/workflows/application-go.yml
+  printf '%s\n' .github/workflows/repo-contract.yml
+  printf '%s\n' .github/workflows/secret-scan.yml
+} | LC_ALL=C sort)"
+actual_workflows="$(
+  git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml' |
+    LC_ALL=C sort
+)"
+[[ "$actual_workflows" = "$expected_workflows" ]] ||
+  fail "workflow file set drifted; every workflow requires a Codex-owned hash update"
 
 for number in $(seq -w 1 10); do
   [[ -f "docs/adr/ADR-0${number}.md" ]] || fail "missing ADR-0${number}"
@@ -42,7 +99,7 @@ done
 
 (cd docs/spec && sha256sum -c SHA256SUMS)
 
-forbidden_path_pattern='(^|/)(\.env[^/]*|node_modules|vendor|dist|build|coverage|\.cache|runtime|logs|uploads|playwright-report|test-results|\.auth|\.browser)(/|$)|(^|/)(id_rsa[^/]*|cookies[^/]*\.json|credentials[^/]*\.json)$|\.(pem|key|p12|pfx|db|sqlite|sqlite3|dump|zip)$'
+forbidden_path_pattern='(^|/)(\.env[^/]*|node_modules|vendor|dist|build|coverage|\.cache|playwright-report|test-results|\.auth|\.browser)(/|$)|^(data|runtime|logs|uploads|tmp)(/|$)|(^|/)(id_rsa[^/]*|cookies[^/]*\.json|credentials[^/]*\.json)$|\.(pem|key|p12|pfx|db|sqlite|sqlite3|dump|zip)$'
 if git ls-files | grep -E "$forbidden_path_pattern" >/dev/null; then
   git ls-files | grep -E "$forbidden_path_pattern" >&2
   fail "forbidden generated, credential, data, or binary path is tracked"
@@ -56,15 +113,58 @@ if git grep --cached -n 'pull_request_target' -- .github/workflows; then
   fail "pull_request_target is forbidden"
 fi
 
-if git grep --cached -n -E \
-  '(contents|id-token|packages|deployments):[[:space:]]*write|^[[:space:]]*environment:' \
-  -- .github/workflows; then
-  fail "workflow write permission or environment is forbidden during bootstrap"
+if git grep --cached -n -F '\' -- .github/workflows; then
+  fail "workflow backslashes are forbidden because YAML escapes bypass text policy"
 fi
 
-if git grep --cached -n -E '\$\{\{[[:space:]]*secrets\.' -- .github/workflows; then
+if git grep --cached -n -E '[&*]|!!|<<[[:space:]]*:' -- .github/workflows; then
+  fail "workflow YAML anchors, aliases, tags, and merge keys are forbidden"
+fi
+
+if git grep --cached -n -E \
+  "[\"'][[:alnum:]_-]+[\"'][[:space:]]*:" \
+  -- .github/workflows; then
+  fail "quoted workflow keys are forbidden because they bypass policy scanners"
+fi
+
+if git grep --cached -n -i -E \
+  '(^|[^[:alnum:]_])write(-all)?([^[:alnum:]_]|$)|(^|[^[:alnum:]_])environment([^[:alnum:]_]|$)|(^|[^[:alnum:]_])deploy(ment|ments|ing)?([^[:alnum:]_]|$)' \
+  -- .github/workflows; then
+  fail "workflow write permission, environment, or deployment is forbidden during bootstrap"
+fi
+
+if git grep --cached -n -i -E \
+  '(^|[^[:alnum:]_])secrets([^[:alnum:]_]|$)' \
+  -- .github/workflows; then
   fail "workflow secrets context is forbidden during bootstrap"
 fi
+
+while IFS= read -r workflow; do
+  awk '
+    /^permissions:[[:space:]]*$/ { in_top_permissions = 1; saw_permissions = 1; next }
+    in_top_permissions && /^[^[:space:]]/ { in_top_permissions = 0 }
+    in_top_permissions && /^[[:space:]]*($|#)/ { next }
+    in_top_permissions {
+      permission_entries++
+      if ($0 != "  contents: read") invalid_permission = 1
+    }
+    END {
+      exit !(saw_permissions && permission_entries == 1 && !invalid_permission)
+    }
+  ' "$workflow" ||
+    fail "$workflow must declare only top-level contents: read"
+
+  [[ "$(grep -Ec '^[[:space:]]*permissions[[:space:]]*:' "$workflow")" -eq 1 ]] ||
+    fail "$workflow must have exactly one canonical permissions key"
+
+  canonical_uses_pattern='^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]#]+([[:space:]]*#.*)?$'
+  uses_key_pattern='(^|[^[:alnum:]_])uses[[:space:]]*:'
+  while IFS= read -r workflow_line; do
+    [[ ! "$workflow_line" =~ $uses_key_pattern ]] ||
+      [[ "$workflow_line" =~ $canonical_uses_pattern ]] ||
+      fail "$workflow contains a non-canonical uses mapping"
+  done < "$workflow"
+done < <(git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml')
 
 while IFS= read -r action_ref; do
   [[ -z "$action_ref" ]] && continue

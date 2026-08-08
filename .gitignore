@@ -31,11 +31,11 @@ dist/
 *.sqlite3
 *.dump
 *.sql.gz
-data/
-runtime/
-logs/
-uploads/
-tmp/
+/data/
+/runtime/
+/logs/
+/uploads/
+/tmp/
 .cache/
 
 # Browser and test state
