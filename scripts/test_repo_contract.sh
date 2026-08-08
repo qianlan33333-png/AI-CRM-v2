@@ -21,6 +21,85 @@ make_fixture() {
   printf '%s\n' "$fixture"
 }
 
+baseline_fixture="$(make_fixture baseline)"
+if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "valid staged baseline was rejected"
+fi
+
+explicit_key_workflow_fixture="$(make_fixture unexpected-explicit-key-workflow)"
+printf '%s\n' \
+  'name: forbidden explicit key fixture' \
+  'on: [push]' \
+  'permissions:' \
+  '  contents: read' \
+  'jobs:' \
+  '  probe:' \
+  '    runs-on: ubuntu-latest' \
+  '    steps:' \
+  '      - ? |-' \
+  '          uses' \
+  '        : actions/checkout@v4' \
+  >"$explicit_key_workflow_fixture/.github/workflows/explicit-key.yml"
+git -C "$explicit_key_workflow_fixture" add .github/workflows/explicit-key.yml
+if (cd "$explicit_key_workflow_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "unexpected workflow with an explicit block uses key was accepted"
+fi
+
+tagged_key_workflow_fixture="$(make_fixture unexpected-tagged-key-workflow)"
+printf '%s\n' \
+  'name: forbidden tagged key fixture' \
+  'on: [push]' \
+  'permissions:' \
+  '  contents: read' \
+  'jobs:' \
+  '  probe:' \
+  '    runs-on: ubuntu-latest' \
+  '    steps:' \
+  '      - ? !<tag:yaml.org,2002:str> |-' \
+  '          uses' \
+  '        : actions/checkout@v4' \
+  >"$tagged_key_workflow_fixture/.github/workflows/tagged-key.yml"
+git -C "$tagged_key_workflow_fixture" add .github/workflows/tagged-key.yml
+if (cd "$tagged_key_workflow_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "unexpected workflow with a tagged block uses key was accepted"
+fi
+
+escaped_yaml_fixture="$(make_fixture escaped-yaml-policy)"
+escaped_yaml_tmp="$escaped_yaml_fixture/.github/workflows/application-go.yml.tmp"
+awk '
+  { print }
+  $0 == "    steps:" {
+    slash = sprintf("%c", 92)
+    print "      - { \"" slash "x75ses\": \"actions/checkout@" slash "x764\" }"
+  }
+' "$escaped_yaml_fixture/.github/workflows/application-go.yml" >"$escaped_yaml_tmp"
+mv "$escaped_yaml_tmp" "$escaped_yaml_fixture/.github/workflows/application-go.yml"
+git -C "$escaped_yaml_fixture" add .github/workflows/application-go.yml
+grep -Fq '\x75ses' "$escaped_yaml_fixture/.github/workflows/application-go.yml" ||
+  fail "failed to construct YAML escape fixture"
+if (cd "$escaped_yaml_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "YAML escape that decodes to an unpinned uses key was accepted"
+fi
+
+overwritten_workflows_fixture="$(make_fixture overwritten-central-workflows)"
+cp "$overwritten_workflows_fixture/.github/workflows/application-go.yml" \
+  "$overwritten_workflows_fixture/.github/workflows/repo-contract.yml"
+cp "$overwritten_workflows_fixture/.github/workflows/application-go.yml" \
+  "$overwritten_workflows_fixture/.github/workflows/secret-scan.yml"
+git -C "$overwritten_workflows_fixture" add .github/workflows
+if (cd "$overwritten_workflows_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "overwritten central policy workflows were accepted"
+fi
+
+workflow_symlink_fixture="$(make_fixture central-workflow-symlink)"
+rm -f "$workflow_symlink_fixture/.github/workflows/repo-contract.yml"
+ln -s application-go.yml \
+  "$workflow_symlink_fixture/.github/workflows/repo-contract.yml"
+git -C "$workflow_symlink_fixture" add .github/workflows/repo-contract.yml
+if (cd "$workflow_symlink_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "central policy workflow symlink was accepted"
+fi
+
 unpinned_fixture="$(make_fixture unpinned-action)"
 sed -i.bak -E \
   's#actions/checkout@[0-9a-f]{40}#actions/checkout@v4#' \
@@ -44,11 +123,99 @@ if (cd "$nonhex_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); the
   fail "40-character non-hex Action reference was accepted"
 fi
 
+quoted_uses_fixture="$(make_fixture quoted-uses-key)"
+sed -i.bak -E \
+  's/^([[:space:]]*)uses: actions\/checkout@[0-9a-f]{40}/\1"uses": actions\/checkout@v4/' \
+  "$quoted_uses_fixture/.github/workflows/repo-contract.yml"
+rm -f "$quoted_uses_fixture/.github/workflows/repo-contract.yml.bak"
+git -C "$quoted_uses_fixture" add .github/workflows/repo-contract.yml
+grep -q '"uses": actions/checkout@v4' \
+  "$quoted_uses_fixture/.github/workflows/repo-contract.yml" ||
+  fail "failed to construct quoted uses fixture"
+if (cd "$quoted_uses_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "quoted uses key with an unpinned Action was accepted"
+fi
+
+flow_uses_fixture="$(make_fixture flow-uses-key)"
+sed -i.bak \
+  '/^    steps:$/a\
+      - { name: Unpinned flow, uses: actions/checkout@v4 }
+' \
+  "$flow_uses_fixture/.github/workflows/repo-contract.yml"
+rm -f "$flow_uses_fixture/.github/workflows/repo-contract.yml.bak"
+git -C "$flow_uses_fixture" add .github/workflows/repo-contract.yml
+grep -q -- 'uses: actions/checkout@v4' \
+  "$flow_uses_fixture/.github/workflows/repo-contract.yml" ||
+  fail "failed to construct flow-style uses fixture"
+if (cd "$flow_uses_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "flow-style uses key with an unpinned Action was accepted"
+fi
+
+write_permission_fixture="$(make_fixture write-permission)"
+sed -i.bak \
+  's/^  contents: read$/  issues: write/' \
+  "$write_permission_fixture/.github/workflows/application-go.yml"
+rm -f "$write_permission_fixture/.github/workflows/application-go.yml.bak"
+git -C "$write_permission_fixture" add .github/workflows/application-go.yml
+if (cd "$write_permission_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "workflow issues: write permission was accepted"
+fi
+
+quoted_write_fixture="$(make_fixture quoted-write-permission)"
+sed -i.bak \
+  '/^  contents: read$/a\
+  issues: "write"
+' \
+  "$quoted_write_fixture/.github/workflows/application-go.yml"
+rm -f "$quoted_write_fixture/.github/workflows/application-go.yml.bak"
+git -C "$quoted_write_fixture" add .github/workflows/application-go.yml
+if (cd "$quoted_write_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "quoted workflow issues: write permission was accepted"
+fi
+
+write_all_fixture="$(make_fixture write-all-permission)"
+sed -i.bak \
+  's/^permissions:$/permissions: write-all/' \
+  "$write_all_fixture/.github/workflows/application-go.yml"
+rm -f "$write_all_fixture/.github/workflows/application-go.yml.bak"
+git -C "$write_all_fixture" add .github/workflows/application-go.yml
+if (cd "$write_all_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "workflow permissions: write-all was accepted"
+fi
+
+secrets_inherit_fixture="$(make_fixture secrets-inherit)"
+sed -i.bak \
+  's/^    steps:$/    "secrets": inherit/' \
+  "$secrets_inherit_fixture/.github/workflows/application-go.yml"
+rm -f "$secrets_inherit_fixture/.github/workflows/application-go.yml.bak"
+git -C "$secrets_inherit_fixture" add .github/workflows/application-go.yml
+if (cd "$secrets_inherit_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "workflow secrets: inherit was accepted"
+fi
+
+secrets_context_fixture="$(make_fixture secrets-context)"
+sed -i.bak \
+  's/^      GOTOOLCHAIN: local$/      GOTOOLCHAIN: ${{ secrets }}/' \
+  "$secrets_context_fixture/.github/workflows/application-go.yml"
+rm -f "$secrets_context_fixture/.github/workflows/application-go.yml.bak"
+git -C "$secrets_context_fixture" add .github/workflows/application-go.yml
+if (cd "$secrets_context_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "workflow secrets context was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc
 if (cd "$envrc_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail ".envrc path was accepted"
+fi
+
+runtime_state_fixture="$(make_fixture runtime-state-path)"
+mkdir -p "$runtime_state_fixture/runtime"
+touch "$runtime_state_fixture/runtime/state.json"
+git -C "$runtime_state_fixture" add -f runtime/state.json
+if (cd "$runtime_state_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "root runtime state path was accepted"
 fi
 
 secret_fixture="$(make_fixture staged-secret)"

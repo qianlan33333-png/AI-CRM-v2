@@ -7,20 +7,42 @@ execution_policy:
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
-current_phase: P0-B0
+current_phase: P0
 slices:
   - slice_id: P0-B0
     title: repository-governance-and-architecture-bootstrap
     owner: Codex
-    status: in_progress
+    status: accepted
     base_sha: null
+    input_zip_size: null
+    input_sha256: null
+    secret_scan: PASS_gitleaks_8.30.1_and_custom
+    pro_url: null
+    output_hashes: []
+    correction_count: 0
+    branch: main
+    pr_url: null
+    merge_sha: 2e89685957d6fe8640b3a3ed55716ee9fff724a5
+    tests:
+      - LOCAL_repo_contract_PASS
+      - LOCAL_repo_contract_negative_cases_PASS
+      - LOCAL_bundle_security_cases_PASS
+      - LOCAL_gitleaks_full_history_PASS
+      - REMOTE_repo_contract_PASS_31254252662
+      - REMOTE_secret_scan_PASS_31254252734
+    external_gates: []
+  - slice_id: P0-C01
+    title: freeze-go-toolchain-generators-and-p0-s01-contract
+    owner: Codex
+    status: in_progress
+    base_sha: 2e89685957d6fe8640b3a3ed55716ee9fff724a5
     input_zip_size: null
     input_sha256: null
     secret_scan: pending
     pro_url: null
     output_hashes: []
     correction_count: 0
-    branch: main
+    branch: codex/p0-foundation-contracts
     pr_url: null
     merge_sha: null
     tests: []

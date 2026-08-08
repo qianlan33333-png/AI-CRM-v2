@@ -1,0 +1,104 @@
+SHELL := /usr/bin/env bash
+.SHELLFLAGS := -eu -o pipefail -c
+
+GO ?= go
+TOOLS_MOD := tools/go.mod
+
+.PHONY: version-check generate generate-openapi generate-sqlc generate-check verify-generated
+.PHONY: mod-check migration-validate migration-guard-negative migration-integration
+.PHONY: fmt-check vet test build vuln p0-s01-acceptance ci-go
+
+version-check:
+	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
+	@test "$$($(GO) list -m -f '{{.Version}}' github.com/jackc/pgx/v5)" = "v5.7.5"
+	@test "$$($(GO) list -m -f '{{.Version}}' github.com/go-chi/chi/v5)" = "v5.2.3"
+	@test "$$($(GO) list -m -f '{{.Version}}' github.com/oapi-codegen/runtime)" = "v1.2.0"
+	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen --version | tail -n 1)" = "v2.6.0"
+	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) sqlc version)" = "v1.28.0"
+	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) goose -version)" = "goose version: v3.25.0"
+	@version_output="$$($(GO) tool -modfile=$(TOOLS_MOD) govulncheck -version)"; \
+		printf '%s\n' "$$version_output" | grep -Fqx 'Scanner: govulncheck@v1.6.0'
+
+generate: generate-openapi generate-sqlc
+
+generate-openapi:
+	@$(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen \
+		--config api/oapi-codegen.yaml api/openapi.yaml
+
+generate-sqlc:
+	@$(GO) tool -modfile=$(TOOLS_MOD) sqlc generate
+
+generate-check: generate
+	@$(MAKE) --no-print-directory verify-generated
+	@$(MAKE) --no-print-directory generate
+	@$(MAKE) --no-print-directory verify-generated
+
+verify-generated:
+	@git diff --exit-code -- \
+		internal/api/generated internal/platform/store/generated
+	@test -z "$$(git ls-files --others --exclude-standard -- \
+		internal/api/generated internal/platform/store/generated)"
+
+mod-check:
+	@$(GO) mod tidy -diff
+	@$(GO) -C tools mod tidy -diff
+
+migration-validate:
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations validate
+
+migration-guard-negative:
+	@output="$$(mktemp -t aicrm-v2-migration-guard.XXXXXX)"; \
+		trap 'rm -f "$$output"' EXIT; \
+		set +e; \
+		env -u ALLOW_DESTRUCTIVE_MIGRATION_TEST \
+			-u MIGRATION_TEST_DATABASE_URL \
+			DATABASE_URL=postgres://127.0.0.1:1/production \
+			$(MAKE) --no-print-directory migration-integration >"$$output" 2>&1; \
+		status=$$?; \
+		set -e; \
+		test "$$status" -eq 2; \
+		grep -Fq 'ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 is required' "$$output"
+
+migration-integration:
+	@test "$${ALLOW_DESTRUCTIVE_MIGRATION_TEST:-}" = "1" || { \
+		echo "ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 is required" >&2; exit 2; }
+	@test "$${MIGRATION_TEST_DATABASE_URL:-}" = \
+		"postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable" || { \
+		echo "MIGRATION_TEST_DATABASE_URL must be the fixed loopback aicrm_test DSN" >&2; exit 2; }
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
+		"$$MIGRATION_TEST_DATABASE_URL" up
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
+		"$$MIGRATION_TEST_DATABASE_URL" down
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
+		"$$MIGRATION_TEST_DATABASE_URL" up
+
+fmt-check:
+	@files="$$(git ls-files '*.go')"; \
+		test -z "$$files" || test -z "$$(gofmt -l $$files)"
+
+vet:
+	@$(GO) vet ./...
+
+test:
+	@$(GO) test -race ./...
+
+build:
+	@$(GO) build ./...
+
+vuln:
+	@$(GO) tool -modfile=$(TOOLS_MOD) govulncheck ./...
+
+p0-s01-acceptance:
+	@if [[ -f cmd/aicrm/main.go || \
+		-f cmd/aicrm/components.go || \
+		-f internal/platform/runtime/cli.go || \
+		-f internal/platform/runtime/run.go || \
+		-f internal/platform/runtime/runtime_test.go ]]; then \
+		acceptance/p0s01/static_contract.sh; \
+		$(GO) test -race -timeout=15s -tags=p0s01_acceptance ./acceptance/p0s01; \
+		acceptance/p0s01/process_blackbox.sh; \
+	else \
+		echo "P0-S01 completion gate: PENDING (implementation not present)"; \
+	fi
+
+ci-go: version-check generate-check mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance

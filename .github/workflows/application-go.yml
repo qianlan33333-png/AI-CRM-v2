@@ -1,0 +1,61 @@
+name: application / go
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: application-go-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: application / go
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOTOOLCHAIN: local
+      GOWORK: "off"
+    services:
+      postgres:
+        image: postgres:16.14-trixie@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aicrm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aicrm_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: Verify Go gates
+        run: make ci-go
+      - name: Verify PostgreSQL version and migrations
+        env:
+          ALLOW_DESTRUCTIVE_MIGRATION_TEST: "1"
+          MIGRATION_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          test "$(docker exec "$POSTGRES_CONTAINER_ID" psql -U postgres -d aicrm_test -Atqc 'SHOW server_version_num')" = "160014"
+          make migration-integration
