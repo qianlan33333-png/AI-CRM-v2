@@ -427,7 +427,7 @@ slices:
   - slice_id: P0-C06A
     title: river-v0-24-core-contract-replay
     owner: Codex-root
-    status: root_staged_validated_pending_pr
+    status: pr_ci_validated_pending_merge
     base_sha: 511bf61f4d553d1e5f6bd3f82edc00f6f8fdc9f4
     execution_mode: internal_terra
     task_type: central_contract
@@ -436,6 +436,11 @@ slices:
     reasoning_effort: ultra
     worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C06A-R1
     branch: codex/p0-c06a-river-contract
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/21
+    issue_status: OPEN
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/22
+    pr_status: OPEN_CI_SUCCESS
+    pr_head_sha: 56330e83380798e36a4b258a50f9b99f53302943
     correction_count: 2
     correction_task_ids:
       - /root/root_stage_audit
@@ -453,13 +458,15 @@ slices:
     payload_worktree_diff_sha256: 16f67419f862233312842b370e9fdef6aad6516457d5c64ac1390fc764fc079f
     diff_sha256: 16f67419f862233312842b370e9fdef6aad6516457d5c64ac1390fc764fc079f
     pre_receipt_root_staged_tree_sha: 213df6c037f9441e1840d5118536d67f127eb887
-    main_base_staged_numstat_excluding_go_sum: 346_additions_19_deletions_365_total
+    main_base_staged_numstat_excluding_go_sum: 352_additions_16_deletions_368_total
     canonical_diff_status: ROOT_STAGED_VERIFIED
     secret_scan: PASS_gitleaks_8.30.1_history_tree_sensitive_and_bundle
     tests:
       - ROOT_STAGED_repo_contract_and_permanent_negatives_PASS
       - ROOT_STAGED_gofmt_tidy_and_make_ci_go_online_govulncheck_PASS_0_REACHABLE
       - ROOT_STAGED_gitleaks_history_tree_sensitive_bundle_PASS
+      - PR22_application_SUCCESS_31277793339_job93154114754_River_v0_24_0_download_river_compile_govuln_0_existing_PG160014_Goose_baseline_P0S04_NOT_WIRED
+      - PR22_repo_contract_31277793349_and_secret_scan_31277793351_SUCCESS
       - P0S04_TAGGED_EXPECTED_COMPILE_FAIL_9_RUNTIME_NEWRUNTIME_MIGRATE_UNDEFINED_NO_PG
       - P0S04_PG_GATE_PENDING_EXTERNAL_GATE
     external_gates:
@@ -467,6 +474,7 @@ slices:
       - ADAPTER_IMPLEMENTATION_PENDING_P0_C06B
       - PG160014_NOT_EXECUTED
       - C06B_STATIC_GITLESS_SHARED_CI_PENDING
-      - PR_PENDING
+      - PR_CI_SUCCESS
+      - MERGE_PENDING
       - MAIN_CI_PENDING
       - NOT_DEPLOYED
