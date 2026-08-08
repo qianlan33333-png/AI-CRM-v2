@@ -34,10 +34,13 @@ required=(
   api/oapi-codegen.yaml
   sqlc.yaml
   migrations/00001_bootstrap.sql
+  internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   acceptance/p0s01/runtime_contract_test.go
   acceptance/p0s01/process_blackbox.sh
   acceptance/p0s01/static_contract.sh
+  acceptance/p0s02/health_contract_test.go
+  acceptance/p0s02/static_contract.sh
   scripts/build_slice_bundle.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
@@ -52,6 +55,7 @@ required=(
   docs/governance/limitations.md
   docs/execution/slice-card-template.md
   docs/execution/slice-ledger.yml
+  docs/execution/slices/P0-S02.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-重构详细设计.md
   docs/spec/SHA256SUMS

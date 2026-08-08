@@ -6,7 +6,7 @@ TOOLS_MOD := tools/go.mod
 
 .PHONY: version-check generate generate-openapi generate-sqlc generate-check gitless-generate-test
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
-.PHONY: fmt-check vet test build vuln p0-s01-acceptance ci-go
+.PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance ci-go
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -96,4 +96,13 @@ p0-s01-acceptance:
 		echo "P0-S01 completion gate: PENDING (implementation not present)"; \
 	fi
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance
+p0-s02-acceptance:
+	@if [[ -e internal/platform/http/health.go || -L internal/platform/http/health.go || \
+		-e internal/platform/http/health_test.go || -L internal/platform/http/health_test.go ]]; then \
+		acceptance/p0s02/static_contract.sh && \
+		GOFLAGS=-mod=readonly $(GO) test -race -timeout=15s -tags=p0s02_acceptance ./acceptance/p0s02; \
+	else \
+		echo "P0-S02 completion gate: PENDING (implementation not present)"; \
+	fi
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance
