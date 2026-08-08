@@ -39,9 +39,12 @@ required=(
   acceptance/p0s01/process_blackbox.sh
   acceptance/p0s01/static_contract.sh
   scripts/build_slice_bundle.sh
+  scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
+  scripts/generated-sources.sha256
   scripts/scan_sensitive_paths.sh
   scripts/test_build_slice_bundle.sh
+  scripts/test_gitless_generated_check.sh
   scripts/test_repo_contract.sh
   docs/architecture/canonical.md
   docs/architecture/port-contracts.md
@@ -80,6 +83,10 @@ verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
   157db46e8147cdca2c71d3044e46d20ddae82374a0368e0fe0b4958d8d3c2488
+verify_index_sha256 scripts/check_generated_sources.sh \
+  f5454daac1f26512bd09292a805fc722e51bcd2efbf77e0f202c13e80c63644d
+verify_index_sha256 scripts/generated-sources.sha256 \
+  babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 
 expected_workflows="$({
   printf '%s\n' .github/workflows/application-go.yml

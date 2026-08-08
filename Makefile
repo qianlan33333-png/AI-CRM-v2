@@ -4,7 +4,7 @@ SHELL := /usr/bin/env bash
 GO ?= go
 TOOLS_MOD := tools/go.mod
 
-.PHONY: version-check generate generate-openapi generate-sqlc generate-check verify-generated
+.PHONY: version-check generate generate-openapi generate-sqlc generate-check gitless-generate-test
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance ci-go
 
@@ -28,20 +28,15 @@ generate-openapi:
 generate-sqlc:
 	@$(GO) tool -modfile=$(TOOLS_MOD) sqlc generate
 
-generate-check: generate
-	@$(MAKE) --no-print-directory verify-generated
-	@$(MAKE) --no-print-directory generate
-	@$(MAKE) --no-print-directory verify-generated
+generate-check:
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" scripts/check_generated_sources.sh
 
-verify-generated:
-	@git diff --exit-code -- \
-		internal/api/generated internal/platform/store/generated
-	@test -z "$$(git ls-files --others --exclude-standard -- \
-		internal/api/generated internal/platform/store/generated)"
+gitless-generate-test:
+	@scripts/test_gitless_generated_check.sh
 
 mod-check:
-	@$(GO) mod tidy -diff
-	@$(GO) -C tools mod tidy -diff
+	@GOWORK=off $(GO) mod tidy -diff
+	@GOWORK=off $(GO) -C tools mod tidy -diff
 
 migration-validate:
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations validate
@@ -101,4 +96,4 @@ p0-s01-acceptance:
 		echo "P0-S01 completion gate: PENDING (implementation not present)"; \
 	fi
 
-ci-go: version-check generate-check mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance

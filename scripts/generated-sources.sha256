@@ -1,0 +1,5 @@
+69793a6fe5b1024bf127e16a6e2582a78c723bdf279c73cbc79ae3dad1b958dd  internal/api/generated/server.gen.go
+53e3f6b6cc5513dfd6c642cbb179fdc9d702c50bcb492cc5028bd227a7d6064c  internal/platform/store/generated/db.go
+6454ff240d0d9f2f62ffc000cf075151c9c8e2a9ebbdf3a65aa45ecf172b01c4  internal/platform/store/generated/health.sql.go
+b6f7586a56a12fa99f51020c40db3930dc36ea1c2f9bd727da4bdf1747161db5  internal/platform/store/generated/models.go
+62a935b888e0f92c11118d8eb3eac392ce0505730caddb88412300f6a584df8e  internal/platform/store/generated/querier.go

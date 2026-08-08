@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+repo_root="$(CDPATH= cd -- "$script_dir/../.." && pwd -P)"
+[[ -f "$repo_root/go.mod" &&
+  -f "$repo_root/internal/platform/runtime/contract.go" ]] || {
+  echo "p0-s01-static: invalid repository root: $repo_root" >&2
+  exit 1
+}
 cd "$repo_root"
 
 implementation_files=(
