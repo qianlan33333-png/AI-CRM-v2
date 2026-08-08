@@ -63,7 +63,7 @@ slices:
   - slice_id: P0-C02
     title: refresh-github-actions-node24-pins
     owner: Codex
-    status: ready_to_merge
+    status: accepted
     base_sha: 95909613fb4fdc7caefe13d984e8cf856982f7c7
     input_zip_size: null
     input_sha256: null
@@ -73,7 +73,7 @@ slices:
     correction_count: 0
     branch: codex/p0-actions-node24
     pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/4
-    merge_sha: null
+    merge_sha: fd766b0b30ae4e5ee1ecc3b43e2cf276568e11dc
     tests:
       - LOCAL_repo_contract_and_negatives_PASS
       - LOCAL_bundle_security_PASS
@@ -82,20 +82,55 @@ slices:
       - REMOTE_repo_contract_PASS_31257080471
       - REMOTE_secret_scan_PASS_31257080467
       - REMOTE_no_Node20_annotation_PASS
+      - MAIN_application_go_PASS_31257216703
+      - MAIN_repo_contract_PASS_31257216725
+      - MAIN_secret_scan_PASS_31257216707
+    external_gates: []
+  - slice_id: P0-C03
+    title: make-slice-gates-gitless-and-fail-closed
+    owner: Codex
+    status: accepted
+    base_sha: fd766b0b30ae4e5ee1ecc3b43e2cf276568e11dc
+    input_zip_size: null
+    input_sha256: null
+    secret_scan: PASS_gitleaks_8.30.1_and_custom
+    pro_url: null
+    output_hashes: []
+    correction_count: 0
+    branch: codex/p0-c03-gitless-slice-gates
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/7
+    merge_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
+    tests:
+      - LOCAL_repo_contract_and_negatives_PASS
+      - LOCAL_gitless_generate_and_mod_PASS
+      - LOCAL_generated_tamper_add_delete_manifest_rewrite_negatives_PASS
+      - LOCAL_make_ci_go_PASS_P0_S01_PENDING
+      - REMOTE_application_go_PASS_31258147463
+      - REMOTE_repo_contract_PASS_31258147431
+      - REMOTE_secret_scan_PASS_31258147427
+      - MAIN_application_go_PASS_31258207149
+      - MAIN_repo_contract_PASS_31258207221
+      - MAIN_secret_scan_PASS_31258207150
     external_gates: []
   - slice_id: P0-S01
     title: go-role-startup-skeleton
     owner: ChatGPT-Pro
-    status: queued
-    base_sha: null
-    input_zip_size: null
-    input_sha256: null
-    secret_scan: pending
-    pro_url: null
+    status: pro_in_progress
+    base_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
+    input_zip_size: 65763
+    input_sha256: d318ce5b2082e33c6ce50501e490fbd3349033d9359875acf5f4e6619922a7af
+    secret_scan: PASS_gitleaks_8.30.1_full_history_custom_and_zip
+    pro_url: https://chatgpt.com/c/6a77278d-24a4-83ee-9f01-515784ff49e5
     output_hashes: []
     correction_count: 0
-    branch: null
+    branch: slice/p0-s01-go-role-startup
     pr_url: null
     merge_sha: null
-    tests: []
-    external_gates: []
+    tests:
+      - LOCAL_zip_T_and_SHA256SUMS_PASS
+      - LOCAL_input_blob_content_and_mode_exact_PASS
+      - LOCAL_gitless_generate_check_PASS
+      - LOCAL_gitless_mod_check_PASS
+      - LOCAL_secret_and_path_scans_PASS
+    external_gates:
+      - PRO_DELIVERY_PENDING
