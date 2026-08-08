@@ -63,7 +63,7 @@ slices:
   - slice_id: P0-C02
     title: refresh-github-actions-node24-pins
     owner: Codex
-    status: ready_to_merge
+    status: accepted
     base_sha: 95909613fb4fdc7caefe13d984e8cf856982f7c7
     input_zip_size: null
     input_sha256: null
@@ -73,7 +73,7 @@ slices:
     correction_count: 0
     branch: codex/p0-actions-node24
     pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/4
-    merge_sha: null
+    merge_sha: fd766b0b30ae4e5ee1ecc3b43e2cf276568e11dc
     tests:
       - LOCAL_repo_contract_and_negatives_PASS
       - LOCAL_bundle_security_PASS
@@ -82,20 +82,75 @@ slices:
       - REMOTE_repo_contract_PASS_31257080471
       - REMOTE_secret_scan_PASS_31257080467
       - REMOTE_no_Node20_annotation_PASS
+      - MAIN_application_go_PASS_31257216703
+      - MAIN_repo_contract_PASS_31257216725
+      - MAIN_secret_scan_PASS_31257216707
+    external_gates: []
+  - slice_id: P0-C03
+    title: make-slice-gates-gitless-and-fail-closed
+    owner: Codex
+    status: accepted
+    base_sha: fd766b0b30ae4e5ee1ecc3b43e2cf276568e11dc
+    input_zip_size: null
+    input_sha256: null
+    secret_scan: PASS_gitleaks_8.30.1_and_custom
+    pro_url: null
+    output_hashes: []
+    correction_count: 0
+    branch: codex/p0-c03-gitless-slice-gates
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/7
+    merge_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
+    tests:
+      - LOCAL_repo_contract_and_negatives_PASS
+      - LOCAL_gitless_generate_and_mod_PASS
+      - LOCAL_generated_tamper_add_delete_manifest_rewrite_negatives_PASS
+      - LOCAL_make_ci_go_PASS_P0_S01_PENDING
+      - REMOTE_application_go_PASS_31258147463
+      - REMOTE_repo_contract_PASS_31258147431
+      - REMOTE_secret_scan_PASS_31258147427
+      - MAIN_application_go_PASS_31258207149
+      - MAIN_repo_contract_PASS_31258207221
+      - MAIN_secret_scan_PASS_31258207150
     external_gates: []
   - slice_id: P0-S01
     title: go-role-startup-skeleton
     owner: ChatGPT-Pro
-    status: queued
-    base_sha: null
-    input_zip_size: null
-    input_sha256: null
-    secret_scan: pending
-    pro_url: null
-    output_hashes: []
-    correction_count: 0
-    branch: null
-    pr_url: null
+    status: ready_to_merge
+    base_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
+    input_zip_size: 65763
+    input_sha256: d318ce5b2082e33c6ce50501e490fbd3349033d9359875acf5f4e6619922a7af
+    secret_scan: PASS_gitleaks_8.30.1_full_history_custom_and_zip
+    pro_url: https://chatgpt.com/c/6a772a78-5d70-83ee-9d4a-816717d023d5
+    output_hashes:
+      - FINAL_OUTER_ZIP_14747_2548cdd632a9832d17ae3edb4cae4aa072c7f6363bf6f3bf7e8aa5ed6ca09a9b
+      - FINAL_PATCH_13108_067433e8afcf6d159aa621ffbaaafe00272c1b2e7202fcee2edea5e8a66b8d1c
+      - FINAL_CHANGED_ZIP_4775_4fbd6ab1225d6d9c4902074704bf497cb84a1453004b7c5acb26654360fa5d66
+      - FINAL_REPORT_8921_7a5919d89b1c278ca80a699968fc7fd15dc85c7bc6f37589db881cec8f22a5b2
+      - FINAL_TEST_LOG_6445_53c82a2bda1213e7efefe798bc002ce5dba454e4fccfe8dca764ff5f9e5baff5
+      - FINAL_SHA256SUMS_383_d7ae9b949128d7ad3fa488097f97399780d390e93ac4449ddafe8e3690957dc9
+    correction_count: 2
+    branch: slice/p0-s01-go-role-startup
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/8
     merge_sha: null
-    tests: []
-    external_gates: []
+    tests:
+      - LOCAL_zip_T_and_SHA256SUMS_PASS
+      - LOCAL_input_blob_content_and_mode_exact_PASS
+      - LOCAL_gitless_generate_check_PASS
+      - LOCAL_gitless_mod_check_PASS
+      - LOCAL_secret_and_path_scans_PASS
+      - LOCAL_final_outer_and_inner_zip_security_PASS
+      - LOCAL_patch_apply_exact_base_and_zip_byte_compare_PASS
+      - LOCAL_Go_1_26_5_runtime_race_PASS
+      - LOCAL_Go_1_26_5_central_acceptance_race_PASS
+      - LOCAL_real_binary_SIGINT_SIGTERM_blackbox_PASS
+      - LOCAL_Go_1_26_5_all_packages_race_PASS
+      - LOCAL_Go_1_26_5_vet_and_build_PASS
+      - LOCAL_generate_mod_and_govulncheck_PASS
+      - LOCAL_adversarial_cancellation_error_order_timeout_signal_panic_PASS
+      - LOCAL_make_ci_go_PASS
+      - REMOTE_application_go_PASS_31260710653
+      - REMOTE_PostgreSQL_16_14_Goose_up_down_up_PASS_31260710653
+      - REMOTE_repo_contract_PASS_31260710643
+      - REMOTE_secret_scan_PASS_31260710641
+    external_gates:
+      - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
