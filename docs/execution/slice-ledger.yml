@@ -115,7 +115,7 @@ slices:
   - slice_id: P0-S01
     title: go-role-startup-skeleton
     owner: ChatGPT-Pro
-    status: codex_accepted_local_pending_pr
+    status: pr_ci_pending
     base_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
     input_zip_size: 65763
     input_sha256: d318ce5b2082e33c6ce50501e490fbd3349033d9359875acf5f4e6619922a7af
@@ -130,7 +130,7 @@ slices:
       - FINAL_SHA256SUMS_383_d7ae9b949128d7ad3fa488097f97399780d390e93ac4449ddafe8e3690957dc9
     correction_count: 2
     branch: slice/p0-s01-go-role-startup
-    pr_url: null
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/8
     merge_sha: null
     tests:
       - LOCAL_zip_T_and_SHA256SUMS_PASS
