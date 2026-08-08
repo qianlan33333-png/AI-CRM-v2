@@ -242,7 +242,7 @@ slices:
   - slice_id: P0-G01
     title: internal-terra-orchestration-governance
     owner: Codex-root
-    status: local_accepted_pending_pr
+    status: accepted
     base_sha: 83197173feec5242f30cc5a8933871ec59ca19d8
     execution_mode: internal_terra
     task_type: central_contract
@@ -268,11 +268,13 @@ slices:
     correction_count: 0
     secret_scan: PASS_gitleaks_history_tree_and_custom
     branch: agent/p0-g01r1-terra-orchestration
-    pr_url: null
-    pr_status: PENDING
-    merge_sha: null
-    merge_status: PENDING
-    main_ci_status: PENDING
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/13
+    issue_status: CLOSED
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/14
+    pr_status: MERGED
+    merge_sha: dd44d32826a11ac5f20a68477c09fbc60ba6c994
+    merge_status: MERGED
+    main_ci_status: SUCCESS
     deployment_status: NOT_DEPLOYED
     tests:
       - LOCAL_yaml_unique_marker_governance_markdown_bash_PASS
@@ -281,7 +283,54 @@ slices:
       - ROOT_STAGED_make_ci_go_PASS_P0_S02_PENDING
       - LOCAL_gitleaks_dir_PASS
       - ROOT_STAGED_repo_contract_and_negatives_PASS
+      - PR_application_go_SUCCESS_31267121879
+      - PR_repo_contract_SUCCESS_31267121893
+      - PR_secret_scan_SUCCESS_31267121913
+      - MAIN_application_go_SUCCESS_31267188371_PG16_14_Goose_up_down_up
+      - MAIN_repo_contract_SUCCESS_31267188390
+      - MAIN_secret_scan_SUCCESS_31267188365
     external_gates:
+      - NOT_DEPLOYED
+  - slice_id: P0-C05A
+    title: p0-s03-typed-sqlc-contract-and-pg-acceptance
+    owner: Codex-root
+    status: contract_frozen_pending_p0_c05b_and_p0_s03
+    base_sha: dd44d32826a11ac5f20a68477c09fbc60ba6c994
+    execution_mode: internal_terra
+    task_type: central_contract
+    executor_task_id: /root/p0_c05a_integration
+    executor_model: gpt-5.6-terra
+    reasoning_effort: ultra
+    worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C05AR1
+    payload_paths:
+      - acceptance/p0s03/query_contract_test.go
+      - docs/execution/slices/P0-S03.md
+      - internal/platform/store/contract.go
+    receipt_carrier_paths:
+      - docs/evidence/slices/P0-C05A.md
+      - docs/execution/slice-ledger.yml
+    file_manifest_sha256: 8880026348f7f8ea85513bbbbb1dd4d712a9f8433f05a5319113aed97fc9aa0a
+    payload_worktree_diff_sha256: aef95e85d60b65422b62b72b98a5cf121a523528eab2c53c570241c9881d2206
+    diff_sha256: aef95e85d60b65422b62b72b98a5cf121a523528eab2c53c570241c9881d2206
+    canonical_diff_status: ROOT_STAGED_VERIFIED
+    correction_task_ids: []
+    correction_count: 0
+    secret_scan: PASS_gitleaks_history_tree_and_custom
+    branch: codex/p0-c05a-sqlc-typed-contract
+    pr_url: null
+    pr_status: PENDING
+    merge_sha: null
+    merge_status: PENDING
+    main_ci_status: PENDING
+    deployment_status: NOT_DEPLOYED
+    tests:
+      - LOCAL_gofmt_generate_mod_vet_race_build_vuln_make_ci_go_PASS
+      - EXPECTED_NEGATIVE_tagged_acceptance_compile_fail_EXIT_1
+      - LOCAL_yaml_unique_gitleaks_diff_whitelist_PASS
+      - PG_NOT_EXECUTED
+      - ROOT_STAGED_repo_contract_and_negatives_PASS
+    external_gates:
+      - P0_C05B_MERGE_PENDING
       - PR_PENDING
       - MERGE_PENDING
       - MAIN_CI_PENDING
