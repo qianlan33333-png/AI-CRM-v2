@@ -60,17 +60,22 @@ func (f *fakeLifecycle) Start(ctx context.Context) error { return f.start(ctx) }
 func (f *fakeLifecycle) Stop(ctx context.Context) error  { return f.stop(ctx) }
 func (f *fakeLifecycle) Stopped() <-chan struct{}        { return f.stopped }
 
+type stopObservation struct {
+	hasDeadline bool
+	remaining   time.Duration
+	err         error
+}
+
 func TestRuntimeLifecycleContract(t *testing.T) {
 	startErr := errors.New("start")
-	if err := platformriver.NewRuntime(&fakeLifecycle{start: func(context.Context) error { return startErr }, stopped: make(chan struct{})}).Run(context.Background()); !errors.Is(err, startErr) {
-		t.Fatalf("Start error = %v", err)
+	startStops := 0
+	if got := platformriver.NewRuntime(&fakeLifecycle{start: func(context.Context) error { return startErr }, stop: func(context.Context) error { startStops++; return nil }, stopped: make(chan struct{})}).Run(context.Background()); got != startErr {
+		t.Fatalf("Start error = %v", got)
+	}
+	if startStops != 0 {
+		t.Fatalf("Start error called Stop %d times", startStops)
 	}
 
-	type stopObservation struct {
-		hasDeadline bool
-		remaining   time.Duration
-		err         error
-	}
 	stopErr := errors.New("stop")
 	for _, tc := range []struct {
 		name    string
@@ -94,14 +99,18 @@ func TestRuntimeLifecycleContract(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			done := make(chan error, 1)
 			go func() { done <- platformriver.NewRuntime(fake).Run(ctx) }()
-			<-started
+			select {
+			case <-started:
+			case <-time.After(time.Second):
+				t.Fatal("Start was not called")
+			}
 			cancel()
 			select {
 			case err := <-done:
 				if tc.stopErr == nil && err != nil {
 					t.Fatalf("successful Stop returned %v", err)
 				}
-				if tc.stopErr != nil && !errors.Is(err, tc.stopErr) {
+				if tc.stopErr != nil && err != tc.stopErr {
 					t.Fatalf("Stop error = %v", err)
 				}
 			case <-time.After(time.Second):
@@ -122,11 +131,100 @@ func TestRuntimeLifecycleContract(t *testing.T) {
 		})
 	}
 
-	earlyStopped := make(chan struct{})
+	earlyStops, earlyStopped := 0, make(chan struct{})
 	close(earlyStopped)
-	err := platformriver.NewRuntime(&fakeLifecycle{start: func(context.Context) error { return nil }, stopped: earlyStopped}).Run(context.Background())
+	err := platformriver.NewRuntime(&fakeLifecycle{start: func(context.Context) error { return nil }, stop: func(context.Context) error { earlyStops++; return nil }, stopped: earlyStopped}).Run(context.Background())
 	if !errors.Is(err, appruntime.ErrUnexpectedStop) {
 		t.Fatalf("early stop = %v", err)
+	}
+	if earlyStops != 0 {
+		t.Fatalf("early stop called Stop %d times", earlyStops)
+	}
+}
+
+func TestRuntimeStartContextIsolated(t *testing.T) {
+	seen, release := make(chan context.Context, 1), make(chan struct{})
+	fake := &fakeLifecycle{
+		start:   func(ctx context.Context) error { seen <- ctx; <-release; return nil },
+		stop:    func(context.Context) error { return nil },
+		stopped: make(chan struct{}),
+	}
+	parent, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- platformriver.NewRuntime(fake).Run(parent) }()
+	var startCtx context.Context
+	select {
+	case startCtx = <-seen:
+	case <-time.After(time.Second):
+		t.Fatal("Start was not called")
+	}
+	cancel()
+	select {
+	case <-startCtx.Done():
+		close(release)
+		t.Fatal("Start received parent-cancelled context")
+	default:
+	}
+	if err := startCtx.Err(); err != nil {
+		close(release)
+		t.Fatalf("Start context Err() = %v", err)
+	}
+	close(release)
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run() = %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Run did not stop after parent cancellation")
+	}
+}
+
+func TestRuntimeCancellationWinsSimultaneousStopped(t *testing.T) {
+	for range 128 { // Behavioral stress; C06B1A1's AST gate enforces deterministic source shape.
+		assertRuntimeCancellationWinsSimultaneousStopped(t)
+	}
+}
+
+func assertRuntimeCancellationWinsSimultaneousStopped(t *testing.T) {
+	started, release := make(chan struct{}), make(chan struct{})
+	stopErr := errors.New("stop")
+	stops := 0
+	var observed stopObservation
+	fake := &fakeLifecycle{
+		start: func(context.Context) error { close(started); <-release; return nil },
+		stop: func(ctx context.Context) error {
+			stops++
+			deadline, ok := ctx.Deadline()
+			observed = stopObservation{ok, time.Until(deadline), ctx.Err()}
+			return stopErr
+		},
+		stopped: make(chan struct{}),
+	}
+	parent, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- platformriver.NewRuntime(fake).Run(parent) }()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("Start was not called")
+	}
+	cancel()
+	close(fake.stopped)
+	close(release)
+	select {
+	case err := <-done:
+		if err != stopErr {
+			t.Fatalf("Run() = %v, want Stop error", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Run did not stop")
+	}
+	if stops != 1 {
+		t.Fatalf("Stop called %d times", stops)
+	}
+	if !observed.hasDeadline || observed.err != nil || observed.remaining <= 0 || observed.remaining > appruntime.ShutdownGrace+10*time.Millisecond {
+		t.Fatalf("Stop context = %#v", observed)
 	}
 }
 
