@@ -115,7 +115,7 @@ slices:
   - slice_id: P0-S01
     title: go-role-startup-skeleton
     owner: ChatGPT-Pro
-    status: ready_to_merge
+    status: accepted
     base_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
     input_zip_size: 65763
     input_sha256: d318ce5b2082e33c6ce50501e490fbd3349033d9359875acf5f4e6619922a7af
@@ -131,7 +131,7 @@ slices:
     correction_count: 2
     branch: slice/p0-s01-go-role-startup
     pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/8
-    merge_sha: null
+    merge_sha: eb998ebe78de6d0521009e57d9f4b184026b0158
     tests:
       - LOCAL_zip_T_and_SHA256SUMS_PASS
       - LOCAL_input_blob_content_and_mode_exact_PASS
@@ -152,5 +152,61 @@ slices:
       - REMOTE_PostgreSQL_16_14_Goose_up_down_up_PASS_31260710653
       - REMOTE_repo_contract_PASS_31260710643
       - REMOTE_secret_scan_PASS_31260710641
+      - FINAL_HEAD_application_go_PASS_31260810126
+      - FINAL_HEAD_repo_contract_PASS_31260810125
+      - FINAL_HEAD_secret_scan_PASS_31260810123
+      - MAIN_application_go_PASS_31260898252
+      - MAIN_PostgreSQL_16_14_Goose_up_down_up_PASS_31260898252
+      - MAIN_repo_contract_PASS_31260898260
+      - MAIN_secret_scan_PASS_31260898263
     external_gates:
       - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
+  - slice_id: P0-C04
+    title: close-p0-s01-and-freeze-p0-s02-health-contract
+    owner: root
+    execution_mode: internal_terra
+    executor_task_id: /root/p0_c04_finalize
+    executor_model: gpt-5.6-terra
+    reasoning_effort: ultra
+    worktree: /Users/qianlan/Downloads/新CRM/AI-CRM-v2
+    status: local_contract_complete
+    base_sha: c5ad1f49b66f5a8dd5d3727f3b053e31205f3b63
+    diff_sha256: 78e36d5bdc3f272d0aa2b1ed027ac3959b44c0982fb1d78217ea8793ad39169c
+    file_manifest_sha256: 2be77fe8f97b7ff7c22e19fecba085127d614bf470f4fe7c79a461c095d5269e
+    secret_scan: PASS_gitleaks_8.30.1_history_staged_tree_and_custom
+    branch: codex/p0-c04-p0s02-contract
+    pr_url: null
+    merge_sha: null
+    tests:
+      - LOCAL_make_ci_go_PASS_P0_S02_PENDING
+      - LOCAL_make_ci_go_isolated_tmpdir_PASS_P0_S02_PENDING
+      - LOCAL_gitless_P0_S02_positive_static_tagged_mod_PASS
+      - LOCAL_P0_S02_missing_nethttp_database_non_ok_negatives_PASS
+      - LOCAL_repo_contract_and_permanent_negatives_PASS
+      - LOCAL_generate_gitless_mod_PASS
+      - LOCAL_yaml_bash_gofmt_and_diff_check_PASS
+      - LOCAL_internal_terra_governance_fields_PASS
+    external_gates:
+      - P0_C04_PR_REMOTE_CI_AND_MERGE_PENDING
+      - P0_S02_IMPLEMENTATION_PENDING
+      - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
+  - slice_id: P0-S02
+    title: healthz-strict-handler
+    owner: root
+    executor_model: gpt-5.6-terra
+    executor_reasoning_effort: ultra
+    status: contract_frozen_pending_dispatch
+    base_sha: null
+    executor_task_id: null
+    worktree: null
+    diff_sha256: null
+    file_manifest_sha256: null
+    secret_scan: PENDING
+    branch: null
+    pr_url: null
+    merge_sha: null
+    tests:
+      - CENTRAL_LOCAL_CONTRACT_PASS_PENDING_DISPATCH
+    external_gates:
+      - EXECUTOR_TASK_ID_AND_WORKTREE_PENDING_DISPATCH
+      - P0_C04_MERGE_PENDING
