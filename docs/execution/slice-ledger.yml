@@ -34,19 +34,29 @@ slices:
   - slice_id: P0-C01
     title: freeze-go-toolchain-generators-and-p0-s01-contract
     owner: Codex
-    status: in_progress
+    status: ready_to_merge
     base_sha: 2e89685957d6fe8640b3a3ed55716ee9fff724a5
     input_zip_size: null
     input_sha256: null
-    secret_scan: pending
+    secret_scan: PASS_gitleaks_8.30.1_and_custom
     pro_url: null
     output_hashes: []
     correction_count: 0
     branch: codex/p0-foundation-contracts
-    pr_url: null
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/2
     merge_sha: null
-    tests: []
-    external_gates: []
+    tests:
+      - LOCAL_repo_contract_and_negatives_PASS
+      - LOCAL_bundle_security_PASS
+      - LOCAL_make_ci_go_PASS_P0_S01_PENDING
+      - LOCAL_gitleaks_and_custom_scan_PASS
+      - REMOTE_application_go_PASS_31256459213
+      - REMOTE_repo_contract_PASS_31256459194
+      - REMOTE_secret_scan_PASS_31256459191
+      - REMOTE_PostgreSQL_16_14_Goose_up_down_up_PASS
+    external_gates:
+      - P0_S01_IMPLEMENTATION_PENDING
+      - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
   - slice_id: P0-S01
     title: go-role-startup-skeleton
     owner: ChatGPT-Pro
