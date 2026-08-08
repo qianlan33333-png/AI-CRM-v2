@@ -1,7 +1,17 @@
 version: 1
 repository: qianlan33333-png/AI-CRM-v2
 execution_policy:
-  max_active_pro_slices: 1
+  orchestrator: Codex-root
+  execution_mode: internal_terra
+  max_active_terra_tasks: 3
+  executor_model: gpt-5.6-terra
+  reasoning_effort: ultra
+  task_graph: dag_ready
+  acceptance_rebase_pr_merge_main_ci: serial
+  terra_receipt: payload_manifest_including_untracked
+  file_manifest_format: sorted_MODE_BYTES_SHA256_PATH
+  canonical_diff: root_staged_git_diff_cached_binary_base_payload_paths
+  receipt_carrier_integrity: pr_head_and_merge_sha
   max_handwritten_files: 8
   max_handwritten_diff_lines: 400
   merge_method: squash
@@ -117,6 +127,13 @@ slices:
     owner: ChatGPT-Pro
     status: accepted
     base_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
+    execution_mode: legacy_external_chatgpt_pro
+    executor_task_id: null
+    executor_model: ChatGPT-Pro
+    reasoning_effort: null
+    worktree: null
+    diff_sha256: 067433e8afcf6d159aa621ffbaaafe00272c1b2e7202fcee2edea5e8a66b8d1c
+    correction_task_ids: []
     input_zip_size: 65763
     input_sha256: d318ce5b2082e33c6ce50501e490fbd3349033d9359875acf5f4e6619922a7af
     secret_scan: PASS_gitleaks_8.30.1_full_history_custom_and_zip
@@ -169,14 +186,16 @@ slices:
     executor_model: gpt-5.6-terra
     reasoning_effort: ultra
     worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C04R1
-    status: local_contract_complete
+    status: accepted
     base_sha: c5ad1f49b66f5a8dd5d3727f3b053e31205f3b63
     diff_sha256: 7fed276b3158d7f9855551b2ec64d4f3033405d9866715b93c3eff86817a6619
     file_manifest_sha256: 2e365163eff0e2e5f2116ca77493ca6b72c17546c2ac2f8b04b9fe539708b40c
     secret_scan: PASS_gitleaks_8.30.1_history_staged_tree_and_custom
     branch: agent/p0-c04r1-health-contract-hardening
-    pr_url: null
-    merge_sha: null
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/11
+    issue_status: CLOSED
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/12
+    merge_sha: 83197173feec5242f30cc5a8933871ec59ca19d8
     tests:
       - LOCAL_make_ci_go_PASS_P0_S02_PENDING
       - LOCAL_make_ci_go_isolated_tmpdir_PASS_P0_S02_PENDING
@@ -186,19 +205,29 @@ slices:
       - LOCAL_generate_gitless_mod_PASS
       - LOCAL_yaml_bash_gofmt_and_diff_check_PASS
       - LOCAL_internal_terra_governance_fields_PASS
+      - PR_application_go_SUCCESS_31266039347
+      - PR_repo_contract_SUCCESS_31266039352
+      - PR_secret_scan_SUCCESS_31266039369
+      - MAIN_application_go_SUCCESS_31266106599_PG16_14_Goose_up_down_up
+      - MAIN_repo_contract_SUCCESS_31266106564
+      - MAIN_secret_scan_SUCCESS_31266106617
     external_gates:
-      - P0_C04_PR_REMOTE_CI_AND_MERGE_PENDING
       - P0_S02_IMPLEMENTATION_PENDING
       - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
+      - NOT_DEPLOYED
   - slice_id: P0-S02
     title: healthz-strict-handler
     owner: root
+    execution_mode: internal_terra
+    task_type: business_implementation
     executor_model: gpt-5.6-terra
-    executor_reasoning_effort: ultra
+    reasoning_effort: ultra
     status: contract_frozen_pending_dispatch
     base_sha: null
     executor_task_id: null
     worktree: null
+    payload_paths: []
+    receipt_carrier_paths: []
     diff_sha256: null
     file_manifest_sha256: null
     secret_scan: PENDING
@@ -209,4 +238,51 @@ slices:
       - CENTRAL_LOCAL_CONTRACT_PASS_PENDING_DISPATCH
     external_gates:
       - EXECUTOR_TASK_ID_AND_WORKTREE_PENDING_DISPATCH
-      - P0_C04_MERGE_PENDING
+      - P0_C04_MERGED_83197173feec5242f30cc5a8933871ec59ca19d8
+  - slice_id: P0-G01
+    title: internal-terra-orchestration-governance
+    owner: Codex-root
+    status: local_accepted_pending_pr
+    base_sha: 83197173feec5242f30cc5a8933871ec59ca19d8
+    execution_mode: internal_terra
+    task_type: central_contract
+    executor_task_id: /root/p0_g01_integration
+    executor_model: gpt-5.6-terra
+    reasoning_effort: ultra
+    worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-G01R1
+    payload_paths:
+      - AGENTS.md
+      - CONTRIBUTING.md
+      - docs/evidence/slices/P0-S01.md
+      - docs/execution/implementation-plan.md
+      - docs/execution/slice-card-template.md
+      - docs/governance/agent-orchestration.md
+    receipt_carrier_paths:
+      - docs/execution/slice-ledger.yml
+      - docs/evidence/slices/P0-G01.md
+    file_manifest_sha256: c8a9274619657df3bc7619b371d1ff6e8de86bf1402e0d5de6221e5e08a91797
+    payload_worktree_diff_sha256: 83ab0463511ede4ef3fe0b24cc98eb9debe9be3ab44f8e6e3d2e64a08c27be3e
+    diff_sha256: 83ab0463511ede4ef3fe0b24cc98eb9debe9be3ab44f8e6e3d2e64a08c27be3e
+    canonical_diff_status: ROOT_STAGED_VERIFIED
+    correction_task_ids: []
+    correction_count: 0
+    secret_scan: PASS_gitleaks_history_tree_and_custom
+    branch: agent/p0-g01r1-terra-orchestration
+    pr_url: null
+    pr_status: PENDING
+    merge_sha: null
+    merge_status: PENDING
+    main_ci_status: PENDING
+    deployment_status: NOT_DEPLOYED
+    tests:
+      - LOCAL_yaml_unique_marker_governance_markdown_bash_PASS
+      - LOCAL_make_ci_go_subgates_PASS
+      - LOCAL_make_ci_go_BLOCKED_UNMERGED_INDEX_EXIT_2
+      - ROOT_STAGED_make_ci_go_PASS_P0_S02_PENDING
+      - LOCAL_gitleaks_dir_PASS
+      - ROOT_STAGED_repo_contract_and_negatives_PASS
+    external_gates:
+      - PR_PENDING
+      - MERGE_PENDING
+      - MAIN_CI_PENDING
+      - NOT_DEPLOYED

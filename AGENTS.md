@@ -38,15 +38,25 @@
 - 跨 contact/identity/events 的创建、绑定、归并通过共享 transaction-bound
   UoW 与公开 port 完成，禁止跨域直写表。
 
-## 4. Slice 边界
+## 4. Slice 边界与内部执行编排
 
-- 同时只允许一个外部 Pro Slice 在执行。
+- Codex root 独占架构裁决、中央契约冻结/批准、拆片、调度、验收/测试、Git/GitHub、
+  PR、merge 和 main CI；除台账、PR 文本或冲突修正外，root 直接改动最多 20 行。
+- 每个 Terra 任务须 self-contained，写明精确 base SHA、已满足依赖、白名单与绝对
+  worktree；执行器固定为 `gpt-5.6-terra`、`reasoning_effort=ultra`。
+- 最多 3 个 Terra 任务在依赖满足且白名单不重叠时按 DAG 并行。
+- Terra 只在分配 worktree 修改/测试；不得 stage、commit、push、PR、rebase、merge、
+  部署、真实迁移或真实外部调用。交回 base、task id、worktree、payload manifest、
+  测试和 correction；root stage 后计算 canonical diff SHA-256。
 - 一片只解决一个行为或状态转换、一个模块、一个 API operation 或一个
   UI flow；API 与 UI 不得同片。
 - 最多 8 个手写文件、400 行手写 diff、一个预先冻结的依赖或迁移。
-- `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与
-  黑盒验收夹具默认由 Codex 独占修改。
-- Pro 不执行 Git、GitHub、部署、真实迁移或外部调用。
+- `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收
+  夹具是中央契约区；root 独占裁决和冻结/批准。Terra 仅可在中央合同任务的逐文件
+  白名单内机械实现/测试，业务 Slice 禁止修改。
+- 失败先由同一 task follow-up 修正；连续两次同根因失败或发生越界时拒收并重新拆片。
+- 开发可并行；root 的验收、Git/GitHub、rebase、PR、merge 和 main CI 必须串行。
+  不得新建、上传或继续网页 ChatGPT Pro 对话；既有链接仅作历史证据。
 
 ## 5. 生成、测试与证据
 
