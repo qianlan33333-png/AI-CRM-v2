@@ -380,7 +380,7 @@ slices:
   - slice_id: P0-C05C
     title: p0-s03-shared-make-ci-checker-ledger-wiring
     owner: Codex-root
-    status: pr_ci_validated_pending_merge
+    status: accepted
     base_sha: 99509f99cadbdad982c06502d19f51238ac59427
     execution_mode: internal_terra
     task_type: central_contract
@@ -404,26 +404,76 @@ slices:
     secret_scan: PASS_gitleaks_8.30.1_history_tree_and_custom
     branch: codex/p0-c05c-sqlc-shared-wiring
     issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/19
-    issue_status: OPEN
+    issue_status: CLOSED
     pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/20
-    pr_status: OPEN_CI_SUCCESS
-    pr_head_sha: 7ba80db890d2547b67f2d7fbc798b5de4616ec03
-    merge_sha: null
+    pr_status: MERGED
+    pr_head_sha: bb684f1a05c37b133b4fec321227c7a37f0fcca6
+    merge_sha: 511bf61f4d553d1e5f6bd3f82edc00f6f8fdc9f4
+    merge_status: MERGED_TO_MAIN
+    main_ci_status: SUCCESS
+    deployment_status: NOT_DEPLOYED
     tests:
-      - LOCAL_bash_yaml_generate_mod_fmt_vet_race_build_PASS
-      - LOCAL_C05B_gitless_contract_EXIT_0
-      - LOCAL_P0_S03_EMPTY_ACCEPTANCE_EXIT_0_AFTER_CONTRACT_PENDING
-      - LOCAL_half_link_FIFO_fail_closed_and_hostile_GOFLAGS_READONLY_PASS
-      - LOCAL_make_ci_go_offline_EXIT_0_P0_S03_PENDING
-      - LOCAL_gitleaks_payload_and_custom_PASS
-      - LOCAL_hostile_GIT_INDEX_FILE_rejected_EXIT_1
-      - ROOT_STAGED_repo_contract_and_permanent_negatives_PASS
-      - PR20_application_SUCCESS_31276016745_job93149528408_contract_PASS_repo_PENDING_PG160014_Goose_up_down_up
-      - PR20_repo_contract_SUCCESS_31276016780
-      - PR20_secret_SUCCESS_31276016739
+      - PR20_application_SUCCESS_31276221951_contract_PASS_repo_PENDING_PG160014_Goose_up_down_up
+      - PR20_repo_contract_SUCCESS_31276221935
+      - PR20_secret_scan_SUCCESS_31276221952
+      - MAIN_application_SUCCESS_31276320869_contract_PASS_repo_PENDING_PG160014_Goose_up_down_up
+      - MAIN_repo_contract_SUCCESS_31276320871
+      - MAIN_secret_scan_SUCCESS_31276320854
       - PG_P0_S03_QUERY_NOT_EXECUTED
     external_gates:
+      - P0_S03_IMPLEMENTATION_PENDING
+      - P0_S03_QUERY_NOT_EXECUTED
+      - NOT_DEPLOYED
+  - slice_id: P0-C06A
+    title: river-v0-24-core-contract-replay
+    owner: Codex-root
+    status: pr_ci_validated_pending_merge
+    base_sha: 511bf61f4d553d1e5f6bd3f82edc00f6f8fdc9f4
+    execution_mode: internal_terra
+    task_type: central_contract
+    executor_task_id: /root/p0_c06a_river_contract_replay
+    executor_model: gpt-5.6-terra
+    reasoning_effort: ultra
+    worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C06A-R1
+    branch: codex/p0-c06a-river-contract
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/21
+    issue_status: OPEN
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/22
+    pr_status: OPEN_CI_SUCCESS
+    pr_head_sha: 56330e83380798e36a4b258a50f9b99f53302943
+    correction_count: 2
+    correction_task_ids:
+      - /root/root_stage_audit
+      - /root/receipt_consistency_audit
+    payload_paths:
+      - acceptance/p0s04/contract_test.go
+      - docs/execution/slices/P0-S04.md
+      - go.mod
+      - go.sum
+      - internal/platform/river/contract.go
+    receipt_carrier_paths:
+      - docs/evidence/slices/P0-C06A.md
+      - docs/execution/slice-ledger.yml
+    file_manifest_sha256: 50764de4078f421643fc1ffb125921c66ed6e388b02efe4f7cddeebc9f2d683a
+    payload_worktree_diff_sha256: 16f67419f862233312842b370e9fdef6aad6516457d5c64ac1390fc764fc079f
+    diff_sha256: 16f67419f862233312842b370e9fdef6aad6516457d5c64ac1390fc764fc079f
+    pre_receipt_root_staged_tree_sha: 213df6c037f9441e1840d5118536d67f127eb887
+    main_base_staged_numstat_excluding_go_sum: 352_additions_16_deletions_368_total
+    canonical_diff_status: ROOT_STAGED_VERIFIED
+    secret_scan: PASS_gitleaks_8.30.1_history_tree_sensitive_and_bundle
+    tests:
+      - ROOT_STAGED_repo_contract_and_permanent_negatives_PASS
+      - ROOT_STAGED_gofmt_tidy_and_make_ci_go_online_govulncheck_PASS_0_REACHABLE
+      - ROOT_STAGED_gitleaks_history_tree_sensitive_bundle_PASS
+      - PR22_application_SUCCESS_31277793339_job93154114754_River_v0_24_0_download_river_compile_govuln_0_existing_PG160014_Goose_baseline_P0S04_NOT_WIRED
+      - PR22_repo_contract_31277793349_and_secret_scan_31277793351_SUCCESS
+      - P0S04_TAGGED_EXPECTED_COMPILE_FAIL_9_RUNTIME_NEWRUNTIME_MIGRATE_UNDEFINED_NO_PG
+      - P0S04_PG_GATE_PENDING_EXTERNAL_GATE
+    external_gates:
       - ROOT_STAGE_VERIFIED
+      - ADAPTER_IMPLEMENTATION_PENDING_P0_C06B
+      - PG160014_NOT_EXECUTED
+      - C06B_STATIC_GITLESS_SHARED_CI_PENDING
       - PR_CI_SUCCESS
       - MERGE_PENDING
       - MAIN_CI_PENDING
