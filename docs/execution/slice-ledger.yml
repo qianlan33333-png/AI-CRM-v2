@@ -168,13 +168,13 @@ slices:
     executor_task_id: /root/p0_c04_finalize
     executor_model: gpt-5.6-terra
     reasoning_effort: ultra
-    worktree: /Users/qianlan/Downloads/新CRM/AI-CRM-v2
+    worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C04R1
     status: local_contract_complete
     base_sha: c5ad1f49b66f5a8dd5d3727f3b053e31205f3b63
-    diff_sha256: 78e36d5bdc3f272d0aa2b1ed027ac3959b44c0982fb1d78217ea8793ad39169c
-    file_manifest_sha256: 2be77fe8f97b7ff7c22e19fecba085127d614bf470f4fe7c79a461c095d5269e
+    diff_sha256: 7fed276b3158d7f9855551b2ec64d4f3033405d9866715b93c3eff86817a6619
+    file_manifest_sha256: 2e365163eff0e2e5f2116ca77493ca6b72c17546c2ac2f8b04b9fe539708b40c
     secret_scan: PASS_gitleaks_8.30.1_history_staged_tree_and_custom
-    branch: codex/p0-c04-p0s02-contract
+    branch: agent/p0-c04r1-health-contract-hardening
     pr_url: null
     merge_sha: null
     tests:

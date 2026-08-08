@@ -97,10 +97,10 @@ p0-s01-acceptance:
 	fi
 
 p0-s02-acceptance:
-	@if [[ -f internal/platform/http/health.go || \
-		-f internal/platform/http/health_test.go ]]; then \
-		acceptance/p0s02/static_contract.sh; \
-		GOFLAGS="$${GOFLAGS:--mod=readonly}" $(GO) test -race -timeout=15s -tags=p0s02_acceptance ./acceptance/p0s02; \
+	@if [[ -e internal/platform/http/health.go || -L internal/platform/http/health.go || \
+		-e internal/platform/http/health_test.go || -L internal/platform/http/health_test.go ]]; then \
+		acceptance/p0s02/static_contract.sh && \
+		GOFLAGS=-mod=readonly $(GO) test -race -timeout=15s -tags=p0s02_acceptance ./acceptance/p0s02; \
 	else \
 		echo "P0-S02 completion gate: PENDING (implementation not present)"; \
 	fi
