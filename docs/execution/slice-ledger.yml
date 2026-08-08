@@ -115,7 +115,7 @@ slices:
   - slice_id: P0-S01
     title: go-role-startup-skeleton
     owner: ChatGPT-Pro
-    status: pr_ci_pending
+    status: ready_to_merge
     base_sha: 7ae62e2aed112d70341b6ea435bb08e7eac80de7
     input_zip_size: 65763
     input_sha256: d318ce5b2082e33c6ce50501e490fbd3349033d9359875acf5f4e6619922a7af
@@ -148,6 +148,9 @@ slices:
       - LOCAL_generate_mod_and_govulncheck_PASS
       - LOCAL_adversarial_cancellation_error_order_timeout_signal_panic_PASS
       - LOCAL_make_ci_go_PASS
+      - REMOTE_application_go_PASS_31260710653
+      - REMOTE_PostgreSQL_16_14_Goose_up_down_up_PASS_31260710653
+      - REMOTE_repo_contract_PASS_31260710643
+      - REMOTE_secret_scan_PASS_31260710641
     external_gates:
-      - REMOTE_PR_CI_PENDING
       - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
