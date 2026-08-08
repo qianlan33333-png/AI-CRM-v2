@@ -75,11 +75,11 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 .github/workflows/application-go.yml \
-  a1b7e630a7a92554c7e8edeac02cc80a809c07dbb689f6a83592b570d676042b
+  ff98340ac1bf905338a687366a5fafa30235187d9f61a7acea80d9011bd5ada1
 verify_index_sha256 .github/workflows/repo-contract.yml \
-  df8c2bcf69cdd2e3750c20cd5825a6be471e0c4dd48c51254107c93e59fb8ec4
+  32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
-  2e39242e53d25d443e1c5e1b0048d3ec637ea066657ab4efde881bb710f3809f
+  157db46e8147cdca2c71d3044e46d20ddae82374a0368e0fe0b4958d8d3c2488
 
 expected_workflows="$({
   printf '%s\n' .github/workflows/application-go.yml
