@@ -6,7 +6,7 @@ TOOLS_MOD := tools/go.mod
 
 .PHONY: version-check generate generate-openapi generate-sqlc generate-check gitless-generate-test
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
-.PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance ci-go
+.PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -105,4 +105,19 @@ p0-s02-acceptance:
 		echo "P0-S02 completion gate: PENDING (implementation not present)"; \
 	fi
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance
+p0-s03-contract:
+	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s03/test_contract.sh
+
+p0-s03-acceptance: p0-s03-contract
+	@if [[ ! -e internal/platform/store/ping.go && ! -L internal/platform/store/ping.go && \
+		! -e internal/platform/store/ping_test.go && ! -L internal/platform/store/ping_test.go ]]; then \
+		echo "P0-S03 completion gate: PENDING (implementation not present)"; \
+	else \
+		acceptance/p0s03/static_contract.sh || exit $$?; \
+		coverage_output="$$(GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -cover ./internal/platform/store 2>&1)" || { status=$$?; printf '%s\n' "$$coverage_output"; exit "$$status"; }; \
+		printf '%s\n' "$$coverage_output"; \
+		printf '%s\n' "$$coverage_output" | grep -Eq 'coverage: 100\.0% of statements' || { echo "P0-S03 completion gate: internal/platform/store coverage must be 100%" >&2; exit 1; }; \
+		GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=15s -tags=p0s03_acceptance ./acceptance/p0s03; \
+	fi
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance

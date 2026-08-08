@@ -294,7 +294,7 @@ slices:
   - slice_id: P0-C05A
     title: p0-s03-typed-sqlc-contract-and-pg-acceptance
     owner: Codex-root
-    status: contract_frozen_pending_p0_c05b_and_p0_s03
+    status: accepted
     base_sha: dd44d32826a11ac5f20a68477c09fbc60ba6c994
     execution_mode: internal_terra
     task_type: central_contract
@@ -317,11 +317,11 @@ slices:
     correction_count: 0
     secret_scan: PASS_gitleaks_history_tree_and_custom
     branch: codex/p0-c05a-sqlc-typed-contract
-    pr_url: null
-    pr_status: PENDING
-    merge_sha: null
-    merge_status: PENDING
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/16
+    pr_status: MERGED
+    merge_sha: 17c006bb67b28c9c19afbf316c1eafa1aefb41ea
+    merge_status: MERGED_TO_MAIN
+    main_ci_status: MAIN_CONTAINED_IN_P0_C05B_BASELINE
     deployment_status: NOT_DEPLOYED
     tests:
       - LOCAL_gofmt_generate_mod_vet_race_build_vuln_make_ci_go_PASS
@@ -330,7 +330,95 @@ slices:
       - PG_NOT_EXECUTED
       - ROOT_STAGED_repo_contract_and_negatives_PASS
     external_gates:
-      - P0_C05B_MERGE_PENDING
+      - P0_C05B_MERGED_99509f99cadbdad982c06502d19f51238ac59427
+      - P0_S03_IMPLEMENTATION_PENDING
+      - NOT_DEPLOYED
+  - slice_id: P0-C05B
+    title: p0-s03-sqlc-source-static-gitless-gates
+    owner: Codex-root
+    status: accepted
+    base_sha: 17c006bb67b28c9c19afbf316c1eafa1aefb41ea
+    execution_mode: internal_terra
+    task_type: central_contract
+    executor_task_id: /root/p0_c05b_sqlc_gates
+    executor_model: gpt-5.6-terra
+    reasoning_effort: ultra
+    worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C05B2
+    payload_paths:
+      - acceptance/p0s03/source_contract.go
+      - acceptance/p0s03/static_contract.sh
+      - acceptance/p0s03/test_contract.sh
+      - docs/execution/slices/P0-S03.md
+    receipt_carrier_paths:
+      - docs/evidence/slices/P0-C05B.md
+      - docs/execution/slice-ledger.yml
+    file_manifest_sha256: 2c596154e13444b83cad6b15e634e3b891c55211539af89e740cd3990be8ed24
+    payload_worktree_diff_sha256: 0df8341c8bfd6bf8cd761d7d3ce347256e439934ef75946a18aff8b58ef6452a
+    diff_sha256: 0df8341c8bfd6bf8cd761d7d3ce347256e439934ef75946a18aff8b58ef6452a
+    canonical_diff_status: ROOT_STAGED_VERIFIED
+    secret_scan: PASS_gitleaks_8.30.1_history_tree_and_custom
+    branch: codex/p0-c05b-sqlc-source-gates
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/17
+    issue_status: CLOSED
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/18
+    pr_status: MERGED
+    merge_sha: 99509f99cadbdad982c06502d19f51238ac59427
+    merge_status: MERGED_TO_MAIN
+    main_ci_status: SUCCESS
+    deployment_status: NOT_DEPLOYED
+    tests:
+      - PR_application_go_SUCCESS_31273561488
+      - PR_repo_contract_SUCCESS_31273561479
+      - PR_secret_scan_SUCCESS_31273561476
+      - MAIN_application_go_SUCCESS_31273630598_PG16_14_Goose_up_down_up
+      - MAIN_repo_contract_SUCCESS_31273630612
+      - MAIN_secret_scan_SUCCESS_31273630597
+      - P0_S03_SHARED_GATE_NOT_WIRED_AT_C05B_PR_AND_MAIN_BASELINE
+    external_gates:
+      - P0_S03_IMPLEMENTATION_PENDING
+      - NOT_DEPLOYED
+  - slice_id: P0-C05C
+    title: p0-s03-shared-make-ci-checker-ledger-wiring
+    owner: Codex-root
+    status: root_staged_validated_pending_pr
+    base_sha: 99509f99cadbdad982c06502d19f51238ac59427
+    execution_mode: internal_terra
+    task_type: central_contract
+    executor_task_id: /root/p0_c05c_sqlc_shared_wiring
+    executor_model: gpt-5.6-terra
+    reasoning_effort: ultra
+    worktree: /Users/qianlan/Downloads/新CRM/handoffs/terra-worktrees/P0-C05C
+    payload_paths:
+      - .github/workflows/application-go.yml
+      - Makefile
+      - scripts/check_repo_contract.sh
+      - scripts/test_repo_contract.sh
+      - docs/execution/slices/P0-S03.md
+    receipt_carrier_paths:
+      - docs/evidence/slices/P0-C05C.md
+      - docs/execution/slice-ledger.yml
+    file_manifest_sha256: ead5a69f74fcbd7e15f99f1a8f973ff7290a153b4ec77c26abc4d26b0f241648
+    payload_worktree_diff_sha256: 06d121db815e139355292ab59132ecac0f0a708eb17ea291455aefb39fce968b
+    diff_sha256: 06d121db815e139355292ab59132ecac0f0a708eb17ea291455aefb39fce968b
+    canonical_diff_status: ROOT_STAGED_VERIFIED
+    secret_scan: PASS_gitleaks_8.30.1_history_tree_and_custom
+    branch: codex/p0-c05c-sqlc-shared-wiring
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/19
+    issue_status: OPEN
+    pr_url: null
+    merge_sha: null
+    tests:
+      - LOCAL_bash_yaml_generate_mod_fmt_vet_race_build_PASS
+      - LOCAL_C05B_gitless_contract_EXIT_0
+      - LOCAL_P0_S03_EMPTY_ACCEPTANCE_EXIT_0_AFTER_CONTRACT_PENDING
+      - LOCAL_half_link_FIFO_fail_closed_and_hostile_GOFLAGS_READONLY_PASS
+      - LOCAL_make_ci_go_offline_EXIT_0_P0_S03_PENDING
+      - LOCAL_gitleaks_payload_and_custom_PASS
+      - LOCAL_hostile_GIT_INDEX_FILE_rejected_EXIT_1
+      - ROOT_STAGED_repo_contract_and_permanent_negatives_PASS
+      - PG_NOT_EXECUTED
+    external_gates:
+      - ROOT_STAGE_VERIFIED
       - PR_PENDING
       - MERGE_PENDING
       - MAIN_CI_PENDING
