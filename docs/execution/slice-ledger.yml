@@ -1,0 +1,43 @@
+version: 1
+repository: qianlan33333-png/AI-CRM-v2
+execution_policy:
+  max_active_pro_slices: 1
+  max_handwritten_files: 8
+  max_handwritten_diff_lines: 400
+  merge_method: squash
+  pr_language: zh-CN
+  external_effects_default: forbidden
+current_phase: P0-B0
+slices:
+  - slice_id: P0-B0
+    title: repository-governance-and-architecture-bootstrap
+    owner: Codex
+    status: in_progress
+    base_sha: null
+    input_zip_size: null
+    input_sha256: null
+    secret_scan: pending
+    pro_url: null
+    output_hashes: []
+    correction_count: 0
+    branch: main
+    pr_url: null
+    merge_sha: null
+    tests: []
+    external_gates: []
+  - slice_id: P0-S01
+    title: go-role-startup-skeleton
+    owner: ChatGPT-Pro
+    status: queued
+    base_sha: null
+    input_zip_size: null
+    input_sha256: null
+    secret_scan: pending
+    pro_url: null
+    output_hashes: []
+    correction_count: 0
+    branch: null
+    pr_url: null
+    merge_sha: null
+    tests: []
+    external_gates: []

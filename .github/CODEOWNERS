@@ -1,0 +1,12 @@
+* @qianlan33333-png
+
+/.github/ @qianlan33333-png
+/docs/adr/ @qianlan33333-png
+/docs/architecture/ @qianlan33333-png
+/docs/execution/ @qianlan33333-png
+/api/ @qianlan33333-png
+/migrations/ @qianlan33333-png
+/internal/identity/ @qianlan33333-png
+/internal/outbound/ @qianlan33333-png
+/tools/migrate-from-v1/ @qianlan33333-png
+/tools/contract-replay/ @qianlan33333-png

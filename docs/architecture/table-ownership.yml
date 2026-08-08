@@ -1,0 +1,144 @@
+version: 1
+
+policy:
+  runtime_write: owner_only
+  cross_domain_read: explicit_allowlist_or_port_or_event
+  migrations: ddl_only_and_codex_owned
+  migration_tool: explicit_mapping_and_target_write_authorization
+  reconciler: read_only
+  unknown_table: deny
+
+owners:
+  contact:
+    package: internal/contact
+    tables:
+      - staff
+      - channels
+      - stages
+      - customers
+      - tag_groups
+      - tags
+      - customer_tags
+      - customer_events
+    constraints:
+      customers: channel_neutral_no_external_ids
+      customer_events: append_only
+
+  identity:
+    package: internal/identity
+    tables:
+      - identities
+      - customer_merges
+      - pending_events
+    constraints:
+      identities: customer_id_nullable
+      customer_merges: append_only
+      pending_events: attribution_pending_and_merge_review_queue
+
+  segment:
+    package: internal/segment
+    tables: [segments, segment_members]
+
+  automation:
+    package: internal/automation
+    tables: [automations, automation_enrollments]
+
+  outbound:
+    package: internal/outbound
+    tables: [outbound_batches, outbound_tasks]
+
+  events:
+    package: internal/events
+    tables: [event_log]
+    constraints:
+      event_log: append_and_dispatch_state_only
+
+  survey:
+    package: internal/survey
+    tables: [surveys, survey_submissions]
+
+  ai:
+    package: internal/ai
+    tables: [ai_prompts, ai_generations]
+
+  config:
+    package: internal/config
+    tables: [settings, settings_audit]
+    constraints:
+      settings: non_secret_only
+      settings_audit: append_only_non_secret
+
+  auth:
+    package: internal/auth
+    tables: [admin_users]
+
+  stats:
+    package: internal/stats
+    tables: [stats_daily]
+
+  ops:
+    package: internal/ops
+    tables: []
+    constraints:
+      access: platform_and_domain_ports_only
+
+  wecom:
+    package: internal/wecom
+    tables: [wecom_sync_state]
+
+  gateway:
+    package: internal/gateway
+    tables:
+      - extension_api_keys
+      - extension_api_audit
+      - extension_webhook_endpoints
+      - extension_webhook_deliveries
+    constraints:
+      extension_api_keys: token_hash_only
+      extension_api_audit: append_only
+      extension_webhook_endpoints: encrypted_or_derived_signing_material
+      extension_webhook_deliveries: append_only_delivery_attempts
+
+external_owners:
+  river:
+    writer: github.com/riverqueue/river
+    version: 0.24.0
+    source: https://github.com/riverqueue/river/tree/v0.24.0/riverdriver/riverpgxv5/migration/main
+    tables:
+      - river_client
+      - river_client_queue
+      - river_job
+      - river_leader
+      - river_migration
+      - river_queue
+    application_access: platform_port_only
+
+  goose:
+    writer: github.com/pressly/goose
+    tables: [goose_db_version]
+    application_access: none
+
+cross_domain_read_allowlist:
+  segment:
+    tables: [customers, customer_tags, tags]
+    reason: indexed_audience_compilation
+  outbound:
+    tables: [segment_members]
+    reason: atomic_batch_expansion
+  stats:
+    tables: [customers, customer_events, outbound_tasks]
+    reason: daily_read_only_aggregation
+
+exceptions:
+  - path: migrations
+    access: schema_ddl
+    runtime_dml: false
+  - path: tools/migrate-from-v1
+    access: explicitly_mapped_target_write
+    requires:
+      - human_signed_mapping
+      - explicit_target_write_authorization
+      - declared_target_environment
+  - path: tools/reconciler
+    access: read_only
+    runtime_dml: false

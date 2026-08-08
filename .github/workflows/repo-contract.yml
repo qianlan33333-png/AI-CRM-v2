@@ -1,0 +1,30 @@
+name: policy / repo-contract
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repo-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repo-contract:
+    name: policy / repo-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify repository contract
+        run: scripts/check_repo_contract.sh
+      - name: Verify repository contract negative cases
+        run: scripts/test_repo_contract.sh

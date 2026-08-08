@@ -1,0 +1,51 @@
+# Secrets and local configuration
+.env*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+cookies*.json
+credentials*.json
+handoffs/
+*.zip
+*.patch
+
+# Go
+/bin/
+/vendor/
+*.test
+coverage.out
+coverage/
+
+# Node and frontend
+node_modules/
+dist/
+.vite/
+.eslintcache
+*.tsbuildinfo
+
+# Runtime, data and databases
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+data/
+runtime/
+logs/
+uploads/
+tmp/
+.cache/
+
+# Browser and test state
+playwright-report/
+test-results/
+.auth/
+.browser/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
