@@ -380,7 +380,7 @@ slices:
   - slice_id: P0-C05C
     title: p0-s03-shared-make-ci-checker-ledger-wiring
     owner: Codex-root
-    status: root_staged_validated_pending_pr
+    status: pr_ci_validated_pending_merge
     base_sha: 99509f99cadbdad982c06502d19f51238ac59427
     execution_mode: internal_terra
     task_type: central_contract
@@ -405,7 +405,9 @@ slices:
     branch: codex/p0-c05c-sqlc-shared-wiring
     issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/19
     issue_status: OPEN
-    pr_url: null
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/20
+    pr_status: OPEN_CI_SUCCESS
+    pr_head_sha: 7ba80db890d2547b67f2d7fbc798b5de4616ec03
     merge_sha: null
     tests:
       - LOCAL_bash_yaml_generate_mod_fmt_vet_race_build_PASS
@@ -416,10 +418,13 @@ slices:
       - LOCAL_gitleaks_payload_and_custom_PASS
       - LOCAL_hostile_GIT_INDEX_FILE_rejected_EXIT_1
       - ROOT_STAGED_repo_contract_and_permanent_negatives_PASS
-      - PG_NOT_EXECUTED
+      - PR20_application_SUCCESS_31276016745_job93149528408_contract_PASS_repo_PENDING_PG160014_Goose_up_down_up
+      - PR20_repo_contract_SUCCESS_31276016780
+      - PR20_secret_SUCCESS_31276016739
+      - PG_P0_S03_QUERY_NOT_EXECUTED
     external_gates:
       - ROOT_STAGE_VERIFIED
-      - PR_PENDING
+      - PR_CI_SUCCESS
       - MERGE_PENDING
       - MAIN_CI_PENDING
       - NOT_DEPLOYED
