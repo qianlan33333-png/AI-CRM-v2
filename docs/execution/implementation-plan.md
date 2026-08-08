@@ -2,19 +2,25 @@
 
 状态：`EXECUTING`
 
-负责人：Codex
+负责人：Codex root
 
-外部实现：ChatGPT Pro，一次一个 Slice
+内部实现：最多 3 个 `gpt-5.6-terra`（`reasoning_effort=ultra`）任务
 
 ## 1. 执行模型
 
-Codex 独占架构、ADR、公共 port、DDL、OpenAPI、生成器版本、黑盒验收、
-Git/GitHub 与最终合并。ChatGPT Pro 只实现冻结任务卡中的一个行为。上一片
-未验收并入库前，不发送下一片。
+Codex root 独占架构裁决、中央契约冻结/批准、拆片、验收/测试、Git/GitHub、PR、merge
+和 main CI。Terra 只在独立 worktree 的白名单内实现/测试；中央合同任务只能机械实现
+root 冻结的合同，业务 Slice 不得改中央契约。
 
-每片硬上限：一个模块、一个 API operation 或一个 UI flow、最多 8 个手写
-文件和 400 行手写 diff。API 与 UI、迁移与外部 adapter 不得同片。连续两次
-同根因失败或发生中央契约变更时，Codex 拒收并重新拆片。
+最多 3 个固定 `gpt-5.6-terra` / `reasoning_effort=ultra` 任务在依赖已满足且路径不重叠时
+按 DAG 并行；root 的验收和 Git/GitHub 流程串行。Terra 不得 stage、commit、push、PR、
+rebase、merge、部署或真实外部调用。交回 base、task id、worktree、payload manifest、
+测试和 correction；root stage 后计算 canonical diff SHA-256。
+
+每片硬上限为一个模块/API operation/UI flow、8 个手写文件、400 行手写 diff；失败先用
+同一 task follow-up，连续两次同根因失败或越界即拒收重拆。不得新建、上传或续接网页
+ChatGPT Pro 对话；P0-S01 既有链接仅为历史证据。完整规则见
+[`agent-orchestration.md`](../governance/agent-orchestration.md)。
 
 ## 2. 阶段依赖
 
@@ -99,7 +105,7 @@ Ops → 剩余功能矩阵。
 - Replay：loader、路由转换、diff、runner、报告。
 - Migration：只读 extractor、contact/identity、timeline、outbound、survey/其余、
   checkpoint/incremental。
-- Reconciler：使用全新 Pro 对话，且不提供 migration 源码；计数聚合、逐字段
+- Reconciler：使用独立内部 Terra task，且不提供 migration 源码；计数聚合、逐字段
   抽样、故障注入。
 - P6 只准备构建/SBOM、迁移脚本、备份恢复、冒烟和观察回滚清单；真实切换
   不在当前授权内。
