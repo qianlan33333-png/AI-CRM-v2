@@ -36,11 +36,16 @@ required=(
   migrations/00001_bootstrap.sql
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
+  internal/platform/store/contract.go
   acceptance/p0s01/runtime_contract_test.go
   acceptance/p0s01/process_blackbox.sh
   acceptance/p0s01/static_contract.sh
   acceptance/p0s02/health_contract_test.go
   acceptance/p0s02/static_contract.sh
+  acceptance/p0s03/query_contract_test.go
+  acceptance/p0s03/source_contract.go
+  acceptance/p0s03/static_contract.sh
+  acceptance/p0s03/test_contract.sh
   scripts/build_slice_bundle.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
@@ -56,6 +61,7 @@ required=(
   docs/execution/slice-card-template.md
   docs/execution/slice-ledger.yml
   docs/execution/slices/P0-S02.md
+  docs/execution/slices/P0-S03.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-重构详细设计.md
   docs/spec/SHA256SUMS
@@ -78,11 +84,13 @@ verify_index_sha256() {
   local actual
   actual="$(git show ":$path" | sha256sum | awk '{print $1}')"
   [[ "$actual" = "$expected" ]] ||
-    fail "central workflow content drifted: $path ($actual)"
+    fail "pinned repository content drifted: $path ($actual)"
 }
 
+verify_index_sha256 Makefile \
+  b28d78e7b2f9665242f382559121793a7c195eaba7521c774511da6e7e2c3c09
 verify_index_sha256 .github/workflows/application-go.yml \
-  ff98340ac1bf905338a687366a5fafa30235187d9f61a7acea80d9011bd5ada1
+  2b7e09bf7621bad6d147eb0e008ca562e7d7517f0f39e9f185fbb5156ad99993
 verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -91,6 +99,38 @@ verify_index_sha256 scripts/check_generated_sources.sh \
   f5454daac1f26512bd09292a805fc722e51bcd2efbf77e0f202c13e80c63644d
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
+verify_index_sha256 scripts/test_repo_contract.sh \
+  37f8e0827c366abe4ab66cf00b01783fafe224e14e142e758189c3d1c0c9d27d
+verify_index_sha256 internal/platform/store/contract.go \
+  747683b0f430da2ee29f001abaebe5fe621561aa3dd99b5b9db6b7d871895165
+verify_index_sha256 acceptance/p0s03/query_contract_test.go \
+  8ec6608f0856f33d5d3e76f497a88a26d0c54ea65c23b4744a08ef7f9c1ff072
+verify_index_sha256 acceptance/p0s03/source_contract.go \
+  d26d11f580eb5b9adf0ea11abc1d0c5feda56c974320cce9589cbe76d87a3f9e
+verify_index_sha256 acceptance/p0s03/static_contract.sh \
+  666b174b0017e44e774eaea1b784d1e0ba93e308632f42f7ace768917d9a3c84
+verify_index_sha256 acceptance/p0s03/test_contract.sh \
+  2e0108e38c8cb8805e45dc46b60698f62015429a41fb2e880a185585de1896e7
+
+makefile="$(git show ':Makefile')"
+printf '%s\n' "$makefile" | grep -Eq '^p0-s03-contract:[[:space:]]*$' ||
+  fail "Makefile is missing the P0-S03 contract target"
+p0_s03_contract_recipe="$(
+  awk '
+    /^p0-s03-contract:[[:space:]]*$/ { capture = 1; next }
+    capture && /^[^[:space:]]/ { exit }
+    capture { print }
+  ' <<<"$makefile"
+)"
+printf '%s\n' "$p0_s03_contract_recipe" |
+  grep -Fqx $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s03/test_contract.sh' ||
+  fail "P0-S03 contract target must run the gitless contract tests"
+printf '%s\n' "$makefile" |
+  grep -Eq '^p0-s03-acceptance:[[:space:]]+p0-s03-contract([[:space:]]|$)' ||
+  fail "P0-S03 acceptance target must depend on the contract target"
+ci_go_target="$(printf '%s\n' "$makefile" | grep -E '^ci-go:[[:space:]]' || true)"
+[[ "$ci_go_target" =~ (^|[[:space:]])p0-s03-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P0-S03 acceptance target"
 
 expected_workflows="$({
   printf '%s\n' .github/workflows/application-go.yml

@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
-test_root="$(mktemp -d -t aicrm-v2-repo-contract-test.XXXXXX)"
-trap 'rm -rf "$test_root"' EXIT
-
 fail() {
   echo "repo-contract-tests: $*" >&2
   exit 1
 }
+
+for forbidden_git_env in \
+  GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_QUARANTINE_PATH; do
+  [[ -z "${!forbidden_git_env:-}" ]] ||
+    fail "repository redirection environment is forbidden: $forbidden_git_env"
+done
+
+repo_root="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
+test_root="$(mktemp -d -t aicrm-v2-repo-contract-test.XXXXXX)"
+trap 'rm -rf "$test_root"' EXIT
 
 make_fixture() {
   local name="$1"
@@ -24,6 +31,51 @@ make_fixture() {
 baseline_fixture="$(make_fixture baseline)"
 if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "valid staged baseline was rejected"
+fi
+
+missing_p0s03_contract_fixture="$(make_fixture missing-p0s03-contract)"
+rm -f "$missing_p0s03_contract_fixture/acceptance/p0s03/static_contract.sh"
+git -C "$missing_p0s03_contract_fixture" add -u acceptance/p0s03/static_contract.sh
+if (cd "$missing_p0s03_contract_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing required P0-S03 contract file was accepted"
+fi
+
+broken_p0s03_acceptance_fixture="$(make_fixture broken-p0s03-acceptance)"
+sed -i.bak -E \
+  's/^p0-s03-acceptance: p0-s03-contract$/p0-s03-acceptance:/' \
+  "$broken_p0s03_acceptance_fixture/Makefile"
+rm -f "$broken_p0s03_acceptance_fixture/Makefile.bak"
+git -C "$broken_p0s03_acceptance_fixture" add Makefile
+if (cd "$broken_p0s03_acceptance_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P0-S03 acceptance target without contract dependency was accepted"
+fi
+
+broken_p0s03_ci_fixture="$(make_fixture broken-p0s03-ci-dependency)"
+sed -i.bak -E \
+  's/[[:space:]]p0-s03-acceptance$//' \
+  "$broken_p0s03_ci_fixture/Makefile"
+rm -f "$broken_p0s03_ci_fixture/Makefile.bak"
+git -C "$broken_p0s03_ci_fixture" add Makefile
+if (cd "$broken_p0s03_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without the P0-S03 acceptance dependency was accepted"
+fi
+
+hollow_p0s03_acceptance_fixture="$(make_fixture hollow-p0s03-acceptance)"
+sed -i.bak \
+  's#acceptance/p0s03/static_contract.sh#true#' \
+  "$hollow_p0s03_acceptance_fixture/Makefile"
+rm -f "$hollow_p0s03_acceptance_fixture/Makefile.bak"
+git -C "$hollow_p0s03_acceptance_fixture" add Makefile
+if (cd "$hollow_p0s03_acceptance_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P0-S03 acceptance recipe was accepted"
+fi
+
+duplicate_p0s03_acceptance_fixture="$(make_fixture duplicate-p0s03-acceptance)"
+printf '%s\n' '' 'p0-s03-acceptance: p0-s03-contract' $'\t@true' \
+  >>"$duplicate_p0s03_acceptance_fixture/Makefile"
+git -C "$duplicate_p0s03_acceptance_fixture" add Makefile
+if (cd "$duplicate_p0s03_acceptance_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "duplicate P0-S03 acceptance target was accepted"
 fi
 
 explicit_key_workflow_fixture="$(make_fixture unexpected-explicit-key-workflow)"
