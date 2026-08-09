@@ -33,6 +33,30 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+for path in scripts/sourcepolicy/main.go scripts/test_source_policy.sh; do
+  source_policy_receipt_fixture="$(make_fixture "source-policy-receipt-${path##*/}")"
+  printf '%s\n' '# source policy receipt drift' >>"$source_policy_receipt_fixture/$path"
+  git -C "$source_policy_receipt_fixture" add "$path"
+  if (cd "$source_policy_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "source policy lint receipt drift was accepted: $path"
+  fi
+done
+
+source_policy_runner_mode_fixture="$(make_fixture source-policy-runner-mode)"
+chmod 644 "$source_policy_runner_mode_fixture/scripts/test_source_policy.sh"
+git -C "$source_policy_runner_mode_fixture" add scripts/test_source_policy.sh
+if (cd "$source_policy_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "source policy lint runner mode drift was accepted"
+fi
+
+broken_source_policy_ci_fixture="$(make_fixture broken-source-policy-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]source-policy-lint-test([[:space:]]|$)/\1/' "$broken_source_policy_ci_fixture/Makefile"
+rm -f "$broken_source_policy_ci_fixture/Makefile.bak"
+git -C "$broken_source_policy_ci_fixture" add Makefile
+if (cd "$broken_source_policy_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without source policy lint tests was accepted"
+fi
+
 for path in scripts/ownership/main.go scripts/test_ownership.sh docs/architecture/table-ownership.yml; do
   ownership_receipt_fixture="$(make_fixture "ownership-receipt-${path##*/}")"
   printf '%s\n' '# ownership receipt drift' >>"$ownership_receipt_fixture/$path"

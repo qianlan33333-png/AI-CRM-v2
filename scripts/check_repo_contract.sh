@@ -62,6 +62,7 @@ required=(
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
+  scripts/sourcepolicy/main.go scripts/test_source_policy.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
   scripts/generated-sources.sha256
@@ -123,6 +124,8 @@ done <<'EOF'
 100755 scripts/test_arch_imports.sh
 100644 scripts/ownership/main.go
 100755 scripts/test_ownership.sh
+100644 scripts/sourcepolicy/main.go
+100755 scripts/test_source_policy.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
@@ -147,7 +150,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  119f7a66e7b7b5cb8a8da8be0fa76803245aa0776c6d2c1d2f205a35b8f2dd28
+  ffbe3047a069712ec37ecde7cbf5fffad7b11cfbd7110e054309ea10db6826fc
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -178,10 +181,14 @@ verify_index_sha256 scripts/ownership/main.go \
   e1dfe40e7ccc9ec40cc7a6cb2c10cb8473e373c2751e1a88f61480b539f64241
 verify_index_sha256 scripts/test_ownership.sh \
   d239565f77afe42155e4a09657fdff0abd6c59823aa60f1ec4ff6c565b9087df
+verify_index_sha256 scripts/sourcepolicy/main.go \
+  bf6ed1861b79d86924f43a5db4d0283e67aeaaca56559f3e283fc83ae969127f
+verify_index_sha256 scripts/test_source_policy.sh \
+  a5abc23dc6a09f018ede52fcab106dedf73969cb692d65a67e237109470a654f
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  d0f1dfe179e8f1f7bd7ddfeddcbd2797a73ba710fcad135e0004f9dd14506251
+  37ea75427a227364b201c9bf3a7790a19553ca5680d6db02825f5a7382b08592
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -414,6 +421,16 @@ done
   fail "ownership lint target lost the frozen checker call"
 [[ "$(make_target_recipe 'ownership-lint-test:')" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_ownership.sh' ]] ||
   fail "ownership lint test target lost the frozen runner call"
+require_make_line '.PHONY: source-policy-lint source-policy-lint-test' \
+  "Makefile must declare the source policy lint targets"
+for target in source-policy-lint source-policy-lint-test; do
+  require_unique_make_target "$target"
+  [[ "$ci_go_target" =~ (^|[[:space:]])$target($|[[:space:]]) ]] || fail "ci-go must depend on $target"
+done
+[[ "$(make_target_recipe 'source-policy-lint:')" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/sourcepolicy/main.go -root .' ]] ||
+  fail "source policy lint target lost the frozen checker call"
+[[ "$(make_target_recipe 'source-policy-lint-test:')" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_source_policy.sh' ]] ||
+  fail "source policy lint test target lost the frozen runner call"
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(
