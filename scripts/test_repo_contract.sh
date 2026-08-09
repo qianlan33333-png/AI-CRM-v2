@@ -252,35 +252,64 @@ if (cd "$broken_p1s01_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2
 fi
 
 for path in \
-  tools/contract-replay/main.go \
-  tools/contract-replay/main_test.go \
-  tools/contract-replay/testdata/empty.v1.json \
-  acceptance/p0s10/test_contract_replay.sh; do
-  replay_receipt_fixture="$(make_fixture "contract-replay-receipt-${path##*/}")"
+  tools/snapshot-gate/main.go \
+  tools/snapshot-gate/main_test.go \
+  acceptance/snapshots/catalog.v1.json \
+  acceptance/p0s10/test_snapshot_gate.sh \
+  docs/adr/ADR-001.md \
+  docs/adr/ADR-010.md \
+  docs/adr/ADR-011.md \
+  docs/execution/slices/M0-5.md \
+  docs/architecture/canonical.md \
+  .github/CODEOWNERS; do
+  snapshot_receipt_fixture="$(make_fixture "snapshot-gate-receipt-${path##*/}")"
   case "$path" in
-    *.go) printf '%s\n' '// contract replay receipt drift' >>"$replay_receipt_fixture/$path" ;;
-    *) printf '%s\n' '# contract replay receipt drift' >>"$replay_receipt_fixture/$path" ;;
+    *.go) printf '%s\n' '// snapshot gate receipt drift' >>"$snapshot_receipt_fixture/$path" ;;
+    *) printf '%s\n' '# snapshot gate receipt drift' >>"$snapshot_receipt_fixture/$path" ;;
   esac
-  git -C "$replay_receipt_fixture" add "$path"
-  if (cd "$replay_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "contract replay receipt drift was accepted: $path"
+  git -C "$snapshot_receipt_fixture" add "$path"
+  if (cd "$snapshot_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "snapshot gate receipt drift was accepted: $path"
   fi
 done
 
-replay_runner_mode_fixture="$(make_fixture contract-replay-runner-mode)"
-chmod 644 "$replay_runner_mode_fixture/acceptance/p0s10/test_contract_replay.sh"
-git -C "$replay_runner_mode_fixture" add acceptance/p0s10/test_contract_replay.sh
-if (cd "$replay_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail "contract replay runner mode drift was accepted"
+snapshot_runner_mode_fixture="$(make_fixture snapshot-gate-runner-mode)"
+chmod 644 "$snapshot_runner_mode_fixture/acceptance/p0s10/test_snapshot_gate.sh"
+git -C "$snapshot_runner_mode_fixture" add acceptance/p0s10/test_snapshot_gate.sh
+if (cd "$snapshot_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "snapshot gate runner mode drift was accepted"
 fi
 
-broken_replay_ci_fixture="$(make_fixture broken-contract-replay-ci)"
-sed -i.bak -E '/^ci-go:/ s/[[:space:]]contract-replay-test([[:space:]]|$)/\1/' \
-  "$broken_replay_ci_fixture/Makefile"
-rm -f "$broken_replay_ci_fixture/Makefile.bak"
-git -C "$broken_replay_ci_fixture" add Makefile
-if (cd "$broken_replay_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail "ci-go without contract replay tests was accepted"
+broken_snapshot_ci_fixture="$(make_fixture broken-snapshot-gate-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]snapshot-gate-test([[:space:]]|$)/\1/' \
+  "$broken_snapshot_ci_fixture/Makefile"
+rm -f "$broken_snapshot_ci_fixture/Makefile.bak"
+restage_make_receipt "$broken_snapshot_ci_fixture"
+if (cd "$broken_snapshot_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without snapshot gate tests was accepted"
+fi
+
+hollow_snapshot_fixture="$(make_fixture hollow-snapshot-gate)"
+sed -i.bak '/^snapshot-gate:$/ { n; s/.*/\t@true/; }' "$hollow_snapshot_fixture/Makefile"
+rm -f "$hollow_snapshot_fixture/Makefile.bak"
+restage_make_receipt "$hollow_snapshot_fixture"
+if (cd "$hollow_snapshot_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow snapshot gate target was accepted"
+fi
+
+retired_replay_fixture="$(make_fixture retired-contract-replay-coexistence)"
+mkdir -p "$retired_replay_fixture/tools/contract-replay"
+printf '%s\n' 'retired' >"$retired_replay_fixture/tools/contract-replay/README"
+git -C "$retired_replay_fixture" add tools/contract-replay/README
+if (cd "$retired_replay_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "retired contract replay path was accepted"
+fi
+
+tracked_snapshot_actual_fixture="$(make_fixture tracked-snapshot-actual)"
+printf '%s\n' '{"version":1,"cases":[]}' >"$tracked_snapshot_actual_fixture/acceptance/snapshots/actual.json"
+git -C "$tracked_snapshot_actual_fixture" add acceptance/snapshots/actual.json
+if (cd "$tracked_snapshot_actual_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "tracked handwritten snapshot actual was accepted"
 fi
 
 for path in scripts/sourcepolicy/main.go scripts/test_source_policy.sh; do

@@ -186,7 +186,7 @@ outbound 只暴露 `EnqueueOne` 与 `EnqueueBatch`。调用方提交稳定幂等
 | 重复企微回调 | 重复业务效果 | 原始回调幂等键与数据库唯一约束 |
 | 外部写超时 | 结果可能未知 | 审计请求与结果；仅按安全策略重试，不声称 exactly-once |
 | 身份证据不足 | 错误归因或误合并 | floating identity、pending event、manual review，默认拒绝猜测 |
-| 某业务 Slice 越界 | 模块耦合和回归 | import/table/API owner lint、允许路径检查、契约回放 |
+| 某业务 Slice 越界 | 模块耦合和回归 | import/table/API owner lint、允许路径检查、行为快照门 |
 | 生成物漂移 | 前后端/SQL 契约不一致 | 锁定生成器、生成两次无 diff、锁文件硬门 |
 
 ## 10. 决策索引

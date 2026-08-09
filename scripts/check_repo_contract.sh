@@ -59,10 +59,10 @@ required=(
   acceptance/p0s04/test_source_contract.sh
   acceptance/p0s04/static_contract.sh
   acceptance/p0s04/test_static_contract.sh
-  acceptance/p0s10/test_contract_replay.sh
-  tools/contract-replay/main.go
-  tools/contract-replay/main_test.go
-  tools/contract-replay/testdata/empty.v1.json
+  acceptance/p0s10/test_snapshot_gate.sh
+  acceptance/snapshots/catalog.v1.json
+  tools/snapshot-gate/main.go
+  tools/snapshot-gate/main_test.go
   tools/legacy-route-export/main.go
   tools/legacy-route-export/main_test.go
   docs/execution/slices/P1-S01.md
@@ -94,6 +94,9 @@ required=(
   scripts/test_query_plan_gate.sh
   scripts/test_repo_contract.sh
   docs/architecture/canonical.md
+  docs/adr/ADR-001.md
+  docs/adr/ADR-010.md
+  docs/adr/ADR-011.md
   docs/architecture/port-contracts.md
   docs/architecture/table-ownership.yml
   docs/governance/limitations.md
@@ -105,6 +108,7 @@ required=(
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
+  docs/execution/slices/M0-5.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
   docs/spec/AI-CRM-v2-重构详细设计.md
@@ -155,9 +159,9 @@ done <<'EOF'
 100755 scripts/test_source_policy.sh
 100755 scripts/check_slice_inputs.sh
 100755 scripts/test_slice_inputs.sh
-100644 tools/contract-replay/main.go
-100644 tools/contract-replay/main_test.go
-100644 tools/contract-replay/testdata/empty.v1.json
+100644 tools/snapshot-gate/main.go
+100644 tools/snapshot-gate/main_test.go
+100644 acceptance/snapshots/catalog.v1.json
 100644 tools/legacy-route-export/main.go
 100644 tools/legacy-route-export/main_test.go
 100644 docs/execution/slices/P1-S01.md
@@ -173,7 +177,7 @@ done <<'EOF'
 100644 tools/migration-mapping/main_test.go
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
-100755 acceptance/p0s10/test_contract_replay.sh
+100755 acceptance/p0s10/test_snapshot_gate.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
@@ -190,6 +194,10 @@ done <<'EOF'
 100644 docs/execution/slices/M0-1.md
 100644 docs/execution/slices/M0-2.md
 100644 docs/execution/slices/M0-3.md
+100644 docs/execution/slices/M0-5.md
+100644 docs/adr/ADR-001.md
+100644 docs/adr/ADR-010.md
+100644 docs/adr/ADR-011.md
 100644 docs/spec/AI-CRM-v2-执行方案.md
 100644 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
 100644 docs/spec/AI-CRM-v2-重构详细设计.md
@@ -206,7 +214,9 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  627b54e1764a117e7b76b060b8f6dda6d9da6b4dba042cb58bbdd46a95f4bf51
+  1610570294a6ab052b21ec66ece693dbc03bed3e0ef1936ba8f949e56937a08c
+verify_index_sha256 .github/CODEOWNERS \
+  bb2c40eaad8b8b3dd83cd2d81f58360717ab6dbaeb773afe6d65b7ae18e4f5cb
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -269,12 +279,12 @@ verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
   a0917b9d2d119a68ba9c32e2d458c7b9a3775f846037748947715fdcfee77ee6
 verify_index_sha256 docs/spec/SHA256SUMS \
   2da55ce677d94ff3f30689b2beb63f5f787be33751acd6584c61258e85c1b72e
-verify_index_sha256 tools/contract-replay/main.go \
-  c2df22b56e1b57667974996808f4185d1a602c54b7da2c3ecdca4c146b902cef
-verify_index_sha256 tools/contract-replay/main_test.go \
-  5bf047935ec6efce36fee33b3921d3cc673a785902fd0e502d37c797ef53aebf
-verify_index_sha256 tools/contract-replay/testdata/empty.v1.json \
-  127ec735fdcb7fc58f7d5f6efbc584727bb0be6f94bc05e38ee485d45023c5cb
+verify_index_sha256 tools/snapshot-gate/main.go \
+  425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
+verify_index_sha256 tools/snapshot-gate/main_test.go \
+  77771f548652fc2ffe556b8f8fd31a8f394cc0e90d3e57cb7014711894a29d9b
+verify_index_sha256 acceptance/snapshots/catalog.v1.json \
+  4dbb86ff637cd42a75d6a1a6ca952930af1e6b145e7c2367c6a5bff6981b1d9d
 verify_index_sha256 tools/legacy-route-export/main.go \
   a7734a3207ec6e7a58c83a397dc6300fe262e5430b03c12b488262dbc126954e
 verify_index_sha256 tools/legacy-route-export/main_test.go \
@@ -291,12 +301,22 @@ verify_index_sha256 docs/migration-mapping.jsonl \
   a625f965db7d9aaf27a74c993252f872f255b9b4a4d7a7cdea499477e652dc09
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
-verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
-  0d8f2c3527d975df78e7837e7b50d66730df0448d0cdbd1e3a06098653c48fc8
+verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
+  f412452642b3b03f9f776ad471996e1b6d2df962c7a8b0016122b6a430f1d91f
+verify_index_sha256 docs/adr/ADR-001.md \
+  e4da265cf5ffd9962d1f77f2410538e09e8b41d1cb37c1584c3d57265480e28d
+verify_index_sha256 docs/adr/ADR-010.md \
+  5fdbd62214938e6485322a84858c488a8bac812e00f312318186a5b3ec9b72dc
+verify_index_sha256 docs/adr/ADR-011.md \
+  3fb1954942b0de9da1989276d535af090c0dcd22841437dbb7d6e49e54b7f92d
+verify_index_sha256 docs/execution/slices/M0-5.md \
+  c5a4f1991b8f3ecbb1a3a024c6131aea5fc3d6813ddeb34b323faf2948229609
+verify_index_sha256 docs/architecture/canonical.md \
+  ac61872a4ad45e368ba8ebf40ec3da2f6e07399c1ad8487ce695f987275861f2
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  f38a0e3fabe88980d312e991353c1f48e37fff075fc3d24825710205ef276f45
+  36d66cfcc5ff40cdfdcb7f0fef9ff8d58c5ecb5bbe8e7ede0330b1d0018a6a4a
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -558,26 +578,28 @@ require_make_line 'slice-input-contract-test: slice-input-contract' \
   fail "slice input contract tests lost the frozen runner call"
 [[ "$ci_go_target" =~ (^|[[:space:]])slice-input-contract-test($|[[:space:]]) ]] ||
   fail "ci-go must depend on slice-input-contract-test"
-require_make_line '.PHONY: contract-replay contract-replay-test' \
-  "Makefile must declare the contract replay targets"
-require_unique_make_target contract-replay
-require_unique_make_target contract-replay-test
-require_make_line 'contract-replay-test: contract-replay' \
-  "contract replay tests must depend on the canonical empty run"
-[[ "$ci_go_target" =~ (^|[[:space:]])contract-replay-test($|[[:space:]]) ]] ||
-  fail "ci-go must depend on contract replay tests"
-contract_replay_recipe="$(make_target_recipe 'contract-replay:')" ||
-  fail "contract replay target must be unique"
-[[ "$contract_replay_recipe" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./contract-replay contract-replay/testdata/empty.v1.json' ]] ||
-  fail "contract replay target lost the canonical empty manifest call"
-contract_replay_test_recipe="$(make_target_recipe 'contract-replay-test: contract-replay')" ||
-  fail "contract replay test target must be unique"
+require_make_line '.PHONY: snapshot-gate snapshot-gate-test' \
+  "Makefile must declare the snapshot gate targets"
+require_unique_make_target snapshot-gate
+require_unique_make_target snapshot-gate-test
+require_make_line 'snapshot-gate-test: snapshot-gate' \
+  "snapshot gate tests must depend on canonical catalog validation"
+[[ "$ci_go_target" =~ (^|[[:space:]])snapshot-gate-test($|[[:space:]]) ]] ||
+  fail "ci-go must depend on snapshot gate tests"
+snapshot_gate_recipe="$(make_target_recipe 'snapshot-gate:')" ||
+  fail "snapshot gate target must be unique"
+[[ "$snapshot_gate_recipe" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./snapshot-gate validate ../acceptance/snapshots/catalog.v1.json' ]] ||
+  fail "snapshot gate target lost canonical catalog validation"
+! grep -Fq 'contract-replay' <<<"$(git show ':Makefile')" ||
+  fail "Makefile restored the retired contract replay target"
+snapshot_gate_test_recipe="$(make_target_recipe 'snapshot-gate-test: snapshot-gate')" ||
+  fail "snapshot gate test target must be unique"
 for line in \
-  $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./contract-replay' \
-  $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./contract-replay' \
-  $'\t@env -u BASH_ENV -u ENV GO="$(GO)" acceptance/p0s10/test_contract_replay.sh'; do
-  printf '%s\n' "$contract_replay_test_recipe" | grep -Fqx "$line" ||
-    fail "contract replay tests lost a frozen vet, race, or gitless call"
+  $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./snapshot-gate' \
+  $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./snapshot-gate' \
+  $'\t@env -u BASH_ENV -u ENV GO="$(GO)" acceptance/p0s10/test_snapshot_gate.sh'; do
+  printf '%s\n' "$snapshot_gate_test_recipe" | grep -Fqx "$line" ||
+    fail "snapshot gate tests lost a frozen vet, race, or gitless call"
 done
 
 require_make_line '.PHONY: legacy-route-export-test' \
@@ -693,9 +715,18 @@ actual_workflows="$(
 [[ "$actual_workflows" = "$expected_workflows" ]] ||
   fail "workflow file set drifted; every workflow requires a Codex-owned hash update"
 
-for number in $(seq -w 1 10); do
+for number in $(seq -w 1 11); do
   [[ -f "docs/adr/ADR-0${number}.md" ]] || fail "missing ADR-0${number}"
 done
+
+if git ls-files tools/contract-replay acceptance/p0s10/test_contract_replay.sh | grep -q .; then
+  fail "retired contract replay implementation is still tracked"
+fi
+[[ "$(git ls-files acceptance/snapshots)" = "acceptance/snapshots/catalog.v1.json" ]] ||
+  fail "snapshot catalog inventory drifted; tracked actual responses are forbidden"
+grep -Fq 'ADR-011' <<<"$(git show ':docs/adr/ADR-001.md')" || fail "ADR-001 lost its ADR-011 supersession marker"
+grep -Fq 'ADR-011' <<<"$(git show ':docs/adr/ADR-010.md')" || fail "ADR-010 lost its ADR-011 supersession marker"
+grep -Fq '不能证明新旧系统行为一致' <<<"$(git show ':docs/adr/ADR-011.md')" || fail "ADR-011 lost the snapshot capability boundary"
 
 (cd docs/spec && sha256sum -c SHA256SUMS)
 
