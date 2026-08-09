@@ -65,6 +65,29 @@ inject_paren_new() { local file="$1/internal/platform/store/ping.go"; awk '{ pri
 inject_ping_method_value() { local file="$1/internal/platform/store/ping.go"; awk '{ print; if ($0 == "func (store *PingStore) Ping(ctx context.Context) error {") print "\t_ = store.querier.Ping" }' "$file" >"$file.tmp"; mv "$file.tmp" "$file"; gofmt -w "$file"; }; inject_func_lit_value() { local file="$1/internal/platform/store/ping.go"; awk '{ print; if ($0 == "func (store *PingStore) Ping(ctx context.Context) error {") print "\t_ = func() {}" }' "$file" >"$file.tmp"; mv "$file.tmp" "$file"; gofmt -w "$file"; }
 append_export() { printf '\n%s\n' 'func Escape() {}' >>"$1/internal/platform/store/ping.go"; }; append_goroutine() { printf '\n%s\n' 'func unsafeGo() { go func() {}() }' >>"$1/internal/platform/store/ping.go"; gofmt -w "$1/internal/platform/store/ping.go"; }; append_defer() { printf '\n%s\n' 'func unsafeDefer() { defer fmt.Errorf("x") }' >>"$1/internal/platform/store/ping.go"; gofmt -w "$1/internal/platform/store/ping.go"; }
 append_ident_call() { printf '\n%s\n' 'var _ = len("x")' >>"$1/internal/platform/store/ping.go"; }; append_func_lit_call() { printf '\n%s\n' 'var _ = func() int { return 0 }()' >>"$1/internal/platform/store/ping.go"; gofmt -w "$1/internal/platform/store/ping.go"; }; append_other_selector() { printf '\n%s\n' 'var _ = fmt.Println("dead")' >>"$1/internal/platform/store/ping.go"; }
+inject_covered_non_one_bypass() {
+	local implementation="$1/internal/platform/store/ping.go" tests="$1/internal/platform/store/ping_test.go"
+	awk '
+		$0 == "\treturn fmt.Errorf(\"platform store ping: unexpected value %d\", value)" {
+			matches++
+			print "\tif value == 42 {"
+			print "\t\treturn nil"
+			print "\t}"
+		}
+		{ print }
+		END { exit !(matches == 1) }
+	' "$implementation" >"$implementation.tmp" || fail "cannot construct covered non-one bypass"
+	mv "$implementation.tmp" "$implementation"
+	cat >>"$tests" <<'EOF'
+
+func TestCoveredNonOneBypass(t *testing.T) {
+	if err := (&PingStore{querier: fixtureQuerier{value: 42}}).Ping(context.Background()); err != nil {
+		t.Fatalf("Ping(42) error = %v, want nil", err)
+	}
+}
+EOF
+	gofmt -w "$implementation" "$tests"
+}
 add_unsafe_test_import() { printf '%b' 'package platformstore\n\nimport "os"\n\nfunc TestUnsafe(t *testing.T) { _ = os.Getenv("x") }\n' >"$1/internal/platform/store/ping_test.go"; gofmt -w "$1/internal/platform/store/ping_test.go"; }; append_test_after_func() { printf '\n%s\n' 'var _ = context.AfterFunc(context.Background(), func() {})' >>"$1/internal/platform/store/ping_test.go"; gofmt -w "$1/internal/platform/store/ping_test.go"; }
 append_test_go() { printf '\n%s\n' 'func TestUnsafeGo(t *testing.T) { go func() {}() }' >>"$1/internal/platform/store/ping_test.go"; gofmt -w "$1/internal/platform/store/ping_test.go"; }; append_test_defer() { printf '\n%s\n' 'func TestUnsafeDefer(t *testing.T) { defer context.AfterFunc(context.Background(), func() {})() }' >>"$1/internal/platform/store/ping_test.go"; gofmt -w "$1/internal/platform/store/ping_test.go"; }
 append_test_method() { printf '\nfunc TestUnsafeMethod(t *testing.T) { %s }\n' "$2" >>"$1/internal/platform/store/ping_test.go"; gofmt -w "$1/internal/platform/store/ping_test.go"; }; test_setenv() { append_test_method "$1" 't.Setenv("K", "V")'; }; test_tempdir() { append_test_method "$1" 't.TempDir()'; }; test_chdir() { append_test_method "$1" 't.Chdir(".")'; }; test_parallel() { append_test_method "$1" 't.Parallel()'; }
@@ -81,6 +104,7 @@ expect_rejected line-limit 'exceed 220 lines' exceed_line_limit; expect_rejected
 expect_rejected direct-query-row 'implementation call is not allowed' append_query_row; expect_rejected direct-query-exec 'implementation call is not allowed' append_query_exec; expect_rejected hostile-calls 'import is not allowed' write_hostile_calls; expect_rejected environment 'implementation call is not allowed' append_environment; expect_rejected connection 'implementation call is not allowed' append_connection
 expect_rejected paren-new 'implementation call is not allowed' inject_paren_new; expect_rejected paren-ping 'implementation call is not allowed' inject_paren_ping; expect_rejected ident-call 'implementation call is not allowed' append_ident_call; expect_rejected func-lit-call 'implementation call is not allowed' append_func_lit_call; expect_rejected selector-call 'implementation call is not allowed' append_other_selector
 expect_rejected ping-method-value 'allowed implementation selectors must each appear exactly once' inject_ping_method_value; expect_rejected func-lit-value 'function literals are forbidden' inject_func_lit_value
+expect_rejected covered-non-one-bypass 'Ping must contain exactly the canonical query/error/success/failure control flow' inject_covered_non_one_bypass
 expect_rejected test-import 'import is not allowed' add_unsafe_test_import; expect_rejected extra-export 'unexpected implementation declaration' append_export; expect_rejected go-statement 'go and defer statements are forbidden' append_goroutine; expect_rejected defer-statement 'go and defer statements are forbidden' append_defer
 expect_rejected test-after-func 'test package call is not allowed' append_test_after_func; expect_rejected test-go 'go and defer statements are forbidden' append_test_go; expect_rejected test-defer 'go and defer statements are forbidden' append_test_defer
 expect_rejected test-setenv 'test method is not allowed: Setenv' test_setenv; expect_rejected test-tempdir 'test method is not allowed: TempDir' test_tempdir; expect_rejected test-chdir 'test method is not allowed: Chdir' test_chdir; expect_rejected test-parallel 'test method is not allowed: Parallel' test_parallel

@@ -78,14 +78,24 @@ func TestPingStoreDirectDBTXContract(t *testing.T) {
 		}
 	})
 
-	t.Run("unexpected generated value has exact error", func(t *testing.T) {
-		store := platformstore.NewPingStore(dbtxFixture{row: scanRow{value: 0}})
-		if err := store.Ping(context.Background()); err == nil {
-			t.Fatal("Ping() error = nil, want non-nil")
-		} else if got, want := err.Error(), "platform store ping: unexpected value 0"; got != want {
-			t.Fatalf("Ping() error = %q, want %q", got, want)
-		}
-	})
+	for _, test := range []struct {
+		name  string
+		value int64
+		want  string
+	}{
+		{name: "zero", value: 0, want: "platform store ping: unexpected value 0"},
+		{name: "positive non-one", value: 42, want: "platform store ping: unexpected value 42"},
+		{name: "negative non-one", value: -7, want: "platform store ping: unexpected value -7"},
+	} {
+		t.Run("unexpected generated value "+test.name+" has exact error", func(t *testing.T) {
+			store := platformstore.NewPingStore(dbtxFixture{row: scanRow{value: test.value}})
+			if err := store.Ping(context.Background()); err == nil {
+				t.Fatal("Ping() error = nil, want non-nil")
+			} else if got := err.Error(); got != test.want {
+				t.Fatalf("Ping() error = %q, want %q", got, test.want)
+			}
+		})
+	}
 }
 
 func TestPingStorePostgreSQL16Integration(t *testing.T) {

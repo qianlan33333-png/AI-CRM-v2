@@ -63,6 +63,21 @@ if (cd "$missing_p0s03_contract_fixture" && scripts/check_repo_contract.sh >/dev
   fail "missing required P0-S03 contract file was accepted"
 fi
 
+for path in \
+  acceptance/p0s03/query_contract_test.go \
+  acceptance/p0s03/source_contract.go \
+  acceptance/p0s03/test_contract.sh; do
+  p0s03_receipt_fixture="$(make_fixture "p0s03-receipt-${path##*/}")"
+  case "$path" in
+    *.go) printf '%s\n' '// P0-S03 receipt drift' >>"$p0s03_receipt_fixture/$path" ;;
+    *.sh) printf '%s\n' '# P0-S03 receipt drift' >>"$p0s03_receipt_fixture/$path" ;;
+  esac
+  git -C "$p0s03_receipt_fixture" add "$path"
+  if (cd "$p0s03_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P0-S03 receipt drift was accepted: $path"
+  fi
+done
+
 broken_p0s03_acceptance_fixture="$(make_fixture broken-p0s03-acceptance)"
 sed -i.bak -E \
   's/^p0-s03-acceptance: p0-s03-contract$/p0-s03-acceptance:/' \
