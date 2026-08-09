@@ -74,16 +74,16 @@ fmt-check:
 		test -z "$$files" || test -z "$$(gofmt -l $$files)"
 
 vet:
-	@$(GO) vet ./...
+	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) vet $$packages
 
 test:
-	@$(GO) test -race ./...
+	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) test -race $$packages
 
 build:
-	@$(GO) build ./...
+	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) build $$packages
 
 vuln:
-	@$(GO) tool -modfile=$(TOOLS_MOD) govulncheck ./...
+	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) tool -modfile=$(TOOLS_MOD) govulncheck $$packages
 
 p0-s01-acceptance:
 	@if [[ -f cmd/aicrm/main.go || \
