@@ -34,6 +34,28 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
 fi
 
 for path in \
+  tools/legacy-route-export/main.go \
+  tools/legacy-route-export/main_test.go \
+  docs/execution/slices/P1-S01.md \
+  docs/evidence/p1/legacy-routes-6cb989c.json; do
+  p1s01_receipt_fixture="$(make_fixture "p1s01-receipt-${path##*/}")"
+  printf '%s\n' '# P1-S01 receipt drift' >>"$p1s01_receipt_fixture/$path"
+  git -C "$p1s01_receipt_fixture" add "$path"
+  if (cd "$p1s01_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P1-S01 receipt drift was accepted: $path"
+  fi
+done
+
+broken_p1s01_ci_fixture="$(make_fixture broken-p1s01-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]legacy-route-export-test([[:space:]]|$)/\1/' \
+  "$broken_p1s01_ci_fixture/Makefile"
+rm -f "$broken_p1s01_ci_fixture/Makefile.bak"
+git -C "$broken_p1s01_ci_fixture" add Makefile
+if (cd "$broken_p1s01_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without the P1-S01 exporter tests was accepted"
+fi
+
+for path in \
   tools/contract-replay/main.go \
   tools/contract-replay/main_test.go \
   tools/contract-replay/testdata/empty.v1.json \

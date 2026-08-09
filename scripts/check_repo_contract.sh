@@ -63,6 +63,10 @@ required=(
   tools/contract-replay/main.go
   tools/contract-replay/main_test.go
   tools/contract-replay/testdata/empty.v1.json
+  tools/legacy-route-export/main.go
+  tools/legacy-route-export/main_test.go
+  docs/execution/slices/P1-S01.md
+  docs/evidence/p1/legacy-routes-6cb989c.json
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
@@ -133,6 +137,10 @@ done <<'EOF'
 100644 tools/contract-replay/main.go
 100644 tools/contract-replay/main_test.go
 100644 tools/contract-replay/testdata/empty.v1.json
+100644 tools/legacy-route-export/main.go
+100644 tools/legacy-route-export/main_test.go
+100644 docs/execution/slices/P1-S01.md
+100644 docs/evidence/p1/legacy-routes-6cb989c.json
 100755 acceptance/p0s10/test_contract_replay.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
@@ -158,7 +166,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  a529fd4e854b6b2fdb091327d242702949a1a0226c194d03103f09fc7b5c7cf8
+  ee0eaa04ce2a8271e7d9c513b7868487dd3682651bc039410ad35eccb85fbdbb
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -199,12 +207,20 @@ verify_index_sha256 tools/contract-replay/main_test.go \
   5bf047935ec6efce36fee33b3921d3cc673a785902fd0e502d37c797ef53aebf
 verify_index_sha256 tools/contract-replay/testdata/empty.v1.json \
   127ec735fdcb7fc58f7d5f6efbc584727bb0be6f94bc05e38ee485d45023c5cb
+verify_index_sha256 tools/legacy-route-export/main.go \
+  a7734a3207ec6e7a58c83a397dc6300fe262e5430b03c12b488262dbc126954e
+verify_index_sha256 tools/legacy-route-export/main_test.go \
+  1a7073ac6488e5d55873d9d2711b1096e2b08402272cd151babd9efa2c81221b
+verify_index_sha256 docs/execution/slices/P1-S01.md \
+  39571f878f83ed4b1537342dc49efe54bb7ea5d7720950002f12e45581a67726
+verify_index_sha256 docs/evidence/p1/legacy-routes-6cb989c.json \
+  fb6aa066c985af4d0c5e3abe8a33c88b5c3a6a56dda9ee7fd6e51aca8cb5f231
 verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
   0d8f2c3527d975df78e7837e7b50d66730df0448d0cdbd1e3a06098653c48fc8
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  92e0a84b6dd121af0560ecdda5835014b559de4c60dca508ab87d69f666386ce
+  c60678cf00843eed405afd505cd5cafd562a138afc9d81210099bb032b4b255c
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -467,6 +483,18 @@ for line in \
   $'\t@env -u BASH_ENV -u ENV GO="$(GO)" acceptance/p0s10/test_contract_replay.sh'; do
   printf '%s\n' "$contract_replay_test_recipe" | grep -Fqx "$line" ||
     fail "contract replay tests lost a frozen vet, race, or gitless call"
+done
+
+require_make_line '.PHONY: legacy-route-export-test' \
+  "Makefile must declare the P1-S01 exporter test target"
+require_unique_make_target legacy-route-export-test
+[[ "$ci_go_target" =~ (^|[[:space:]])legacy-route-export-test($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P1-S01 exporter tests"
+p1_s01_recipe="$(make_target_recipe 'legacy-route-export-test:')" ||
+  fail "P1-S01 exporter test target must be unique"
+for call in '$(GO) -C tools vet ./legacy-route-export' '$(GO) -C tools test -race -timeout=15s ./legacy-route-export'; do
+  [[ "$(grep -Fc "$call" <<<"$p1_s01_recipe" || true)" = "1" ]] ||
+    fail "P1-S01 exporter lost a frozen vet or race test call"
 done
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
