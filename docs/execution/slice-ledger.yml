@@ -572,6 +572,15 @@ slices:
     merge_sha: c223a90e09577bf587def242fe19a6e7d551ab96
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     correction_count: 0
+  - slice_id: M0-2
+    title: refreeze-authoritative-specifications
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/84
+    pr_head_sha: 1a5663258973842a64d23e8ddee12b5c5509c82b
+    merge_sha: 890e6884f488e1a4b45092e8c3903d4d44b1975a
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: 0
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00

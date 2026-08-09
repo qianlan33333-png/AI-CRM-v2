@@ -18,6 +18,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: legacy-route-export-test
 .PHONY: feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion
 .PHONY: migration-mapping-contract migration-mapping-p1-completion
+.PHONY: query-plan-gate query-plan-gate-test
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -246,4 +247,16 @@ migration-mapping-contract:
 migration-mapping-p1-completion: migration-mapping-contract
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./migration-mapping --completion
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test slice-input-contract-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract
+query-plan-gate query-plan-gate-test: override SHELL := /bin/bash
+query-plan-gate query-plan-gate-test: override .SHELLFLAGS := -eu -o pipefail -c
+query-plan-gate query-plan-gate-test: override GO := go
+
+query-plan-gate:
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./query-plan-gate -root .. -base "$$QUERY_PLAN_BASE_SHA" -head "$$QUERY_PLAN_HEAD_SHA" -database-url "$$QUERY_PLAN_TEST_DATABASE_URL"
+
+query-plan-gate-test: query-plan-gate
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./query-plan-gate
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./query-plan-gate
+	@/usr/bin/env -u BASH_ENV -u ENV GO="$(GO)" /bin/bash scripts/test_query_plan_gate.sh
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test slice-input-contract-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract query-plan-gate-test
