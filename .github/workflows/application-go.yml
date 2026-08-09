@@ -55,6 +55,9 @@ jobs:
         env:
           P0S03_PG_INTEGRATION: "1"
           P0S03_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable
+          QUERY_PLAN_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable
+          QUERY_PLAN_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+          QUERY_PLAN_HEAD_SHA: ${{ github.sha }}
         run: make ci-go
       - name: Verify PostgreSQL version and migrations
         env:

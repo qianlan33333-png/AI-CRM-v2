@@ -76,6 +76,8 @@ required=(
   docs/execution/slices/P1-S09.md
   tools/migration-mapping/main.go
   tools/migration-mapping/main_test.go
+  tools/query-plan-gate/main.go
+  tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
@@ -89,6 +91,7 @@ required=(
   scripts/test_gitless_generated_check.sh
   scripts/test_orval_generated_check.sh
   scripts/test_arch_imports.sh
+  scripts/test_query_plan_gate.sh
   scripts/test_repo_contract.sh
   docs/architecture/canonical.md
   docs/architecture/port-contracts.md
@@ -101,6 +104,7 @@ required=(
   docs/execution/slices/P0-S04.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
+  docs/execution/slices/M0-3.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
   docs/spec/AI-CRM-v2-重构详细设计.md
@@ -133,6 +137,8 @@ done <<'EOF'
 100644 Makefile
 100644 go.mod
 100644 go.sum
+100644 tools/go.mod
+100644 tools/go.sum
 100644 package.json
 100644 package-lock.json
 100644 web/index.html
@@ -165,10 +171,13 @@ done <<'EOF'
 100644 docs/execution/slices/P1-S09.md
 100644 tools/migration-mapping/main.go
 100644 tools/migration-mapping/main_test.go
+100644 tools/query-plan-gate/main.go
+100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_contract_replay.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
+100755 scripts/test_query_plan_gate.sh
 100755 acceptance/p0s02/static_contract.sh
 100755 acceptance/p0s02/test_static_contract.sh
 100644 internal/platform/river/contract.go
@@ -180,6 +189,7 @@ done <<'EOF'
 100644 docs/execution/slices/P0-S04.md
 100644 docs/execution/slices/M0-1.md
 100644 docs/execution/slices/M0-2.md
+100644 docs/execution/slices/M0-3.md
 100644 docs/spec/AI-CRM-v2-执行方案.md
 100644 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
 100644 docs/spec/AI-CRM-v2-重构详细设计.md
@@ -196,7 +206,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  cda91bf53566a9a5e4a809d060f183ae7fb8165d75fd4b39129c70101e195fc7
+  627b54e1764a117e7b76b060b8f6dda6d9da6b4dba042cb58bbdd46a95f4bf51
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -208,7 +218,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   c6505babc7e0896afc3ce3b554abeb08519f72c3bf8db871cc88e67ac92d836c
 verify_index_sha256 .github/workflows/application-go.yml \
-  fbabc284fc80fc27ab181667a9ee1d21333cbaba4df25e00c494e6e75e75be23
+  eb5a445954504d93ddf0b2b3e6bcbe90dd1344ae3f9a6b63312ee82c107d09bf
 verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -239,6 +249,18 @@ verify_index_sha256 docs/execution/slices/M0-1.md \
   1bb201f3550ef638ea85f8f7f5de585b57825177c400a7f5cab3094ef68f6043
 verify_index_sha256 docs/execution/slices/M0-2.md \
   97d9acda27150c905af7bc52eeca623034ae1c529d89aac56c253f18d426df59
+verify_index_sha256 tools/go.mod \
+  b4e02c1b4df02846679387ab075e4323e26bf9247af6c0ac034f9a94392880ab
+verify_index_sha256 tools/go.sum \
+  2515f9dd3dbc17c77f98550be06a8cdf072538e6d8eb296077b6ad91120d2753
+verify_index_sha256 tools/query-plan-gate/main.go \
+  ef737d9397fde907f0aadc404733413c8a867911463c31a3218d45c44a9dcaf7
+verify_index_sha256 tools/query-plan-gate/main_test.go \
+  379fdaecbfac5c3f7107edace3edc7aa9381ea4fe12623fafb94a5308251518a
+verify_index_sha256 scripts/test_query_plan_gate.sh \
+  61a1ce22acc6358b697c50e191c02a6d2e8a0fe20b9d00c2070cececdc8bb497
+verify_index_sha256 docs/execution/slices/M0-3.md \
+  c14caaed56bc85a386ece43639053b10556d3d4eae25816fbefe334430d6ba0f
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
   210f6d3c9d0434cba6426ab71fc1cc64bc3a6d3a1a184e55af5f1273c21a8099
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
@@ -274,7 +296,7 @@ verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  fc3216323d729f24da98077d69b931bfeed1e1e8ef73706f19a3fe5f7f434d8e
+  f38a0e3fabe88980d312e991353c1f48e37fff075fc3d24825710205ef276f45
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -337,7 +359,7 @@ require_unique_make_target() {
   local target="$1"
   local count
   count="$(awk -v target="$target" '
-    /^[^[:space:]#][^:]*:/ && $0 !~ /:[[:space:]]+override[[:space:]]+(SHELL|[.]SHELLFLAGS)[[:space:]]*:=/ {
+    /^[^[:space:]#][^:]*:/ && $0 !~ /:[[:space:]]+override[[:space:]]+(SHELL|[.]SHELLFLAGS|GO)[[:space:]]*:=/ {
       header = $0
       sub(/:.*/, "", header)
       fields = split(header, names, /[[:space:]]+/)
@@ -602,6 +624,24 @@ require_make_line 'migration-mapping-p1-completion: migration-mapping-contract' 
 [[ "$(make_target_recipe 'migration-mapping-p1-completion: migration-mapping-contract')" = *'$(GO) -C tools run ./migration-mapping --completion'* ]] || fail "migration mapping completion lost its pending gate"
 [[ "$ci_go_target" =~ (^|[[:space:]])migration-mapping-contract($|[[:space:]]) && ! "$ci_go_target" =~ (^|[[:space:]])migration-mapping-p1-completion($|[[:space:]]) ]] || fail "ci-go must run only the base migration mapping contract"
 
+require_make_line '.PHONY: query-plan-gate query-plan-gate-test' "Makefile must declare the query plan gates"
+require_make_line 'query-plan-gate query-plan-gate-test: override SHELL := /bin/bash' "query plan targets must use absolute Bash"
+require_make_line 'query-plan-gate query-plan-gate-test: override .SHELLFLAGS := -eu -o pipefail -c' "query plan targets must pin fail-closed Bash flags"
+require_make_line 'query-plan-gate query-plan-gate-test: override GO := go' "query plan targets must reject hostile GO overrides"
+for target in query-plan-gate query-plan-gate-test; do require_unique_make_target "$target"; done
+query_plan_recipe="$(make_target_recipe 'query-plan-gate:')" || fail "query plan gate target must be unique"
+[[ "$query_plan_recipe" = $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./query-plan-gate -root .. -base "$$QUERY_PLAN_BASE_SHA" -head "$$QUERY_PLAN_HEAD_SHA" -database-url "$$QUERY_PLAN_TEST_DATABASE_URL"' ]] ||
+  fail "query plan gate lost its frozen Git and database inputs"
+require_make_line 'query-plan-gate-test: query-plan-gate' "query plan tests must depend on the real gate"
+query_plan_test_recipe="$(make_target_recipe 'query-plan-gate-test: query-plan-gate')" || fail "query plan test target must be unique"
+for line in \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./query-plan-gate' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./query-plan-gate' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GO="$(GO)" /bin/bash scripts/test_query_plan_gate.sh'; do
+  printf '%s\n' "$query_plan_test_recipe" | grep -Fqx "$line" || fail "query plan tests lost a frozen static or PostgreSQL call"
+done
+[[ "$ci_go_target" =~ (^|[[:space:]])query-plan-gate-test($|[[:space:]]) ]] || fail "ci-go must depend on query-plan-gate-test"
+
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(
   awk '
@@ -621,6 +661,13 @@ done
 for line in '      BASH_ENV: ""' '      ENV: ""'; do
   [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
     fail "application workflow must clear BASH_ENV and ENV"
+done
+for line in \
+  '          QUERY_PLAN_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable' \
+  '          QUERY_PLAN_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}' \
+  '          QUERY_PLAN_HEAD_SHA: ${{ github.sha }}'; do
+  [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "application workflow lost a frozen query plan gate input"
 done
 for line in \
   '  web:' \

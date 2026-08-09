@@ -57,6 +57,38 @@ if (cd "$m0_v2_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "M0-2 v2 spec mode drift was accepted"
 fi
 
+for path in tools/query-plan-gate/main.go tools/query-plan-gate/main_test.go scripts/test_query_plan_gate.sh docs/execution/slices/M0-3.md tools/go.mod; do
+  query_plan_receipt_fixture="$(make_fixture "query-plan-receipt-${path##*/}")"
+  case "$path" in *.go) printf '%s\n' '// query plan receipt drift' >>"$query_plan_receipt_fixture/$path" ;; *) printf '%s\n' '# query plan receipt drift' >>"$query_plan_receipt_fixture/$path" ;; esac
+  git -C "$query_plan_receipt_fixture" add "$path"
+  if (cd "$query_plan_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "query plan gate receipt drift was accepted: $path"
+  fi
+done
+
+query_plan_runner_mode_fixture="$(make_fixture query-plan-runner-mode)"
+chmod 644 "$query_plan_runner_mode_fixture/scripts/test_query_plan_gate.sh"
+git -C "$query_plan_runner_mode_fixture" add scripts/test_query_plan_gate.sh
+if (cd "$query_plan_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "query plan gate runner mode drift was accepted"
+fi
+
+broken_query_plan_ci_fixture="$(make_fixture broken-query-plan-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]query-plan-gate-test([[:space:]]|$)/\1/' "$broken_query_plan_ci_fixture/Makefile"
+rm -f "$broken_query_plan_ci_fixture/Makefile.bak"
+restage_make_receipt "$broken_query_plan_ci_fixture"
+if (cd "$broken_query_plan_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without query plan gate tests was accepted"
+fi
+
+hollow_query_plan_target_fixture="$(make_fixture hollow-query-plan-target)"
+sed -i.bak '/^query-plan-gate:$/ { n; s/.*/\t@true/; }' "$hollow_query_plan_target_fixture/Makefile"
+rm -f "$hollow_query_plan_target_fixture/Makefile.bak"
+restage_make_receipt "$hollow_query_plan_target_fixture"
+if (cd "$hollow_query_plan_target_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow query plan gate target was accepted"
+fi
+
 make_gitless_matrix_fixture() {
   local fixture
   fixture="$(make_fixture "$1")"
