@@ -37,6 +37,7 @@ required=(
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
+  internal/platform/river/contract.go
   acceptance/p0s01/runtime_contract_test.go
   acceptance/p0s01/process_blackbox.sh
   acceptance/p0s01/static_contract.sh
@@ -46,6 +47,11 @@ required=(
   acceptance/p0s03/source_contract.go
   acceptance/p0s03/static_contract.sh
   acceptance/p0s03/test_contract.sh
+  acceptance/p0s04/contract_test.go
+  acceptance/p0s04/source_contract.go
+  acceptance/p0s04/test_source_contract.sh
+  acceptance/p0s04/static_contract.sh
+  acceptance/p0s04/test_static_contract.sh
   scripts/build_slice_bundle.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
@@ -62,6 +68,7 @@ required=(
   docs/execution/slice-ledger.yml
   docs/execution/slices/P0-S02.md
   docs/execution/slices/P0-S03.md
+  docs/execution/slices/P0-S04.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-重构详细设计.md
   docs/spec/SHA256SUMS
@@ -78,6 +85,33 @@ for path in "${required[@]}"; do
   esac
 done
 
+verify_index_mode() {
+  local path="$1"
+  local expected="$2"
+  local actual
+  actual="$(git ls-files -s -- "$path" | awk 'NR == 1 { print $1 }')"
+  [[ "$actual" = "$expected" ]] ||
+    fail "pinned repository mode drifted: $path ($actual)"
+}
+
+while IFS=' ' read -r expected path; do
+  verify_index_mode "$path" "$expected"
+done <<'EOF'
+100644 Makefile
+100644 go.mod
+100644 go.sum
+100644 .github/workflows/application-go.yml
+100755 scripts/check_repo_contract.sh
+100755 scripts/test_repo_contract.sh
+100644 internal/platform/river/contract.go
+100644 acceptance/p0s04/contract_test.go
+100644 acceptance/p0s04/source_contract.go
+100755 acceptance/p0s04/test_source_contract.sh
+100755 acceptance/p0s04/static_contract.sh
+100755 acceptance/p0s04/test_static_contract.sh
+100644 docs/execution/slices/P0-S04.md
+EOF
+
 verify_index_sha256() {
   local path="$1"
   local expected="$2"
@@ -88,9 +122,13 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  b28d78e7b2f9665242f382559121793a7c195eaba7521c774511da6e7e2c3c09
+  4efc03dcffc0c3bda494e3543f934ab8cb8d6f1c3315d0e26cfeae0cb32943ba
+verify_index_sha256 go.mod \
+  3cbf623a51f7f6d3d67fd9130d54173ede1c8234b23f28dfa6878c8b4c34d287
+verify_index_sha256 go.sum \
+  6f4bd6e24238ffc3775f110f672fd8c9f5a1114913dda5e31000d3d6881eda21
 verify_index_sha256 .github/workflows/application-go.yml \
-  2b7e09bf7621bad6d147eb0e008ca562e7d7517f0f39e9f185fbb5156ad99993
+  16c984a169ada4cf8b0daa6c219c7a18a2348fb82bf71ef71a2d46c13c555605
 verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -100,7 +138,7 @@ verify_index_sha256 scripts/check_generated_sources.sh \
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  37f8e0827c366abe4ab66cf00b01783fafe224e14e142e758189c3d1c0c9d27d
+  3a7f5949cf013abfd3d92f0896ae210bf68a68e1b965966339aa8ea800cc6a92
 verify_index_sha256 internal/platform/store/contract.go \
   747683b0f430da2ee29f001abaebe5fe621561aa3dd99b5b9db6b7d871895165
 verify_index_sha256 acceptance/p0s03/query_contract_test.go \
@@ -111,6 +149,20 @@ verify_index_sha256 acceptance/p0s03/static_contract.sh \
   666b174b0017e44e774eaea1b784d1e0ba93e308632f42f7ace768917d9a3c84
 verify_index_sha256 acceptance/p0s03/test_contract.sh \
   2e0108e38c8cb8805e45dc46b60698f62015429a41fb2e880a185585de1896e7
+verify_index_sha256 internal/platform/river/contract.go \
+  f03a64b78f9fa0f809b869a7d473f42a9edecc41201805fec461f4ba0f1cb292
+verify_index_sha256 acceptance/p0s04/contract_test.go \
+  969e834043c841f533c3405da13f2048178cb31982ac0619aec04f77ed600340
+verify_index_sha256 acceptance/p0s04/source_contract.go \
+  8d02d5d5fdd76a31999ed76a9eb77d8343b09d4a0cd48c3531f893d29331f9d0
+verify_index_sha256 acceptance/p0s04/test_source_contract.sh \
+  5d92037d3a54cc450b7862d08d60015ac9b1a776d11230d1d373d0169a516697
+verify_index_sha256 acceptance/p0s04/static_contract.sh \
+  8cf9ee7189be9a859c660301a5a801cef50495cfcf394d1ed6854b4e73a39c5d
+verify_index_sha256 acceptance/p0s04/test_static_contract.sh \
+  8b53e98baeba0c106a489ad3ea9e3b65d618433a3e740b4109ec032e0dd6b97e
+verify_index_sha256 docs/execution/slices/P0-S04.md \
+  bb8cc8f7ff0ef4d6e76c8c124bafc661f562a230ec25826b8318a82311281608
 
 makefile="$(git show ':Makefile')"
 printf '%s\n' "$makefile" | grep -Eq '^p0-s03-contract:[[:space:]]*$' ||
@@ -131,6 +183,119 @@ printf '%s\n' "$makefile" |
 ci_go_target="$(printf '%s\n' "$makefile" | grep -E '^ci-go:[[:space:]]' || true)"
 [[ "$ci_go_target" =~ (^|[[:space:]])p0-s03-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P0-S03 acceptance target"
+
+require_make_line() {
+  local line="$1"
+  local label="$2"
+  [[ "$(printf '%s\n' "$makefile" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "$label"
+}
+
+require_unique_make_target() {
+  local target="$1"
+  local count
+  count="$(awk -v target="$target" '
+    /^[^[:space:]#][^:]*:/ {
+      header = $0
+      sub(/:.*/, "", header)
+      fields = split(header, names, /[[:space:]]+/)
+      for (position = 1; position <= fields; position++) {
+        if (names[position] == target) count++
+      }
+    }
+    END { print count + 0 }
+  ' <<<"$makefile")"
+  [[ "$count" = "1" ]] || fail "Makefile target must be unique: $target"
+}
+
+make_target_recipe() {
+  local header="$1"
+  awk -v header="$header" '
+    $0 == header { seen++; capture = 1; next }
+    capture && /^[^[:space:]]/ { exit }
+    capture { print }
+    END { exit !(seen == 1) }
+  ' <<<"$makefile"
+}
+
+require_make_line 'unexport BASH_ENV ENV' \
+  "Makefile must unexport BASH_ENV and ENV before starting recipes"
+require_make_line '.PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration' \
+  "Makefile must declare the P0-S04 targets exactly once"
+require_unique_make_target p0-s04-contract
+require_unique_make_target p0-s04-acceptance
+require_unique_make_target p0-s04-integration
+require_make_line 'p0-s04-contract:' \
+  "Makefile is missing or overriding the P0-S04 contract target"
+require_make_line 'p0-s04-acceptance: p0-s04-contract' \
+  "P0-S04 acceptance target must depend only on the contract target"
+require_make_line 'p0-s04-integration: p0-s04-contract' \
+  "P0-S04 integration target must depend only on the contract target"
+
+p0_s04_contract_recipe="$(make_target_recipe 'p0-s04-contract:')" ||
+  fail "P0-S04 contract target must be unique"
+[[ "$p0_s04_contract_recipe" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/test_source_contract.sh\n\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/test_static_contract.sh' ]] ||
+  fail "P0-S04 contract target must run only the frozen source and static runners"
+
+p0_s04_empty_lines=(
+  $'\t@shopt -s nullglob dotglob; \\'
+  $'\t\triver_entries=(internal/platform/river/*); \\'
+  $'\tif [[ -d internal && ! -L internal && \\'
+  $'\t\t-d internal/platform && ! -L internal/platform && \\'
+  $'\t\t-d internal/platform/river && ! -L internal/platform/river && \\'
+  $'\t\t-f internal/platform/river/contract.go && ! -L internal/platform/river/contract.go && \\'
+  $'\t\t"$${#river_entries[@]}" -eq 1 && "$${river_entries[0]}" = "internal/platform/river/contract.go" && \\'
+  $'\t\t! -e internal/platform/river/runtime.go && ! -L internal/platform/river/runtime.go && \\'
+  $'\t\t! -e internal/platform/river/migrate.go && ! -L internal/platform/river/migrate.go && \\'
+  $'\t\t! -e internal/platform/river/runtime_test.go && ! -L internal/platform/river/runtime_test.go ]]; then \\'
+)
+
+p0_s04_acceptance_recipe="$(make_target_recipe 'p0-s04-acceptance: p0-s04-contract')" ||
+  fail "P0-S04 acceptance target must be unique"
+for line in "${p0_s04_empty_lines[@]}" \
+  $'\t\techo "P0-S04 acceptance gate: PENDING (implementation not present)"; \\' \
+  $'\t\tenv -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/static_contract.sh || exit $$?; \\' \
+  $'\t\tcoverage_output="$$(env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -cover -timeout=15s ./internal/platform/river 2>&1)" || { status=$$?; printf \'%s\\n\' "$$coverage_output"; exit "$$status"; }; \\' \
+  $'\t\tif ! printf \'%s\\n\' "$$coverage_output" | awk \'$$1 == "ok" && $$2 == "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river" { matches++; value = $$0; if (value !~ /coverage: [0-9]+([.][0-9]+)?% of statements$$/) invalid = 1; else { sub(/^.*coverage: /, "", value); sub(/% of statements$$/, "", value); if (value + 0 <= 0) invalid = 1 } } END { exit !(matches == 1 && !invalid) }\'; then echo "P0-S04 acceptance gate: internal/platform/river must report positive numeric coverage" >&2; exit 1; fi; \\' \
+  $'\t\tenv -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=15s -tags=p0s04_acceptance -run \'^(TestPinnedRiverPublicAPISurface|TestRuntimeLifecycleContract|TestRuntimeStartContextIsolated|TestRuntimeCancellationWinsSimultaneousStopped|TestInvalidMigrationDirection)$$\' ./acceptance/p0s04; \\'; do
+  printf '%s\n' "$p0_s04_acceptance_recipe" | grep -Fqx "$line" ||
+    fail "P0-S04 acceptance target lost a frozen static, coverage, or non-PG call"
+done
+
+p0_s04_integration_recipe="$(make_target_recipe 'p0-s04-integration: p0-s04-contract')" ||
+  fail "P0-S04 integration target must be unique"
+for line in "${p0_s04_empty_lines[@]}" \
+  $'\t\techo "P0-S04 integration gate: PENDING (implementation not present)"; \\' \
+  $'\t\tenv -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/static_contract.sh || exit $$?; \\' \
+  $'\t\ttest "$${ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST:-}" = "1" || { echo "ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 is required" >&2; exit 2; }; \\' \
+  $'\t\tenv -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 $(GO) test -race -timeout=45s -tags=p0s04_acceptance -run \'^TestOfficialMigrationUpDownUp$$\' ./acceptance/p0s04; \\'; do
+  printf '%s\n' "$p0_s04_integration_recipe" | grep -Fqx "$line" ||
+    fail "P0-S04 integration target lost a frozen static, guard, or PG call"
+done
+
+[[ "$(printf '%s\n' "$makefile" | grep -Ec '^ci-go:[[:space:]]' || true)" = "1" && "$ci_go_target" =~ (^|[[:space:]])p0-s04-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P0-S04 acceptance target"
+
+application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
+verify_postgres_step="$(
+  awk '
+    $0 == "      - name: Verify PostgreSQL version and migrations" { seen++; capture = 1; next }
+    capture && /^      - name:/ { exit }
+    capture { print }
+    END { exit !(seen == 1) }
+  ' <<<"$application_go_workflow"
+)" || fail "application workflow must contain one PostgreSQL verification step"
+for line in \
+  '          ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST: "1"' \
+  '          make migration-integration' \
+  '          make p0-s04-integration'; do
+  [[ "$(printf '%s\n' "$verify_postgres_step" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "application workflow lost the fixed P0-S04 integration environment or call"
+done
+for line in '      BASH_ENV: ""' '      ENV: ""'; do
+  [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "application workflow must clear BASH_ENV and ENV"
+done
 
 expected_workflows="$({
   printf '%s\n' .github/workflows/application-go.yml
