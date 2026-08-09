@@ -257,7 +257,7 @@ verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  5f4f51d4360269238a0eea153d7eec4c57f477bdd43a356b56a7317156e5fe52
+  6cd5bf608964540575ed408b7a2cfaa21fbdca6266d8f04d0744385fba9c82d2
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
