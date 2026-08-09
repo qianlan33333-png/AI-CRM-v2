@@ -1,14 +1,20 @@
 version: 1
 repository: qianlan33333-png/AI-CRM-v2
 execution_policy:
-  orchestrator: Codex-root
-  execution_mode: internal_terra
+  orchestrator: Codex-Sol
+  execution_mode: sol_vertical_slice
+  phase_strategy:
+    P0: sol_end_to_end
+    P1: terra_grouped_investigation_sol_decision
+    P2: sol_shared_core_delegated_isolated_components
+    P3_P4: sol_command_terra_parallel_after_contract_freeze
+    migration_reconciliation: independent_agent_required
   max_active_terra_tasks: 3
-  executor_model: gpt-5.6-terra
-  reasoning_effort: ultra
-  task_graph: dag_ready
-  acceptance_rebase_pr_merge_main_ci: serial
-  terra_receipt: payload_manifest_including_untracked
+  executor_model: gpt-5.6-sol
+  reasoning_effort: root_session
+  task_graph: vertical_slice_then_conditional_dag
+  architecture_implementation_acceptance_git_main_ci: sol_end_to_end_serial
+  delegated_receipt: payload_manifest_including_untracked
   file_manifest_format: sorted_MODE_BYTES_SHA256_PATH
   canonical_diff: root_staged_git_diff_cached_binary_base_payload_paths
   receipt_carrier_integrity: pr_head_and_merge_sha

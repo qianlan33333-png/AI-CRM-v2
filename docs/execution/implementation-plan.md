@@ -4,21 +4,22 @@
 
 负责人：Codex root
 
-内部实现：最多 3 个 `gpt-5.6-terra`（`reasoning_effort=ultra`）任务
+当前实现：P0 由单一 Codex Sol 端到端闭环
 
 ## 1. 执行模型
 
-Codex root 独占架构裁决、中央契约冻结/批准、拆片、验收/测试、Git/GitHub、PR、merge
-和 main CI。Terra 只在独立 worktree 的白名单内实现/测试；中央合同任务只能机械实现
-root 冻结的合同，业务 Slice 不得改中央契约。
+P0 由 Sol 直接负责架构裁决、契约、实现、测试、修正、Git/GitHub、PR、merge 和
+精确 main SHA CI。每个完整行为尽量一个垂直 PR；超限时按可独立验收的行为拆分，
+不再为小实现单独建立 Terra 回执、中间契约 PR 或上传包。
 
-最多 3 个固定 `gpt-5.6-terra` / `reasoning_effort=ultra` 任务在依赖已满足且路径不重叠时
-按 DAG 并行；root 的验收和 Git/GitHub 流程串行。Terra 不得 stage、commit、push、PR、
-rebase、merge、部署或真实外部调用。交回 base、task id、worktree、payload manifest、
-测试和 correction；root stage 后计算 canonical diff SHA-256。
+阶段策略固定为：P1 可将互不依赖的事实盘点交 Terra 分组并行，Sol 汇总裁决；P2
+共享平台核心由 Sol 主做，孤立组件按需委派；P3/P4 契约冻结后恢复 Sol 指挥 + Terra
+并行；迁移与对账必须由与实现者独立的 Agent 复核。并行实现须至少两个互不依赖、
+路径不重叠、工作量足够且公共契约已冻结的任务；最多 3 个 Terra task。
 
-每片硬上限为一个模块/API operation/UI flow、8 个手写文件、400 行手写 diff；失败先用
-同一 task follow-up，连续两次同根因失败或越界即拒收重拆。不得新建、上传或续接网页
+每片硬上限为一个模块/API operation/UI flow、8 个手写文件、400 行手写 diff。Sol 在
+同一 PR 内修正；委派失败先用同一 task follow-up，连续两次同根因失败或越界即拒收重拆。
+不得新建、上传或续接网页
 ChatGPT Pro 对话；P0-S01 既有链接仅为历史证据。完整规则见
 [`agent-orchestration.md`](../governance/agent-orchestration.md)。
 
