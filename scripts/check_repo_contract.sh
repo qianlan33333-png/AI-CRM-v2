@@ -59,6 +59,10 @@ required=(
   acceptance/p0s04/test_source_contract.sh
   acceptance/p0s04/static_contract.sh
   acceptance/p0s04/test_static_contract.sh
+  acceptance/p0s10/test_contract_replay.sh
+  tools/contract-replay/main.go
+  tools/contract-replay/main_test.go
+  tools/contract-replay/testdata/empty.v1.json
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
@@ -126,6 +130,10 @@ done <<'EOF'
 100755 scripts/test_ownership.sh
 100644 scripts/sourcepolicy/main.go
 100755 scripts/test_source_policy.sh
+100644 tools/contract-replay/main.go
+100644 tools/contract-replay/main_test.go
+100644 tools/contract-replay/testdata/empty.v1.json
+100755 acceptance/p0s10/test_contract_replay.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
@@ -150,7 +158,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  ffbe3047a069712ec37ecde7cbf5fffad7b11cfbd7110e054309ea10db6826fc
+  a529fd4e854b6b2fdb091327d242702949a1a0226c194d03103f09fc7b5c7cf8
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -185,10 +193,18 @@ verify_index_sha256 scripts/sourcepolicy/main.go \
   bf6ed1861b79d86924f43a5db4d0283e67aeaaca56559f3e283fc83ae969127f
 verify_index_sha256 scripts/test_source_policy.sh \
   a5abc23dc6a09f018ede52fcab106dedf73969cb692d65a67e237109470a654f
+verify_index_sha256 tools/contract-replay/main.go \
+  c2df22b56e1b57667974996808f4185d1a602c54b7da2c3ecdca4c146b902cef
+verify_index_sha256 tools/contract-replay/main_test.go \
+  5bf047935ec6efce36fee33b3921d3cc673a785902fd0e502d37c797ef53aebf
+verify_index_sha256 tools/contract-replay/testdata/empty.v1.json \
+  127ec735fdcb7fc58f7d5f6efbc584727bb0be6f94bc05e38ee485d45023c5cb
+verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
+  0d8f2c3527d975df78e7837e7b50d66730df0448d0cdbd1e3a06098653c48fc8
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  37ea75427a227364b201c9bf3a7790a19553ca5680d6db02825f5a7382b08592
+  92e0a84b6dd121af0560ecdda5835014b559de4c60dca508ab87d69f666386ce
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -431,6 +447,27 @@ done
   fail "source policy lint target lost the frozen checker call"
 [[ "$(make_target_recipe 'source-policy-lint-test:')" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_source_policy.sh' ]] ||
   fail "source policy lint test target lost the frozen runner call"
+require_make_line '.PHONY: contract-replay contract-replay-test' \
+  "Makefile must declare the contract replay targets"
+require_unique_make_target contract-replay
+require_unique_make_target contract-replay-test
+require_make_line 'contract-replay-test: contract-replay' \
+  "contract replay tests must depend on the canonical empty run"
+[[ "$ci_go_target" =~ (^|[[:space:]])contract-replay-test($|[[:space:]]) ]] ||
+  fail "ci-go must depend on contract replay tests"
+contract_replay_recipe="$(make_target_recipe 'contract-replay:')" ||
+  fail "contract replay target must be unique"
+[[ "$contract_replay_recipe" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./contract-replay contract-replay/testdata/empty.v1.json' ]] ||
+  fail "contract replay target lost the canonical empty manifest call"
+contract_replay_test_recipe="$(make_target_recipe 'contract-replay-test: contract-replay')" ||
+  fail "contract replay test target must be unique"
+for line in \
+  $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./contract-replay' \
+  $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./contract-replay' \
+  $'\t@env -u BASH_ENV -u ENV GO="$(GO)" acceptance/p0s10/test_contract_replay.sh'; do
+  printf '%s\n' "$contract_replay_test_recipe" | grep -Fqx "$line" ||
+    fail "contract replay tests lost a frozen vet, race, or gitless call"
+done
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(

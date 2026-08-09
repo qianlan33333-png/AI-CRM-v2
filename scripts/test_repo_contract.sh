@@ -33,6 +33,38 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+for path in \
+  tools/contract-replay/main.go \
+  tools/contract-replay/main_test.go \
+  tools/contract-replay/testdata/empty.v1.json \
+  acceptance/p0s10/test_contract_replay.sh; do
+  replay_receipt_fixture="$(make_fixture "contract-replay-receipt-${path##*/}")"
+  case "$path" in
+    *.go) printf '%s\n' '// contract replay receipt drift' >>"$replay_receipt_fixture/$path" ;;
+    *) printf '%s\n' '# contract replay receipt drift' >>"$replay_receipt_fixture/$path" ;;
+  esac
+  git -C "$replay_receipt_fixture" add "$path"
+  if (cd "$replay_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "contract replay receipt drift was accepted: $path"
+  fi
+done
+
+replay_runner_mode_fixture="$(make_fixture contract-replay-runner-mode)"
+chmod 644 "$replay_runner_mode_fixture/acceptance/p0s10/test_contract_replay.sh"
+git -C "$replay_runner_mode_fixture" add acceptance/p0s10/test_contract_replay.sh
+if (cd "$replay_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "contract replay runner mode drift was accepted"
+fi
+
+broken_replay_ci_fixture="$(make_fixture broken-contract-replay-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]contract-replay-test([[:space:]]|$)/\1/' \
+  "$broken_replay_ci_fixture/Makefile"
+rm -f "$broken_replay_ci_fixture/Makefile.bak"
+git -C "$broken_replay_ci_fixture" add Makefile
+if (cd "$broken_replay_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without contract replay tests was accepted"
+fi
+
 for path in scripts/sourcepolicy/main.go scripts/test_source_policy.sh; do
   source_policy_receipt_fixture="$(make_fixture "source-policy-receipt-${path##*/}")"
   printf '%s\n' '# source policy receipt drift' >>"$source_policy_receipt_fixture/$path"
