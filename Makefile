@@ -16,6 +16,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: contract-replay contract-replay-test
 .PHONY: legacy-route-export-test
 .PHONY: feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion
+.PHONY: migration-mapping-contract migration-mapping-p1-completion
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -226,4 +227,13 @@ feature-matrix-contract:
 feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion: feature-matrix-contract
 	@phase="$@"; phase="$${phase#feature-matrix-}"; phase="$${phase%-completion}"; /usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/check_feature_matrix_contract.sh --completion "$$phase"
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test contract-replay-test legacy-route-export-test feature-matrix-contract
+migration-mapping-contract migration-mapping-p1-completion: override SHELL := /bin/bash
+migration-mapping-contract migration-mapping-p1-completion: override .SHELLFLAGS := -eu -o pipefail -c
+migration-mapping-contract:
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./migration-mapping
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./migration-mapping
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./migration-mapping
+migration-mapping-p1-completion: migration-mapping-contract
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./migration-mapping --completion
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract
