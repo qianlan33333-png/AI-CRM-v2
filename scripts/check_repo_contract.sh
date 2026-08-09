@@ -76,6 +76,7 @@ required=(
   docs/execution/slices/P1-S09.md
   tools/migration-mapping/main.go
   tools/migration-mapping/main_test.go
+  docs/api-mapping.md docs/api-mapping.jsonl docs/execution/slices/P1-S10.md tools/api-mapping/main.go tools/api-mapping/main_test.go
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
@@ -159,6 +160,11 @@ done <<'EOF'
 100644 docs/execution/slices/P1-S09.md
 100644 tools/migration-mapping/main.go
 100644 tools/migration-mapping/main_test.go
+100644 docs/api-mapping.md
+100644 docs/api-mapping.jsonl
+100644 docs/execution/slices/P1-S10.md
+100644 tools/api-mapping/main.go
+100644 tools/api-mapping/main_test.go
 100755 acceptance/p0s10/test_contract_replay.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
@@ -184,7 +190,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  b32ae940227b7c7b61c01472cae2b4891e72eb6d66124f1aa4ee1602113b089f
+  6a636540a743ffdcafe3830019288ad400c4b3a3d43c3923ef624d591d3992df
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -239,6 +245,11 @@ verify_index_sha256 docs/execution/slices/P1-S08.md \
   707667f4058d212ed628d8b868e02225c93a3948c9d90a229856162c15b13d99
 verify_index_sha256 docs/migration-mapping.jsonl \
   a625f965db7d9aaf27a74c993252f872f255b9b4a4d7a7cdea499477e652dc09
+verify_index_sha256 docs/api-mapping.jsonl bd46c8e39a41b1454c6cec81283a39c8377c4e31c5596993d86dc2e8d8ca4563
+verify_index_sha256 docs/api-mapping.md 3de12f9a6fd206a009b1aabc9e950eb65d189e687f5ac359f6e49f98928769a9
+verify_index_sha256 docs/execution/slices/P1-S10.md fc104dc51ea0de9ad7960ae458d2d760946dcf217f845202a1c8de2d72a35a25
+verify_index_sha256 tools/api-mapping/main.go 46963dc85cfafcd17db7001cbce933f1cb2599ca6b8d048fac850e1b2174cd21
+verify_index_sha256 tools/api-mapping/main_test.go ea4926b7a336cc873e84a5d61b758334e8ccf7fdcf2af953bb503948e25ecdf8
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
 verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
@@ -246,7 +257,7 @@ verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  fd3ca63fec9602a3003b046589abe3d5ff555e8e24f9db52691161005c7be812
+  6e1bfb9bd3ef3b12161f0b6cbcaa0683bd7bc65a4fcda3d0fbe27d2b9fe01b9a
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -277,7 +288,7 @@ verify_index_sha256 docs/execution/slices/P0-S04.md \
   bb8cc8f7ff0ef4d6e76c8c124bafc661f562a230ec25826b8318a82311281608
 
 makefile="$(git show ':Makefile')"; alternate="$(find . -maxdepth 1 \( -name GNUmakefile -o -name makefile \) -print -quit)"; [[ -z "$alternate" ]] || fail "alternate Make entrypoint is forbidden: ${alternate#./}"
-! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
+! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk -v guard='$(if $(and $(filter ci-go api-mapping-contract api-mapping-p1-completion,$(MAKECMDGOALS)),$(or $(findstring n,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring i,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring t,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring q,$(filter-out --% %=%,$(MAKEFLAGS))))),$(error execution-changing MAKEFLAGS are forbidden for CI/API mapping))' 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ && $0 != guard { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
   fail "Makefile must not construct or import rules dynamically"
 printf '%s\n' "$makefile" | grep -Eq '^p0-s03-contract:[[:space:]]*$' ||
   fail "Makefile is missing the P0-S03 contract target"
@@ -309,7 +320,7 @@ require_unique_make_target() {
   local target="$1"
   local count
   count="$(awk -v target="$target" '
-    /^[^[:space:]#][^:]*:/ && $0 !~ /:[[:space:]]+override[[:space:]]+(SHELL|[.]SHELLFLAGS)[[:space:]]*:=/ {
+    /^[^[:space:]#][^:]*:/ && $0 !~ /:[[:space:]]+override[[:space:]]+(SHELL|[.]SHELLFLAGS|GO)[[:space:]]*:=/ {
       header = $0
       sub(/:.*/, "", header)
       fields = split(header, names, /[[:space:]]+/)
@@ -556,6 +567,17 @@ for call in '$(GO) -C tools vet ./migration-mapping' '$(GO) -C tools test -race 
 require_make_line 'migration-mapping-p1-completion: migration-mapping-contract' "migration mapping completion must depend on its contract"
 [[ "$(make_target_recipe 'migration-mapping-p1-completion: migration-mapping-contract')" = *'$(GO) -C tools run ./migration-mapping --completion'* ]] || fail "migration mapping completion lost its pending gate"
 [[ "$ci_go_target" =~ (^|[[:space:]])migration-mapping-contract($|[[:space:]]) && ! "$ci_go_target" =~ (^|[[:space:]])migration-mapping-p1-completion($|[[:space:]]) ]] || fail "ci-go must run only the base migration mapping contract"
+
+require_make_line '.PHONY: api-mapping-contract api-mapping-p1-completion' "Makefile must declare the API mapping gates"
+require_make_line 'api-mapping-contract api-mapping-p1-completion: override SHELL := /bin/bash' "API mapping gates must pin Bash"
+require_make_line 'api-mapping-contract api-mapping-p1-completion: override .SHELLFLAGS := -eu -o pipefail -c' "API mapping gates must fail closed"
+require_make_line 'api-mapping-contract api-mapping-p1-completion: override GO := go' "API mapping gates must reject hostile GO overrides"
+for target in api-mapping-contract api-mapping-p1-completion; do require_unique_make_target "$target"; done
+api_mapping_recipe="$(make_target_recipe 'api-mapping-contract:')" || fail "API mapping contract target must be unique"
+for call in '/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./api-mapping' '/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./api-mapping' '/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./api-mapping'; do [[ "$(grep -Fxc $'\t@'"$call" <<<"$api_mapping_recipe" || true)" = "1" ]] || fail "API mapping contract lost a frozen Go call"; done
+require_make_line 'api-mapping-p1-completion: api-mapping-contract' "API mapping completion must depend on its contract"
+[[ "$(make_target_recipe 'api-mapping-p1-completion: api-mapping-contract')" = $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./api-mapping --completion' ]] || fail "API mapping completion lost its pending gate"
+[[ "$ci_go_target" =~ (^|[[:space:]])api-mapping-contract($|[[:space:]]) && ! "$ci_go_target" =~ (^|[[:space:]])api-mapping-p1-completion($|[[:space:]]) ]] || fail "ci-go must run only the base API mapping contract"
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(

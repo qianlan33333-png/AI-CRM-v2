@@ -176,6 +176,17 @@ for kind in eval include variable call alternate; do dynamic_matrix_target_fixtu
   if (cd "$dynamic_matrix_target_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "$kind-generated feature matrix override was accepted"; fi
 done
 
+for path in docs/api-mapping.jsonl docs/api-mapping.md docs/execution/slices/P1-S10.md tools/api-mapping/main.go tools/api-mapping/main_test.go; do api_fixture="$(make_fixture "api-mapping-receipt-${path##*/}")"; printf '\n' >>"$api_fixture/$path"
+  git -C "$api_fixture" add "$path"; if (cd "$api_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "API mapping receipt drift was accepted: $path"; fi
+done
+for kind in ci hollow; do api_fixture="$(make_fixture "api-mapping-$kind")"; case "$kind" in ci) sed -i.bak -E '/^ci-go:/ s/[[:space:]]api-mapping-contract([[:space:]]|$)/\1/' "$api_fixture/Makefile" ;; hollow) sed -i.bak '/^api-mapping-contract:$/ { n; s/.*/\t@true/; }' "$api_fixture/Makefile" ;; esac
+  rm -f "$api_fixture/Makefile.bak"; git -C "$api_fixture" add -A; restage_make_receipt "$api_fixture"
+  if (cd "$api_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "broken API mapping $kind gate was accepted"; fi
+done
+api_hostile_fixture="$(make_fixture api-mapping-hostile-go)"; set +e; api_hostile_output="$(cd "$api_hostile_fixture" && BASH_ENV=/bin/false ENV=/bin/false MAKEFLAGS='GO=/usr/bin/true' make --no-print-directory api-mapping-p1-completion 2>&1)"; api_hostile_status=$?; set -e
+[[ "$api_hostile_status" -eq 2 && "$api_hostile_output" = *'api-mapping P1 completion: PENDING_HUMAN_SIGNOFF (781 routes)'* ]] || fail "hostile environment bypassed API mapping completion"
+for hostile_flags in -n -i -t -q; do if (cd "$api_hostile_fixture" && MAKEFLAGS="$hostile_flags" make --no-print-directory api-mapping-p1-completion >/dev/null 2>&1); then fail "execution-changing MAKEFLAGS bypassed API mapping: $hostile_flags"; fi; done
+
 for path in \
   tools/legacy-route-export/main.go \
   tools/legacy-route-export/main_test.go \

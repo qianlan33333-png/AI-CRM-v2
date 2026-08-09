@@ -1,6 +1,7 @@
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
 unexport BASH_ENV ENV
+$(if $(and $(filter ci-go api-mapping-contract api-mapping-p1-completion,$(MAKECMDGOALS)),$(or $(findstring n,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring i,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring t,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring q,$(filter-out --% %=%,$(MAKEFLAGS))))),$(error execution-changing MAKEFLAGS are forbidden for CI/API mapping))
 
 GO ?= go
 TOOLS_MOD := tools/go.mod
@@ -17,6 +18,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: legacy-route-export-test
 .PHONY: feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion
 .PHONY: migration-mapping-contract migration-mapping-p1-completion
+.PHONY: api-mapping-contract api-mapping-p1-completion
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -236,4 +238,14 @@ migration-mapping-contract:
 migration-mapping-p1-completion: migration-mapping-contract
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./migration-mapping --completion
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract
+api-mapping-contract api-mapping-p1-completion: override SHELL := /bin/bash
+api-mapping-contract api-mapping-p1-completion: override .SHELLFLAGS := -eu -o pipefail -c
+api-mapping-contract api-mapping-p1-completion: override GO := go
+api-mapping-contract:
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./api-mapping
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./api-mapping
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./api-mapping
+api-mapping-p1-completion: api-mapping-contract
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./api-mapping --completion
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract api-mapping-contract
