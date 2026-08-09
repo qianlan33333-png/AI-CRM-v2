@@ -13,6 +13,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: arch-import-lint arch-import-lint-test
 .PHONY: ownership-lint ownership-lint-test
 .PHONY: source-policy-lint source-policy-lint-test
+.PHONY: slice-input-contract slice-input-contract-test
 .PHONY: contract-replay contract-replay-test
 .PHONY: legacy-route-export-test
 .PHONY: feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion
@@ -206,6 +207,15 @@ source-policy-lint:
 source-policy-lint-test:
 	@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_source_policy.sh
 
+slice-input-contract slice-input-contract-test: override SHELL := /bin/bash
+slice-input-contract slice-input-contract-test: override .SHELLFLAGS := -eu -o pipefail -c
+
+slice-input-contract:
+	@/usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/check_slice_inputs.sh
+
+slice-input-contract-test: slice-input-contract
+	@/usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/test_slice_inputs.sh
+
 contract-replay:
 	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./contract-replay contract-replay/testdata/empty.v1.json
 
@@ -236,4 +246,4 @@ migration-mapping-contract:
 migration-mapping-p1-completion: migration-mapping-contract
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./migration-mapping --completion
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test slice-input-contract-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract
