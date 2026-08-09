@@ -33,6 +33,29 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+missing_p0s02_runner_fixture="$(make_fixture missing-p0s02-runner)"
+rm -f "$missing_p0s02_runner_fixture/acceptance/p0s02/test_static_contract.sh"
+git -C "$missing_p0s02_runner_fixture" add -u acceptance/p0s02/test_static_contract.sh
+if (cd "$missing_p0s02_runner_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P0-S02 static-contract runner was accepted"
+fi
+
+p0s02_runner_mode_fixture="$(make_fixture p0s02-runner-mode)"
+chmod 644 "$p0s02_runner_mode_fixture/acceptance/p0s02/test_static_contract.sh"
+git -C "$p0s02_runner_mode_fixture" add acceptance/p0s02/test_static_contract.sh
+if (cd "$p0s02_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P0-S02 static-contract runner mode drift was accepted"
+fi
+
+broken_p0s02_acceptance_fixture="$(make_fixture broken-p0s02-acceptance)"
+sed -i.bak 's/^p0-s02-acceptance: p0-s02-contract$/p0-s02-acceptance:/' \
+  "$broken_p0s02_acceptance_fixture/Makefile"
+rm -f "$broken_p0s02_acceptance_fixture/Makefile.bak"
+git -C "$broken_p0s02_acceptance_fixture" add Makefile
+if (cd "$broken_p0s02_acceptance_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P0-S02 acceptance target without contract dependency was accepted"
+fi
+
 missing_p0s03_contract_fixture="$(make_fixture missing-p0s03-contract)"
 rm -f "$missing_p0s03_contract_fixture/acceptance/p0s03/static_contract.sh"
 git -C "$missing_p0s03_contract_fixture" add -u acceptance/p0s03/static_contract.sh
