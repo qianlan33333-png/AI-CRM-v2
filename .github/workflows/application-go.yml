@@ -66,3 +66,27 @@ jobs:
           test "$(docker exec "$POSTGRES_CONTAINER_ID" psql -U postgres -d aicrm_test -Atqc 'SHOW server_version_num')" = "160014"
           make migration-integration
           make p0-s04-integration
+  web:
+    name: application / web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24.18.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+          token: ''
+      - name: Install pinned npm
+        run: npm install --global npm@11.12.1 --ignore-scripts --no-audit --no-fund
+      - name: Verify web gates
+        run: |
+          test "$(node --version)" = "v24.18.0"
+          test "$(npm --version)" = "11.12.1"
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run ci

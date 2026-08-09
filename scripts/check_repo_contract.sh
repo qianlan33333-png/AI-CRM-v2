@@ -20,6 +20,8 @@ required=(
   SECURITY.md
   NOTICE
   .tool-versions
+  package.json
+  package-lock.json
   Makefile
   go.mod
   go.sum
@@ -38,6 +40,9 @@ required=(
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
   internal/platform/river/contract.go
+  web/index.html
+  web/src/main.tsx
+  web/src/main.test.tsx
   acceptance/p0s01/runtime_contract_test.go
   acceptance/p0s01/process_blackbox.sh
   acceptance/p0s01/static_contract.sh
@@ -101,6 +106,11 @@ done <<'EOF'
 100644 Makefile
 100644 go.mod
 100644 go.sum
+100644 package.json
+100644 package-lock.json
+100644 web/index.html
+100644 web/src/main.tsx
+100644 web/src/main.test.tsx
 100644 .github/workflows/application-go.yml
 100755 scripts/check_repo_contract.sh
 100755 scripts/test_repo_contract.sh
@@ -125,13 +135,17 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  6634ce5ee85478d6d9fe4f5b237a9dd0e2b3efb5def89ae56a227d87058b58f7
+  98e7c300e57f925d2dbe768efde964e549b366e6bd88f2234d094aa578c4ef53
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
   aa4b66d926c9ed89b510d20b02ad81cf9b181e55f85fa132cb0266517f8a0ad4
+verify_index_sha256 package.json \
+  3977766cd6813b2b29a6491ab63442b40e1a7bacb43367b94cabd8b967e1096e
+verify_index_sha256 package-lock.json \
+  d4bf3fd93e6227ef23d3fd56fd6aef169817b7d112e5a3fac1c672f4b522713f
 verify_index_sha256 .github/workflows/application-go.yml \
-  16c984a169ada4cf8b0daa6c219c7a18a2348fb82bf71ef71a2d46c13c555605
+  fbabc284fc80fc27ab181667a9ee1d21333cbaba4df25e00c494e6e75e75be23
 verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -225,6 +239,23 @@ make_target_recipe() {
   ' <<<"$makefile"
 }
 
+for target in vet test build vuln; do
+  recipe="$(make_target_recipe "$target:")" ||
+    fail "Makefile target must be unique: $target"
+  [[ "$(grep -Fc 'GOWORK=off $(GO) list ./...' <<<"$recipe" || true)" = "1" ]] ||
+    fail "$target must use Go to discover buildable packages"
+  [[ "$(grep -Fc "grep -Ev '(^|/)([.]git|node_modules|vendor)(/|\$\$)'" <<<"$recipe" || true)" = "1" ]] ||
+    fail "$target must exclude .git, node_modules, and vendor packages"
+  case "$target" in
+    vet) expected='$(GO) vet $$packages' ;;
+    test) expected='$(GO) test -race $$packages' ;;
+    build) expected='$(GO) build $$packages' ;;
+    vuln) expected='$(GO) tool -modfile=$(TOOLS_MOD) govulncheck $$packages' ;;
+  esac
+  grep -Fq "$expected" <<<"$recipe" ||
+    fail "$target must consume the filtered Go package set"
+done
+
 require_make_line 'unexport BASH_ENV ENV' \
   "Makefile must unexport BASH_ENV and ENV before starting recipes"
 require_make_line '.PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go' \
@@ -314,6 +345,17 @@ done
 for line in '      BASH_ENV: ""' '      ENV: ""'; do
   [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
     fail "application workflow must clear BASH_ENV and ENV"
+done
+for line in \
+  '  web:' \
+  '    name: application / web' \
+  '        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38' \
+  '          node-version: 24.18.0' \
+  '        run: npm install --global npm@11.12.1 --ignore-scripts --no-audit --no-fund' \
+  '          npm ci --ignore-scripts --no-audit --no-fund' \
+  '          npm run ci'; do
+  [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "application workflow lost a frozen P0-S05 web gate: $line"
 done
 
 expected_workflows="$({
