@@ -143,9 +143,9 @@ verify_index_sha256 scripts/generated-sources.sha256 \
 verify_index_sha256 scripts/test_repo_contract.sh \
   a6e902dda4c5fec0b290b05a288347682d213f65c60fd14b870bec91208b93cc
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
-  afa05557442b0028e80199713a3e2b7a1fbc0720d1a94e66fd066fdf79127a90
+  0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
-  890a1d41f6e8f2838be3b6266050978bf97a89fe1a4c882907d293f8869ca68e
+  1d3c89bdb0dffabf298777965896128c2fa4116b134deacf8c1499b18a45c7a2
 verify_index_sha256 internal/platform/store/contract.go \
   747683b0f430da2ee29f001abaebe5fe621561aa3dd99b5b9db6b7d871895165
 verify_index_sha256 acceptance/p0s03/query_contract_test.go \

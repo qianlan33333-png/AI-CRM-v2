@@ -10,6 +10,7 @@ cd "$repo_root"
 
 implementation="internal/platform/http/health.go"
 unit_test="internal/platform/http/health_test.go"
+contract_file="internal/platform/http/contract.go"
 source_files=("$implementation" "$unit_test")
 mode_of() {
   local path="$1" mode
@@ -22,7 +23,11 @@ mode_of() {
   [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
   printf '%s\n' "$mode"
 }
-[[ -d internal/platform/http && ! -L internal/platform/http ]] || fail "HTTP package path must be a directory"
+for directory in internal internal/platform internal/platform/http; do
+  [[ -d "$directory" && ! -L "$directory" ]] || fail "repository directory must be real: $directory"
+done
+[[ -f "$contract_file" && ! -L "$contract_file" ]] || fail "contract.go must be a regular non-symlink file: $contract_file"
+[[ "$(mode_of "$contract_file")" =~ ^0?644$ ]] || fail "contract.go must have mode 0644: $contract_file"
 inventory_file="$(mktemp -t p0s02-http.XXXXXX)" || fail "cannot create HTTP inventory"
 trap 'rm -f "$inventory_file"' EXIT
 if ! find internal/platform/http -mindepth 1 -maxdepth 1 -print0 >"$inventory_file"; then
@@ -110,7 +115,6 @@ func allowExport(path, kind, name string) bool {
 	return (kind == "type" && name == "HealthHandler") ||
 		(kind == "func" && (name == "NewHealthHandler" || name == "GetHealthz"))
 }
-
 func main() {
 	healthHandler := false
 	newHealthHandler := false
@@ -119,26 +123,18 @@ func main() {
 	for _, path := range os.Args[2:] {
 		testFile := strings.HasSuffix(path, "_test.go")
 		file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ParseComments)
-		if err != nil {
-			fail("cannot parse %s: %v", path, err)
-		}
+		if err != nil { fail("cannot parse %s: %v", path, err) }
 		for _, imported := range file.Imports {
 			importPath, err := strconv.Unquote(imported.Path.Value)
-			if err != nil || forbiddenImport(importPath) {
-				fail("forbidden import in %s", path)
-			}
+			if err != nil || forbiddenImport(importPath) { fail("forbidden import in %s", path) }
 		}
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch item := node.(type) {
 			case *ast.GoStmt:
 				fail("goroutines are forbidden in %s", path)
 			case *ast.SelectorExpr:
-				if forbiddenSelectors[item.Sel.Name] {
-					fail("forbidden side effect in %s", path)
-				}
-				if ident, ok := item.X.(*ast.Ident); ok && ident.Name == "time" {
-					fail("time use is forbidden in %s", path)
-				}
+				if forbiddenSelectors[item.Sel.Name] { fail("forbidden side effect in %s", path) }
+				if ident, ok := item.X.(*ast.Ident); ok && ident.Name == "time" { fail("time use is forbidden in %s", path) }
 			}
 			return true
 		})
@@ -148,21 +144,15 @@ func main() {
 				for _, spec := range item.Specs {
 					switch value := spec.(type) {
 					case *ast.TypeSpec:
-						if value.Name.IsExported() && !allowExport(path, "type", value.Name.Name) {
-							fail("forbidden exported type %s in %s", value.Name.Name, path)
-						}
+						if value.Name.IsExported() && !allowExport(path, "type", value.Name.Name) { fail("forbidden exported type %s in %s", value.Name.Name, path) }
 						if !testFile && value.Name.Name == "HealthHandler" {
 							structType, ok := value.Type.(*ast.StructType)
-							if !ok || len(structType.Fields.List) != 0 {
-								fail("HealthHandler must be stateless")
-							}
+							if !ok || len(structType.Fields.List) != 0 { fail("HealthHandler must be stateless") }
 							healthHandler = true
 						}
 					case *ast.ValueSpec:
 						for _, name := range value.Names {
-							if name.IsExported() && !allowExport(path, "value", name.Name) {
-								fail("forbidden exported value %s in %s", name.Name, path)
-							}
+							if name.IsExported() && !allowExport(path, "value", name.Name) { fail("forbidden exported value %s in %s", name.Name, path) }
 						}
 						if !testFile && len(value.Names) == 1 && value.Names[0].Name == "_" &&
 							generatedSelector(value.Type, "StrictServerInterface") && len(value.Values) == 1 &&
@@ -172,22 +162,14 @@ func main() {
 					}
 				}
 			case *ast.FuncDecl:
-				if item.Name.IsExported() && !allowExport(path, "func", item.Name.Name) {
-					fail("forbidden exported func %s in %s", item.Name.Name, path)
-				}
-				if !testFile && item.Name.Name == "NewHealthHandler" {
-					newHealthHandler = true
-				}
+				if item.Name.IsExported() && !allowExport(path, "func", item.Name.Name) { fail("forbidden exported func %s in %s", item.Name.Name, path) }
+				if !testFile && item.Name.Name == "NewHealthHandler" { newHealthHandler = true }
 				if !testFile && item.Name.Name == "GetHealthz" && item.Body != nil {
 					ast.Inspect(item.Body, func(node ast.Node) bool {
 						returned, ok := node.(*ast.ReturnStmt)
-						if !ok || len(returned.Results) != 2 || !generatedOKResponse(returned.Results[0]) {
-							return true
-						}
+						if !ok || len(returned.Results) != 2 || !generatedOKResponse(returned.Results[0]) { return true }
 						nilIdent, ok := returned.Results[1].(*ast.Ident)
-						if ok && nilIdent.Name == "nil" {
-							okResponse = true
-						}
+						if ok && nilIdent.Name == "nil" { okResponse = true }
 						return true
 					})
 				}

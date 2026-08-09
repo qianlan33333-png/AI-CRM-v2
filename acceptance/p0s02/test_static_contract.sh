@@ -33,9 +33,10 @@ type GetHealthzResponseObject interface{}
 type GetHealthz200JSONResponse struct { Status HealthResponseStatus }
 type StrictServerInterface interface {
 	GetHealthz(context.Context, GetHealthzRequestObject) (GetHealthzResponseObject, error)
-}
+  }
 EOF
   printf '%s\n' 'package platformhttp' >"$fixture/internal/platform/http/contract.go"
+  chmod 644 "$fixture/internal/platform/http/contract.go"
   cat >"$fixture/internal/platform/http/health.go" <<'EOF'
 package platformhttp
 
@@ -85,11 +86,18 @@ write_rg_sentinel() {
 run_static() {
   local stat_dir="${1:-}"
   local rg_sentinel_log="$fixture/rg-called"
+  local output_file="${2:-/dev/null}"
   if [[ -n "$stat_dir" ]]; then
-    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off PATH="$stat_dir:$PATH" RG_SENTINEL_LOG="$rg_sentinel_log" "$fixture/acceptance/p0s02/static_contract.sh") >/dev/null 2>&1
+    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off PATH="$stat_dir:$PATH" RG_SENTINEL_LOG="$rg_sentinel_log" "$fixture/acceptance/p0s02/static_contract.sh") >"$output_file" 2>&1
   else
-    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off RG_SENTINEL_LOG="$rg_sentinel_log" "$fixture/acceptance/p0s02/static_contract.sh") >/dev/null 2>&1
+    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off RG_SENTINEL_LOG="$rg_sentinel_log" "$fixture/acceptance/p0s02/static_contract.sh") >"$output_file" 2>&1
   fi
+}
+
+reject_with() {
+  local expected="$1" output="$fixture/static.out"
+  if run_static "" "$output"; then fail "invalid fixture was accepted"; fi
+  [[ "$(cat "$output")" == "$expected" ]] || fail "unexpected static diagnostic"
 }
 
 new_fixture native
@@ -121,5 +129,14 @@ for kind in symlink special extra; do
   esac
   if run_static; then fail "boundary was accepted: $kind"; fi
 done
+for ancestor in internal internal/platform internal/platform/http; do
+  new_fixture "ancestor-${ancestor//\//-}"
+  mv "$fixture/$ancestor" "$fixture/$ancestor.real"
+  ln -s "${ancestor##*/}.real" "$fixture/$ancestor"
+  reject_with "p0-s02-static: repository directory must be real: $ancestor"
+done
+new_fixture missing-contract
+rm -f "$fixture/internal/platform/http/contract.go"
+reject_with "p0-s02-static: contract.go must be a regular non-symlink file: internal/platform/http/contract.go"
 
 echo "p0-s02-static-contract-tests: PASS"
