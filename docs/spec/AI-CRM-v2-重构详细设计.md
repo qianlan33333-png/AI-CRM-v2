@@ -129,9 +129,10 @@ CREATE TABLE stages (                       -- 转化阶段定义
 );
 
 CREATE TABLE customers (
-  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  external_userid  TEXT NOT NULL UNIQUE,     -- 企微外部联系人ID
-  unionid          TEXT,
+  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,  -- 渠道中立 OneID
+  -- ⚠️ 本表禁止出现 external_userid / unionid / openid / phone 等任何外部身份列。
+  --    全部外部标识只存 identities 表（§7），由 identity 模块独占写入。
+  --    裁决依据：ADR-002。schema lint 会拒绝在本表新增外部身份列。
   name             TEXT NOT NULL DEFAULT '',
   avatar_url       TEXT,
   gender           SMALLINT,
@@ -149,7 +150,7 @@ CREATE TABLE customers (
 CREATE INDEX idx_customers_owner_stage ON customers (owner_staff_id, stage_id) WHERE NOT is_deleted;
 CREATE INDEX idx_customers_stage_interact ON customers (stage_id, last_interact_at DESC) WHERE NOT is_deleted;
 CREATE INDEX idx_customers_channel ON customers (channel_id) WHERE NOT is_deleted;
-CREATE INDEX idx_customers_unionid ON customers (unionid) WHERE unionid IS NOT NULL;
+-- 按外部标识查客户一律经 identities 表关联，不在 customers 上建外部 ID 索引（ADR-002）
 
 CREATE TABLE tag_groups (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -307,8 +308,9 @@ CREATE TABLE identities (           -- 身份图谱: 一个客户挂 N 条外部
   customer_id BIGINT REFERENCES customers(id),  -- 可空 = 游离身份(未归因, 等待匹配)
   id_type     TEXT NOT NULL,        -- wecom_external_userid / unionid / mp_openid /
                                     -- oa_openid / alipay_user_id / phone / ext:{自定义}
-  scope       TEXT NOT NULL DEFAULT '',  -- 区分同类型不同主体: openid 填 appid,
-                                         -- 支付宝填应用ID, phone/unionid 留空
+  scope       TEXT NOT NULL DEFAULT '',  -- 身份含义的必填部分，不可省略（ADR-002）：
+                                         -- unionid → 微信开放平台账号；mp/oa_openid → appid；
+                                         -- wecom_external_userid → corp_id；phone → E.164 命名空间
   id_value    TEXT NOT NULL,
   confidence  TEXT NOT NULL DEFAULT 'declared', -- verified(验证过,如短信验证/官方接口返回)
                                                 -- declared(用户自填/表单)
@@ -439,7 +441,7 @@ CREATE TABLE wecom_sync_state (     -- 企微同步游标
 /web                            # React 前端, 构建产物 embed
 /migrations                     # goose SQL 迁移
 /tools/migrate-from-v1          # 旧库迁移工具(独立可执行)
-/tools/contract-replay          # 契约回放测试工具
+/acceptance/snapshots           # 行为快照库(§5), 由验收测试生成, 禁止手写
 ```
 
 ### 3.2 铁律（go-arch-lint 强制，CI 不过不合并）
@@ -568,13 +570,15 @@ type OutboundCfg struct {
 
 ---
 
-## 5. 行为基准提取与契约测试
+## 5. 行为基准提取与回归防线
 
 以线上 aicrm_next 实际行为为准，三步固化：
 
 1. **API 清单**：旧系统 `python3 app.py routes` 导出全部路由 → 逐条映射到新 `openapi.yaml`，产出对照表（旧路由 → 新路由 → 差异说明，差异只允许是路径风格，不允许是语义）。
-2. **Golden case 录制**：在旧系统 nginx 加镜像日志（或 FastAPI middleware）录制 1–2 周真实请求/响应，脱敏后按接口归档为回放用例；低频接口人工补造用例。目标：每个接口 ≥ 3 个 case（正常/边界/错误）。
-3. **契约回放**：`tools/contract-replay` 把 golden case 打到新系统，逐字段 diff（忽略时间戳/ID 等白名单字段）。回放通过率 100% 是切换的硬性前置条件。
+2. **行为快照沉淀**：每片交付时，由该片的黑盒验收测试产出 `acceptance/snapshots/{module}/{operation}.json`，含请求（method/path/body）与期望响应（status/body），时间戳与自增 ID 等易变字段进忽略白名单。每个核心 operation ≥ 3 组（正常/边界/错误）。**快照禁止手写，必须由测试生成且重新生成无 diff。**
+3. **快照门（snapshot-gate）**：任一 PR 改动 `internal/**` 时全量比对快照，任何 diff 必须在 PR 说明中显式解释（有意变更 vs 回归）；无解释的 diff 一律视为回归，打回。
+
+> **路线变更记录**：本节原为"golden case 录制 + 契约回放"。因旧系统只保留 API 调用元数据（路径/状态码/耗时），无历史请求体与响应体，真实回放缺乏素材，故改为行为快照。**能力缺口需明示：快照只防新系统自身回归，不能防新旧行为不一致**——后者的保障转移到 G1 签字的 API 事实盘点与 P5 人工全功能抽验，这两处权重相应上升，不可压缩。
 
 ---
 
@@ -598,7 +602,7 @@ type OutboundCfg struct {
 
 ```
 T-7d   新服务器部署 v2, 全量迁移演练 ×2, 对账脚本跑通
-T-1d   全量迁移正式执行, 契约回放全绿
+T-1d   全量迁移正式执行, 快照门全绿
 T日    低峰期(凌晨): 旧系统停写(挂维护页, 预计 ≤30min)
        → 增量迁移(分钟级) → 对账(行数 + 关键聚合 + 100条抽样逐字段)
        → 企微后台切换: 回调URL/可信域名/JS域名指向新服务器 → 验签通过
@@ -695,7 +699,7 @@ GET  /ext/v1/webhooks              # 订阅 customer.merged / tag_applied 等事
 
 ### 8.3 问题③：API 访问不了、要清晰的 API 管理
 
-根因：接口分散、无统一治理、坏了没人知道。三样补齐（旧问题接口不专门挖清单，靠 §5 录制回放自然覆盖）：
+根因：接口分散、无统一治理、坏了没人知道。三样补齐（旧问题接口不专门挖清单，靠 G1 的 API 事实盘点覆盖）：
 
 1. **spec-first 单一真相**：`openapi.yaml` 是唯一接口定义，server stub 与前端 client 都由它生成，接口签名不一致在编译期暴露（已在 §3.1）。
 2. **统一 API 网关中间件**（所有 `/api/*` 业务接口强制经过，顺序固定）：请求ID注入 → 鉴权 → 单账号并发预算(§8.1) → 超时控制(默认 10s，可按接口覆盖) → panic 恢复 → 统一错误码结构 → 结构化访问日志(`request_id/account/method/path/status/latency_ms/err`)。任一接口异常，凭 request_id 在日志秒级定位，不再"各种原因访问不了"却查不到原因。
@@ -711,10 +715,11 @@ GET  /ext/v1/webhooks              # 订阅 customer.merged / tag_applied 等事
 
 ### 8.5 问题④：改新功能把老功能改回
 
-根因：无回归防线。结构性防御已有（铁律 + go-arch-lint + 契约回放），本节把回放从"切换前跑一次"升级为**CI 常态门**：
+根因：无回归防线。结构性防御已有（铁律 + go-arch-lint），但结构约束防的是"乱 import"，防不住"行为悄悄变了"。补上机械回归防线：
 
-- **契约回放进 CI**（升级 §5 与 T0.3）：每个 PR 合并前，对该 PR 触及模块的 golden case 全量回放，任一用例行为变化即红灯，当场拦住"回改"。这是根治问题④的唯一硬手段——结构约束防的是"乱 import"，回放防的是"行为悄悄变了"。
-- golden case 随功能矩阵增长持续补充，形成"行为快照库"；任何对既有接口的语义改动必须显式更新对应 golden case（PR 里能看到 diff），杜绝无意识回改。
+- **快照门常态化**（§5）：每个 PR 合并前，对触及模块的行为快照全量比对，任一行为变化即红灯，当场拦住"回改"。
+- 快照随模块交付持续沉淀；任何对既有接口的语义改动必须显式更新对应快照并在 PR 说明解释，杜绝无意识回改。
+- **注意能力边界**：快照由新系统自身验收测试生成，只能保证"新系统不自我回归"，不能证明"新系统与旧系统一致"。后者靠 G1 与 P5 人工环节承接。
 
 ---
 
@@ -723,10 +728,10 @@ GET  /ext/v1/webhooks              # 订阅 customer.merged / tag_applied 等事
 | 阶段 | 周期 | 交付物 | 出口标准 |
 |---|---|---|---|
 | M1 行为冻结 | W1–2 | 功能矩阵表、API 对照表、openapi.yaml v1、本文档表结构评审定稿 | 三份清单人工签字冻结 |
-| M2 骨架 | W2–3 | 工程脚手架、config/events/auth、API网关中间件、api/worker角色隔离、CI(arch-lint含禁timer + sqlc + EXPLAIN + 契约回放门) | 铁律检查在 CI 生效 |
+| M2 骨架 | W2–3 | 工程脚手架、config/events/auth、API网关中间件、api/worker角色隔离、CI(arch-lint含禁timer + sqlc + EXPLAIN + snapshot-gate) | 铁律检查在 CI 生效 |
 | M3 核心域 | W3–6 | contact / identity / wecom 同步 / segment / outbound | 20万模拟数据下列表 P95<200ms、群发压测通过 |
 | M4 上层域 | W5–8 | automation / survey / ai / gateway(含 Extension API) / stats / 运维页 + 前端全部页面 | 功能矩阵 100% 打勾 |
-| M5 验证 | W8–9 | 契约回放全绿、迁移演练 ×2、对账脚本 | 回放通过率 100% |
+| M5 验证 | W8–9 | 快照门全绿、迁移演练 ×2、对账脚本、人工全功能抽验 | 快照 100% 通过 + 抽验清零 |
 | M6 切换 | W10 | 首个客户环境迁移切换 | 冒烟 checklist 通过, 24h 无阻断 |
 
 ---

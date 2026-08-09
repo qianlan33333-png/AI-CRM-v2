@@ -563,6 +563,15 @@ slices:
     merge_sha: b3613f635692c932021036f8f81babf24fca8222
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     correction_count: null
+  - slice_id: M0-1
+    title: governance-ledger-and-legacy-source-isolation
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/83
+    pr_head_sha: ca31fd765dbe6489a1c2bc3be43a45427060a82d
+    merge_sha: c223a90e09577bf587def242fe19a6e7d551ab96
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: 0
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00

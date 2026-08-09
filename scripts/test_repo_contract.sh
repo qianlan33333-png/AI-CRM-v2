@@ -36,6 +36,27 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+for path in \
+  docs/spec/AI-CRM-v2-执行方案.md \
+  docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
+  docs/spec/AI-CRM-v2-重构详细设计.md \
+  docs/spec/SHA256SUMS \
+  docs/execution/slices/M0-2.md; do
+  spec_receipt_fixture="$(make_fixture "m0-2-receipt-${path##*/}")"
+  printf '%s\n' '# M0-2 receipt drift' >>"$spec_receipt_fixture/$path"
+  git -C "$spec_receipt_fixture" add "$path"
+  if (cd "$spec_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "M0-2 spec receipt drift was accepted: $path"
+  fi
+done
+
+m0_v2_mode_fixture="$(make_fixture m0-2-v2-mode)"
+chmod 755 "$m0_v2_mode_fixture/docs/spec/AI-CRM-v2-执行方案-v2-至P3.md"
+git -C "$m0_v2_mode_fixture" add docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
+if (cd "$m0_v2_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "M0-2 v2 spec mode drift was accepted"
+fi
+
 make_gitless_matrix_fixture() {
   local fixture
   fixture="$(make_fixture "$1")"
