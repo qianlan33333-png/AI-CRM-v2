@@ -141,7 +141,7 @@ verify_index_sha256 scripts/check_generated_sources.sh \
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a6e902dda4c5fec0b290b05a288347682d213f65c60fd14b870bec91208b93cc
+  1b380a9a28a6167c6c44b71d0550daaa75b581aa859e1e5ecf7a7f602f5f3fa4
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -149,13 +149,13 @@ verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
 verify_index_sha256 internal/platform/store/contract.go \
   747683b0f430da2ee29f001abaebe5fe621561aa3dd99b5b9db6b7d871895165
 verify_index_sha256 acceptance/p0s03/query_contract_test.go \
-  8ec6608f0856f33d5d3e76f497a88a26d0c54ea65c23b4744a08ef7f9c1ff072
+  c980ae9264f1eadf69fd98734259dcb92a9bf3f5ddd899518a36ee636a64fd42
 verify_index_sha256 acceptance/p0s03/source_contract.go \
-  d26d11f580eb5b9adf0ea11abc1d0c5feda56c974320cce9589cbe76d87a3f9e
+  239802f1fea13e0640ca4e3d1eda8f8428f8393f2cd4919deecc0d6ab311cd79
 verify_index_sha256 acceptance/p0s03/static_contract.sh \
   666b174b0017e44e774eaea1b784d1e0ba93e308632f42f7ace768917d9a3c84
 verify_index_sha256 acceptance/p0s03/test_contract.sh \
-  2e0108e38c8cb8805e45dc46b60698f62015429a41fb2e880a185585de1896e7
+  030c0ca1f901e95d802b3dee37ca0b472fceecb5fd147263a59c6bd786b946aa
 verify_index_sha256 internal/platform/river/contract.go \
   f03a64b78f9fa0f809b869a7d473f42a9edecc41201805fec461f4ba0f1cb292
 verify_index_sha256 acceptance/p0s04/contract_test.go \
