@@ -599,6 +599,15 @@ slices:
     merge_sha: 4ba0fc6c0a69b03037707cf9cb0fb4f0267afa75
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     correction_count: 0
+  - slice_id: P1-C01
+    title: reland-legacy-api-mapping-candidates
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/87
+    pr_head_sha: 8af60e5e0458663ab7035930c79845b6dad0caeb
+    merge_sha: 82b1da04d1d35e56c6aff97c7eb07eb35cea1f59
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: 0
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00

@@ -1,0 +1,2220 @@
+{
+  "schema_version": 1,
+  "legacy_source_sha": "6cb989c071255437d75953dabb943318a74eb8f4",
+  "lifecycle_manifest_sha256": "710a01ee3813051b4ec13de8ef8b8ad64b39bc380b3a5a81c669580df24b488e",
+  "table_count": 316,
+  "tables": [
+    {
+      "legacy_table": "admin_login_audit",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0085_admin_config_audit_baseline",
+      "source_line": 2335
+    },
+    {
+      "legacy_table": "admin_operation_logs",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0085_admin_config_audit_baseline",
+      "source_line": 2353
+    },
+    {
+      "legacy_table": "admin_sso_states",
+      "legacy_domain": "legacy_auth",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4607
+    },
+    {
+      "legacy_table": "admin_user_roles",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0085_admin_config_audit_baseline",
+      "source_line": 2380
+    },
+    {
+      "legacy_table": "admin_users",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0085_admin_config_audit_baseline",
+      "source_line": 2398
+    },
+    {
+      "legacy_table": "admin_wecom_directory_members",
+      "legacy_domain": "admin_identity",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0096_admin_wecom_directory_members",
+      "source_line": 205
+    },
+    {
+      "legacy_table": "ai_audience_hxc_member_usage_projection",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0149_ai_audience_hxc_projection",
+      "source_line": 2434
+    },
+    {
+      "legacy_table": "ai_audience_hxc_member_usage_projection_control",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0149_ai_audience_hxc_projection",
+      "source_line": 2453
+    },
+    {
+      "legacy_table": "ai_audience_inbound_webhook_event",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2416
+    },
+    {
+      "legacy_table": "ai_audience_member_current",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2512
+    },
+    {
+      "legacy_table": "ai_audience_member_event",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2531
+    },
+    {
+      "legacy_table": "ai_audience_outbound_subscription",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2549
+    },
+    {
+      "legacy_table": "ai_audience_package",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2584
+    },
+    {
+      "legacy_table": "ai_audience_package_dependency",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2602
+    },
+    {
+      "legacy_table": "ai_audience_package_group",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "config",
+      "migration_source": "0162_ai_audience_groups_binding",
+      "source_line": 2567
+    },
+    {
+      "legacy_table": "ai_audience_package_run",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2620
+    },
+    {
+      "legacy_table": "ai_audience_package_sender",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0051_ai_audience_sender_whitelist",
+      "source_line": 2638
+    },
+    {
+      "legacy_table": "ai_audience_package_version",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0045_ai_audience_ops",
+      "source_line": 2656
+    },
+    {
+      "legacy_table": "ai_audience_refresh_intent",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0128_ai_audience_refresh_intents",
+      "source_line": 2472
+    },
+    {
+      "legacy_table": "ai_audience_refresh_source_receipt",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0128_ai_audience_refresh_intents",
+      "source_line": 2493
+    },
+    {
+      "legacy_table": "alembic_version",
+      "legacy_domain": "schema_migration",
+      "legacy_lifecycle": "config",
+      "migration_source": "Alembic runtime metadata",
+      "source_line": 2674
+    },
+    {
+      "legacy_table": "alipay_pay_order_events",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0014_alipay_pay",
+      "source_line": 2692
+    },
+    {
+      "legacy_table": "alipay_pay_orders",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0014_alipay_pay",
+      "source_line": 2710
+    },
+    {
+      "legacy_table": "app_settings",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "config",
+      "migration_source": "0084_id_dev_p1_baseline_tables",
+      "source_line": 514
+    },
+    {
+      "legacy_table": "archive_sync_state",
+      "legacy_domain": "messaging",
+      "legacy_lifecycle": "config",
+      "migration_source": "0077_id_dev_runtime_baseline",
+      "source_line": 465
+    },
+    {
+      "legacy_table": "archived_messages",
+      "legacy_domain": "messaging",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0077_id_dev_runtime_baseline",
+      "source_line": 442
+    },
+    {
+      "legacy_table": "attachment_library",
+      "legacy_domain": "media_library",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0076_create_missing_baseline_runtime_tables",
+      "source_line": 1475
+    },
+    {
+      "legacy_table": "audience_rule",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "config",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 984
+    },
+    {
+      "legacy_table": "audience_rule_result",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 1016
+    },
+    {
+      "legacy_table": "audience_rule_version",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "config",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 1000
+    },
+    {
+      "legacy_table": "auth_api_clients",
+      "legacy_domain": "auth_platform",
+      "legacy_lifecycle": "config",
+      "migration_source": "0104_auth_platform",
+      "source_line": 27
+    },
+    {
+      "legacy_table": "auth_security_events",
+      "legacy_domain": "auth_platform",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0104_auth_platform",
+      "source_line": 46
+    },
+    {
+      "legacy_table": "auth_sessions",
+      "legacy_domain": "auth_platform",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0104_auth_platform",
+      "source_line": 63
+    },
+    {
+      "legacy_table": "auth_webhook_clients",
+      "legacy_domain": "auth_platform",
+      "legacy_lifecycle": "config",
+      "migration_source": "0104_auth_platform",
+      "source_line": 80
+    },
+    {
+      "legacy_table": "auth_webhook_replay",
+      "legacy_domain": "auth_platform",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0104_auth_platform",
+      "source_line": 98
+    },
+    {
+      "legacy_table": "automation_agent_audit_log",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0022_next_automation_agents",
+      "source_line": 2728
+    },
+    {
+      "legacy_table": "automation_agent_config",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "config",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 2746
+    },
+    {
+      "legacy_table": "automation_agent_idempotency",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0022_next_automation_agents",
+      "source_line": 2764
+    },
+    {
+      "legacy_table": "automation_agent_llm_call_log",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "audit",
+      "migration_source": "migrations/versions/0124_automation_agent_audit_tables.py",
+      "source_line": 2782
+    },
+    {
+      "legacy_table": "automation_agent_output",
+      "legacy_domain": "ai_audience_ops",
+      "legacy_lifecycle": "audit",
+      "migration_source": "migrations/versions/0124_automation_agent_audit_tables.py",
+      "source_line": 2800
+    },
+    {
+      "legacy_table": "automation_agent_output_export_job",
+      "legacy_domain": "legacy_automation_agent",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4611
+    },
+    {
+      "legacy_table": "automation_agent_prompt_registry",
+      "legacy_domain": "legacy_automation_agent",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4615
+    },
+    {
+      "legacy_table": "automation_agent_router_config",
+      "legacy_domain": "legacy_automation_agent",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4619
+    },
+    {
+      "legacy_table": "automation_agent_run",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 2818
+    },
+    {
+      "legacy_table": "automation_agent_runtime_config",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "config",
+      "migration_source": "0054_automation_agent_runtime_config",
+      "source_line": 2836
+    },
+    {
+      "legacy_table": "automation_agent_skill_call_audit",
+      "legacy_domain": "legacy_automation_agent",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4623
+    },
+    {
+      "legacy_table": "automation_agent_skill_registry",
+      "legacy_domain": "legacy_automation_agent",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4627
+    },
+    {
+      "legacy_table": "automation_agent_webhook_batch",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline",
+      "source_line": 2856
+    },
+    {
+      "legacy_table": "automation_agent_webhook_item",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline",
+      "source_line": 2874
+    },
+    {
+      "legacy_table": "automation_agents",
+      "legacy_domain": "automation_agents",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0022_next_automation_agents",
+      "source_line": 2892
+    },
+    {
+      "legacy_table": "automation_ai_push_log",
+      "legacy_domain": "automation_engine",
+      "legacy_lifecycle": "audit",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 2910
+    },
+    {
+      "legacy_table": "automation_channel",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 2928
+    },
+    {
+      "legacy_table": "automation_channel_assignee",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0036_channel_multi_staff_assignment",
+      "source_line": 2951
+    },
+    {
+      "legacy_table": "automation_channel_assignment_event",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0036_channel_multi_staff_assignment",
+      "source_line": 2971
+    },
+    {
+      "legacy_table": "automation_channel_contact",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 2991
+    },
+    {
+      "legacy_table": "automation_channel_entry_effect_log",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "event",
+      "migration_source": "0078_final_legacy_identity_column_cleanup",
+      "source_line": 641
+    },
+    {
+      "legacy_table": "automation_channel_entry_runtime",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff and 0129_identity_customer_event_driven",
+      "source_line": 659
+    },
+    {
+      "legacy_table": "automation_channel_qrcode_asset",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3011
+    },
+    {
+      "legacy_table": "automation_channel_scene_alias",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3033
+    },
+    {
+      "legacy_table": "automation_event",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1372
+    },
+    {
+      "legacy_table": "automation_event_v2",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1251
+    },
+    {
+      "legacy_table": "automation_execution_trace",
+      "legacy_domain": "automation",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0002_perf_indexes_and_trace, removed by 0071_retire_conversion_trace_tables",
+      "source_line": 242
+    },
+    {
+      "legacy_table": "automation_focus_send_batch",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4631
+    },
+    {
+      "legacy_table": "automation_focus_send_batch_item",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4635
+    },
+    {
+      "legacy_table": "automation_frequency_budget",
+      "legacy_domain": "automation_engine",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0004_cloud_orchestrator",
+      "source_line": 3053
+    },
+    {
+      "legacy_table": "automation_frequency_consumption",
+      "legacy_domain": "automation_engine",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0004_cloud_orchestrator",
+      "source_line": 3071
+    },
+    {
+      "legacy_table": "automation_group_ops_effect_dependency",
+      "legacy_domain": "automation_engine_group_ops",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0127_group_ops_durable_effect_graph",
+      "source_line": 5218
+    },
+    {
+      "legacy_table": "automation_group_ops_effect_graph",
+      "legacy_domain": "automation_engine_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0127_group_ops_durable_effect_graph",
+      "source_line": 5174
+    },
+    {
+      "legacy_table": "automation_group_ops_effect_material",
+      "legacy_domain": "automation_engine_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0127_group_ops_durable_effect_graph",
+      "source_line": 5197
+    },
+    {
+      "legacy_table": "automation_group_ops_execution_log",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 1067
+    },
+    {
+      "legacy_table": "automation_group_ops_plan_groups",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0015_group_ops_plans",
+      "source_line": 896
+    },
+    {
+      "legacy_table": "automation_group_ops_plan_member",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 966
+    },
+    {
+      "legacy_table": "automation_group_ops_plan_nodes",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0015_group_ops_plans",
+      "source_line": 914
+    },
+    {
+      "legacy_table": "automation_group_ops_plan_scope",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 950
+    },
+    {
+      "legacy_table": "automation_group_ops_plan_segmentation",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "config",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 1033
+    },
+    {
+      "legacy_table": "automation_group_ops_plans",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0015_group_ops_plans",
+      "source_line": 874
+    },
+    {
+      "legacy_table": "automation_group_ops_trigger_event",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "event",
+      "migration_source": "0023_group_ops_webhook_rules",
+      "source_line": 1049
+    },
+    {
+      "legacy_table": "automation_group_ops_webhook_events",
+      "legacy_domain": "automation_group_ops",
+      "legacy_lifecycle": "event",
+      "migration_source": "0015_group_ops_plans",
+      "source_line": 932
+    },
+    {
+      "legacy_table": "automation_laohuang_chat_job",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4639
+    },
+    {
+      "legacy_table": "automation_member",
+      "legacy_domain": "automation",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0001 baseline, removed by 0070_retire_automation_member_table",
+      "source_line": 226
+    },
+    {
+      "legacy_table": "automation_member_audience_entry",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1266
+    },
+    {
+      "legacy_table": "automation_membership_v2",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1236
+    },
+    {
+      "legacy_table": "automation_message_activity_sync_item",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4643
+    },
+    {
+      "legacy_table": "automation_message_activity_sync_run",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4647
+    },
+    {
+      "legacy_table": "automation_operation_task",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1357
+    },
+    {
+      "legacy_table": "automation_operation_task_execution",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4651
+    },
+    {
+      "legacy_table": "automation_operation_task_execution_item",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4655
+    },
+    {
+      "legacy_table": "automation_operation_task_group",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4659
+    },
+    {
+      "legacy_table": "automation_operation_template_audit_log",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4663
+    },
+    {
+      "legacy_table": "automation_operation_template_idempotency",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4667
+    },
+    {
+      "legacy_table": "automation_operation_templates",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4671
+    },
+    {
+      "legacy_table": "automation_profile_segment_category",
+      "legacy_domain": "legacy_automation_profile",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4675
+    },
+    {
+      "legacy_table": "automation_profile_segment_option_mapping",
+      "legacy_domain": "legacy_automation_profile",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4679
+    },
+    {
+      "legacy_table": "automation_profile_segment_template",
+      "legacy_domain": "legacy_automation_profile",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4683
+    },
+    {
+      "legacy_table": "automation_profile_segment_template_audit_log",
+      "legacy_domain": "legacy_automation_profile",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4687
+    },
+    {
+      "legacy_table": "automation_profile_segment_template_idempotency",
+      "legacy_domain": "legacy_automation_profile",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4691
+    },
+    {
+      "legacy_table": "automation_program",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1387
+    },
+    {
+      "legacy_table": "automation_program_admission_attempt",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1312
+    },
+    {
+      "legacy_table": "automation_program_channel_binding",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1327
+    },
+    {
+      "legacy_table": "automation_program_config_block",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1342
+    },
+    {
+      "legacy_table": "automation_program_member",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1296
+    },
+    {
+      "legacy_table": "automation_program_member_stage_history",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1281
+    },
+    {
+      "legacy_table": "automation_reply_monitor_config",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4695
+    },
+    {
+      "legacy_table": "automation_reply_monitor_queue",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4699
+    },
+    {
+      "legacy_table": "automation_sop_batch",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4703
+    },
+    {
+      "legacy_table": "automation_sop_batch_item",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4707
+    },
+    {
+      "legacy_table": "automation_sop_pool_config",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4711
+    },
+    {
+      "legacy_table": "automation_sop_progress",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4715
+    },
+    {
+      "legacy_table": "automation_sop_template",
+      "legacy_domain": "automation_engine",
+      "legacy_lifecycle": "config",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3089
+    },
+    {
+      "legacy_table": "automation_stage_entry_v2",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1221
+    },
+    {
+      "legacy_table": "automation_task_plan_v2",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1206
+    },
+    {
+      "legacy_table": "automation_touch_delivery_log",
+      "legacy_domain": "automation_engine",
+      "legacy_lifecycle": "audit",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3107
+    },
+    {
+      "legacy_table": "automation_workflow",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1190
+    },
+    {
+      "legacy_table": "automation_workflow_agent_binding",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4719
+    },
+    {
+      "legacy_table": "automation_workflow_audience",
+      "legacy_domain": "legacy_automation",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4723
+    },
+    {
+      "legacy_table": "automation_workflow_execution",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1099
+    },
+    {
+      "legacy_table": "automation_workflow_execution_item",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1084
+    },
+    {
+      "legacy_table": "automation_workflow_goal",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1175
+    },
+    {
+      "legacy_table": "automation_workflow_node",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1160
+    },
+    {
+      "legacy_table": "automation_workflow_node_content",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1130
+    },
+    {
+      "legacy_table": "automation_workflow_node_content_variant",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1115
+    },
+    {
+      "legacy_table": "automation_workflow_node_transition",
+      "legacy_domain": "automation_legacy",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline, removed by 0053_retire_legacy_automation_tables",
+      "source_line": 1145
+    },
+    {
+      "legacy_table": "broadcast_job_events",
+      "legacy_domain": "broadcast_jobs",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0021_broadcast_queue_platform_hardening",
+      "source_line": 3125
+    },
+    {
+      "legacy_table": "broadcast_job_hourly_reports",
+      "legacy_domain": "broadcast_jobs",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0020_broadcast_job_hourly_reports",
+      "source_line": 3148
+    },
+    {
+      "legacy_table": "broadcast_jobs",
+      "legacy_domain": "broadcast",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0008_broadcast_jobs, hardened by 0021/0066/0089/0100 and crash-safe finalization by 0103",
+      "source_line": 755
+    },
+    {
+      "legacy_table": "broadcast_queue_notification_settings",
+      "legacy_domain": "broadcast_jobs",
+      "legacy_lifecycle": "config",
+      "migration_source": "0019_broadcast_queue_notification_settings",
+      "source_line": 3166
+    },
+    {
+      "legacy_table": "callback_jobs",
+      "legacy_domain": "legacy_callback",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4727
+    },
+    {
+      "legacy_table": "campaign_members",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0005_segments_and_campaigns",
+      "source_line": 849
+    },
+    {
+      "legacy_table": "campaign_segments",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0005_segments_and_campaigns",
+      "source_line": 809
+    },
+    {
+      "legacy_table": "campaign_steps",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0005_segments_and_campaigns",
+      "source_line": 828
+    },
+    {
+      "legacy_table": "campaigns",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0005_segments_and_campaigns",
+      "source_line": 785
+    },
+    {
+      "legacy_table": "channel_welcome_effect_dependency",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0130_welcome_media_dependencies",
+      "source_line": 5266
+    },
+    {
+      "legacy_table": "channel_welcome_effect_graph",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0130_welcome_media_dependencies",
+      "source_line": 5243
+    },
+    {
+      "legacy_table": "class_term_tag_mapping",
+      "legacy_domain": "legacy_customer_tags",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4731
+    },
+    {
+      "legacy_table": "class_user_status_current",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0081_create_customer_status_baseline_tables",
+      "source_line": 141
+    },
+    {
+      "legacy_table": "class_user_status_history",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0081_create_customer_status_baseline_tables",
+      "source_line": 163
+    },
+    {
+      "legacy_table": "cloud_agent_audit_log",
+      "legacy_domain": "cloud_orchestrator",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0004_cloud_orchestrator",
+      "source_line": 3184
+    },
+    {
+      "legacy_table": "cloud_approval_tokens",
+      "legacy_domain": "cloud_orchestrator",
+      "legacy_lifecycle": "config",
+      "migration_source": "0004_cloud_orchestrator",
+      "source_line": 3202
+    },
+    {
+      "legacy_table": "cloud_broadcast_plan_recipient_messages",
+      "legacy_domain": "cloud_orchestrator",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0024_cloud_plan_recipient_approval",
+      "source_line": 3220
+    },
+    {
+      "legacy_table": "cloud_broadcast_plan_recipients",
+      "legacy_domain": "cloud_orchestrator",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0024_cloud_plan_recipient_approval",
+      "source_line": 3244
+    },
+    {
+      "legacy_table": "cloud_broadcast_plans",
+      "legacy_domain": "cloud_orchestrator",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0004_cloud_orchestrator",
+      "source_line": 3267
+    },
+    {
+      "legacy_table": "codex_schema_backups",
+      "legacy_domain": "legacy_schema_audit",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4735
+    },
+    {
+      "legacy_table": "commerce_coupon_claims",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0114_commerce_coupons",
+      "source_line": 4033
+    },
+    {
+      "legacy_table": "commerce_coupon_product_bindings",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0114_commerce_coupons",
+      "source_line": 4011
+    },
+    {
+      "legacy_table": "commerce_coupon_redemptions",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0114_commerce_coupons",
+      "source_line": 4055
+    },
+    {
+      "legacy_table": "commerce_coupons",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0114_commerce_coupons",
+      "source_line": 3991
+    },
+    {
+      "legacy_table": "config_releases",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "config",
+      "migration_source": "0144_config_release_control_plane",
+      "source_line": 539
+    },
+    {
+      "legacy_table": "contact_tags",
+      "legacy_domain": "customer_tags",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0080_create_contact_tags_mirror",
+      "source_line": 115
+    },
+    {
+      "legacy_table": "contacts",
+      "legacy_domain": "contacts",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3285
+    },
+    {
+      "legacy_table": "conversion_dispatch_log",
+      "legacy_domain": "automation",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0001 baseline, removed by 0071_retire_conversion_trace_tables",
+      "source_line": 256
+    },
+    {
+      "legacy_table": "conversion_feedback",
+      "legacy_domain": "legacy_conversion",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4739
+    },
+    {
+      "legacy_table": "crm_user_identity",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3303
+    },
+    {
+      "legacy_table": "crm_user_identity_conflicts",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0062_unionid_identity_refactor",
+      "source_line": 3331
+    },
+    {
+      "legacy_table": "crm_user_identity_merge_audit",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0062_unionid_identity_refactor",
+      "source_line": 3349
+    },
+    {
+      "legacy_table": "crm_user_identity_resolution_queue",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "queue",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql, event-driven effect ownership added by 0129_identity_customer_event_driven",
+      "source_line": 3367
+    },
+    {
+      "legacy_table": "customer_detail_snapshot_next",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0026_customer_read_model_next",
+      "source_line": 3408
+    },
+    {
+      "legacy_table": "customer_detail_snapshot_next_shadow",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0153_customer_read_model_generation_slots",
+      "source_line": 3492
+    },
+    {
+      "legacy_table": "customer_list_index_next",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0026_customer_read_model_next",
+      "source_line": 3431
+    },
+    {
+      "legacy_table": "customer_list_index_next_shadow",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0153_customer_read_model_generation_slots",
+      "source_line": 3473
+    },
+    {
+      "legacy_table": "customer_marketing_state_current",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4743
+    },
+    {
+      "legacy_table": "customer_marketing_state_history",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4747
+    },
+    {
+      "legacy_table": "customer_read_model_current",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4751
+    },
+    {
+      "legacy_table": "customer_read_model_refresh_intent",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0129_identity_customer_event_driven",
+      "source_line": 4566
+    },
+    {
+      "legacy_table": "customer_read_model_refresh_source_receipt",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0129_identity_customer_event_driven",
+      "source_line": 4587
+    },
+    {
+      "legacy_table": "customer_read_model_refresh_state",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0108_customer_read_model_refresh, active slot fields added by 0153_customer_read_model_generation_slots",
+      "source_line": 4545
+    },
+    {
+      "legacy_table": "customer_recent_message_next",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0026_customer_read_model_next",
+      "source_line": 3454
+    },
+    {
+      "legacy_table": "customer_recent_message_next_shadow",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0153_customer_read_model_generation_slots",
+      "source_line": 3511
+    },
+    {
+      "legacy_table": "customer_timeline_event_next",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0026_customer_read_model_next",
+      "source_line": 3530
+    },
+    {
+      "legacy_table": "customer_value_segment_current",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4755
+    },
+    {
+      "legacy_table": "customer_value_segment_history",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4759
+    },
+    {
+      "legacy_table": "data_health_snapshot",
+      "legacy_domain": "data_health",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0143_data_health_snapshot",
+      "source_line": 4524
+    },
+    {
+      "legacy_table": "deployment_profile_state",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "config",
+      "migration_source": "0144_config_release_control_plane",
+      "source_line": 561
+    },
+    {
+      "legacy_table": "domain_event_outbox",
+      "legacy_domain": "commerce_events",
+      "legacy_lifecycle": "event",
+      "migration_source": "0023_product_external_push",
+      "source_line": 1690
+    },
+    {
+      "legacy_table": "external_campaign_preparation_recipients",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "staging",
+      "migration_source": "0156_campaign_preparation_context",
+      "source_line": 5110
+    },
+    {
+      "legacy_table": "external_campaign_preparations",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0156_campaign_preparation_context",
+      "source_line": 5091
+    },
+    {
+      "legacy_table": "external_contact_bindings",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3548
+    },
+    {
+      "legacy_table": "external_effect_attempt",
+      "legacy_domain": "external_effects",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0039_external_effect_queue, private provider-result handoff added by 0129_identity_customer_event_driven",
+      "source_line": 2255
+    },
+    {
+      "legacy_table": "external_effect_job",
+      "legacy_domain": "external_effects",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0039_external_effect_queue, hardened by 0100_external_effect_delivery_lease and R08 transactional producers",
+      "source_line": 2222
+    },
+    {
+      "legacy_table": "external_effect_test_receipt",
+      "legacy_domain": "external",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0040_external_effect_test_receiver",
+      "source_line": 3569
+    },
+    {
+      "legacy_table": "external_push_config",
+      "legacy_domain": "external",
+      "legacy_lifecycle": "config",
+      "migration_source": "0023_product_external_push",
+      "source_line": 3587
+    },
+    {
+      "legacy_table": "external_push_delivery",
+      "legacy_domain": "commerce_events",
+      "legacy_lifecycle": "legacy_boundary",
+      "migration_source": "0023_product_external_push",
+      "source_line": 1712
+    },
+    {
+      "legacy_table": "group_chats",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3605
+    },
+    {
+      "legacy_table": "group_invite_library",
+      "legacy_domain": "media_library",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0117_group_invite_cards, 0119_group_invite_bindings",
+      "source_line": 1501
+    },
+    {
+      "legacy_table": "group_ops_workspace_allowlist_snapshots",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0049_group_ops_workspace_governance",
+      "source_line": 3623
+    },
+    {
+      "legacy_table": "group_ops_workspace_draft_audit_logs",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0047_group_ops_workspace_drafts",
+      "source_line": 3642
+    },
+    {
+      "legacy_table": "group_ops_workspace_draft_items",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0047_group_ops_workspace_drafts",
+      "source_line": 3661
+    },
+    {
+      "legacy_table": "group_ops_workspace_drafts",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0047_group_ops_workspace_drafts",
+      "source_line": 3680
+    },
+    {
+      "legacy_table": "group_ops_workspace_governance_review_steps",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0049_group_ops_workspace_governance",
+      "source_line": 3699
+    },
+    {
+      "legacy_table": "group_ops_workspace_governance_reviews",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0049_group_ops_workspace_governance",
+      "source_line": 3718
+    },
+    {
+      "legacy_table": "group_ops_workspace_gray_window_approvals",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0049_group_ops_workspace_governance",
+      "source_line": 3737
+    },
+    {
+      "legacy_table": "hxc_dashboard_broadcast_tasks",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0018_hxc_dashboard_broadcast_tasks",
+      "source_line": 3756
+    },
+    {
+      "legacy_table": "identity_resolution_completion_receipt",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0129_identity_customer_event_driven",
+      "source_line": 3389
+    },
+    {
+      "legacy_table": "image_library",
+      "legacy_domain": "media_library",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0007_image_library",
+      "source_line": 1403
+    },
+    {
+      "legacy_table": "image_library_variants",
+      "legacy_domain": "media_library",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0017_image_library_variants",
+      "source_line": 1430
+    },
+    {
+      "legacy_table": "internal_event",
+      "legacy_domain": "internal_events",
+      "legacy_lifecycle": "event",
+      "migration_source": "0043_internal_event_queue, fan-out manifest added by 0122_internal_event_fanout_manifest",
+      "source_line": 1772
+    },
+    {
+      "legacy_table": "internal_event_consumer_attempt",
+      "legacy_domain": "internal_events",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0043_internal_event_queue, manual retry audit hardened by 0099_internal_event_outbox_and_consumer_lease",
+      "source_line": 1857
+    },
+    {
+      "legacy_table": "internal_event_consumer_run",
+      "legacy_domain": "internal_events",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0043_internal_event_queue, lease CAS hardened by 0099_internal_event_outbox_and_consumer_lease",
+      "source_line": 1829
+    },
+    {
+      "legacy_table": "internal_event_outbox",
+      "legacy_domain": "internal_events",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0099_internal_event_outbox_and_consumer_lease",
+      "source_line": 1795
+    },
+    {
+      "legacy_table": "legacy_webhook_cleanup_audit",
+      "legacy_domain": "legacy_webhook_cleanup",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0042_legacy_webhook_deprecation_registry, removed by 0105_drop_legacy_cleanup_tables",
+      "source_line": 3774
+    },
+    {
+      "legacy_table": "legacy_webhook_deprecation_registry",
+      "legacy_domain": "legacy_webhook_cleanup",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0042_legacy_webhook_deprecation_registry, removed by 0105_drop_legacy_cleanup_tables",
+      "source_line": 3790
+    },
+    {
+      "legacy_table": "marketing_automation_configs",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "config",
+      "migration_source": "0083_create_marketing_automation_config_tables",
+      "source_line": 497
+    },
+    {
+      "legacy_table": "marketing_automation_question_rules",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "config",
+      "migration_source": "0083_create_marketing_automation_config_tables",
+      "source_line": 480
+    },
+    {
+      "legacy_table": "marketing_state_current",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4763
+    },
+    {
+      "legacy_table": "marketing_value_segment_current",
+      "legacy_domain": "legacy_customer_projection",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4767
+    },
+    {
+      "legacy_table": "mcp_tool_settings",
+      "legacy_domain": "admin_config",
+      "legacy_lifecycle": "config",
+      "migration_source": "0084_id_dev_p1_baseline_tables",
+      "source_line": 583
+    },
+    {
+      "legacy_table": "message_batch_items",
+      "legacy_domain": "messaging",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline",
+      "source_line": 427
+    },
+    {
+      "legacy_table": "message_batches",
+      "legacy_domain": "messaging",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline",
+      "source_line": 412
+    },
+    {
+      "legacy_table": "miniprogram_library",
+      "legacy_domain": "media_library",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0006_miniprogram_library, 0007_image_library thumb_image_id",
+      "source_line": 1449
+    },
+    {
+      "legacy_table": "operation_cycle_action_request_events",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "event",
+      "migration_source": "0169_operation_cycle_codex_actions",
+      "source_line": 4838
+    },
+    {
+      "legacy_table": "operation_cycle_action_requests",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0169_operation_cycle_codex_actions",
+      "source_line": 4860
+    },
+    {
+      "legacy_table": "operation_cycle_attempts",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 4884
+    },
+    {
+      "legacy_table": "operation_cycle_metrics",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 4903
+    },
+    {
+      "legacy_table": "operation_cycle_plan_links",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "projection",
+      "migration_source": "0156_campaign_preparation_context",
+      "source_line": 5131
+    },
+    {
+      "legacy_table": "operation_cycle_references",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 4921
+    },
+    {
+      "legacy_table": "operation_cycle_runners",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0169_operation_cycle_codex_actions",
+      "source_line": 4939
+    },
+    {
+      "legacy_table": "operation_cycle_runs",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 4961
+    },
+    {
+      "legacy_table": "operation_cycle_snapshots",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "event",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 4979
+    },
+    {
+      "legacy_table": "operation_cycle_stages",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 4999
+    },
+    {
+      "legacy_table": "operation_cycle_strategies",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 5017
+    },
+    {
+      "legacy_table": "operation_cycle_strategy_change_proposals",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "event",
+      "migration_source": "0156_campaign_preparation_context",
+      "source_line": 5072
+    },
+    {
+      "legacy_table": "operation_cycle_strategy_version_documents",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0156_campaign_preparation_context",
+      "source_line": 5053
+    },
+    {
+      "legacy_table": "operation_cycle_strategy_versions",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0113_operation_cycles",
+      "source_line": 5035
+    },
+    {
+      "legacy_table": "operation_cycle_system_facts",
+      "legacy_domain": "operation_cycles",
+      "legacy_lifecycle": "event",
+      "migration_source": "0156_campaign_preparation_context",
+      "source_line": 5155
+    },
+    {
+      "legacy_table": "outbound_event_outbox",
+      "legacy_domain": "outbound_webhook",
+      "legacy_lifecycle": "event",
+      "migration_source": "0002_perf_indexes_and_trace",
+      "source_line": 1757
+    },
+    {
+      "legacy_table": "outbound_tasks",
+      "legacy_domain": "admin_jobs",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3806
+    },
+    {
+      "legacy_table": "outbound_webhook_deliveries",
+      "legacy_domain": "outbound_webhook",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0076_create_missing_baseline_runtime_tables",
+      "source_line": 1735
+    },
+    {
+      "legacy_table": "owner_migration_import_sessions",
+      "legacy_domain": "owner_migration",
+      "legacy_lifecycle": "config",
+      "migration_source": "0028_owner_excel_sessions",
+      "source_line": 2279
+    },
+    {
+      "legacy_table": "owner_migration_previews",
+      "legacy_domain": "owner_migration",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0028_owner_excel_sessions",
+      "source_line": 2297
+    },
+    {
+      "legacy_table": "owner_migration_results",
+      "legacy_domain": "owner_migration",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0028_owner_excel_sessions",
+      "source_line": 2316
+    },
+    {
+      "legacy_table": "owner_role_map",
+      "legacy_domain": "admin_identity",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0081_create_customer_status_baseline_tables",
+      "source_line": 183
+    },
+    {
+      "legacy_table": "people",
+      "legacy_domain": "legacy_identity",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4771
+    },
+    {
+      "legacy_table": "prod_fix_backup_ai_audience_regression_20260624",
+      "legacy_domain": "legacy_schema_backup",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4775
+    },
+    {
+      "legacy_table": "prod_test_backup_ai_audience_20260623",
+      "legacy_domain": "legacy_schema_backup",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4779
+    },
+    {
+      "legacy_table": "prod_test_backup_ai_audience_full_20260623",
+      "legacy_domain": "legacy_schema_backup",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4783
+    },
+    {
+      "legacy_table": "questionnaire_continuation_job",
+      "legacy_domain": "legacy_questionnaire",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "historical Siyuan 0124_questionnaire_continuation_jobs",
+      "source_line": 4787
+    },
+    {
+      "legacy_table": "questionnaire_external_push_logs",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0076_create_missing_baseline_runtime_tables",
+      "source_line": 1668
+    },
+    {
+      "legacy_table": "questionnaire_options",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0076_create_missing_baseline_runtime_tables",
+      "source_line": 1588
+    },
+    {
+      "legacy_table": "questionnaire_questions",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 1570
+    },
+    {
+      "legacy_table": "questionnaire_score_rules",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0076_create_missing_baseline_runtime_tables",
+      "source_line": 1606
+    },
+    {
+      "legacy_table": "questionnaire_scrm_apply_logs",
+      "legacy_domain": "legacy_questionnaire",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4794
+    },
+    {
+      "legacy_table": "questionnaire_submission_answers",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "event",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 1647
+    },
+    {
+      "legacy_table": "questionnaire_submissions",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "event",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 1624
+    },
+    {
+      "legacy_table": "questionnaires",
+      "legacy_domain": "questionnaire",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql; list index added by 0106_critical_read_path_indexes; nullable lead channel binding added by 0116_questionnaire_operations_config; lead QR copy added by 0168_lead_qr_copy_config",
+      "source_line": 1548
+    },
+    {
+      "legacy_table": "queue_fairness_cursor",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0126_postgres_execution_runtime",
+      "source_line": 1963
+    },
+    {
+      "legacy_table": "queue_history_classification",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0125_execution_runtime_correctness",
+      "source_line": 1878
+    },
+    {
+      "legacy_table": "queue_lane_canary_job_authorization",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "runtime",
+      "migration_source": "0159_ai_automation_lane_rollout_audit",
+      "source_line": 2071
+    },
+    {
+      "legacy_table": "queue_lane_policy",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "config",
+      "migration_source": "0126_postgres_execution_runtime",
+      "source_line": 1920
+    },
+    {
+      "legacy_table": "queue_lane_rollout_audit",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0159_ai_automation_lane_rollout_audit",
+      "source_line": 2051
+    },
+    {
+      "legacy_table": "queue_policy_snapshot",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "config",
+      "migration_source": "0126_postgres_execution_runtime",
+      "source_line": 1942
+    },
+    {
+      "legacy_table": "queue_rate_scope_cooldown",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "queue",
+      "migration_source": "0126_postgres_execution_runtime",
+      "source_line": 1984
+    },
+    {
+      "legacy_table": "queue_runtime_canary_config_audit",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0135_queue_scope_transition_audit",
+      "source_line": 2092
+    },
+    {
+      "legacy_table": "queue_runtime_control",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "config",
+      "migration_source": "0126_postgres_execution_runtime",
+      "source_line": 1898
+    },
+    {
+      "legacy_table": "queue_runtime_lease_recovery_event",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "source_line": 2159
+    },
+    {
+      "legacy_table": "queue_runtime_scope_transition_audit",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0135_queue_scope_transition_audit",
+      "source_line": 2031
+    },
+    {
+      "legacy_table": "queue_runtime_soak_run",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "source_line": 2180
+    },
+    {
+      "legacy_table": "queue_runtime_soak_snapshot",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "source_line": 2201
+    },
+    {
+      "legacy_table": "queue_runtime_validation_evidence",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "source_line": 2136
+    },
+    {
+      "legacy_table": "queue_terminal_acknowledgement",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0139_queue_terminal_acknowledgement_scope",
+      "source_line": 2112
+    },
+    {
+      "legacy_table": "queue_worker_heartbeat",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0126_postgres_execution_runtime",
+      "source_line": 2009
+    },
+    {
+      "legacy_table": "radar_click_events",
+      "legacy_domain": "radar",
+      "legacy_lifecycle": "event",
+      "migration_source": "0102_questionnaire_radar_invariants; external-feed index 0118_external_radar_read_api",
+      "source_line": 3829
+    },
+    {
+      "legacy_table": "radar_links",
+      "legacy_domain": "radar",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3850
+    },
+    {
+      "legacy_table": "radar_pdf_preview_assets",
+      "legacy_domain": "radar",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0025_radar_pdf_preview_assets",
+      "source_line": 3868
+    },
+    {
+      "legacy_table": "routing_rule_config",
+      "legacy_domain": "legacy_routing",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4798
+    },
+    {
+      "legacy_table": "schema_migrations",
+      "legacy_domain": "legacy_schema_audit",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4802
+    },
+    {
+      "legacy_table": "schema_release_compatibility",
+      "legacy_domain": "platform_foundation",
+      "legacy_lifecycle": "audit",
+      "migration_source": "0170_release_governance_foundation",
+      "source_line": 5291
+    },
+    {
+      "legacy_table": "segment_member_snapshots",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0005_segments_and_campaigns",
+      "source_line": 737
+    },
+    {
+      "legacy_table": "segments",
+      "legacy_domain": "campaign",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0005_segments_and_campaigns",
+      "source_line": 719
+    },
+    {
+      "legacy_table": "service_period_entitlements",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0097_service_period_unionid_cleanup",
+      "source_line": 4195
+    },
+    {
+      "legacy_table": "service_period_events",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0095_service_period_products",
+      "source_line": 4219
+    },
+    {
+      "legacy_table": "service_period_huangyoucan_usage_snapshot",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "projection",
+      "migration_source": "0107_hyc_usage_snapshot",
+      "source_line": 4241
+    },
+    {
+      "legacy_table": "service_period_huangyoucan_usage_sync_runs",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "event",
+      "migration_source": "0107_hyc_usage_snapshot",
+      "source_line": 4263
+    },
+    {
+      "legacy_table": "service_period_member_collaborators",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0121_service_period_member_grid_sharing",
+      "source_line": 4155
+    },
+    {
+      "legacy_table": "service_period_member_shares",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0121_service_period_member_grid_sharing",
+      "source_line": 4175
+    },
+    {
+      "legacy_table": "service_period_member_views",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0120_service_period_member_views",
+      "source_line": 4135
+    },
+    {
+      "legacy_table": "service_period_products",
+      "legacy_domain": "service_period",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0095_service_period_products",
+      "source_line": 4111
+    },
+    {
+      "legacy_table": "sidebar_customer_profile_fields",
+      "legacy_domain": "customer_read_model",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0077_id_dev_runtime_baseline",
+      "source_line": 602
+    },
+    {
+      "legacy_table": "signup_tag_rules",
+      "legacy_domain": "legacy_customer_tags",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4806
+    },
+    {
+      "legacy_table": "sync_runs",
+      "legacy_domain": "admin_jobs",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 3886
+    },
+    {
+      "legacy_table": "user_ops_activation_status_source",
+      "legacy_domain": "legacy_user_ops",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4810
+    },
+    {
+      "legacy_table": "user_ops_deferred_jobs",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline",
+      "source_line": 346
+    },
+    {
+      "legacy_table": "user_ops_do_not_disturb",
+      "legacy_domain": "legacy_user_ops",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4814
+    },
+    {
+      "legacy_table": "user_ops_do_not_disturb_next",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0029_user_ops_prod_tables",
+      "source_line": 378
+    },
+    {
+      "legacy_table": "user_ops_experience_leads",
+      "legacy_domain": "legacy_user_ops",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4818
+    },
+    {
+      "legacy_table": "user_ops_huangxiaocan_activation_source",
+      "legacy_domain": "legacy_user_ops",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4822
+    },
+    {
+      "legacy_table": "user_ops_hxc_dashboard_meta",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0010_user_ops_hxc_dashboard_snapshot",
+      "source_line": 3909
+    },
+    {
+      "legacy_table": "user_ops_hxc_dashboard_snapshot",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0010_user_ops_hxc_dashboard_snapshot",
+      "source_line": 3927
+    },
+    {
+      "legacy_table": "user_ops_hxc_send_config",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "config",
+      "migration_source": "0011_user_ops_hxc_send_config",
+      "source_line": 3945
+    },
+    {
+      "legacy_table": "user_ops_import_batches",
+      "legacy_domain": "legacy_user_ops",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4826
+    },
+    {
+      "legacy_table": "user_ops_lead_pool_current",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0083_create_marketing_automation_config_tables",
+      "source_line": 271
+    },
+    {
+      "legacy_table": "user_ops_lead_pool_history",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0083_create_marketing_automation_config_tables",
+      "source_line": 286
+    },
+    {
+      "legacy_table": "user_ops_pool_current",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline",
+      "source_line": 301
+    },
+    {
+      "legacy_table": "user_ops_pool_current_next",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0029_user_ops_prod_tables, hardened by 0077_id_dev_runtime_baseline",
+      "source_line": 361
+    },
+    {
+      "legacy_table": "user_ops_pool_history",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline",
+      "source_line": 316
+    },
+    {
+      "legacy_table": "user_ops_send_records",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "retired",
+      "migration_source": "pre-Alembic baseline",
+      "source_line": 331
+    },
+    {
+      "legacy_table": "user_ops_send_records_next",
+      "legacy_domain": "user_ops",
+      "legacy_lifecycle": "event",
+      "migration_source": "0029_user_ops_prod_tables",
+      "source_line": 396
+    },
+    {
+      "legacy_table": "webhook_inbox",
+      "legacy_domain": "webhook_ingress",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0054_webhook_inbox",
+      "source_line": 3963
+    },
+    {
+      "legacy_table": "wechat_pay_order_events",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "audit",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 4077
+    },
+    {
+      "legacy_table": "wechat_pay_order_export_jobs",
+      "legacy_domain": "legacy_commerce",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4830
+    },
+    {
+      "legacy_table": "wechat_pay_order_identity_repair",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "retired",
+      "migration_source": "0062_wechat_pay_order_identity_repair, removed by 0091_retire_wechat_pay_order_identity_repair",
+      "source_line": 4095
+    },
+    {
+      "legacy_table": "wechat_pay_orders",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 4282
+    },
+    {
+      "legacy_table": "wechat_pay_product_page_slices",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0012_wechat_pay_products",
+      "source_line": 4310
+    },
+    {
+      "legacy_table": "wechat_pay_products",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql; lead QR copy added by 0168_lead_qr_copy_config",
+      "source_line": 4328
+    },
+    {
+      "legacy_table": "wechat_pay_refunds",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 4350
+    },
+    {
+      "legacy_table": "wechat_shop_order_events",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "event",
+      "migration_source": "0084_id_dev_p1_baseline_tables",
+      "source_line": 699
+    },
+    {
+      "legacy_table": "wechat_shop_orders",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0077_id_dev_runtime_baseline",
+      "source_line": 677
+    },
+    {
+      "legacy_table": "wechat_shop_refunds",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0035_wechat_shop_refunds",
+      "source_line": 4369
+    },
+    {
+      "legacy_table": "wechat_shop_sync_runs",
+      "legacy_domain": "commerce",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0036_wechat_shop_sync_runs",
+      "source_line": 4387
+    },
+    {
+      "legacy_table": "wechat_shop_tokens",
+      "legacy_domain": "legacy_commerce",
+      "legacy_lifecycle": "legacy",
+      "migration_source": "pre-convergence production schema",
+      "source_line": 4834
+    },
+    {
+      "legacy_table": "wecom_corp_tag_groups",
+      "legacy_domain": "customer_tags",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0016_wecom_corp_tag_catalog",
+      "source_line": 4405
+    },
+    {
+      "legacy_table": "wecom_corp_tags",
+      "legacy_domain": "customer_tags",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0016_wecom_corp_tag_catalog",
+      "source_line": 4423
+    },
+    {
+      "legacy_table": "wecom_customer_acquisition_links",
+      "legacy_domain": "channel_entry",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0077_id_dev_runtime_baseline",
+      "source_line": 622
+    },
+    {
+      "legacy_table": "wecom_external_contact_event_logs",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "audit",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "source_line": 4441
+    },
+    {
+      "legacy_table": "wecom_external_contact_follow_users",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql; canonical mirror columns and indexes repaired by 0106_critical_read_path_indexes",
+      "source_line": 4464
+    },
+    {
+      "legacy_table": "wecom_external_contact_identity_map",
+      "legacy_domain": "identity_contact",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql; canonical mirror columns and indexes repaired by 0106_critical_read_path_indexes",
+      "source_line": 4485
+    },
+    {
+      "legacy_table": "wecom_group_chat_snapshots",
+      "legacy_domain": "group_ops",
+      "legacy_lifecycle": "read_model",
+      "migration_source": "0015_group_ops_plans",
+      "source_line": 4506
+    },
+    {
+      "legacy_table": "wecom_media_leases",
+      "legacy_domain": "media_library",
+      "legacy_lifecycle": "canonical",
+      "migration_source": "0115_wecom_media_leases",
+      "source_line": 1527
+    }
+  ]
+}

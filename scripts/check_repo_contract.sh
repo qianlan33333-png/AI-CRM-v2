@@ -73,7 +73,9 @@ required=(
   scripts/check_feature_matrix_contract.sh
   docs/migration-mapping.md
   docs/migration-mapping.jsonl
+  docs/evidence/p1/migration-lifecycle-index-6cb989c.json
   docs/execution/slices/P1-S09.md
+  docs/execution/slices/P1-C02.md
   tools/migration-mapping/main.go
   tools/migration-mapping/main_test.go
   tools/query-plan-gate/main.go
@@ -172,7 +174,9 @@ done <<'EOF'
 100755 scripts/check_feature_matrix_contract.sh
 100644 docs/migration-mapping.md
 100644 docs/migration-mapping.jsonl
+100644 docs/evidence/p1/migration-lifecycle-index-6cb989c.json
 100644 docs/execution/slices/P1-S09.md
+100644 docs/execution/slices/P1-C02.md
 100644 tools/migration-mapping/main.go
 100644 tools/migration-mapping/main_test.go
 100644 tools/query-plan-gate/main.go
@@ -298,7 +302,17 @@ verify_index_sha256 docs/evidence/p1/feature-matrix-id-anchor.v1 \
 verify_index_sha256 docs/execution/slices/P1-S08.md \
   707667f4058d212ed628d8b868e02225c93a3948c9d90a229856162c15b13d99
 verify_index_sha256 docs/migration-mapping.jsonl \
-  a625f965db7d9aaf27a74c993252f872f255b9b4a4d7a7cdea499477e652dc09
+  d87e602bff788b097f6b502843b3d815419889e022da21292434670f537da28e
+verify_index_sha256 docs/evidence/p1/migration-lifecycle-index-6cb989c.json \
+  404083ca07522a993f349b9a53331663375b53b3344743ddcb238966e3ff2540
+verify_index_sha256 docs/migration-mapping.md \
+  9e3bbf63d9357291c19071b98e79f16ea76002e398e13bedb7b2ac2d89fb1e32
+verify_index_sha256 tools/migration-mapping/main.go \
+  634cae2168f86dce0f58604ecbf9357dcafe99850c12cef7436234ee52f2804a
+verify_index_sha256 tools/migration-mapping/main_test.go \
+  762bc2621cbcff28530354ebcc47d102ee579eb1bc364fbec70c8efada929ddb
+verify_index_sha256 docs/execution/slices/P1-C02.md \
+  c7b8c7236f20279d244286f0f3facaab28ba831a64e7f662755a6b9700abac43
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
@@ -316,7 +330,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  36d66cfcc5ff40cdfdcb7f0fef9ff8d58c5ecb5bbe8e7ede0330b1d0018a6a4a
+  5cc8a460c1e514547d797120f6400a724a5572dbd94b7e41b3f7e19701255245
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

@@ -73,6 +73,28 @@ if (cd "$query_plan_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev
   fail "query plan gate runner mode drift was accepted"
 fi
 
+for path in \
+  docs/migration-mapping.jsonl \
+  docs/evidence/p1/migration-lifecycle-index-6cb989c.json \
+  docs/migration-mapping.md \
+  tools/migration-mapping/main.go \
+  tools/migration-mapping/main_test.go \
+  docs/execution/slices/P1-C02.md; do
+  migration_mapping_receipt_fixture="$(make_fixture "migration-mapping-receipt-${path##*/}")"
+  case "$path" in *.go) printf '%s\n' '// P1-C02 receipt drift' >>"$migration_mapping_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-C02 receipt drift' >>"$migration_mapping_receipt_fixture/$path" ;; esac
+  git -C "$migration_mapping_receipt_fixture" add "$path"
+  if (cd "$migration_mapping_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P1-C02 receipt drift was accepted: $path"
+  fi
+done
+
+migration_index_mode_fixture="$(make_fixture migration-index-mode)"
+chmod 755 "$migration_index_mode_fixture/docs/evidence/p1/migration-lifecycle-index-6cb989c.json"
+git -C "$migration_index_mode_fixture" add docs/evidence/p1/migration-lifecycle-index-6cb989c.json
+if (cd "$migration_index_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P1-C02 lifecycle index mode drift was accepted"
+fi
+
 broken_query_plan_ci_fixture="$(make_fixture broken-query-plan-ci)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]query-plan-gate-test([[:space:]]|$)/\1/' "$broken_query_plan_ci_fixture/Makefile"
 rm -f "$broken_query_plan_ci_fixture/Makefile.bak"
