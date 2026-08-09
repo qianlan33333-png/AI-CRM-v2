@@ -23,7 +23,11 @@ execution_policy:
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
-current_phase: P0
+current_phase: P1
+current_phase_status: BEHAVIOR_INVENTORY_NOT_STARTED
+ledger_semantics:
+  historical_slice_records: point_in_time_receipts
+  current_phase_status_source: phase_closeouts
 slices:
   - slice_id: P0-B0
     title: repository-governance-and-architecture-bootstrap
@@ -484,3 +488,68 @@ slices:
       - MERGE_PENDING
       - MAIN_CI_PENDING
       - NOT_DEPLOYED
+phase_closeouts:
+  P0:
+    as_of: 2026-08-09T14:44:17+08:00
+    status: APPLICATION_GREEN_BASELINE
+    product_status: NOT_VALIDATED
+    final_main_sha: 98f0ac4813aff623a9a7c0790e57c8c1993a8fd3
+    evidence: docs/evidence/phases/P0-closeout.md
+    issue_url: https://github.com/qianlan33333-png/AI-CRM-v2/issues/59
+    execution_model: single_sol_vertical_slice
+    completed_vertical_slices:
+      - id: P0-S01
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/8
+        merge_sha: eb998ebe78de6d0521009e57d9f4b184026b0158
+      - id: P0-S02
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/36
+        merge_sha: 4ce15ea2f7d4eeaa706065780825b95df231ba0d
+        correction_pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/38
+        correction_merge_sha: 1ad85c1068409dd51322fe9ce46156422063297c
+      - id: P0-S03
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/41
+        merge_sha: a5c11d11d6f55903a74fcac6e4288544dc8f4be1
+        contract_correction_pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/40
+        contract_correction_merge_sha: 95b7ad81b0e685b8f7f23809cfb497dd2d0a66cd
+      - id: P0-S04
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/44
+        merge_sha: ad21879f916df5d548aacbeb4fdfb1fdf214b09e
+      - id: P0-G02
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/46
+        merge_sha: 94ec1016954c1a14c62ede42d299599b444f254d
+      - id: P0-S05
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/48
+        merge_sha: 098fd38065b0c8b2ab75e251a00ce5b6f26f8e54
+      - id: P0-S06
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/50
+        merge_sha: 6a654baf71149dfa55900d9dd0a025c12725f8cc
+      - id: P0-S07
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/52
+        merge_sha: b96e9f30c8d1aef24f8b8e739e987b919fc37d77
+      - id: P0-S08
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/54
+        merge_sha: 59385b5a1e3a4922e0260df1cfd2af9761dc5d7e
+      - id: P0-S09
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/56
+        merge_sha: 840befb5c85f5694512fb190886e5106f2215262
+      - id: P0-S10
+        pr: https://github.com/qianlan33333-png/AI-CRM-v2/pull/58
+        merge_sha: 98f0ac4813aff623a9a7c0790e57c8c1993a8fd3
+    final_main_ci:
+      - run: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31299549088
+        status: SUCCESS
+        gates: [go, web, postgres_16_14, goose_up_down_up, river_migration]
+      - run: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31299549094
+        status: SUCCESS
+        gates: [repo_contract, permanent_negative_cases]
+      - run: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31299549099
+        status: SUCCESS
+        gates: [gitleaks_full_history, sensitive_paths, bundle_security]
+    external_gates:
+      - G1_BEHAVIOR_API_MIGRATION_MAPPING_SIGNOFF_PENDING
+      - STAGING_NOT_EXECUTED
+      - PRODUCTION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+      - REAL_DATA_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_AUTHORIZED
+      - PRIVATE_MAIN_RULESET_NOT_ENFORCED_GITHUB_FREE
