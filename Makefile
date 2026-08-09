@@ -4,8 +4,9 @@ unexport BASH_ENV ENV
 
 GO ?= go
 TOOLS_MOD := tools/go.mod
+ORVAL ?= ./node_modules/.bin/orval
 
-.PHONY: version-check generate generate-openapi generate-sqlc generate-check gitless-generate-test
+.PHONY: version-check generate generate-openapi generate-sqlc generate-orval orval-check generate-check gitless-generate-test
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
@@ -21,7 +22,7 @@ version-check:
 	@version_output="$$($(GO) tool -modfile=$(TOOLS_MOD) govulncheck -version)"; \
 		printf '%s\n' "$$version_output" | grep -Fqx 'Scanner: govulncheck@v1.6.0'
 
-generate: generate-openapi generate-sqlc
+generate: generate-openapi generate-sqlc generate-orval
 
 generate-openapi:
 	@$(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen \
@@ -29,6 +30,19 @@ generate-openapi:
 
 generate-sqlc:
 	@$(GO) tool -modfile=$(TOOLS_MOD) sqlc generate
+
+generate-orval:
+	@PATH="$(dir $(abspath $(ORVAL))):$$PATH" $(ORVAL) \
+		--input api/openapi.yaml --output web/src/api/generated/health.ts \
+		--client fetch --mode single --clean web/src/api/generated --prettier
+
+orval-check:
+	@$(MAKE) --no-print-directory generate-orval
+	@git diff --exit-code -- web/src/api/generated
+	@test -z "$$(git ls-files --others --exclude-standard -- web/src/api/generated)"
+	@$(MAKE) --no-print-directory generate-orval
+	@git diff --exit-code -- web/src/api/generated
+	@test -z "$$(git ls-files --others --exclude-standard -- web/src/api/generated)"
 
 generate-check:
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" scripts/check_generated_sources.sh

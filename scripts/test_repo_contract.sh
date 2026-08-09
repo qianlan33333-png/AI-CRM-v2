@@ -185,6 +185,22 @@ if (cd "$missing_p0s04_workflow_fixture" && scripts/check_repo_contract.sh >/dev
   fail "application workflow without P0-S04 integration was accepted"
 fi
 
+missing_orval_gate_fixture="$(make_fixture missing-orval-gate)"
+sed -i.bak 's/npm run orval:check && //' \
+  "$missing_orval_gate_fixture/package.json"
+rm -f "$missing_orval_gate_fixture/package.json.bak"
+git -C "$missing_orval_gate_fixture" add package.json
+if (cd "$missing_orval_gate_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "package scripts without the Orval consistency gate were accepted"
+fi
+
+orval_runner_mode_fixture="$(make_fixture orval-runner-mode)"
+chmod 644 "$orval_runner_mode_fixture/scripts/test_orval_generated_check.sh"
+git -C "$orval_runner_mode_fixture" add scripts/test_orval_generated_check.sh
+if (cd "$orval_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "Orval generated-client runner mode drift was accepted"
+fi
+
 duplicate_p0s04_contract_fixture="$(make_fixture duplicate-p0s04-contract)"
 printf '%s\n' '' 'p0-s04-contract:' $'\t@true' \
   >>"$duplicate_p0s04_contract_fixture/Makefile"

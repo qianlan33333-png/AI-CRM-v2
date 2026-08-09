@@ -43,6 +43,7 @@ required=(
   web/index.html
   web/src/main.tsx
   web/src/main.test.tsx
+  web/src/api/generated/health.ts
   acceptance/p0s01/runtime_contract_test.go
   acceptance/p0s01/process_blackbox.sh
   acceptance/p0s01/static_contract.sh
@@ -65,6 +66,7 @@ required=(
   scripts/scan_sensitive_paths.sh
   scripts/test_build_slice_bundle.sh
   scripts/test_gitless_generated_check.sh
+  scripts/test_orval_generated_check.sh
   scripts/test_repo_contract.sh
   docs/architecture/canonical.md
   docs/architecture/port-contracts.md
@@ -111,8 +113,10 @@ done <<'EOF'
 100644 web/index.html
 100644 web/src/main.tsx
 100644 web/src/main.test.tsx
+100644 web/src/api/generated/health.ts
 100644 .github/workflows/application-go.yml
 100755 scripts/check_repo_contract.sh
+100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
 100755 acceptance/p0s02/static_contract.sh
 100755 acceptance/p0s02/test_static_contract.sh
@@ -135,15 +139,17 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  98e7c300e57f925d2dbe768efde964e549b366e6bd88f2234d094aa578c4ef53
+  b15a2a05225872ba231b92d3ebb3b608a922224e4051b603e101f3f490ad0b63
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
   aa4b66d926c9ed89b510d20b02ad81cf9b181e55f85fa132cb0266517f8a0ad4
 verify_index_sha256 package.json \
-  3977766cd6813b2b29a6491ab63442b40e1a7bacb43367b94cabd8b967e1096e
+  0eba96dc7c5cb99afa7334da44ebff47e004d10465cb5f9b2ce31f1993bb3d47
 verify_index_sha256 package-lock.json \
-  d4bf3fd93e6227ef23d3fd56fd6aef169817b7d112e5a3fac1c672f4b522713f
+  64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
+verify_index_sha256 web/src/api/generated/health.ts \
+  c6505babc7e0896afc3ce3b554abeb08519f72c3bf8db871cc88e67ac92d836c
 verify_index_sha256 .github/workflows/application-go.yml \
   fbabc284fc80fc27ab181667a9ee1d21333cbaba4df25e00c494e6e75e75be23
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -154,8 +160,10 @@ verify_index_sha256 scripts/check_generated_sources.sh \
   f5454daac1f26512bd09292a805fc722e51bcd2efbf77e0f202c13e80c63644d
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
+verify_index_sha256 scripts/test_orval_generated_check.sh \
+  ae16d4f7696baccf354b6debc0645afeac32e8475491d4d4b4cfe281c201e587
 verify_index_sha256 scripts/test_repo_contract.sh \
-  4a733732e96d42372d8227e8dc40f8041b356f1e1a4f98020ce43fa3213ae42f
+  7e72e2922176316f371559c1cea42097f6d80d752f940242251ba56d3911b54c
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -254,6 +262,42 @@ for target in vet test build vuln; do
   esac
   grep -Fq "$expected" <<<"$recipe" ||
     fail "$target must consume the filtered Go package set"
+done
+
+require_make_line 'generate: generate-openapi generate-sqlc generate-orval' \
+  "make generate must include the frozen Orval client"
+require_unique_make_target generate-orval
+require_unique_make_target orval-check
+orval_generate_recipe="$(make_target_recipe 'generate-orval:')" ||
+  fail "Orval generate target must be unique"
+for fragment in \
+  'PATH="$(dir $(abspath $(ORVAL))):$$PATH" $(ORVAL)' \
+  '--input api/openapi.yaml --output web/src/api/generated/health.ts' \
+  '--client fetch --mode single --clean web/src/api/generated --prettier'; do
+  grep -Fq -- "$fragment" <<<"$orval_generate_recipe" ||
+    fail "Orval generation lost a frozen input, output, client, or clean boundary"
+done
+orval_check_recipe="$(make_target_recipe 'orval-check:')" ||
+  fail "Orval check target must be unique"
+[[ "$(grep -Fc '$(MAKE) --no-print-directory generate-orval' <<<"$orval_check_recipe" || true)" = "2" ]] ||
+  fail "Orval check must generate twice"
+[[ "$(grep -Fc 'git diff --exit-code -- web/src/api/generated' <<<"$orval_check_recipe" || true)" = "2" ]] ||
+  fail "Orval check must reject tracked generated drift after both passes"
+[[ "$(grep -Fc 'git ls-files --others --exclude-standard -- web/src/api/generated' <<<"$orval_check_recipe" || true)" = "2" ]] ||
+  fail "Orval check must reject untracked generated drift after both passes"
+
+package_json="$(git show ':package.json')"
+for fragment in \
+  '"orval": "7.21.0"' \
+  '"prettier": "3.9.6"' \
+  '"js-yaml": "4.3.1"' \
+  '"lodash": "4.18.1"' \
+  '"orval:generate": "make generate-orval"' \
+  '"orval:check": "make orval-check"' \
+  '"orval:contract": "scripts/test_orval_generated_check.sh"' \
+  'npm run orval:check && npm run orval:contract'; do
+  [[ "$(grep -Fc "$fragment" <<<"$package_json" || true)" = "1" ]] ||
+    fail "package.json lost a frozen P0-S06 Orval version, security override, or gate"
 done
 
 require_make_line 'unexport BASH_ENV ENV' \
