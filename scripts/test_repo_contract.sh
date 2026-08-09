@@ -27,11 +27,154 @@ make_fixture() {
   git -C "$fixture" add -A
   printf '%s\n' "$fixture"
 }
+restage_make_receipt() { local fixture="$1" digest
+  git -C "$fixture" add Makefile; digest="$(git -C "$fixture" show :Makefile | sha256sum | awk '{print $1}')"
+  sed -i.bak -E "/^verify_index_sha256 Makefile/{n;s/[0-9a-f]{64}/$digest/;}" "$fixture/scripts/check_repo_contract.sh"; rm -f "$fixture/scripts/check_repo_contract.sh.bak"; git -C "$fixture" add scripts/check_repo_contract.sh; }
 
 baseline_fixture="$(make_fixture baseline)"
 if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "valid staged baseline was rejected"
 fi
+
+make_gitless_matrix_fixture() {
+  local fixture
+  fixture="$(make_fixture "$1")"
+  rm -rf "$fixture/.git"
+  [[ ! -e "$fixture/.git" ]] || fail "feature matrix fixture retained Git metadata"
+  printf '%s\n' "$fixture"
+}
+assert_matrix_rejected() {
+  local name="$1" fixture="$2" expected="$3" log
+  log="$test_root/$name.log"
+  if (cd / && /bin/bash "$fixture/scripts/check_feature_matrix_contract.sh" >"$log" 2>&1); then
+    fail "feature matrix negative was accepted: $name"
+  fi
+  grep -Fq "$expected" "$log" || fail "feature matrix negative missed its diagnostic: $name"
+}
+
+matrix_valid_fixture="$(make_gitless_matrix_fixture feature-matrix-valid)"
+printf '%s\n' '#!/bin/sh' 'exit 97' >"$matrix_valid_fixture/hostile-bash-env"; chmod 755 "$matrix_valid_fixture/hostile-bash-env"
+matrix_output="$(cd / && BASH_ENV="$matrix_valid_fixture/hostile-bash-env" ENV="$matrix_valid_fixture/hostile-bash-env" PATH=/nonexistent MAKEFLAGS="SHELL=$matrix_valid_fixture/hostile-bash-env .SHELLFLAGS=-c\\ true" /usr/bin/make -C "$matrix_valid_fixture" --no-print-directory feature-matrix-contract)" ||
+  fail "valid hostile-environment feature matrix was rejected without Git"
+[[ "$matrix_output" == 'feature-matrix-contract: PASS (rows=293)' ]] || fail "feature matrix contract did not report the unique PASS"
+set +e
+completion_output="$(cd / && /bin/bash "$matrix_valid_fixture/scripts/check_feature_matrix_contract.sh" --completion p1 2>&1)"
+completion_status=$?
+set -e
+[[ "$completion_status" -eq 2 && "$completion_output" == 'feature-matrix-completion: PENDING phase=p1 rows=293 pending=293 synthetic=0 staging=0 production=0' ]] ||
+  fail "P1 completion did not report the frozen PENDING state"
+
+assert_completion() {
+  local fixture="$1" phase="$2" expected="$3" output result
+  set +e
+  output="$(cd / && /bin/bash "$fixture/scripts/check_feature_matrix_contract.sh" --completion "$phase" 2>&1)"; result=$?
+  set -e
+  [[ "$result" -eq 2 && "$output" == "$expected" ]] || fail "completion level drifted: $phase/$expected"
+}
+synthetic_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-synthetic)"
+sed -i.bak -e '2s/,"UNREVIEWED","NOT_STARTED","NOT_RUN","PENDING_HUMAN_SIGNOFF"/,"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"/' \
+  -e '2s#,"","","",""$#,"approved_by=tester;approved_at=2026-08-09","pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","method=fixture;command=make-test",""#' \
+  "$synthetic_matrix_fixture/docs/feature-matrix.csv"; rm -f "$synthetic_matrix_fixture/docs/feature-matrix.csv.bak"
+/bin/bash "$synthetic_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid synthetic evidence was rejected"
+assert_completion "$synthetic_matrix_fixture" p4 'feature-matrix-completion: PENDING phase=p4 rows=293 pending=292 synthetic=1 staging=0 production=0'
+assert_completion "$synthetic_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=293 synthetic=1 staging=0 production=0'
+staging_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-staging)"
+sed -i.bak -e '2s/,"UNREVIEWED","NOT_STARTED","NOT_RUN","PENDING_HUMAN_SIGNOFF"/,"MIGRATE","IMPLEMENTED","STAGING_PASS","APPROVED"/' \
+  -e '2s#,"","","",""$#,"approved_by=tester;approved_at=2026-08-09","pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=staging;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=log",""#' \
+  "$staging_matrix_fixture/docs/feature-matrix.csv"; rm -f "$staging_matrix_fixture/docs/feature-matrix.csv.bak"
+/bin/bash "$staging_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid staging evidence was rejected"
+assert_completion "$staging_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=0 staging=1 production=0'
+production_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-production)"
+sed -i.bak -e '2s/,"UNREVIEWED","NOT_STARTED","NOT_RUN","PENDING_HUMAN_SIGNOFF"/,"MIGRATE","IMPLEMENTED","PRODUCTION_PASS","APPROVED"/' \
+  -e '2s#,"","","",""$#,"approved_by=tester;approved_at=2026-08-09","pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=production;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=receipt;authorization=fixture",""#' \
+  "$production_matrix_fixture/docs/feature-matrix.csv"; rm -f "$production_matrix_fixture/docs/feature-matrix.csv.bak"
+/bin/bash "$production_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid production evidence was rejected"
+assert_completion "$production_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=0 staging=0 production=1'
+
+duplicate_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-duplicate)"
+sed -i.bak '3s/LEGACY-S05-002/LEGACY-S05-001/' "$duplicate_matrix_fixture/docs/feature-matrix.csv"; rm -f "$duplicate_matrix_fixture/docs/feature-matrix.csv.bak"
+assert_matrix_rejected duplicate "$duplicate_matrix_fixture" 'duplicate feature_id'
+
+enum_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-enum)"
+sed -i.bak '2s/UNREVIEWED/BROKEN/' "$enum_matrix_fixture/docs/feature-matrix.csv"; rm -f "$enum_matrix_fixture/docs/feature-matrix.csv.bak"
+assert_matrix_rejected enum "$enum_matrix_fixture" 'invalid disposition'
+
+target_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-target)"
+sed -i.bak '2s/,""$/,"LEGACY-MISSING-999"/' "$target_matrix_fixture/docs/feature-matrix.csv"; rm -f "$target_matrix_fixture/docs/feature-matrix.csv.bak"
+assert_matrix_rejected target "$target_matrix_fixture" 'dangling target: LEGACY-MISSING-999'
+
+evidence_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-evidence)"
+sed -i.bak '2s/,"NOT_STARTED","NOT_RUN"/,"IMPLEMENTED","NOT_RUN"/' "$evidence_matrix_fixture/docs/feature-matrix.csv"; rm -f "$evidence_matrix_fixture/docs/feature-matrix.csv.bak"
+assert_matrix_rejected evidence "$evidence_matrix_fixture" 'IMPLEMENTED evidence lacks PR, merge SHA, tests, or paths'
+
+malformed_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-malformed)"
+printf '%s\n' '"' >>"$malformed_matrix_fixture/docs/feature-matrix.csv"
+assert_matrix_rejected malformed "$malformed_matrix_fixture" 'unterminated quoted field'
+
+nul_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-nul)"
+nul_size="$(wc -c <"$nul_matrix_fixture/docs/feature-matrix.csv" | tr -d ' ')"
+dd if="$nul_matrix_fixture/docs/feature-matrix.csv" of="$nul_matrix_fixture/docs/feature-matrix.csv.tmp" bs=1 count=$((nul_size - 1)) 2>/dev/null
+printf '\0' >>"$nul_matrix_fixture/docs/feature-matrix.csv.tmp"; mv "$nul_matrix_fixture/docs/feature-matrix.csv.tmp" "$nul_matrix_fixture/docs/feature-matrix.csv"
+assert_matrix_rejected nul "$nul_matrix_fixture" 'matrix contains NUL bytes'
+
+noeol_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-no-final-lf)"
+noeol_size="$(wc -c <"$noeol_matrix_fixture/docs/feature-matrix.csv" | tr -d ' ')"
+dd if="$noeol_matrix_fixture/docs/feature-matrix.csv" of="$noeol_matrix_fixture/docs/feature-matrix.csv.tmp" bs=1 count=$((noeol_size - 1)) 2>/dev/null
+mv "$noeol_matrix_fixture/docs/feature-matrix.csv.tmp" "$noeol_matrix_fixture/docs/feature-matrix.csv"
+assert_matrix_rejected no-final-lf "$noeol_matrix_fixture" 'matrix must end with one LF'
+long_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-long-row)"; awk 'BEGIN { for (i=0;i<4097;i++) printf "x"; print "" }' >>"$long_matrix_fixture/docs/feature-matrix.csv"; assert_matrix_rejected long-row "$long_matrix_fixture" 'physical row exceeds 4096 bytes'
+
+deleted_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-deleted-row)"
+awk 'NR != 2' "$deleted_matrix_fixture/docs/feature-matrix.csv" >"$deleted_matrix_fixture/docs/feature-matrix.csv.tmp"
+mv "$deleted_matrix_fixture/docs/feature-matrix.csv.tmp" "$deleted_matrix_fixture/docs/feature-matrix.csv"
+assert_matrix_rejected deleted-row "$deleted_matrix_fixture" 'anchor version or row count mismatch'
+
+rewritten_anchor_fixture="$(make_gitless_matrix_fixture feature-matrix-rewritten-anchor)"
+sed -i.bak '2s/293/292/' "$rewritten_anchor_fixture/docs/evidence/p1/feature-matrix-id-anchor.v1"; rm -f "$rewritten_anchor_fixture/docs/evidence/p1/feature-matrix-id-anchor.v1.bak"
+assert_matrix_rejected rewritten-anchor "$rewritten_anchor_fixture" 'anchor is not the frozen revision'
+
+for kind in mode symlink fifo; do
+  shape_fixture="$(make_gitless_matrix_fixture "feature-matrix-$kind")"
+  expected_shape_error='regular file required: docs/feature-matrix.csv'
+  case "$kind" in
+    mode) chmod 755 "$shape_fixture/docs/feature-matrix.csv"; expected_shape_error='mode must be exactly 0644: docs/feature-matrix.csv' ;;
+    symlink) mv "$shape_fixture/docs/feature-matrix.csv" "$shape_fixture/docs/feature-matrix.csv.real"; ln -s feature-matrix.csv.real "$shape_fixture/docs/feature-matrix.csv" ;;
+    fifo) mv "$shape_fixture/docs/feature-matrix.csv" "$shape_fixture/docs/feature-matrix.csv.real"; mkfifo "$shape_fixture/docs/feature-matrix.csv" ;;
+  esac
+  assert_matrix_rejected "$kind" "$shape_fixture" "$expected_shape_error"
+done
+scripts_link_fixture="$(make_gitless_matrix_fixture feature-matrix-scripts-symlink)"; mv "$scripts_link_fixture/scripts" "$scripts_link_fixture/scripts.real"; ln -s scripts.real "$scripts_link_fixture/scripts"
+assert_matrix_rejected scripts-symlink "$scripts_link_fixture" 'real script directory required: scripts'
+
+for path in scripts/check_feature_matrix_contract.sh docs/evidence/p1/feature-matrix-id-anchor.v1 docs/execution/slices/P1-S08.md; do
+  receipt_fixture="$(make_fixture "feature-matrix-receipt-${path##*/}")"
+  printf '%s\n' '# P1-S08 receipt drift' >>"$receipt_fixture/$path"
+  git -C "$receipt_fixture" add "$path"
+  if (cd "$receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P1-S08 receipt drift was accepted: $path"
+  fi
+done
+
+matrix_mode_fixture="$(make_fixture feature-matrix-mode)"
+chmod 755 "$matrix_mode_fixture/docs/feature-matrix.csv"
+git -C "$matrix_mode_fixture" add docs/feature-matrix.csv
+if (cd "$matrix_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "feature matrix mode drift was accepted"; fi
+
+broken_matrix_ci_fixture="$(make_fixture broken-feature-matrix-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]feature-matrix-contract([[:space:]]|$)/\1/' "$broken_matrix_ci_fixture/Makefile"; rm -f "$broken_matrix_ci_fixture/Makefile.bak"
+restage_make_receipt "$broken_matrix_ci_fixture"
+if (cd "$broken_matrix_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "ci-go without feature matrix contract was accepted"; fi
+
+hollow_matrix_target_fixture="$(make_fixture hollow-feature-matrix-target)"
+sed -i.bak '/^feature-matrix-contract:$/ { n; s/.*/\t@true/; }' "$hollow_matrix_target_fixture/Makefile"; rm -f "$hollow_matrix_target_fixture/Makefile.bak"
+restage_make_receipt "$hollow_matrix_target_fixture"
+if (cd "$hollow_matrix_target_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "hollow feature matrix contract target was accepted"; fi
+
+for kind in eval include variable call alternate; do dynamic_matrix_target_fixture="$(make_fixture "dynamic-feature-matrix-$kind")"
+  case "$kind" in eval) printf '%s\n' 'matrix_gate := feature-matrix-contract' '$(eval $(matrix_gate): ; @true)' >>"$dynamic_matrix_target_fixture/Makefile" ;; include) printf '%s\n' 'feature-matrix-contract:' $'\t@true' >"$dynamic_matrix_target_fixture/injected.mk"; printf '%s\n' 'include injected.mk' >>"$dynamic_matrix_target_fixture/Makefile" ;; variable) printf '%s\n' 'matrix_gate := feature-matrix-contract' '$(matrix_gate):' $'\t@true' >>"$dynamic_matrix_target_fixture/Makefile" ;; call) printf '%s\n' 'matrix_rule := feature-matrix-contract: ; @true' '$(call eval,$(matrix_rule))' >>"$dynamic_matrix_target_fixture/Makefile" ;; alternate) printf '%s\n' 'feature-matrix-contract:' $'\t@true' >"$dynamic_matrix_target_fixture/GNUmakefile" ;; esac
+  restage_make_receipt "$dynamic_matrix_target_fixture"
+  if (cd "$dynamic_matrix_target_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "$kind-generated feature matrix override was accepted"; fi
+done
 
 for path in \
   tools/legacy-route-export/main.go \

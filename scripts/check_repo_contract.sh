@@ -67,6 +67,10 @@ required=(
   tools/legacy-route-export/main_test.go
   docs/execution/slices/P1-S01.md
   docs/evidence/p1/legacy-routes-6cb989c.json
+  docs/feature-matrix.csv
+  docs/evidence/p1/feature-matrix-id-anchor.v1
+  docs/execution/slices/P1-S08.md
+  scripts/check_feature_matrix_contract.sh
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
@@ -141,6 +145,10 @@ done <<'EOF'
 100644 tools/legacy-route-export/main_test.go
 100644 docs/execution/slices/P1-S01.md
 100644 docs/evidence/p1/legacy-routes-6cb989c.json
+100644 docs/feature-matrix.csv
+100644 docs/evidence/p1/feature-matrix-id-anchor.v1
+100644 docs/execution/slices/P1-S08.md
+100755 scripts/check_feature_matrix_contract.sh
 100755 acceptance/p0s10/test_contract_replay.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
@@ -166,7 +174,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  ee0eaa04ce2a8271e7d9c513b7868487dd3682651bc039410ad35eccb85fbdbb
+  51c9d0d078b2e568be0daa5de40b6de5927944852918e6517077191fce0e8c35
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -215,12 +223,18 @@ verify_index_sha256 docs/execution/slices/P1-S01.md \
   39571f878f83ed4b1537342dc49efe54bb7ea5d7720950002f12e45581a67726
 verify_index_sha256 docs/evidence/p1/legacy-routes-6cb989c.json \
   fb6aa066c985af4d0c5e3abe8a33c88b5c3a6a56dda9ee7fd6e51aca8cb5f231
+verify_index_sha256 docs/evidence/p1/feature-matrix-id-anchor.v1 \
+  1ab849cb10518e55f5c95716c1fab6f2c9e47477d17ad7f3f125edcc7e01ad75
+verify_index_sha256 docs/execution/slices/P1-S08.md \
+  707667f4058d212ed628d8b868e02225c93a3948c9d90a229856162c15b13d99
+verify_index_sha256 scripts/check_feature_matrix_contract.sh \
+  d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
 verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
   0d8f2c3527d975df78e7837e7b50d66730df0448d0cdbd1e3a06098653c48fc8
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  c60678cf00843eed405afd505cd5cafd562a138afc9d81210099bb032b4b255c
+  fd3ca63fec9602a3003b046589abe3d5ff555e8e24f9db52691161005c7be812
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -250,7 +264,9 @@ verify_index_sha256 acceptance/p0s04/test_static_contract.sh \
 verify_index_sha256 docs/execution/slices/P0-S04.md \
   bb8cc8f7ff0ef4d6e76c8c124bafc661f562a230ec25826b8318a82311281608
 
-makefile="$(git show ':Makefile')"
+makefile="$(git show ':Makefile')"; alternate="$(find . -maxdepth 1 \( -name GNUmakefile -o -name makefile \) -print -quit)"; [[ -z "$alternate" ]] || fail "alternate Make entrypoint is forbidden: ${alternate#./}"
+! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
+  fail "Makefile must not construct or import rules dynamically"
 printf '%s\n' "$makefile" | grep -Eq '^p0-s03-contract:[[:space:]]*$' ||
   fail "Makefile is missing the P0-S03 contract target"
 p0_s03_contract_recipe="$(
@@ -281,7 +297,7 @@ require_unique_make_target() {
   local target="$1"
   local count
   count="$(awk -v target="$target" '
-    /^[^[:space:]#][^:]*:/ {
+    /^[^[:space:]#][^:]*:/ && $0 !~ /:[[:space:]]+override[[:space:]]+(SHELL|[.]SHELLFLAGS)[[:space:]]*:=/ {
       header = $0
       sub(/:.*/, "", header)
       fields = split(header, names, /[[:space:]]+/)
@@ -495,6 +511,30 @@ p1_s01_recipe="$(make_target_recipe 'legacy-route-export-test:')" ||
 for call in '$(GO) -C tools vet ./legacy-route-export' '$(GO) -C tools test -race -timeout=15s ./legacy-route-export'; do
   [[ "$(grep -Fc "$call" <<<"$p1_s01_recipe" || true)" = "1" ]] ||
     fail "P1-S01 exporter lost a frozen vet or race test call"
+done
+
+require_make_line '.PHONY: feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion' \
+  "Makefile must declare the feature matrix contract and completion targets"
+require_make_line 'feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion: override SHELL := /bin/bash' \
+  "feature matrix targets must use the absolute Bash interpreter"
+require_make_line 'feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion: override .SHELLFLAGS := -eu -o pipefail -c' \
+  "feature matrix targets must pin fail-closed Bash flags"
+for target in feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion; do
+  require_unique_make_target "$target"
+done
+feature_matrix_recipe="$(make_target_recipe 'feature-matrix-contract:')" ||
+  fail "feature matrix contract target must be unique"
+[[ "$feature_matrix_recipe" = $'\t@/usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/check_feature_matrix_contract.sh' ]] ||
+  fail "feature matrix contract target lost the frozen validator call"
+completion_header='feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion: feature-matrix-contract'
+completion_recipe="$(make_target_recipe "$completion_header")" ||
+  fail "feature matrix completion targets must share one frozen recipe"
+[[ "$completion_recipe" = $'\t@phase="$@"; phase="$${phase#feature-matrix-}"; phase="$${phase%-completion}"; /usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/check_feature_matrix_contract.sh --completion "$$phase"' ]] ||
+  fail "feature matrix completion targets lost phase isolation"
+[[ "$ci_go_target" =~ (^|[[:space:]])feature-matrix-contract($|[[:space:]]) ]] ||
+  fail "ci-go must depend on feature-matrix-contract"
+for target in feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion; do
+  [[ ! "$ci_go_target" =~ (^|[[:space:]])$target($|[[:space:]]) ]] || fail "completion targets must stay outside base ci-go: $target"
 done
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
