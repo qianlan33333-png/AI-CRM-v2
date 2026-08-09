@@ -125,11 +125,11 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  1ce83378743d4ac4230890db83c72475b22c6239f16b01dfbd6227ccac6489a1
+  6634ce5ee85478d6d9fe4f5b237a9dd0e2b3efb5def89ae56a227d87058b58f7
 verify_index_sha256 go.mod \
-  3cbf623a51f7f6d3d67fd9130d54173ede1c8234b23f28dfa6878c8b4c34d287
+  50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
-  6f4bd6e24238ffc3775f110f672fd8c9f5a1114913dda5e31000d3d6881eda21
+  aa4b66d926c9ed89b510d20b02ad81cf9b181e55f85fa132cb0266517f8a0ad4
 verify_index_sha256 .github/workflows/application-go.yml \
   16c984a169ada4cf8b0daa6c219c7a18a2348fb82bf71ef71a2d46c13c555605
 verify_index_sha256 .github/workflows/repo-contract.yml \
