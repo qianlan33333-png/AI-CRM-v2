@@ -13,7 +13,10 @@ import (
 	"strings"
 )
 
-const legacySHA = "6cb989c071255437d75953dabb943318a74eb8f4"
+const (
+	legacySHA            = "6cb989c071255437d75953dabb943318a74eb8f4"
+	lifecycleManifestSHA = "710a01ee3813051b4ec13de8ef8b8ad64b39bc380b3a5a81c669580df24b488e"
+)
 
 type column struct {
 	Name     string `json:"name"`
@@ -25,6 +28,23 @@ type column struct {
 type fieldMapping struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
+	Reason string `json:"reason"`
+}
+
+type lifecycleTable struct {
+	LegacyTable     string `json:"legacy_table"`
+	LegacyDomain    string `json:"legacy_domain"`
+	LegacyLifecycle string `json:"legacy_lifecycle"`
+	MigrationSource string `json:"migration_source"`
+	SourceLine      int    `json:"source_line"`
+}
+
+type lifecycleIndex struct {
+	SchemaVersion           int              `json:"schema_version"`
+	LegacySourceSHA         string           `json:"legacy_source_sha"`
+	LifecycleManifestSHA256 string           `json:"lifecycle_manifest_sha256"`
+	TableCount              int              `json:"table_count"`
+	Tables                  []lifecycleTable `json:"tables"`
 }
 
 type mappingRow struct {
@@ -83,7 +103,11 @@ func oneOf(value string, values ...string) bool {
 	return false
 }
 
-func validate(input io.Reader, want expected) ([]mappingRow, error) {
+func validate(input io.Reader, index lifecycleIndex, want expected) ([]mappingRow, error) {
+	indexed, err := validateLifecycleIndex(index, want.rows)
+	if err != nil {
+		return nil, err
+	}
 	scanner := bufio.NewScanner(input)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 	rows, tables, ids := []mappingRow{}, map[string]bool{}, map[string]bool{}
@@ -108,6 +132,10 @@ func validate(input io.Reader, want expected) ([]mappingRow, error) {
 		tables[row.LegacyTable], ids[row.MappingID] = true, true
 		if row.LegacySourceSHA != legacySHA || row.MigrationSource == "" || row.LegacyLifecycle == "" || row.LegacyDomain == "" || len(row.SourceEvidence) == 0 {
 			return nil, fmt.Errorf("%s: incomplete legacy evidence", row.MappingID)
+		}
+		indexedTable, ok := indexed[row.LegacyTable]
+		if !ok || indexedTable.LegacyDomain != row.LegacyDomain || indexedTable.LegacyLifecycle != row.LegacyLifecycle || indexedTable.MigrationSource != row.MigrationSource {
+			return nil, fmt.Errorf("%s: lifecycle index disagrees with mapping", row.MappingID)
 		}
 		if !oneOf(row.SourcePresence, "HEAD_PHYSICAL", "ABSENT_AT_HEAD", "FRAMEWORK_METADATA") {
 			return nil, fmt.Errorf("%s: invalid source_presence", row.MappingID)
@@ -176,6 +204,22 @@ func validate(input io.Reader, want expected) ([]mappingRow, error) {
 	return rows, nil
 }
 
+func validateLifecycleIndex(index lifecycleIndex, want int) (map[string]lifecycleTable, error) {
+	if index.SchemaVersion != 1 || index.LegacySourceSHA != legacySHA || index.LifecycleManifestSHA256 != lifecycleManifestSHA || index.TableCount != want || len(index.Tables) != want {
+		return nil, errors.New("lifecycle index header or inventory mismatch")
+	}
+	tables := make(map[string]lifecycleTable, len(index.Tables))
+	previous := ""
+	for _, item := range index.Tables {
+		if !namePattern.MatchString(item.LegacyTable) || item.LegacyTable <= previous || item.LegacyDomain == "" || item.LegacyLifecycle == "" || item.MigrationSource == "" || item.SourceLine < 1 {
+			return nil, fmt.Errorf("lifecycle index has invalid table: %s", item.LegacyTable)
+		}
+		tables[item.LegacyTable] = item
+		previous = item.LegacyTable
+	}
+	return tables, nil
+}
+
 func validateFields(row mappingRow) error {
 	columns, mappings := map[string]bool{}, map[string]string{}
 	previousOrdinal := 0
@@ -186,17 +230,28 @@ func validateFields(row mappingRow) error {
 		columns[item.Name] = true
 		previousOrdinal = item.Ordinal
 	}
+	identityTarget, identityScope, identityProvenance := false, false, false
 	for _, item := range row.FieldMappings {
 		if !columns[item.Source] || mappings[item.Source] != "" || !validTarget(item.Target) {
 			return fmt.Errorf("%s: invalid or duplicate field mapping", row.MappingID)
 		}
-		if identityCol.MatchString(item.Source) && strings.HasPrefix(item.Target, "planned:customers.") {
-			return fmt.Errorf("%s: external identity cannot target customers", row.MappingID)
+		reason := strings.TrimSpace(item.Reason)
+		if reason == "" || len(reason) > 1200 || strings.ContainsAny(reason, "\r\n") || !strings.Contains(reason, row.LegacyTable+"."+item.Source) || !strings.Contains(reason, item.Target) {
+			return fmt.Errorf("%s: field mapping lacks a bound reason", row.MappingID)
 		}
+		if identityCol.MatchString(item.Source) && !strings.HasPrefix(item.Target, "planned:identities.") && !strings.HasPrefix(item.Target, "planned:pending_events.") && !special[item.Target] {
+			return fmt.Errorf("%s: external identity has an unsafe target", row.MappingID)
+		}
+		identityTarget = identityTarget || strings.HasPrefix(item.Target, "planned:identities.")
+		identityScope = identityScope || item.Target == "planned:identities.scope"
+		identityProvenance = identityProvenance || (strings.HasPrefix(item.Target, "planned:identities.") && strings.Contains(strings.ToLower(reason), "provenance"))
 		mappings[item.Source] = item.Target
 	}
 	if len(columns) != len(mappings) {
 		return fmt.Errorf("%s: every legacy column must be mapped once", row.MappingID)
+	}
+	if identityTarget && (!identityScope || !strings.Contains(strings.ToLower(row.ConversionRule), "scope") || !identityProvenance) {
+		return fmt.Errorf("%s: identity mapping lacks scoped provenance", row.MappingID)
 	}
 	if strings.Contains(strings.Join(row.CandidateTargets, " "), "outbound_") && !strings.Contains(row.SafetyRule, "never reactivate legacy execution or sending") {
 		return fmt.Errorf("%s: outbound history lacks no-reactivation rule", row.MappingID)
@@ -205,6 +260,24 @@ func validateFields(row mappingRow) error {
 		return fmt.Errorf("%s: active suppression lacks a launch blocker", row.MappingID)
 	}
 	return nil
+}
+
+func loadLifecycleIndex(path string) (lifecycleIndex, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return lifecycleIndex{}, err
+	}
+	defer file.Close()
+	var index lifecycleIndex
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&index); err != nil {
+		return lifecycleIndex{}, err
+	}
+	if decoder.Decode(&struct{}{}) != io.EOF {
+		return lifecycleIndex{}, errors.New("lifecycle index has a trailing JSON value")
+	}
+	return index, nil
 }
 
 func validCandidateTarget(value string) bool {
@@ -228,15 +301,21 @@ func validTarget(value string) bool {
 
 func main() {
 	path := flag.String("mapping", "../docs/migration-mapping.jsonl", "mapping JSONL")
+	indexPath := flag.String("index", "../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "frozen lifecycle index")
 	completion := flag.Bool("completion", false, "require human signoff")
 	flag.Parse()
+	index, err := loadLifecycleIndex(*indexPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "migration-mapping:", err)
+		os.Exit(1)
+	}
 	file, err := os.Open(*path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	defer file.Close()
-	rows, err := validate(file, expected{rows: 316, physical: 217, framework: 1, columns: 3312})
+	rows, err := validate(file, index, expected{rows: 316, physical: 217, framework: 1, columns: 3312})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "migration-mapping:", err)
 		os.Exit(1)
