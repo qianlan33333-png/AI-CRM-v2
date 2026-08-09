@@ -76,17 +76,28 @@ write_stat() {
   chmod 755 "$fixture/bin/stat"
 }
 
+write_rg_sentinel() {
+  mkdir -p "$fixture/bin"
+  printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\\n" called >>"$RG_SENTINEL_LOG"' 'exit 97' >"$fixture/bin/rg"
+  chmod 755 "$fixture/bin/rg"
+}
+
 run_static() {
   local stat_dir="${1:-}"
+  local rg_sentinel_log="$fixture/rg-called"
   if [[ -n "$stat_dir" ]]; then
-    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off PATH="$stat_dir:$PATH" "$fixture/acceptance/p0s02/static_contract.sh") >/dev/null 2>&1
+    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off PATH="$stat_dir:$PATH" RG_SENTINEL_LOG="$rg_sentinel_log" "$fixture/acceptance/p0s02/static_contract.sh") >/dev/null 2>&1
   else
-    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off "$fixture/acceptance/p0s02/static_contract.sh") >/dev/null 2>&1
+    (cd "$fixture" && env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly GOPROXY=off GOSUMDB=off RG_SENTINEL_LOG="$rg_sentinel_log" "$fixture/acceptance/p0s02/static_contract.sh") >/dev/null 2>&1
   fi
 }
 
 new_fixture native
 run_static || fail "native mode semantics were rejected"
+new_fixture rg-unavailable
+write_rg_sentinel
+run_static "$fixture/bin" || fail "rg-unavailable mode semantics were rejected"
+[[ ! -e "$fixture/rg-called" ]] || fail "static contract invoked rg"
 new_fixture bsd
 write_stat 644 invalid
 run_static "$fixture/bin" || fail "BSD mode semantics were rejected"
