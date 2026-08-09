@@ -95,6 +95,31 @@ if (cd "$migration_index_mode_fixture" && scripts/check_repo_contract.sh >/dev/n
   fail "P1-C02 lifecycle index mode drift was accepted"
 fi
 
+for path in tools/p1-reconciliation/main.go tools/p1-reconciliation/main_test.go docs/execution/slices/P1-C03.md; do
+  reconciliation_receipt_fixture="$(make_fixture "p1-reconciliation-receipt-${path##*/}")"
+  case "$path" in *.go) printf '%s\n' '// P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$path" ;; esac
+  git -C "$reconciliation_receipt_fixture" add "$path"
+  if (cd "$reconciliation_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P1-C03 receipt drift was accepted: $path"
+  fi
+done
+
+broken_reconciliation_ci_fixture="$(make_fixture broken-p1-reconciliation-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p1-reconciliation-contract([[:space:]]|$)/\1/' "$broken_reconciliation_ci_fixture/Makefile"
+rm -f "$broken_reconciliation_ci_fixture/Makefile.bak"
+restage_make_receipt "$broken_reconciliation_ci_fixture"
+if (cd "$broken_reconciliation_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without P1 reconciliation was accepted"
+fi
+
+hollow_reconciliation_fixture="$(make_fixture hollow-p1-reconciliation)"
+sed -i.bak '/^p1-reconciliation-contract:$/ { n; s/.*/\t@true/; }' "$hollow_reconciliation_fixture/Makefile"
+rm -f "$hollow_reconciliation_fixture/Makefile.bak"
+restage_make_receipt "$hollow_reconciliation_fixture"
+if (cd "$hollow_reconciliation_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P1 reconciliation target was accepted"
+fi
+
 broken_query_plan_ci_fixture="$(make_fixture broken-query-plan-ci)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]query-plan-gate-test([[:space:]]|$)/\1/' "$broken_query_plan_ci_fixture/Makefile"
 rm -f "$broken_query_plan_ci_fixture/Makefile.bak"

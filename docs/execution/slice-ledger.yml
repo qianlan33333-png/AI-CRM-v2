@@ -608,6 +608,15 @@ slices:
     merge_sha: 82b1da04d1d35e56c6aff97c7eb07eb35cea1f59
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     correction_count: 0
+  - slice_id: P1-C02
+    title: close-migration-field-mapping-coverage
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/88
+    pr_head_sha: 3ab7db8b56ef91fd713c3f21db7b8eb8bffce0d9
+    merge_sha: 6732687fbdf22beec09697ab9874dcab76be0702
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: 0
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00

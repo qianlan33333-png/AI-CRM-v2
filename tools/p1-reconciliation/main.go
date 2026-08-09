@@ -1,0 +1,401 @@
+package main
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+)
+
+const (
+	legacySHA   = "6cb989c071255437d75953dabb943318a74eb8f4"
+	manifestSHA = "710a01ee3813051b4ec13de8ef8b8ad64b39bc380b3a5a81c669580df24b488e"
+)
+
+type routeDoc struct {
+	SchemaVersion        int               `json:"schema_version"`
+	SourceKind           string            `json:"source_kind"`
+	SourceCommit         string            `json:"source_commit"`
+	SourceManifest       string            `json:"source_manifest"`
+	SourceManifestSHA256 string            `json:"source_manifest_sha256"`
+	RouteCount           int               `json:"route_count"`
+	Routes               []json.RawMessage `json:"routes"`
+}
+
+type routeFact struct {
+	Path, Name, Owner string
+	Methods           []string
+	Canonical         []byte
+}
+
+type lifecycleIndex struct {
+	SchemaVersion           int              `json:"schema_version"`
+	LegacySourceSHA         string           `json:"legacy_source_sha"`
+	LifecycleManifestSHA256 string           `json:"lifecycle_manifest_sha256"`
+	TableCount              int              `json:"table_count"`
+	Tables                  []lifecycleTable `json:"tables"`
+}
+
+type lifecycleTable struct {
+	LegacyTable     string `json:"legacy_table"`
+	LegacyDomain    string `json:"legacy_domain"`
+	LegacyLifecycle string `json:"legacy_lifecycle"`
+	MigrationSource string `json:"migration_source"`
+	SourceLine      int    `json:"source_line"`
+}
+
+type field struct{ Source, Target, Reason string }
+type migrationFact struct {
+	Table, Presence, Domain, Lifecycle, Source, Safety, Decision, Signoff, Implementation, Verification string
+	Columns, Targets                                                                                    []string
+	Fields                                                                                              []field
+	Evidence                                                                                            []json.RawMessage
+}
+
+type paths struct{ routes, api, lifecycle, migration string }
+
+var identity = regexp.MustCompile(`(?i)(external_?userid|unionid|openid|mobile|phone)`)
+
+func main() {
+	routes := flag.String("routes", "../docs/evidence/p1/legacy-routes-6cb989c.json", "P1-S01 route manifest")
+	api := flag.String("api", "../docs/api-mapping.jsonl", "API candidate mapping")
+	lifecycle := flag.String("lifecycle", "../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "legacy lifecycle index")
+	migration := flag.String("migration", "../docs/migration-mapping.jsonl", "migration mapping")
+	flag.Parse()
+	result, err := reconcile(paths{*routes, *api, *lifecycle, *migration})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "p1-reconciliation:", err)
+		os.Exit(1)
+	}
+	fmt.Println(result)
+}
+
+func reconcile(p paths) (string, error) {
+	routes, err := loadRoutes(p.routes)
+	if err != nil {
+		return "", err
+	}
+	counts, err := reconcileAPI(p.api, routes)
+	if err != nil {
+		return "", err
+	}
+	tables, err := loadLifecycle(p.lifecycle)
+	if err != nil {
+		return "", err
+	}
+	fields, pending, err := reconcileMigration(p.migration, tables)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d tables=316 fields=%d pending_routes=781 pending_tables=%d)", counts[0], counts[1], counts[2], fields, pending), nil
+}
+
+func loadRoutes(path string) (map[string]routeFact, error) {
+	var doc routeDoc
+	if err := strictJSONFile(path, &doc); err != nil {
+		return nil, err
+	}
+	if doc.SchemaVersion != 1 || doc.SourceCommit != legacySHA || doc.SourceManifestSHA256 != "3bb11a48c8bbc520fb9da5128726594232bca0b4e0f0c7ed1f63bb4b3c2263bd" || doc.RouteCount != 781 || len(doc.Routes) != 781 {
+		return nil, errors.New("route manifest header or inventory mismatch")
+	}
+	result := make(map[string]routeFact, 781)
+	for _, raw := range doc.Routes {
+		fact, err := parseRoute(raw)
+		if err != nil {
+			return nil, err
+		}
+		key := routeKey(fact.Path, fact.Name, fact.Methods)
+		if _, exists := result[key]; exists {
+			return nil, fmt.Errorf("duplicate route: %s", key)
+		}
+		result[key] = fact
+	}
+	return result, nil
+}
+
+func parseRoute(raw json.RawMessage) (routeFact, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return routeFact{}, err
+	}
+	path, err := text(fields, "path")
+	if err != nil {
+		return routeFact{}, err
+	}
+	name, err := text(fields, "route_name")
+	if err != nil {
+		return routeFact{}, err
+	}
+	owner, err := text(fields, "capability_owner")
+	if err != nil {
+		return routeFact{}, err
+	}
+	methods, err := texts(fields, "methods")
+	if err != nil || len(methods) == 0 {
+		return routeFact{}, errors.New("route has invalid methods")
+	}
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return routeFact{}, err
+	}
+	canonical, _ := json.Marshal(value)
+	return routeFact{path, name, owner, methods, canonical}, nil
+}
+
+func reconcileAPI(path string, routes map[string]routeFact) ([3]int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return [3]int{}, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	seen, counts := map[string]bool{}, [3]int{}
+	line := 0
+	for scanner.Scan() {
+		line++
+		var row map[string]json.RawMessage
+		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
+			return counts, fmt.Errorf("API line %d: %w", line, err)
+		}
+		id, _ := text(row, "mapping_id")
+		if id != fmt.Sprintf("LEGACY-API-%04d", line) {
+			return counts, fmt.Errorf("API line %d has unstable mapping_id", line)
+		}
+		pathValue, e1 := text(row, "legacy_path")
+		name, e2 := text(row, "legacy_route_name")
+		methods, e3 := texts(row, "manifest_methods")
+		if e1 != nil || e2 != nil || e3 != nil {
+			return counts, fmt.Errorf("%s has incomplete route key", id)
+		}
+		key := routeKey(pathValue, name, methods)
+		authority, ok := routes[key]
+		if !ok || seen[key] {
+			return counts, fmt.Errorf("%s has missing or duplicate authority route", id)
+		}
+		seen[key] = true
+		var embedded any
+		if err := json.Unmarshal(row["manifest_contract"], &embedded); err != nil {
+			return counts, fmt.Errorf("%s has invalid embedded manifest", id)
+		}
+		canonical, _ := json.Marshal(embedded)
+		if !bytes.Equal(canonical, authority.Canonical) {
+			return counts, fmt.Errorf("%s embedded manifest drifted", id)
+		}
+		partition, _ := text(row, "partition")
+		expected := expectedPartition(authority)
+		if partition != expected {
+			return counts, fmt.Errorf("%s is in %s, want %s", id, partition, expected)
+		}
+		counts[map[string]int{"S02": 0, "S03": 1, "S04": 2}[partition]]++
+		if value, _ := text(row, "legacy_source_sha"); value != legacySHA {
+			return counts, fmt.Errorf("%s has wrong legacy SHA", id)
+		}
+		if value, _ := text(row, "disposition"); value != "UNREVIEWED" {
+			return counts, fmt.Errorf("%s has unapproved disposition", id)
+		}
+		if value, _ := text(row, "signoff"); value != "PENDING_HUMAN_SIGNOFF" {
+			return counts, fmt.Errorf("%s has fake signoff", id)
+		}
+		for _, field := range []string{"candidate_v2_operation_id", "candidate_v2_method", "candidate_v2_path"} {
+			if value, _ := text(row, field); value != "PENDING_HUMAN_DESIGN" {
+				return counts, fmt.Errorf("%s has non-pending %s", id, field)
+			}
+		}
+		var evidence []json.RawMessage
+		if err := json.Unmarshal(row["decision_evidence"], &evidence); err != nil || len(evidence) != 0 {
+			return counts, fmt.Errorf("%s has decision evidence without signoff", id)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return counts, err
+	}
+	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} {
+		return counts, fmt.Errorf("route partition mismatch: rows=%d seen=%d counts=%v", line, len(seen), counts)
+	}
+	return counts, nil
+}
+
+func expectedPartition(route routeFact) string {
+	s02 := map[string]bool{"customer_read_model": true, "customer_tags": true, "identity_contact": true, "sidebar_write": true, "admin_auth": true, "admin_config": true, "admin_jobs": true}
+	if s02[route.Owner] || route.Name == "oauth_token" {
+		return "S02"
+	}
+	s03 := map[string]bool{"ai_audience_ops": true, "auth_wecom": true, "channel_entry": true, "ops_enrollment": true, "send_content": true}
+	if s03[route.Owner] {
+		return "S03"
+	}
+	automation := []string{"/api/admin/automation-conversion/group-ops", "/api/automation/group-ops", "/api/admin/channels", "/api/admin/channel-welcome-materials", "/api/admin/wecom-customer-acquisition-links", "/admin/channels", "/admin/automation-conversion/group-ops"}
+	platform := []string{"/api/admin/external-effects", "/api/external-effects", "/api/admin/push-center"}
+	if route.Owner == "automation_engine" && under(route.Path, automation) || route.Owner == "platform_foundation" && (under(route.Path, platform) || route.Path == "/api/admin/wecom/execution-diagnostics") {
+		return "S03"
+	}
+	return "S04"
+}
+
+func under(path string, prefixes []string) bool {
+	for _, p := range prefixes {
+		if path == p || strings.HasPrefix(path, p+"/") {
+			return true
+		}
+	}
+	return false
+}
+func routeKey(path, name string, methods []string) string {
+	copyMethods := append([]string(nil), methods...)
+	sort.Strings(copyMethods)
+	return path + "\x00" + name + "\x00" + strings.Join(copyMethods, ",")
+}
+
+func loadLifecycle(path string) (map[string]lifecycleTable, error) {
+	var index lifecycleIndex
+	if err := strictJSONFile(path, &index); err != nil {
+		return nil, err
+	}
+	if index.SchemaVersion != 1 || index.LegacySourceSHA != legacySHA || index.LifecycleManifestSHA256 != manifestSHA || index.TableCount != 316 || len(index.Tables) != 316 {
+		return nil, errors.New("lifecycle index header or inventory mismatch")
+	}
+	result, previous := map[string]lifecycleTable{}, ""
+	for _, table := range index.Tables {
+		if table.LegacyTable <= previous || table.LegacyDomain == "" || table.LegacyLifecycle == "" || table.MigrationSource == "" || table.SourceLine < 1 {
+			return nil, errors.New("invalid lifecycle table")
+		}
+		result[table.LegacyTable] = table
+		previous = table.LegacyTable
+	}
+	return result, nil
+}
+
+func reconcileMigration(path string, lifecycle map[string]lifecycleTable) (int, int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	seen, fields, pending := map[string]bool{}, 0, 0
+	for scanner.Scan() {
+		row, err := parseMigration(scanner.Bytes())
+		if err != nil {
+			return 0, 0, err
+		}
+		indexed, ok := lifecycle[row.Table]
+		if !ok || seen[row.Table] || indexed.LegacyDomain != row.Domain || indexed.LegacyLifecycle != row.Lifecycle || indexed.MigrationSource != row.Source {
+			return 0, 0, fmt.Errorf("migration table missing, duplicate, or drifted: %s", row.Table)
+		}
+		seen[row.Table] = true
+		mapped := map[string]bool{}
+		for _, field := range row.Fields {
+			if mapped[field.Source] || strings.TrimSpace(field.Reason) == "" || !strings.Contains(field.Reason, row.Table+"."+field.Source) || !strings.Contains(field.Reason, field.Target) {
+				return 0, 0, fmt.Errorf("%s.%s has missing or unbound reason", row.Table, field.Source)
+			}
+			if identity.MatchString(field.Source) && (strings.HasPrefix(field.Target, "planned:customers.") || strings.HasPrefix(field.Target, "physical:customers.")) {
+				return 0, 0, fmt.Errorf("identity field targets customers: %s.%s", row.Table, field.Source)
+			}
+			mapped[field.Source] = true
+			fields++
+		}
+		if len(row.Columns) != len(mapped) {
+			return 0, 0, fmt.Errorf("%s field coverage mismatch", row.Table)
+		}
+		for _, column := range row.Columns {
+			if !mapped[column] {
+				return 0, 0, fmt.Errorf("%s.%s is unmapped", row.Table, column)
+			}
+		}
+		joined := strings.Join(row.Targets, " ")
+		if strings.Contains(joined, "outbound_") && !strings.Contains(row.Safety, "never reactivate legacy execution or sending") || strings.Contains(joined, "automations") && !strings.Contains(row.Safety, "no migration action, external call, job enqueue, provider retry, or runtime activation") {
+			return 0, 0, fmt.Errorf("%s can reactivate execution", row.Table)
+		}
+		if row.Decision == "UNREVIEWED" && row.Signoff == "PENDING_HUMAN_SIGNOFF" && len(row.Evidence) == 0 {
+			pending++
+		} else if !(row.Decision == "NOT_APPLICABLE" && row.Signoff == "NOT_REQUIRED" && len(row.Evidence) > 0) {
+			return 0, 0, fmt.Errorf("%s has fake migration signoff", row.Table)
+		}
+		if row.Implementation != "NOT_STARTED" || row.Verification != "NOT_RUN" {
+			return 0, 0, fmt.Errorf("%s claims migration execution", row.Table)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, 0, err
+	}
+	if len(seen) != 316 || len(seen) != len(lifecycle) || fields != 3313 || pending != 315 {
+		return 0, 0, fmt.Errorf("migration inventory mismatch: tables=%d fields=%d pending=%d", len(seen), fields, pending)
+	}
+	return fields, pending, nil
+}
+
+func parseMigration(raw []byte) (migrationFact, error) {
+	var row map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &row); err != nil {
+		return migrationFact{}, err
+	}
+	get := func(key string) string { v, _ := text(row, key); return v }
+	fact := migrationFact{Table: get("legacy_table"), Presence: get("source_presence"), Domain: get("legacy_domain"), Lifecycle: get("legacy_lifecycle"), Source: get("migration_source"), Safety: get("safety_rule"), Decision: get("decision"), Signoff: get("signoff"), Implementation: get("implementation"), Verification: get("verification")}
+	var columns []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(row["legacy_columns"], &columns); err != nil {
+		return fact, err
+	}
+	for _, c := range columns {
+		fact.Columns = append(fact.Columns, c.Name)
+	}
+	var fields []struct {
+		Source string `json:"source"`
+		Target string `json:"target"`
+		Reason string `json:"reason"`
+	}
+	if err := json.Unmarshal(row["field_mappings"], &fields); err != nil {
+		return fact, err
+	}
+	for _, f := range fields {
+		fact.Fields = append(fact.Fields, field{f.Source, f.Target, f.Reason})
+	}
+	if err := json.Unmarshal(row["candidate_targets"], &fact.Targets); err != nil {
+		return fact, err
+	}
+	if err := json.Unmarshal(row["decision_evidence"], &fact.Evidence); err != nil {
+		return fact, err
+	}
+	return fact, nil
+}
+
+func strictJSONFile(path string, target any) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	if decoder.Decode(&struct{}{}) != io.EOF {
+		return errors.New("trailing JSON value")
+	}
+	return nil
+}
+func text(fields map[string]json.RawMessage, key string) (string, error) {
+	var value string
+	if err := json.Unmarshal(fields[key], &value); err != nil || value == "" {
+		return "", fmt.Errorf("missing text field: %s", key)
+	}
+	return value, nil
+}
+func texts(fields map[string]json.RawMessage, key string) ([]string, error) {
+	var value []string
+	if err := json.Unmarshal(fields[key], &value); err != nil {
+		return nil, fmt.Errorf("invalid string list: %s", key)
+	}
+	return value, nil
+}
