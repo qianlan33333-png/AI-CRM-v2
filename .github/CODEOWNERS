@@ -9,4 +9,5 @@
 /internal/identity/ @qianlan33333-png
 /internal/outbound/ @qianlan33333-png
 /tools/migrate-from-v1/ @qianlan33333-png
-/tools/contract-replay/ @qianlan33333-png
+/tools/snapshot-gate/ @qianlan33333-png
+/acceptance/snapshots/ @qianlan33333-png

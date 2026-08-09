@@ -14,7 +14,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: ownership-lint ownership-lint-test
 .PHONY: source-policy-lint source-policy-lint-test
 .PHONY: slice-input-contract slice-input-contract-test
-.PHONY: contract-replay contract-replay-test
+.PHONY: snapshot-gate snapshot-gate-test
 .PHONY: legacy-route-export-test
 .PHONY: feature-matrix-contract feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion
 .PHONY: migration-mapping-contract migration-mapping-p1-completion
@@ -217,13 +217,13 @@ slice-input-contract:
 slice-input-contract-test: slice-input-contract
 	@/usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/test_slice_inputs.sh
 
-contract-replay:
-	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./contract-replay contract-replay/testdata/empty.v1.json
+snapshot-gate:
+	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./snapshot-gate validate ../acceptance/snapshots/catalog.v1.json
 
-contract-replay-test: contract-replay
-	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./contract-replay
-	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./contract-replay
-	@env -u BASH_ENV -u ENV GO="$(GO)" acceptance/p0s10/test_contract_replay.sh
+snapshot-gate-test: snapshot-gate
+	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./snapshot-gate
+	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=15s ./snapshot-gate
+	@env -u BASH_ENV -u ENV GO="$(GO)" acceptance/p0s10/test_snapshot_gate.sh
 
 legacy-route-export-test:
 	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./legacy-route-export
@@ -259,4 +259,4 @@ query-plan-gate-test: query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GO="$(GO)" /bin/bash scripts/test_query_plan_gate.sh
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test slice-input-contract-test contract-replay-test legacy-route-export-test feature-matrix-contract migration-mapping-contract query-plan-gate-test
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract query-plan-gate-test
