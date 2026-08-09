@@ -234,10 +234,17 @@ done
 
 make_bin="$(type -P make || true)"
 [[ "$make_bin" == /* && -x "$make_bin" && -x /usr/bin/perl ]] || fail "trusted make/watchdog unavailable"
+reset_p0s04_fixture() {
+  local fixture="$1"
+  rm -f "$fixture/internal/platform/river/runtime.go" \
+    "$fixture/internal/platform/river/migrate.go" \
+    "$fixture/internal/platform/river/runtime_test.go"
+  rm -rf "$fixture/.git"
+}
 make_p0s04_fixture() {
   local fixture
   fixture="$(make_fixture "$1")"
-  rm -rf "$fixture/.git"
+  reset_p0s04_fixture "$fixture"
   printf '%s\n' "$fixture"
 }
 assert_p0s04_pending() {
@@ -249,9 +256,19 @@ assert_p0s04_pending() {
     fail "canonical empty P0-S04 $gate gate did not report PENDING"
 }
 
-p0s04_empty_fixture="$(make_p0s04_fixture p0s04-canonical-empty)"
+p0s04_empty_fixture="$(make_fixture p0s04-canonical-empty)"
+for file in runtime.go migrate.go runtime_test.go; do
+  candidate="$p0s04_empty_fixture/internal/platform/river/$file"
+  [[ -e "$candidate" || -L "$candidate" ]] || printf '%s\n' 'package platformriver' >"$candidate"
+  [[ -f "$candidate" && ! -L "$candidate" ]] || fail "P0-S04 implementation-present fixture is incomplete: $file"
+done
+reset_p0s04_fixture "$p0s04_empty_fixture"
 [[ ! -e "$p0s04_empty_fixture/.git" && ! -L "$p0s04_empty_fixture/.git" ]] ||
   fail "P0-S04 no-Git fixture retained .git"
+for file in runtime.go migrate.go runtime_test.go; do
+  [[ ! -e "$p0s04_empty_fixture/internal/platform/river/$file" && ! -L "$p0s04_empty_fixture/internal/platform/river/$file" ]] ||
+    fail "P0-S04 canonical-empty fixture retained implementation: $file"
+done
 for target in p0-s04-acceptance p0-s04-integration; do
   assert_p0s04_pending "$p0s04_empty_fixture" "$target"
 done

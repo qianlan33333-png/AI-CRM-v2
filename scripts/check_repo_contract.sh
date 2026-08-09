@@ -141,7 +141,7 @@ verify_index_sha256 scripts/check_generated_sources.sh \
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  1b380a9a28a6167c6c44b71d0550daaa75b581aa859e1e5ecf7a7f602f5f3fa4
+  4a733732e96d42372d8227e8dc40f8041b356f1e1a4f98020ce43fa3213ae42f
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
