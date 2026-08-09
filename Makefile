@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
 unexport BASH_ENV ENV
-$(if $(and $(filter ci-go api-mapping-contract api-mapping-p1-completion,$(MAKECMDGOALS)),$(or $(findstring n,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring i,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring t,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring q,$(filter-out --% %=%,$(MAKEFLAGS))))),$(error execution-changing MAKEFLAGS are forbidden for CI/API mapping))
+$(if $(and $(filter ci-go api-mapping-contract api-mapping-p1-completion,$(MAKECMDGOALS)),$(or $(findstring n,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))),$(findstring i,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))),$(findstring t,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))),$(findstring q,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))))),$(error execution-changing MAKEFLAGS are forbidden for CI/API mapping))
 
 GO ?= go
 TOOLS_MOD := tools/go.mod

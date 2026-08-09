@@ -190,7 +190,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  6a636540a743ffdcafe3830019288ad400c4b3a3d43c3923ef624d591d3992df
+  4f62f074573570e16ff223b86c22fe1f8449877f8d4870b2896e4bb1374d2d24
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -257,7 +257,7 @@ verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  6e1bfb9bd3ef3b12161f0b6cbcaa0683bd7bc65a4fcda3d0fbe27d2b9fe01b9a
+  5f4f51d4360269238a0eea153d7eec4c57f477bdd43a356b56a7317156e5fe52
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -288,7 +288,7 @@ verify_index_sha256 docs/execution/slices/P0-S04.md \
   bb8cc8f7ff0ef4d6e76c8c124bafc661f562a230ec25826b8318a82311281608
 
 makefile="$(git show ':Makefile')"; alternate="$(find . -maxdepth 1 \( -name GNUmakefile -o -name makefile \) -print -quit)"; [[ -z "$alternate" ]] || fail "alternate Make entrypoint is forbidden: ${alternate#./}"
-! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk -v guard='$(if $(and $(filter ci-go api-mapping-contract api-mapping-p1-completion,$(MAKECMDGOALS)),$(or $(findstring n,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring i,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring t,$(filter-out --% %=%,$(MAKEFLAGS))),$(findstring q,$(filter-out --% %=%,$(MAKEFLAGS))))),$(error execution-changing MAKEFLAGS are forbidden for CI/API mapping))' 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ && $0 != guard { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
+! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk -v guard='$(if $(and $(filter ci-go api-mapping-contract api-mapping-p1-completion,$(MAKECMDGOALS)),$(or $(findstring n,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))),$(findstring i,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))),$(findstring t,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))),$(findstring q,$(filter-out --% $(MAKEOVERRIDES),$(MAKEFLAGS))))),$(error execution-changing MAKEFLAGS are forbidden for CI/API mapping))' 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ && $0 != guard { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
   fail "Makefile must not construct or import rules dynamically"
 printf '%s\n' "$makefile" | grep -Eq '^p0-s03-contract:[[:space:]]*$' ||
   fail "Makefile is missing the P0-S03 contract target"
