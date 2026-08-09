@@ -10,6 +10,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
+.PHONY: arch-import-lint arch-import-lint-test
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -181,4 +182,10 @@ p0-s04-integration: p0-s04-contract
 		env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 $(GO) test -race -timeout=45s -tags=p0s04_acceptance -run '^TestOfficialMigrationUpDownUp$$' ./acceptance/p0s04; \
 	fi
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance
+arch-import-lint:
+	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/check_arch_imports.go -root .
+
+arch-import-lint-test:
+	@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_arch_imports.sh
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test

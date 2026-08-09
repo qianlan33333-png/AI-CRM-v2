@@ -33,6 +33,32 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+for path in scripts/check_arch_imports.go scripts/test_arch_imports.sh; do
+  arch_receipt_fixture="$(make_fixture "arch-receipt-${path##*/}")"
+  printf '%s\n' '// architecture receipt drift' >>"$arch_receipt_fixture/$path"
+  git -C "$arch_receipt_fixture" add "$path"
+  if (cd "$arch_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "architecture lint receipt drift was accepted: $path"
+  fi
+done
+
+arch_runner_mode_fixture="$(make_fixture arch-runner-mode)"
+chmod 644 "$arch_runner_mode_fixture/scripts/test_arch_imports.sh"
+git -C "$arch_runner_mode_fixture" add scripts/test_arch_imports.sh
+if (cd "$arch_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "architecture lint runner mode drift was accepted"
+fi
+
+broken_arch_ci_fixture="$(make_fixture broken-arch-ci)"
+sed -i.bak -E \
+  '/^ci-go:/ s/[[:space:]]arch-import-lint-test([[:space:]]|$)/\1/' \
+  "$broken_arch_ci_fixture/Makefile"
+rm -f "$broken_arch_ci_fixture/Makefile.bak"
+git -C "$broken_arch_ci_fixture" add Makefile
+if (cd "$broken_arch_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without the architecture lint tests was accepted"
+fi
+
 missing_p0s02_runner_fixture="$(make_fixture missing-p0s02-runner)"
 rm -f "$missing_p0s02_runner_fixture/acceptance/p0s02/test_static_contract.sh"
 git -C "$missing_p0s02_runner_fixture" add -u acceptance/p0s02/test_static_contract.sh
@@ -168,7 +194,7 @@ fi
 
 broken_p0s04_ci_fixture="$(make_fixture broken-p0s04-ci-dependency)"
 sed -i.bak -E \
-  '/^ci-go:/ s/[[:space:]]p0-s04-acceptance$//' \
+  '/^ci-go:/ s/[[:space:]]p0-s04-acceptance([[:space:]])/\1/' \
   "$broken_p0s04_ci_fixture/Makefile"
 rm -f "$broken_p0s04_ci_fixture/Makefile.bak"
 git -C "$broken_p0s04_ci_fixture" add Makefile
