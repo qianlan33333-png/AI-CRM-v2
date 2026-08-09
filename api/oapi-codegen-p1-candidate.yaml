@@ -1,9 +1,9 @@
 package: generated
-output: internal/api/generated/server.gen.go
+output: internal/api/candidate/generated/server.gen.go
 generate:
   models: true
   chi-server: true
   strict-server: true
 output-options:
   include-tags:
-    - health
+    - p1-core-candidate

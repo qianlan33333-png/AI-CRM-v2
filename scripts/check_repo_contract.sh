@@ -34,6 +34,7 @@ required=(
   .github/workflows/secret-scan.yml
   api/openapi.yaml
   api/oapi-codegen.yaml
+  api/oapi-codegen-p1-candidate.yaml
   sqlc.yaml
   migrations/00001_bootstrap.sql
   internal/platform/http/contract.go
@@ -81,6 +82,17 @@ required=(
   tools/p1-reconciliation/main.go
   tools/p1-reconciliation/main_test.go
   docs/execution/slices/P1-C03.md
+  tools/openapi-contract/main.go
+  tools/openapi-contract/main_test.go
+  acceptance/p1s11/contracts_test.go
+  acceptance/p1s11/doc.go
+  docs/execution/slices/P1-S11.md
+  internal/api/generated/server.gen.go
+  internal/api/candidate/generated/server.gen.go
+  internal/auth/port/port.go
+  internal/contact/port/port.go
+  internal/identity/port/port.go
+  internal/platform/port/uow.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -187,6 +199,20 @@ done <<'EOF'
 100644 tools/p1-reconciliation/main.go
 100644 tools/p1-reconciliation/main_test.go
 100644 docs/execution/slices/P1-C03.md
+100644 api/openapi.yaml
+100644 api/oapi-codegen.yaml
+100644 api/oapi-codegen-p1-candidate.yaml
+100644 internal/api/generated/server.gen.go
+100644 internal/api/candidate/generated/server.gen.go
+100644 tools/openapi-contract/main.go
+100644 tools/openapi-contract/main_test.go
+100644 acceptance/p1s11/contracts_test.go
+100644 acceptance/p1s11/doc.go
+100644 docs/execution/slices/P1-S11.md
+100644 internal/auth/port/port.go
+100644 internal/contact/port/port.go
+100644 internal/identity/port/port.go
+100644 internal/platform/port/uow.go
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -227,19 +253,19 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  0b02a44ea7aab1288ad279deab390d49692d54a75bd8adeca57eb1ef1ff6b9c4
+  84ea2eae13dc537a78fbc480bb1ea3a45811dbea104372e4888e5db5e1d5da12
 verify_index_sha256 .github/CODEOWNERS \
   bb2c40eaad8b8b3dd83cd2d81f58360717ab6dbaeb773afe6d65b7ae18e4f5cb
 verify_index_sha256 go.mod \
-  50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
+  d670d0dbe18623fdaf0792f6bcae0bca07cba70e66f555ef35164a79d6b2219c
 verify_index_sha256 go.sum \
-  aa4b66d926c9ed89b510d20b02ad81cf9b181e55f85fa132cb0266517f8a0ad4
+  8fa975442d8a0f2e15719d7b7558f206656592735c983a0ccd51eaeb588dbdc6
 verify_index_sha256 package.json \
   0eba96dc7c5cb99afa7334da44ebff47e004d10465cb5f9b2ce31f1993bb3d47
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  c6505babc7e0896afc3ce3b554abeb08519f72c3bf8db871cc88e67ac92d836c
+  3c41200820e97578bad58d45155b236e3bac1d926380a6f0ead2f0c24d7fe05e
 verify_index_sha256 .github/workflows/application-go.yml \
   eb5a445954504d93ddf0b2b3e6bcbe90dd1344ae3f9a6b63312ee82c107d09bf
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -247,11 +273,11 @@ verify_index_sha256 .github/workflows/repo-contract.yml \
 verify_index_sha256 .github/workflows/secret-scan.yml \
   157db46e8147cdca2c71d3044e46d20ddae82374a0368e0fe0b4958d8d3c2488
 verify_index_sha256 scripts/check_generated_sources.sh \
-  b39fbf67ced48236651c81592928b2d0f5e520c43b49abad54048c1b078f3a3d
+  e6dd0def9500ac96aaff3bb4c1737d29212612a6fa36db9078229183994035c7
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
 verify_index_sha256 scripts/generated-sources.sha256 \
-  babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
+  33eaa83c609577fde602e42c59746443ac67e1d7191a2841b5d33cadd815c58a
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   ae16d4f7696baccf354b6debc0645afeac32e8475491d4d4b4cfe281c201e587
 verify_index_sha256 scripts/check_arch_imports.go \
@@ -277,7 +303,7 @@ verify_index_sha256 docs/execution/slices/M0-1.md \
 verify_index_sha256 docs/execution/slices/M0-2.md \
   97d9acda27150c905af7bc52eeca623034ae1c529d89aac56c253f18d426df59
 verify_index_sha256 tools/go.mod \
-  b4e02c1b4df02846679387ab075e4323e26bf9247af6c0ac034f9a94392880ab
+  6a64133379331817837ab27823bcf7c672d3a300b2cf9d3c2c79c56f7f90e7ef
 verify_index_sha256 tools/go.sum \
   2515f9dd3dbc17c77f98550be06a8cdf072538e6d8eb296077b6ad91120d2753
 verify_index_sha256 tools/query-plan-gate/main.go \
@@ -332,6 +358,34 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
   1f393c640b8a2c223e86a13558ce893adf6a01183876f6a7fb7b2cbc8038b727
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
+verify_index_sha256 api/openapi.yaml \
+  952687bfbb7b88d101723cc189d7880dc09d5667da942ae0070e9c222f590f80
+verify_index_sha256 api/oapi-codegen.yaml \
+  78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
+verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
+  6a4bc4d7afa720c2175b8b59754dd68a1e6321020bd63a33029dc7bbacc65e69
+verify_index_sha256 internal/api/generated/server.gen.go \
+  a199091028a584df54844b2d761bda8f5010f64e326bae1526c71d9fd15c9c82
+verify_index_sha256 internal/api/candidate/generated/server.gen.go \
+  d40e331971601433321458e19717ef2aa83b98891dc62cbe20693bda5ef51874
+verify_index_sha256 tools/openapi-contract/main.go \
+  4203491b66bff772f7ea21f1523a84f96690b2ea25f5f0da23711b3e68bf3bb3
+verify_index_sha256 tools/openapi-contract/main_test.go \
+  41cd6ab2e8088ddf962f14948108cf5766df27f531934e44ddd5fa9bc5f51c93
+verify_index_sha256 acceptance/p1s11/contracts_test.go \
+  148b70a42a8b6a6ec5ec7dbac9ee47e89f0a8cfc0cb07da857d2df4568061cd9
+verify_index_sha256 acceptance/p1s11/doc.go \
+  8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
+verify_index_sha256 docs/execution/slices/P1-S11.md \
+  5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
+verify_index_sha256 internal/auth/port/port.go \
+  3bf6bb9affe0c102bd5c64b01d824a75eb35ef3958f99c2787cf30319436dd4f
+verify_index_sha256 internal/contact/port/port.go \
+  c25b7d5551878d8e8b1a33617f11d8080dbd02aba9c28e254346c752bb0dc0cc
+verify_index_sha256 internal/identity/port/port.go \
+  321d6518b3e5fec57f3591307334e9fac67c06018bec727790f45e0e55ab5627
+verify_index_sha256 internal/platform/port/uow.go \
+  9c751db2adab03f18c342fa5ab6487020084f704b0fe96203010e1f9f5c03e2b
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
@@ -351,7 +405,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b30031285a08251fb041391dd197091e09be922282cc0dd5aed4b112951280d2
+  51157f0852c7b72d1d50cdd1c2cd0dbda5b689fb68ed1b313b48e4018aea12d5
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -456,6 +510,12 @@ done
 
 require_make_line 'generate: generate-openapi generate-sqlc generate-orval' \
   "make generate must include the frozen Orval client"
+require_unique_make_target generate-openapi
+openapi_generate_recipe="$(make_target_recipe 'generate-openapi:')" ||
+  fail "OpenAPI generate target must be unique"
+expected_openapi_generate_recipe=$'\t@$(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen \\\n\t\t--config api/oapi-codegen.yaml api/openapi.yaml\n\t@$(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen \\\n\t\t--config api/oapi-codegen-p1-candidate.yaml api/openapi.yaml'
+[[ "$openapi_generate_recipe" = "$expected_openapi_generate_recipe" ]] ||
+  fail "OpenAPI generation lost the runtime or candidate boundary"
 require_unique_make_target generate-orval
 require_unique_make_target orval-check
 orval_generate_recipe="$(make_target_recipe 'generate-orval:')" ||
@@ -694,6 +754,21 @@ for line in \
   printf '%s\n' "$reconciliation_recipe" | grep -Fqx "$line" || fail "P1 reconciliation lost a frozen Go call"
 done
 [[ "$ci_go_target" =~ (^|[[:space:]])p1-reconciliation-contract($|[[:space:]]) ]] || fail "ci-go must depend on p1-reconciliation-contract"
+
+require_make_line '.PHONY: openapi-p1-contract' "Makefile must declare the P1-S11 OpenAPI gate"
+require_make_line 'openapi-p1-contract: override SHELL := /bin/bash' "P1-S11 OpenAPI gate must use absolute Bash"
+require_make_line 'openapi-p1-contract: override .SHELLFLAGS := -eu -o pipefail -c' "P1-S11 OpenAPI gate must pin fail-closed Bash flags"
+require_make_line 'openapi-p1-contract: override GO := go' "P1-S11 OpenAPI gate must reject hostile GO overrides"
+require_unique_make_target 'openapi-p1-contract'
+openapi_p1_recipe="$(make_target_recipe 'openapi-p1-contract:')" || fail "P1-S11 OpenAPI target must be unique"
+for line in \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./openapi-contract' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./openapi-contract' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./openapi-contract' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=20s ./acceptance/p1s11'; do
+  printf '%s\n' "$openapi_p1_recipe" | grep -Fqx "$line" || fail "P1-S11 OpenAPI gate lost a frozen validation call"
+done
+[[ "$ci_go_target" =~ (^|[[:space:]])openapi-p1-contract($|[[:space:]]) ]] || fail "ci-go must depend on openapi-p1-contract"
 
 require_make_line '.PHONY: query-plan-gate query-plan-gate-test' "Makefile must declare the query plan gates"
 require_make_line 'query-plan-gate query-plan-gate-test: override SHELL := /bin/bash' "query plan targets must use absolute Bash"

@@ -120,6 +120,60 @@ if (cd "$hollow_reconciliation_fixture" && scripts/check_repo_contract.sh >/dev/
   fail "hollow P1 reconciliation target was accepted"
 fi
 
+for path in \
+  api/openapi.yaml \
+  api/oapi-codegen.yaml \
+  api/oapi-codegen-p1-candidate.yaml \
+  internal/api/generated/server.gen.go \
+  internal/api/candidate/generated/server.gen.go \
+  tools/openapi-contract/main.go \
+  tools/openapi-contract/main_test.go \
+  acceptance/p1s11/contracts_test.go \
+  acceptance/p1s11/doc.go \
+  docs/execution/slices/P1-S11.md \
+  internal/auth/port/port.go \
+  internal/contact/port/port.go \
+  internal/identity/port/port.go \
+  internal/platform/port/uow.go; do
+  openapi_receipt_fixture="$(make_fixture "p1-s11-receipt-${path//\//-}")"
+  case "$path" in *.go) printf '%s\n' '// P1-S11 receipt drift' >>"$openapi_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-S11 receipt drift' >>"$openapi_receipt_fixture/$path" ;; esac
+  git -C "$openapi_receipt_fixture" add "$path"
+  if (cd "$openapi_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P1-S11 receipt drift was accepted: $path"
+  fi
+done
+
+candidate_generated_mode_fixture="$(make_fixture p1-s11-candidate-mode)"
+chmod 755 "$candidate_generated_mode_fixture/internal/api/candidate/generated/server.gen.go"
+git -C "$candidate_generated_mode_fixture" add internal/api/candidate/generated/server.gen.go
+if (cd "$candidate_generated_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P1-S11 candidate generated mode drift was accepted"
+fi
+
+broken_openapi_ci_fixture="$(make_fixture broken-p1-s11-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]openapi-p1-contract([[:space:]]|$)/\1/' "$broken_openapi_ci_fixture/Makefile"
+rm -f "$broken_openapi_ci_fixture/Makefile.bak"
+restage_make_receipt "$broken_openapi_ci_fixture"
+if (cd "$broken_openapi_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without P1-S11 OpenAPI contract was accepted"
+fi
+
+hollow_openapi_fixture="$(make_fixture hollow-p1-s11-openapi)"
+sed -i.bak '/^openapi-p1-contract:$/ { n; s/.*/\t@true/; }' "$hollow_openapi_fixture/Makefile"
+rm -f "$hollow_openapi_fixture/Makefile.bak"
+restage_make_receipt "$hollow_openapi_fixture"
+if (cd "$hollow_openapi_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P1-S11 OpenAPI target was accepted"
+fi
+
+missing_candidate_generator_fixture="$(make_fixture missing-p1-s11-candidate-generator)"
+sed -i.bak '/oapi-codegen-p1-candidate.yaml/d' "$missing_candidate_generator_fixture/Makefile"
+rm -f "$missing_candidate_generator_fixture/Makefile.bak"
+restage_make_receipt "$missing_candidate_generator_fixture"
+if (cd "$missing_candidate_generator_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "OpenAPI generation without the isolated P1 candidate server was accepted"
+fi
+
 broken_query_plan_ci_fixture="$(make_fixture broken-query-plan-ci)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]query-plan-gate-test([[:space:]]|$)/\1/' "$broken_query_plan_ci_fixture/Makefile"
 rm -f "$broken_query_plan_ci_fixture/Makefile.bak"
