@@ -9,12 +9,16 @@
   },
   "packageManager": "npm@11.12.1",
   "scripts": {
-    "version:check": "node -e \"const ua=process.env.npm_config_user_agent||'';if(process.version!=='v24.18.0'||!ua.startsWith('npm/11.12.1 ')){console.error('expected node v24.18.0 and npm 11.12.1');process.exit(1)}\"",
-    "lint": "node --input-type=module -e \"import { ESLint } from 'eslint'; import parser from '@typescript-eslint/parser'; const eslint = new ESLint({ overrideConfigFile: true, overrideConfig: [{ files: ['**/*.ts', '**/*.tsx'], languageOptions: { parser, parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } } }, rules: { 'no-console': 'error', 'no-debugger': 'error', 'no-unused-vars': ['error', { varsIgnorePattern: '^React$' }] } }] }); const results = await eslint.lintFiles(['web/src']); const output = (await eslint.loadFormatter('stylish')).format(results); if (output) console.log(output); if (results.some((result) => result.errorCount > 0)) process.exit(1);\"",
+    "version:check": "node -e \"const ua=process.env.npm_config_user_agent||'';if(process.version!=='v24.18.0'||!ua.startsWith('npm/11.12.1 ')){console.error('expected node v24.18.0 and npm 11.12.1');process.exit(1)}\" && test \"$(orval --version)\" = \"7.21.0\" && test \"$(prettier --version)\" = \"3.9.6\"",
+    "orval:generate": "make generate-orval",
+    "orval:check": "make orval-check",
+    "orval:contract": "scripts/test_orval_generated_check.sh",
+    "lint": "node --input-type=module -e \"import { ESLint } from 'eslint'; import parser from '@typescript-eslint/parser'; const eslint = new ESLint({ overrideConfigFile: true, overrideConfig: [{ ignores: ['web/src/api/generated/**'] }, { files: ['**/*.ts', '**/*.tsx'], languageOptions: { parser, parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } } }, rules: { 'no-console': 'error', 'no-debugger': 'error', 'no-unused-vars': ['error', { varsIgnorePattern: '^React$' }] } }] }); const results = await eslint.lintFiles(['web/src']); const output = (await eslint.loadFormatter('stylish')).format(results); if (output) console.log(output); if (results.some((result) => result.errorCount > 0)) process.exit(1);\"",
     "typecheck": "tsc --noEmit --strict --skipLibCheck --jsx react --module ESNext --moduleResolution Bundler --target ES2022 --lib ES2022,DOM --types vitest/globals,node web/src/main.tsx web/src/main.test.tsx",
     "test": "vitest run --environment node web/src/main.test.tsx",
     "build": "vite build web",
-    "ci": "npm run version:check && npm run lint && npm run typecheck && npm test && npm run build"
+    "audit": "npm audit --audit-level=high",
+    "ci": "npm run version:check && npm run orval:check && npm run orval:contract && npm run lint && npm run typecheck && npm test && npm run build && npm run audit"
   },
   "dependencies": {
     "antd": "5.27.6",
@@ -27,8 +31,14 @@
     "@types/react-dom": "18.3.7",
     "@typescript-eslint/parser": "8.66.0",
     "eslint": "10.8.1",
+    "orval": "7.21.0",
+    "prettier": "3.9.6",
     "typescript": "6.0.3",
     "vite": "7.3.6",
     "vitest": "4.1.10"
+  },
+  "overrides": {
+    "js-yaml": "4.3.1",
+    "lodash": "4.18.1"
   }
 }
