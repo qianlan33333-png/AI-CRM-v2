@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
+unexport BASH_ENV ENV
 
 GO ?= go
 TOOLS_MOD := tools/go.mod
@@ -7,6 +8,7 @@ TOOLS_MOD := tools/go.mod
 .PHONY: version-check generate generate-openapi generate-sqlc generate-check gitless-generate-test
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
+.PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
@@ -120,4 +122,46 @@ p0-s03-acceptance: p0-s03-contract
 		GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=15s -tags=p0s03_acceptance ./acceptance/p0s03; \
 	fi
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance
+p0-s04-contract:
+	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/test_source_contract.sh
+	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/test_static_contract.sh
+
+p0-s04-acceptance: p0-s04-contract
+	@shopt -s nullglob dotglob; \
+		river_entries=(internal/platform/river/*); \
+	if [[ -d internal && ! -L internal && \
+		-d internal/platform && ! -L internal/platform && \
+		-d internal/platform/river && ! -L internal/platform/river && \
+		-f internal/platform/river/contract.go && ! -L internal/platform/river/contract.go && \
+		"$${#river_entries[@]}" -eq 1 && "$${river_entries[0]}" = "internal/platform/river/contract.go" && \
+		! -e internal/platform/river/runtime.go && ! -L internal/platform/river/runtime.go && \
+		! -e internal/platform/river/migrate.go && ! -L internal/platform/river/migrate.go && \
+		! -e internal/platform/river/runtime_test.go && ! -L internal/platform/river/runtime_test.go ]]; then \
+		echo "P0-S04 acceptance gate: PENDING (implementation not present)"; \
+	else \
+		env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/static_contract.sh || exit $$?; \
+		coverage_output="$$(env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -cover -timeout=15s ./internal/platform/river 2>&1)" || { status=$$?; printf '%s\n' "$$coverage_output"; exit "$$status"; }; \
+		printf '%s\n' "$$coverage_output"; \
+		if ! printf '%s\n' "$$coverage_output" | awk '$$1 == "ok" && $$2 == "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river" { matches++; value = $$0; if (value !~ /coverage: [0-9]+([.][0-9]+)?% of statements$$/) invalid = 1; else { sub(/^.*coverage: /, "", value); sub(/% of statements$$/, "", value); if (value + 0 <= 0) invalid = 1 } } END { exit !(matches == 1 && !invalid) }'; then echo "P0-S04 acceptance gate: internal/platform/river must report positive numeric coverage" >&2; exit 1; fi; \
+		env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=15s -tags=p0s04_acceptance -run '^(TestPinnedRiverPublicAPISurface|TestRuntimeLifecycleContract|TestRuntimeStartContextIsolated|TestRuntimeCancellationWinsSimultaneousStopped|TestInvalidMigrationDirection)$$' ./acceptance/p0s04; \
+	fi
+
+p0-s04-integration: p0-s04-contract
+	@shopt -s nullglob dotglob; \
+		river_entries=(internal/platform/river/*); \
+	if [[ -d internal && ! -L internal && \
+		-d internal/platform && ! -L internal/platform && \
+		-d internal/platform/river && ! -L internal/platform/river && \
+		-f internal/platform/river/contract.go && ! -L internal/platform/river/contract.go && \
+		"$${#river_entries[@]}" -eq 1 && "$${river_entries[0]}" = "internal/platform/river/contract.go" && \
+		! -e internal/platform/river/runtime.go && ! -L internal/platform/river/runtime.go && \
+		! -e internal/platform/river/migrate.go && ! -L internal/platform/river/migrate.go && \
+		! -e internal/platform/river/runtime_test.go && ! -L internal/platform/river/runtime_test.go ]]; then \
+		echo "P0-S04 integration gate: PENDING (implementation not present)"; \
+	else \
+		env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/static_contract.sh || exit $$?; \
+		test "$${ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST:-}" = "1" || { echo "ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 is required" >&2; exit 2; }; \
+		env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 $(GO) test -race -timeout=45s -tags=p0s04_acceptance -run '^TestOfficialMigrationUpDownUp$$' ./acceptance/p0s04; \
+	fi
+
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance

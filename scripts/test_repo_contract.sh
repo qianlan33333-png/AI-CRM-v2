@@ -52,9 +52,14 @@ fi
 
 broken_p0s03_ci_fixture="$(make_fixture broken-p0s03-ci-dependency)"
 sed -i.bak -E \
-  's/[[:space:]]p0-s03-acceptance$//' \
+  '/^ci-go:/ s/[[:space:]]p0-s03-acceptance([[:space:]])/\1/' \
   "$broken_p0s03_ci_fixture/Makefile"
 rm -f "$broken_p0s03_ci_fixture/Makefile.bak"
+if grep -Eq '^ci-go:.*p0-s03-acceptance([[:space:]]|$)' "$broken_p0s03_ci_fixture/Makefile"; then
+  fail "failed to remove the P0-S03 acceptance dependency"
+fi
+grep -Eq '^ci-go:.*p0-s04-acceptance([[:space:]]|$)' "$broken_p0s03_ci_fixture/Makefile" ||
+  fail "P0-S03 fixture unexpectedly removed the P0-S04 acceptance dependency"
 git -C "$broken_p0s03_ci_fixture" add Makefile
 if (cd "$broken_p0s03_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "ci-go without the P0-S03 acceptance dependency was accepted"
@@ -77,6 +82,177 @@ git -C "$duplicate_p0s03_acceptance_fixture" add Makefile
 if (cd "$duplicate_p0s03_acceptance_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "duplicate P0-S03 acceptance target was accepted"
 fi
+
+missing_p0s04_contract_fixture="$(make_fixture missing-p0s04-contract)"
+rm -f "$missing_p0s04_contract_fixture/acceptance/p0s04/static_contract.sh"
+git -C "$missing_p0s04_contract_fixture" add -u acceptance/p0s04/static_contract.sh
+if (cd "$missing_p0s04_contract_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing required P0-S04 contract file was accepted"
+fi
+
+replaced_p0s04_runner_fixture="$(make_fixture replaced-p0s04-runner)"
+sed -i.bak \
+  's#acceptance/p0s04/test_source_contract.sh#true#' \
+  "$replaced_p0s04_runner_fixture/Makefile"
+rm -f "$replaced_p0s04_runner_fixture/Makefile.bak"
+git -C "$replaced_p0s04_runner_fixture" add Makefile
+if (cd "$replaced_p0s04_runner_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "replaced P0-S04 contract runner was accepted"
+fi
+
+missing_p0s04_caller_hygiene_fixture="$(make_fixture missing-p0s04-caller-hygiene)"
+sed -i.bak '/^unexport BASH_ENV ENV$/d' \
+  "$missing_p0s04_caller_hygiene_fixture/Makefile"
+rm -f "$missing_p0s04_caller_hygiene_fixture/Makefile.bak"
+git -C "$missing_p0s04_caller_hygiene_fixture" add Makefile
+if (cd "$missing_p0s04_caller_hygiene_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P0-S04 BASH_ENV and ENV caller hygiene was accepted"
+fi
+
+missing_p0s04_recipe_hygiene_fixture="$(make_fixture missing-p0s04-recipe-hygiene)"
+sed -i.bak \
+  's#@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/test_source_contract.sh#@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s04/test_source_contract.sh#' \
+  "$missing_p0s04_recipe_hygiene_fixture/Makefile"
+rm -f "$missing_p0s04_recipe_hygiene_fixture/Makefile.bak"
+git -C "$missing_p0s04_recipe_hygiene_fixture" add Makefile
+if (cd "$missing_p0s04_recipe_hygiene_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P0-S04 contract recipe BASH_ENV and ENV hygiene was accepted"
+fi
+
+weakened_p0s04_coverage_fixture="$(make_fixture weakened-p0s04-coverage-proof)"
+sed -i.bak 's/matches == 1 && !invalid/1/' \
+  "$weakened_p0s04_coverage_fixture/Makefile"
+rm -f "$weakened_p0s04_coverage_fixture/Makefile.bak"
+git -C "$weakened_p0s04_coverage_fixture" add Makefile
+if (cd "$weakened_p0s04_coverage_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "weakened P0-S04 positive coverage proof was accepted"
+fi
+
+broken_p0s04_ci_fixture="$(make_fixture broken-p0s04-ci-dependency)"
+sed -i.bak -E \
+  '/^ci-go:/ s/[[:space:]]p0-s04-acceptance$//' \
+  "$broken_p0s04_ci_fixture/Makefile"
+rm -f "$broken_p0s04_ci_fixture/Makefile.bak"
+git -C "$broken_p0s04_ci_fixture" add Makefile
+if (cd "$broken_p0s04_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without the P0-S04 acceptance dependency was accepted"
+fi
+
+missing_p0s04_workflow_fixture="$(make_fixture missing-p0s04-workflow-integration)"
+sed -i.bak '/^          make p0-s04-integration$/d' \
+  "$missing_p0s04_workflow_fixture/.github/workflows/application-go.yml"
+rm -f "$missing_p0s04_workflow_fixture/.github/workflows/application-go.yml.bak"
+git -C "$missing_p0s04_workflow_fixture" add .github/workflows/application-go.yml
+if (cd "$missing_p0s04_workflow_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "application workflow without P0-S04 integration was accepted"
+fi
+
+duplicate_p0s04_contract_fixture="$(make_fixture duplicate-p0s04-contract)"
+printf '%s\n' '' 'p0-s04-contract:' $'\t@true' \
+  >>"$duplicate_p0s04_contract_fixture/Makefile"
+git -C "$duplicate_p0s04_contract_fixture" add Makefile
+if (cd "$duplicate_p0s04_contract_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "duplicate or overriding P0-S04 contract target was accepted"
+fi
+
+multi_target_p0s04_override_fixture="$(make_fixture multi-target-p0s04-override)"
+printf '%s\n' '' 'p0-s04-contract p0-s04-sidecar:' $'\t@true' \
+  >>"$multi_target_p0s04_override_fixture/Makefile"
+git -C "$multi_target_p0s04_override_fixture" add Makefile
+if (cd "$multi_target_p0s04_override_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "multi-target P0-S04 contract override was accepted"
+fi
+
+p0s04_runner_mode_fixture="$(make_fixture p0s04-runner-mode)"
+chmod 644 "$p0s04_runner_mode_fixture/acceptance/p0s04/test_static_contract.sh"
+git -C "$p0s04_runner_mode_fixture" add acceptance/p0s04/test_static_contract.sh
+if (cd "$p0s04_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P0-S04 static runner mode drift was accepted"
+fi
+
+p0s04_go_mode_fixture="$(make_fixture p0s04-go-mode)"
+chmod 755 "$p0s04_go_mode_fixture/internal/platform/river/contract.go"
+git -C "$p0s04_go_mode_fixture" add internal/platform/river/contract.go
+if (cd "$p0s04_go_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P0-S04 Go contract mode drift was accepted"
+fi
+
+for path in go.mod go.sum; do
+  p0s04_module_pin_fixture="$(make_fixture "p0s04-module-pin-$path")"
+  printf '%s\n' '# P0-S04 module pin drift' >>"$p0s04_module_pin_fixture/$path"
+  git -C "$p0s04_module_pin_fixture" add "$path"
+  if (cd "$p0s04_module_pin_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P0-S04 $path content drift was accepted"
+  fi
+done
+for path in go.mod go.sum; do
+  p0s04_module_mode_fixture="$(make_fixture "p0s04-module-mode-$path")"
+  chmod 755 "$p0s04_module_mode_fixture/$path"
+  git -C "$p0s04_module_mode_fixture" add "$path"
+  if (cd "$p0s04_module_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P0-S04 $path mode drift was accepted"
+  fi
+done
+
+make_bin="$(type -P make || true)"
+[[ "$make_bin" == /* && -x "$make_bin" && -x /usr/bin/perl ]] || fail "trusted make/watchdog unavailable"
+make_p0s04_fixture() {
+  local fixture
+  fixture="$(make_fixture "$1")"
+  rm -rf "$fixture/.git"
+  printf '%s\n' "$fixture"
+}
+assert_p0s04_pending() {
+  local fixture="$1" target="$2" gate output
+  gate="${target#p0-s04-}"
+  output="$(cd "$fixture" && "$make_bin" -o p0-s04-contract "$target" 2>&1)" ||
+    fail "canonical empty P0-S04 $gate gate was rejected without Git"
+  grep -Fqx "P0-S04 $gate gate: PENDING (implementation not present)" <<<"$output" ||
+    fail "canonical empty P0-S04 $gate gate did not report PENDING"
+}
+
+p0s04_empty_fixture="$(make_p0s04_fixture p0s04-canonical-empty)"
+[[ ! -e "$p0s04_empty_fixture/.git" && ! -L "$p0s04_empty_fixture/.git" ]] ||
+  fail "P0-S04 no-Git fixture retained .git"
+for target in p0-s04-acceptance p0-s04-integration; do
+  assert_p0s04_pending "$p0s04_empty_fixture" "$target"
+done
+p0s04_coverage_fixture="$(make_p0s04_fixture p0s04-coverage-parser)"
+for file in runtime.go migrate.go runtime_test.go; do : >"$p0s04_coverage_fixture/internal/platform/river/$file"; done
+printf '%s\n' '#!/usr/bin/env bash' 'exit 0' >"$p0s04_coverage_fixture/acceptance/p0s04/static_contract.sh"
+printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' 'coverage: 12.5% of statements' 'ok  github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river  0.004s  coverage: [no statements]'" >"$p0s04_coverage_fixture/fake-go"
+chmod 755 "$p0s04_coverage_fixture/acceptance/p0s04/static_contract.sh" "$p0s04_coverage_fixture/fake-go"
+if (cd "$p0s04_coverage_fixture" && GO="$p0s04_coverage_fixture/fake-go" "$make_bin" -o p0-s04-contract p0-s04-acceptance >/dev/null 2>&1); then
+  fail "P0-S04 acceptance accepted fake positive coverage with no statements"
+fi
+printf '%s\n' 'exit 97' >"$p0s04_empty_fixture/hostile-bash-env"
+hostile_output="$(cd "$p0s04_empty_fixture" && BASH_ENV="$p0s04_empty_fixture/hostile-bash-env" ENV="$p0s04_empty_fixture/hostile-bash-env" "$make_bin" -o p0-s04-contract p0-s04-acceptance 2>&1)" ||
+  fail "hostile BASH_ENV rejected canonical empty P0-S04 gate"
+grep -Fqx 'P0-S04 acceptance gate: PENDING (implementation not present)' <<<"$hostile_output" ||
+  fail "hostile BASH_ENV bypassed P0-S04 caller hygiene"
+set +e
+empty_path_output="$(cd "$p0s04_empty_fixture" && PATH=/nonexistent "$make_bin" -o p0-s04-contract p0-s04-acceptance 2>&1)"
+empty_path_status=$?
+set -e
+[[ "$empty_path_status" -ne 0 ]] || fail "empty PATH P0-S04 gate did not fail closed"
+for kind in hidden fifo subdir ancestor_symlink contract_symlink runtime_partial runtime_fifo; do
+  fixture="$(make_p0s04_fixture "p0s04-invalid-$kind")"
+  case "$kind" in
+    hidden) : >"$fixture/internal/platform/river/.unexpected" ;;
+    fifo) mkfifo "$fixture/internal/platform/river/unexpected-fifo" ;;
+    subdir) mkdir "$fixture/internal/platform/river/unexpected-dir" ;;
+    ancestor_symlink) mv "$fixture/internal/platform/river" "$fixture/internal/platform/river.real"; ln -s river.real "$fixture/internal/platform/river" ;;
+    contract_symlink) mv "$fixture/internal/platform/river/contract.go" "$fixture/internal/platform/river/contract.go.real"; ln -s contract.go.real "$fixture/internal/platform/river/contract.go" ;;
+    runtime_partial) : >"$fixture/internal/platform/river/runtime.go" ;;
+    runtime_fifo) mkfifo "$fixture/internal/platform/river/runtime.go" ;;
+  esac
+  for target in p0-s04-acceptance p0-s04-integration; do
+    set +e
+    (cd "$fixture" && /usr/bin/perl -e 'alarm 5; exec @ARGV' "$make_bin" -o p0-s04-contract "$target" >/dev/null 2>&1); invalid_status=$?
+    set -e
+    [[ "$invalid_status" -ne 0 && "$invalid_status" -ne 142 ]] || fail "invalid P0-S04 canonical-empty shape was accepted or timed out: $kind/$target"
+  done
+done
 
 explicit_key_workflow_fixture="$(make_fixture unexpected-explicit-key-workflow)"
 printf '%s\n' \
