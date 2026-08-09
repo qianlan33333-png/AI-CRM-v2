@@ -59,7 +59,7 @@ PostgreSQL 16
 
 生产建议在同一主机运行独立 `api` 与 `worker` 进程并使用独立 pgx 连接池；S 档允许 `all`。`api` 不注册 worker，`worker` 不开放业务 HTTP 端口。单一二进制和单库不等于允许模块绕过所有权边界。
 
-固定工具链：Go 1.26.5、Node 24.18.0 LTS、npm 11.12.1、PostgreSQL 16.14。初始依赖锁定为 River 0.24.0、pgx 5.7.5、chi 5.2.3、oapi-codegen 2.6、sqlc 1.28、Goose 3.25、React 18.3.1、antd 5.27.6、Orval 7.13、Vite 7.2.2。oapi-codegen 2.6 生成的 Go server 额外固定其官方示例兼容 runtime 1.2.0；这是生成物运行依赖，不是生成器升级。版本变更必须单独评审，不能由业务 Slice 顺手升级。
+固定工具链：Go 1.26.5、Node 24.18.0 LTS、npm 11.12.1、PostgreSQL 16.14。初始依赖锁定为 River 0.24.0、pgx 5.9.2、chi 5.2.3、oapi-codegen 2.6、sqlc 1.28、Goose 3.25、React 18.3.1、antd 5.27.6、Orval 7.13、Vite 7.2.2。oapi-codegen 2.6 生成的 Go server 额外固定其官方示例兼容 runtime 1.2.0；这是生成物运行依赖，不是生成器升级。pgx 5.9.2 是 [GO-2026-4772](https://pkg.go.dev/vuln/GO-2026-4772) 与 [GO-2026-5004](https://pkg.go.dev/vuln/GO-2026-5004) 的共同最低修复版本，替代有可达安全路径的 5.7.5。版本变更必须显式评审，不能由业务 Slice 顺手升级。
 
 ## 4. 模块与依赖方向
 
