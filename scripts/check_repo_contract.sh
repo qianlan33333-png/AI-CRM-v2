@@ -61,6 +61,7 @@ required=(
   acceptance/p0s04/test_static_contract.sh
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
+  scripts/ownership/main.go scripts/test_ownership.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
   scripts/generated-sources.sha256
@@ -120,6 +121,9 @@ done <<'EOF'
 100755 scripts/check_repo_contract.sh
 100644 scripts/check_arch_imports.go
 100755 scripts/test_arch_imports.sh
+100644 scripts/ownership/main.go
+100755 scripts/test_ownership.sh
+100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
 100755 acceptance/p0s02/static_contract.sh
@@ -143,7 +147,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  79ee509aa30402d7d0f3d66b0cb1807759a52e32b5859e020ac4290f07e8ced6
+  119f7a66e7b7b5cb8a8da8be0fa76803245aa0776c6d2c1d2f205a35b8f2dd28
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -170,8 +174,14 @@ verify_index_sha256 scripts/check_arch_imports.go \
   7467b6857b05e89793bb2001745650bc04750bd5a59072e3c7a2a7be0f011b18
 verify_index_sha256 scripts/test_arch_imports.sh \
   68cdf909235c8961a91ffe6560461fb1e174bc67fdb3b3eb24b22bf43c25d0b7
+verify_index_sha256 scripts/ownership/main.go \
+  e1dfe40e7ccc9ec40cc7a6cb2c10cb8473e373c2751e1a88f61480b539f64241
+verify_index_sha256 scripts/test_ownership.sh \
+  d239565f77afe42155e4a09657fdff0abd6c59823aa60f1ec4ff6c565b9087df
+verify_index_sha256 docs/architecture/table-ownership.yml \
+  c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a9891339ce98367df3ddd40854807b002b5f97865c9a3471c3174a1ebca22ce9
+  d0f1dfe179e8f1f7bd7ddfeddcbd2797a73ba710fcad135e0004f9dd14506251
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -394,6 +404,16 @@ for target in arch-import-lint arch-import-lint-test; do
   [[ "$ci_go_target" =~ (^|[[:space:]])$target($|[[:space:]]) ]] ||
     fail "ci-go must depend on $target"
 done
+require_make_line '.PHONY: ownership-lint ownership-lint-test' \
+  "Makefile must declare the ownership lint targets"
+for target in ownership-lint ownership-lint-test; do
+  require_unique_make_target "$target"
+  [[ "$ci_go_target" =~ (^|[[:space:]])$target($|[[:space:]]) ]] || fail "ci-go must depend on $target"
+done
+[[ "$(make_target_recipe 'ownership-lint:')" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/ownership/main.go -root .' ]] ||
+  fail "ownership lint target lost the frozen checker call"
+[[ "$(make_target_recipe 'ownership-lint-test:')" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_ownership.sh' ]] ||
+  fail "ownership lint test target lost the frozen runner call"
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(

@@ -33,6 +33,30 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+for path in scripts/ownership/main.go scripts/test_ownership.sh docs/architecture/table-ownership.yml; do
+  ownership_receipt_fixture="$(make_fixture "ownership-receipt-${path##*/}")"
+  printf '%s\n' '# ownership receipt drift' >>"$ownership_receipt_fixture/$path"
+  git -C "$ownership_receipt_fixture" add "$path"
+  if (cd "$ownership_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "ownership lint receipt drift was accepted: $path"
+  fi
+done
+
+ownership_runner_mode_fixture="$(make_fixture ownership-runner-mode)"
+chmod 644 "$ownership_runner_mode_fixture/scripts/test_ownership.sh"
+git -C "$ownership_runner_mode_fixture" add scripts/test_ownership.sh
+if (cd "$ownership_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ownership lint runner mode drift was accepted"
+fi
+
+broken_ownership_ci_fixture="$(make_fixture broken-ownership-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]ownership-lint-test([[:space:]]|$)/\1/' "$broken_ownership_ci_fixture/Makefile"
+rm -f "$broken_ownership_ci_fixture/Makefile.bak"
+git -C "$broken_ownership_ci_fixture" add Makefile
+if (cd "$broken_ownership_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without ownership lint tests was accepted"
+fi
+
 for path in scripts/check_arch_imports.go scripts/test_arch_imports.sh; do
   arch_receipt_fixture="$(make_fixture "arch-receipt-${path##*/}")"
   printf '%s\n' '// architecture receipt drift' >>"$arch_receipt_fixture/$path"
