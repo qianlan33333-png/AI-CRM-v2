@@ -28,7 +28,8 @@ CI 接线、修正和 GitHub 全流程；不另立小型中间合同 PR、Terra 
 独立公开行为，按可单独验收的行为拆分，不按“契约/实现/回执”层次拆分。
 
 Sol 必须串行执行每片的 rebase、全门禁、中文 PR、squash merge 和精确 main SHA CI；
-当前私有仓库无 GitHub 强制 Ruleset，不得把流程纪律写成“已保护分支”。
+当前仓库虽已公开，但尚未配置 GitHub Ruleset 或 branch protection，不得把流程纪律
+写成“已保护分支”。
 
 ## 分阶段协作
 
