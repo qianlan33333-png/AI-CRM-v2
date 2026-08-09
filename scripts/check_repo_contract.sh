@@ -100,7 +100,9 @@ required=(
   docs/execution/slices/P0-S03.md
   docs/execution/slices/P0-S04.md
   docs/execution/slices/M0-1.md
+  docs/execution/slices/M0-2.md
   docs/spec/AI-CRM-v2-执行方案.md
+  docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
   docs/spec/AI-CRM-v2-重构详细设计.md
   docs/spec/SHA256SUMS
 )
@@ -177,6 +179,11 @@ done <<'EOF'
 100755 acceptance/p0s04/test_static_contract.sh
 100644 docs/execution/slices/P0-S04.md
 100644 docs/execution/slices/M0-1.md
+100644 docs/execution/slices/M0-2.md
+100644 docs/spec/AI-CRM-v2-执行方案.md
+100644 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
+100644 docs/spec/AI-CRM-v2-重构详细设计.md
+100644 docs/spec/SHA256SUMS
 EOF
 
 verify_index_sha256() {
@@ -230,6 +237,16 @@ verify_index_sha256 scripts/test_slice_inputs.sh \
   32ec32f2c3f0c7ec7c29aabfada4bc4c1f29dc39a37fc0aacfb51e30d304d8a7
 verify_index_sha256 docs/execution/slices/M0-1.md \
   1bb201f3550ef638ea85f8f7f5de585b57825177c400a7f5cab3094ef68f6043
+verify_index_sha256 docs/execution/slices/M0-2.md \
+  97d9acda27150c905af7bc52eeca623034ae1c529d89aac56c253f18d426df59
+verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
+  210f6d3c9d0434cba6426ab71fc1cc64bc3a6d3a1a184e55af5f1273c21a8099
+verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
+  c3f3cdd4f89a0ef0194dfa3d1c0e537af56655ef643f9f5e470e66b6b2647665
+verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
+  a0917b9d2d119a68ba9c32e2d458c7b9a3775f846037748947715fdcfee77ee6
+verify_index_sha256 docs/spec/SHA256SUMS \
+  2da55ce677d94ff3f30689b2beb63f5f787be33751acd6584c61258e85c1b72e
 verify_index_sha256 tools/contract-replay/main.go \
   c2df22b56e1b57667974996808f4185d1a602c54b7da2c3ecdca4c146b902cef
 verify_index_sha256 tools/contract-replay/main_test.go \
@@ -257,7 +274,7 @@ verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  5cd132096715f79a2d4b69e58368057a193aac904b892884484c9892af75b188
+  fc3216323d729f24da98077d69b931bfeed1e1e8ef73706f19a3fe5f7f434d8e
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -634,6 +651,25 @@ for number in $(seq -w 1 10); do
 done
 
 (cd docs/spec && sha256sum -c SHA256SUMS)
+
+v1_plan="$(git show ':docs/spec/AI-CRM-v2-执行方案.md')"
+v2_plan="$(git show ':docs/spec/AI-CRM-v2-执行方案-v2-至P3.md')"
+design="$(git show ':docs/spec/AI-CRM-v2-重构详细设计.md')"
+grep -Fq '> P0–P3 范围以《AI-CRM-v2-执行方案-v2-至P3.md》为准。' <<<"$v1_plan" ||
+  fail "v1 plan must defer P0-P3 to the v2 plan"
+grep -Fq 'b3613f635692c932021036f8f81babf24fca8222' <<<"$v2_plan" ||
+  fail "v2 plan lost the frozen actual baseline footnote"
+customers_ddl="$(awk '/^CREATE TABLE customers \(/ { capture=1 } capture { print } capture && /^\);/ { exit }' <<<"$design")"
+[[ -n "$customers_ddl" ]] || fail "design lost the customers DDL"
+! grep -Eq '^[[:space:]]+(external_userid|unionid|openid|phone)[[:space:]]' <<<"$customers_ddl" ||
+  fail "customers DDL restored a forbidden external identity column"
+! grep -Fq 'idx_customers_unionid' <<<"$design" || fail "design restored the forbidden customers unionid index"
+grep -Eq '^[[:space:]]+scope[[:space:]]+TEXT[[:space:]]+NOT NULL' <<<"$design" ||
+  fail "design identities scope must remain required"
+! grep -Fq '/tools/contract-replay' <<<"$design" || fail "design restored the retired contract replay path"
+grep -Fq '/acceptance/snapshots' <<<"$design" || fail "design lost the snapshot gate path"
+grep -Fq '快照只防新系统自身回归，不能防新旧行为不一致' <<<"$design" ||
+  fail "design lost the snapshot capability limitation"
 
 forbidden_path_pattern='(^|/)(\.env[^/]*|node_modules|vendor|dist|build|coverage|\.cache|playwright-report|test-results|\.auth|\.browser)(/|$)|^(data|runtime|logs|uploads|tmp)(/|$)|(^|/)(id_rsa[^/]*|cookies[^/]*\.json|credentials[^/]*\.json)$|\.(pem|key|p12|pfx|db|sqlite|sqlite3|dump|zip)$'
 if git ls-files | grep -E "$forbidden_path_pattern" >/dev/null; then
