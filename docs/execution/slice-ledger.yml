@@ -590,6 +590,15 @@ slices:
     merge_sha: 6685d4cf53c3bbb1d5e8f6340a81ecf6612c4a68
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     correction_count: 1
+  - slice_id: M0-5
+    title: replace-contract-replay-with-snapshot-gate
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/86
+    pr_head_sha: 64d0ec006697fb407096c90b8bad51393a9f1fa9
+    merge_sha: 4ba0fc6c0a69b03037707cf9cb0fb4f0267afa75
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: 0
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00
