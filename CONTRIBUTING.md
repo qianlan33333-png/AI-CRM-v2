@@ -1,6 +1,6 @@
 # Contributing
 
-本仓库采用 Codex root 总指挥的内部 Terra 交付流程。开始前阅读 `AGENTS.md`、
+本仓库采用 Codex Sol 总负责的垂直 Slice 交付流程。开始前阅读 `AGENTS.md`、
 相关 ADR、任务卡和 [`agent-orchestration.md`](docs/governance/agent-orchestration.md)。
 
 ## 分支与 PR
@@ -10,8 +10,8 @@
   `codex/<phase>-<slug>`。
 - 一个 PR 只对应一个 Slice；默认使用 squash merge，合并后删除分支。
 - PR 标题、正文和面向仓库的进度说明使用中文。
-- Terra 仅在 root 分配的独立 worktree 修改/测试；root 独占验收、Git/GitHub、
-  PR、rebase、merge 和 main CI，并串行执行。
+- P0 由 Sol 在独立 worktree 完成实现、验收、Git/GitHub、PR、merge 和 main CI；
+  每个完整行为尽量只有一个 PR。
 - 当前私有仓库套餐不能强制 Ruleset，因此发起人必须在合并前主动验证
   所有适用检查；详情见 `docs/governance/limitations.md`。
 
@@ -21,8 +21,8 @@
 - 最多 8 个手写文件、400 行手写 diff。
 - API 与 UI、迁移与外部 adapter 不得在同一片。
 - 任务卡白名单之外的修改全部拒收。
-- 中央契约裁决和冻结/批准只属于 Codex root。Terra 仅可在中央合同任务的 root
-  白名单内机械实现/测试；业务 Slice 不得修改中央契约。
+- 中央契约只能由 Sol 在当前垂直 Slice 内裁决和修改，或在冻结后以精确白名单
+  委派机械实现。
 
 ## 验证
 
@@ -36,11 +36,11 @@
 未执行项必须写 `NOT EXECUTED`。真实外部条件未授权时写
 `PENDING_EXTERNAL_GATE`；本地或 synthetic 结果不得写成生产验证。
 
-## 内部 Terra 交付
+## 分阶段协作
 
-- 每个任务固定 `gpt-5.6-terra` / `reasoning_effort=ultra`，记录精确 base、task id、
-  绝对 worktree、payload manifest、测试和 correction；root stage 后计算 canonical hash。
-- 最多 3 个 self-contained 任务在 DAG 依赖满足、白名单不重叠时并行。
-- Terra 不得 stage、commit、push、PR、rebase、merge、部署、真实迁移/外部调用或外部
-  上传；失败由同一 task follow-up，连续两次同根因失败或越界即拒收重拆。
+- P0：单 Sol 垂直闭环；P1：Terra 可分组并行调查，Sol 汇总裁决；P2：Sol 主做共享
+  平台，孤立组件按需委派；P3/P4：契约冻结后恢复并行。
+- 并行实现需至少两个互不依赖、路径不重叠且足以覆盖交接成本的任务，并且公共
+  契约已冻结。最多 3 个 Terra task；独立红队复核可单独委派。
+- 迁移与对账必须重新引入与实现者独立的 Agent；实现者不得自证正确。
 - 不得新建、上传或续接网页 ChatGPT Pro 对话；P0-S01 的原始链接仅为历史证据。

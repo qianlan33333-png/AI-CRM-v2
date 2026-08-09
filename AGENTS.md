@@ -40,22 +40,24 @@
 
 ## 4. Slice 边界与内部执行编排
 
-- Codex root 独占架构裁决、中央契约冻结/批准、拆片、调度、验收/测试、Git/GitHub、
-  PR、merge 和 main CI；除台账、PR 文本或冲突修正外，root 直接改动最多 20 行。
-- 每个 Terra 任务须 self-contained，写明精确 base SHA、已满足依赖、白名单与绝对
-  worktree；执行器固定为 `gpt-5.6-terra`、`reasoning_effort=ultra`。
-- 最多 3 个 Terra 任务在依赖满足且白名单不重叠时按 DAG 并行。
-- Terra 只在分配 worktree 修改/测试；不得 stage、commit、push、PR、rebase、merge、
-  部署、真实迁移或真实外部调用。交回 base、task id、worktree、payload manifest、
-  测试和 correction；root stage 后计算 canonical diff SHA-256。
+- P0 骨架默认由 Codex Sol 在单一独立 worktree 端到端完成：架构裁决、契约、
+  实现、测试、Git/GitHub、中文 PR、squash merge 和精确 main SHA CI 复验。
+- 一个完整可观察行为尽量在一个 PR 内闭环契约、实现、作者测试、黑盒验收和 CI。
+  若超限，按可独立验收的行为拆分，不按“契约/实现/回执”层次拆成中间 PR。
+- P1 可将互不依赖的事实盘点交给 Terra 分组并行，由 Sol 汇总和裁决；P2 共享
+  平台核心由 Sol 主做，只将孤立组件按需委派；P3/P4 在契约冻结后恢复 Sol
+  指挥与 Terra 并行。迁移与对账必须使用与实现者独立的 Agent 复核。
+- 并行实现只在至少两个任务互不依赖、路径不重叠、单任务足够覆盖交接成本且
+  API/公共契约已冻结时启用；独立红队复核可单独委派。最多 3 个 Terra task。
+- 被委派 Agent 只在分配 worktree 和白名单内修改/测试，除非任务卡明确授权，不得
+  stage、commit、push、PR、rebase、merge、部署、真实迁移或真实外部调用。
 - 一片只解决一个行为或状态转换、一个模块、一个 API operation 或一个
   UI flow；API 与 UI 不得同片。
 - 最多 8 个手写文件、400 行手写 diff、一个预先冻结的依赖或迁移。
 - `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收
-  夹具是中央契约区；root 独占裁决和冻结/批准。Terra 仅可在中央合同任务的逐文件
-  白名单内机械实现/测试，业务 Slice 禁止修改。
-- 失败先由同一 task follow-up 修正；连续两次同根因失败或发生越界时拒收并重新拆片。
-- 开发可并行；root 的验收、Git/GitHub、rebase、PR、merge 和 main CI 必须串行。
+  夹具是中央契约区；只能由 Sol 在当前垂直 Slice 内裁决和修改，或在冻结后以精确
+  白名单委派机械实现。
+- Sol 必须串行执行每片的 rebase、全门禁、PR、squash merge 和精确 main SHA CI。
   不得新建、上传或继续网页 ChatGPT Pro 对话；既有链接仅作历史证据。
 
 ## 5. 生成、测试与证据
