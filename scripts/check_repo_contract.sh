@@ -71,6 +71,11 @@ required=(
   docs/evidence/p1/feature-matrix-id-anchor.v1
   docs/execution/slices/P1-S08.md
   scripts/check_feature_matrix_contract.sh
+  docs/migration-mapping.md
+  docs/migration-mapping.jsonl
+  docs/execution/slices/P1-S09.md
+  tools/migration-mapping/main.go
+  tools/migration-mapping/main_test.go
   scripts/build_slice_bundle.sh
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
@@ -149,6 +154,11 @@ done <<'EOF'
 100644 docs/evidence/p1/feature-matrix-id-anchor.v1
 100644 docs/execution/slices/P1-S08.md
 100755 scripts/check_feature_matrix_contract.sh
+100644 docs/migration-mapping.md
+100644 docs/migration-mapping.jsonl
+100644 docs/execution/slices/P1-S09.md
+100644 tools/migration-mapping/main.go
+100644 tools/migration-mapping/main_test.go
 100755 acceptance/p0s10/test_contract_replay.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
@@ -174,7 +184,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  51c9d0d078b2e568be0daa5de40b6de5927944852918e6517077191fce0e8c35
+  b32ae940227b7c7b61c01472cae2b4891e72eb6d66124f1aa4ee1602113b089f
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -227,6 +237,8 @@ verify_index_sha256 docs/evidence/p1/feature-matrix-id-anchor.v1 \
   1ab849cb10518e55f5c95716c1fab6f2c9e47477d17ad7f3f125edcc7e01ad75
 verify_index_sha256 docs/execution/slices/P1-S08.md \
   707667f4058d212ed628d8b868e02225c93a3948c9d90a229856162c15b13d99
+verify_index_sha256 docs/migration-mapping.jsonl \
+  a625f965db7d9aaf27a74c993252f872f255b9b4a4d7a7cdea499477e652dc09
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
 verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
@@ -536,6 +548,14 @@ completion_recipe="$(make_target_recipe "$completion_header")" ||
 for target in feature-matrix-p1-completion feature-matrix-p4-completion feature-matrix-p5-completion; do
   [[ ! "$ci_go_target" =~ (^|[[:space:]])$target($|[[:space:]]) ]] || fail "completion targets must stay outside base ci-go: $target"
 done
+
+require_make_line '.PHONY: migration-mapping-contract migration-mapping-p1-completion' "Makefile must declare the migration mapping gates"
+for target in migration-mapping-contract migration-mapping-p1-completion; do require_unique_make_target "$target"; done
+mapping_recipe="$(make_target_recipe 'migration-mapping-contract:')" || fail "migration mapping contract target must be unique"
+for call in '$(GO) -C tools vet ./migration-mapping' '$(GO) -C tools test -race -timeout=15s ./migration-mapping' '$(GO) -C tools run ./migration-mapping'; do [[ "$(grep -Fc "$call" <<<"$mapping_recipe" || true)" = "1" ]] || fail "migration mapping contract lost a frozen Go call"; done
+require_make_line 'migration-mapping-p1-completion: migration-mapping-contract' "migration mapping completion must depend on its contract"
+[[ "$(make_target_recipe 'migration-mapping-p1-completion: migration-mapping-contract')" = *'$(GO) -C tools run ./migration-mapping --completion'* ]] || fail "migration mapping completion lost its pending gate"
+[[ "$ci_go_target" =~ (^|[[:space:]])migration-mapping-contract($|[[:space:]]) && ! "$ci_go_target" =~ (^|[[:space:]])migration-mapping-p1-completion($|[[:space:]]) ]] || fail "ci-go must run only the base migration mapping contract"
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(
