@@ -11,7 +11,7 @@
   真实企微写操作或运行 live migration。
 - 每个 Slice 必须基于精确 `main` SHA；不得顺手扩大修改范围。
 
-## 2. 八条架构铁律
+## 2. 九条架构铁律
 
 1. 域之间只能导入 `internal/<domain>/port` 或使用领域事件；禁止导入其他
    域的 `app`、`store`、`http`、`worker`。
@@ -26,6 +26,9 @@
    `/examples` 仅允许不可部署的测试参照。
 8. 业务周期任务一律使用 River periodic jobs；禁止 `time.Ticker`、
    `time.AfterFunc` 和第三方 cron。
+9. 业务模块实现阶段不得读取旧 Python 源码；旧系统行为只能经
+   `docs/rules/*.md` 或 `docs/evidence/p1/api-facts-*.md` 传递。实现片
+   的任务输入中出现旧仓源码路径即为越界。
 
 ## 3. OneID 与事务
 
@@ -40,25 +43,26 @@
 
 ## 4. Slice 边界与内部执行编排
 
-- P0 骨架默认由 Codex Sol 在单一独立 worktree 端到端完成：架构裁决、契约、
-  实现、测试、Git/GitHub、中文 PR、squash merge 和精确 main SHA CI 复验。
-- 一个完整可观察行为尽量在一个 PR 内闭环契约、实现、作者测试、黑盒验收和 CI。
-  若超限，按可独立验收的行为拆分，不按“契约/实现/回执”层次拆成中间 PR。
-- P1 可将互不依赖的事实盘点交给 Terra 分组并行，由 Sol 汇总和裁决；P2 共享
-  平台核心由 Sol 主做，只将孤立组件按需委派；P3/P4 在契约冻结后恢复 Sol
-  指挥与 Terra 并行。迁移与对账必须使用与实现者独立的 Agent 复核。
-- 并行实现只在至少两个任务互不依赖、路径不重叠、单任务足够覆盖交接成本且
-  API/公共契约已冻结时启用；独立红队复核可单独委派。最多 3 个 Terra task。
-- 被委派 Agent 只在分配 worktree 和白名单内修改/测试，除非任务卡明确授权，不得
-  stage、commit、push、PR、rebase、merge、部署、真实迁移或真实外部调用。
-- 一片只解决一个行为或状态转换、一个模块、一个 API operation 或一个
-  UI flow；API 与 UI 不得同片。
-- 最多 8 个手写文件、400 行手写 diff、一个预先冻结的依赖或迁移。
+- 每片只解决一个完整可观察行为：一个模块、一个 API operation 或一个 UI flow；
+  API 与 UI 不得同片。此条不因规模上限而放宽。
+- 手写规模上限：P2 为 12 文件 / 800 行；P3–P4 为 12 文件 / 1000 行。
+  生成物与测试文件不计入手写额度。
+- 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
+  半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
+- 回退信号：若某片修正轮次超过 2 次，或连续三片平均 correction_count 超过 1，
+  视为切片过大，下一片回退到上一档规模并在 ledger 记录。
+- 并行：最多 3 个任务，且须满足互不依赖、路径不重叠、对应域 OpenAPI 与
+  公共 port 已冻结。P3 波次划分为 contact → (identity ∥ segment) →
+  (wecom ∥ outbound)。
+- 迁移与对账必须由与实现者独立的 Agent 复核，且不得向复核方提供迁移源码。
+- 用户最新指令对停报信号从严收紧：单片 `correction_count >= 2` 时立即停止并报告，
+  不等待“超过 2 次”。
+- 相对简单、边界清晰且不需要架构、产品或安全判断的机械任务，如确有需要可
+  委派 Terra Max 执行；Sol 仍负责范围冻结、结果复核、Git/PR 与 main CI 闭环。
 - `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收
   夹具是中央契约区；只能由 Sol 在当前垂直 Slice 内裁决和修改，或在冻结后以精确
   白名单委派机械实现。
 - Sol 必须串行执行每片的 rebase、全门禁、PR、squash merge 和精确 main SHA CI。
-  不得新建、上传或继续网页 ChatGPT Pro 对话；既有链接仅作历史证据。
 
 ## 5. 生成、测试与证据
 

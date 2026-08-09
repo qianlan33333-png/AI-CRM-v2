@@ -14,20 +14,32 @@ execution_policy:
   reasoning_effort: root_session
   task_graph: vertical_slice_then_conditional_dag
   architecture_implementation_acceptance_git_main_ci: sol_end_to_end_serial
+  sol_receipt_fields:
+    - pr_head_sha
+    - merge_sha
+    - main_ci_status
+    - correction_count
+  delegated_terra_receipts: full_hash_manifest_only_when_actually_delegated
   delegated_receipt: payload_manifest_including_untracked
   file_manifest_format: sorted_MODE_BYTES_SHA256_PATH
   canonical_diff: root_staged_git_diff_cached_binary_base_payload_paths
   receipt_carrier_integrity: pr_head_and_merge_sha
-  max_handwritten_files: 8
-  max_handwritten_diff_lines: 400
+  handwritten_limits:
+    P2: 12_files_800_lines
+    P3_P4: 12_files_1000_lines
+    hard_cap: 15_files_1500_lines
+  correction_stop_threshold: 2
+  rolling_three_slice_average_threshold: 1
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P1
-current_phase_status: BEHAVIOR_INVENTORY_NOT_STARTED
+current_phase_status: M0_CORRECTION_REQUIRED_BEFORE_P1_CLOSEOUT
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
+  historical_unknown_correction_count: null_not_zero
+  sol_receipts_are_forward_recorded: true
 slices:
   - slice_id: P0-B0
     title: repository-governance-and-architecture-bootstrap
@@ -488,6 +500,69 @@ slices:
       - MERGE_PENDING
       - MAIN_CI_PENDING
       - NOT_DEPLOYED
+  - slice_id: P1-S03
+    title: freeze-wecom-segment-outbound-api-static-facts
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/68
+    pr_head_sha: 20e71ef5f148aff9b90913bb70b8c468e835d61f
+    merge_sha: 8b531b95e3a6803f4ed65bcf5773a6803e05d591
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
+  - slice_id: P1-S04
+    title: freeze-upper-domain-api-static-facts
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/70
+    pr_head_sha: 838f62d1a0d3e690005fcca6e3551cfa25a274a4
+    merge_sha: 0892f1fd44e34eb6c838f1dc776f4239641e1a65
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
+  - slice_id: P1-S05
+    title: freeze-contact-auth-admin-frontend-behavior-matrix
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/72
+    pr_head_sha: 4fa6c721d226278b65aaf5874954b105a82ebb3f
+    merge_sha: 63fc09c114939890f4f24eb27cb2c9bcba2aab9c
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
+  - slice_id: P1-S06
+    title: freeze-wecom-audience-outbound-frontend-behavior-matrix
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/74
+    pr_head_sha: 30b539d7fef00cafaf6e59654f21dfd1995d8d99
+    merge_sha: 07735c1749b729db45c21f1a4bb766de33516d57
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
+  - slice_id: P1-S07
+    title: freeze-strict-complement-frontend-candidate-matrix
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/76
+    pr_head_sha: 089911de8db2502ded3f787296b3810832ccb23c
+    merge_sha: 84b893aef66f8be0074b25894debb95bbbdd975c
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
+  - slice_id: P1-S08
+    title: wire-feature-matrix-structure-evidence-and-completion-gates
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/78
+    pr_head_sha: 968c3f7d138fa98fb73a20fa2ffd44fa00376ed8
+    merge_sha: d2a260e130940a6466bb95c84d26fffb22a3b560
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
+  - slice_id: P1-S09-S10
+    title: freeze-complete-legacy-migration-mapping-candidates
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/80
+    pr_head_sha: e7c209cfc3ed28c236e550e3fe83b0070641e4ce
+    merge_sha: b3613f635692c932021036f8f81babf24fca8222
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    correction_count: null
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00

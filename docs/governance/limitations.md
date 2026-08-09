@@ -10,6 +10,10 @@
 自动创建治理规则：Ruleset API 当前返回空列表，`main` protection API 返回 404，
 所以 `main` 仍没有 GitHub 平台强制的分支保护。
 
+`M0-4` 由用户本人操作，当前状态为
+`PENDING_USER_CONFIRMATION`。在用户提供 Ruleset 实际状态后才能更新为已保护，
+不得用本地检查、PR 流程或公开可见性代替该证据。
+
 这意味着：
 
 - GitHub 技术上仍可能接受直接 push；不能声称 `main` 已受保护。

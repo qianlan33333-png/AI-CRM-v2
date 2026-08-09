@@ -80,6 +80,7 @@ required=(
   scripts/check_arch_imports.go
   scripts/ownership/main.go scripts/test_ownership.sh
   scripts/sourcepolicy/main.go scripts/test_source_policy.sh
+  scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
   scripts/generated-sources.sha256
@@ -98,6 +99,7 @@ required=(
   docs/execution/slices/P0-S02.md
   docs/execution/slices/P0-S03.md
   docs/execution/slices/P0-S04.md
+  docs/execution/slices/M0-1.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-重构详细设计.md
   docs/spec/SHA256SUMS
@@ -143,6 +145,8 @@ done <<'EOF'
 100755 scripts/test_ownership.sh
 100644 scripts/sourcepolicy/main.go
 100755 scripts/test_source_policy.sh
+100755 scripts/check_slice_inputs.sh
+100755 scripts/test_slice_inputs.sh
 100644 tools/contract-replay/main.go
 100644 tools/contract-replay/main_test.go
 100644 tools/contract-replay/testdata/empty.v1.json
@@ -172,6 +176,7 @@ done <<'EOF'
 100755 acceptance/p0s04/static_contract.sh
 100755 acceptance/p0s04/test_static_contract.sh
 100644 docs/execution/slices/P0-S04.md
+100644 docs/execution/slices/M0-1.md
 EOF
 
 verify_index_sha256() {
@@ -184,7 +189,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  b32ae940227b7c7b61c01472cae2b4891e72eb6d66124f1aa4ee1602113b089f
+  cda91bf53566a9a5e4a809d060f183ae7fb8165d75fd4b39129c70101e195fc7
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -219,6 +224,12 @@ verify_index_sha256 scripts/sourcepolicy/main.go \
   bf6ed1861b79d86924f43a5db4d0283e67aeaaca56559f3e283fc83ae969127f
 verify_index_sha256 scripts/test_source_policy.sh \
   a5abc23dc6a09f018ede52fcab106dedf73969cb692d65a67e237109470a654f
+verify_index_sha256 scripts/check_slice_inputs.sh \
+  b7b1711da73974b0a89c79bab020e519095fc8aaf36f737b036027ec3a08cb25
+verify_index_sha256 scripts/test_slice_inputs.sh \
+  32ec32f2c3f0c7ec7c29aabfada4bc4c1f29dc39a37fc0aacfb51e30d304d8a7
+verify_index_sha256 docs/execution/slices/M0-1.md \
+  1bb201f3550ef638ea85f8f7f5de585b57825177c400a7f5cab3094ef68f6043
 verify_index_sha256 tools/contract-replay/main.go \
   c2df22b56e1b57667974996808f4185d1a602c54b7da2c3ecdca4c146b902cef
 verify_index_sha256 tools/contract-replay/main_test.go \
@@ -246,7 +257,7 @@ verify_index_sha256 acceptance/p0s10/test_contract_replay.sh \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  fd3ca63fec9602a3003b046589abe3d5ff555e8e24f9db52691161005c7be812
+  5cd132096715f79a2d4b69e58368057a193aac904b892884484c9892af75b188
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -491,6 +502,23 @@ done
   fail "source policy lint target lost the frozen checker call"
 [[ "$(make_target_recipe 'source-policy-lint-test:')" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_source_policy.sh' ]] ||
   fail "source policy lint test target lost the frozen runner call"
+require_make_line '.PHONY: slice-input-contract slice-input-contract-test' \
+  "Makefile must declare the slice input contract targets"
+require_make_line 'slice-input-contract slice-input-contract-test: override SHELL := /bin/bash' \
+  "slice input contract targets must use absolute Bash"
+require_make_line 'slice-input-contract slice-input-contract-test: override .SHELLFLAGS := -eu -o pipefail -c' \
+  "slice input contract targets must pin fail-closed Bash flags"
+for target in slice-input-contract slice-input-contract-test; do
+  require_unique_make_target "$target"
+done
+[[ "$(make_target_recipe 'slice-input-contract:')" = $'\t@/usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/check_slice_inputs.sh' ]] ||
+  fail "slice input contract target lost the frozen checker call"
+require_make_line 'slice-input-contract-test: slice-input-contract' \
+  "slice input tests must depend on the canonical checker"
+[[ "$(make_target_recipe 'slice-input-contract-test: slice-input-contract')" = $'\t@/usr/bin/env -u BASH_ENV -u ENV /bin/bash scripts/test_slice_inputs.sh' ]] ||
+  fail "slice input contract tests lost the frozen runner call"
+[[ "$ci_go_target" =~ (^|[[:space:]])slice-input-contract-test($|[[:space:]]) ]] ||
+  fail "ci-go must depend on slice-input-contract-test"
 require_make_line '.PHONY: contract-replay contract-replay-test' \
   "Makefile must declare the contract replay targets"
 require_unique_make_target contract-replay

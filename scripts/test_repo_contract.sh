@@ -254,6 +254,38 @@ if (cd "$broken_source_policy_ci_fixture" && scripts/check_repo_contract.sh >/de
   fail "ci-go without source policy lint tests was accepted"
 fi
 
+for path in scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh docs/execution/slices/M0-1.md; do
+  slice_input_receipt_fixture="$(make_fixture "slice-input-receipt-${path##*/}")"
+  printf '%s\n' '# slice input receipt drift' >>"$slice_input_receipt_fixture/$path"
+  git -C "$slice_input_receipt_fixture" add "$path"
+  if (cd "$slice_input_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "slice input contract receipt drift was accepted: $path"
+  fi
+done
+
+slice_input_runner_mode_fixture="$(make_fixture slice-input-runner-mode)"
+chmod 644 "$slice_input_runner_mode_fixture/scripts/test_slice_inputs.sh"
+git -C "$slice_input_runner_mode_fixture" add scripts/test_slice_inputs.sh
+if (cd "$slice_input_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "slice input contract runner mode drift was accepted"
+fi
+
+broken_slice_input_ci_fixture="$(make_fixture broken-slice-input-ci)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]slice-input-contract-test([[:space:]]|$)/\1/' "$broken_slice_input_ci_fixture/Makefile"
+rm -f "$broken_slice_input_ci_fixture/Makefile.bak"
+restage_make_receipt "$broken_slice_input_ci_fixture"
+if (cd "$broken_slice_input_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without slice input contract tests was accepted"
+fi
+
+hollow_slice_input_target_fixture="$(make_fixture hollow-slice-input-target)"
+sed -i.bak '/^slice-input-contract:$/ { n; s/.*/\t@true/; }' "$hollow_slice_input_target_fixture/Makefile"
+rm -f "$hollow_slice_input_target_fixture/Makefile.bak"
+restage_make_receipt "$hollow_slice_input_target_fixture"
+if (cd "$hollow_slice_input_target_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow slice input contract target was accepted"
+fi
+
 for path in scripts/ownership/main.go scripts/test_ownership.sh docs/architecture/table-ownership.yml; do
   ownership_receipt_fixture="$(make_fixture "ownership-receipt-${path##*/}")"
   printf '%s\n' '# ownership receipt drift' >>"$ownership_receipt_fixture/$path"
