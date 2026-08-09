@@ -60,6 +60,7 @@ required=(
   acceptance/p0s04/static_contract.sh
   acceptance/p0s04/test_static_contract.sh
   scripts/build_slice_bundle.sh
+  scripts/check_arch_imports.go
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
   scripts/generated-sources.sha256
@@ -67,6 +68,7 @@ required=(
   scripts/test_build_slice_bundle.sh
   scripts/test_gitless_generated_check.sh
   scripts/test_orval_generated_check.sh
+  scripts/test_arch_imports.sh
   scripts/test_repo_contract.sh
   docs/architecture/canonical.md
   docs/architecture/port-contracts.md
@@ -116,6 +118,8 @@ done <<'EOF'
 100644 web/src/api/generated/health.ts
 100644 .github/workflows/application-go.yml
 100755 scripts/check_repo_contract.sh
+100644 scripts/check_arch_imports.go
+100755 scripts/test_arch_imports.sh
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_repo_contract.sh
 100755 acceptance/p0s02/static_contract.sh
@@ -139,7 +143,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  b15a2a05225872ba231b92d3ebb3b608a922224e4051b603e101f3f490ad0b63
+  79ee509aa30402d7d0f3d66b0cb1807759a52e32b5859e020ac4290f07e8ced6
 verify_index_sha256 go.mod \
   50ddacab2ed3d90ff69dbd2c9e1a16c23db40993087563acb77a1f383a910ce7
 verify_index_sha256 go.sum \
@@ -162,8 +166,12 @@ verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   ae16d4f7696baccf354b6debc0645afeac32e8475491d4d4b4cfe281c201e587
+verify_index_sha256 scripts/check_arch_imports.go \
+  7467b6857b05e89793bb2001745650bc04750bd5a59072e3c7a2a7be0f011b18
+verify_index_sha256 scripts/test_arch_imports.sh \
+  68cdf909235c8961a91ffe6560461fb1e174bc67fdb3b3eb24b22bf43c25d0b7
 verify_index_sha256 scripts/test_repo_contract.sh \
-  7e72e2922176316f371559c1cea42097f6d80d752f940242251ba56d3911b54c
+  a9891339ce98367df3ddd40854807b002b5f97865c9a3471c3174a1ebca22ce9
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -369,6 +377,23 @@ done
 
 [[ "$(printf '%s\n' "$makefile" | grep -Ec '^ci-go:[[:space:]]' || true)" = "1" && "$ci_go_target" =~ (^|[[:space:]])p0-s04-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P0-S04 acceptance target"
+
+require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
+  "Makefile must declare the architecture import lint targets"
+require_unique_make_target arch-import-lint
+require_unique_make_target arch-import-lint-test
+arch_import_recipe="$(make_target_recipe 'arch-import-lint:')" ||
+  fail "architecture import lint target must be unique"
+[[ "$arch_import_recipe" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/check_arch_imports.go -root .' ]] ||
+  fail "architecture import lint target lost the frozen checker call"
+arch_import_test_recipe="$(make_target_recipe 'arch-import-lint-test:')" ||
+  fail "architecture import lint test target must be unique"
+[[ "$arch_import_test_recipe" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_arch_imports.sh' ]] ||
+  fail "architecture import lint test target lost the frozen runner call"
+for target in arch-import-lint arch-import-lint-test; do
+  [[ "$ci_go_target" =~ (^|[[:space:]])$target($|[[:space:]]) ]] ||
+    fail "ci-go must depend on $target"
+done
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
 verify_postgres_step="$(
