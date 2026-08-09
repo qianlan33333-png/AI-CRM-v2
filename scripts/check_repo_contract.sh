@@ -43,6 +43,7 @@ required=(
   acceptance/p0s01/static_contract.sh
   acceptance/p0s02/health_contract_test.go
   acceptance/p0s02/static_contract.sh
+  acceptance/p0s02/test_static_contract.sh
   acceptance/p0s03/query_contract_test.go
   acceptance/p0s03/source_contract.go
   acceptance/p0s03/static_contract.sh
@@ -103,6 +104,8 @@ done <<'EOF'
 100644 .github/workflows/application-go.yml
 100755 scripts/check_repo_contract.sh
 100755 scripts/test_repo_contract.sh
+100755 acceptance/p0s02/static_contract.sh
+100755 acceptance/p0s02/test_static_contract.sh
 100644 internal/platform/river/contract.go
 100644 acceptance/p0s04/contract_test.go
 100644 acceptance/p0s04/source_contract.go
@@ -122,7 +125,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  4efc03dcffc0c3bda494e3543f934ab8cb8d6f1c3315d0e26cfeae0cb32943ba
+  1ce83378743d4ac4230890db83c72475b22c6239f16b01dfbd6227ccac6489a1
 verify_index_sha256 go.mod \
   3cbf623a51f7f6d3d67fd9130d54173ede1c8234b23f28dfa6878c8b4c34d287
 verify_index_sha256 go.sum \
@@ -138,7 +141,11 @@ verify_index_sha256 scripts/check_generated_sources.sh \
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  3a7f5949cf013abfd3d92f0896ae210bf68a68e1b965966339aa8ea800cc6a92
+  a6e902dda4c5fec0b290b05a288347682d213f65c60fd14b870bec91208b93cc
+verify_index_sha256 acceptance/p0s02/static_contract.sh \
+  b54cb39a87c72969caa8d480ff85da1471b1e6e42556a7ee8db7bf701e1eef91
+verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
+  92aef4422e152576884d1152c50538d4e517b907ceda5807420cfa6ebdf3d699
 verify_index_sha256 internal/platform/store/contract.go \
   747683b0f430da2ee29f001abaebe5fe621561aa3dd99b5b9db6b7d871895165
 verify_index_sha256 acceptance/p0s03/query_contract_test.go \
@@ -220,6 +227,18 @@ make_target_recipe() {
 
 require_make_line 'unexport BASH_ENV ENV' \
   "Makefile must unexport BASH_ENV and ENV before starting recipes"
+require_make_line '.PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go' \
+  "Makefile must declare the P0-S02 contract and acceptance targets"
+require_unique_make_target p0-s02-contract
+require_unique_make_target p0-s02-acceptance
+require_make_line 'p0-s02-acceptance: p0-s02-contract' \
+  "P0-S02 acceptance target must depend on the contract target"
+p0_s02_contract_recipe="$(make_target_recipe 'p0-s02-contract:')" ||
+  fail "P0-S02 contract target must be unique"
+[[ "$p0_s02_contract_recipe" = $'\t@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly acceptance/p0s02/test_static_contract.sh' ]] ||
+  fail "P0-S02 contract target must run only the frozen static-contract runner"
+[[ "$ci_go_target" =~ (^|[[:space:]])p0-s02-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P0-S02 acceptance target"
 require_make_line '.PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration' \
   "Makefile must declare the P0-S04 targets exactly once"
 require_unique_make_target p0-s04-contract

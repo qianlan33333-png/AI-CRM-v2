@@ -11,6 +11,17 @@ cd "$repo_root"
 implementation="internal/platform/http/health.go"
 unit_test="internal/platform/http/health_test.go"
 source_files=("$implementation" "$unit_test")
+mode_of() {
+  local path="$1" mode
+  mode="$(stat -f '%Lp' "$path" 2>/dev/null || true)"
+  if [[ "$mode" =~ ^[0-7]{3,4}$ ]]; then
+    printf '%s\n' "$mode"
+    return
+  fi
+  mode="$(stat -c '%a' "$path" 2>/dev/null || true)"
+  [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
+  printf '%s\n' "$mode"
+}
 [[ -d internal/platform/http && ! -L internal/platform/http ]] || fail "HTTP package path must be a directory"
 while IFS= read -r -d '' entry; do
   case "$entry" in
@@ -21,9 +32,8 @@ while IFS= read -r -d '' entry; do
 done < <(find internal/platform/http -mindepth 1 -maxdepth 1 -print0)
 for source_file in "${source_files[@]}"; do
   [[ -f "$source_file" && ! -L "$source_file" ]] || fail "required Slice path must be a regular non-symlink file: $source_file"
-  mode="$(stat -f '%Lp' "$source_file" 2>/dev/null || stat -c '%a' "$source_file")"
-  [[ "$mode" =~ ^[0-7]{3,4}$ ]] || fail "cannot read file mode: $source_file"
-  permissions=$((8#$mode))
+  mode="$(mode_of "$source_file")" || fail "cannot read file mode: $source_file"
+  permissions=$(( (8#$mode) & 07777 ))
   (( (permissions & 011) == 0 )) || fail "group/other execute bits are forbidden: $source_file"
 done
 line_count="$(awk 'END { print NR }' "$implementation")"
