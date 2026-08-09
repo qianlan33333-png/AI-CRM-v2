@@ -78,6 +78,9 @@ required=(
   docs/execution/slices/P1-C02.md
   tools/migration-mapping/main.go
   tools/migration-mapping/main_test.go
+  tools/p1-reconciliation/main.go
+  tools/p1-reconciliation/main_test.go
+  docs/execution/slices/P1-C03.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -179,6 +182,9 @@ done <<'EOF'
 100644 docs/execution/slices/P1-C02.md
 100644 tools/migration-mapping/main.go
 100644 tools/migration-mapping/main_test.go
+100644 tools/p1-reconciliation/main.go
+100644 tools/p1-reconciliation/main_test.go
+100644 docs/execution/slices/P1-C03.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -218,7 +224,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  1610570294a6ab052b21ec66ece693dbc03bed3e0ef1936ba8f949e56937a08c
+  0b02a44ea7aab1288ad279deab390d49692d54a75bd8adeca57eb1ef1ff6b9c4
 verify_index_sha256 .github/CODEOWNERS \
   bb2c40eaad8b8b3dd83cd2d81f58360717ab6dbaeb773afe6d65b7ae18e4f5cb
 verify_index_sha256 go.mod \
@@ -313,6 +319,12 @@ verify_index_sha256 tools/migration-mapping/main_test.go \
   762bc2621cbcff28530354ebcc47d102ee579eb1bc364fbec70c8efada929ddb
 verify_index_sha256 docs/execution/slices/P1-C02.md \
   c7b8c7236f20279d244286f0f3facaab28ba831a64e7f662755a6b9700abac43
+verify_index_sha256 tools/p1-reconciliation/main.go \
+  f71d66874bf968b1e97c3d33c0358020d5670721c087a0f7b1fdb55b33b76f39
+verify_index_sha256 tools/p1-reconciliation/main_test.go \
+  1f393c640b8a2c223e86a13558ce893adf6a01183876f6a7fb7b2cbc8038b727
+verify_index_sha256 docs/execution/slices/P1-C03.md \
+  cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
@@ -330,7 +342,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  5cc8a460c1e514547d797120f6400a724a5572dbd94b7e41b3f7e19701255245
+  54141afe7ca38dfd720cc846259edcc07fa0f32d676df4b6a7f5c876aee95ed7
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -659,6 +671,20 @@ for call in '$(GO) -C tools vet ./migration-mapping' '$(GO) -C tools test -race 
 require_make_line 'migration-mapping-p1-completion: migration-mapping-contract' "migration mapping completion must depend on its contract"
 [[ "$(make_target_recipe 'migration-mapping-p1-completion: migration-mapping-contract')" = *'$(GO) -C tools run ./migration-mapping --completion'* ]] || fail "migration mapping completion lost its pending gate"
 [[ "$ci_go_target" =~ (^|[[:space:]])migration-mapping-contract($|[[:space:]]) && ! "$ci_go_target" =~ (^|[[:space:]])migration-mapping-p1-completion($|[[:space:]]) ]] || fail "ci-go must run only the base migration mapping contract"
+
+require_make_line '.PHONY: p1-reconciliation-contract' "Makefile must declare the P1 reconciliation gate"
+require_make_line 'p1-reconciliation-contract: override SHELL := /bin/bash' "P1 reconciliation must use absolute Bash"
+require_make_line 'p1-reconciliation-contract: override .SHELLFLAGS := -eu -o pipefail -c' "P1 reconciliation must pin fail-closed Bash flags"
+require_make_line 'p1-reconciliation-contract: override GO := go' "P1 reconciliation must reject hostile GO overrides"
+require_unique_make_target 'p1-reconciliation-contract'
+reconciliation_recipe="$(make_target_recipe 'p1-reconciliation-contract:')" || fail "P1 reconciliation target must be unique"
+for line in \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./p1-reconciliation' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./p1-reconciliation' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./p1-reconciliation'; do
+  printf '%s\n' "$reconciliation_recipe" | grep -Fqx "$line" || fail "P1 reconciliation lost a frozen Go call"
+done
+[[ "$ci_go_target" =~ (^|[[:space:]])p1-reconciliation-contract($|[[:space:]]) ]] || fail "ci-go must depend on p1-reconciliation-contract"
 
 require_make_line '.PHONY: query-plan-gate query-plan-gate-test' "Makefile must declare the query plan gates"
 require_make_line 'query-plan-gate query-plan-gate-test: override SHELL := /bin/bash' "query plan targets must use absolute Bash"
