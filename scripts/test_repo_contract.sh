@@ -52,6 +52,22 @@ for file_path in acceptance/fixtures/postgres.go acceptance/fixtures/postgres_te
   fi
 done
 
+for file_path in internal/platform/store/uow.go internal/platform/store/uow_test.go acceptance/p2s01r/doc.go acceptance/p2s01r/uow_integration_test.go docs/execution/slices/P2-01R.md docs/execution/implementation-plan.md; do
+  uow_receipt_fixture="$(make_fixture "p2-01r-receipt-${file_path//\//-}")"
+  case "$file_path" in *.go) printf '%s\n' '// P2-01R receipt drift' >>"$uow_receipt_fixture/$file_path" ;; *) printf '%s\n' '# P2-01R receipt drift' >>"$uow_receipt_fixture/$file_path" ;; esac
+  git -C "$uow_receipt_fixture" add "$file_path"
+  if (cd "$uow_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-01R UoW or housekeeping receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_uow_implementation="$(make_fixture missing-p2-01r-uow)"
+rm -f "$missing_uow_implementation/internal/platform/store/uow.go"
+git -C "$missing_uow_implementation" add -u internal/platform/store/uow.go
+if (cd "$missing_uow_implementation" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-01R UnitOfWork implementation was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go

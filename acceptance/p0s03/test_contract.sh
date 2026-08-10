@@ -18,12 +18,14 @@ make_fixture() {
 	chmod 755 "$fixture/acceptance/p0s03/static_contract.sh"
 	cp "$repo_root/go.mod" "$repo_root/go.sum" "$fixture/"
 	printf '%s\n' 'package platformstore' >"$fixture/internal/platform/store/contract.go"
+	printf '%s\n' 'package platformstore' >"$fixture/internal/platform/store/uow.go"
+	printf '%s\n' 'package platformstore' >"$fixture/internal/platform/store/uow_test.go"
 	printf '%b' 'package platformstore\n\nimport (\n\t"context"\n\t"fmt"\n\n\tdbgen "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store/generated"\n)\n\n' \
 		'type PingStore struct {\n\tquerier dbgen.Querier\n}\n\nfunc NewPingStore(db dbgen.DBTX) *PingStore {\n\treturn &PingStore{querier: dbgen.New(db)}\n}\n\n' \
 		'func (store *PingStore) Ping(ctx context.Context) error {\n\tvalue, err := store.querier.Ping(ctx)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif value == 1 {\n\t\treturn nil\n\t}\n\treturn fmt.Errorf("platform store ping: unexpected value %d", value)\n}\n' >"$fixture/internal/platform/store/ping.go"
 	printf '%b' 'package platformstore\n\nimport (\n\t"context"\n\t"errors"\n\t"testing"\n)\n\ntype fixtureQuerier struct { value int64; err error }\nfunc (querier fixtureQuerier) Ping(context.Context) (int64, error) { return querier.value, querier.err }\n\nfunc TestPing(t *testing.T) {\n\tif NewPingStore(nil) == nil { t.Fatal("nil store") }\n\tif err := (&PingStore{querier: fixtureQuerier{value: 1}}).Ping(context.Background()); err != nil { t.Fatal(err) }\n\tsentinel := errors.New("sentinel")\n\tif err := (&PingStore{querier: fixtureQuerier{err: sentinel}}).Ping(context.Background()); !errors.Is(err, sentinel) { t.Fatal(err) }\n\tif err := (&PingStore{querier: fixtureQuerier{}}).Ping(context.Background()); err == nil || err.Error() != "platform store ping: unexpected value 0" { t.Fatalf("unexpected error: %v", err) }\n}\n' >"$fixture/internal/platform/store/ping_test.go"
 	gofmt -w "$fixture/internal/platform/store/ping.go" "$fixture/internal/platform/store/ping_test.go"
-	chmod 755 "$fixture/internal" "$fixture/internal/platform" "$fixture/internal/platform/store" "$fixture/internal/platform/store/generated" "$fixture/internal/platform/store/queries"; chmod 644 "$fixture/internal/platform/store/contract.go" "$fixture/internal/platform/store/queries/health.sql" "$fixture/internal/platform/store/ping.go" "$fixture/internal/platform/store/ping_test.go" "$fixture/internal/platform/store/generated/"*.go
+	chmod 755 "$fixture/internal" "$fixture/internal/platform" "$fixture/internal/platform/store" "$fixture/internal/platform/store/generated" "$fixture/internal/platform/store/queries"; chmod 644 "$fixture/internal/platform/store/contract.go" "$fixture/internal/platform/store/uow.go" "$fixture/internal/platform/store/uow_test.go" "$fixture/internal/platform/store/queries/health.sql" "$fixture/internal/platform/store/ping.go" "$fixture/internal/platform/store/ping_test.go" "$fixture/internal/platform/store/generated/"*.go
 	[[ ! -e "$fixture/.git" && ! -L "$fixture/.git" ]] || fail "fixture unexpectedly has .git: $1"
 	printf '%s\n' "$fixture"
 }

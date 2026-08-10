@@ -101,6 +101,8 @@ required=(
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
+  docs/execution/slices/P2-01R.md
+  docs/execution/implementation-plan.md
   docs/execution/slices/P1-S11.md
   internal/api/generated/server.gen.go
   internal/api/candidate/generated/server.gen.go
@@ -108,6 +110,10 @@ required=(
   internal/contact/port/port.go
   internal/identity/port/port.go
   internal/platform/port/uow.go
+  internal/platform/store/uow.go
+  internal/platform/store/uow_test.go
+  acceptance/p2s01r/doc.go
+  acceptance/p2s01r/uow_integration_test.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -234,6 +240,8 @@ done <<'EOF'
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
+100644 docs/execution/slices/P2-01R.md
+100644 docs/execution/implementation-plan.md
 100644 docs/execution/slices/P1-S11.md
 100644 docs/backlog/post-launch.md
 100644 docs/execution/slices/SEC-01.md
@@ -241,6 +249,10 @@ done <<'EOF'
 100644 internal/contact/port/port.go
 100644 internal/identity/port/port.go
 100644 internal/platform/port/uow.go
+100644 internal/platform/store/uow.go
+100644 internal/platform/store/uow_test.go
+100644 acceptance/p2s01r/doc.go
+100644 acceptance/p2s01r/uow_integration_test.go
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -319,7 +331,11 @@ verify_index_sha256 scripts/generated-sources.sha256 \
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 docs/backlog/post-launch.md \
-  82818ff302e0fb96c3e9aaaf148c3169262f90346131ecb098c91c3fbc753694
+  3248fa362b357e72f562531feb5ba01297f0a19b275a1e61d40108a4fe522b31
+verify_index_sha256 docs/execution/implementation-plan.md \
+  49fe144941c712ee47ef9b99c603e5eef70194a1039cd5cef87a6cdb1657a283
+verify_index_sha256 docs/execution/slices/P2-01R.md \
+  15e671e6d7244993157487b674473fa65acfb26dfbb24e8903130ed9dd1ece85
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
@@ -367,9 +383,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  a0917b9d2d119a68ba9c32e2d458c7b9a3775f846037748947715fdcfee77ee6
+  5c49bf3f2421e7d93d1f92a20279d7d847e61d3e9aaedf2b635213aa80fe32e7
 verify_index_sha256 docs/spec/SHA256SUMS \
-  2b6a02de88ef52160af312a2d5b52677364ccfa64125eb67cf5bb1e155caec82
+  fea44f535c5fc1149c9ed7372fd4667592c7013d84e498c9b31049bdf116c94a
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -417,7 +433,7 @@ verify_index_sha256 docs/execution/slices/G1-D01.md \
 verify_index_sha256 docs/execution/slices/G1-D02.md \
   3fc37264f57da5fa15d8d3765554ca3e1eea7ce8bd10865176eb9d3b537f4742
 verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
-  26b26679422287c3dd32c6321a481f6f8e02fecc23a99f058ea9fe1b24ef8f42
+  d7b9aa9ccb7679c2e4e1b1d6e1a9a3aba147fc7c205f1b62e9f11a3e490d8011
 verify_index_sha256 tools/p1-reconciliation/main.go \
   2b1162a4a423b9f106b512d162a5ebc4d3bc5fded125caaa69bc0d7b823ade99
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
@@ -451,7 +467,15 @@ verify_index_sha256 internal/contact/port/port.go \
 verify_index_sha256 internal/identity/port/port.go \
   321d6518b3e5fec57f3591307334e9fac67c06018bec727790f45e0e55ab5627
 verify_index_sha256 internal/platform/port/uow.go \
-  9c751db2adab03f18c342fa5ab6487020084f704b0fe96203010e1f9f5c03e2b
+  f8f9b381c9cdbcabbeea9403e8379c33464b7356522abdb383d0e09a6f5996c1
+verify_index_sha256 internal/platform/store/uow.go \
+  46591bbf2833b97ce06d9cc1513ca2aadc70f21de05544e836b453d35da51b7e
+verify_index_sha256 internal/platform/store/uow_test.go \
+  4524e09f7200b7b445cdab73be7ee921d619adc624de3b790f4fcd395017b0d7
+verify_index_sha256 acceptance/p2s01r/doc.go \
+  34dbf4e86ad0f890aa503a84b8c429c692b15678f8df20adebde86a698d4a12b
+verify_index_sha256 acceptance/p2s01r/uow_integration_test.go \
+  15522642151bc0e7e8f4b45985066269b0a8a66d3401662c2cde86edadbc33df
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   6aeeed7538c430b1d18861fade94ba0428fac5b3c2c2f6493e51bea08e3d178e
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
@@ -471,7 +495,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  cf3f44286a2b6789aa81d1a8c4ebc22739fbd51f9f09302219bf2db91bd6a27e
+  2bf69ebbeaa028969fcf3bf861e5625eb5faaddad9f3e7f079f9b85c427090d0
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -483,9 +507,9 @@ verify_index_sha256 acceptance/p0s03/query_contract_test.go \
 verify_index_sha256 acceptance/p0s03/source_contract.go \
   239802f1fea13e0640ca4e3d1eda8f8428f8393f2cd4919deecc0d6ab311cd79
 verify_index_sha256 acceptance/p0s03/static_contract.sh \
-  666b174b0017e44e774eaea1b784d1e0ba93e308632f42f7ace768917d9a3c84
+  313bc75b5730733b0cb5654a669a5130c7dd36c8cc3a5de99d14b124f7741100
 verify_index_sha256 acceptance/p0s03/test_contract.sh \
-  030c0ca1f901e95d802b3dee37ca0b472fceecb5fd147263a59c6bd786b946aa
+  8e92a83915ac4a068408f5e562c50d7965efd7c0129e41a0e7fa38769567f6d8
 verify_index_sha256 internal/platform/river/contract.go \
   f03a64b78f9fa0f809b869a7d473f42a9edecc41201805fec461f4ba0f1cb292
 verify_index_sha256 acceptance/p0s04/contract_test.go \
@@ -1001,6 +1025,20 @@ grep -Eq '^[[:space:]]+scope[[:space:]]+TEXT[[:space:]]+NOT NULL' <<<"$design" |
 grep -Fq '/acceptance/snapshots' <<<"$design" || fail "design lost the snapshot gate file_path"
 grep -Fq '快照只防新系统自身回归，不能防新旧行为不一致' <<<"$design" ||
   fail "design lost the snapshot capability limitation"
+grep -Fq 'River 队列固定为 `critical/event/outbound/sync/heavy/ai`' <<<"$design" ||
+  fail "design lost the fixed six-queue topology"
+grep -Fq 'CREATE TABLE inbox_events (' <<<"$design" ||
+  fail "design lost the persistent inbox contract"
+grep -Fq 'outcome_unknown' <<<"$design" ||
+  fail "design lost the outbound unknown-outcome state"
+grep -Fq 'event_deliveries 推迟到 P4' <<<"$design" ||
+  fail "design lost the P4 per-consumer delivery deferral"
+implementation_plan="$(git show ':docs/execution/implementation-plan.md')"
+grep -Fq 'contact → (identity ∥ segment) → (wecom ∥ outbound)' <<<"$implementation_plan" ||
+  fail "implementation plan lost the frozen P3 waves"
+grep -Fq '安全、数据损坏/不可逆风险、已决 ADR、全部架构铁律与 CI 门禁均不得进入' \
+  <<<"$(git show ':docs/backlog/post-launch.md')" ||
+  fail "post-launch backlog lost its non-deferrable boundaries"
 
 forbidden_path_pattern='(^|/)(\.env[^/]*|node_modules|vendor|dist|build|coverage|\.cache|playwright-report|test-results|\.auth|\.browser)(/|$)|^(data|runtime|logs|uploads|tmp)(/|$)|(^|/)(id_rsa[^/]*|cookies[^/]*\.json|credentials[^/]*\.json)$|\.(pem|key|p12|pfx|db|sqlite|sqlite3|dump|zip)$'
 if git ls-files | grep -E "$forbidden_path_pattern" >/dev/null; then

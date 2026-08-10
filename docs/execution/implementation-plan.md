@@ -17,7 +17,7 @@ P0 由 Sol 直接负责架构裁决、契约、实现、测试、修正、Git/Gi
 并行；迁移与对账必须由与实现者独立的 Agent 复核。并行实现须至少两个互不依赖、
 路径不重叠、工作量足够且公共契约已冻结的任务；最多 3 个 Terra task。
 
-每片硬上限为一个模块/API operation/UI flow、8 个手写文件、400 行手写 diff。Sol 在
+每片硬上限为一个模块/API operation/UI flow；P2 为 12 个手写文件/800 行，P3 为 12 文件/1000 行，完整行为硬顶 15/1500。Sol 在
 同一 PR 内修正；委派失败先用同一 task follow-up，连续两次同根因失败或越界即拒收重拆。
 不得新建、上传或续接网页
 ChatGPT Pro 对话；P0-S01 既有链接仅为历史证据。完整规则见
@@ -73,7 +73,7 @@ flowchart TD
 
 UoW、强类型 config、settings/secret、River role、scheduler、event append、
 dispatcher、请求/错误中间件、并发预算、登录、RBAC、router、Web shell、
-stages store/service/handler/page，共 17 片。
+stages store/service/handler/page，以及 S/M/L 分档生成与 Compose/staging 脚本，共 18 片。
 
 ### P3
 
@@ -86,7 +86,7 @@ stages store/service/handler/page，共 17 片。
 - Outbound：store、EnqueueOne、EnqueueBatch、sender、状态/事件、重试取消、
   handler、UI。
 
-严格顺序：contact → identity → wecom → segment → outbound。
+波次顺序以 AGENTS.md §4 为准：`contact → (identity ∥ segment) → (wecom ∥ outbound)`。每波次启动前冻结对应域 OpenAPI 与公共 port。
 
 ### P4
 

@@ -6,7 +6,10 @@ import (
 	"errors"
 )
 
-var ErrTransactionRequired = errors.New("transaction context required")
+var (
+	ErrTransactionRequired = errors.New("transaction context required")
+	ErrNestedTransaction   = errors.New("nested transaction forbidden")
+)
 
 // UnitOfWork supplies a transaction-bound context. The callback must not retain
 // the context or use it from another goroutine.

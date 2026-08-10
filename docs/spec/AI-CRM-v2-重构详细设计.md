@@ -71,18 +71,26 @@
 | `maintenance_work_mem` | 128MB | 256MB | 512MB |
 | `max_connections` | 40 | 80 | 150 |
 | Go `GOMEMLIMIT` | 768MB | 1.5GB | 3GB |
-| pgx 池 (api / worker) | 10 / 5 | 20 / 10 | 30 / 20 |
-| River worker 并发 | 3 | 8 | 16 |
+| pgx 池 (api) | 10 | 20 | 30 |
+| River `critical` 并发 | 2 | 3 | 4 |
+| River `event` 并发 | 1 | 2 | 4 |
+| River `outbound` 并发 | 1 | 4 | 8 |
+| River `sync` 并发 | 1 | 2 | 3 |
+| River `heavy` 并发 | 1 | 2 | 4 |
+| River `ai` 并发 | 1 | 2 | 3 |
+| River 队列并发合计 | 7 | 15 | 26 |
+| pgx 池 (worker) | 9 | 18 | 30 |
 | 外发批量插入分块 | 1000 | 5000 | 10000 |
 | swap | 4GB（必开） | 2GB（建议） | 可不开 |
 
-- 部署脚本接受 `--tier=s|m|l`，自动生成对应的 `postgresql.conf` 与应用环境变量，**杜绝人工调参出错**（这本身也是旧系统"改参数踩坑"的对策之一）。
+- 部署脚本接受 `--tier=s|m|l`，自动生成对应的 `postgresql.conf` 与应用环境变量，**杜绝人工调参出错**（这本身也是旧系统"改参数踩坑"的对策之一）。worker pgx 池必须始终大于等于六队列并发合计 + 2。
+- River 队列固定为 `critical/event/outbound/sync/heavy/ai`，每个 enqueue 点必须显式指定，禁止 default queue。`critical` 默认 timeout 30s 且禁止长任务；`heavy` 不借用其他队列空闲槽。
 - S 档必须把人群刷新、统计预聚合、大批量群发排到低峰时段（配置项 `worker.heavy_task_window`，默认 01:00–06:00）。
 
 ### 1.4 容量红线（防过度设计）
 
 - 后台并发用户 ≤ 15，API QPS 峰值按 50 设计即可。
-- 企微回调峰值按 100/s 设计（加好友活动高峰），Go 单进程直接扛。
+- 企微回调峰值按 100/s 设计（加好友活动高峰）；HTTP handler 只验签/解密并原子写 inbox + `critical` job，业务处理不在 API 进程内同步执行。
 - 单次群发上限 20 万条 outbound 任务，worker 按企微限速匀速消费——**群发总耗时的瓶颈是企微 API 限速，不是服务器规格**，升配不会让群发变快，只让群发不影响其他人用。
 - **禁止**引入：消息中间件、微服务拆分、读写分离数据库、分库分表。以上任何一项出现在 PR 里即打回。
 
@@ -235,6 +243,22 @@ CREATE TABLE automation_enrollments (
 );
 CREATE INDEX idx_enroll_auto ON automation_enrollments (automation_id, created_at DESC);
 
+-- ============ 持久化收件箱 (wecom 验签后先落库) ============
+
+CREATE TABLE inbox_events (
+  id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  provider           TEXT NOT NULL,        -- wecom / wechat_mp / ext:{key}
+  external_id        TEXT NOT NULL,        -- 提供方事件唯一标识或事件指纹
+  raw_payload        JSONB NOT NULL,       -- 解密后原始事件，保真存储
+  signature_verified BOOLEAN NOT NULL,
+  received_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  status             TEXT NOT NULL DEFAULT 'pending', -- pending/processing/processed/failed/skipped
+  attempts           INT NOT NULL DEFAULT 0,
+  last_error         TEXT,
+  processed_at       TIMESTAMPTZ,
+  UNIQUE (provider, external_id)
+);
+
 -- ============ 外发域 (outbound 模块独占企微写API) ============
 
 CREATE TABLE outbound_batches (
@@ -245,6 +269,7 @@ CREATE TABLE outbound_batches (
   total        INT NOT NULL DEFAULT 0,
   sent         INT NOT NULL DEFAULT 0,
   failed       INT NOT NULL DEFAULT 0,
+  unknown      INT NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'pending', -- pending/running/done/cancelled
   created_by   BIGINT,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -258,15 +283,14 @@ CREATE TABLE outbound_tasks (
   sender_staff_id BIGINT,
   payload         JSONB NOT NULL,
   idempotency_key TEXT NOT NULL UNIQUE,
-  status          TEXT NOT NULL DEFAULT 'pending', -- pending/sending/sent/failed/cancelled
-  attempts        INT NOT NULL DEFAULT 0,
-  next_retry_at   TIMESTAMPTZ,
+  status          TEXT NOT NULL DEFAULT 'pending', -- pending/sending/sent/retryable_failed/final_failed/outcome_unknown/cancelled
+  attempt_count   INT NOT NULL DEFAULT 0,           -- 仅审计/UI，不参与调度
   wecom_msgid     TEXT,
   last_error      TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   sent_at         TIMESTAMPTZ
 );
-CREATE INDEX idx_ot_pending ON outbound_tasks (status, next_retry_at) WHERE status IN ('pending','failed');
+CREATE INDEX idx_ot_pending ON outbound_tasks (id) WHERE status IN ('pending','retryable_failed');
 CREATE INDEX idx_ot_batch ON outbound_tasks (batch_id, status);
 
 -- ============ 事件总线 (events 模块, Transactional Outbox) ============
@@ -280,6 +304,8 @@ CREATE TABLE event_log (
   dispatched   BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE INDEX idx_el_undispatched ON event_log (id) WHERE NOT dispatched;
+-- P3 只有单消费方，暂保留 dispatched；per-consumer event_deliveries 推迟到 P4。
+-- 禁止在 event_log 上添加只在单消费方成立的唯一约束或状态语义。
 
 -- ============ 问卷域 (survey 模块) ============
 
@@ -542,7 +568,9 @@ type OutboundCfg struct {
 
 ### 3.4 核心链路时序
 
-**群发链路**：运营选人群包 → `outbound.EnqueueBatch`（展开 segment_members 为 N 条 task，事务内完成）→ River worker 按 `outbound.rate_per_second` 令牌桶消费 → 调企微 API → 更新 task 状态 + 写 `outbound.sent` 事件 → contact 模块消费事件写时间线。
+**企微回调链路**：验签 → 解密 → `BEGIN` → `INSERT inbox_events ... ON CONFLICT DO NOTHING` → 确实插入时同事务 `River InsertTx(queue=critical)` → `COMMIT` → 立即 ACK。重复推送不插 job 但仍 ACK；建档、归因和时间线处理一律在 job 内执行。
+
+**群发链路**：运营选人群包 → `outbound.EnqueueBatch`（展开 segment_members 为 N 条 task，事务内完成）→ River `outbound` worker 按 `outbound.rate_per_second` 令牌桶消费 → 调企微 API → 按响应更新 task 状态并写域事件 → contact 消费事件写时间线。HTTP timeout/连接中断/无响应体 5xx 必须进 `outcome_unknown`，不得自动重试；只能经企微结果查询对账后转终态，无查询接口时留待人工判定。429/临时错误进 `retryable_failed`，明确永久错误进 `final_failed`。
 
 **自动化链路**：业务写库 + 同事务写 event_log → dispatcher（River 周期任务）取未分发事件 → 匹配启用的 automations（trigger_type 索引匹配）→ 条件 DSL 判断 → 生成 enrollment（幂等键去重）→ 执行 action（apply_tag 调 contact 接口 / send_msg 调 outbound / ai_generate 先调 ai 再调 outbound）。
 
@@ -692,7 +720,7 @@ GET  /ext/v1/webhooks              # 订阅 customer.merged / tag_applied 等事
 
 根因：散落的 APScheduler/线程 timer 自转，互相踩、无锁、无可观测。**彻底移除所有自建 timer**，全部周期任务收敛为 River periodic job：
 
-- 全系统周期任务清单（唯一入口 `internal/platform/scheduler.go` 注册）：segment 定时刷新、stats 每日预聚合、wecom 增量同步、outbound 重试扫描、pending_events 回放、event_log dispatcher、customer_events 分区预建。
+- 全系统周期任务清单（唯一入口 `internal/platform/scheduler.go` 注册）：segment 定时刷新、stats 每日预聚合、wecom 增量同步、outbound 未知结果对账、pending_events 回放、event_log dispatcher、customer_events 分区预建。可重试外发的调度与 attempts 由 River 独占，不用业务表扫描驱动。
 - River 天然保证：**同一任务全局唯一锁**（不会并发跑两份）、失败自动重试带退避、每个任务在任务表里有明确状态（pending/running/completed/failed/scheduled）。
 - **铁律补充（写入 §3.2）**：禁止任何 `time.Ticker` / `time.AfterFunc` / 第三方 cron 库做业务周期任务，一律走 River periodic job。go-arch-lint 加规则扫这些符号，出现即 CI 红。
 - 这直接根治"轮询卡队列查不到具体数据"——River 任务表 + §8.4 运维页让每个任务卡在哪、卡多久、什么错误一目了然。
@@ -723,16 +751,9 @@ GET  /ext/v1/webhooks              # 订阅 customer.merged / tag_applied 等事
 
 ---
 
-## 9. 里程碑
+## 9. 里程碑（原 M1–M6 周排期已作废）
 
-| 阶段 | 周期 | 交付物 | 出口标准 |
-|---|---|---|---|
-| M1 行为冻结 | W1–2 | 功能矩阵表、API 对照表、openapi.yaml v1、本文档表结构评审定稿 | 三份清单人工签字冻结 |
-| M2 骨架 | W2–3 | 工程脚手架、config/events/auth、API网关中间件、api/worker角色隔离、CI(arch-lint含禁timer + sqlc + EXPLAIN + snapshot-gate) | 铁律检查在 CI 生效 |
-| M3 核心域 | W3–6 | contact / identity / wecom 同步 / segment / outbound | 20万模拟数据下列表 P95<200ms、群发压测通过 |
-| M4 上层域 | W5–8 | automation / survey / ai / gateway(含 Extension API) / stats / 运维页 + 前端全部页面 | 功能矩阵 100% 打勾 |
-| M5 验证 | W8–9 | 快照门全绿、迁移演练 ×2、对账脚本、人工全功能抽验 | 快照 100% 通过 + 抽验清零 |
-| M6 切换 | W10 | 首个客户环境迁移切换 | 冒烟 checklist 通过, 24h 无阻断 |
+原 `M1–M6 / W1–W10` 时间表已被 `P0–P3 / G1–G3` 执行体系取代，不再用于排期、出口判定或进度报告，也不得与 `M0-x` 治理切片编号混用。当前唯一执行路线见 `docs/spec/AI-CRM-v2-P2P3执行计划.md`。
 
 ---
 
