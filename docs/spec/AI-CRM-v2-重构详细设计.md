@@ -399,12 +399,13 @@ CREATE TABLE settings (
   key        TEXT PRIMARY KEY,     -- 命名空间化: wecom.corp_id / ai.provider / outbound.rate_limit
   value      JSONB NOT NULL,
   updated_by TEXT NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL
 );
 CREATE TABLE settings_audit (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   key TEXT NOT NULL, old_value JSONB, new_value JSONB NOT NULL,
-  updated_by TEXT NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_by TEXT NOT NULL, request_id TEXT NOT NULL UNIQUE,
+  updated_at TIMESTAMPTZ NOT NULL
 );
 
 -- ============ 后台账号 / 统计 ============
@@ -546,25 +547,25 @@ type Generator interface {
 ```go
 // internal/config/schema.go —— 全部配置项集中定义, 启动时全量校验, 失败拒绝启动
 type Root struct {
-    WeCom    WeComCfg    `settings:"wecom"`
+    WeCom    WeComSettings `settings:"wecom"`
     AI       AICfg       `settings:"ai"`
     Outbound OutboundCfg `settings:"outbound"`
     Survey   SurveyCfg   `settings:"survey"`
 }
-type WeComCfg struct {
+type WeComSettings struct {
     CorpID         string `json:"corp_id" validate:"required"`
     AgentID        int    `json:"agent_id" validate:"required"`
-    Secret         string `json:"secret" validate:"required"`
-    CallbackToken  string `json:"callback_token" validate:"required"`
-    CallbackAESKey string `json:"callback_aes_key" validate:"required,len=43"`
 }
+// Secret、CallbackToken、CallbackAESKey、数据库密码等不属于 settings Root；
+// 只通过部署环境或只读挂载文件注入 opaque SecretValue，格式化时恒为 [REDACTED]。
 type OutboundCfg struct {
     RatePerSecond int `json:"rate_per_second" validate:"min=1,max=50"` // 企微限速
     MaxAttempts   int `json:"max_attempts" validate:"min=1,max=10"`
 }
 ```
 
-- 后台"系统设置"页保存时按同一 struct 校验；每次变更写 settings_audit。
+- 后台"系统设置"页保存时按同一 registry 校验；secret key 在进入事务前拒绝。
+  每次非密设置变更在同一事务写 settings、settings_audit(request_id) 与 event_log。
 - 配置热更新：保存后发进程内信号重载，无需重启。
 
 ### 3.4 核心链路时序

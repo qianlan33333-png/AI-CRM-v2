@@ -118,6 +118,44 @@ if (cd "$missing_event_appender" && scripts/check_repo_contract.sh >/dev/null 2>
   fail "missing P2-06 event appender was accepted"
 fi
 
+for file_path in \
+  migrations/00003_settings.sql \
+  sqlc.yaml \
+  internal/config/port/port.go \
+  internal/config/registry.go \
+  internal/config/registry_test.go \
+  internal/config/app/manager.go \
+  internal/config/app/manager_test.go \
+  internal/config/store/repository.go \
+  internal/config/store/queries/settings.sql \
+  internal/config/store/generated/db.go \
+  internal/config/store/generated/models.go \
+  internal/config/store/generated/querier.go \
+  internal/config/store/generated/settings.sql.go \
+  acceptance/p2s03/doc.go \
+  acceptance/p2s03/settings_integration_test.go \
+  acceptance/p1s11/contracts_test.go \
+  docs/execution/slices/P2-03.md \
+  docs/evidence/slices/P2-03-registry-tests.md; do
+  settings_receipt_fixture="$(make_fixture "p2-03-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-03 receipt drift' >>"$settings_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P2-03 receipt drift' >>"$settings_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-03 receipt drift' >>"$settings_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$settings_receipt_fixture" add "$file_path"
+  if (cd "$settings_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-03 settings boundary receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_settings_registry="$(make_fixture missing-p2-03-settings-registry)"
+rm -f "$missing_settings_registry/internal/config/registry.go"
+git -C "$missing_settings_registry" add -u internal/config/registry.go
+if (cd "$missing_settings_registry" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-03 settings registry was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go

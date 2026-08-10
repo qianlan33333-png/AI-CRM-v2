@@ -39,6 +39,7 @@ required=(
   sqlc.yaml
   migrations/00001_bootstrap.sql
   migrations/00002_event_log.sql
+  migrations/00003_settings.sql
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -104,7 +105,9 @@ required=(
   docs/execution/slices/P2-00.md
   docs/execution/slices/P2-01R.md
   docs/execution/slices/P2-02.md
+  docs/execution/slices/P2-03.md
   docs/execution/slices/P2-06.md
+  docs/evidence/slices/P2-03-registry-tests.md
   docs/execution/implementation-plan.md
   docs/execution/slices/P1-S11.md
   internal/api/generated/server.gen.go
@@ -128,10 +131,23 @@ required=(
   internal/config/load.go
   internal/config/schema.go
   internal/config/schema_test.go
+  internal/config/port/port.go
+  internal/config/registry.go
+  internal/config/registry_test.go
+  internal/config/app/manager.go
+  internal/config/app/manager_test.go
+  internal/config/store/repository.go
+  internal/config/store/queries/settings.sql
+  internal/config/store/generated/db.go
+  internal/config/store/generated/models.go
+  internal/config/store/generated/querier.go
+  internal/config/store/generated/settings.sql.go
   acceptance/p2s01r/doc.go
   acceptance/p2s01r/uow_integration_test.go
   acceptance/p2s06/doc.go
   acceptance/p2s06/event_log_integration_test.go
+  acceptance/p2s03/doc.go
+  acceptance/p2s03/settings_integration_test.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -260,7 +276,9 @@ done <<'EOF'
 100644 docs/execution/slices/P2-00.md
 100644 docs/execution/slices/P2-01R.md
 100644 docs/execution/slices/P2-02.md
+100644 docs/execution/slices/P2-03.md
 100644 docs/execution/slices/P2-06.md
+100644 docs/evidence/slices/P2-03-registry-tests.md
 100644 docs/execution/implementation-plan.md
 100644 docs/execution/slices/P1-S11.md
 100644 docs/backlog/post-launch.md
@@ -284,11 +302,25 @@ done <<'EOF'
 100644 internal/config/load.go
 100644 internal/config/schema.go
 100644 internal/config/schema_test.go
+100644 internal/config/port/port.go
+100644 internal/config/registry.go
+100644 internal/config/registry_test.go
+100644 internal/config/app/manager.go
+100644 internal/config/app/manager_test.go
+100644 internal/config/store/repository.go
+100644 internal/config/store/queries/settings.sql
+100644 internal/config/store/generated/db.go
+100644 internal/config/store/generated/models.go
+100644 internal/config/store/generated/querier.go
+100644 internal/config/store/generated/settings.sql.go
 100644 acceptance/p2s01r/doc.go
 100644 acceptance/p2s01r/uow_integration_test.go
 100644 acceptance/p2s06/doc.go
 100644 acceptance/p2s06/event_log_integration_test.go
+100644 acceptance/p2s03/doc.go
+100644 acceptance/p2s03/settings_integration_test.go
 100644 migrations/00002_event_log.sql
+100644 migrations/00003_settings.sql
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -359,11 +391,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  d45d5308bcb7371a34131935f4779d65c7e549fa56779b4b928d9b030d873166
+  ec207ddcb896b40ee8cb5a0187a7d903ea4a680a52d28138dcb5c8e0edd58395
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
 verify_index_sha256 scripts/generated-sources.sha256 \
-  f7ba8ef35f41e795b2ae09c1a6b7719151c07ac1704f89872ee601f6b8128e3a
+  fe4e0188629ad6d39148a9423cf86842a138a9a12277c61959b09c23c2ac9a56
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 docs/backlog/post-launch.md \
@@ -374,10 +406,14 @@ verify_index_sha256 docs/execution/slices/P2-01R.md \
   15e671e6d7244993157487b674473fa65acfb26dfbb24e8903130ed9dd1ece85
 verify_index_sha256 docs/execution/slices/P2-02.md \
   621075ee177a387666180a6350049e543f53f9e9c740974986c5a14ecbf1c47d
+verify_index_sha256 docs/execution/slices/P2-03.md \
+  4bb96186ecb58f642018d8302bdadd094a04d8c79c2b00f8e561d0848bf3b5d4
+verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
+  8e96f6cef17231c327326f01e3705c1ffa3185379d3639c1c9bf5489d0f02be9
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  e2dd68b6c0fb1554eae19afa02f449d6afd7ab976af3779ecbc698c50abf0fd7
+  088ca43a7811ce23e9d5d4191c4b2d9efb88c2245cefe8f0ee974cfdcb8163c3
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
@@ -400,6 +436,34 @@ verify_index_sha256 acceptance/p2s06/doc.go \
   3101deaa38f9aa4594cf8b94d7e7854e422dd8d9551432e978f9f3811714ba86
 verify_index_sha256 acceptance/p2s06/event_log_integration_test.go \
   134c354deae4f3898540bc25ad61eac5497d0ac5a12c9a3c3be4f33027eeea82
+verify_index_sha256 migrations/00003_settings.sql \
+  68cf560217f40e3b9db22980e1dad23e532b83c62d5399138b99cb024961afd6
+verify_index_sha256 internal/config/port/port.go \
+  d3ef44bedf2b467cc98ff355961eeb8b85e556b5a47404f59664f19df6f7f9cc
+verify_index_sha256 internal/config/registry.go \
+  d90a3a2ffea74bbc51453132ad179bb40bd249137908b879412d0bc6f838d965
+verify_index_sha256 internal/config/registry_test.go \
+  fab5be640b3417346a4b3b0e5a13be288cc38c85bdb3399f2459a1c300235fdb
+verify_index_sha256 internal/config/app/manager.go \
+  5f8bc34ad31b6ee7435fdbc81d038fd5205e438ec4c98325de8459420d8e4231
+verify_index_sha256 internal/config/app/manager_test.go \
+  ddd410a63b140ff6b3b26d61089b6d6610ea61ec937b71ca35010b47f54d69e6
+verify_index_sha256 internal/config/store/repository.go \
+  20410ebe4e9ef49e44605d29083648cf53d2a36fb20aebf5c19d3e73a6d3cc2b
+verify_index_sha256 internal/config/store/queries/settings.sql \
+  7fde857302d015f24dd6824d903a0b5318a9ff3b2efd3fe5b3e019c44017ee44
+verify_index_sha256 internal/config/store/generated/db.go \
+  4e62e449e68451475c6fc8047f5f97703cd6bcd4ee27ee00f19775d9fac1849e
+verify_index_sha256 internal/config/store/generated/models.go \
+  effe9e9755ba425453e9ca96de5e536e86a747f2698c22a32f64c0655c0e168b
+verify_index_sha256 internal/config/store/generated/querier.go \
+  c1b6543f57eb5e1455fec3a4b2907180fff6700c6aba0a9a51a036adf4eb6fb8
+verify_index_sha256 internal/config/store/generated/settings.sql.go \
+  bcd88d6a1bc79fa2cbefdf2454ea53f8649b314d53d0300c93022bebad124e1f
+verify_index_sha256 acceptance/p2s03/doc.go \
+  1f235f5da9ab144143ba8bc2523c1e1e0c1679a961d778b0bbf22802c5c2bb10
+verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
+  f9d6aa321d7763f95badb4cd90188efc9119f9f27e728730240b6cc328c08abc
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
@@ -447,9 +511,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  61dd1ccd128b40464e5241decf3bcfabac9c6a78f39e0637dfd87bd1a2bdf921
+  f8e5e1aa3d9f99842e5395da2d665c521814998a500991565bd77644c263d42b
 verify_index_sha256 docs/spec/SHA256SUMS \
-  a6c996698769f72462acfd33d5887ac4954a76ec1d99cc52541b1649dd759858
+  1c3c78deebf5dfe78909d322f1c72cb0f9a52fee8e594b1b005f565edeb6a35a
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -519,7 +583,7 @@ verify_index_sha256 tools/openapi-contract/main.go \
 verify_index_sha256 tools/openapi-contract/main_test.go \
   defc65938826a478ff4093deb86ca6242a108d9da171afecb50aac9f480ff994
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
-  fd9c4abda78fc90475a711fc6655063dff865beb5d5971e80ab7ab5d0b8b41dc
+  6d96d7c81d3ac28bdd4c8a6455fa7675a133936f92861b25a2f8250dbff2889f
 verify_index_sha256 acceptance/p1s11/doc.go \
   8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
 verify_index_sha256 docs/execution/slices/P1-S11.md \
@@ -571,7 +635,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  c8e228d48860d320a1ca69f4f857188d317050844843af8ea6772ec8a2f91953
+  f575f639c217a020c5e9438508dd418c8cb5e10c5e7eaf98290b1b332bd0109c
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
