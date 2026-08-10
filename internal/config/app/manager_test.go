@@ -135,3 +135,19 @@ func TestSetPropagatesEventFailure(t *testing.T) {
 		t.Fatalf("Set() error = %v, want event sentinel", err)
 	}
 }
+
+func TestSetRejectsAmbiguousAuditMetadataBeforeTransaction(t *testing.T) {
+	for _, command := range []configport.SetCommand{
+		{Key: configport.WeComAgentID, Value: []byte(`1`), Actor: " admin:1", RequestID: "request-1"},
+		{Key: configport.WeComAgentID, Value: []byte(`1`), Actor: "admin:1", RequestID: "request-1 "},
+	} {
+		uow := &fakeUoW{}
+		manager := NewManager(uow, &fakeRepository{}, &fakeAppender{})
+		if _, err := manager.Set(context.Background(), command); !errors.Is(err, configport.ErrInvalidSetting) {
+			t.Fatalf("Set() error = %v, want ErrInvalidSetting", err)
+		}
+		if uow.calls != 0 {
+			t.Fatalf("invalid metadata entered %d transactions", uow.calls)
+		}
+	}
+}

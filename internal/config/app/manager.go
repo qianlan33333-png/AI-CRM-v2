@@ -60,8 +60,7 @@ func (manager *Manager) Set(ctx context.Context, command configport.SetCommand) 
 	if err != nil {
 		return configport.Setting{}, err
 	}
-	if strings.TrimSpace(command.Actor) == "" || len(command.Actor) > 200 ||
-		strings.TrimSpace(command.RequestID) == "" || len(command.RequestID) > 200 {
+	if !validMetadata(command.Actor) || !validMetadata(command.RequestID) {
 		return configport.Setting{}, configport.ErrInvalidSetting
 	}
 	if err = manager.ready(); err != nil {
@@ -119,6 +118,10 @@ func (manager *Manager) Set(ctx context.Context, command configport.SetCommand) 
 		return err
 	})
 	return setting, err
+}
+
+func validMetadata(value string) bool {
+	return value != "" && strings.TrimSpace(value) == value && len(value) <= 200
 }
 
 func (manager *Manager) ready() error {

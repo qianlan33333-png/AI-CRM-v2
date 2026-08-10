@@ -903,17 +903,17 @@ slices:
   - slice_id: P2-06
     title: transactional-event-log-append
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged_main_ci_success
     base_sha: e166f2a9bb25b8a8f2e04d0c4078f2296b33bb9a
     dependency: P2-02
     branch: slice/p2-06-event-log-append
     decision_anchor: P2-EVENT-ORDER-2026-08-10
     reorder_reason: iron_law_4_requires_event_append_before_settings_state_writes
     reliability_anchor: REL-2026-08-10
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/101
+    pr_head_sha: ad8e4c22742a8d7c901dc6a08540cefb62b6fd83
+    merge_sha: c73b81c46ef133a8b67d688cfdeb53a535d8dc95
+    main_ci_status: SUCCESS_exact_merge_sha_application_31387361665_repo_31387361874_secret_31387361785
     tests:
       - LOCAL_event_appender_focused_race_PASS
       - LOCAL_expired_tx_context_test_import_slice_correction_1
@@ -932,6 +932,50 @@ slices:
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
     external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-03
+    title: settings-audit-and-secret-persistence-boundary
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: c73b81c46ef133a8b67d688cfdeb53a535d8dc95
+    dependency: P2-06
+    branch: slice/p2-03-settings-secret-boundary
+    decision_anchor: SECURITY-BOUNDARY-APPROVED-2026-08-10
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_03_registry_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/config/registry_test.go
+        base_sha: 8500031bb0b59426256baae763f0b5b098786960
+        delegated_head_sha: a6d69cea2a16e03e005552df29fc98092d27ef5b
+        correction_count: 0
+        file_manifest_sha256: aac9123bb413a9c1389c2aac8007f8eecd4ba9cc9b0e1f6f85930f74eb994628
+        diff_sha256: 1b64f90727c5cb9358b96e4542d3f16b12d70398491aa034f310bac0112ca81b
+        receipt: docs/evidence/slices/P2-03-registry-tests.md
+    tests:
+      - LOCAL_registry_and_manager_focused_race_PASS
+      - LOCAL_idempotent_replay_result_slice_correction_1
+      - LOCAL_gofmt_contract_test_slice_correction_2
+      - LOCAL_real_PostgreSQL16_transaction_acceptance_PASS
+      - LOCAL_missing_P0S03_test_DSN_verification_correction_1
+      - LOCAL_full_ci_go_PASS
+      - LOCAL_orval_double_generation_and_negative_PASS
+      - LOCAL_web_ci_and_audit_PASS
+      - LOCAL_repo_contract_all_108_negative_fixtures_PASS
+      - LOCAL_gitleaks_sensitive_paths_and_bundle_PASS
+    handwritten_scope: 10_files_566_changed_lines
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    external_gates:
+      - REAL_SECRET_NOT_READ
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
