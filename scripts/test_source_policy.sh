@@ -9,13 +9,15 @@ trap 'rm -rf "$test_root"' EXIT
 seed() {
   local root="$1"
   mkdir -p "$root/cmd/aicrm" "$root/internal/platform/runtime" "$root/internal/config/source" \
-    "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app"
+    "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
+    "$root/internal/api/candidate/generated"
   echo 'package main' >"$root/cmd/aicrm/main.go"
   printf '%s\n' 'package runtime' 'import "time"' 'func bounded(){ _ = time.NewTimer(time.Second) }' >"$root/internal/platform/runtime/timer.go"
   printf '%s\n' 'package source' 'import "os"' 'func load(){ _, _ = os.LookupEnv("KEY") }' >"$root/internal/config/source/env.go"
   echo 'SELECT 1;' >"$root/internal/contact/store/queries/list.sql"
   echo 'package generated; const query = "SELECT 1"; func call(){ db.QueryRow(ctx, query) }' >"$root/internal/contact/store/generated/query.go"
-  echo 'package app' >"$root/internal/contact/app/app.go"
+  echo 'package generated; const query = "SELECT 1"; func call(){ db.Query(query) }' >"$root/internal/api/candidate/generated/server.gen.go"
+  printf '%s\n' 'package app' 'import "net/http"' 'func readQuery(r *http.Request){ _ = r.URL.Query() }' >"$root/internal/contact/app/app.go"
 }
 run_checker() {
   (cd / && env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off "$go_bin" run "$checker" -root "$1")
@@ -36,8 +38,8 @@ mutate() {
     sql-path) echo 'SELECT 1;' >"$root/internal/contact/store/direct.sql" ;;
     sql-literal) echo 'package app; const q = "UPDATE customers SET name=$1"' >"$root/internal/contact/app/app.go" ;;
     sql-split) echo 'package app; const q = "SEL"+("ECT 1")' >"$root/internal/contact/app/app.go" ;;
-    db-call) echo 'package app; func f(){ db.QueryContext(ctx, q) }' >"$root/internal/contact/app/app.go" ;;
-    fake-generated) mkdir -p "$root/internal/contact/app/store/generated"; echo 'package generated; const q="SELECT 1"' >"$root/internal/contact/app/store/generated/query.go" ;;
+    db-call) echo 'package app; func f(){ db.Query("SELECT * FROM customers") }' >"$root/internal/contact/app/app.go" ;;
+    candidate-manual) mkdir -p "$root/internal/api/candidate"; echo 'package candidate; func f(){ db.Query("SELECT * FROM customers") }' >"$root/internal/api/candidate/manual.go" ;;
     orm) echo 'package app; import _ "gorm.io/gorm"' >"$root/internal/contact/app/app.go" ;;
     ticker) echo 'package app; import clock "time"; func f(){ _ = clock.NewTicker(clock.Second) }' >"$root/internal/contact/app/app.go" ;;
     after-func) echo 'package app; import "time"; func f(){ time.AfterFunc(time.Second, f) }' >"$root/internal/contact/app/app.go" ;;
@@ -47,7 +49,7 @@ mutate() {
 }
 reject env 'environment read forbidden'; reject env-loader 'environment loader forbidden'
 reject sql-path 'SQL source outside'; reject sql-literal 'handwritten SQL forbidden'; reject sql-split 'constructed SQL forbidden'
-reject db-call 'direct database call forbidden'; reject fake-generated 'handwritten SQL forbidden'; reject orm 'dynamic SQL library forbidden'
+reject db-call 'direct database call forbidden'; reject candidate-manual 'direct database call forbidden'; reject orm 'dynamic SQL library forbidden'
 reject ticker 'business timer forbidden'; reject after-func 'business timer forbidden'
 reject cron 'third-party cron forbidden'; reject fifo 'symlink or special path forbidden'
 echo "source-policy-tests: PASS"

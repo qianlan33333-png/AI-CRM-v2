@@ -80,7 +80,7 @@
 ### M0-1 治理条款更新（单片）
 - AGENTS.md 第 2 节新增**第 9 条铁律**：业务模块实现阶段不得读取旧 Python 源码；旧行为只能经 `docs/rules/*.md` 或 `docs/evidence/p1/api-facts-*.md` 传递。
 - AGENTS.md 第 4 节规模与并行条款按**附录 A** 原文替换。
-- 取消 Sol 自执行片的 `input_zip_size` / `input_sha256` / `output_hashes` / `diff_sha256` / `file_manifest_sha256` / `payload_worktree_diff_sha256` / `canonical_diff_status` 记录；仅保留 `pr_head_sha` / `merge_sha` / `main_ci_status` / `correction_count`。上述 hash 收据**仅在真实委派 Terra 子任务时启用**。
+- 取消 Sol 自执行片的 `input_zip_size` / `input_sha256` / `output_hashes` / `diff_sha256` / `file_manifest_sha256` / `payload_worktree_diff_sha256` / `canonical_diff_status` 记录；仅保留 `pr_head_sha` / `merge_sha` / `main_ci_status` / `slice_induced_correction_count` / `infra_induced_correction_count`。上述 hash 收据**仅在真实委派 Terra 子任务时启用**。
 - 验收：ledger schema 校验通过；新增一条负例证明"实现片引用旧 Python 路径"会被拒。
 
 ### M0-2 spec 重新冻结（单片）
@@ -316,7 +316,7 @@
 | **R3** | DSL 编译器语义漂移 | 圈错人 → 错发消息 | ≥50 组表驱动 + 3 个真实人群包对拍 |
 | **R4** | 阶段 B 隔离被破坏 | 旧架构复刻，四大顽疾回归 | 铁律 9 + review 违规信号 + 引用旧 Python 路径的负例 |
 | **R5** | 781 条 G1 签字工作量失控 | 阻塞全流程 | 附录 B 三档分级 |
-| **R6** | 切片过大导致返工 | 隐性拖慢 | 附录 A 回退信号（`correction_count` 触发降档） |
+| **R6** | 切片过大导致返工 | 隐性拖慢 | 附录 A 回退信号（仅 `slice_induced_correction_count` 触发降档） |
 | **R7** | 仓库 public 泄露商业设计 | 竞对可见完整架构 | 建议评估转 Team 付费私有；属你的商业决策 |
 
 ---
@@ -388,8 +388,11 @@
   生成物与测试文件不计入手写额度。
 - 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
   半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
-- 回退信号：若某片修正轮次超过 2 次，或连续三片平均 correction_count 超过 1，
-  视为切片过大，下一片回退到上一档规模并在 ledger 记录。
+- 回退信号：仅 `slice_induced` 修正计入切片过大信号；某片
+  `slice_induced_correction_count` 达到 2，或连续三片平均超过 1，
+  下一片回退到上一档规模并在 ledger 记录。
+- `infra_induced` 修正不触发规模降档，但必须另开独立基础设施修复片；
+  两类修正之和达到 2 即停报。
 - 并行：最多 3 个任务，且须满足互不依赖、路径不重叠、对应域 OpenAPI 与
   公共 port 已冻结。P3 波次划分为 contact → (identity ∥ segment) →
   (wecom ∥ outbound)。
