@@ -301,6 +301,7 @@ CREATE TABLE event_log (
   customer_id  BIGINT,
   payload      JSONB NOT NULL DEFAULT '{}',
   occurred_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  idempotency_key TEXT NOT NULL UNIQUE, -- 领域事件幂等键；与消费方数量无关
   dispatched   BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE INDEX idx_el_undispatched ON event_log (id) WHERE NOT dispatched;

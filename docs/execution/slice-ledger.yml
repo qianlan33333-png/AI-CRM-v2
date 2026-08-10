@@ -873,14 +873,14 @@ slices:
   - slice_id: P2-02
     title: typed-startup-config-and-fail-fast-validation
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged_main_ci_success
     base_sha: c8326ae0cc8a62c8c193b80ab2a72b27db3660a3
     dependency: P2-01R
     branch: slice/p2-02-typed-config
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/100
+    pr_head_sha: f1d79c37dc1e662287fdda92d57a11bce0023b51
+    merge_sha: e166f2a9bb25b8a8f2e04d0c4078f2296b33bb9a
+    main_ci_status: SUCCESS_exact_merge_sha_application_31383807679_repo_31383807723_secret_31383807668
     tests:
       - LOCAL_config_focused_race_PASS
       - LOCAL_process_config_blackbox_PASS
@@ -899,6 +899,41 @@ slices:
       - SETTINGS_SECRET_SECURITY_BOUNDARY_NOT_ENTERED
       - PRODUCTION_CONFIGURATION_NOT_READ
       - DATABASE_CONNECTION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-06
+    title: transactional-event-log-append
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: e166f2a9bb25b8a8f2e04d0c4078f2296b33bb9a
+    dependency: P2-02
+    branch: slice/p2-06-event-log-append
+    decision_anchor: P2-EVENT-ORDER-2026-08-10
+    reorder_reason: iron_law_4_requires_event_append_before_settings_state_writes
+    reliability_anchor: REL-2026-08-10
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    tests:
+      - LOCAL_event_appender_focused_race_PASS
+      - LOCAL_expired_tx_context_test_import_slice_correction_1
+      - LOCAL_ownership_PostgreSQL_upsert_false_positive_verification_correction_1
+      - LOCAL_ownership_upsert_positive_and_cross_domain_update_negative_PASS
+      - LOCAL_official_PostgreSQL16_14_SHA256_verified_55432_PASS
+      - LOCAL_goose_up_down_up_event_log_PASS
+      - LOCAL_real_PostgreSQL16_commit_rollback_idempotency_conflict_expired_context_PASS
+      - LOCAL_make_ci_go_real_PostgreSQL16_14_PASS
+      - LOCAL_orval_double_generation_and_Web_CI_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_history_config_sensitive_paths_bundle_PASS
+    handwritten_scope: 9_files_209_changed_lines_under_P2_cap_tests_generated_and_receipts_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
 phase_closeouts:
   P1:

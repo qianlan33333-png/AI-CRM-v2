@@ -25,6 +25,7 @@ var (
 		regexp.MustCompile(`(?s)'(?:''|[^'])*'`),
 		regexp.MustCompile(`(?s)/[*].*?[*]/`),
 		regexp.MustCompile(`(?m)--.*$`),
+		regexp.MustCompile(`(?i)\bdo\s+update\s+set\b`),
 	}
 	writePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\bcreate\s+(?:temporary\s+|temp\s+)?table\s+(?:if\s+not\s+exists\s+)?([a-z0-9_.$"]+)`),

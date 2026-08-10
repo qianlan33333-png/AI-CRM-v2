@@ -84,6 +84,40 @@ if (cd "$missing_config_loader" && scripts/check_repo_contract.sh >/dev/null 2>&
   fail "missing P2-02 config loader was accepted"
 fi
 
+for file_path in \
+  migrations/00002_event_log.sql \
+  sqlc.yaml \
+  internal/events/port/port.go \
+  internal/events/store/queries/event_log.sql \
+  internal/events/store/appender.go \
+  internal/events/store/appender_test.go \
+  internal/events/store/generated/db.go \
+  internal/events/store/generated/event_log.sql.go \
+  internal/events/store/generated/models.go \
+  internal/events/store/generated/querier.go \
+  acceptance/p2s06/doc.go \
+  acceptance/p2s06/event_log_integration_test.go \
+  acceptance/p1s11/contracts_test.go \
+  docs/execution/slices/P2-06.md; do
+  event_receipt_fixture="$(make_fixture "p2-06-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-06 receipt drift' >>"$event_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P2-06 receipt drift' >>"$event_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-06 receipt drift' >>"$event_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$event_receipt_fixture" add "$file_path"
+  if (cd "$event_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-06 event append receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_event_appender="$(make_fixture missing-p2-06-event-appender)"
+rm -f "$missing_event_appender/internal/events/store/appender.go"
+git -C "$missing_event_appender" add -u internal/events/store/appender.go
+if (cd "$missing_event_appender" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-06 event appender was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
