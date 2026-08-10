@@ -729,7 +729,7 @@ verify_index_sha256 internal/platform/http/gateway.go \
 verify_index_sha256 internal/platform/http/gateway_test.go \
   eb8313743a76e962aa23f0da2603db113abac349d04189c67662a13893e97214
 verify_index_sha256 docs/execution/slices/P2-08.md \
-  85d31226d656576e418c217d811b0ce495d1556bfc637a55b0a914f5222ed208
+  ddb5ac532b13f7060dfbedb7a4b624c48b8121c6f70b301ecec21fc93a5e2aa8
 verify_index_sha256 docs/evidence/slices/P2-08-http-tests.md \
   a61b50a0d040373515216d96fe1707a14be7a9852e8a1b9e64ba94c07ae35fcc
 verify_index_sha256 docs/execution/slices/P2-07.md \
@@ -761,7 +761,7 @@ verify_index_sha256 docs/architecture/table-ownership.yml \
 verify_index_sha256 scripts/test_repo_contract.sh \
   30221d8cbf87f42e64ac4e45e79deec44cce59975c9c32af8f57e1bab08d1827
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
-  0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
+  8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
   1d3c89bdb0dffabf298777965896128c2fa4116b134deacf8c1499b18a45c7a2
 verify_index_sha256 internal/platform/store/contract.go \

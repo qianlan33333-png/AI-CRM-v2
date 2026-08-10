@@ -861,6 +861,7 @@ slices:
       - LOCAL_orval_double_generation_and_Web_CI_PASS
       - LOCAL_gitleaks_config_and_sensitive_path_PASS
       - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_P0S02_HTTP_inventory_exact_extension_and_extra_file_negative_PASS
     handwritten_scope: 10_files_359_changed_lines_under_P2_cap_tests_and_verification_fixtures_excluded
     slice_induced_correction_count: 1
     infra_induced_correction_count: 1
@@ -930,7 +931,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -1143,7 +1144,7 @@ slices:
       - LOCAL_orval_double_generation_and_Web_CI_PASS
       - LOCAL_gitleaks_history_config_sensitive_paths_bundle_PASS
       - LOCAL_repo_contract_full_negative_suite_PASS
-    handwritten_scope: 4_files_550_changed_lines_under_P2_cap_tests_docs_receipts_and_ledger_excluded
+    handwritten_scope: 5_files_551_changed_lines_under_P2_cap_tests_docs_receipts_and_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
