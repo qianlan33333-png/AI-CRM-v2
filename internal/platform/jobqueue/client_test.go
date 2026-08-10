@@ -94,8 +94,17 @@ func TestExplicitOptionsRejectDefaultMismatchAndUnknownKind(t *testing.T) {
 	if !errors.Is(err, ErrUnregisteredJob) {
 		t.Fatalf("unknown job error = %v", err)
 	}
+	var typedNil *pointerQueueArgs
+	_, err = client.explicitOptions(QueueCritical, typedNil, nil)
+	if !errors.Is(err, ErrInvalidQueue) {
+		t.Fatalf("typed nil args error = %v", err)
+	}
 }
 
 type unknownQueueArgs struct{}
 
 func (unknownQueueArgs) Kind() string { return "p2s04_unknown_queue" }
+
+type pointerQueueArgs struct{}
+
+func (*pointerQueueArgs) Kind() string { return "p2s05_pointer_queue" }

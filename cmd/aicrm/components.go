@@ -63,6 +63,12 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, errInvalidWorkerDatabaseConfig
 	}
 	queues := config.Worker.Queues
+	workers := platformjobqueue.NewWorkerRegistry()
+	periodicPlan, err := schedulerPlan(workers)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	client, err := platformjobqueue.NewClient(pool, platformjobqueue.QueueConcurrency{
 		Critical: queues.Critical,
 		Event:    queues.Event,
@@ -70,7 +76,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		Sync:     queues.Sync,
 		Heavy:    queues.Heavy,
 		AI:       queues.AI,
-	}, platformjobqueue.NewWorkerRegistry())
+	}, workers, periodicPlan.Jobs()...)
 	if err != nil {
 		pool.Close()
 		return nil, err

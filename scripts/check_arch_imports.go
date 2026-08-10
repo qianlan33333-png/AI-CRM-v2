@@ -100,6 +100,7 @@ func checkRiverBoundary(file *ast.File, source string) error {
 	if strings.HasPrefix(source, "internal/platform/river/") || strings.HasPrefix(source, "internal/platform/jobqueue/") {
 		return nil
 	}
+	schedulerBoundary := strings.HasPrefix(source, "internal/platform/scheduler/")
 	riverPackages := make(map[string]bool)
 	for _, spec := range file.Imports {
 		importPath, err := strconv.Unquote(spec.Path.Value)
@@ -127,14 +128,23 @@ func checkRiverBoundary(file *ast.File, source string) error {
 		"Client": true, "NewClient": true, "QueueDefault": true,
 		"NewWorkers": true, "AddWorker": true, "AddWorkerSafely": true,
 	}
+	periodicForbidden := map[string]bool{
+		"NewPeriodicJob": true, "PeriodicJob": true, "PeriodicJobOpts": true,
+		"PeriodicSchedule": true, "PeriodicInterval": true, "NeverSchedule": true,
+	}
 	var symbol string
 	ast.Inspect(file, func(node ast.Node) bool {
 		selector, ok := node.(*ast.SelectorExpr)
 		if !ok {
 			return true
 		}
-		identifier, ok := selector.X.(*ast.Ident)
-		if ok && riverPackages[identifier.Name] && forbidden[selector.Sel.Name] {
+		identifier, packageSelector := selector.X.(*ast.Ident)
+		if packageSelector && riverPackages[identifier.Name] &&
+			(forbidden[selector.Sel.Name] || (!schedulerBoundary && periodicForbidden[selector.Sel.Name])) {
+			symbol = selector.Sel.Name
+			return false
+		}
+		if !schedulerBoundary && selector.Sel.Name == "PeriodicJobs" {
 			symbol = selector.Sel.Name
 			return false
 		}
@@ -198,6 +208,10 @@ func checkImport(source, importPath string) error {
 		return fmt.Errorf("invalid internal import in %s: %s", source, importPath)
 	}
 	destination := parts[0]
+	if importPath == internalPrefix+"platform/scheduler" && source != "cmd/aicrm/scheduler.go" &&
+		!strings.HasPrefix(source, "internal/platform/scheduler/") {
+		return fmt.Errorf("scheduler registration import forbidden outside the unique catalog in %s", source)
+	}
 	if destination == "platform" || destination == "api" {
 		return nil
 	}

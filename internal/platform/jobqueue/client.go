@@ -18,7 +18,7 @@ type Client struct {
 	registry *WorkerRegistry
 }
 
-func NewClient(pool *pgxpool.Pool, concurrency QueueConcurrency, registry *WorkerRegistry) (*Client, error) {
+func NewClient(pool *pgxpool.Pool, concurrency QueueConcurrency, registry *WorkerRegistry, periodicJobs ...*queueriver.PeriodicJob) (*Client, error) {
 	if pool == nil || registry == nil || registry.workers == nil || registry.assignments == nil {
 		return nil, ErrClientUnavailable
 	}
@@ -26,8 +26,9 @@ func NewClient(pool *pgxpool.Pool, concurrency QueueConcurrency, registry *Worke
 		return nil, err
 	}
 	client, err := queueriver.NewClient(riverpgxv5.New(pool), &queueriver.Config{
-		Queues:  concurrency.riverQueues(),
-		Workers: registry.workers,
+		PeriodicJobs: append([]*queueriver.PeriodicJob(nil), periodicJobs...),
+		Queues:       concurrency.riverQueues(),
+		Workers:      registry.workers,
 	})
 	if err != nil {
 		return nil, err
@@ -81,23 +82,8 @@ func (client *Client) EnqueueTx(ctx context.Context, tx pgx.Tx, queue Queue, arg
 }
 
 func (client *Client) explicitOptions(queue Queue, args queueriver.JobArgs, options *queueriver.InsertOpts) (*queueriver.InsertOpts, error) {
-	if !validQueue(queue) || args == nil {
-		return nil, ErrInvalidQueue
+	if client == nil || client.registry == nil {
+		return nil, ErrClientUnavailable
 	}
-	registeredQueue, ok := client.registry.assignments[args.Kind()]
-	if !ok {
-		return nil, ErrUnregisteredJob
-	}
-	if registeredQueue != queue {
-		return nil, ErrQueueMismatch
-	}
-	cloned := queueriver.InsertOpts{}
-	if options != nil {
-		cloned = *options
-	}
-	if cloned.Queue != "" && cloned.Queue != string(queue) {
-		return nil, ErrQueueMismatch
-	}
-	cloned.Queue = string(queue)
-	return &cloned, nil
+	return client.registry.ExplicitOptions(queue, args, options)
 }

@@ -92,6 +92,12 @@ mutate() {
       printf '%s\n' 'package app' 'import queue "github.com/riverqueue/river"' 'var _ = queue.QueueDefault' >"$root/internal/outbound/app/use.go" ;;
     raw-river-driver)
       printf '%s\n' 'package main' 'import _ "github.com/riverqueue/river/riverdriver/riverpgxv5"' >"$root/cmd/aicrm/river.go" ;;
+    raw-periodic-constructor)
+      printf '%s\n' 'package app' 'import queue "github.com/riverqueue/river"' 'var _ = queue.NewPeriodicJob' >"$root/internal/outbound/app/use.go" ;;
+    dynamic-periodic-registration)
+      printf '%s\n' 'package app' 'func register(){ client.PeriodicJobs() }' >"$root/internal/outbound/app/use.go" ;;
+    scattered-scheduler-import)
+      printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/scheduler"' >"$root/internal/outbound/app/use.go" ;;
     malformed) printf '%s\n' 'package app' 'import (' >"$root/internal/contact/app/use.go" ;;
     symlink) ln -s ../identity "$root/internal/contact/link" ;;
     fifo) mkfifo "$root/internal/contact/unexpected" ;;
@@ -108,6 +114,9 @@ reject aliased-env 'scattered environment read forbidden'
 reject raw-river-client 'raw or default River symbol forbidden'
 reject default-river-queue 'raw or default River symbol forbidden'
 reject raw-river-driver 'raw River driver forbidden'
+reject raw-periodic-constructor 'raw or default River symbol forbidden'
+reject dynamic-periodic-registration 'raw or default River symbol forbidden'
+reject scattered-scheduler-import 'scheduler registration import forbidden outside the unique catalog'
 reject malformed 'parse internal/contact/app/use.go'
 reject symlink 'symlink or special path forbidden'
 reject fifo 'symlink or special path forbidden'
