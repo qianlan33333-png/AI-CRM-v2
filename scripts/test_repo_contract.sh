@@ -36,6 +36,60 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+for path in .gitleaks.toml scripts/test_gitleaks_config.sh docs/execution/slices/M0-7.md; do
+  gitleaks_receipt_fixture="$(make_fixture "gitleaks-receipt-${path##*/}")"
+  printf '%s\n' '# gitleaks receipt drift' >>"$gitleaks_receipt_fixture/$path"
+  git -C "$gitleaks_receipt_fixture" add "$path"
+  if (cd "$gitleaks_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "gitleaks contract receipt drift was accepted: $path"
+  fi
+done
+
+gitleaks_config_mode_fixture="$(make_fixture gitleaks-config-mode)"
+chmod 755 "$gitleaks_config_mode_fixture/.gitleaks.toml"
+git -C "$gitleaks_config_mode_fixture" add .gitleaks.toml
+if (cd "$gitleaks_config_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "executable gitleaks config was accepted"
+fi
+
+gitleaks_runner_mode_fixture="$(make_fixture gitleaks-runner-mode)"
+chmod 644 "$gitleaks_runner_mode_fixture/scripts/test_gitleaks_config.sh"
+git -C "$gitleaks_runner_mode_fixture" add scripts/test_gitleaks_config.sh
+if (cd "$gitleaks_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "non-executable gitleaks regression runner was accepted"
+fi
+
+weak_gitleaks_fixture="$(make_fixture weak-gitleaks-allowlist)"
+sed -i.bak 's/condition = "AND"/condition = "OR"/' "$weak_gitleaks_fixture/.gitleaks.toml"
+rm -f "$weak_gitleaks_fixture/.gitleaks.toml.bak"
+git -C "$weak_gitleaks_fixture" add .gitleaks.toml
+weak_digest="$(git -C "$weak_gitleaks_fixture" show :.gitleaks.toml | sha256sum | awk '{print $1}')"
+sed -i.bak -E "/^verify_index_sha256 \.gitleaks\.toml/{n;s/[0-9a-f]{64}/$weak_digest/;}" \
+  "$weak_gitleaks_fixture/scripts/check_repo_contract.sh"
+rm -f "$weak_gitleaks_fixture/scripts/check_repo_contract.sh.bak"
+git -C "$weak_gitleaks_fixture" add scripts/check_repo_contract.sh
+if (cd "$weak_gitleaks_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "OR-composed gitleaks allowlist was accepted"
+fi
+
+for kind in missing-config missing-runner; do
+  disconnected_gitleaks_fixture="$(make_fixture "gitleaks-$kind")"
+  case "$kind" in
+    missing-config) sed -i.bak 's/ --config \.gitleaks\.toml//' "$disconnected_gitleaks_fixture/.github/workflows/secret-scan.yml" ;;
+    missing-runner) sed -i.bak '/scripts\/test_gitleaks_config\.sh/d' "$disconnected_gitleaks_fixture/.github/workflows/secret-scan.yml" ;;
+  esac
+  rm -f "$disconnected_gitleaks_fixture/.github/workflows/secret-scan.yml.bak"
+  git -C "$disconnected_gitleaks_fixture" add .github/workflows/secret-scan.yml
+  workflow_digest="$(git -C "$disconnected_gitleaks_fixture" show :.github/workflows/secret-scan.yml | sha256sum | awk '{print $1}')"
+  sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/secret-scan\.yml/{n;s/[0-9a-f]{64}/$workflow_digest/;}" \
+    "$disconnected_gitleaks_fixture/scripts/check_repo_contract.sh"
+  rm -f "$disconnected_gitleaks_fixture/scripts/check_repo_contract.sh.bak"
+  git -C "$disconnected_gitleaks_fixture" add scripts/check_repo_contract.sh
+  if (cd "$disconnected_gitleaks_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "secret scan workflow without $kind protection was accepted"
+  fi
+done
+
 for path in \
   docs/spec/AI-CRM-v2-执行方案.md \
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \

@@ -20,6 +20,7 @@ required=(
   SECURITY.md
   NOTICE
   .tool-versions
+  .gitleaks.toml
   package.json
   package-lock.json
   Makefile
@@ -104,6 +105,7 @@ required=(
   scripts/check_repo_contract.sh
   scripts/generated-sources.sha256
   scripts/scan_sensitive_paths.sh
+  scripts/test_gitleaks_config.sh
   scripts/test_build_slice_bundle.sh
   scripts/test_gitless_generated_check.sh
   scripts/test_orval_generated_check.sh
@@ -127,6 +129,7 @@ required=(
   docs/execution/slices/M0-3.md
   docs/execution/slices/M0-5.md
   docs/execution/slices/M0-6.md
+  docs/execution/slices/M0-7.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
   docs/spec/AI-CRM-v2-重构详细设计.md
@@ -163,6 +166,7 @@ done <<'EOF'
 100644 tools/go.sum
 100644 package.json
 100644 package-lock.json
+100644 .gitleaks.toml
 100644 web/index.html
 100644 web/src/main.tsx
 100644 web/src/main.test.tsx
@@ -218,6 +222,7 @@ done <<'EOF'
 100755 acceptance/p0s10/test_snapshot_gate.sh
 100644 docs/architecture/table-ownership.yml
 100755 scripts/test_orval_generated_check.sh
+100755 scripts/test_gitleaks_config.sh
 100755 scripts/test_repo_contract.sh
 100755 scripts/test_query_plan_gate.sh
 100755 acceptance/p0s02/static_contract.sh
@@ -234,6 +239,7 @@ done <<'EOF'
 100644 docs/execution/slices/M0-3.md
 100644 docs/execution/slices/M0-5.md
 100644 docs/execution/slices/M0-6.md
+100644 docs/execution/slices/M0-7.md
 100644 docs/adr/ADR-001.md
 100644 docs/adr/ADR-010.md
 100644 docs/adr/ADR-011.md
@@ -271,7 +277,13 @@ verify_index_sha256 .github/workflows/application-go.yml \
 verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
-  157db46e8147cdca2c71d3044e46d20ddae82374a0368e0fe0b4958d8d3c2488
+  e3077f509e0cfe5a9b70c4064cc666f53258c62cda590f191ea401d1734d02fe
+verify_index_sha256 .gitleaks.toml \
+  b220c3b1e00671ed5d45f796b341a586a533659b7eecadf4906516769414ff74
+verify_index_sha256 scripts/test_gitleaks_config.sh \
+  2c4da4f3e1fc926910a516593513c8f1e2f51445879bd7a9a5574ce47396dcf3
+verify_index_sha256 docs/execution/slices/M0-7.md \
+  0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
   e6dd0def9500ac96aaff3bb4c1737d29212612a6fa36db9078229183994035c7
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
@@ -405,7 +417,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  51157f0852c7b72d1d50cdd1c2cd0dbda5b689fb68ed1b313b48e4018aea12d5
+  3396925b4f182a09ff4a20982ad4cf6eefa08c9f434bc1e013f67a0360e6aa4d
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -825,6 +837,25 @@ for line in \
   '          npm run ci'; do
   [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
     fail "application workflow lost a frozen P0-S05 web gate: $line"
+done
+
+secret_scan_workflow="$(git show ':'.github/workflows/secret-scan.yml)"
+for line in \
+  '        run: gitleaks git . --config .gitleaks.toml --redact --no-banner --exit-code 1' \
+  '        run: scripts/test_gitleaks_config.sh'; do
+  [[ "$(printf '%s\n' "$secret_scan_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "secret scan workflow lost its pinned config or false-positive regression: $line"
+done
+gitleaks_config="$(git show ':'.gitleaks.toml)"
+for line in \
+  'useDefault = true' \
+  'targetRules = ["generic-api-key"]' \
+  'condition = "AND"' \
+  'regexTarget = "line"' \
+  "paths = ['''(^|/)web/src/api/generated/[^/]+\.ts$''']" \
+  "regexes = ['''^\s*\*\s+OpenAPI spec version:\s+[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\s*$''']"; do
+  [[ "$(printf '%s\n' "$gitleaks_config" | grep -Fxc "$line" || true)" = "1" ]] ||
+    fail "gitleaks false-positive boundary drifted: $line"
 done
 
 expected_workflows="$({

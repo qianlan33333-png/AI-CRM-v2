@@ -1,0 +1,12 @@
+title = "AI-CRM v2 gitleaks policy"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Allow the generated Orval banner's public OpenAPI semantic version"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)web/src/api/generated/[^/]+\.ts$''']
+regexes = ['''^\s*\*\s+OpenAPI spec version:\s+[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\s*$''']
