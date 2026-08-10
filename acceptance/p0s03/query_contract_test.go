@@ -13,11 +13,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	dbgen "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store/generated"
 )
-
-const fixedLoopbackDSN = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
 
 var (
 	_ dbgen.DBTX                                = dbtxFixture{}
@@ -131,14 +130,23 @@ func TestIntegrationConfigurationFailsClosed(t *testing.T) {
 	t.Run("switch error does not echo input", func(t *testing.T) {
 		const sentinel = "switch-secret-sentinel"
 		t.Setenv("P0S03_PG_INTEGRATION", sentinel)
-		t.Setenv("P0S03_TEST_DATABASE_URL", fixedLoopbackDSN)
+		t.Setenv("P0S03_TEST_DATABASE_URL", acceptancefixtures.DefaultDatabaseURL)
 		assertIntegrationConfigError(t, sentinel, `P0S03_PG_INTEGRATION must equal "1"`)
 	})
 	t.Run("DSN error does not echo password", func(t *testing.T) {
 		const passwordSentinel = "password-sentinel"
 		t.Setenv("P0S03_PG_INTEGRATION", "1")
 		t.Setenv("P0S03_TEST_DATABASE_URL", "postgres://postgres:"+passwordSentinel+"@127.0.0.1:5432/not_aicrm_test?sslmode=disable")
-		assertIntegrationConfigError(t, passwordSentinel, "P0S03_TEST_DATABASE_URL must equal the fixed loopback aicrm_test DSN")
+		assertIntegrationConfigError(t, passwordSentinel, "P0S03_TEST_DATABASE_URL must be the safe literal-loopback aicrm_test DSN")
+	})
+	t.Run("dynamic literal loopback port is accepted", func(t *testing.T) {
+		const dynamicDSN = "postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable"
+		t.Setenv("P0S03_PG_INTEGRATION", "1")
+		t.Setenv("P0S03_TEST_DATABASE_URL", dynamicDSN)
+		got, err := integrationDSN()
+		if err != nil || got != dynamicDSN {
+			t.Fatalf("integrationDSN() = (%q, %v), want (%q, nil)", got, err, dynamicDSN)
+		}
 	})
 }
 
@@ -160,8 +168,9 @@ func integrationDSN() (string, error) {
 	if os.Getenv("P0S03_PG_INTEGRATION") != "1" {
 		return "", errors.New(`P0S03_PG_INTEGRATION must equal "1"`)
 	}
-	if os.Getenv("P0S03_TEST_DATABASE_URL") != fixedLoopbackDSN {
-		return "", errors.New("P0S03_TEST_DATABASE_URL must equal the fixed loopback aicrm_test DSN")
+	dsn := os.Getenv("P0S03_TEST_DATABASE_URL")
+	if err := acceptancefixtures.ValidateDatabaseURL(dsn); err != nil {
+		return "", errors.New("P0S03_TEST_DATABASE_URL must be the safe literal-loopback aicrm_test DSN")
 	}
-	return fixedLoopbackDSN, nil
+	return dsn, nil
 }

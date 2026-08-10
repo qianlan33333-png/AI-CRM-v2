@@ -21,22 +21,22 @@ while IFS= read -r root; do
 done < <(find internal -type d -name generated -print | LC_ALL=C sort)
 [[ "${#generated_roots[@]}" -gt 0 ]] || fail "no generated source directories found"
 if find internal -name generated ! -type d -print -quit | grep -q .; then
-  fail "generated path must be a real directory"
+  fail "generated file_path must be a real directory"
 fi
 
 hash_file() {
-  local path="$1"
+  local file_path="$1"
   if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$path"
+    sha256sum "$file_path"
   elif command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$path"
+    shasum -a 256 "$file_path"
   else
     fail "sha256sum or shasum is required"
   fi
 }
 
 write_actual_manifest() {
-  local root path
+  local root file_path
   for root in "${generated_roots[@]}"; do
     [[ -d "$root" ]] || fail "missing generated directory: $root"
   done
@@ -56,10 +56,10 @@ write_actual_manifest() {
     fail "generated source files must not be executable"
   fi
 
-  while IFS= read -r path; do
-    [[ "$path" != *[$'\t\r\n ']* && "$path" != *\\* ]] ||
-      fail "generated path contains whitespace or a backslash: $path"
-    hash_file "$path"
+  while IFS= read -r file_path; do
+    [[ "$file_path" != *[$'\t\r\n ']* && "$file_path" != *\\* ]] ||
+      fail "generated file_path contains whitespace or a backslash: $file_path"
+    hash_file "$file_path"
   done < <(find "${generated_roots[@]}" -type f -print | LC_ALL=C sort)
 }
 

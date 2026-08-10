@@ -12,6 +12,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: arch-import-lint arch-import-lint-test
 .PHONY: ownership-lint ownership-lint-test
+.PHONY: acceptance-fixtures
 .PHONY: source-policy-lint source-policy-lint-test
 .PHONY: slice-input-contract slice-input-contract-test
 .PHONY: snapshot-gate snapshot-gate-test
@@ -222,6 +223,13 @@ ownership-lint:
 ownership-lint-test:
 	@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_ownership.sh
 
+acceptance-fixtures: override SHELL := /bin/bash
+acceptance-fixtures: override .SHELLFLAGS := -eu -o pipefail -c
+acceptance-fixtures: override GO := go
+acceptance-fixtures:
+	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$$ACCEPTANCE_FIXTURES_TEST_DATABASE_URL" $(GO) test -race -count=1 -timeout=30s ./acceptance/fixtures
+
 source-policy-lint:
 	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/sourcepolicy/main.go -root .
 
@@ -296,4 +304,4 @@ query-plan-gate-test: query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GO="$(GO)" /bin/bash scripts/test_query_plan_gate.sh
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test

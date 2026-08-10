@@ -48,15 +48,40 @@ func TestParseQueryFile(t *testing.T) {
 }
 
 func TestTemporaryDatabaseURL(t *testing.T) {
-	got, err := temporaryDatabaseURL(fixedDatabaseURL, "aicrm_query_plan_abcdef")
+	const databaseURL = "postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable"
+	got, err := temporaryDatabaseURL(databaseURL, "aicrm_query_plan_abcdef")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "postgres://postgres:postgres@127.0.0.1:5432/aicrm_query_plan_abcdef?sslmode=disable"
-	if got != want || got == fixedDatabaseURL {
+	want := "postgres://postgres:postgres@127.0.0.1:55432/aicrm_query_plan_abcdef?sslmode=disable"
+	if got != want || got == databaseURL {
 		t.Fatalf("temporary URL = %q; want %q", got, want)
 	}
-	if _, err := temporaryDatabaseURL(fixedDatabaseURL, "unsafe-name"); err == nil {
+	if _, err := temporaryDatabaseURL(databaseURL, "unsafe-name"); err == nil {
 		t.Fatal("unsafe database name was accepted")
+	}
+}
+
+func TestValidateAcceptanceDatabaseURL(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		databaseURL string
+		wantError   bool
+	}{
+		{name: "dynamic IPv4 loopback", databaseURL: "postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable"},
+		{name: "dynamic IPv6 loopback", databaseURL: "postgres://postgres:postgres@[::1]:55432/aicrm_test?sslmode=disable"},
+		{name: "hostname rejected", databaseURL: "postgres://postgres:postgres@localhost:55432/aicrm_test?sslmode=disable", wantError: true},
+		{name: "credential rejected", databaseURL: "postgres://postgres:secret@127.0.0.1:55432/aicrm_test?sslmode=disable", wantError: true},
+		{name: "extra option rejected", databaseURL: "postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable&application_name=test", wantError: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateAcceptanceDatabaseURL(test.databaseURL)
+			if test.wantError && err == nil {
+				t.Fatal("validateAcceptanceDatabaseURL() error = nil, want rejection")
+			}
+			if !test.wantError && err != nil {
+				t.Fatalf("validateAcceptanceDatabaseURL() error = %v, want nil", err)
+			}
+		})
 	}
 }

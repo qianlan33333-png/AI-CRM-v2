@@ -20,6 +20,8 @@ execution_policy:
     - main_ci_status
     - slice_induced_correction_count
     - infra_induced_correction_count
+    - scope_induced_correction_count
+    - verification_induced_correction_count
   delegated_terra_receipts: full_hash_manifest_only_when_actually_delegated
   delegated_receipt: payload_manifest_including_untracked
   file_manifest_format: sorted_MODE_BYTES_SHA256_PATH
@@ -29,13 +31,15 @@ execution_policy:
     P2: 12_files_800_lines
     P3_P4: 12_files_1000_lines
     hard_cap: 15_files_1500_lines
-  correction_stop_threshold: total_corrections_gte_2
+  correction_stop_threshold:
+    slice_induced: gte_3
+    infra_scope_verification_count_toward_stop: false
   rolling_three_slice_average_threshold: slice_induced_average_gt_1
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P2
-current_phase_status: P2_PAUSED_SEC_01
+current_phase_status: P2_IN_PROGRESS
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -44,8 +48,21 @@ ledger_semantics:
   correction_attribution:
     slice_induced: slice_code_or_design_defect
     infra_induced: existing_gate_toolchain_environment_or_ci_defect
-    infra_requires_independent_fix_slice: true
-    total_corrections_gte_2_requires_stop_report: true
+    scope_induced: slice_card_scope_was_underdefined
+    verification_induced: verification_command_environment_or_evidence_invocation_defect
+    infra_disposition: same_slice_or_independent_fix_slice_by_complete_behavior
+    non_slice_attributions_stop_independently: false
+    slice_induced_gte_3_requires_stop_report: true
+    scope_induced_requires_rescope_not_counter_reset: true
+  reporting:
+    P2: phase_completion
+    P3: each_wave_completion
+    immediate_stop_gates:
+      - real_external_effect
+      - irreversible_identity_semantic_disagreement
+      - substantive_auth_secret_wecom_credential_change
+      - user_real_input_or_manual_acceptance_required
+      - substantive_ADR_or_architecture_law_conflict
   sol_receipts_are_forward_recorded: true
 slices:
   - slice_id: P0-B0
@@ -677,14 +694,18 @@ slices:
   - slice_id: G1-D02
     title: solidify-rule-signoff-and-release-p2
     owner: Codex-Sol
-    status: accepted_governance_decision
+    status: accepted
     base_sha: 57bb4ca4b4b8e1b46978e6e513f6d9cdf28f3af7
     decision_anchor: G1-D02-2026-08-10
     branch: slice/g1-d02-preflight
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/96
+    pr_head_sha: 58d4585f9d8c7ee62da11d07bd6200ad33bd134d
+    merge_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    main_ci_runs:
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31366301815
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31366301836
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31366301812
     tests:
       - LOCAL_feature_matrix_p1_completion_PASS_293_pending_0
       - LOCAL_migration_mapping_p1_completion_PASS_316_pending_0
@@ -700,17 +721,21 @@ slices:
   - slice_id: SEC-01
     title: upgrade-vulnerable-root-dependency-and-bootstrap-orval
     owner: Codex-Sol
-    status: ready_for_pr
+    status: accepted
     base_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
     branch: sec/sec-01-root-dependencies-orval
     security_anchor: SEC-01-2026-08-10
     blocked_slice: P2-00
     blocked_slice_disposition: PAUSED_THEN_RESUME_WITH_CORRECTION_COUNT_2
     disposition_contrast: P2_01_SUPERSEDED_BY_RESCOPE_P2_00_NOT_SUPERSEDED
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/97
+    pr_head_sha: c45bbb5e95aed4d07f15cde7b1c0b3ab3d10ce16
+    merge_sha: 6ad45d07a32465c321aa1233882eb5d43101148f
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    main_ci_runs:
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31370933104
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31370933167
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31370933098
     dependency_changes:
       - golang.org/x/text_v0.29.0_to_v0.39.0_GO_2026_5970_CVE_2026_56852
       - golang.org/x/sync_v0.17.0_to_v0.21.0_transitive_MVS_from_x_text
@@ -732,12 +757,85 @@ slices:
     infra_induced_correction_count: 0
     external_gates:
       - PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED
+  - slice_id: P2-00
+    title: reusable-postgresql-acceptance-fixtures
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
+    resumed_base_sha: 6ad45d07a32465c321aa1233882eb5d43101148f
+    dependency: SEC-01
+    branch: slice/p2-00-acceptance-fixtures
+    decision_anchor: P2-RESCOPE-2026-08-10
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    tests:
+      - LOCAL_ownership_public_unknown_table_FAIL_as_expected
+      - LOCAL_ownership_acceptance_fixtures_schema_PASS
+      - LOCAL_safe_loopback_test_DSN_port_correction_1
+      - LOCAL_real_PostgreSQL16_transaction_rollback_cleanup_PASS
+      - LOCAL_generate_twice_initially_NOT_COMPLETED_missing_orval_install
+      - LOCAL_full_ci_initially_blocked_GO_2026_5970_reachable
+      - LOCAL_P0_S03_fixed_port_contract_infra_correction_3
+      - LOCAL_P0_S03_skip_attempt_verification_correction_4
+      - LOCAL_shell_special_path_variable_verification_correction_5
+      - LOCAL_Homebrew_PostgreSQL16_13_patch_mismatch_infra_correction_6
+      - LOCAL_shell_command_v_flag_invocation_verification_correction_7
+      - LOCAL_temporary_PostgreSQL_build_without_ICU_verification_correction_8
+      - LOCAL_query_plan_fixed_port_infra_correction_9
+      - LOCAL_PostgreSQL16_14_source_SHA256_f6d077142737920858ce958ccdb75c6ee137a63b5b0853c70693d401ac7e3471_PASS
+      - LOCAL_dynamic_loopback_DSN_P0_S03_fixture_query_plan_PASS
+      - LOCAL_ci_go_real_PostgreSQL16_14_PASS
+      - LOCAL_query_plan_indexed_and_Seq_Scan_negative_PASS
+      - LOCAL_shell_environment_shadow_negative_PASS
+      - LOCAL_orval_generate_twice_and_contract_PASS
+      - LOCAL_web_ci_npm_audit_zero_PASS
+      - LOCAL_gitleaks_history_config_sensitive_paths_PASS
+      - LOCAL_repo_contract_and_all_negatives_PASS
+    handwritten_scope: 12_files_583_changed_lines_under_P2_cap_tests_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 4
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 4
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-01
+    title: transaction-bound-uow-and-housekeeping
+    owner: Codex-Sol
+    status: SUPERSEDED_BY_RESCOPE
+    base_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
+    branch: slice/p2-01-uow-housekeeping
+    reliability_source: user_reliability_addendum
+    reliability_anchor: REL-2026-08-10
+    superseded_by:
+      - P2-00
+      - P2-01R
+    supersede_reason: slice_card_omitted_reusable_real_postgresql_fixture_mechanism
+    pr_url: NOT_CREATED
+    pr_head_sha: NOT_CREATED
+    merge_sha: NOT_CREATED
+    main_ci_status: NOT_APPLICABLE
+    tests:
+      - LOCAL_platform_store_UoW_race_PASS
+      - LOCAL_transaction_context_expiry_nested_retry_rollback_PASS
+      - LOCAL_docs_housekeeping_and_repo_contract_PASS
+      - LOCAL_ownership_lint_probe_table_correction_1
+      - LOCAL_build_test_only_contact_store_directory_correction_2_STOP
+    handwritten_scope: 10_files_under_12_file_800_line_cap
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 2
+    external_gates:
+      - SECURITY_AUTHORIZATION_REQUIRED_BEFORE_CREDENTIAL_SECRET_OAUTH_SLICE
+      - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00
     status: P2_READY
     decision_base_sha: 57bb4ca4b4b8e1b46978e6e513f6d9cdf28f3af7
-    final_main_sha: PENDING_FORWARD_RECEIPT
+    final_main_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
     evidence: docs/evidence/p1/g1-signoff-pack.md
     route_reconciliation: PASS_781_equals_156_plus_184_plus_441
     migration_reconciliation: PASS_316_tables_3313_field_mappings_pending_0

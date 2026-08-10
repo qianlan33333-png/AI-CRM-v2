@@ -27,6 +27,7 @@ var (
 		regexp.MustCompile(`(?m)--.*$`),
 	}
 	writePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\bcreate\s+(?:temporary\s+|temp\s+)?table\s+(?:if\s+not\s+exists\s+)?([a-z0-9_.$"]+)`),
 		regexp.MustCompile(`(?i)\binsert\s+into\s+([a-z0-9_.$"]+)`),
 		regexp.MustCompile(`(?i)\bupdate\s+(?:only\s+)?([a-z0-9_.$"]+)`),
 		regexp.MustCompile(`(?i)\bdelete\s+from\s+(?:only\s+)?([a-z0-9_.$"]+)`),
@@ -147,12 +148,20 @@ func addTable(p *policy, section, owner, table string) error {
 	return nil
 }
 func walkInternal(root string, p *policy) error {
-	internal := filepath.Join(root, "internal")
-	info, err := os.Lstat(internal)
-	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("regular directory required: internal")
+	for _, tree := range []string{"internal", "acceptance"} {
+		if err := walkSQLTree(root, tree, p); err != nil {
+			return err
+		}
 	}
-	return filepath.WalkDir(internal, func(path string, entry fs.DirEntry, walkErr error) error {
+	return nil
+}
+func walkSQLTree(root, tree string, p *policy) error {
+	treeRoot := filepath.Join(root, tree)
+	info, err := os.Lstat(treeRoot)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("regular directory required: %s", tree)
+	}
+	return filepath.WalkDir(treeRoot, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -243,7 +252,14 @@ func checkText(text, source, rel string, p *policy) error {
 }
 func checkTable(raw, source, rel string, p *policy) error {
 	parts := strings.Split(raw, ".")
-	table := strings.ToLower(strings.Trim(parts[len(parts)-1], `"`))
+	table := normalizeIdentifier(parts[len(parts)-1])
+	schema := ""
+	if len(parts) > 1 {
+		schema = normalizeIdentifier(parts[len(parts)-2])
+	}
+	if schema == "acceptance_fixtures" {
+		return nil
+	}
 	owner, exists := p.tables[table]
 	if !exists {
 		return fmt.Errorf("write to unknown table in %s: %s", rel, table)
@@ -252,6 +268,9 @@ func checkTable(raw, source, rel string, p *policy) error {
 		return fmt.Errorf("table write ownership violation in %s: %s belongs to %s", rel, table, owner)
 	}
 	return nil
+}
+func normalizeIdentifier(value string) string {
+	return strings.ToLower(strings.Trim(value, `"`))
 }
 func checkWeCom(text, source, rel string) error {
 	lower := strings.ToLower(text)

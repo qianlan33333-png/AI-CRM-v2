@@ -49,23 +49,31 @@
   生成物与测试文件不计入手写额度。
 - 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
   半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
-- 修正归因分为 `slice_induced` 与 `infra_induced`。仅本片代码或设计缺陷导致的
-  `slice_induced_correction_count` 计入切片过大信号；单片达到 2，或连续三片
+- 修正归因分为 `slice_induced`、`infra_induced`、`scope_induced` 与
+  `verification_induced`。仅本片业务代码或设计缺陷导致的
+  `slice_induced_correction_count` 计入切片过大信号；单片达到 3，或连续三片
   平均超过 1，下一片回退到上一档规模并在 ledger 记录。
 - 既存门禁误判、工具链/环境问题或 CI 抖动记入 `infra_induced_correction_count`，
-  不触发规模降档，但必须另开独立基础设施修复片，禁止在原片内绕过或将就。
+  验收命令、本地/CI 环境或证据调用方式的修正记入
+  `verification_induced_correction_count`。两者都不触发规模降档，由 Sol 在原片
+  精确修复或按完整行为另开基础设施片；禁止绕过或降低门禁。
+- 切片卡范围欠定义导致的修正记入 `scope_induced_correction_count`；Sol 应依
+  完整行为自行合并、拆分或标记 `SUPERSEDED_BY_RESCOPE`，不得清零原片历史计数。
 - 并行：最多 3 个任务，且须满足互不依赖、路径不重叠、对应域 OpenAPI 与
   公共 port 已冻结。P3 波次划分为 contact → (identity ∥ segment) →
   (wecom ∥ outbound)。
 - 迁移与对账必须由与实现者独立的 Agent 复核，且不得向复核方提供迁移源码。
-- 停报按两类修正之和计算：单片总修正次数达到 2 时立即停止并报告；归因只影响
-  是否降档，不影响停报阈值。
+- 单片 `slice_induced_correction_count >= 3` 时立即停报；`infra_induced`、
+  `scope_induced`、`verification_induced` 不计入该阈值。
 - 相对简单、边界清晰且不需要架构、产品或安全判断的机械任务，如确有需要可
   委派 Terra Max 执行；Sol 仍负责范围冻结、结果复核、Git/PR 与 main CI 闭环。
 - `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收
   夹具是中央契约区；只能由 Sol 在当前垂直 Slice 内裁决和修改，或在冻结后以精确
   白名单委派机械实现。
 - Sol 必须串行执行每片的 rebase、全门禁、PR、squash merge 和精确 main SHA CI。
+- 常规进度仅在 P2 全部完成、P3 每个波次完成时批量汇报。只有真实外部效果、
+  identity 不可逆语义分歧、鉴权/secret/企微凭据实质变更、需要用户真实输入或
+  人工验收、与已决 ADR 或架构铁律实质冲突时立即停报。
 
 ## 5. 生成、测试与证据
 

@@ -100,7 +100,8 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 - Sol 始终负责：范围冻结 → 结果复核 → rebase/门禁/PR/squash/main CI 闭环。**Terra 产出不直接进 main。**
 - 委派时启用 hash 收据（`input_sha256`/`output_hashes`/`file_manifest_sha256`），Sol 自执行片仍免除。
 - 并行上限 3，路径不重叠。
-- Terra 片的 `correction_count` 归入 Sol 该片总数，停报阈值不变。
+- Terra 片的 `correction_count` 归入 Sol 该片总数；仅业务实现
+  `slice_induced >= 3` 触发停报，其他归因不计入该阈值。
 
 ---
 
@@ -289,18 +290,29 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 
 ### 6.1 必须停下来问用户
 
-1. 数据不可逆风险的语义分歧（尤其 identity 合并规则）
-2. 安全边界：secret、鉴权、企微凭据处理方式
-3. 需要真实外部效果：企微调用、部署、live migration
-4. spec 与已决 ADR 出现新矛盾
-5. 单片 correction_count 达到 2
-6. 某完整行为超过硬顶 15 文件 / 1500 行
-7. 到达 G2 / G3 人工门
-8. **旧行为存在安全漏洞或会导致数据损坏**（此时不适用照搬原则）
+1. 需要真实外部效果：企微真实调用、staging/生产部署、live migration
+   或连接生产数据库。
+2. identity 合并语义存在任何不可逆的分歧或不确定。
+3. 鉴权模型、secret 处理或企微凭据存储方式的实质变更；纯测试凭据与本地
+   DSN 不在此列。
+4. 需要用户提供 3 个真实人群包、feature top-20 抽查或 G2/G3 人工验收。
+5. 与已决 ADR 或架构铁律出现实质冲突。
+
+此外，单片 `slice_induced_correction_count >= 3` 时作为防死循环门立即停报。
+`infra_induced`、`scope_induced`、`verification_induced` 不计入该阈值，由 Sol 自行
+精确修复并留痕。
 
 ### 6.2 不得停下来问（照搬即可）
 
 旧行为丑陋/不合理、旧行为有普通 bug、缺少产品判断的小选择、非阻塞性能问题、发现更好写法——**一律照搬 + 记 backlog**，继续推进。
+测试/验收基础设施、门禁精确化、可修复的依赖升级、波次依赖不变的切片调整与
+硬顶内的规模安排，由 Sol 自行决策并在批量汇报中留痕。
+
+### 6.3 批量汇报
+
+- P2 全部完成时汇报一次；P3 每个波次完成时汇报一次。
+- 固定内容：完成项、自行决策及理由、backlog 新增、未执行项、当前 main SHA
+  和 CI 状态。触发 §6.1 或 correction 防死循环门时不等批次，立即停报。
 
 ---
 

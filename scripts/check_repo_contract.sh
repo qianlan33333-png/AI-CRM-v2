@@ -98,6 +98,9 @@ required=(
   tools/openapi-contract/main_test.go
   acceptance/p1s11/contracts_test.go
   acceptance/p1s11/doc.go
+  acceptance/fixtures/postgres.go
+  acceptance/fixtures/postgres_test.go
+  docs/execution/slices/P2-00.md
   docs/execution/slices/P1-S11.md
   internal/api/generated/server.gen.go
   internal/api/candidate/generated/server.gen.go
@@ -147,28 +150,28 @@ required=(
   docs/spec/SHA256SUMS
 )
 
-for path in "${required[@]}"; do
-  [[ -f "$path" ]] || fail "missing required file: $path"
-  [[ "$(git ls-files -s -- "$path" | wc -l | tr -d ' ')" = "1" ]] ||
-    fail "required file is missing or has an ambiguous index entry: $path"
-  index_mode="$(git ls-files -s -- "$path" | awk '{print $1}')"
+for file_path in "${required[@]}"; do
+  [[ -f "$file_path" ]] || fail "missing required file: $file_path"
+  [[ "$(git ls-files -s -- "$file_path" | wc -l | tr -d ' ')" = "1" ]] ||
+    fail "required file is missing or has an ambiguous index entry: $file_path"
+  index_mode="$(git ls-files -s -- "$file_path" | awk '{print $1}')"
   case "$index_mode" in
     100644|100755) ;;
-    *) fail "required path must be a regular tracked file: $path (mode $index_mode)" ;;
+    *) fail "required file_path must be a regular tracked file: $file_path (mode $index_mode)" ;;
   esac
 done
 
 verify_index_mode() {
-  local path="$1"
+  local file_path="$1"
   local expected="$2"
   local actual
-  actual="$(git ls-files -s -- "$path" | awk 'NR == 1 { print $1 }')"
+  actual="$(git ls-files -s -- "$file_path" | awk 'NR == 1 { print $1 }')"
   [[ "$actual" = "$expected" ]] ||
-    fail "pinned repository mode drifted: $path ($actual)"
+    fail "pinned repository mode drifted: $file_path ($actual)"
 }
 
-while IFS=' ' read -r expected path; do
-  verify_index_mode "$path" "$expected"
+while IFS=' ' read -r expected file_path; do
+  verify_index_mode "$file_path" "$expected"
 done <<'EOF'
 100644 Makefile
 100644 CONTRIBUTING.md
@@ -228,6 +231,9 @@ done <<'EOF'
 100644 tools/openapi-contract/main_test.go
 100644 acceptance/p1s11/contracts_test.go
 100644 acceptance/p1s11/doc.go
+100644 acceptance/fixtures/postgres.go
+100644 acceptance/fixtures/postgres_test.go
+100644 docs/execution/slices/P2-00.md
 100644 docs/execution/slices/P1-S11.md
 100644 docs/backlog/post-launch.md
 100644 docs/execution/slices/SEC-01.md
@@ -268,16 +274,16 @@ done <<'EOF'
 EOF
 
 verify_index_sha256() {
-  local path="$1"
+  local file_path="$1"
   local expected="$2"
   local actual
-  actual="$(git show ":$path" | sha256sum | awk '{print $1}')"
+  actual="$(git show ":$file_path" | sha256sum | awk '{print $1}')"
   [[ "$actual" = "$expected" ]] ||
-    fail "pinned repository content drifted: $path ($actual)"
+    fail "pinned repository content drifted: $file_path ($actual)"
 }
 
 verify_index_sha256 Makefile \
-  9da252a15f7065d05e27049595a244108fe011a72a36e49bb05786970dfc72da
+  a83d24db819a9e6fe2fece9ee43f90a1e013cb133c764a9f3cea3679eed387cd
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -293,7 +299,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   5b3c0fd655dfb30964998a473cb1d9569983b44bdebfc01e3472c47b77ede60b
 verify_index_sha256 .github/workflows/application-go.yml \
-  eb5a445954504d93ddf0b2b3e6bcbe90dd1344ae3f9a6b63312ee82c107d09bf
+  71a9695df525aa03886f7020caed85f66e13e5ea1190ad2e8f487a6c7555fbb5
 verify_index_sha256 .github/workflows/repo-contract.yml \
   32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -305,7 +311,7 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  e6dd0def9500ac96aaff3bb4c1737d29212612a6fa36db9078229183994035c7
+  7e8133c4a3d9c63b165d3b4438cc72fcb7c9a0dca02dd758ef075f7010beab20
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
 verify_index_sha256 scripts/generated-sources.sha256 \
@@ -321,15 +327,21 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   68cdf909235c8961a91ffe6560461fb1e174bc67fdb3b3eb24b22bf43c25d0b7
 verify_index_sha256 scripts/ownership/main.go \
-  e1dfe40e7ccc9ec40cc7a6cb2c10cb8473e373c2751e1a88f61480b539f64241
+  0417b2afd59f20b614fdc5c40072a8ffddfc675145bfc1fe3a59bbdf43e739b1
 verify_index_sha256 scripts/test_ownership.sh \
-  d239565f77afe42155e4a09657fdff0abd6c59823aa60f1ec4ff6c565b9087df
+  2db6b28fbc8054c99760d2b242b020edc5f138e1b5ee8357c72cfb7f97069f21
+verify_index_sha256 acceptance/fixtures/postgres.go \
+  2ad5addf7cddd04b4b054fe9372e05f0177468825227af71cab08eab5f5db7d8
+verify_index_sha256 acceptance/fixtures/postgres_test.go \
+  1663c7affa6575965b956a54f4af839c8ae8187e220ba689a4b03a5fa9a74e62
+verify_index_sha256 docs/execution/slices/P2-00.md \
+  7f625dc6dd0017266faaf779a79ca093bf600bb4b51adc61660751be86b16022
 verify_index_sha256 scripts/sourcepolicy/main.go \
   350924119f5f190d1e399d2e84f8f163d5c5ea7b0dbfc2a0652ba9b7a3c077c0
 verify_index_sha256 scripts/test_source_policy.sh \
   ea5b70241c85adeed28bd6b4f0ad1f887630615b882aac209af4e42e15cc184e
 verify_index_sha256 AGENTS.md \
-  665b9c6e15c4e95feb6fba1c9a7702a094cf84c46e7d1f2d685de7e1881cc8a0
+  6d7bbe6739e98fd878d9fa7550726841f616f0190778b03587025a0cc025173f
 verify_index_sha256 scripts/check_slice_inputs.sh \
   b7b1711da73974b0a89c79bab020e519095fc8aaf36f737b036027ec3a08cb25
 verify_index_sha256 scripts/test_slice_inputs.sh \
@@ -343,9 +355,9 @@ verify_index_sha256 tools/go.mod \
 verify_index_sha256 tools/go.sum \
   2515f9dd3dbc17c77f98550be06a8cdf072538e6d8eb296077b6ad91120d2753
 verify_index_sha256 tools/query-plan-gate/main.go \
-  ef737d9397fde907f0aadc404733413c8a867911463c31a3218d45c44a9dcaf7
+  f36e5be67a56a4d969206d870fe4a0104c9387a6caeacf6ac96ac7eeb1686b15
 verify_index_sha256 tools/query-plan-gate/main_test.go \
-  379fdaecbfac5c3f7107edace3edc7aa9381ea4fe12623fafb94a5308251518a
+  c61d43bc6e10ec992ab68385c0f0280559f4c44cb8a0ad7d05d9516b511e9798
 verify_index_sha256 scripts/test_query_plan_gate.sh \
   61a1ce22acc6358b697c50e191c02a6d2e8a0fe20b9d00c2070cececdc8bb497
 verify_index_sha256 docs/execution/slices/M0-3.md \
@@ -405,7 +417,7 @@ verify_index_sha256 docs/execution/slices/G1-D01.md \
 verify_index_sha256 docs/execution/slices/G1-D02.md \
   3fc37264f57da5fa15d8d3765554ca3e1eea7ce8bd10865176eb9d3b537f4742
 verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
-  6e4c0d1c9fd68df727ca70af8c23bf2ec4da1aa743020533855bbf37a537cf19
+  26b26679422287c3dd32c6321a481f6f8e02fecc23a99f058ea9fe1b24ef8f42
 verify_index_sha256 tools/p1-reconciliation/main.go \
   2b1162a4a423b9f106b512d162a5ebc4d3bc5fded125caaa69bc0d7b823ade99
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
@@ -441,7 +453,7 @@ verify_index_sha256 internal/identity/port/port.go \
 verify_index_sha256 internal/platform/port/uow.go \
   9c751db2adab03f18c342fa5ab6487020084f704b0fe96203010e1f9f5c03e2b
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
-  156cf8ae10dd1363271b1f157b0ba66a2b5726e01ba42694417476e8f153dfdb
+  6aeeed7538c430b1d18861fade94ba0428fac5b3c2c2f6493e51bea08e3d178e
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
   f412452642b3b03f9f776ad471996e1b6d2df962c7a8b0016122b6a430f1d91f
 verify_index_sha256 docs/adr/ADR-001.md \
@@ -459,7 +471,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a06ee98e1b41494d322e307e2d0c0e4e073383e0920e6f9dd341789bd01a7f68
+  cf3f44286a2b6789aa81d1a8c4ebc22739fbd51f9f09302219bf2db91bd6a27e
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -467,7 +479,7 @@ verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
 verify_index_sha256 internal/platform/store/contract.go \
   747683b0f430da2ee29f001abaebe5fe621561aa3dd99b5b9db6b7d871895165
 verify_index_sha256 acceptance/p0s03/query_contract_test.go \
-  c980ae9264f1eadf69fd98734259dcb92a9bf3f5ddd899518a36ee636a64fd42
+  44184be1c39ffff0e825d0888dcc9d62e5993cfe1958861d2ddb50323ce536da
 verify_index_sha256 acceptance/p0s03/source_contract.go \
   239802f1fea13e0640ca4e3d1eda8f8428f8393f2cd4919deecc0d6ab311cd79
 verify_index_sha256 acceptance/p0s03/static_contract.sh \
@@ -724,6 +736,25 @@ done
   fail "ownership lint target lost the frozen checker call"
 [[ "$(make_target_recipe 'ownership-lint-test:')" = $'\t@env -u BASH_ENV -u ENV GO="$(GO)" scripts/test_ownership.sh' ]] ||
   fail "ownership lint test target lost the frozen runner call"
+require_make_line '.PHONY: acceptance-fixtures' \
+  "Makefile must declare the acceptance fixture target"
+require_make_line 'acceptance-fixtures: override SHELL := /bin/bash' \
+  "acceptance fixture target must use absolute Bash"
+require_make_line 'acceptance-fixtures: override .SHELLFLAGS := -eu -o pipefail -c' \
+  "acceptance fixture target must pin fail-closed Bash flags"
+require_make_line 'acceptance-fixtures: override GO := go' \
+  "acceptance fixture target must reject hostile GO overrides"
+require_unique_make_target acceptance-fixtures
+acceptance_fixtures_recipe="$(make_target_recipe 'acceptance-fixtures:')" ||
+  fail "acceptance fixture target must be unique"
+for line in \
+  $'\t@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$$ACCEPTANCE_FIXTURES_TEST_DATABASE_URL" $(GO) test -race -count=1 -timeout=30s ./acceptance/fixtures'; do
+  printf '%s\n' "$acceptance_fixtures_recipe" | grep -Fqx "$line" ||
+    fail "acceptance fixture target lost a frozen validation call"
+done
+[[ "$ci_go_target" =~ (^|[[:space:]])acceptance-fixtures($|[[:space:]]) ]] ||
+  fail "ci-go must depend on acceptance-fixtures"
 require_make_line '.PHONY: source-policy-lint source-policy-lint-test' \
   "Makefile must declare the source policy lint targets"
 for target in source-policy-lint source-policy-lint-test; do
@@ -887,6 +918,7 @@ for line in '      BASH_ENV: ""' '      ENV: ""'; do
     fail "application workflow must clear BASH_ENV and ENV"
 done
 for line in \
+  '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable' \
   '          QUERY_PLAN_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable' \
   '          QUERY_PLAN_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}' \
   '          QUERY_PLAN_HEAD_SHA: ${{ github.sha }}'; do
@@ -965,15 +997,15 @@ customers_ddl="$(awk '/^CREATE TABLE customers \(/ { capture=1 } capture { print
 ! grep -Fq 'idx_customers_unionid' <<<"$design" || fail "design restored the forbidden customers unionid index"
 grep -Eq '^[[:space:]]+scope[[:space:]]+TEXT[[:space:]]+NOT NULL' <<<"$design" ||
   fail "design identities scope must remain required"
-! grep -Fq '/tools/contract-replay' <<<"$design" || fail "design restored the retired contract replay path"
-grep -Fq '/acceptance/snapshots' <<<"$design" || fail "design lost the snapshot gate path"
+! grep -Fq '/tools/contract-replay' <<<"$design" || fail "design restored the retired contract replay file_path"
+grep -Fq '/acceptance/snapshots' <<<"$design" || fail "design lost the snapshot gate file_path"
 grep -Fq '快照只防新系统自身回归，不能防新旧行为不一致' <<<"$design" ||
   fail "design lost the snapshot capability limitation"
 
 forbidden_path_pattern='(^|/)(\.env[^/]*|node_modules|vendor|dist|build|coverage|\.cache|playwright-report|test-results|\.auth|\.browser)(/|$)|^(data|runtime|logs|uploads|tmp)(/|$)|(^|/)(id_rsa[^/]*|cookies[^/]*\.json|credentials[^/]*\.json)$|\.(pem|key|p12|pfx|db|sqlite|sqlite3|dump|zip)$'
 if git ls-files | grep -E "$forbidden_path_pattern" >/dev/null; then
   git ls-files | grep -E "$forbidden_path_pattern" >&2
-  fail "forbidden generated, credential, data, or binary path is tracked"
+  fail "forbidden generated, credential, data, or binary file_path is tracked"
 fi
 
 if git ls-files | grep -E '(^|/)handoffs(/|$)|AI-CRM-v2-v3\.(patch|zip)$' >/dev/null; then
@@ -1050,6 +1082,14 @@ done < <(
     -- .github/workflows |
     sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]#]+).*/\2/'
 )
+
+shell_shadow_pattern='^[[:space:]]*for[[:space:]]+(path|PATH|IFS|HOME|PWD|SHELL|LANG|UID|STATUS)[[:space:]]+in([[:space:];]|$)|^[[:space:]]*(local|typeset|declare)[[:space:]]+([^#;]*[[:space:]])?(path|PATH|IFS|HOME|PWD|SHELL|LANG|UID|STATUS)(=|[[:space:];]|$)'
+shell_shadow_matches="$(
+  git grep --cached -n -E "$shell_shadow_pattern" -- \
+    ':(glob)scripts/*.sh' ':(glob)scripts/**/*.sh' || true
+)"
+[[ -z "$shell_shadow_matches" ]] ||
+  fail "shell loop/local variables must not shadow environment names: $shell_shadow_matches"
 
 scripts/scan_sensitive_paths.sh
 
