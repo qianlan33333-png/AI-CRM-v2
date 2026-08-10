@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	eventdb "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/generated"
@@ -21,10 +22,48 @@ const DefaultBatchSize int32 = 100
 var (
 	ErrInvalidDispatcher = errors.New("invalid event dispatcher")
 	ErrDispatchProgress  = errors.New("event dispatch progress mismatch")
+	ErrEnqueuerBound     = errors.New("event dispatcher enqueuer is already bound")
 )
 
 type transactionalEnqueuer interface {
 	EnqueueTx(context.Context, pgx.Tx, platformjobqueue.Queue, river.JobArgs, *river.InsertOpts) (*rivertype.JobInsertResult, error)
+}
+
+// DeferredEnqueuer breaks the worker/client construction cycle with a single,
+// fail-closed bind before the River runtime starts. It cannot be rebound.
+type DeferredEnqueuer struct {
+	mu       sync.RWMutex
+	enqueuer transactionalEnqueuer
+}
+
+func NewDeferredEnqueuer() *DeferredEnqueuer {
+	return &DeferredEnqueuer{}
+}
+
+func (reference *DeferredEnqueuer) Bind(enqueuer transactionalEnqueuer) error {
+	if reference == nil || isNil(enqueuer) {
+		return ErrInvalidDispatcher
+	}
+	reference.mu.Lock()
+	defer reference.mu.Unlock()
+	if reference.enqueuer != nil {
+		return ErrEnqueuerBound
+	}
+	reference.enqueuer = enqueuer
+	return nil
+}
+
+func (reference *DeferredEnqueuer) EnqueueTx(ctx context.Context, tx pgx.Tx, queue platformjobqueue.Queue, args river.JobArgs, options *river.InsertOpts) (*rivertype.JobInsertResult, error) {
+	if reference == nil {
+		return nil, ErrInvalidDispatcher
+	}
+	reference.mu.RLock()
+	enqueuer := reference.enqueuer
+	reference.mu.RUnlock()
+	if isNil(enqueuer) {
+		return nil, platformjobqueue.ErrClientUnavailable
+	}
+	return enqueuer.EnqueueTx(ctx, tx, queue, args, options)
 }
 
 // Dispatcher atomically inserts River delivery jobs and advances event_log

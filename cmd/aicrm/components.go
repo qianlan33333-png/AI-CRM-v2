@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
@@ -12,8 +11,6 @@ import (
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
 var errInvalidWorkerDatabaseConfig = errors.New("invalid worker database configuration")
@@ -83,10 +80,8 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	var client *platformjobqueue.Client
-	dispatcher, err := eventdispatcher.New(platformstore.NewUnitOfWork(pool), deferredEnqueuer{
-		client: func() *platformjobqueue.Client { return client },
-	}, eventdispatcher.DefaultBatchSize)
+	enqueuer := eventdispatcher.NewDeferredEnqueuer()
+	dispatcher, err := eventdispatcher.New(platformstore.NewUnitOfWork(pool), enqueuer, eventdispatcher.DefaultBatchSize)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -105,7 +100,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	client, err = platformjobqueue.NewClient(pool, platformjobqueue.QueueConcurrency{
+	client, err := platformjobqueue.NewClient(pool, platformjobqueue.QueueConcurrency{
 		Critical: queues.Critical,
 		Event:    queues.Event,
 		Outbound: queues.Outbound,
@@ -117,22 +112,11 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	if err = enqueuer.Bind(client); err != nil {
+		pool.Close()
+		return nil, err
+	}
 	return &workerComponent{runtime: platformriver.NewRuntime(client), pool: pool}, nil
-}
-
-type deferredEnqueuer struct {
-	client func() *platformjobqueue.Client
-}
-
-func (enqueuer deferredEnqueuer) EnqueueTx(ctx context.Context, tx pgx.Tx, queue platformjobqueue.Queue, args river.JobArgs, options *river.InsertOpts) (*rivertype.JobInsertResult, error) {
-	if enqueuer.client == nil {
-		return nil, platformjobqueue.ErrClientUnavailable
-	}
-	client := enqueuer.client()
-	if client == nil {
-		return nil, platformjobqueue.ErrClientUnavailable
-	}
-	return client.EnqueueTx(ctx, tx, queue, args, options)
 }
 
 type workerComponent struct {
