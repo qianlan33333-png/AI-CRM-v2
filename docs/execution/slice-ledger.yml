@@ -1071,15 +1071,19 @@ slices:
   - slice_id: P2-07
     title: event-dispatcher-idempotent-claim-and-crash-recovery
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: e865b4468b8a73f2029c85ccf385f4f5027acb0e
     dependency: P2-05
     branch: slice/p2-07-dispatcher
     decision_anchor: REL-2026-08-10
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/105
+    pr_head_sha: c3c14f1a2c6f15138c90a3f2ae1b74c1a19e4c36
+    merge_sha: d9c9fe33ea9b11ac12b80a201aa3d06bee6cda11
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31412939335
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31412939332
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31412939342
     delegated_tasks:
       - task_id: p2_07_dispatcher_test_corpus
         executor: gpt-5.6-terra
@@ -1100,9 +1104,45 @@ slices:
       - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
     handwritten_scope: 10_files_449_changed_lines_under_P2_cap_tests_generated_and_receipts_excluded
     slice_induced_correction_count: 0
-    infra_induced_correction_count: 1
+    infra_induced_correction_count: 2
     scope_induced_correction_count: 0
     verification_induced_correction_count: 10
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+  - slice_id: P2-08
+    title: http-request-id-unified-errors-recovery-observability
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: d9c9fe33ea9b11ac12b80a201aa3d06bee6cda11
+    dependency: P2-07
+    branch: slice/p2-08-http-observability
+    decision_anchor: ADR-006
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_08_http_gateway_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/platform/http/gateway_test.go
+        base_sha: a6107db82e97e685a780065cce52db7d1320fa86
+        delegated_head_sha: 291add7ede9ed68dd2b5227c7ade048021f6a3a2
+        correction_count: 0
+        file_manifest_sha256: d27df4b0e00503e4d4e85c1a2f485ab60b886a413b18b4f3041107b9efabec83
+        diff_sha256: 64c0e31b7f35da1d893754f39ff6bc0403d080fd484459ef87d5890413719d99
+        receipt: docs/evidence/slices/P2-08-http-tests.md
+    tests:
+      - LOCAL_http_gateway_and_blackbox_focused_race_PASS
+      - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+    handwritten_scope: 4_files_550_changed_lines_under_P2_cap_tests_docs_receipts_and_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -431,7 +432,8 @@ func singleAccessLog(t *testing.T, logs *bytes.Buffer) map[string]any {
 	if err := decoder.Decode(&entry); err != nil {
 		t.Fatalf("decode access log %q: %v", logs.String(), err)
 	}
-	if decoder.More() {
+	var extra map[string]any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
 		t.Fatalf("expected one structured access log, got %q", logs.String())
 	}
 	if got := entry["msg"]; got != "http_access" {

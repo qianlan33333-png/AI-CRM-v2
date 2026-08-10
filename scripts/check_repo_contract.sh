@@ -171,6 +171,13 @@ required=(
   internal/events/dispatcher/dispatcher.go
   internal/events/dispatcher/dispatcher_test.go
   internal/events/dispatcher/jobs.go
+  acceptance/p2s08/doc.go
+  acceptance/p2s08/gateway_blackbox_test.go
+  internal/platform/http/errors.go
+  internal/platform/http/gateway.go
+  internal/platform/http/gateway_test.go
+  docs/execution/slices/P2-08.md
+  docs/evidence/slices/P2-08-http-tests.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -365,6 +372,13 @@ done <<'EOF'
 100644 internal/events/dispatcher/dispatcher.go
 100644 internal/events/dispatcher/dispatcher_test.go
 100644 internal/events/dispatcher/jobs.go
+100644 acceptance/p2s08/doc.go
+100644 acceptance/p2s08/gateway_blackbox_test.go
+100644 internal/platform/http/errors.go
+100644 internal/platform/http/gateway.go
+100644 internal/platform/http/gateway_test.go
+100644 docs/execution/slices/P2-08.md
+100644 docs/evidence/slices/P2-08-http-tests.md
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 tools/query-plan-gate/main.go
@@ -411,7 +425,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  4a6bd4a8693fed7690c5cf1b7e6dd7f4083dc7ed681b35a413249deb791eae37
+  1da0302789cfd6b804f3c5a8e6482b3688a5bc4b06c05a4a081b04b09d65379b
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -704,8 +718,22 @@ verify_index_sha256 internal/events/dispatcher/dispatcher_test.go \
   baae4dfd41d343885d6e30a11bbd49079164636a92f9107f2365e404f9080f78
 verify_index_sha256 internal/events/dispatcher/jobs.go \
   5c9ecd33343c3b382fe3b0af0a0314ec5c9147c7ae3a357e1e26f594ee2d3a39
+verify_index_sha256 acceptance/p2s08/doc.go \
+  8c7efd59df7d54ec7c2f032beb4da78baa87ddccf874c852a22a9d21218ccb50
+verify_index_sha256 acceptance/p2s08/gateway_blackbox_test.go \
+  e522f404c6dde64fc0f339af29e92e1352090b914912c8443e2eb5daa1c99956
+verify_index_sha256 internal/platform/http/errors.go \
+  21b6da0d4a110b9564f3324d00414ed59405c7577cd3379d00749812f941bf9f
+verify_index_sha256 internal/platform/http/gateway.go \
+  164599817c476db1dc1b623ef662da284a066523c175ca991476f535f5835402
+verify_index_sha256 internal/platform/http/gateway_test.go \
+  eb8313743a76e962aa23f0da2603db113abac349d04189c67662a13893e97214
+verify_index_sha256 docs/execution/slices/P2-08.md \
+  c2074545b8e6bc3e84df39fde7af0a79b1d4b9eeee7c654359228f4b7b18fe79
+verify_index_sha256 docs/evidence/slices/P2-08-http-tests.md \
+  a61b50a0d040373515216d96fe1707a14be7a9852e8a1b9e64ba94c07ae35fcc
 verify_index_sha256 docs/execution/slices/P2-07.md \
-  9205661205205eda14fa4c15fa1820cd1bf6da6916d39155bda6c1e74c227dd9
+  4788b3c37af60d5b95704b0e8981a86904575112a635106821a1d180ef8f0c91
 verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
   81000988e5933b412931f9797949823afc8d5855cf3a76263ce7ef443dd092d7
 verify_index_sha256 acceptance/p2s01r/doc.go \
@@ -731,7 +759,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  d747fadc0f31c1f333b56bb2819f3c60bec0845454445708bb065a768ece4dcb
+  30221d8cbf87f42e64ac4e45e79deec44cce59975c9c32af8f57e1bab08d1827
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1009,6 +1037,16 @@ p2_s07_acceptance_recipe="$(make_target_recipe 'p2-s07-acceptance:')" ||
   fail "P2-S07 acceptance target must run only the frozen dispatcher crash-recovery acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s07-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S07 acceptance target"
+
+require_make_line '.PHONY: p2-s08-acceptance' \
+  "Makefile must declare the P2-S08 acceptance target"
+require_unique_make_target p2-s08-acceptance
+p2_s08_acceptance_recipe="$(make_target_recipe 'p2-s08-acceptance:')" ||
+  fail "P2-S08 acceptance target must be unique"
+[[ "$p2_s08_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=45s ./acceptance/p2s08' ]] ||
+  fail "P2-S08 acceptance target must run only the frozen HTTP gateway acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s08-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S08 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"

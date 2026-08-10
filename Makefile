@@ -13,6 +13,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p2-s04-acceptance
 .PHONY: p2-s05-acceptance
 .PHONY: p2-s07-acceptance
+.PHONY: p2-s08-acceptance
 .PHONY: arch-import-lint arch-import-lint-test
 .PHONY: ownership-lint ownership-lint-test
 .PHONY: acceptance-fixtures
@@ -223,6 +224,9 @@ p2-s05-acceptance:
 p2-s07-acceptance:
 	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=60s ./acceptance/p2s07
 
+p2-s08-acceptance:
+	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=45s ./acceptance/p2s08
+
 arch-import-lint:
 	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/check_arch_imports.go -root .
 
@@ -316,4 +320,4 @@ query-plan-gate-test: query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GO="$(GO)" /bin/bash scripts/test_query_plan_gate.sh
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance p2-s08-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test
