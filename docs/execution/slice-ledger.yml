@@ -760,16 +760,20 @@ slices:
   - slice_id: P2-00
     title: reusable-postgresql-acceptance-fixtures
     owner: Codex-Sol
-    status: ready_for_pr
+    status: accepted
     base_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
     resumed_base_sha: 6ad45d07a32465c321aa1233882eb5d43101148f
     dependency: SEC-01
     branch: slice/p2-00-acceptance-fixtures
     decision_anchor: P2-RESCOPE-2026-08-10
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/98
+    pr_head_sha: b2989d03024380fe204cd566c759ec227316334b
+    merge_sha: 10c7f90f553ff929f570909a835061d16c53d8d0
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    main_ci_runs:
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31376774039
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31376774022
+      - https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31376774092
     tests:
       - LOCAL_ownership_public_unknown_table_FAIL_as_expected
       - LOCAL_ownership_acceptance_fixtures_schema_PASS
@@ -830,6 +834,42 @@ slices:
     external_gates:
       - SECURITY_AUTHORIZATION_REQUIRED_BEFORE_CREDENTIAL_SECRET_OAUTH_SLICE
       - STAGING_AND_PRODUCTION_NOT_AUTHORIZED
+  - slice_id: P2-01R
+    title: transaction-bound-uow-and-housekeeping-rescoped
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: 10c7f90f553ff929f570909a835061d16c53d8d0
+    dependency: P2-00
+    branch: slice/p2-01r-uow-housekeeping
+    decision_anchor: P2-RESCOPE-2026-08-10
+    reliability_anchor: REL-2026-08-10
+    original_slice: P2-01
+    original_slice_disposition: SUPERSEDED_BY_RESCOPE
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    tests:
+      - LOCAL_platform_store_UoW_unit_race_PASS
+      - LOCAL_document_grep_backtick_escaping_verification_correction_1
+      - LOCAL_acceptance_test_only_package_build_infra_correction_2
+      - LOCAL_p0s03_store_whitelist_verification_correction_3
+      - LOCAL_platform_store_package_coverage_slice_correction_4
+      - LOCAL_real_PostgreSQL16_14_commit_rollback_PASS
+      - LOCAL_housekeeping_contract_PASS
+      - LOCAL_make_ci_go_isolated_PostgreSQL16_14_PASS
+      - LOCAL_orval_double_generation_and_Web_CI_PASS
+      - LOCAL_gitleaks_config_and_sensitive_path_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+    handwritten_scope: 10_files_359_changed_lines_under_P2_cap_tests_and_verification_fixtures_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00

@@ -22,14 +22,15 @@ for directory in internal internal/platform "$store_root" "$store_root/generated
 	[[ "$mode" =~ ^[0-7]+$ ]] && (( (8#$mode & 07777) == 0755 )) || fail "directory mode must be exactly 0755: $directory"
 done
 files=("$store_root/ping.go" "$store_root/ping_test.go")
+uow_files=("$store_root/uow.go" "$store_root/uow_test.go")
 generated_files=("$store_root/generated/db.go" "$store_root/generated/health.sql.go" "$store_root/generated/models.go" "$store_root/generated/querier.go")
-ordinary=("$store_root/contract.go" "${files[@]}" "$store_root/queries/health.sql" "${generated_files[@]}")
+ordinary=("$store_root/contract.go" "${files[@]}" "${uow_files[@]}" "$store_root/queries/health.sql" "${generated_files[@]}")
 shopt -s dotglob nullglob
 store_entries=("$store_root"/*); query_entries=("$store_root/queries"/*); generated_entries=("$store_root/generated"/*)
 shopt -u dotglob nullglob
 for path in "${store_entries[@]}"; do
 	case "$path" in
-	"$store_root/contract.go"|"$store_root/ping.go"|"$store_root/ping_test.go"|"$store_root/generated"|"$store_root/queries") ;;
+	"$store_root/contract.go"|"$store_root/ping.go"|"$store_root/ping_test.go"|"$store_root/uow.go"|"$store_root/uow_test.go"|"$store_root/generated"|"$store_root/queries") ;;
 	*) fail "unexpected store top-level entry: $path" ;;
 	esac
 done

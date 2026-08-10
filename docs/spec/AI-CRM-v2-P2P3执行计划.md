@@ -162,7 +162,7 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 波次 3（并行）       wecom     ∥  outbound
 ```
 
-**注**：仓库 `implementation-plan.md` 仍写"严格顺序 contact→identity→wecom→segment→outbound"，与 AGENTS.md §4 的波次划分冲突。以 AGENTS.md 为准，implementation-plan.md 需同步（见 §7 housekeeping）。
+**注**：`implementation-plan.md` 已在 P2-01R 同步为 AGENTS.md §4 的波次划分，不再使用旧的严格串行顺序。
 
 每波次启动前须冻结对应域 OpenAPI 与公共 port。
 
@@ -318,9 +318,9 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 
 ## 7. Housekeeping（顺带修正，各自并入相邻片）
 
-1. `docs/execution/implementation-plan.md` 的 P3"严格顺序"与 AGENTS.md §4 波次划分冲突 → 以 AGENTS.md 为准同步。
-2. 设计文档 §9 的 M1–M6 周排期里程碑表已被 P0–P3/G1–G3 体系取代 → 删除或标注作废，避免与 M0-x 编号混淆。
-3. `docs/backlog/post-launch.md` 需在 P2 第一片时创建。
+1. [P2-01R 已完成] `docs/execution/implementation-plan.md` 已按 AGENTS.md §4 同步 P3 波次。
+2. [P2-01R 已完成] 设计文档 §9 的 M1–M6 周排期已标注作废，不再与 M0-x 混用。
+3. [SEC-01 已创建，P2-01R 已收紧边界] `docs/backlog/post-launch.md` 已作为唯一推迟出口，安全、不可逆风险、ADR、铁律与 CI 不得进入。
 
 ---
 
