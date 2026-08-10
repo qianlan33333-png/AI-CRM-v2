@@ -28,6 +28,10 @@
 
 按当前阶段运行适用门禁，并在 PR 中记录完整命令和退出码：
 
+- 首次检出或锁文件更新后运行 `make bootstrap-tools`。该目标按 `.tool-versions`、
+  `tools/go.mod` 和 `package-lock.json` 安装并核对 Go 工具及 Orval；缺少或版本错误
+  会明确失败，不允许跳过生成门。
+
 - Go：生成无 diff、tidy 无 diff、fmt、vet、race、test、build、漏洞扫描。
 - Web：`npm ci`、生成无 diff、lint、typecheck、test、build。
 - DB：PostgreSQL 16 fresh DB、Goose、River、sqlc、集成测试和 EXPLAIN。

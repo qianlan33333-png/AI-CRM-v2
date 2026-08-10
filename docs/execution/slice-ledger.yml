@@ -35,7 +35,7 @@ execution_policy:
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P2
-current_phase_status: P2_READY
+current_phase_status: P2_PAUSED_SEC_01
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -697,6 +697,41 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
       - REAL_DATA_MIGRATION_NOT_EXECUTED
+  - slice_id: SEC-01
+    title: upgrade-vulnerable-root-dependency-and-bootstrap-orval
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: 021c624b88b73ceb0695707e40c2a2f9deb43945
+    branch: sec/sec-01-root-dependencies-orval
+    security_anchor: SEC-01-2026-08-10
+    blocked_slice: P2-00
+    blocked_slice_disposition: PAUSED_THEN_RESUME_WITH_CORRECTION_COUNT_2
+    disposition_contrast: P2_01_SUPERSEDED_BY_RESCOPE_P2_00_NOT_SUPERSEDED
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    dependency_changes:
+      - golang.org/x/text_v0.29.0_to_v0.39.0_GO_2026_5970_CVE_2026_56852
+      - golang.org/x/sync_v0.17.0_to_v0.21.0_transitive_MVS_from_x_text
+    tests:
+      - LOCAL_baseline_govulncheck_symbol_results_none
+      - LOCAL_baseline_package_result_GO_2026_5970
+      - LOCAL_baseline_module_only_chi_vulnerabilities_4_backlogged
+      - LOCAL_missing_orval_negative_FAIL_as_expected
+      - LOCAL_x_text_v0_39_0_govulncheck_symbol_and_package_results_zero
+      - LOCAL_go_mod_tidy_diff_empty_x_sync_MVS_explained
+      - LOCAL_bootstrap_tools_Node24_18_Orval7_21_PASS
+      - LOCAL_generate_go_and_orval_twice_no_diff_PASS
+      - LOCAL_ci_go_real_PostgreSQL16_PASS
+      - LOCAL_web_ci_and_npm_audit_zero_PASS
+      - LOCAL_repo_contract_and_negative_cases_PASS
+      - LOCAL_gitleaks_history_and_sensitive_paths_PASS
+    handwritten_scope: 7_files_152_changed_lines_tests_and_go_sum_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    external_gates:
+      - PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00

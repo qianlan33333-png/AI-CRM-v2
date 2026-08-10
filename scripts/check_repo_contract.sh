@@ -89,6 +89,8 @@ required=(
   docs/execution/slices/G1-D01.md
   docs/execution/slices/G1-D02.md
   docs/spec/AI-CRM-v2-P2P3执行计划.md
+  docs/backlog/post-launch.md
+  docs/execution/slices/SEC-01.md
   tools/p1-reconciliation/main.go
   tools/p1-reconciliation/main_test.go
   docs/execution/slices/P1-C03.md
@@ -169,6 +171,7 @@ while IFS=' ' read -r expected path; do
   verify_index_mode "$path" "$expected"
 done <<'EOF'
 100644 Makefile
+100644 CONTRIBUTING.md
 100644 go.mod
 100644 go.sum
 100644 tools/go.mod
@@ -226,6 +229,8 @@ done <<'EOF'
 100644 acceptance/p1s11/contracts_test.go
 100644 acceptance/p1s11/doc.go
 100644 docs/execution/slices/P1-S11.md
+100644 docs/backlog/post-launch.md
+100644 docs/execution/slices/SEC-01.md
 100644 internal/auth/port/port.go
 100644 internal/contact/port/port.go
 100644 internal/identity/port/port.go
@@ -272,13 +277,15 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  84ea2eae13dc537a78fbc480bb1ea3a45811dbea104372e4888e5db5e1d5da12
+  9da252a15f7065d05e27049595a244108fe011a72a36e49bb05786970dfc72da
+verify_index_sha256 CONTRIBUTING.md \
+  851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
   bb2c40eaad8b8b3dd83cd2d81f58360717ab6dbaeb773afe6d65b7ae18e4f5cb
 verify_index_sha256 go.mod \
-  d670d0dbe18623fdaf0792f6bcae0bca07cba70e66f555ef35164a79d6b2219c
+  4a9c7b8b89f2279e05bc12cbe3a9e8303c539f30bde51d8a39e568c2077eeb66
 verify_index_sha256 go.sum \
-  8fa975442d8a0f2e15719d7b7558f206656592735c983a0ccd51eaeb588dbdc6
+  411aa7f8fff51ca54e7b0c3f84323a2bcbec8541a9a16cb01c3e46af1c24dee7
 verify_index_sha256 package.json \
   0eba96dc7c5cb99afa7334da44ebff47e004d10465cb5f9b2ce31f1993bb3d47
 verify_index_sha256 package-lock.json \
@@ -304,7 +311,11 @@ verify_index_sha256 scripts/test_gitless_generated_check.sh \
 verify_index_sha256 scripts/generated-sources.sha256 \
   33eaa83c609577fde602e42c59746443ac67e1d7191a2841b5d33cadd815c58a
 verify_index_sha256 scripts/test_orval_generated_check.sh \
-  ae16d4f7696baccf354b6debc0645afeac32e8475491d4d4b4cfe281c201e587
+  1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
+verify_index_sha256 docs/backlog/post-launch.md \
+  82818ff302e0fb96c3e9aaaf148c3169262f90346131ecb098c91c3fbc753694
+verify_index_sha256 docs/execution/slices/SEC-01.md \
+  94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
   7467b6857b05e89793bb2001745650bc04750bd5a59072e3c7a2a7be0f011b18
 verify_index_sha256 scripts/test_arch_imports.sh \
@@ -559,9 +570,31 @@ openapi_generate_recipe="$(make_target_recipe 'generate-openapi:')" ||
 expected_openapi_generate_recipe=$'\t@$(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen \\\n\t\t--config api/oapi-codegen.yaml api/openapi.yaml\n\t@$(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen \\\n\t\t--config api/oapi-codegen-p1-candidate.yaml api/openapi.yaml'
 [[ "$openapi_generate_recipe" = "$expected_openapi_generate_recipe" ]] ||
   fail "OpenAPI generation lost the runtime or candidate boundary"
+require_unique_make_target bootstrap-tools
+require_unique_make_target orval-tool-check
 require_unique_make_target generate-orval
 require_unique_make_target orval-check
-orval_generate_recipe="$(make_target_recipe 'generate-orval:')" ||
+bootstrap_tools_recipe="$(make_target_recipe 'bootstrap-tools:')" ||
+  fail "bootstrap tools target must be unique"
+for fragment in \
+  'bootstrap-tools: missing Go 1.26.5; install versions from .tool-versions' \
+  'bootstrap-tools: expected Node.js 24.18.0 from .tool-versions' \
+  'failed to install pinned oapi-codegen, sqlc, goose, and govulncheck tools' \
+  'failed to install pinned Orval 7.21.0 and web tools' \
+  '$(MAKE) --no-print-directory version-check orval-tool-check'; do
+  grep -Fq -- "$fragment" <<<"$bootstrap_tools_recipe" ||
+    fail "bootstrap tools lost a pinned installation or explicit failure boundary"
+done
+orval_tool_recipe="$(make_target_recipe 'orval-tool-check:')" ||
+  fail "Orval tool target must be unique"
+for fragment in \
+  "missing pinned Orval 7.21.0" \
+  "expected Orval 7.21.0" \
+  "run 'make bootstrap-tools'"; do
+  grep -Fq -- "$fragment" <<<"$orval_tool_recipe" ||
+    fail "Orval tool check lost an explicit failure instruction"
+done
+orval_generate_recipe="$(make_target_recipe 'generate-orval: orval-tool-check')" ||
   fail "Orval generate target must be unique"
 for fragment in \
   'PATH="$(dir $(abspath $(ORVAL))):$$PATH" $(ORVAL)' \
@@ -570,6 +603,8 @@ for fragment in \
   grep -Fq -- "$fragment" <<<"$orval_generate_recipe" ||
     fail "Orval generation lost a frozen input, output, client, or clean boundary"
 done
+grep -Fq '$$($(GO) list -m -f '\''{{.Version}}'\'' golang.org/x/text)" = "v0.39.0"' <<<"$makefile" ||
+  fail "version-check must pin the GO-2026-5970 fixed x/text version"
 orval_check_recipe="$(make_target_recipe 'orval-check:')" ||
   fail "Orval check target must be unique"
 [[ "$(grep -Fc '$(MAKE) --no-print-directory generate-orval' <<<"$orval_check_recipe" || true)" = "2" ]] ||
