@@ -107,6 +107,7 @@ required=(
   docs/execution/slices/P2-02.md
   docs/execution/slices/P2-03.md
   docs/execution/slices/P2-04.md
+  docs/evidence/slices/P2-04-queue-policy-tests.md
   docs/execution/slices/P2-06.md
   docs/evidence/slices/P2-03-registry-tests.md
   docs/execution/implementation-plan.md
@@ -155,6 +156,7 @@ required=(
   internal/platform/jobqueue/client.go
   internal/platform/jobqueue/client_test.go
   internal/platform/jobqueue/queue.go
+  internal/platform/jobqueue/queue_policy_test.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -285,6 +287,7 @@ done <<'EOF'
 100644 docs/execution/slices/P2-02.md
 100644 docs/execution/slices/P2-03.md
 100644 docs/execution/slices/P2-04.md
+100644 docs/evidence/slices/P2-04-queue-policy-tests.md
 100644 docs/execution/slices/P2-06.md
 100644 docs/evidence/slices/P2-03-registry-tests.md
 100644 docs/execution/implementation-plan.md
@@ -333,6 +336,7 @@ done <<'EOF'
 100644 internal/platform/jobqueue/client.go
 100644 internal/platform/jobqueue/client_test.go
 100644 internal/platform/jobqueue/queue.go
+100644 internal/platform/jobqueue/queue_policy_test.go
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 tools/query-plan-gate/main.go
@@ -385,7 +389,7 @@ verify_index_sha256 CONTRIBUTING.md \
 verify_index_sha256 .github/CODEOWNERS \
   bb2c40eaad8b8b3dd83cd2d81f58360717ab6dbaeb773afe6d65b7ae18e4f5cb
 verify_index_sha256 go.mod \
-  4a9c7b8b89f2279e05bc12cbe3a9e8303c539f30bde51d8a39e568c2077eeb66
+  fc223e80d21cc5b2f20bcfcfb5bc219d993993c1b480621442b6f8c692071a97
 verify_index_sha256 go.sum \
   411aa7f8fff51ca54e7b0c3f84323a2bcbec8541a9a16cb01c3e46af1c24dee7
 verify_index_sha256 package.json \
@@ -425,7 +429,9 @@ verify_index_sha256 docs/execution/slices/P2-02.md \
 verify_index_sha256 docs/execution/slices/P2-03.md \
   4bb96186ecb58f642018d8302bdadd094a04d8c79c2b00f8e561d0848bf3b5d4
 verify_index_sha256 docs/execution/slices/P2-04.md \
-  20e616f93c38f83a0824aaf1288891e015833b5ef87de2c96d5f28ed56189ee7
+  d49596794caaf94e8b63b3edb4e94ebeb85e1a8c893dafc42201dc1c356cc85c
+verify_index_sha256 docs/evidence/slices/P2-04-queue-policy-tests.md \
+  c037c37d29cac90b7a6e3eb29ccaabf6bf101720cf8ce5f635e5a9c72ed437ac
 verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
   8e96f6cef17231c327326f01e3705c1ffa3185379d3639c1c9bf5489d0f02be9
 verify_index_sha256 docs/execution/slices/P2-06.md \
@@ -644,6 +650,8 @@ verify_index_sha256 internal/platform/jobqueue/client_test.go \
   8d78dceceb4e50696717ec3514fa0c597b669d49764b33979ab85d13ee2bb0b7
 verify_index_sha256 internal/platform/jobqueue/queue.go \
   b057f95c1be0e0ed206a82b8cb3839c661e3de6b991854020add469818276482
+verify_index_sha256 internal/platform/jobqueue/queue_policy_test.go \
+  12f2041543ad7da6af1d068067184e50d20c36732ee7e6a39423cc0da7053cf1
 verify_index_sha256 acceptance/p2s01r/doc.go \
   34dbf4e86ad0f890aa503a84b8c429c692b15678f8df20adebde86a698d4a12b
 verify_index_sha256 acceptance/p2s01r/uow_integration_test.go \
@@ -667,7 +675,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  6254d419e64ef70eabc8542de29f2181a3ddf9a447a6861acf5333c1ed772964
+  d286e3d3a24c3769b26cfbafec3fe3f4e1de05ab3bf1657084b038de8c67014d
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

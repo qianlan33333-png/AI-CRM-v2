@@ -169,9 +169,11 @@ for file_path in \
   internal/platform/jobqueue/client.go \
   internal/platform/jobqueue/client_test.go \
   internal/platform/jobqueue/queue.go \
+  internal/platform/jobqueue/queue_policy_test.go \
   scripts/check_arch_imports.go \
   scripts/test_arch_imports.sh \
-  docs/execution/slices/P2-04.md; do
+  docs/execution/slices/P2-04.md \
+  docs/evidence/slices/P2-04-queue-policy-tests.md; do
   queue_receipt_fixture="$(make_fixture "p2-04-receipt-${file_path//\//-}")"
   case "$file_path" in
     *.go) printf '%s\n' '// P2-04 receipt drift' >>"$queue_receipt_fixture/$file_path" ;;

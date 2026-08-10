@@ -986,7 +986,7 @@ slices:
   - slice_id: P2-04
     title: river-role-assembly-and-six-queue-isolation
     owner: Codex-Sol
-    status: implementation_in_progress
+    status: ready_for_pr
     base_sha: 04a04655cc853f5ae83e4e8b97330aa1a97b8a94
     dependency: P2-03
     branch: slice/p2-04-river-role-queues
@@ -995,15 +995,30 @@ slices:
     pr_head_sha: PENDING
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING
-    delegated_tasks: []
+    delegated_tasks:
+      - task_id: p2_04_queue_policy_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/platform/jobqueue/queue_policy_test.go
+        base_sha: 4810d5b1ce00263390d2ddb8f674e9c9d48eb9bf
+        delegated_head_sha: 6eeb35e3ca7b2e5cd62597035bd5123b40e67a0e
+        correction_count: 0
+        file_manifest_sha256: c3034ec89152fd87873e1a13383db0e096bff8a236e1e617e6e14c68ae52638c
+        diff_sha256: b89f25b9d846719b79be6526cc31dbc66828674e73cfc186350a5e45b34b5c0f
+        receipt: docs/evidence/slices/P2-04-queue-policy-tests.md
     tests:
       - LOCAL_config_role_jobqueue_focused_race_PASS
       - LOCAL_arch_raw_and_default_River_negative_PASS
       - LOCAL_PostgreSQL16_14_S_queue_isolation_PASS
       - LOCAL_P0S01_static_failure_propagation_verification_correction_1
-      - LOCAL_full_gates_PENDING
-    handwritten_scope: PENDING_FINAL_COUNT
-    slice_induced_correction_count: 0
+      - LOCAL_rivertype_direct_dependency_tidy_slice_correction_1
+      - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_PASS
+      - LOCAL_orval_double_generation_and_Web_CI_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_history_config_sensitive_paths_bundle_PASS
+    handwritten_scope: 9_files_494_changed_lines_under_P2_cap_tests_generated_and_receipts_excluded
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
