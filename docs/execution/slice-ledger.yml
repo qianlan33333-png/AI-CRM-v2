@@ -1256,7 +1256,7 @@ slices:
   - slice_id: P2-11
     title: per-account-budget-timeout-and-final-router
     owner: Codex-Sol
-    status: in_progress
+    status: ready_for_pr
     base_sha: 66f2be3db23c0f31e1c66e5843536ab1b9d7fd68
     dependency: P2-10
     branch: slice/p2-11-http-budget-router
@@ -1279,9 +1279,15 @@ slices:
     tests:
       - LOCAL_gateway_router_acceptance_focused_race_PASS
       - LOCAL_Terra_hash_receipt_and_integrated_race_replay_PASS
+      - LOCAL_goose_up_down_up_00001_through_00004_PostgreSQL16_14_55432_PASS
+      - LOCAL_generate_and_orval_double_generation_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_176_commits_sensitive_paths_bundle_PASS
     handwritten_scope: 6_files_452_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 2
-    infra_induced_correction_count: 0
+    infra_induced_correction_count: 2
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
     external_gates:
