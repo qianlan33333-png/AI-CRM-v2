@@ -86,6 +86,11 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			}
 			reject(t, doc, ids)
 		},
+		"role denial without forbidden response": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/identity/resolve").Post.Responses.Delete("403")
+			reject(t, doc, ids)
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, test)

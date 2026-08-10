@@ -192,6 +192,13 @@ required=(
   internal/auth/store/generated/querier.go
   docs/execution/slices/P2-09.md
   docs/evidence/slices/P2-09-auth-service-tests.md
+  acceptance/p2s10/doc.go
+  acceptance/p2s10/rbac_contract_test.go
+  internal/auth/app/policy.go
+  internal/auth/app/policy_test.go
+  internal/auth/http/authorization.go
+  docs/execution/slices/P2-10.md
+  docs/evidence/slices/P2-10-rbac-tests.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -406,6 +413,13 @@ done <<'EOF'
 100644 internal/auth/store/generated/querier.go
 100644 docs/execution/slices/P2-09.md
 100644 docs/evidence/slices/P2-09-auth-service-tests.md
+100644 acceptance/p2s10/doc.go
+100644 acceptance/p2s10/rbac_contract_test.go
+100644 internal/auth/app/policy.go
+100644 internal/auth/app/policy_test.go
+100644 internal/auth/http/authorization.go
+100644 docs/execution/slices/P2-10.md
+100644 docs/evidence/slices/P2-10-rbac-tests.md
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
@@ -1113,6 +1127,16 @@ p2_s09_acceptance_recipe="$(make_target_recipe 'p2-s09-acceptance:')" ||
   fail "P2-S09 acceptance target must run only the frozen auth-session acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s09-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S09 acceptance target"
+
+require_make_line '.PHONY: p2-s10-acceptance' \
+  "Makefile must declare the P2-S10 acceptance target"
+require_unique_make_target p2-s10-acceptance
+p2_s10_acceptance_recipe="$(make_target_recipe 'p2-s10-acceptance:')" ||
+  fail "P2-S10 acceptance target must be unique"
+[[ "$p2_s10_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=30s ./acceptance/p2s10' ]] ||
+  fail "P2-S10 acceptance target must run only the frozen RBAC acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s10-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S10 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"

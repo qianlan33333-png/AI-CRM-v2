@@ -136,6 +136,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
 				return fmt.Errorf("%s RBAC scopes=%v", op.OperationID, scopes)
 			}
+			if len(contract.scopes) < 3 && op.Responses.Value("403") == nil {
+				return fmt.Errorf("%s denies a role but lacks 403", op.OperationID)
+			}
 		}
 	}
 	if len(seen) != 10 || links != 14 {

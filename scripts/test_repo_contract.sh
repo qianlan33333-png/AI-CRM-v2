@@ -413,6 +413,52 @@ if (cd "$hollow_p2s09" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S09 acceptance target was accepted"
 fi
 
+for file_path in \
+  api/openapi.yaml \
+  internal/auth/port/port.go \
+  internal/auth/app/policy.go \
+  internal/auth/app/policy_test.go \
+  internal/auth/http/authorization.go \
+  acceptance/p2s10/doc.go \
+  acceptance/p2s10/rbac_contract_test.go \
+  docs/execution/slices/P2-10.md \
+  docs/evidence/slices/P2-10-rbac-tests.md; do
+  rbac_receipt_fixture="$(make_fixture "p2-10-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-10 receipt drift' >>"$rbac_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-10 receipt drift' >>"$rbac_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$rbac_receipt_fixture" add "$file_path"
+  if (cd "$rbac_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-10 RBAC receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/auth/app/policy.go internal/auth/http/authorization.go; do
+  missing_rbac_file="$(make_fixture "missing-p2-10-${file_path//\//-}")"
+  rm -f "$missing_rbac_file/$file_path"
+  git -C "$missing_rbac_file" add -u "$file_path"
+  if (cd "$missing_rbac_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-10 RBAC core was accepted: $file_path"
+  fi
+done
+
+disconnected_p2s10="$(make_fixture disconnected-p2-s10-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s10-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s10/Makefile"
+rm -f "$disconnected_p2s10/Makefile.bak"
+restage_make_receipt "$disconnected_p2s10"
+if (cd "$disconnected_p2s10" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S10 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s10="$(make_fixture hollow-p2-s10-target)"
+sed -i.bak '/^p2-s10-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s10/Makefile"
+rm -f "$hollow_p2s10/Makefile.bak"
+restage_make_receipt "$hollow_p2s10"
+if (cd "$hollow_p2s10" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S10 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go

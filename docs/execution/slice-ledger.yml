@@ -1162,15 +1162,19 @@ slices:
   - slice_id: P2-09
     title: login-server-session-logout-contract
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: 391d719957f963037e8fa7a8c5e3c716fad5206a
     dependency: P2-08
     branch: slice/p2-09-login-session
     decision_anchor: USER_SECURITY_BOUNDARY_AUTHORIZATION_2026-08-10
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/107
+    pr_head_sha: 8780c51a0a91413e2160f9bb02cc24fa046623a6
+    merge_sha: 2176fe032eb897c640e5b911a6a7609ecc648e35
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31428089943
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31428089886
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31428089903
     delegated_tasks:
       - task_id: p2_09_auth_service_test_corpus
         executor: gpt-5.6-terra

@@ -684,11 +684,18 @@ export type resolveIdentityResponse401 = {
   status: 401;
 };
 
+export type resolveIdentityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
 export type resolveIdentityResponseSuccess = resolveIdentityResponse200 & {
   headers: Headers;
 };
 export type resolveIdentityResponseError = (
-  resolveIdentityResponse400 | resolveIdentityResponse401
+  | resolveIdentityResponse400
+  | resolveIdentityResponse401
+  | resolveIdentityResponse403
 ) & {
   headers: Headers;
 };
@@ -739,6 +746,11 @@ export type bindIdentityResponse401 = {
   status: 401;
 };
 
+export type bindIdentityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
 export type bindIdentityResponse409 = {
   data: ConflictResponse;
   status: 409;
@@ -748,7 +760,10 @@ export type bindIdentityResponseSuccess = bindIdentityResponse200 & {
   headers: Headers;
 };
 export type bindIdentityResponseError = (
-  bindIdentityResponse400 | bindIdentityResponse401 | bindIdentityResponse409
+  | bindIdentityResponse400
+  | bindIdentityResponse401
+  | bindIdentityResponse403
+  | bindIdentityResponse409
 ) & {
   headers: Headers;
 };
@@ -799,12 +814,19 @@ export type ingestIdentityEventResponse401 = {
   status: 401;
 };
 
+export type ingestIdentityEventResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
 export type ingestIdentityEventResponseSuccess =
   ingestIdentityEventResponse200 & {
     headers: Headers;
   };
 export type ingestIdentityEventResponseError = (
-  ingestIdentityEventResponse400 | ingestIdentityEventResponse401
+  | ingestIdentityEventResponse400
+  | ingestIdentityEventResponse401
+  | ingestIdentityEventResponse403
 ) & {
   headers: Headers;
 };
