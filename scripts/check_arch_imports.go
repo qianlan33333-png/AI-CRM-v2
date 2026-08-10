@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -76,7 +77,7 @@ func checkTree(root, tree string) error {
 }
 
 func checkFile(path, rel string) error {
-	file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
+	file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
 	if err != nil {
 		return fmt.Errorf("parse %s: %w", rel, err)
 	}
@@ -88,6 +89,49 @@ func checkFile(path, rel string) error {
 		if err := checkImport(rel, importPath); err != nil {
 			return err
 		}
+	}
+	return checkEnvironmentReads(file, rel)
+}
+
+func checkEnvironmentReads(file *ast.File, source string) error {
+	if source == "internal/config/load.go" {
+		return nil
+	}
+	environmentPackages := make(map[string]bool)
+	for _, spec := range file.Imports {
+		importPath, err := strconv.Unquote(spec.Path.Value)
+		if err != nil || (importPath != "os" && importPath != "syscall") {
+			continue
+		}
+		packageName := importPath
+		if spec.Name != nil {
+			packageName = spec.Name.Name
+		}
+		if packageName == "." {
+			return fmt.Errorf("scattered environment read forbidden in %s", source)
+		}
+		if packageName != "_" {
+			environmentPackages[packageName] = true
+		}
+	}
+	var forbidden bool
+	ast.Inspect(file, func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		identifier, ok := selector.X.(*ast.Ident)
+		if !ok || !environmentPackages[identifier.Name] {
+			return true
+		}
+		switch selector.Sel.Name {
+		case "Getenv", "LookupEnv", "Environ", "ExpandEnv":
+			forbidden = true
+		}
+		return true
+	})
+	if forbidden {
+		return fmt.Errorf("scattered environment read forbidden in %s", source)
 	}
 	return nil
 }

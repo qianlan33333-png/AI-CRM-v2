@@ -19,7 +19,8 @@ seed() {
   local root="$1"
   mkdir -p "$root/cmd/aicrm" "$root/internal/contact/app" \
     "$root/internal/identity/port" "$root/internal/identity/store" \
-    "$root/internal/platform/store" "$root/internal/api/generated"
+    "$root/internal/platform/store" "$root/internal/api/generated" \
+    "$root/internal/config"
   printf '%s\n' 'package app' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"' \
     >"$root/internal/contact/app/use.go"
@@ -29,6 +30,9 @@ seed() {
   printf '%s\n' 'package store' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"' \
     >"$root/internal/identity/store/use.go"
+  printf '%s\n' 'package config' 'import "os"' \
+    'func load() { _, _ = os.LookupEnv("AICRM_DATABASE_URL") }' \
+    >"$root/internal/config/load.go"
 }
 
 run_checker() {
@@ -73,6 +77,10 @@ mutate() {
       printf '%s\n' 'package generated' 'import . "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"' >"$root/internal/api/generated/use.go" ;;
     unknown)
       printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/shared/port"' >"$root/internal/contact/app/use.go" ;;
+    scattered-env)
+      printf '%s\n' 'package app' 'import "os"' 'var _ = os.Getenv("DATABASE_URL")' >"$root/internal/contact/app/use.go" ;;
+    aliased-env)
+      printf '%s\n' 'package main' 'import system "os"' 'var _ = system.LookupEnv("DATABASE_URL")' >"$root/cmd/aicrm/main.go" ;;
     malformed) printf '%s\n' 'package app' 'import (' >"$root/internal/contact/app/use.go" ;;
     symlink) ln -s ../identity "$root/internal/contact/link" ;;
     fifo) mkfifo "$root/internal/contact/unexpected" ;;
@@ -84,6 +92,8 @@ reject nested-port 'forbidden cross-module import'
 reject platform-domain 'forbidden cross-module import'
 reject api-domain 'forbidden cross-module import'
 reject unknown 'unknown internal module'
+reject scattered-env 'scattered environment read forbidden'
+reject aliased-env 'scattered environment read forbidden'
 reject malformed 'parse internal/contact/app/use.go'
 reject symlink 'symlink or special path forbidden'
 reject fifo 'symlink or special path forbidden'

@@ -68,6 +68,22 @@ if (cd "$missing_uow_implementation" && scripts/check_repo_contract.sh >/dev/nul
   fail "missing P2-01R UnitOfWork implementation was accepted"
 fi
 
+for file_path in cmd/aicrm/main.go cmd/aicrm/components.go internal/config/load.go internal/config/schema.go internal/config/schema_test.go acceptance/p0s01/process_blackbox.sh docs/execution/slices/P2-02.md; do
+  config_receipt_fixture="$(make_fixture "p2-02-receipt-${file_path//\//-}")"
+  case "$file_path" in *.go) printf '%s\n' '// P2-02 receipt drift' >>"$config_receipt_fixture/$file_path" ;; *) printf '%s\n' '# P2-02 receipt drift' >>"$config_receipt_fixture/$file_path" ;; esac
+  git -C "$config_receipt_fixture" add "$file_path"
+  if (cd "$config_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-02 config receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_config_loader="$(make_fixture missing-p2-02-config-loader)"
+rm -f "$missing_config_loader/internal/config/load.go"
+git -C "$missing_config_loader" add -u internal/config/load.go
+if (cd "$missing_config_loader" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-02 config loader was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
