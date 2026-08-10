@@ -218,6 +218,55 @@ if (cd "$hollow_p2s04" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S04 acceptance target was accepted"
 fi
 
+for file_path in \
+  acceptance/p2s05/doc.go \
+  acceptance/p2s05/scheduler_integration_test.go \
+  cmd/aicrm/components.go \
+  cmd/aicrm/scheduler.go \
+  internal/platform/jobqueue/client.go \
+  internal/platform/jobqueue/client_test.go \
+  internal/platform/jobqueue/queue.go \
+  internal/platform/scheduler/scheduler.go \
+  internal/platform/scheduler/scheduler_test.go \
+  scripts/check_arch_imports.go \
+  scripts/test_arch_imports.sh \
+  docs/execution/slices/P2-05.md; do
+  scheduler_receipt_fixture="$(make_fixture "p2-05-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-05 receipt drift' >>"$scheduler_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-05 receipt drift' >>"$scheduler_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$scheduler_receipt_fixture" add "$file_path"
+  if (cd "$scheduler_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-05 scheduler receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/platform/scheduler/scheduler.go cmd/aicrm/scheduler.go; do
+  missing_scheduler_file="$(make_fixture "missing-p2-05-${file_path##*/}")"
+  rm -f "$missing_scheduler_file/$file_path"
+  git -C "$missing_scheduler_file" add -u "$file_path"
+  if (cd "$missing_scheduler_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-05 unique scheduler boundary was accepted: $file_path"
+  fi
+done
+
+disconnected_p2s05="$(make_fixture disconnected-p2-s05-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s05-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s05/Makefile"
+rm -f "$disconnected_p2s05/Makefile.bak"
+restage_make_receipt "$disconnected_p2s05"
+if (cd "$disconnected_p2s05" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S05 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s05="$(make_fixture hollow-p2-s05-target)"
+sed -i.bak '/^p2-s05-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s05/Makefile"
+rm -f "$hollow_p2s05/Makefile.bak"
+restage_make_receipt "$hollow_p2s05"
+if (cd "$hollow_p2s05" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S05 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go

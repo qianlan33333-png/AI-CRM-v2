@@ -114,6 +114,30 @@ type queueWorker[T queueriver.JobArgs] struct {
 	queue Queue
 }
 
+// ExplicitOptions validates that an enqueue request uses the worker's frozen
+// queue and returns a defensive copy with that queue set explicitly.
+func (registry *WorkerRegistry) ExplicitOptions(queue Queue, args queueriver.JobArgs, options *queueriver.InsertOpts) (*queueriver.InsertOpts, error) {
+	if registry == nil || registry.assignments == nil || !validQueue(queue) || isNil(args) {
+		return nil, ErrInvalidQueue
+	}
+	registeredQueue, ok := registry.assignments[args.Kind()]
+	if !ok {
+		return nil, ErrUnregisteredJob
+	}
+	if registeredQueue != queue {
+		return nil, ErrQueueMismatch
+	}
+	cloned := queueriver.InsertOpts{}
+	if options != nil {
+		cloned = *options
+	}
+	if cloned.Queue != "" && cloned.Queue != string(queue) {
+		return nil, ErrQueueMismatch
+	}
+	cloned.Queue = string(queue)
+	return &cloned, nil
+}
+
 func (worker *queueWorker[T]) Timeout(job *queueriver.Job[T]) time.Duration {
 	timeout := worker.Worker.Timeout(job)
 	if worker.queue == QueueCritical && (timeout <= 0 || timeout > CriticalJobTimeout) {
