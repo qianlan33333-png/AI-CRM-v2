@@ -67,6 +67,25 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/auth/logout").Post.Responses.Delete("403")
 			reject(t, doc, ids)
 		},
+		"missing operation capability": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Paths.Value("/api/v1/customers").Get.Extensions, "x-aicrm-capability")
+			reject(t, doc, ids)
+		},
+		"sales customer scope widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/customers").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{
+				"admin": "global", "ops": "global", "sales": "global",
+			}
+			reject(t, doc, ids)
+		},
+		"config granted to ops": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/admin/config/overview").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{
+				"admin": "global", "ops": "global",
+			}
+			reject(t, doc, ids)
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, test)

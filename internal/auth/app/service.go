@@ -135,8 +135,11 @@ func (service *Service) Authenticate(ctx context.Context, session authport.Sessi
 	return principal, nil
 }
 
-func (service *Service) Authorize(context.Context, authport.Principal, string) error {
-	return authport.ErrUnauthorized
+func (service *Service) Authorize(ctx context.Context, principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {
+	if service == nil || ctx == nil || ctx.Err() != nil {
+		return authport.Authorization{}, authport.ErrUnauthorized
+	}
+	return authorize(principal, capability)
 }
 
 func (service *Service) Invalidate(ctx context.Context, session authport.SessionRef, csrf authport.CSRFToken) error {
@@ -192,8 +195,10 @@ func validPrincipal(principal authport.Principal) bool {
 		return false
 	}
 	switch principal.Role {
-	case authport.RoleAdmin, authport.RoleOps, authport.RoleSales:
+	case authport.RoleAdmin, authport.RoleOps:
 		return principal.StaffID == nil || *principal.StaffID > 0
+	case authport.RoleSales:
+		return principal.StaffID != nil && *principal.StaffID > 0
 	default:
 		return false
 	}

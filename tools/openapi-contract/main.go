@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -18,6 +19,24 @@ var candidateOperations = map[string]bool{
 	"listCustomerEvents": true, "resolveIdentity": true, "bindIdentity": true,
 	"ingestIdentityEvent": true, "getAuthSession": true, "logoutAdmin": true,
 	"getAdminConfigOverview": true,
+}
+
+type authorizationContract struct {
+	capability string
+	scopes     map[string]string
+}
+
+var authorizationContracts = map[string]authorizationContract{
+	"listCustomers":          {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getCustomer":            {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"updateCustomer":         {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listCustomerEvents":     {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"resolveIdentity":        {"identity.resolve", map[string]string{"admin": "global", "ops": "global"}},
+	"bindIdentity":           {"identity.bind", map[string]string{"admin": "global", "ops": "global"}},
+	"ingestIdentityEvent":    {"identity.ingest", map[string]string{"admin": "global", "ops": "global"}},
+	"getAuthSession":         {"auth.session.read", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
+	"logoutAdmin":            {"auth.session.logout", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
+	"getAdminConfigOverview": {"config.overview.read", map[string]string{"admin": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -108,6 +127,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				}
 				links++
 			}
+			contract := authorizationContracts[op.OperationID]
+			capability, ok := op.Extensions["x-aicrm-capability"].(string)
+			if !ok || capability != contract.capability {
+				return fmt.Errorf("%s capability=%q", op.OperationID, capability)
+			}
+			scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+			if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
+				return fmt.Errorf("%s RBAC scopes=%v", op.OperationID, scopes)
+			}
 		}
 	}
 	if len(seen) != 10 || links != 14 {
@@ -190,6 +218,26 @@ func stringList(value any) ([]string, error) {
 	for _, item := range result {
 		if item == "" {
 			return nil, errors.New("blank list item")
+		}
+	}
+	return result, nil
+}
+
+func stringMap(value any) (map[string]string, error) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]string
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, errors.New("empty string map")
+	}
+	for key, item := range result {
+		if key == "" || item == "" {
+			return nil, errors.New("blank string map entry")
 		}
 	}
 	return result, nil

@@ -29,6 +29,63 @@ type Principal struct {
 	StaffID     *int64
 }
 
+// Capability is a stable operation permission. Unknown values must be denied.
+type Capability string
+
+const (
+	CapabilityAuthSessionRead    Capability = "auth.session.read"
+	CapabilityAuthSessionLogout  Capability = "auth.session.logout"
+	CapabilityCustomersRead      Capability = "customers.read"
+	CapabilityCustomersWrite     Capability = "customers.write"
+	CapabilityCustomerEventsRead Capability = "customer.events.read"
+	CapabilityIdentityResolve    Capability = "identity.resolve"
+	CapabilityIdentityBind       Capability = "identity.bind"
+	CapabilityIdentityIngest     Capability = "identity.ingest"
+	CapabilityConfigOverviewRead Capability = "config.overview.read"
+)
+
+func (capability Capability) Known() bool {
+	switch capability {
+	case CapabilityAuthSessionRead, CapabilityAuthSessionLogout,
+		CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead,
+		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
+		CapabilityConfigOverviewRead:
+		return true
+	default:
+		return false
+	}
+}
+
+type ScopeKind string
+
+const (
+	ScopeSelf       ScopeKind = "self"
+	ScopeGlobal     ScopeKind = "global"
+	ScopeOwnerStaff ScopeKind = "owner_staff"
+)
+
+// Authorization is produced only after both the principal and capability are
+// accepted. OwnerStaffID is populated only for ScopeOwnerStaff.
+type Authorization struct {
+	Capability   Capability
+	Scope        ScopeKind
+	OwnerStaffID int64
+}
+
+func (authorization Authorization) AllowsOwner(ownerStaffID int64) bool {
+	if ownerStaffID < 1 {
+		return false
+	}
+	switch authorization.Scope {
+	case ScopeGlobal:
+		return true
+	case ScopeOwnerStaff:
+		return authorization.OwnerStaffID > 0 && authorization.OwnerStaffID == ownerStaffID
+	default:
+		return false
+	}
+}
+
 type SessionRef string
 type CSRFToken string
 
@@ -54,6 +111,7 @@ type BrowserSession struct {
 
 type principalContextKey struct{}
 type sessionContextKey struct{}
+type authorizationContextKey struct{}
 
 func WithAuthenticatedSession(ctx context.Context, principal Principal, session SessionRef) context.Context {
 	ctx = context.WithValue(ctx, principalContextKey{}, principal)
@@ -76,6 +134,35 @@ func SessionFromContext(ctx context.Context) (SessionRef, bool) {
 	return session, ok && session != ""
 }
 
+func WithAuthorization(ctx context.Context, authorization Authorization) (context.Context, error) {
+	if ctx == nil || !validAuthorization(authorization) {
+		return nil, ErrUnauthorized
+	}
+	return context.WithValue(ctx, authorizationContextKey{}, authorization), nil
+}
+
+func AuthorizationFromContext(ctx context.Context) (Authorization, bool) {
+	if ctx == nil {
+		return Authorization{}, false
+	}
+	authorization, ok := ctx.Value(authorizationContextKey{}).(Authorization)
+	return authorization, ok && validAuthorization(authorization)
+}
+
+func validAuthorization(authorization Authorization) bool {
+	if !authorization.Capability.Known() {
+		return false
+	}
+	switch authorization.Scope {
+	case ScopeSelf, ScopeGlobal:
+		return authorization.OwnerStaffID == 0
+	case ScopeOwnerStaff:
+		return authorization.OwnerStaffID > 0
+	default:
+		return false
+	}
+}
+
 type Issuer interface {
 	IssueVerified(context.Context, VerifiedLogin) (BrowserSession, error)
 }
@@ -84,6 +171,6 @@ type Issuer interface {
 // Callers must not log, persist, or expose SessionRef.
 type Service interface {
 	Authenticate(context.Context, SessionRef) (Principal, error)
-	Authorize(context.Context, Principal, string) error
+	Authorize(context.Context, Principal, Capability) (Authorization, error)
 	Invalidate(context.Context, SessionRef, CSRFToken) error
 }
