@@ -39,7 +39,12 @@ func run(args []string) int {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := appruntime.Run(ctx, cli.Role, components(startupConfig)); err != nil {
+	processComponents, err := components(cli.Role, startupConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "aicrm: initialize components: %v\n", err)
+		return appruntime.ExitRuntime
+	}
+	if err := appruntime.Run(ctx, cli.Role, processComponents); err != nil {
 		fmt.Fprintf(os.Stderr, "aicrm: %v\n", err)
 		return appruntime.ExitRuntime
 	}

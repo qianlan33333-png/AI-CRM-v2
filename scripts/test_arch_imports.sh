@@ -19,6 +19,7 @@ seed() {
   local root="$1"
   mkdir -p "$root/cmd/aicrm" "$root/internal/contact/app" \
     "$root/internal/identity/port" "$root/internal/identity/store" \
+    "$root/internal/outbound/app" \
     "$root/internal/platform/store" "$root/internal/api/generated" \
     "$root/internal/config"
   printf '%s\n' 'package app' \
@@ -30,6 +31,10 @@ seed() {
   printf '%s\n' 'package store' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"' \
     >"$root/internal/identity/store/use.go"
+  printf '%s\n' 'package app' \
+    'import queue "github.com/riverqueue/river"' \
+    'var _ queue.JobArgs' \
+    >"$root/internal/outbound/app/use.go"
   printf '%s\n' 'package config' 'import "os"' \
     'func load() { _, _ = os.LookupEnv("AICRM_DATABASE_URL") }' \
     >"$root/internal/config/load.go"
@@ -81,6 +86,12 @@ mutate() {
       printf '%s\n' 'package app' 'import "os"' 'var _ = os.Getenv("DATABASE_URL")' >"$root/internal/contact/app/use.go" ;;
     aliased-env)
       printf '%s\n' 'package main' 'import system "os"' 'var _ = system.LookupEnv("DATABASE_URL")' >"$root/cmd/aicrm/main.go" ;;
+    raw-river-client)
+      printf '%s\n' 'package app' 'import queue "github.com/riverqueue/river"' 'var _ *queue.Client[any]' >"$root/internal/outbound/app/use.go" ;;
+    default-river-queue)
+      printf '%s\n' 'package app' 'import queue "github.com/riverqueue/river"' 'var _ = queue.QueueDefault' >"$root/internal/outbound/app/use.go" ;;
+    raw-river-driver)
+      printf '%s\n' 'package main' 'import _ "github.com/riverqueue/river/riverdriver/riverpgxv5"' >"$root/cmd/aicrm/river.go" ;;
     malformed) printf '%s\n' 'package app' 'import (' >"$root/internal/contact/app/use.go" ;;
     symlink) ln -s ../identity "$root/internal/contact/link" ;;
     fifo) mkfifo "$root/internal/contact/unexpected" ;;
@@ -94,6 +105,9 @@ reject api-domain 'forbidden cross-module import'
 reject unknown 'unknown internal module'
 reject scattered-env 'scattered environment read forbidden'
 reject aliased-env 'scattered environment read forbidden'
+reject raw-river-client 'raw or default River symbol forbidden'
+reject default-river-queue 'raw or default River symbol forbidden'
+reject raw-river-driver 'raw River driver forbidden'
 reject malformed 'parse internal/contact/app/use.go'
 reject symlink 'symlink or special path forbidden'
 reject fifo 'symlink or special path forbidden'

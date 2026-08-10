@@ -90,7 +90,60 @@ func checkFile(path, rel string) error {
 			return err
 		}
 	}
-	return checkEnvironmentReads(file, rel)
+	if err := checkEnvironmentReads(file, rel); err != nil {
+		return err
+	}
+	return checkRiverBoundary(file, rel)
+}
+
+func checkRiverBoundary(file *ast.File, source string) error {
+	if strings.HasPrefix(source, "internal/platform/river/") || strings.HasPrefix(source, "internal/platform/jobqueue/") {
+		return nil
+	}
+	riverPackages := make(map[string]bool)
+	for _, spec := range file.Imports {
+		importPath, err := strconv.Unquote(spec.Path.Value)
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(importPath, "github.com/riverqueue/river/riverdriver") || importPath == "github.com/riverqueue/river/rivermigrate" {
+			return fmt.Errorf("raw River driver forbidden in %s", source)
+		}
+		if importPath != "github.com/riverqueue/river" {
+			continue
+		}
+		packageName := "river"
+		if spec.Name != nil {
+			packageName = spec.Name.Name
+		}
+		if packageName == "." {
+			return fmt.Errorf("raw River dot import forbidden in %s", source)
+		}
+		if packageName != "_" {
+			riverPackages[packageName] = true
+		}
+	}
+	forbidden := map[string]bool{
+		"Client": true, "NewClient": true, "QueueDefault": true,
+		"NewWorkers": true, "AddWorker": true, "AddWorkerSafely": true,
+	}
+	var symbol string
+	ast.Inspect(file, func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		identifier, ok := selector.X.(*ast.Ident)
+		if ok && riverPackages[identifier.Name] && forbidden[selector.Sel.Name] {
+			symbol = selector.Sel.Name
+			return false
+		}
+		return true
+	})
+	if symbol != "" {
+		return fmt.Errorf("raw or default River symbol forbidden in %s: %s", source, symbol)
+	}
+	return nil
 }
 
 func checkEnvironmentReads(file *ast.File, source string) error {

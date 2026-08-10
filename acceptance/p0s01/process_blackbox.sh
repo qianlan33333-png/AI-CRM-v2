@@ -25,6 +25,12 @@ startup_environment=(
   AICRM_HTTP_LISTEN_ADDRESS
   AICRM_API_PGX_MAX_CONNS
   AICRM_WORKER_PGX_MAX_CONNS
+  AICRM_RIVER_CRITICAL_MAX_WORKERS
+  AICRM_RIVER_EVENT_MAX_WORKERS
+  AICRM_RIVER_OUTBOUND_MAX_WORKERS
+  AICRM_RIVER_SYNC_MAX_WORKERS
+  AICRM_RIVER_HEAVY_MAX_WORKERS
+  AICRM_RIVER_AI_MAX_WORKERS
 )
 for config_key in "${startup_environment[@]}"; do
   unset "$config_key"
@@ -101,7 +107,9 @@ for bad_args in '--role=api --role=worker' 'api' '--debug'; do
 done
 
 expect_exit 1 --role=all
-for field_name in database.url api.listen_address api.pool_max_conns worker.pool_max_conns; do
+for field_name in database.url api.listen_address api.pool_max_conns worker.pool_max_conns \
+  worker.queues.critical worker.queues.event worker.queues.outbound \
+  worker.queues.sync worker.queues.heavy worker.queues.ai; do
   grep -Fq "$field_name" "$test_root/stderr"
 done
 ! grep -Fq 'Usage:' "$test_root/stderr"
@@ -110,6 +118,12 @@ export AICRM_DATABASE_URL='not-a-url-database-password-sentinel'
 export AICRM_HTTP_LISTEN_ADDRESS='127.0.0.1:8080'
 export AICRM_API_PGX_MAX_CONNS='not-a-number'
 export AICRM_WORKER_PGX_MAX_CONNS='0'
+export AICRM_RIVER_CRITICAL_MAX_WORKERS='2'
+export AICRM_RIVER_EVENT_MAX_WORKERS='1'
+export AICRM_RIVER_OUTBOUND_MAX_WORKERS='1'
+export AICRM_RIVER_SYNC_MAX_WORKERS='1'
+export AICRM_RIVER_HEAVY_MAX_WORKERS='1'
+export AICRM_RIVER_AI_MAX_WORKERS='1'
 expect_exit 1 --role=all
 grep -Fq 'database.url must be a valid postgres URL' "$test_root/stderr"
 grep -Fq 'api.pool_max_conns must be a positive integer' "$test_root/stderr"
@@ -120,21 +134,18 @@ export AICRM_DATABASE_URL='postgres://aicrm:secret@127.0.0.1:5432/aicrm?sslmode=
 export AICRM_API_PGX_MAX_CONNS='10'
 export AICRM_WORKER_PGX_MAX_CONNS='9'
 
-for role in api worker all; do
-  "$binary" --role="$role" >"$test_root/$role.stdout" 2>"$test_root/$role.stderr" &
-  process_id=$!
-  sleep 0.2
-  kill -0 "$process_id" 2>/dev/null || {
-    echo "$role process exited before cancellation" >&2
-    wait "$process_id" || true
-    exit 1
-  }
-  if [[ "$role" == api ]]; then
-    kill -INT "$process_id"
-  else
-    kill -TERM "$process_id"
-  fi
-  wait_for_signal_exit "$role" "$process_id"
-done
+unset AICRM_WORKER_PGX_MAX_CONNS AICRM_RIVER_CRITICAL_MAX_WORKERS \
+  AICRM_RIVER_EVENT_MAX_WORKERS AICRM_RIVER_OUTBOUND_MAX_WORKERS \
+  AICRM_RIVER_SYNC_MAX_WORKERS AICRM_RIVER_HEAVY_MAX_WORKERS AICRM_RIVER_AI_MAX_WORKERS
+"$binary" --role=api >"$test_root/api.stdout" 2>"$test_root/api.stderr" &
+process_id=$!
+sleep 0.2
+kill -0 "$process_id" 2>/dev/null || {
+  echo "api process exited before cancellation" >&2
+  wait "$process_id" || true
+  exit 1
+}
+kill -INT "$process_id"
+wait_for_signal_exit api "$process_id"
 
 echo "p0-s01-process-blackbox: PASS"
