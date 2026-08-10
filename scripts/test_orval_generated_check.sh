@@ -40,6 +40,16 @@ run_check() {
   (cd "$fixture" && ORVAL="$orval" npm run --silent orval:check)
 }
 
+missing_tool_fixture="$(make_fixture missing-tool)"
+missing_tool="$missing_tool_fixture/tooling/orval"
+set +e
+missing_output="$(cd "$missing_tool_fixture" && ORVAL="$missing_tool" make generate-orval 2>&1)"
+missing_status=$?
+set -e
+[[ "$missing_status" -ne 0 ]] || fail "missing Orval binary was accepted"
+grep -Fq "orval-tool-check: missing pinned Orval 7.21.0 at $missing_tool; run 'make bootstrap-tools'" <<<"$missing_output" ||
+  fail "missing Orval binary did not return the explicit bootstrap instruction: $missing_output"
+
 valid_fixture="$(make_fixture valid)"
 run_check "$valid_fixture" >/dev/null || fail "valid generated client was rejected"
 

@@ -6,7 +6,7 @@ GO ?= go
 TOOLS_MOD := tools/go.mod
 ORVAL ?= ./node_modules/.bin/orval
 
-.PHONY: version-check generate generate-openapi generate-sqlc generate-orval orval-check generate-check gitless-generate-test
+.PHONY: bootstrap-tools version-check generate generate-openapi generate-sqlc generate-orval orval-tool-check orval-check generate-check gitless-generate-test
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
@@ -26,12 +26,24 @@ version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/jackc/pgx/v5)" = "v5.9.2"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/go-chi/chi/v5)" = "v5.2.3"
+	@test "$$($(GO) list -m -f '{{.Version}}' golang.org/x/text)" = "v0.39.0"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/oapi-codegen/runtime)" = "v1.2.0"
 	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen --version | tail -n 1)" = "v2.6.0"
 	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) sqlc version)" = "v1.28.0"
 	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) goose -version)" = "goose version: v3.25.0"
 	@version_output="$$($(GO) tool -modfile=$(TOOLS_MOD) govulncheck -version)"; \
 		printf '%s\n' "$$version_output" | grep -Fqx 'Scanner: govulncheck@v1.6.0'
+
+bootstrap-tools:
+	@command -v $(GO) >/dev/null 2>&1 || { echo "bootstrap-tools: missing Go 1.26.5; install versions from .tool-versions" >&2; exit 2; }
+	@command -v node >/dev/null 2>&1 || { echo "bootstrap-tools: missing Node.js 24.18.0; install versions from .tool-versions" >&2; exit 2; }
+	@command -v npm >/dev/null 2>&1 || { echo "bootstrap-tools: missing npm 11.12.1; install versions from package.json" >&2; exit 2; }
+	@test "$$(node --version)" = "v24.18.0" || { echo "bootstrap-tools: expected Node.js 24.18.0 from .tool-versions, got $$(node --version)" >&2; exit 2; }
+	@test "$$(npm --version)" = "11.12.1" || { echo "bootstrap-tools: expected npm 11.12.1 from package.json, got $$(npm --version)" >&2; exit 2; }
+	@GOWORK=off $(GO) mod download || { echo "bootstrap-tools: failed to download root Go dependencies" >&2; exit 2; }
+	@GOWORK=off $(GO) mod download -modfile=$(TOOLS_MOD) || { echo "bootstrap-tools: failed to install pinned oapi-codegen, sqlc, goose, and govulncheck tools" >&2; exit 2; }
+	@npm ci --ignore-scripts --no-audit --no-fund || { echo "bootstrap-tools: failed to install pinned Orval 7.21.0 and web tools" >&2; exit 2; }
+	@$(MAKE) --no-print-directory version-check orval-tool-check
 
 generate: generate-openapi generate-sqlc generate-orval
 
@@ -44,7 +56,11 @@ generate-openapi:
 generate-sqlc:
 	@$(GO) tool -modfile=$(TOOLS_MOD) sqlc generate
 
-generate-orval:
+orval-tool-check:
+	@test -x "$(ORVAL)" || { echo "orval-tool-check: missing pinned Orval 7.21.0 at $(ORVAL); run 'make bootstrap-tools'" >&2; exit 2; }
+	@test "$$($(ORVAL) --version 2>/dev/null)" = "7.21.0" || { echo "orval-tool-check: expected Orval 7.21.0 at $(ORVAL); run 'make bootstrap-tools'" >&2; exit 2; }
+
+generate-orval: orval-tool-check
 	@PATH="$(dir $(abspath $(ORVAL))):$$PATH" $(ORVAL) \
 		--input api/openapi.yaml --output web/src/api/generated/health.ts \
 		--client fetch --mode single --clean web/src/api/generated --prettier
