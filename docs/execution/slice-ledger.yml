@@ -1194,7 +1194,6 @@ slices:
       - LOCAL_generate_and_orval_double_generation_PASS
       - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
       - LOCAL_Web_CI_Node24_18_npm11_12_PASS
-      - LOCAL_Web_CI_Node24_18_npm11_12_PASS
       - LOCAL_repo_contract_full_negative_suite_PASS
       - LOCAL_full_ci_go_exact_head_46f3492_PASS
       - LOCAL_gitleaks_160_commits_sensitive_paths_bundle_PASS
@@ -1211,7 +1210,7 @@ slices:
   - slice_id: P2-10
     title: rbac-and-server-side-data-scope
     owner: Codex-Sol
-    status: ready_for_verification
+    status: ready_for_pr
     base_sha: 2176fe032eb897c640e5b911a6a7609ecc648e35
     dependency: P2-09
     branch: slice/p2-10-rbac-data-scope
@@ -1235,11 +1234,16 @@ slices:
       - LOCAL_auth_port_acceptance_openapi_focused_race_PASS
       - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
       - LOCAL_generate_and_orval_double_generation_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_goose_up_down_up_00001_through_00004_55432_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_170_commits_sensitive_paths_bundle_PASS
     handwritten_scope: 9_files_323_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 4
+    verification_induced_correction_count: 5
     external_gates:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED

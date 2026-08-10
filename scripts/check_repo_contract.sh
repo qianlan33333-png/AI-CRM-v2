@@ -817,7 +817,7 @@ verify_index_sha256 acceptance/p2s10/doc.go \
 verify_index_sha256 acceptance/p2s10/rbac_contract_test.go \
   af33a1f7423c177865b25fc45b960a01a8e074b7f03ae08f7194bd3eaff7dcdf
 verify_index_sha256 docs/execution/slices/P2-10.md \
-  23e212f8f7a73a2fb28a8d09265881c68ee3466ba570074ed459efac7aba2dab
+  0858a75f669f890e77cfd6e4aeb9a7218ab5e2f980f6370a9f00283296d63e54
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 docs/execution/slices/P2-07.md \
