@@ -153,11 +153,16 @@ func validAuthorization(authorization Authorization) bool {
 	if !authorization.Capability.Known() {
 		return false
 	}
-	switch authorization.Scope {
-	case ScopeSelf, ScopeGlobal:
-		return authorization.OwnerStaffID == 0
-	case ScopeOwnerStaff:
-		return authorization.OwnerStaffID > 0
+	switch authorization.Capability {
+	case CapabilityAuthSessionRead, CapabilityAuthSessionLogout:
+		return authorization.Scope == ScopeSelf && authorization.OwnerStaffID == 0
+	case CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead:
+		if authorization.Scope == ScopeGlobal {
+			return authorization.OwnerStaffID == 0
+		}
+		return authorization.Scope == ScopeOwnerStaff && authorization.OwnerStaffID > 0
+	case CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest, CapabilityConfigOverviewRead:
+		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:
 		return false
 	}

@@ -119,6 +119,7 @@ required=(
   internal/api/generated/server.gen.go
   internal/api/candidate/generated/server.gen.go
   internal/auth/port/port.go
+  internal/auth/port/port_test.go
   internal/contact/port/port.go
   internal/events/port/port.go
   internal/events/store/appender.go
@@ -340,6 +341,7 @@ done <<'EOF'
 100644 docs/backlog/post-launch.md
 100644 docs/execution/slices/SEC-01.md
 100644 internal/auth/port/port.go
+100644 internal/auth/port/port_test.go
 100644 internal/contact/port/port.go
 100644 internal/events/port/port.go
 100644 internal/events/store/appender.go

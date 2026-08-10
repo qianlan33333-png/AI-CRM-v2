@@ -416,6 +416,7 @@ fi
 for file_path in \
   api/openapi.yaml \
   internal/auth/port/port.go \
+  internal/auth/port/port_test.go \
   internal/auth/app/policy.go \
   internal/auth/app/policy_test.go \
   internal/auth/http/authorization.go \
