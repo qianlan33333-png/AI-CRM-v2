@@ -108,6 +108,8 @@ required=(
   docs/execution/slices/P2-03.md
   docs/execution/slices/P2-04.md
   docs/execution/slices/P2-05.md
+  docs/execution/slices/P2-07.md
+  docs/evidence/slices/P2-07-dispatcher-tests.md
   docs/evidence/slices/P2-04-queue-policy-tests.md
   docs/execution/slices/P2-06.md
   docs/evidence/slices/P2-03-registry-tests.md
@@ -133,6 +135,7 @@ required=(
   cmd/aicrm/components.go
   cmd/aicrm/components_test.go
   cmd/aicrm/scheduler.go
+  cmd/aicrm/scheduler_test.go
   internal/config/load.go
   internal/config/schema.go
   internal/config/schema_test.go
@@ -163,6 +166,11 @@ required=(
   internal/platform/scheduler/scheduler_test.go
   acceptance/p2s05/doc.go
   acceptance/p2s05/scheduler_integration_test.go
+  acceptance/p2s07/doc.go
+  acceptance/p2s07/dispatcher_integration_test.go
+  internal/events/dispatcher/dispatcher.go
+  internal/events/dispatcher/dispatcher_test.go
+  internal/events/dispatcher/jobs.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -294,6 +302,8 @@ done <<'EOF'
 100644 docs/execution/slices/P2-03.md
 100644 docs/execution/slices/P2-04.md
 100644 docs/execution/slices/P2-05.md
+100644 docs/execution/slices/P2-07.md
+100644 docs/evidence/slices/P2-07-dispatcher-tests.md
 100644 docs/evidence/slices/P2-04-queue-policy-tests.md
 100644 docs/execution/slices/P2-06.md
 100644 docs/evidence/slices/P2-03-registry-tests.md
@@ -319,6 +329,7 @@ done <<'EOF'
 100644 cmd/aicrm/components.go
 100644 cmd/aicrm/components_test.go
 100644 cmd/aicrm/scheduler.go
+100644 cmd/aicrm/scheduler_test.go
 100644 internal/config/load.go
 100644 internal/config/schema.go
 100644 internal/config/schema_test.go
@@ -349,6 +360,11 @@ done <<'EOF'
 100644 internal/platform/scheduler/scheduler_test.go
 100644 acceptance/p2s05/doc.go
 100644 acceptance/p2s05/scheduler_integration_test.go
+100644 acceptance/p2s07/doc.go
+100644 acceptance/p2s07/dispatcher_integration_test.go
+100644 internal/events/dispatcher/dispatcher.go
+100644 internal/events/dispatcher/dispatcher_test.go
+100644 internal/events/dispatcher/jobs.go
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 tools/query-plan-gate/main.go
@@ -395,7 +411,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  de07689fd8246a5edea336e6eadf78d1dbbdfab5cc9365fedae69f338b59616b
+  4a6bd4a8693fed7690c5cf1b7e6dd7f4083dc7ed681b35a413249deb791eae37
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -423,11 +439,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  ec207ddcb896b40ee8cb5a0187a7d903ea4a680a52d28138dcb5c8e0edd58395
+  2f953a7fc919dcea736fce15791b80cf28f6808bc8c6561ed2457585e8022ae9
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
 verify_index_sha256 scripts/generated-sources.sha256 \
-  fe4e0188629ad6d39148a9423cf86842a138a9a12277c61959b09c23c2ac9a56
+  13fd724094cd0b9c3b5c2ae62079966bc2fa524916be49278ffdbf3b6e085ad6
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 docs/backlog/post-launch.md \
@@ -455,9 +471,9 @@ verify_index_sha256 sqlc.yaml \
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
-  ec88480bc41a51fba744bdbed15c878ab298586370cdfe86b242796a07b7df71
+  442e598f3e7a45a23c4a2312f35b001390257b7912725ee18c309c5b95dd8561
 verify_index_sha256 internal/events/store/queries/event_log.sql \
-  16241d3bfc36d1c75203b462461525272aa620b64b20a8420978249d73fbe77e
+  96d351b2faf428ae291064a21bb23f9a32be4580ae3f65203eed988e17757e21
 verify_index_sha256 internal/events/store/appender.go \
   820730005a9835051fbacaa31ca6b161f17feb99543a127195a6e1ad059964b9
 verify_index_sha256 internal/events/store/appender_test.go \
@@ -465,11 +481,11 @@ verify_index_sha256 internal/events/store/appender_test.go \
 verify_index_sha256 internal/events/store/generated/db.go \
   08295f6e16bef8e5d3ea40cf12f296ddd5a25965c44a447a35eb6ddc9ef08ca8
 verify_index_sha256 internal/events/store/generated/event_log.sql.go \
-  b5c885324629a00e8242c535f2aebeb470b1bceef2c05fd03886208c9de6526b
+  35f1c0c866751e3dcce63771b0076a8f35044cd5fe822b8338b99889fe62299b
 verify_index_sha256 internal/events/store/generated/models.go \
-  3c3c36d273e69c737d97a51f50f6f4d7fc13c7c2e1ef15a1faf93e800676c38e
+  f1bdaa47b54cc769e5d2911263163f58b3bfab594c189adeda5f3311853cd2e3
 verify_index_sha256 internal/events/store/generated/querier.go \
-  d6d031223abb152e623d5391841129fbfd2690fdc10fb6e486076aa3891f65b5
+  3d57b59f2cd541f2179f6dbfad8211facb80b14ce141de82fa6bfd968df48e4c
 verify_index_sha256 acceptance/p2s06/doc.go \
   3101deaa38f9aa4594cf8b94d7e7854e422dd8d9551432e978f9f3811714ba86
 verify_index_sha256 acceptance/p2s06/event_log_integration_test.go \
@@ -509,9 +525,9 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   deeb4088b249ab42d1fc6e3aef517079aa6d6808a8c294bfa1ef2a853c6b35ab
 verify_index_sha256 scripts/ownership/main.go \
-  b914ea21f25e6279f23f72728ad889311787fb0a21958d1242d1152179b6701b
+  94d56f1479ee25eb13643ed97565a73fd5e774178510b118d172d7fd1dbac22e
 verify_index_sha256 scripts/test_ownership.sh \
-  b83653d08186d2195b6555c6eb00c52ff8f0c1d46bdbbd6e36ac241a5f0dccb6
+  e3aaf067dc11b97a5eb7188b7bdc3a5fd92babd8a77a8d7aa282c82b038b029a
 verify_index_sha256 acceptance/fixtures/postgres.go \
   2ad5addf7cddd04b4b054fe9372e05f0177468825227af71cab08eab5f5db7d8
 verify_index_sha256 acceptance/fixtures/postgres_test.go \
@@ -641,11 +657,13 @@ verify_index_sha256 internal/platform/store/uow_test.go \
 verify_index_sha256 cmd/aicrm/main.go \
   52fe62cdda6653e597ca338c4cb9a47605b47fb15c21410f6156f6d05691d180
 verify_index_sha256 cmd/aicrm/components.go \
-  f69759b006fe712157afa50a975c5a072f8a32cffc0aa583e2f33674102c0b13
+  0a5815ac685db52470076d4c93c36e9cfd973e93b5577fdd2c3ded40f0a7ffe4
 verify_index_sha256 cmd/aicrm/components_test.go \
   b81bf5c6370a3e89dbd99308d7ad31cdb03e716e76c77f412544ab32318a56e0
 verify_index_sha256 cmd/aicrm/scheduler.go \
-  3968304356f2c6b17870f585e4097acd971cc37907b79dfbea169cd8dc7f5fb7
+  d7936cbc8fc7b0e82fde8d681d71547ba73f3a63ff2e462933651fd29a96bccd
+verify_index_sha256 cmd/aicrm/scheduler_test.go \
+  7ad730aa9e418e96c1002571a8b936a6e87c1a1b8ff62137fbab6996c3368ef9
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
@@ -676,6 +694,20 @@ verify_index_sha256 acceptance/p2s05/doc.go \
   2f876c4d57b8df9ab8228a55f6329ef14d75cc86f93035ee364cef256a08be73
 verify_index_sha256 acceptance/p2s05/scheduler_integration_test.go \
   f5a6b0d41d420a3085529c4ea333afd21ac3367a7d4f7a08ace1273541c36271
+verify_index_sha256 acceptance/p2s07/doc.go \
+  c9c184fc05b5f37a83bf1bf03497c6d39a77440e22825515dc235cd684709741
+verify_index_sha256 acceptance/p2s07/dispatcher_integration_test.go \
+  37f55bc45d7afcc45c13c6c3de0d95cddb512a8fb5cc186f9b69b6a258659fa7
+verify_index_sha256 internal/events/dispatcher/dispatcher.go \
+  1f326e3ac2fd692680b353266265018edd4a6edbca58506fac0f3e001212b0ba
+verify_index_sha256 internal/events/dispatcher/dispatcher_test.go \
+  baae4dfd41d343885d6e30a11bbd49079164636a92f9107f2365e404f9080f78
+verify_index_sha256 internal/events/dispatcher/jobs.go \
+  5c9ecd33343c3b382fe3b0af0a0314ec5c9147c7ae3a357e1e26f594ee2d3a39
+verify_index_sha256 docs/execution/slices/P2-07.md \
+  9205661205205eda14fa4c15fa1820cd1bf6da6916d39155bda6c1e74c227dd9
+verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
+  81000988e5933b412931f9797949823afc8d5855cf3a76263ce7ef443dd092d7
 verify_index_sha256 acceptance/p2s01r/doc.go \
   34dbf4e86ad0f890aa503a84b8c429c692b15678f8df20adebde86a698d4a12b
 verify_index_sha256 acceptance/p2s01r/uow_integration_test.go \
@@ -699,7 +731,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  951c13c2f9ee54af3c4b6d444f1315cf864e44f4bfdc4f33d693a3e55540b827
+  d747fadc0f31c1f333b56bb2819f3c60bec0845454445708bb065a768ece4dcb
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -967,6 +999,16 @@ p2_s05_acceptance_recipe="$(make_target_recipe 'p2-s05-acceptance:')" ||
   fail "P2-S05 acceptance target must run only the frozen scheduler singleton acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s05-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S05 acceptance target"
+
+require_make_line '.PHONY: p2-s07-acceptance' \
+  "Makefile must declare the P2-S07 acceptance target"
+require_unique_make_target p2-s07-acceptance
+p2_s07_acceptance_recipe="$(make_target_recipe 'p2-s07-acceptance:')" ||
+  fail "P2-S07 acceptance target must be unique"
+[[ "$p2_s07_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=60s ./acceptance/p2s07' ]] ||
+  fail "P2-S07 acceptance target must run only the frozen dispatcher crash-recovery acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s07-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S07 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"

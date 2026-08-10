@@ -54,3 +54,90 @@ func (q *Queries) AppendEvent(ctx context.Context, arg AppendEventParams) (int64
 	err := row.Scan(&id)
 	return id, err
 }
+
+const claimUndispatchedEvents = `-- name: ClaimUndispatchedEvents :many
+SELECT
+  id,
+  event_type,
+  customer_id,
+  payload,
+  occurred_at,
+  idempotency_key,
+  dispatched
+FROM event_log
+WHERE NOT dispatched
+ORDER BY id
+LIMIT $1
+FOR UPDATE SKIP LOCKED
+`
+
+func (q *Queries) ClaimUndispatchedEvents(ctx context.Context, batchSize int32) ([]EventLog, error) {
+	rows, err := q.db.Query(ctx, claimUndispatchedEvents, batchSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []EventLog{}
+	for rows.Next() {
+		var i EventLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.CustomerID,
+			&i.Payload,
+			&i.OccurredAt,
+			&i.IdempotencyKey,
+			&i.Dispatched,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEvent = `-- name: GetEvent :one
+SELECT
+  id,
+  event_type,
+  customer_id,
+  payload,
+  occurred_at,
+  idempotency_key,
+  dispatched
+FROM event_log
+WHERE id = $1
+`
+
+func (q *Queries) GetEvent(ctx context.Context, eventID int64) (EventLog, error) {
+	row := q.db.QueryRow(ctx, getEvent, eventID)
+	var i EventLog
+	err := row.Scan(
+		&i.ID,
+		&i.EventType,
+		&i.CustomerID,
+		&i.Payload,
+		&i.OccurredAt,
+		&i.IdempotencyKey,
+		&i.Dispatched,
+	)
+	return i, err
+}
+
+const markEventsDispatched = `-- name: MarkEventsDispatched :execrows
+UPDATE event_log
+SET dispatched = TRUE
+WHERE id = ANY($1::bigint[])
+  AND NOT dispatched
+`
+
+func (q *Queries) MarkEventsDispatched(ctx context.Context, eventIds []int64) (int64, error) {
+	result, err := q.db.Exec(ctx, markEventsDispatched, eventIds)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

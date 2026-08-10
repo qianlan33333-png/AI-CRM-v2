@@ -267,6 +267,59 @@ if (cd "$hollow_p2s05" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S05 acceptance target was accepted"
 fi
 
+for file_path in \
+  acceptance/p2s07/doc.go \
+  acceptance/p2s07/dispatcher_integration_test.go \
+  cmd/aicrm/components.go \
+  cmd/aicrm/scheduler.go \
+  cmd/aicrm/scheduler_test.go \
+  internal/events/port/port.go \
+  internal/events/store/queries/event_log.sql \
+  internal/events/store/generated/event_log.sql.go \
+  internal/events/store/generated/models.go \
+  internal/events/store/generated/querier.go \
+  internal/events/dispatcher/dispatcher.go \
+  internal/events/dispatcher/dispatcher_test.go \
+  internal/events/dispatcher/jobs.go \
+  docs/execution/slices/P2-07.md \
+  docs/evidence/slices/P2-07-dispatcher-tests.md; do
+  dispatcher_receipt_fixture="$(make_fixture "p2-07-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-07 receipt drift' >>"$dispatcher_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P2-07 receipt drift' >>"$dispatcher_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-07 receipt drift' >>"$dispatcher_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$dispatcher_receipt_fixture" add "$file_path"
+  if (cd "$dispatcher_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-07 dispatcher receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/events/dispatcher/dispatcher.go internal/events/dispatcher/jobs.go; do
+  missing_dispatcher_file="$(make_fixture "missing-p2-07-${file_path##*/}")"
+  rm -f "$missing_dispatcher_file/$file_path"
+  git -C "$missing_dispatcher_file" add -u "$file_path"
+  if (cd "$missing_dispatcher_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-07 dispatcher core was accepted: $file_path"
+  fi
+done
+
+disconnected_p2s07="$(make_fixture disconnected-p2-s07-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s07-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s07/Makefile"
+rm -f "$disconnected_p2s07/Makefile.bak"
+restage_make_receipt "$disconnected_p2s07"
+if (cd "$disconnected_p2s07" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S07 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s07="$(make_fixture hollow-p2-s07-target)"
+sed -i.bak '/^p2-s07-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s07/Makefile"
+rm -f "$hollow_p2s07/Makefile.bak"
+restage_make_receipt "$hollow_p2s07"
+if (cd "$hollow_p2s07" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S07 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go

@@ -1034,15 +1034,19 @@ slices:
   - slice_id: P2-05
     title: unique-periodic-scheduler-registration
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: 0047fde7e785a876430517f67bbf3268313ef112
     dependency: P2-04
     branch: slice/p2-05-scheduler
     decision_anchor: REL-2026-08-10
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/104
+    pr_head_sha: 6a97b73d3b2707d78cc6f6f9ac7cacbed2f7a1c5
+    merge_sha: e865b4468b8a73f2029c85ccf385f4f5027acb0e
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31403987427
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31403987421
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31403987471
     delegated_tasks: []
     tests:
       - LOCAL_scheduler_jobqueue_cmd_focused_race_PASS
@@ -1059,6 +1063,46 @@ slices:
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+  - slice_id: P2-07
+    title: event-dispatcher-idempotent-claim-and-crash-recovery
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: e865b4468b8a73f2029c85ccf385f4f5027acb0e
+    dependency: P2-05
+    branch: slice/p2-07-dispatcher
+    decision_anchor: REL-2026-08-10
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_07_dispatcher_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/events/dispatcher/dispatcher_test.go
+        base_sha: 2f24e531a1525e8ceea43c34c1945380a2c79c7f
+        delegated_head_sha: eae4a7d2f7413afd519f5cc45fdff94736008533
+        correction_count: 0
+        file_manifest_sha256: 47beba230be48db7374364e82956ff729a116160bf6e74415e7f839e70024431
+        diff_sha256: c9f7b84ba93399e70c57493a6e463464d04008211e5e2b0e63456de8cd41038c
+        receipt: docs/evidence/slices/P2-07-dispatcher-tests.md
+    tests:
+      - LOCAL_dispatcher_events_cmd_focused_race_PASS
+      - LOCAL_official_PostgreSQL16_14_SHA256_verified_55432_PASS
+      - LOCAL_real_SIGKILL_enqueue_before_commit_recovery_PASS
+      - LOCAL_real_two_dispatcher_200_event_disjoint_claim_PASS
+      - LOCAL_arch_and_source_policy_negative_PASS
+      - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+    handwritten_scope: 10_files_449_changed_lines_under_P2_cap_tests_generated_and_receipts_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 10
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
