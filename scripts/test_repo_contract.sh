@@ -1332,6 +1332,20 @@ if (cd "$workflow_symlink_fixture" && scripts/check_repo_contract.sh >/dev/null 
   fail "central policy workflow symlink was accepted"
 fi
 
+short_repo_timeout_fixture="$(make_fixture short-repo-contract-timeout)"
+sed -i.bak 's/timeout-minutes: 30/timeout-minutes: 10/' \
+  "$short_repo_timeout_fixture/.github/workflows/repo-contract.yml"
+rm -f "$short_repo_timeout_fixture/.github/workflows/repo-contract.yml.bak"
+git -C "$short_repo_timeout_fixture" add .github/workflows/repo-contract.yml
+short_repo_workflow_digest="$(git -C "$short_repo_timeout_fixture" show :.github/workflows/repo-contract.yml | sha256sum | awk '{print $1}')"
+sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/repo-contract\.yml/{n;s/[0-9a-f]{64}/$short_repo_workflow_digest/;}" \
+  "$short_repo_timeout_fixture/scripts/check_repo_contract.sh"
+rm -f "$short_repo_timeout_fixture/scripts/check_repo_contract.sh.bak"
+git -C "$short_repo_timeout_fixture" add scripts/check_repo_contract.sh
+if (cd "$short_repo_timeout_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "repo-contract workflow with a 10-minute budget was accepted after receipt restaging"
+fi
+
 unpinned_fixture="$(make_fixture unpinned-action)"
 sed -i.bak -E \
   's#actions/checkout@[0-9a-f]{40}#actions/checkout@v4#' \

@@ -443,7 +443,7 @@ verify_index_sha256 web/src/api/generated/health.ts \
 verify_index_sha256 .github/workflows/application-go.yml \
   71a9695df525aa03886f7020caed85f66e13e5ea1190ad2e8f487a6c7555fbb5
 verify_index_sha256 .github/workflows/repo-contract.yml \
-  32ae51c23bffdc930bbf2cbec4098089d4eb46c879fb79b141665523f93547e5
+  300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
   e3077f509e0cfe5a9b70c4064cc666f53258c62cda590f191ea401d1734d02fe
 verify_index_sha256 .gitleaks.toml \
@@ -729,7 +729,7 @@ verify_index_sha256 internal/platform/http/gateway.go \
 verify_index_sha256 internal/platform/http/gateway_test.go \
   eb8313743a76e962aa23f0da2603db113abac349d04189c67662a13893e97214
 verify_index_sha256 docs/execution/slices/P2-08.md \
-  ddb5ac532b13f7060dfbedb7a4b624c48b8121c6f70b301ecec21fc93a5e2aa8
+  f9c10d171a4256764945f333ba2c591aca6c3824938f1980d849403b15b9e7f4
 verify_index_sha256 docs/evidence/slices/P2-08-http-tests.md \
   a61b50a0d040373515216d96fe1707a14be7a9852e8a1b9e64ba94c07ae35fcc
 verify_index_sha256 docs/execution/slices/P2-07.md \
@@ -759,7 +759,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  30221d8cbf87f42e64ac4e45e79deec44cce59975c9c32af8f57e1bab08d1827
+  83aedae457fa1e5c6fe6113c07e801bf94388d04212ffe0e0b07700398878d8f
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1282,6 +1282,9 @@ for line in \
   [[ "$(printf '%s\n' "$secret_scan_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
     fail "secret scan workflow lost its pinned config or false-positive regression: $line"
 done
+repo_contract_workflow="$(git show ':'.github/workflows/repo-contract.yml)"
+[[ "$(printf '%s\n' "$repo_contract_workflow" | grep -Fxc '    timeout-minutes: 30' || true)" = "1" ]] ||
+  fail "repo-contract workflow must retain the 30-minute full negative-suite budget"
 gitleaks_config="$(git show ':'.gitleaks.toml)"
 for line in \
   'useDefault = true' \
