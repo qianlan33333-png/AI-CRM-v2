@@ -106,6 +106,7 @@ required=(
   docs/execution/slices/P2-01R.md
   docs/execution/slices/P2-02.md
   docs/execution/slices/P2-03.md
+  docs/execution/slices/P2-04.md
   docs/execution/slices/P2-06.md
   docs/evidence/slices/P2-03-registry-tests.md
   docs/execution/implementation-plan.md
@@ -128,6 +129,7 @@ required=(
   internal/platform/store/uow_test.go
   cmd/aicrm/main.go
   cmd/aicrm/components.go
+  cmd/aicrm/components_test.go
   internal/config/load.go
   internal/config/schema.go
   internal/config/schema_test.go
@@ -148,6 +150,11 @@ required=(
   acceptance/p2s06/event_log_integration_test.go
   acceptance/p2s03/doc.go
   acceptance/p2s03/settings_integration_test.go
+  acceptance/p2s04/doc.go
+  acceptance/p2s04/queue_isolation_integration_test.go
+  internal/platform/jobqueue/client.go
+  internal/platform/jobqueue/client_test.go
+  internal/platform/jobqueue/queue.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -277,6 +284,7 @@ done <<'EOF'
 100644 docs/execution/slices/P2-01R.md
 100644 docs/execution/slices/P2-02.md
 100644 docs/execution/slices/P2-03.md
+100644 docs/execution/slices/P2-04.md
 100644 docs/execution/slices/P2-06.md
 100644 docs/evidence/slices/P2-03-registry-tests.md
 100644 docs/execution/implementation-plan.md
@@ -299,6 +307,7 @@ done <<'EOF'
 100644 internal/platform/store/uow_test.go
 100644 cmd/aicrm/main.go
 100644 cmd/aicrm/components.go
+100644 cmd/aicrm/components_test.go
 100644 internal/config/load.go
 100644 internal/config/schema.go
 100644 internal/config/schema_test.go
@@ -319,6 +328,11 @@ done <<'EOF'
 100644 acceptance/p2s06/event_log_integration_test.go
 100644 acceptance/p2s03/doc.go
 100644 acceptance/p2s03/settings_integration_test.go
+100644 acceptance/p2s04/doc.go
+100644 acceptance/p2s04/queue_isolation_integration_test.go
+100644 internal/platform/jobqueue/client.go
+100644 internal/platform/jobqueue/client_test.go
+100644 internal/platform/jobqueue/queue.go
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 tools/query-plan-gate/main.go
@@ -328,6 +342,8 @@ done <<'EOF'
 100755 scripts/test_orval_generated_check.sh
 100755 scripts/test_gitleaks_config.sh
 100755 scripts/test_repo_contract.sh
+100755 acceptance/p0s01/process_blackbox.sh
+100755 acceptance/p0s01/static_contract.sh
 100755 scripts/test_query_plan_gate.sh
 100755 acceptance/p0s02/static_contract.sh
 100755 acceptance/p0s02/test_static_contract.sh
@@ -363,7 +379,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  a83d24db819a9e6fe2fece9ee43f90a1e013cb133c764a9f3cea3679eed387cd
+  e4c71623179d374344be6044048ee7d4e4c9b0058d2fc36ce067e8ec2b5729e0
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -408,6 +424,8 @@ verify_index_sha256 docs/execution/slices/P2-02.md \
   621075ee177a387666180a6350049e543f53f9e9c740974986c5a14ecbf1c47d
 verify_index_sha256 docs/execution/slices/P2-03.md \
   4bb96186ecb58f642018d8302bdadd094a04d8c79c2b00f8e561d0848bf3b5d4
+verify_index_sha256 docs/execution/slices/P2-04.md \
+  20e616f93c38f83a0824aaf1288891e015833b5ef87de2c96d5f28ed56189ee7
 verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
   8e96f6cef17231c327326f01e3705c1ffa3185379d3639c1c9bf5489d0f02be9
 verify_index_sha256 docs/execution/slices/P2-06.md \
@@ -467,9 +485,9 @@ verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
-  a1990d8893b82a40a4ef716a3b07dc4bc4c1f7a9e9e0d2111793c5aa9fe715b0
+  0b4e4416dec43ff12c5a0d08ec24e983d8868c0b6aff2c54d3c625c4565f0ff7
 verify_index_sha256 scripts/test_arch_imports.sh \
-  c0aa47101ad8cfde76a60cd723b6bb9e6ed08c0f446561ecb361fcb0678fc6f2
+  4ed661713b9867d0c318c986f5e2bdc908cabe614d5a2c1f1309bf62c27c243c
 verify_index_sha256 scripts/ownership/main.go \
   b914ea21f25e6279f23f72728ad889311787fb0a21958d1242d1152179b6701b
 verify_index_sha256 scripts/test_ownership.sh \
@@ -601,17 +619,31 @@ verify_index_sha256 internal/platform/store/uow.go \
 verify_index_sha256 internal/platform/store/uow_test.go \
   4524e09f7200b7b445cdab73be7ee921d619adc624de3b790f4fcd395017b0d7
 verify_index_sha256 cmd/aicrm/main.go \
-  863f94e408a7e63fb5a807d39b329dc8f1c9df5faee8983d067fe3c7d58c5395
+  52fe62cdda6653e597ca338c4cb9a47605b47fb15c21410f6156f6d05691d180
 verify_index_sha256 cmd/aicrm/components.go \
-  9f6774d7fe375c39063482e276f56e6f65d5cc6b1be5f97829285039bcde6958
+  ff3f2acc7d30e36213c79c894db10ed2ad3b527eee1da5d62d143f0aa0ab247f
+verify_index_sha256 cmd/aicrm/components_test.go \
+  b81bf5c6370a3e89dbd99308d7ad31cdb03e716e76c77f412544ab32318a56e0
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
-  45089ea17e24a79ee827995f21b90d0711b56bca359e0bf3c4b60740a179f14d
+  9f0a9a98edb39a5b06ac58433f17036592810116180a9f4dd24c1686fac46bf7
 verify_index_sha256 internal/config/schema_test.go \
-  9babd7aae5158d0f104b0a04fdf04fb59075638db4e82b85a805cb13b1e42dcc
+  bcd594e45894bbe3499cd9e85225ea476ef54299e328da49a61a333cc126e480
 verify_index_sha256 acceptance/p0s01/process_blackbox.sh \
-  623534bf120cedec33e230da022766c8512e7bf90f8157ba7a77ded981da83ff
+  dca96d9df61c3c67e2254d59e22c300850b58841d93eca70b3f1743df294ce6b
+verify_index_sha256 acceptance/p0s01/static_contract.sh \
+  b28b4d45732651b879b82144597a70677f1bd83524f4fb2c62f2a32da8358232
+verify_index_sha256 acceptance/p2s04/doc.go \
+  475ea9f04231b77cb8a7400395055f75f9bb80711729b8203393dfba0e817d3a
+verify_index_sha256 acceptance/p2s04/queue_isolation_integration_test.go \
+  a3190dafafeade5f3583bb3183ea70bb8390dfa2dafcb2789e831609d8bca3a7
+verify_index_sha256 internal/platform/jobqueue/client.go \
+  032c03135730fe1dc40ef5848ec60ef1680121d82c75aaf1e0693f948863de6b
+verify_index_sha256 internal/platform/jobqueue/client_test.go \
+  8d78dceceb4e50696717ec3514fa0c597b669d49764b33979ab85d13ee2bb0b7
+verify_index_sha256 internal/platform/jobqueue/queue.go \
+  b057f95c1be0e0ed206a82b8cb3839c661e3de6b991854020add469818276482
 verify_index_sha256 acceptance/p2s01r/doc.go \
   34dbf4e86ad0f890aa503a84b8c429c692b15678f8df20adebde86a698d4a12b
 verify_index_sha256 acceptance/p2s01r/uow_integration_test.go \
@@ -635,7 +667,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  f575f639c217a020c5e9438508dd418c8cb5e10c5e7eaf98290b1b332bd0109c
+  6254d419e64ef70eabc8542de29f2181a3ddf9a447a6861acf5333c1ed772964
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -808,6 +840,16 @@ require_make_line 'unexport BASH_ENV ENV' \
   "Makefile must unexport BASH_ENV and ENV before starting recipes"
 require_make_line '.PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go' \
   "Makefile must declare the P0-S02 contract and acceptance targets"
+require_unique_make_target p0-s01-acceptance
+p0_s01_acceptance_recipe="$(make_target_recipe 'p0-s01-acceptance:')" ||
+  fail "P0-S01 acceptance target must be unique"
+for line in \
+  $'\t\tacceptance/p0s01/static_contract.sh && \\' \
+  $'\t\t$(GO) test -race -timeout=15s -tags=p0s01_acceptance ./acceptance/p0s01 && \\' \
+  $'\t\tacceptance/p0s01/process_blackbox.sh; \\'; do
+  printf '%s\n' "$p0_s01_acceptance_recipe" | grep -Fqx "$line" ||
+    fail "P0-S01 acceptance target must fail fast across static, tagged, and process checks"
+done
 require_unique_make_target p0-s02-contract
 require_unique_make_target p0-s02-acceptance
 require_make_line 'p0-s02-acceptance: p0-s02-contract' \
@@ -873,6 +915,16 @@ done
 
 [[ "$(printf '%s\n' "$makefile" | grep -Ec '^ci-go:[[:space:]]' || true)" = "1" && "$ci_go_target" =~ (^|[[:space:]])p0-s04-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P0-S04 acceptance target"
+
+require_make_line '.PHONY: p2-s04-acceptance' \
+  "Makefile must declare the P2-S04 acceptance target"
+require_unique_make_target p2-s04-acceptance
+p2_s04_acceptance_recipe="$(make_target_recipe 'p2-s04-acceptance:')" ||
+  fail "P2-S04 acceptance target must be unique"
+[[ "$p2_s04_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=45s ./acceptance/p2s04' ]] ||
+  fail "P2-S04 acceptance target must run only the frozen queue-isolation acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s04-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S04 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"
