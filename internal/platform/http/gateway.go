@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,8 +18,10 @@ import (
 )
 
 const (
-	RequestIDHeader          = "X-Request-ID"
-	maxBufferedResponseBytes = 8 << 20
+	RequestIDHeader                = "X-Request-ID"
+	maxBufferedResponseBytes       = 8 << 20
+	DefaultMaxConcurrentPerAccount = 4
+	DefaultRequestTimeout          = 10 * time.Second
 )
 
 var (
@@ -34,22 +37,29 @@ type accountIDKey struct{}
 type requestStateKey struct{}
 
 type requestState struct {
-	requestID string
-	accountID atomic.Value
+	requestID    string
+	accountID    atomic.Value
+	routePattern atomic.Value
 }
 
 type GatewayOptions struct {
-	Logger       *slog.Logger
-	Clock        func() time.Time
-	NewRequestID func() string
-	RoutePattern func(*http.Request) string
+	Logger                  *slog.Logger
+	Clock                   func() time.Time
+	NewRequestID            func() string
+	RoutePattern            func(*http.Request) string
+	MaxConcurrentPerAccount int
+	RequestTimeout          time.Duration
 }
 
 type Gateway struct {
-	logger       *slog.Logger
-	clock        func() time.Time
-	newRequestID func() string
-	routePattern func(*http.Request) string
+	logger                  *slog.Logger
+	clock                   func() time.Time
+	newRequestID            func() string
+	routePattern            func(*http.Request) string
+	maxConcurrentPerAccount int
+	requestTimeout          time.Duration
+	budgetMu                sync.Mutex
+	inflightByAccount       map[string]int
 }
 
 func NewGateway(options GatewayOptions) (*Gateway, error) {
@@ -65,9 +75,19 @@ func NewGateway(options GatewayOptions) (*Gateway, error) {
 	if options.RoutePattern == nil {
 		options.RoutePattern = routePattern
 	}
+	if options.MaxConcurrentPerAccount == 0 {
+		options.MaxConcurrentPerAccount = DefaultMaxConcurrentPerAccount
+	}
+	if options.RequestTimeout == 0 {
+		options.RequestTimeout = DefaultRequestTimeout
+	}
+	if options.MaxConcurrentPerAccount < 1 || options.RequestTimeout < 1 {
+		return nil, ErrInvalidGateway
+	}
 	return &Gateway{
-		logger: options.Logger, clock: options.Clock,
-		newRequestID: options.NewRequestID, routePattern: options.RoutePattern,
+		logger: options.Logger, clock: options.Clock, newRequestID: options.NewRequestID,
+		routePattern: options.RoutePattern, maxConcurrentPerAccount: options.MaxConcurrentPerAccount,
+		requestTimeout: options.RequestTimeout, inflightByAccount: make(map[string]int),
 	}, nil
 }
 
@@ -85,10 +105,11 @@ func (gateway *Gateway) Wrap(next http.Handler) (http.Handler, error) {
 // RequestIDMiddleware is the outermost process middleware. Authentication and
 // request-budget middleware may be inserted between it and RecoveryErrorLog.
 func (gateway *Gateway) RequestIDMiddleware(next http.Handler) (http.Handler, error) {
-	if gateway == nil || gateway.newRequestID == nil || next == nil {
+	if gateway == nil || gateway.logger == nil || gateway.clock == nil || gateway.newRequestID == nil || gateway.routePattern == nil || next == nil {
 		return nil, ErrInvalidGateway
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		startedAt := gateway.clock()
 		requestID := strings.TrimSpace(request.Header.Get(RequestIDHeader))
 		if !requestIDPattern.MatchString(requestID) {
 			requestID = gateway.newRequestID()
@@ -99,20 +120,73 @@ func (gateway *Gateway) RequestIDMiddleware(next http.Handler) (http.Handler, er
 		state := &requestState{requestID: requestID}
 		ctx := context.WithValue(request.Context(), requestIDKey{}, requestID)
 		request = request.WithContext(context.WithValue(ctx, requestStateKey{}, state))
-		writer.Header().Set(RequestIDHeader, requestID)
+		response := &observedResponse{underlying: writer}
+		response.Header().Set(RequestIDHeader, requestID)
+		defer func() { gateway.logAccess(request, response.status, response.errorCode, startedAt) }()
+		next.ServeHTTP(response, request)
+	}), nil
+}
+
+// AccountBudgetMiddleware limits in-flight work after authentication has bound
+// an opaque account identifier. It never queues excess requests in-process.
+func (gateway *Gateway) AccountBudgetMiddleware(next http.Handler) (http.Handler, error) {
+	if gateway == nil || gateway.maxConcurrentPerAccount < 1 || gateway.inflightByAccount == nil || next == nil {
+		return nil, ErrInvalidGateway
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		accountID := AccountID(request.Context())
+		if accountID == "anonymous" {
+			WriteError(writer, request, NewError(CodeUnauthenticated, nil))
+			return
+		}
+		if !gateway.acquireAccount(accountID) {
+			WriteError(writer, request, NewError(CodeConcurrencyLimited, nil))
+			return
+		}
+		defer gateway.releaseAccount(accountID)
 		next.ServeHTTP(writer, request)
 	}), nil
 }
 
-// RecoveryErrorLog is the fixed tail of the HTTP middleware chain: panic
-// recovery, unified errors, then one structured access record. It deliberately
-// buffers JSON responses and therefore does not support streaming handlers.
-func (gateway *Gateway) RecoveryErrorLog(next http.Handler) (http.Handler, error) {
-	if gateway == nil || gateway.logger == nil || gateway.clock == nil || gateway.routePattern == nil || next == nil {
+// RoutePatternMiddleware records the frozen route template after routing and
+// before authentication can short-circuit. Raw request paths are never stored.
+func (gateway *Gateway) RoutePatternMiddleware(pattern string, next http.Handler) (http.Handler, error) {
+	if gateway == nil || pattern == "unmatched" || safeRoutePattern(pattern) != pattern || next == nil {
 		return nil, ErrInvalidGateway
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		startedAt := gateway.clock()
+		state, ok := request.Context().Value(requestStateKey{}).(*requestState)
+		if !ok || state == nil {
+			WriteError(writer, request, NewError(CodeInternal, nil))
+			return
+		}
+		state.routePattern.Store(pattern)
+		next.ServeHTTP(writer, request)
+	}), nil
+}
+
+// TimeoutMiddleware binds the default request deadline. Domain handlers must
+// honor context cancellation; RecoveryErrorLog normalizes an elapsed deadline.
+func (gateway *Gateway) TimeoutMiddleware(next http.Handler) (http.Handler, error) {
+	if gateway == nil || gateway.requestTimeout < 1 || next == nil {
+		return nil, ErrInvalidGateway
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		ctx, cancel := context.WithTimeout(request.Context(), gateway.requestTimeout)
+		defer cancel()
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	}), nil
+}
+
+// RecoveryErrorLog is the fixed tail of the HTTP middleware chain: panic
+// recovery and unified errors. RequestIDMiddleware emits the access record
+// after this tail or any earlier middleware returns. Responses are buffered,
+// so the platform business API does not support streaming handlers.
+func (gateway *Gateway) RecoveryErrorLog(next http.Handler) (http.Handler, error) {
+	if gateway == nil || next == nil {
+		return nil, ErrInvalidGateway
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		response := newBufferedResponse(writer)
 		response.Header().Set(RequestIDHeader, RequestID(request.Context()))
 
@@ -120,12 +194,35 @@ func (gateway *Gateway) RecoveryErrorLog(next http.Handler) (http.Handler, error
 			if recover() != nil {
 				response.reset()
 				WriteError(response, request, NewError(CodeInternal, nil))
+			} else if errors.Is(request.Context().Err(), context.DeadlineExceeded) {
+				response.reset()
+				WriteError(response, request, NewError(CodeDependencyUnavailable, nil))
 			}
 			response.finalize(request)
-			gateway.logAccess(request, response, startedAt)
 		}()
 		next.ServeHTTP(response, request)
 	}), nil
+}
+
+func (gateway *Gateway) acquireAccount(accountID string) bool {
+	gateway.budgetMu.Lock()
+	defer gateway.budgetMu.Unlock()
+	if gateway.inflightByAccount[accountID] >= gateway.maxConcurrentPerAccount {
+		return false
+	}
+	gateway.inflightByAccount[accountID]++
+	return true
+}
+
+func (gateway *Gateway) releaseAccount(accountID string) {
+	gateway.budgetMu.Lock()
+	defer gateway.budgetMu.Unlock()
+	remaining := gateway.inflightByAccount[accountID] - 1
+	if remaining <= 0 {
+		delete(gateway.inflightByAccount, accountID)
+		return
+	}
+	gateway.inflightByAccount[accountID] = remaining
 }
 
 func RequestID(ctx context.Context) string {
@@ -215,8 +312,7 @@ func safeRoutePattern(pattern string) string {
 	return pattern
 }
 
-func (gateway *Gateway) logAccess(request *http.Request, response *bufferedResponse, startedAt time.Time) {
-	status := response.status
+func (gateway *Gateway) logAccess(request *http.Request, status int, errorCode ErrorCode, startedAt time.Time) {
 	if status == 0 {
 		status = http.StatusOK
 	}
@@ -226,19 +322,27 @@ func (gateway *Gateway) logAccess(request *http.Request, response *bufferedRespo
 	} else if status >= http.StatusBadRequest {
 		level = slog.LevelWarn
 	}
-	errCode := ""
-	if response.errorCode != "" {
-		errCode = string(response.errorCode)
-	}
 	gateway.logger.LogAttrs(request.Context(), level, "http_access",
 		slog.String("request_id", RequestID(request.Context())),
 		slog.String("account", AccountID(request.Context())),
 		slog.String("method", safeMethod(request.Method)),
-		slog.String("path", safeRoutePattern(gateway.routePattern(request))),
+		slog.String("path", gateway.observedRoutePattern(request)),
 		slog.Int("status", status),
 		slog.Int64("latency_ms", gateway.clock().Sub(startedAt).Milliseconds()),
-		slog.String("err", errCode),
+		slog.String("err", string(errorCode)),
 	)
+}
+
+func (gateway *Gateway) observedRoutePattern(request *http.Request) string {
+	if request != nil {
+		if state, ok := request.Context().Value(requestStateKey{}).(*requestState); ok && state != nil {
+			pattern, _ := state.routePattern.Load().(string)
+			if safeRoutePattern(pattern) == pattern {
+				return pattern
+			}
+		}
+	}
+	return safeRoutePattern(gateway.routePattern(request))
 }
 
 func safeMethod(method string) string {
@@ -261,6 +365,31 @@ type bufferedResponse struct {
 	errorCode  ErrorCode
 	overflow   bool
 }
+
+type observedResponse struct {
+	underlying http.ResponseWriter
+	status     int
+	errorCode  ErrorCode
+}
+
+func (response *observedResponse) Header() http.Header { return response.underlying.Header() }
+
+func (response *observedResponse) WriteHeader(status int) {
+	if response.status != 0 {
+		return
+	}
+	response.status = status
+	response.underlying.WriteHeader(status)
+}
+
+func (response *observedResponse) Write(content []byte) (int, error) {
+	if response.status == 0 {
+		response.WriteHeader(http.StatusOK)
+	}
+	return response.underlying.Write(content)
+}
+
+func (response *observedResponse) markError(code ErrorCode) { response.errorCode = code }
 
 func newBufferedResponse(underlying http.ResponseWriter) *bufferedResponse {
 	return &bufferedResponse{underlying: underlying, header: make(http.Header)}
@@ -316,6 +445,9 @@ func (response *bufferedResponse) finalize(request *http.Request) {
 		for _, value := range values {
 			response.underlying.Header().Add(key, value)
 		}
+	}
+	if marker, ok := response.underlying.(errorMarker); ok && response.errorCode != "" {
+		marker.markError(response.errorCode)
 	}
 	response.underlying.WriteHeader(response.status)
 	if response.status != http.StatusNoContent {

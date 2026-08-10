@@ -460,6 +460,50 @@ if (cd "$hollow_p2s10" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S10 acceptance target was accepted"
 fi
 
+for file_path in \
+  cmd/aicrm/api.go \
+  cmd/aicrm/api_test.go \
+  cmd/aicrm/components.go \
+  internal/platform/http/gateway.go \
+  internal/platform/http/gateway_test.go \
+  acceptance/p2s11/doc.go \
+  acceptance/p2s11/gateway_router_test.go \
+  docs/execution/slices/P2-11.md \
+  docs/evidence/slices/P2-11-gateway-tests.md; do
+  gateway_router_receipt_fixture="$(make_fixture "p2-11-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-11 receipt drift' >>"$gateway_router_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-11 receipt drift' >>"$gateway_router_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$gateway_router_receipt_fixture" add "$file_path"
+  if (cd "$gateway_router_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-11 gateway/router receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_p2s11_router="$(make_fixture missing-p2-11-router)"
+rm -f "$missing_p2s11_router/cmd/aicrm/api.go"
+git -C "$missing_p2s11_router" add -u cmd/aicrm/api.go
+if (cd "$missing_p2s11_router" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-11 API router was accepted"
+fi
+
+disconnected_p2s11="$(make_fixture disconnected-p2-s11-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s11-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s11/Makefile"
+rm -f "$disconnected_p2s11/Makefile.bak"
+restage_make_receipt "$disconnected_p2s11"
+if (cd "$disconnected_p2s11" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S11 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s11="$(make_fixture hollow-p2-s11-target)"
+sed -i.bak '/^p2-s11-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s11/Makefile"
+rm -f "$hollow_p2s11/Makefile.bak"
+restage_make_receipt "$hollow_p2s11"
+if (cd "$hollow_p2s11" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S11 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
