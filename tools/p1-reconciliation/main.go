@@ -63,6 +63,20 @@ type paths struct{ routes, api, lifecycle, migration string }
 
 var identity = regexp.MustCompile(`(?i)(external_?userid|unionid|openid|mobile|phone)`)
 
+var approvedNotMigratedRoutes = map[string]bool{
+	"LEGACY-API-0012": true, "LEGACY-API-0383": true, "LEGACY-API-0598": true,
+	"LEGACY-API-0607": true, "LEGACY-API-0640": true, "LEGACY-API-0678": true,
+	"LEGACY-API-0683": true, "LEGACY-API-0684": true, "LEGACY-API-0686": true,
+	"LEGACY-API-0702": true, "LEGACY-API-0704": true, "LEGACY-API-0748": true,
+}
+
+type apiDecisionEvidence struct {
+	DecisionID string `json:"decision_id"`
+	ApprovedBy string `json:"approved_by"`
+	ApprovedAt string `json:"approved_at"`
+	Decision   string `json:"decision"`
+}
+
 func main() {
 	routes := flag.String("routes", "../docs/evidence/p1/legacy-routes-6cb989c.json", "P1-S01 route manifest")
 	api := flag.String("api", "../docs/api-mapping.jsonl", "API candidate mapping")
@@ -82,7 +96,7 @@ func reconcile(p paths) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	counts, err := reconcileAPI(p.api, routes)
+	counts, pendingRoutes, err := reconcileAPI(p.api, routes)
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +108,7 @@ func reconcile(p paths) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d tables=316 fields=%d pending_routes=781 pending_tables=%d)", counts[0], counts[1], counts[2], fields, pending), nil
+	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d tables=316 fields=%d pending_routes=%d approved_not_migrated_routes=12 pending_tables=%d)", counts[0], counts[1], counts[2], fields, pendingRoutes, pending), nil
 }
 
 func loadRoutes(path string) (map[string]routeFact, error) {
@@ -149,78 +163,82 @@ func parseRoute(raw json.RawMessage) (routeFact, error) {
 	return routeFact{path, name, owner, methods, canonical}, nil
 }
 
-func reconcileAPI(path string, routes map[string]routeFact) ([3]int, error) {
+func reconcileAPI(path string, routes map[string]routeFact) ([3]int, int, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return [3]int{}, err
+		return [3]int{}, 0, err
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
-	seen, counts := map[string]bool{}, [3]int{}
+	seen, approvedSeen, counts, pending := map[string]bool{}, map[string]bool{}, [3]int{}, 0
 	line := 0
 	for scanner.Scan() {
 		line++
 		var row map[string]json.RawMessage
 		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
-			return counts, fmt.Errorf("API line %d: %w", line, err)
+			return counts, 0, fmt.Errorf("API line %d: %w", line, err)
 		}
 		id, _ := text(row, "mapping_id")
 		if id != fmt.Sprintf("LEGACY-API-%04d", line) {
-			return counts, fmt.Errorf("API line %d has unstable mapping_id", line)
+			return counts, 0, fmt.Errorf("API line %d has unstable mapping_id", line)
 		}
 		pathValue, e1 := text(row, "legacy_path")
 		name, e2 := text(row, "legacy_route_name")
 		methods, e3 := texts(row, "manifest_methods")
 		if e1 != nil || e2 != nil || e3 != nil {
-			return counts, fmt.Errorf("%s has incomplete route key", id)
+			return counts, 0, fmt.Errorf("%s has incomplete route key", id)
 		}
 		key := routeKey(pathValue, name, methods)
 		authority, ok := routes[key]
 		if !ok || seen[key] {
-			return counts, fmt.Errorf("%s has missing or duplicate authority route", id)
+			return counts, 0, fmt.Errorf("%s has missing or duplicate authority route", id)
 		}
 		seen[key] = true
 		var embedded any
 		if err := json.Unmarshal(row["manifest_contract"], &embedded); err != nil {
-			return counts, fmt.Errorf("%s has invalid embedded manifest", id)
+			return counts, 0, fmt.Errorf("%s has invalid embedded manifest", id)
 		}
 		canonical, _ := json.Marshal(embedded)
 		if !bytes.Equal(canonical, authority.Canonical) {
-			return counts, fmt.Errorf("%s embedded manifest drifted", id)
+			return counts, 0, fmt.Errorf("%s embedded manifest drifted", id)
 		}
 		partition, _ := text(row, "partition")
 		expected := expectedPartition(authority)
 		if partition != expected {
-			return counts, fmt.Errorf("%s is in %s, want %s", id, partition, expected)
+			return counts, 0, fmt.Errorf("%s is in %s, want %s", id, partition, expected)
 		}
 		counts[map[string]int{"S02": 0, "S03": 1, "S04": 2}[partition]]++
 		if value, _ := text(row, "legacy_source_sha"); value != legacySHA {
-			return counts, fmt.Errorf("%s has wrong legacy SHA", id)
+			return counts, 0, fmt.Errorf("%s has wrong legacy SHA", id)
 		}
-		if value, _ := text(row, "disposition"); value != "UNREVIEWED" {
-			return counts, fmt.Errorf("%s has unapproved disposition", id)
+		disposition, _ := text(row, "disposition")
+		signoff, _ := text(row, "signoff")
+		operation, _ := text(row, "candidate_v2_operation_id")
+		method, _ := text(row, "candidate_v2_method")
+		candidatePath, _ := text(row, "candidate_v2_path")
+		var evidence []apiDecisionEvidence
+		if err := json.Unmarshal(row["decision_evidence"], &evidence); err != nil {
+			return counts, 0, fmt.Errorf("%s has invalid decision evidence", id)
 		}
-		if value, _ := text(row, "signoff"); value != "PENDING_HUMAN_SIGNOFF" {
-			return counts, fmt.Errorf("%s has fake signoff", id)
+		reason, _ := text(row, "disposition_reason")
+		targetMapping, _ := text(row, "target_mapping_id")
+		if disposition == "UNREVIEWED" && signoff == "PENDING_HUMAN_SIGNOFF" && operation == "PENDING_HUMAN_DESIGN" && method == "PENDING_HUMAN_DESIGN" && candidatePath == "PENDING_HUMAN_DESIGN" && reason == "" && targetMapping == "" && len(evidence) == 0 {
+			pending++
+			continue
 		}
-		for _, field := range []string{"candidate_v2_operation_id", "candidate_v2_method", "candidate_v2_path"} {
-			if value, _ := text(row, field); value != "PENDING_HUMAN_DESIGN" {
-				return counts, fmt.Errorf("%s has non-pending %s", id, field)
-			}
+		if !approvedNotMigratedRoutes[id] || disposition != "NOT_MIGRATED" || signoff != "APPROVED" || operation != "NOT_APPLICABLE" || method != "NOT_APPLICABLE" || candidatePath != "NOT_APPLICABLE" || targetMapping != "" || reason != "G1-D01 approved tier C route as not migrated." || len(evidence) != 1 || evidence[0] != (apiDecisionEvidence{"G1-D01", "repository_owner", "2026-08-10", "NOT_MIGRATED"}) {
+			return counts, 0, fmt.Errorf("%s has unapproved or forged disposition", id)
 		}
-		var evidence []json.RawMessage
-		if err := json.Unmarshal(row["decision_evidence"], &evidence); err != nil || len(evidence) != 0 {
-			return counts, fmt.Errorf("%s has decision evidence without signoff", id)
-		}
+		approvedSeen[id] = true
 	}
 	if err := scanner.Err(); err != nil {
-		return counts, err
+		return counts, 0, err
 	}
-	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} {
-		return counts, fmt.Errorf("route partition mismatch: rows=%d seen=%d counts=%v", line, len(seen), counts)
+	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} || pending != 769 || len(approvedSeen) != len(approvedNotMigratedRoutes) {
+		return counts, 0, fmt.Errorf("route partition or decision mismatch: rows=%d seen=%d counts=%v pending=%d approved=%d", line, len(seen), counts, pending, len(approvedSeen))
 	}
-	return counts, nil
+	return counts, pending, nil
 }
 
 func expectedPartition(route routeFact) string {

@@ -21,9 +21,14 @@ func TestFrozenOpenAPI(t *testing.T) {
 
 func TestRejectsUnsafeContractMutations(t *testing.T) {
 	tests := map[string]func(*testing.T){
-		"fake signoff": func(t *testing.T) {
+		"signoff regression": func(t *testing.T) {
 			doc, ids := fresh(t)
-			doc.Paths.Value("/api/v1/customers").Get.Extensions["x-p1-signoff-status"] = "APPROVED"
+			doc.Paths.Value("/api/v1/customers").Get.Extensions["x-p1-signoff-status"] = "PENDING_HUMAN_SIGNOFF"
+			reject(t, doc, ids)
+		},
+		"forged decision evidence": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/customers").Get.Extensions["x-p1-decision-evidence"] = "G1-D01-FORGED"
 			reject(t, doc, ids)
 		},
 		"unknown legacy link": func(t *testing.T) {

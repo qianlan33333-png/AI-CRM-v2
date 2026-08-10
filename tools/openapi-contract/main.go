@@ -20,6 +20,8 @@ var candidateOperations = map[string]bool{
 	"getAdminConfigOverview": true,
 }
 
+const g1DecisionEvidence = "G1-D01-2026-08-10"
+
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
 	mapping := flag.String("mapping", "../docs/api-mapping.jsonl", "legacy API mapping")
@@ -32,7 +34,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (candidate_operations=10 pending=10 legacy_links=14)")
+	fmt.Println("openapi-contract: PASS (candidate_operations=10 approved=10 pending=0 legacy_links=14)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -89,8 +91,12 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 			seen[op.OperationID] = true
 			status, ok := op.Extensions["x-p1-signoff-status"].(string)
-			if !ok || status != "PENDING_HUMAN_SIGNOFF" {
-				return fmt.Errorf("%s has fake signoff", op.OperationID)
+			if !ok || status != "APPROVED" {
+				return fmt.Errorf("%s lacks approved G1 signoff", op.OperationID)
+			}
+			evidence, ok := op.Extensions["x-p1-decision-evidence"].(string)
+			if !ok || evidence != g1DecisionEvidence {
+				return fmt.Errorf("%s has missing or forged G1 evidence", op.OperationID)
 			}
 			ids, err := stringList(op.Extensions["x-legacy-mapping-ids"])
 			if err != nil || len(ids) == 0 {

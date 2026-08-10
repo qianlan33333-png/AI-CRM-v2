@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: AI-CRM v2 API
-  version: 0.2.0-p1-candidate
-  description: Canonical HTTP contract. Generated code must not be edited. P1 core operations remain pending G1 human signoff.
+  version: 0.2.0-g1-frozen
+  description: Canonical HTTP contract. Generated code must not be edited. The ten P1 core operations are frozen by G1-D01.
 security:
   - AdminSession: []
 paths:
@@ -24,7 +24,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: listCustomers
       summary: List customers using a keyset cursor
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0609]
       parameters:
         - $ref: "#/components/parameters/Cursor"
@@ -45,7 +46,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: getCustomer
       summary: Get a channel-neutral customer by OneID
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0619, LEGACY-API-0743]
       responses:
         "200":
@@ -60,7 +62,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: updateCustomer
       summary: Update customer-owned profile fields
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0736]
       requestBody:
         required: true
@@ -86,7 +89,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: listCustomerEvents
       summary: List append-only customer events using a keyset cursor
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0620, LEGACY-API-0739, LEGACY-API-0745]
       parameters:
         - $ref: "#/components/parameters/Cursor"
@@ -106,7 +110,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: resolveIdentity
       summary: Resolve one scoped identity without implicit creation
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0355, LEGACY-API-0680]
       requestBody:
         required: true
@@ -128,7 +133,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: bindIdentity
       summary: Bind a scoped identity to a channel-neutral customer
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0709]
       requestBody:
         required: true
@@ -151,7 +157,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: ingestIdentityEvent
       summary: Attribute or persist an external event without guessing identity
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0780]
       requestBody:
         required: true
@@ -173,7 +180,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: getAuthSession
       summary: Return the authenticated admin principal
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0758]
       responses:
         "200":
@@ -188,7 +196,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: logoutAdmin
       summary: Invalidate the current admin session
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0760]
       responses:
         "204": { description: Session invalidated. }
@@ -198,7 +207,8 @@ paths:
       tags: [p1-core-candidate]
       operationId: getAdminConfigOverview
       summary: List non-secret configuration readiness
-      x-p1-signoff-status: PENDING_HUMAN_SIGNOFF
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0269]
       responses:
         "200":

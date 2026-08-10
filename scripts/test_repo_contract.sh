@@ -149,7 +149,14 @@ if (cd "$migration_index_mode_fixture" && scripts/check_repo_contract.sh >/dev/n
   fail "P1-C02 lifecycle index mode drift was accepted"
 fi
 
-for path in tools/p1-reconciliation/main.go tools/p1-reconciliation/main_test.go docs/execution/slices/P1-C03.md; do
+for path in \
+  docs/api-mapping.jsonl \
+  docs/evidence/p1/route-triage.csv \
+  docs/evidence/p1/g1-decisions.md \
+  docs/execution/slices/G1-D01.md \
+  tools/p1-reconciliation/main.go \
+  tools/p1-reconciliation/main_test.go \
+  docs/execution/slices/P1-C03.md; do
   reconciliation_receipt_fixture="$(make_fixture "p1-reconciliation-receipt-${path##*/}")"
   case "$path" in *.go) printf '%s\n' '// P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$path" ;; esac
   git -C "$reconciliation_receipt_fixture" add "$path"

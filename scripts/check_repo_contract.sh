@@ -80,6 +80,10 @@ required=(
   docs/execution/slices/P1-C02.md
   tools/migration-mapping/main.go
   tools/migration-mapping/main_test.go
+  docs/api-mapping.jsonl
+  docs/evidence/p1/route-triage.csv
+  docs/evidence/p1/g1-decisions.md
+  docs/execution/slices/G1-D01.md
   tools/p1-reconciliation/main.go
   tools/p1-reconciliation/main_test.go
   docs/execution/slices/P1-C03.md
@@ -200,6 +204,10 @@ done <<'EOF'
 100644 docs/execution/slices/P1-C02.md
 100644 tools/migration-mapping/main.go
 100644 tools/migration-mapping/main_test.go
+100644 docs/api-mapping.jsonl
+100644 docs/evidence/p1/route-triage.csv
+100644 docs/evidence/p1/g1-decisions.md
+100644 docs/execution/slices/G1-D01.md
 100644 tools/p1-reconciliation/main.go
 100644 tools/p1-reconciliation/main_test.go
 100644 docs/execution/slices/P1-C03.md
@@ -364,14 +372,22 @@ verify_index_sha256 tools/migration-mapping/main_test.go \
   762bc2621cbcff28530354ebcc47d102ee579eb1bc364fbec70c8efada929ddb
 verify_index_sha256 docs/execution/slices/P1-C02.md \
   c7b8c7236f20279d244286f0f3facaab28ba831a64e7f662755a6b9700abac43
+verify_index_sha256 docs/api-mapping.jsonl \
+  8e4929f79b7809b4d1a9621ce0e94531b7d46cedcaeb437fc34d71e7f8f1ae6d
+verify_index_sha256 docs/evidence/p1/route-triage.csv \
+  875596da33d316c31bff9a6103725affa58c44be399ec98239d9e294c34c069b
+verify_index_sha256 docs/evidence/p1/g1-decisions.md \
+  96686173d77d2a70fd1f4114cb1cd32bbdd4185cda5b2db83c9571825c48e1b3
+verify_index_sha256 docs/execution/slices/G1-D01.md \
+  4f44fe051407300a5536d784d8d79e2a3f6d62fbee786024d828b2897c7b0157
 verify_index_sha256 tools/p1-reconciliation/main.go \
-  f71d66874bf968b1e97c3d33c0358020d5670721c087a0f7b1fdb55b33b76f39
+  47a6c9a6dae5b4a4e082a86ad13251edd8cdc370e396abd42d557bae1d9b78be
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
-  1f393c640b8a2c223e86a13558ce893adf6a01183876f6a7fb7b2cbc8038b727
+  b7c9c62315059476905bdf8765ccb741066307ffbc030e2a9492ff8284fb435a
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  952687bfbb7b88d101723cc189d7880dc09d5667da942ae0070e9c222f590f80
+  646b65f055ce20eba013bd16154fa216b054d36eac85a7ecbbdf9355dad15487
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
@@ -381,9 +397,9 @@ verify_index_sha256 internal/api/generated/server.gen.go \
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
   d40e331971601433321458e19717ef2aa83b98891dc62cbe20693bda5ef51874
 verify_index_sha256 tools/openapi-contract/main.go \
-  4203491b66bff772f7ea21f1523a84f96690b2ea25f5f0da23711b3e68bf3bb3
+  35bc3bc136964388c71ec90a1706553671b77505a7716ab5bfe8071a06ea772f
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  41cd6ab2e8088ddf962f14948108cf5766df27f531934e44ddd5fa9bc5f51c93
+  defc65938826a478ff4093deb86ca6242a108d9da171afecb50aac9f480ff994
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
   148b70a42a8b6a6ec5ec7dbac9ee47e89f0a8cfc0cb07da857d2df4568061cd9
 verify_index_sha256 acceptance/p1s11/doc.go \
@@ -417,7 +433,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  3396925b4f182a09ff4a20982ad4cf6eefa08c9f434bc1e013f67a0360e6aa4d
+  251d853fd4a228511c94bb93b31daf162c1b84bc33f5fd3e2a7964d6b83d9129
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

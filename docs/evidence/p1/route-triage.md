@@ -4,14 +4,14 @@
 
 基于用户授权的生产环境只读取证与冻结 UI 矩阵，781 条 authority 路由已经全部进入候选分档：
 
-| 分区 | A：逐条人工决策 | B：零流量且无 UI 引用 | C：retired/blocked 且零流量 | 合计 |
+| 分区 | A：逐条人工决策 | B：已暂缓 | C：已批准不迁 | 合计 |
 |---|---:|---:|---:|---:|
 | S02 contact/auth/admin | 99 | 56 | 1 | 156 |
 | S03 WeCom/segment/outbound | 106 | 76 | 2 | 184 |
 | S04 上层域 | 296 | 136 | 9 | 441 |
 | **总计** | **501** | **268** | **12** | **781** |
 
-规范化逐路由表见 `docs/evidence/p1/route-triage.csv`。所有 781 行仍为 `PENDING_HUMAN_SIGNOFF`，本次分档不是最终迁移/合并/废弃决定。
+规范化逐路由表见 `docs/evidence/p1/route-triage.csv`。G1-D01 已批准 12 条 C 不迁；268 条 B 仅暂缓、最终 signoff 仍 pending；501 条 A 的 route disposition 仍 pending。10 个核心新 OpenAPI 的批准不自动批准任何其余 legacy route。
 
 ## 判据
 
@@ -38,12 +38,12 @@
 - 结构化 route summary：`f0e148a404be8f375093f73c9239b9abc79c1045a6a9c38cde909f1acc754990`
 - 主应用早期去查询参数访问聚合：`653a08b285d4a070fee4d2d51df9d6b89abe7863acc82e777b5c073e3fcde403`
 - 独立回调入口去查询参数访问聚合：`f638b711b1c08790613bbf0e6662882a3d3bcf75ef2c7e00f94a6913d9560e2d`
-- 781 行规范化候选表：`7e9fed11015458fb957880c27819d6259b81df53dc85cbeba1767fe04a64189e`
+- G1-D01 后 781 行分档表：`875596da33d316c31bff9a6103725affa58c44be399ec98239d9e294c34c069b`
 
-## 你需要做的决定
+## G1-D01 后的剩余决定
 
-1. 先批量确认 12 条 C 是否全部不迁；任何希望保留的条目升 A。
-2. 再审 268 条 B，原则上批量废弃，只报需要保留的例外。
-3. 最后处理 501 条 A 的迁移/合并/废弃；可先从 10 个核心 OpenAPI 及高频能力开始。
+1. C 档 12 条已全部批准不迁；任何未来恢复都必须走新的人工裁决。
+2. B 档 268 条已暂缓，尚未批准废弃或迁移。
+3. A 档 501 条的 legacy route disposition 仍待处理；10 个核心 OpenAPI 已另行冻结。
 
-在三档完成签字前，任何 route disposition 都不得从 pending 提升为 signed，不得开始 P2 业务实现。
+在剩余 G1 项完成签字前，不得开始 P2 业务实现。

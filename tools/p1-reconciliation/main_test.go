@@ -16,7 +16,7 @@ func TestFrozenReconciliation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 tables=316 fields=3313 pending_routes=781 pending_tables=315)"
+	want := "p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 tables=316 fields=3313 pending_routes=769 approved_not_migrated_routes=12 pending_tables=315)"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -30,6 +30,28 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 		{"duplicate route", "routes", func(v any) { d := v.(*map[string]any); r := (*d)["routes"].([]any); r[1] = r[0] }},
 		{"wrong partition", "api", func(v any) { r := v.(*[]map[string]any); (*r)[0]["partition"] = "S02" }},
 		{"missing route status", "api", func(v any) { r := v.(*[]map[string]any); (*r)[0]["disposition"] = "" }},
+		{"fake approved route", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			approveRoute((*r)[0])
+		}},
+		{"approved route missing evidence", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["mapping_id"] == "LEGACY-API-0012" {
+					row["decision_evidence"] = []any{}
+					return
+				}
+			}
+		}},
+		{"approved route reactivated", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["mapping_id"] == "LEGACY-API-0012" {
+					row["candidate_v2_operation_id"] = "reactivateLegacyRoute"
+					return
+				}
+			}
+		}},
 		{"missing lifecycle table", "lifecycle", func(v any) {
 			d := v.(*map[string]any)
 			r := (*d)["tables"].([]any)
@@ -75,6 +97,16 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 			}
 		})
 	}
+}
+
+func approveRoute(row map[string]any) {
+	row["candidate_v2_operation_id"] = "NOT_APPLICABLE"
+	row["candidate_v2_method"] = "NOT_APPLICABLE"
+	row["candidate_v2_path"] = "NOT_APPLICABLE"
+	row["disposition"] = "NOT_MIGRATED"
+	row["disposition_reason"] = "G1-D01 approved tier C route as not migrated."
+	row["signoff"] = "APPROVED"
+	row["decision_evidence"] = []any{map[string]any{"decision_id": "G1-D01", "approved_by": "repository_owner", "approved_at": "2026-08-10", "decision": "NOT_MIGRATED"}}
 }
 
 func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
