@@ -35,7 +35,7 @@ if ! find internal/platform/http -mindepth 1 -maxdepth 1 -print0 >"$inventory_fi
 fi
 while IFS= read -r -d '' entry; do
   case "$entry" in
-    internal/platform/http/contract.go|"$implementation"|"$unit_test") ;;
+    internal/platform/http/contract.go|"$implementation"|"$unit_test"|internal/platform/http/errors.go|internal/platform/http/gateway.go|internal/platform/http/gateway_test.go) ;;
     *) fail "unexpected HTTP package entry: $entry" ;;
   esac
   [[ -f "$entry" && ! -L "$entry" ]] || fail "HTTP package entry must be a regular non-symlink file: $entry"

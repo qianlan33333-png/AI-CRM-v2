@@ -320,6 +320,50 @@ if (cd "$hollow_p2s07" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S07 acceptance target was accepted"
 fi
 
+for file_path in \
+  acceptance/p2s08/doc.go \
+  acceptance/p2s08/gateway_blackbox_test.go \
+  internal/platform/http/errors.go \
+  internal/platform/http/gateway.go \
+  internal/platform/http/gateway_test.go \
+  docs/execution/slices/P2-08.md \
+  docs/evidence/slices/P2-08-http-tests.md; do
+  http_receipt_fixture="$(make_fixture "p2-08-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-08 receipt drift' >>"$http_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-08 receipt drift' >>"$http_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$http_receipt_fixture" add "$file_path"
+  if (cd "$http_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-08 HTTP gateway receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/platform/http/errors.go internal/platform/http/gateway.go; do
+  missing_http_file="$(make_fixture "missing-p2-08-${file_path##*/}")"
+  rm -f "$missing_http_file/$file_path"
+  git -C "$missing_http_file" add -u "$file_path"
+  if (cd "$missing_http_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-08 HTTP gateway core was accepted: $file_path"
+  fi
+done
+
+disconnected_p2s08="$(make_fixture disconnected-p2-s08-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s08-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s08/Makefile"
+rm -f "$disconnected_p2s08/Makefile.bak"
+restage_make_receipt "$disconnected_p2s08"
+if (cd "$disconnected_p2s08" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S08 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s08="$(make_fixture hollow-p2-s08-target)"
+sed -i.bak '/^p2-s08-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s08/Makefile"
+rm -f "$hollow_p2s08/Makefile.bak"
+restage_make_receipt "$hollow_p2s08"
+if (cd "$hollow_p2s08" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S08 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
@@ -1286,6 +1330,20 @@ ln -s application-go.yml \
 git -C "$workflow_symlink_fixture" add .github/workflows/repo-contract.yml
 if (cd "$workflow_symlink_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "central policy workflow symlink was accepted"
+fi
+
+short_repo_timeout_fixture="$(make_fixture short-repo-contract-timeout)"
+sed -i.bak 's/timeout-minutes: 30/timeout-minutes: 10/' \
+  "$short_repo_timeout_fixture/.github/workflows/repo-contract.yml"
+rm -f "$short_repo_timeout_fixture/.github/workflows/repo-contract.yml.bak"
+git -C "$short_repo_timeout_fixture" add .github/workflows/repo-contract.yml
+short_repo_workflow_digest="$(git -C "$short_repo_timeout_fixture" show :.github/workflows/repo-contract.yml | sha256sum | awk '{print $1}')"
+sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/repo-contract\.yml/{n;s/[0-9a-f]{64}/$short_repo_workflow_digest/;}" \
+  "$short_repo_timeout_fixture/scripts/check_repo_contract.sh"
+rm -f "$short_repo_timeout_fixture/scripts/check_repo_contract.sh.bak"
+git -C "$short_repo_timeout_fixture" add scripts/check_repo_contract.sh
+if (cd "$short_repo_timeout_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "repo-contract workflow with a 10-minute budget was accepted after receipt restaging"
 fi
 
 unpinned_fixture="$(make_fixture unpinned-action)"
