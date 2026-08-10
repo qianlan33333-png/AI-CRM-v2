@@ -332,6 +332,7 @@ func TestAuthenticateFailsClosedForInvalidPrincipal(t *testing.T) {
 		{name: "missing admin id", principal: authport.Principal{Role: authport.RoleAdmin}},
 		{name: "unknown role", principal: authport.Principal{AdminUserID: 1, Role: authport.Role("superuser")}},
 		{name: "nonpositive staff id", principal: authport.Principal{AdminUserID: 1, Role: authport.RoleOps, StaffID: &zeroStaffID}},
+		{name: "sales missing staff id", principal: authport.Principal{AdminUserID: 1, Role: authport.RoleSales}},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			uow := &fakeAuthUoW{}
@@ -466,20 +467,20 @@ func TestInvalidateFailsClosedForMissingOrUnavailableSession(t *testing.T) {
 	}
 }
 
-func TestAuthorizeAlwaysFailsClosed(t *testing.T) {
+func TestAuthorizeNilServiceFailsClosed(t *testing.T) {
 	service := (*Service)(nil)
 	for _, testCase := range []struct {
 		name       string
 		ctx        context.Context
 		principal  authport.Principal
-		capability string
+		capability authport.Capability
 	}{
 		{name: "nil context and principal", ctx: nil},
-		{name: "valid principal and known capability", ctx: context.Background(), principal: usablePrincipal(), capability: "admin.users.read"},
-		{name: "invalid principal and arbitrary capability", ctx: context.Background(), principal: authport.Principal{AdminUserID: -1}, capability: "*"},
+		{name: "valid principal and known capability", ctx: context.Background(), principal: usablePrincipal(), capability: authport.CapabilityCustomersRead},
+		{name: "invalid principal and arbitrary capability", ctx: context.Background(), principal: authport.Principal{AdminUserID: -1}, capability: authport.Capability("*")},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			if err := service.Authorize(testCase.ctx, testCase.principal, testCase.capability); !errors.Is(err, authport.ErrUnauthorized) {
+			if _, err := service.Authorize(testCase.ctx, testCase.principal, testCase.capability); !errors.Is(err, authport.ErrUnauthorized) {
 				t.Fatalf("Authorize() error = %v, want ErrUnauthorized", err)
 			}
 		})

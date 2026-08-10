@@ -1162,15 +1162,19 @@ slices:
   - slice_id: P2-09
     title: login-server-session-logout-contract
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: 391d719957f963037e8fa7a8c5e3c716fad5206a
     dependency: P2-08
     branch: slice/p2-09-login-session
     decision_anchor: USER_SECURITY_BOUNDARY_AUTHORIZATION_2026-08-10
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/107
+    pr_head_sha: 8780c51a0a91413e2160f9bb02cc24fa046623a6
+    merge_sha: 2176fe032eb897c640e5b911a6a7609ecc648e35
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31428089943
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31428089886
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31428089903
     delegated_tasks:
       - task_id: p2_09_auth_service_test_corpus
         executor: gpt-5.6-terra
@@ -1188,6 +1192,7 @@ slices:
       - LOCAL_official_PostgreSQL16_14_55432_REAL_SESSION_LIFECYCLE_PASS
       - LOCAL_goose_up_down_up_00004_auth_PASS
       - LOCAL_generate_and_orval_double_generation_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
       - LOCAL_Web_CI_Node24_18_npm11_12_PASS
       - LOCAL_repo_contract_full_negative_suite_PASS
       - LOCAL_full_ci_go_exact_head_46f3492_PASS
@@ -1199,6 +1204,48 @@ slices:
     verification_induced_correction_count: 1
     external_gates:
       - REAL_WECOM_OAUTH_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-10
+    title: rbac-and-server-side-data-scope
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: 2176fe032eb897c640e5b911a6a7609ecc648e35
+    dependency: P2-09
+    branch: slice/p2-10-rbac-data-scope
+    decision_anchor: ADR-006
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_10_rbac_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/auth/app/policy_test.go
+        base_sha: 9400330c9a63baa313bd5969a5c51ce61bfc67c8
+        delegated_head_sha: d3800270be445c41054b52d8eb652b4068f42d28
+        correction_count: 0
+        file_manifest_sha256: c7dbc1474f6ce79a3b94cca9320bf35b5120af9f8526a1c7aa0950f2f9311bf5
+        diff_sha256: 4b93350facf108ad37cc92c90170ed3d452a1270e3e0158a360fe99d97d35308
+        receipt: docs/evidence/slices/P2-10-rbac-tests.md
+    tests:
+      - LOCAL_auth_port_acceptance_openapi_focused_race_PASS
+      - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+      - LOCAL_generate_and_orval_double_generation_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_goose_up_down_up_00001_through_00004_55432_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_170_commits_sensitive_paths_bundle_PASS
+    handwritten_scope: 9_files_323_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 5
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED

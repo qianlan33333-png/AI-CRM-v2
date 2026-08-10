@@ -1259,6 +1259,15 @@ func (response BindIdentity401JSONResponse) VisitBindIdentityResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type BindIdentity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response BindIdentity403JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type BindIdentity409JSONResponse struct{ ConflictJSONResponse }
 
 func (response BindIdentity409JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
@@ -1303,6 +1312,15 @@ func (response IngestIdentityEvent401JSONResponse) VisitIngestIdentityEventRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type IngestIdentityEvent403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IngestIdentityEvent403JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ResolveIdentityRequestObject struct {
 	Body *ResolveIdentityJSONRequestBody
 }
@@ -1334,6 +1352,15 @@ type ResolveIdentity401JSONResponse struct{ UnauthorizedJSONResponse }
 func (response ResolveIdentity401JSONResponse) VisitResolveIdentityResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveIdentity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ResolveIdentity403JSONResponse) VisitResolveIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }

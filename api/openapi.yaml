@@ -27,6 +27,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0609]
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       parameters:
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
@@ -49,6 +51,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0619, LEGACY-API-0743]
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       responses:
         "200":
           description: Customer profile.
@@ -65,6 +69,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0736]
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       requestBody:
         required: true
         content:
@@ -92,6 +98,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0620, LEGACY-API-0739, LEGACY-API-0745]
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       parameters:
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
@@ -113,6 +121,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0355, LEGACY-API-0680]
+      x-aicrm-capability: identity.resolve
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
       requestBody:
         required: true
         content:
@@ -128,6 +138,7 @@ paths:
                 $ref: "#/components/schemas/ResolveIdentityResponse"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/v1/identity/bind:
     post:
       tags: [p1-core-candidate]
@@ -136,6 +147,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0709]
+      x-aicrm-capability: identity.bind
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
       requestBody:
         required: true
         content:
@@ -151,6 +164,7 @@ paths:
                 $ref: "#/components/schemas/BindIdentityResponse"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/identity/ingest:
     post:
@@ -160,6 +174,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0780]
+      x-aicrm-capability: identity.ingest
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
       requestBody:
         required: true
         content:
@@ -175,6 +191,7 @@ paths:
                 $ref: "#/components/schemas/IngestIdentityEventResponse"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/v1/auth/session:
     get:
       tags: [p1-core-candidate]
@@ -183,6 +200,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0758]
+      x-aicrm-capability: auth.session.read
+      x-aicrm-rbac-scopes: { admin: self, ops: self, sales: self }
       responses:
         "200":
           description: Authenticated session.
@@ -199,6 +218,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0760]
+      x-aicrm-capability: auth.session.logout
+      x-aicrm-rbac-scopes: { admin: self, ops: self, sales: self }
       parameters:
         - $ref: "#/components/parameters/CSRFToken"
       responses:
@@ -213,6 +234,8 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0269]
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
       responses:
         "200":
           description: Non-secret configuration readiness only.
