@@ -36,6 +36,9 @@ type HealthResponse struct {
 // HealthResponseStatus defines model for HealthResponse.Status.
 type HealthResponseStatus string
 
+// CustomerID defines model for CustomerID.
+type CustomerID = int64
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Process liveness

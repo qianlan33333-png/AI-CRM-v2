@@ -8,7 +8,7 @@ cd "$repo_root"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
 expected_manifest="scripts/generated-sources.sha256"
-expected_manifest_sha256="babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8"
+expected_manifest_sha256="33eaa83c609577fde602e42c59746443ac67e1d7191a2841b5d33cadd815c58a"
 
 fail() {
   echo "generated-check: $*" >&2
@@ -80,6 +80,8 @@ verify_manifest() {
 run_generators() {
   GOWORK=off "$go_command" tool -modfile="$tools_mod" oapi-codegen \
     --config api/oapi-codegen.yaml api/openapi.yaml
+  GOWORK=off "$go_command" tool -modfile="$tools_mod" oapi-codegen \
+    --config api/oapi-codegen-p1-candidate.yaml api/openapi.yaml
   GOWORK=off "$go_command" tool -modfile="$tools_mod" sqlc generate
 }
 
