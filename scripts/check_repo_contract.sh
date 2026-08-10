@@ -729,7 +729,7 @@ verify_index_sha256 internal/platform/http/gateway.go \
 verify_index_sha256 internal/platform/http/gateway_test.go \
   eb8313743a76e962aa23f0da2603db113abac349d04189c67662a13893e97214
 verify_index_sha256 docs/execution/slices/P2-08.md \
-  c2074545b8e6bc3e84df39fde7af0a79b1d4b9eeee7c654359228f4b7b18fe79
+  85d31226d656576e418c217d811b0ce495d1556bfc637a55b0a914f5222ed208
 verify_index_sha256 docs/evidence/slices/P2-08-http-tests.md \
   a61b50a0d040373515216d96fe1707a14be7a9852e8a1b9e64ba94c07ae35fcc
 verify_index_sha256 docs/execution/slices/P2-07.md \

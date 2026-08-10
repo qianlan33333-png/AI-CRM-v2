@@ -1138,9 +1138,14 @@ slices:
     tests:
       - LOCAL_http_gateway_and_blackbox_focused_race_PASS
       - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+      - LOCAL_official_PostgreSQL16_14_SHA256_verified_55432_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_PASS
+      - LOCAL_orval_double_generation_and_Web_CI_PASS
+      - LOCAL_gitleaks_history_config_sensitive_paths_bundle_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
     handwritten_scope: 4_files_550_changed_lines_under_P2_cap_tests_docs_receipts_and_ledger_excluded
     slice_induced_correction_count: 0
-    infra_induced_correction_count: 0
+    infra_induced_correction_count: 1
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
     external_gates:
