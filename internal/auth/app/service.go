@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
 	"time"
 
@@ -48,7 +49,7 @@ var (
 )
 
 func NewService(uow platformport.UnitOfWork, repo repository, options Options) (*Service, error) {
-	if uow == nil || repo == nil {
+	if nilInterface(uow) || nilInterface(repo) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	if options.Clock == nil {
@@ -112,6 +113,9 @@ func (service *Service) Authenticate(ctx context.Context, session authport.Sessi
 		return authport.Principal{}, authport.ErrUnauthenticated
 	}
 	now := service.clock().UTC()
+	if now.IsZero() {
+		return authport.Principal{}, authport.ErrAuthenticationUnavailable
+	}
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
 		principal, err = service.repo.GetActive(txCtx, tokenHash, now)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -148,6 +152,9 @@ func (service *Service) Invalidate(ctx context.Context, session authport.Session
 		return authport.ErrAuthenticationUnavailable
 	}
 	revokedAt := service.clock().UTC()
+	if revokedAt.IsZero() {
+		return authport.ErrAuthenticationUnavailable
+	}
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
 		revokeErr := service.repo.Revoke(txCtx, tokenHash, csrfHash, revokedAt)
 		if errors.Is(revokeErr, pgx.ErrNoRows) {
@@ -190,4 +197,12 @@ func validPrincipal(principal authport.Principal) bool {
 	default:
 		return false
 	}
+}
+
+func nilInterface(value any) bool {
+	if value == nil {
+		return true
+	}
+	reflected := reflect.ValueOf(value)
+	return reflected.Kind() == reflect.Pointer && reflected.IsNil()
 }

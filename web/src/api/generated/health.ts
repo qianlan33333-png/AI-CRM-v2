@@ -334,6 +334,11 @@ export type NotFoundResponse = ErrorResponse;
  */
 export type ConflictResponse = ErrorResponse;
 
+/**
+ * CSRF token bound to the server-side browser session.
+ */
+export type CSRFTokenParameter = string;
+
 export type CursorParameter = string;
 
 export type LimitParameter = number;
@@ -892,10 +897,17 @@ export type logoutAdminResponse401 = {
   status: 401;
 };
 
+export type logoutAdminResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
 export type logoutAdminResponseSuccess = logoutAdminResponse204 & {
   headers: Headers;
 };
-export type logoutAdminResponseError = logoutAdminResponse401 & {
+export type logoutAdminResponseError = (
+  logoutAdminResponse401 | logoutAdminResponse403
+) & {
   headers: Headers;
 };
 

@@ -233,7 +233,7 @@ components:
       name: X-CSRF-Token
       in: header
       required: true
-      description: Double-submit token bound to the server-side browser session.
+      description: CSRF token bound to the server-side browser session.
       schema:
         type: string
         minLength: 43

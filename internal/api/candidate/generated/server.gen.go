@@ -367,7 +367,7 @@ type Unauthorized = ErrorResponse
 
 // LogoutAdminParams defines parameters for LogoutAdmin.
 type LogoutAdminParams struct {
-	// XCSRFToken Double-submit token bound to the server-side browser session.
+	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 

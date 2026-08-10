@@ -51,6 +51,22 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Delete("/api/v1/admin/config/overview")
 			reject(t, doc, ids)
 		},
+		"browser JWT substitution": func(t *testing.T) {
+			doc, ids := fresh(t)
+			scheme := doc.Components.SecuritySchemes["AdminSession"].Value
+			scheme.Type, scheme.In, scheme.Name, scheme.Scheme, scheme.BearerFormat = "http", "", "", "bearer", "JWT"
+			reject(t, doc, ids)
+		},
+		"logout without CSRF": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/auth/logout").Post.Parameters = nil
+			reject(t, doc, ids)
+		},
+		"logout without CSRF failure response": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/auth/logout").Post.Responses.Delete("403")
+			reject(t, doc, ids)
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, test)

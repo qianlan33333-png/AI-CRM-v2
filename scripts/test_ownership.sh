@@ -54,6 +54,7 @@ mutate() {
     segment-write) echo 'DELETE FROM customers;' >"$root/internal/segment/store/queries/read.sql" ;;
     platform-write) echo 'INSERT INTO event_log DEFAULT VALUES;' >"$root/internal/platform/store/write.sql" ;;
     contact-event-update) echo 'UPDATE event_log SET dispatched = true;' >"$root/internal/contact/store/queries/write.sql" ;;
+    contact-auth-session) echo 'UPDATE admin_sessions SET revoked_reason = '\''bypass'\'';' >"$root/internal/contact/store/queries/write.sql" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
     update-unknown-table) echo 'UPDATE mystery_table AS target SET id = 2;' >"$root/internal/contact/store/queries/write.sql" ;;
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
@@ -67,6 +68,7 @@ mutate() {
 }
 reject contact-identity 'table write ownership violation'; reject segment-write 'table write ownership violation'
 reject platform-write 'table write ownership violation'; reject contact-event-update 'table write ownership violation'
+reject contact-auth-session 'table write ownership violation'
 reject unknown-table 'write to unknown table'
 reject update-unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'

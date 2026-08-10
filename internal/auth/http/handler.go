@@ -1,9 +1,11 @@
 package authhttp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"reflect"
 	"time"
 
 	generated "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
@@ -24,7 +26,7 @@ type Handler struct {
 var _ generated.ServerInterface = (*Handler)(nil)
 
 func NewHandler(auth authport.Service) (*Handler, error) {
-	if auth == nil {
+	if nilService(auth) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	return &Handler{auth: auth}, nil
@@ -64,7 +66,7 @@ func (handler *Handler) Authenticate(next http.Handler) http.Handler {
 
 func (handler *Handler) GetAuthSession(writer http.ResponseWriter, request *http.Request) {
 	principal, ok := authport.PrincipalFromContext(request.Context())
-	if !ok {
+	if !ok || principal.AdminUserID < 1 || !validRole(principal.Role) {
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthenticated, authport.ErrUnauthenticated))
 		return
 	}
@@ -99,17 +101,36 @@ func (handler *Handler) LogoutAdmin(writer http.ResponseWriter, request *http.Re
 }
 
 func WriteBrowserSession(writer http.ResponseWriter, session authport.BrowserSession) error {
-	if writer == nil || session.Session == "" || session.CSRF == "" || !session.ExpiresAt.After(time.Now().UTC()) {
+	now := time.Now().UTC()
+	if writer == nil || !validToken(string(session.Session)) || !validToken(string(session.CSRF)) ||
+		!session.ExpiresAt.After(now) || session.ExpiresAt.After(now.Add(24*time.Hour)) {
 		return authport.ErrAuthenticationUnavailable
 	}
-	maxAge := int(time.Until(session.ExpiresAt).Seconds())
+	maxAge := int(session.ExpiresAt.Sub(now).Seconds())
 	if maxAge < 1 {
 		return authport.ErrAuthenticationUnavailable
 	}
 	http.SetCookie(writer, &http.Cookie{Name: SessionCookieName, Value: string(session.Session), Path: "/", Expires: session.ExpiresAt, MaxAge: maxAge, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
-	// The browser must echo this non-HttpOnly token in X-CSRF-Token. It is not a bearer credential by itself.
+	// The browser must echo this non-HttpOnly token in X-CSRF-Token. Its hash is bound to the server-side session.
 	http.SetCookie(writer, &http.Cookie{Name: CSRFCookieName, Value: string(session.CSRF), Path: "/", Expires: session.ExpiresAt, MaxAge: maxAge, Secure: true, HttpOnly: false, SameSite: http.SameSiteStrictMode})
 	return nil
+}
+
+func validToken(token string) bool {
+	decoded, err := base64.RawURLEncoding.DecodeString(token)
+	return err == nil && len(token) == 43 && len(decoded) == 32
+}
+
+func validRole(role authport.Role) bool {
+	return role == authport.RoleAdmin || role == authport.RoleOps || role == authport.RoleSales
+}
+
+func nilService(service authport.Service) bool {
+	if service == nil {
+		return true
+	}
+	value := reflect.ValueOf(service)
+	return value.Kind() == reflect.Pointer && value.IsNil()
 }
 
 func ClearBrowserSession(writer http.ResponseWriter) {
