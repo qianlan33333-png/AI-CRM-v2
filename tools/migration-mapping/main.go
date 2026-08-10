@@ -16,6 +16,7 @@ import (
 const (
 	legacySHA            = "6cb989c071255437d75953dabb943318a74eb8f4"
 	lifecycleManifestSHA = "710a01ee3813051b4ec13de8ef8b8ad64b39bc380b3a5a81c669580df24b488e"
+	g1D02Evidence        = "G1-D02-2026-08-10"
 )
 
 type column struct {
@@ -103,6 +104,37 @@ func oneOf(value string, values ...string) bool {
 	return false
 }
 
+func expectedDecision(row mappingRow) string {
+	if row.SourcePresence == "ABSENT_AT_HEAD" {
+		return "DEFER"
+	}
+	return map[string]string{
+		"MIGRATE_CANDIDATE":        "MIGRATE",
+		"ARCHIVE_ONLY_CANDIDATE":   "ARCHIVE_ONLY",
+		"DROP_CANDIDATE":           "DROP",
+		"MANUAL_REENTRY_CANDIDATE": "MANUAL_REENTRY",
+		"REBUILD_CANDIDATE":        "REBUILD",
+		"RESET_RUNTIME_CANDIDATE":  "RESET_RUNTIME",
+		"PENDING_TARGET_SCHEMA":    "DEFER",
+	}[row.Recommendation]
+}
+
+func approvedEvidence(decision string) []string {
+	return []string{g1D02Evidence, "approved_by=repository_owner", "approved_at=2026-08-10", "decision=" + decision}
+}
+
+func equalStrings(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
+}
+
 func validate(input io.Reader, index lifecycleIndex, want expected) ([]mappingRow, error) {
 	indexed, err := validateLifecycleIndex(index, want.rows)
 	if err != nil {
@@ -178,12 +210,10 @@ func validate(input io.Reader, index lifecycleIndex, want expected) ([]mappingRo
 				return nil, err
 			}
 		}
-		if row.Decision == "UNREVIEWED" && row.Signoff == "PENDING_HUMAN_SIGNOFF" && len(row.DecisionEvidence) == 0 {
-			// Honest initial candidate.
-		} else if row.Decision == "NOT_APPLICABLE" && row.Signoff == "NOT_REQUIRED" && row.Recommendation == "FRAMEWORK_ONLY" && len(row.DecisionEvidence) > 0 {
+		if row.Decision == "NOT_APPLICABLE" && row.Signoff == "NOT_REQUIRED" && row.Recommendation == "FRAMEWORK_ONLY" && len(row.DecisionEvidence) > 0 {
 			// Framework metadata is outside the business migration decision set.
-		} else if oneOf(row.Decision, "MIGRATE", "ARCHIVE_ONLY", "DROP", "MANUAL_REENTRY", "REBUILD", "RESET_RUNTIME", "DEFER") && row.Signoff == "APPROVED" && len(row.DecisionEvidence) > 0 {
-			// Human-approved row.
+		} else if decision := expectedDecision(row); decision != "" && row.Decision == decision && row.Signoff == "APPROVED" && equalStrings(row.DecisionEvidence, approvedEvidence(decision)) {
+			// G1-D02 approved the recommendation, while absent source tables fail closed to DEFER.
 		} else {
 			return nil, fmt.Errorf("%s: decision and signoff evidence disagree", row.MappingID)
 		}

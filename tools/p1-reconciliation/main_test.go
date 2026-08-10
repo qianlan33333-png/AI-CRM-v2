@@ -8,7 +8,7 @@ import (
 )
 
 func frozenPaths() paths {
-	return paths{"../../docs/evidence/p1/legacy-routes-6cb989c.json", "../../docs/api-mapping.jsonl", "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "../../docs/migration-mapping.jsonl"}
+	return paths{"../../docs/evidence/p1/legacy-routes-6cb989c.json", "../../docs/api-mapping.jsonl", "../../docs/evidence/p1/route-triage.csv", "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "../../docs/migration-mapping.jsonl"}
 }
 
 func TestFrozenReconciliation(t *testing.T) {
@@ -16,7 +16,7 @@ func TestFrozenReconciliation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 tables=316 fields=3313 pending_routes=769 approved_not_migrated_routes=12 pending_tables=315)"
+	want := "p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 migrate_routes=501 deferred_post_launch_routes=268 not_migrated_routes=12 tables=316 fields=3313 pending_routes=0 pending_tables=0)"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -48,6 +48,15 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 			for _, row := range *r {
 				if row["mapping_id"] == "LEGACY-API-0012" {
 					row["candidate_v2_operation_id"] = "reactivateLegacyRoute"
+					return
+				}
+			}
+		}},
+		{"tier B mislabeled not migrated", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["disposition"] == "DEFERRED_POST_LAUNCH" {
+					approveRoute(row)
 					return
 				}
 			}
@@ -89,6 +98,16 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 			(*r)[0]["decision"] = "MIGRATE"
 			(*r)[0]["signoff"] = "APPROVED"
 		}},
+		{"absent source drop", "migration", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["source_presence"] == "ABSENT_AT_HEAD" {
+					row["decision"] = "DROP"
+					row["decision_evidence"] = []any{"G1-D02-2026-08-10", "approved_by=repository_owner", "approved_at=2026-08-10", "decision=DROP"}
+					return
+				}
+			}
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := mutatedFixture(t, tc.file, tc.mutate)
@@ -114,7 +133,7 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 	dir := t.TempDir()
 	source := frozenPaths()
 	result := paths{}
-	files := map[string]string{"routes": source.routes, "api": source.api, "lifecycle": source.lifecycle, "migration": source.migration}
+	files := map[string]string{"routes": source.routes, "api": source.api, "triage": source.triage, "lifecycle": source.lifecycle, "migration": source.migration}
 	for name, path := range files {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -155,6 +174,8 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 			result.routes = out
 		case "api":
 			result.api = out
+		case "triage":
+			result.triage = out
 		case "lifecycle":
 			result.lifecycle = out
 		case "migration":

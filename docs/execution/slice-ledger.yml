@@ -34,8 +34,8 @@ execution_policy:
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
-current_phase: P1
-current_phase_status: G1_PENDING_HUMAN_SIGNOFF
+current_phase: P2
+current_phase_status: P2_READY
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -674,15 +674,41 @@ slices:
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
+  - slice_id: G1-D02
+    title: solidify-rule-signoff-and-release-p2
+    owner: Codex-Sol
+    status: accepted_governance_decision
+    base_sha: 57bb4ca4b4b8e1b46978e6e513f6d9cdf28f3af7
+    decision_anchor: G1-D02-2026-08-10
+    branch: slice/g1-d02-preflight
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    tests:
+      - LOCAL_feature_matrix_p1_completion_PASS_293_pending_0
+      - LOCAL_migration_mapping_p1_completion_PASS_316_pending_0
+      - LOCAL_p1_reconciliation_PASS_781_routes_316_tables
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    external_gates:
+      - M0_4_BRANCH_PROTECTION_PENDING_NON_BLOCKING
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+      - REAL_DATA_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P1:
-    as_of: 2026-08-10T13:31:53+08:00
-    status: G1_PENDING_HUMAN_SIGNOFF
-    candidate_main_sha: c60f4d01a432bbbfeb25db713b358768e20ae309
+    as_of: 2026-08-10T15:30:00+08:00
+    status: P2_READY
+    decision_base_sha: 57bb4ca4b4b8e1b46978e6e513f6d9cdf28f3af7
+    final_main_sha: PENDING_FORWARD_RECEIPT
     evidence: docs/evidence/p1/g1-signoff-pack.md
     route_reconciliation: PASS_781_equals_156_plus_184_plus_441
-    migration_reconciliation: PASS_316_tables_3313_field_mappings
-    route_triage: PARTIAL_SIGNOFF_A501_PENDING_B268_DEFERRED_C12_APPROVED_NOT_MIGRATED
+    migration_reconciliation: PASS_316_tables_3313_field_mappings_pending_0
+    feature_matrix: PASS_293_MIGRATE_APPROVED_NOT_STARTED_NOT_RUN
+    route_triage: FINAL_A501_MIGRATE_B268_DEFERRED_POST_LAUNCH_C12_NOT_MIGRATED
+    migration_decisions: FINAL_MIGRATE33_ARCHIVE57_DROP14_MANUAL7_REBUILD24_RESET20_DEFER160_NA1
     route_triage_evidence: docs/evidence/p1/route-triage.md
     g1_decision_evidence: docs/evidence/p1/g1-decisions.md
     openapi_candidates:
@@ -690,9 +716,7 @@ phase_closeouts:
       operations: 10
       decision: G1-D01
     external_gates:
-      - G1_HUMAN_SIGNOFF_REQUIRED
-      - G1_REMAINING_ROUTE_DISPOSITION_SIGNOFF_REQUIRED
-      - M0_4_BRANCH_PROTECTION_PENDING_USER_CONFIRMATION
+      - M0_4_BRANCH_PROTECTION_PENDING_NON_BLOCKING
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED

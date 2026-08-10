@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -53,13 +54,13 @@ type lifecycleTable struct {
 
 type field struct{ Source, Target, Reason string }
 type migrationFact struct {
-	Table, Presence, Domain, Lifecycle, Source, Safety, Decision, Signoff, Implementation, Verification string
-	Columns, Targets                                                                                    []string
-	Fields                                                                                              []field
-	Evidence                                                                                            []json.RawMessage
+	Table, Presence, Domain, Lifecycle, Source, Recommendation, Safety, Decision, Signoff, Implementation, Verification string
+	Columns, Targets                                                                                                    []string
+	Fields                                                                                                              []field
+	Evidence                                                                                                            []string
 }
 
-type paths struct{ routes, api, lifecycle, migration string }
+type paths struct{ routes, api, triage, lifecycle, migration string }
 
 var identity = regexp.MustCompile(`(?i)(external_?userid|unionid|openid|mobile|phone)`)
 
@@ -80,10 +81,11 @@ type apiDecisionEvidence struct {
 func main() {
 	routes := flag.String("routes", "../docs/evidence/p1/legacy-routes-6cb989c.json", "P1-S01 route manifest")
 	api := flag.String("api", "../docs/api-mapping.jsonl", "API candidate mapping")
+	triage := flag.String("triage", "../docs/evidence/p1/route-triage.csv", "G1 route triage decisions")
 	lifecycle := flag.String("lifecycle", "../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "legacy lifecycle index")
 	migration := flag.String("migration", "../docs/migration-mapping.jsonl", "migration mapping")
 	flag.Parse()
-	result, err := reconcile(paths{*routes, *api, *lifecycle, *migration})
+	result, err := reconcile(paths{*routes, *api, *triage, *lifecycle, *migration})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "p1-reconciliation:", err)
 		os.Exit(1)
@@ -96,7 +98,11 @@ func reconcile(p paths) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	counts, pendingRoutes, err := reconcileAPI(p.api, routes)
+	tiers, err := loadTriage(p.triage)
+	if err != nil {
+		return "", err
+	}
+	counts, decisions, err := reconcileAPI(p.api, routes, tiers)
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +114,49 @@ func reconcile(p paths) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d tables=316 fields=%d pending_routes=%d approved_not_migrated_routes=12 pending_tables=%d)", counts[0], counts[1], counts[2], fields, pendingRoutes, pending), nil
+	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d migrate_routes=%d deferred_post_launch_routes=%d not_migrated_routes=%d tables=316 fields=%d pending_routes=0 pending_tables=%d)", counts[0], counts[1], counts[2], decisions[0], decisions[1], decisions[2], fields, pending), nil
+}
+
+func loadTriage(path string) (map[string]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("route triage: %w", err)
+	}
+	if len(records) != 782 {
+		return nil, fmt.Errorf("route triage rows=%d, want 781", len(records)-1)
+	}
+	columns := map[string]int{}
+	for index, name := range records[0] {
+		columns[name] = index
+	}
+	for _, required := range []string{"mapping_id", "recommended_tier", "human_signoff"} {
+		if _, ok := columns[required]; !ok {
+			return nil, fmt.Errorf("route triage lacks %s", required)
+		}
+	}
+	tiers, counts := make(map[string]string, 781), map[string]int{}
+	for index, record := range records[1:] {
+		id := record[columns["mapping_id"]]
+		if id != fmt.Sprintf("LEGACY-API-%04d", index+1) || tiers[id] != "" {
+			return nil, fmt.Errorf("route triage line %d has unstable identity", index+2)
+		}
+		tier := record[columns["recommended_tier"]]
+		if !oneOf(tier, "A", "B", "C") || record[columns["human_signoff"]] != "APPROVED" {
+			return nil, fmt.Errorf("%s has invalid tier or pending signoff", id)
+		}
+		tiers[id] = tier
+		counts[tier]++
+	}
+	if counts["A"] != 501 || counts["B"] != 268 || counts["C"] != 12 {
+		return nil, fmt.Errorf("route triage tier mismatch: A=%d B=%d C=%d", counts["A"], counts["B"], counts["C"])
+	}
+	return tiers, nil
 }
 
 func loadRoutes(path string) (map[string]routeFact, error) {
@@ -163,54 +211,54 @@ func parseRoute(raw json.RawMessage) (routeFact, error) {
 	return routeFact{path, name, owner, methods, canonical}, nil
 }
 
-func reconcileAPI(path string, routes map[string]routeFact) ([3]int, int, error) {
+func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]string) ([3]int, [3]int, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return [3]int{}, 0, err
+		return [3]int{}, [3]int{}, err
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
-	seen, approvedSeen, counts, pending := map[string]bool{}, map[string]bool{}, [3]int{}, 0
+	seen, counts, decisions := map[string]bool{}, [3]int{}, [3]int{}
 	line := 0
 	for scanner.Scan() {
 		line++
 		var row map[string]json.RawMessage
 		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
-			return counts, 0, fmt.Errorf("API line %d: %w", line, err)
+			return counts, decisions, fmt.Errorf("API line %d: %w", line, err)
 		}
 		id, _ := text(row, "mapping_id")
 		if id != fmt.Sprintf("LEGACY-API-%04d", line) {
-			return counts, 0, fmt.Errorf("API line %d has unstable mapping_id", line)
+			return counts, decisions, fmt.Errorf("API line %d has unstable mapping_id", line)
 		}
 		pathValue, e1 := text(row, "legacy_path")
 		name, e2 := text(row, "legacy_route_name")
 		methods, e3 := texts(row, "manifest_methods")
 		if e1 != nil || e2 != nil || e3 != nil {
-			return counts, 0, fmt.Errorf("%s has incomplete route key", id)
+			return counts, decisions, fmt.Errorf("%s has incomplete route key", id)
 		}
 		key := routeKey(pathValue, name, methods)
 		authority, ok := routes[key]
 		if !ok || seen[key] {
-			return counts, 0, fmt.Errorf("%s has missing or duplicate authority route", id)
+			return counts, decisions, fmt.Errorf("%s has missing or duplicate authority route", id)
 		}
 		seen[key] = true
 		var embedded any
 		if err := json.Unmarshal(row["manifest_contract"], &embedded); err != nil {
-			return counts, 0, fmt.Errorf("%s has invalid embedded manifest", id)
+			return counts, decisions, fmt.Errorf("%s has invalid embedded manifest", id)
 		}
 		canonical, _ := json.Marshal(embedded)
 		if !bytes.Equal(canonical, authority.Canonical) {
-			return counts, 0, fmt.Errorf("%s embedded manifest drifted", id)
+			return counts, decisions, fmt.Errorf("%s embedded manifest drifted", id)
 		}
 		partition, _ := text(row, "partition")
 		expected := expectedPartition(authority)
 		if partition != expected {
-			return counts, 0, fmt.Errorf("%s is in %s, want %s", id, partition, expected)
+			return counts, decisions, fmt.Errorf("%s is in %s, want %s", id, partition, expected)
 		}
 		counts[map[string]int{"S02": 0, "S03": 1, "S04": 2}[partition]]++
 		if value, _ := text(row, "legacy_source_sha"); value != legacySHA {
-			return counts, 0, fmt.Errorf("%s has wrong legacy SHA", id)
+			return counts, decisions, fmt.Errorf("%s has wrong legacy SHA", id)
 		}
 		disposition, _ := text(row, "disposition")
 		signoff, _ := text(row, "signoff")
@@ -219,26 +267,49 @@ func reconcileAPI(path string, routes map[string]routeFact) ([3]int, int, error)
 		candidatePath, _ := text(row, "candidate_v2_path")
 		var evidence []apiDecisionEvidence
 		if err := json.Unmarshal(row["decision_evidence"], &evidence); err != nil {
-			return counts, 0, fmt.Errorf("%s has invalid decision evidence", id)
+			return counts, decisions, fmt.Errorf("%s has invalid decision evidence", id)
 		}
 		reason, _ := text(row, "disposition_reason")
 		targetMapping, _ := text(row, "target_mapping_id")
-		if disposition == "UNREVIEWED" && signoff == "PENDING_HUMAN_SIGNOFF" && operation == "PENDING_HUMAN_DESIGN" && method == "PENDING_HUMAN_DESIGN" && candidatePath == "PENDING_HUMAN_DESIGN" && reason == "" && targetMapping == "" && len(evidence) == 0 {
-			pending++
-			continue
+		tier := tiers[id]
+		switch tier {
+		case "A":
+			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"}
+			if disposition != "MIGRATE" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 approved tier A route for 1:1 legacy semantic migration; target v2 operation remains domain-contract work." || len(evidence) != 1 || evidence[0] != expectedEvidence {
+				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier A disposition", id)
+			}
+			decisions[0]++
+		case "B":
+			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "DEFERRED_POST_LAUNCH"}
+			if disposition != "DEFERRED_POST_LAUNCH" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 deferred tier B route until post-launch reassessment; this is not deprecation or NOT_MIGRATED." || len(evidence) != 1 || evidence[0] != expectedEvidence {
+				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier B disposition", id)
+			}
+			decisions[1]++
+		case "C":
+			if !approvedNotMigratedRoutes[id] || disposition != "NOT_MIGRATED" || signoff != "APPROVED" || operation != "NOT_APPLICABLE" || method != "NOT_APPLICABLE" || candidatePath != "NOT_APPLICABLE" || targetMapping != "" || reason != "G1-D01 approved tier C route as not migrated." || len(evidence) != 1 || evidence[0] != (apiDecisionEvidence{"G1-D01", "repository_owner", "2026-08-10", "NOT_MIGRATED"}) {
+				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier C disposition", id)
+			}
+			decisions[2]++
+		default:
+			return counts, decisions, fmt.Errorf("%s lacks signed tier", id)
 		}
-		if !approvedNotMigratedRoutes[id] || disposition != "NOT_MIGRATED" || signoff != "APPROVED" || operation != "NOT_APPLICABLE" || method != "NOT_APPLICABLE" || candidatePath != "NOT_APPLICABLE" || targetMapping != "" || reason != "G1-D01 approved tier C route as not migrated." || len(evidence) != 1 || evidence[0] != (apiDecisionEvidence{"G1-D01", "repository_owner", "2026-08-10", "NOT_MIGRATED"}) {
-			return counts, 0, fmt.Errorf("%s has unapproved or forged disposition", id)
-		}
-		approvedSeen[id] = true
 	}
 	if err := scanner.Err(); err != nil {
-		return counts, 0, err
+		return counts, decisions, err
 	}
-	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} || pending != 769 || len(approvedSeen) != len(approvedNotMigratedRoutes) {
-		return counts, 0, fmt.Errorf("route partition or decision mismatch: rows=%d seen=%d counts=%v pending=%d approved=%d", line, len(seen), counts, pending, len(approvedSeen))
+	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} || decisions != [3]int{501, 268, 12} {
+		return counts, decisions, fmt.Errorf("route partition or decision mismatch: rows=%d seen=%d partitions=%v decisions=%v", line, len(seen), counts, decisions)
 	}
-	return counts, pending, nil
+	return counts, decisions, nil
+}
+
+func oneOf(value string, allowed ...string) bool {
+	for _, candidate := range allowed {
+		if value == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 func expectedPartition(route routeFact) string {
@@ -333,10 +404,16 @@ func reconcileMigration(path string, lifecycle map[string]lifecycleTable) (int, 
 		if strings.Contains(joined, "outbound_") && !strings.Contains(row.Safety, "never reactivate legacy execution or sending") || strings.Contains(joined, "automations") && !strings.Contains(row.Safety, "no migration action, external call, job enqueue, provider retry, or runtime activation") {
 			return 0, 0, fmt.Errorf("%s can reactivate execution", row.Table)
 		}
-		if row.Decision == "UNREVIEWED" && row.Signoff == "PENDING_HUMAN_SIGNOFF" && len(row.Evidence) == 0 {
-			pending++
-		} else if !(row.Decision == "NOT_APPLICABLE" && row.Signoff == "NOT_REQUIRED" && len(row.Evidence) > 0) {
-			return 0, 0, fmt.Errorf("%s has fake migration signoff", row.Table)
+		if row.Recommendation == "FRAMEWORK_ONLY" {
+			if row.Decision != "NOT_APPLICABLE" || row.Signoff != "NOT_REQUIRED" || len(row.Evidence) == 0 {
+				return 0, 0, fmt.Errorf("%s has invalid framework decision", row.Table)
+			}
+		} else {
+			decision := expectedMigrationDecision(row)
+			evidence := []string{"G1-D02-2026-08-10", "approved_by=repository_owner", "approved_at=2026-08-10", "decision=" + decision}
+			if decision == "" || row.Decision != decision || row.Signoff != "APPROVED" || !equalText(row.Evidence, evidence) {
+				return 0, 0, fmt.Errorf("%s has fake migration signoff", row.Table)
+			}
 		}
 		if row.Implementation != "NOT_STARTED" || row.Verification != "NOT_RUN" {
 			return 0, 0, fmt.Errorf("%s claims migration execution", row.Table)
@@ -345,10 +422,37 @@ func reconcileMigration(path string, lifecycle map[string]lifecycleTable) (int, 
 	if err := scanner.Err(); err != nil {
 		return 0, 0, err
 	}
-	if len(seen) != 316 || len(seen) != len(lifecycle) || fields != 3313 || pending != 315 {
+	if len(seen) != 316 || len(seen) != len(lifecycle) || fields != 3313 || pending != 0 {
 		return 0, 0, fmt.Errorf("migration inventory mismatch: tables=%d fields=%d pending=%d", len(seen), fields, pending)
 	}
 	return fields, pending, nil
+}
+
+func expectedMigrationDecision(row migrationFact) string {
+	if row.Presence == "ABSENT_AT_HEAD" {
+		return "DEFER"
+	}
+	return map[string]string{
+		"MIGRATE_CANDIDATE":        "MIGRATE",
+		"ARCHIVE_ONLY_CANDIDATE":   "ARCHIVE_ONLY",
+		"DROP_CANDIDATE":           "DROP",
+		"MANUAL_REENTRY_CANDIDATE": "MANUAL_REENTRY",
+		"REBUILD_CANDIDATE":        "REBUILD",
+		"RESET_RUNTIME_CANDIDATE":  "RESET_RUNTIME",
+		"PENDING_TARGET_SCHEMA":    "DEFER",
+	}[row.Recommendation]
+}
+
+func equalText(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func parseMigration(raw []byte) (migrationFact, error) {
@@ -357,7 +461,7 @@ func parseMigration(raw []byte) (migrationFact, error) {
 		return migrationFact{}, err
 	}
 	get := func(key string) string { v, _ := text(row, key); return v }
-	fact := migrationFact{Table: get("legacy_table"), Presence: get("source_presence"), Domain: get("legacy_domain"), Lifecycle: get("legacy_lifecycle"), Source: get("migration_source"), Safety: get("safety_rule"), Decision: get("decision"), Signoff: get("signoff"), Implementation: get("implementation"), Verification: get("verification")}
+	fact := migrationFact{Table: get("legacy_table"), Presence: get("source_presence"), Domain: get("legacy_domain"), Lifecycle: get("legacy_lifecycle"), Source: get("migration_source"), Recommendation: get("recommendation"), Safety: get("safety_rule"), Decision: get("decision"), Signoff: get("signoff"), Implementation: get("implementation"), Verification: get("verification")}
 	var columns []struct {
 		Name string `json:"name"`
 	}

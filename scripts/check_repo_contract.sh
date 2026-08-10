@@ -83,7 +83,12 @@ required=(
   docs/api-mapping.jsonl
   docs/evidence/p1/route-triage.csv
   docs/evidence/p1/g1-decisions.md
+  docs/evidence/p1/g1-signoff-pack.md
+  docs/evidence/p1/feature-matrix-top20.md
+  docs/evidence/p1/migration-exceptions.md
   docs/execution/slices/G1-D01.md
+  docs/execution/slices/G1-D02.md
+  docs/spec/AI-CRM-v2-P2P3执行计划.md
   tools/p1-reconciliation/main.go
   tools/p1-reconciliation/main_test.go
   docs/execution/slices/P1-C03.md
@@ -361,29 +366,39 @@ verify_index_sha256 docs/evidence/p1/feature-matrix-id-anchor.v1 \
 verify_index_sha256 docs/execution/slices/P1-S08.md \
   707667f4058d212ed628d8b868e02225c93a3948c9d90a229856162c15b13d99
 verify_index_sha256 docs/migration-mapping.jsonl \
-  d87e602bff788b097f6b502843b3d815419889e022da21292434670f537da28e
+  67e594387f982151b0cf488640975ae7e25a1bf456a3fca3f869c6c208a775af
 verify_index_sha256 docs/evidence/p1/migration-lifecycle-index-6cb989c.json \
   404083ca07522a993f349b9a53331663375b53b3344743ddcb238966e3ff2540
 verify_index_sha256 docs/migration-mapping.md \
   9e3bbf63d9357291c19071b98e79f16ea76002e398e13bedb7b2ac2d89fb1e32
 verify_index_sha256 tools/migration-mapping/main.go \
-  634cae2168f86dce0f58604ecbf9357dcafe99850c12cef7436234ee52f2804a
+  fe6e133f6b6b9c746bd9e8347f8a2eb049daf45b0402fa84f5cc5cddfc3fde74
 verify_index_sha256 tools/migration-mapping/main_test.go \
-  762bc2621cbcff28530354ebcc47d102ee579eb1bc364fbec70c8efada929ddb
+  6304f26af0587ebb47e622eff9afbd8cb45158a69f1e5e8befd0df5808d6d70d
 verify_index_sha256 docs/execution/slices/P1-C02.md \
   c7b8c7236f20279d244286f0f3facaab28ba831a64e7f662755a6b9700abac43
 verify_index_sha256 docs/api-mapping.jsonl \
-  8e4929f79b7809b4d1a9621ce0e94531b7d46cedcaeb437fc34d71e7f8f1ae6d
+  6e2e3cc5122a12d121bcc5be41d716c40e57338a7bb92a53b0b6b9d0a1254e02
 verify_index_sha256 docs/evidence/p1/route-triage.csv \
-  875596da33d316c31bff9a6103725affa58c44be399ec98239d9e294c34c069b
+  ccd7708b12481add3af74c0d6442e5f4333ee076e28110aa4b330e7181f00da4
 verify_index_sha256 docs/evidence/p1/g1-decisions.md \
-  96686173d77d2a70fd1f4114cb1cd32bbdd4185cda5b2db83c9571825c48e1b3
+  90fd1c6276604085ddd5cad9f84fa07288141a410c6ea48693862cb77a80cd03
+verify_index_sha256 docs/evidence/p1/g1-signoff-pack.md \
+  9ae83d6b4724fd8c4698b189fc446411f895585ec07b5c1630c0f9e058d80901
+verify_index_sha256 docs/evidence/p1/feature-matrix-top20.md \
+  de58e5528dbfc92939f163aca2cb0ebfa38cd640d9c7b9d0f0608f173d0d91cb
+verify_index_sha256 docs/evidence/p1/migration-exceptions.md \
+  4e00455c4a637df40d9da41f44b4ffe0e44c948226ca766254ba83c964581c26
 verify_index_sha256 docs/execution/slices/G1-D01.md \
   1d2f47dd1af0d27533184e772de2a28d9cc4a663b923bf1bd7ddd6121417be8b
+verify_index_sha256 docs/execution/slices/G1-D02.md \
+  3fc37264f57da5fa15d8d3765554ca3e1eea7ce8bd10865176eb9d3b537f4742
+verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
+  6e4c0d1c9fd68df727ca70af8c23bf2ec4da1aa743020533855bbf37a537cf19
 verify_index_sha256 tools/p1-reconciliation/main.go \
-  47a6c9a6dae5b4a4e082a86ad13251edd8cdc370e396abd42d557bae1d9b78be
+  2b1162a4a423b9f106b512d162a5ebc4d3bc5fded125caaa69bc0d7b823ade99
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
-  b7c9c62315059476905bdf8765ccb741066307ffbc030e2a9492ff8284fb435a
+  ecf7d359ce9bac04949e78edc20484a2a759adcd606c8ba971e5e4976ae1f703
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
@@ -415,7 +430,7 @@ verify_index_sha256 internal/identity/port/port.go \
 verify_index_sha256 internal/platform/port/uow.go \
   9c751db2adab03f18c342fa5ab6487020084f704b0fe96203010e1f9f5c03e2b
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
-  d554c955b66a539a6fed395abd4dbd207fc71fce294f2fb1965dc66169b0759b
+  156cf8ae10dd1363271b1f157b0ba66a2b5726e01ba42694417476e8f153dfdb
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
   f412452642b3b03f9f776ad471996e1b6d2df962c7a8b0016122b6a430f1d91f
 verify_index_sha256 docs/adr/ADR-001.md \
@@ -433,7 +448,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  251d853fd4a228511c94bb93b31daf162c1b84bc33f5fd3e2a7964d6b83d9129
+  a06ee98e1b41494d322e307e2d0c0e4e073383e0920e6f9dd341789bd01a7f68
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

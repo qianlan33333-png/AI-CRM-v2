@@ -1,17 +1,17 @@
-# G1 路由 A/B/C 分档候选
+# G1 路由 A/B/C 分档与 G1-D02 签字
 
 ## 结论
 
-基于用户授权的生产环境只读取证与冻结 UI 矩阵，781 条 authority 路由已经全部进入候选分档：
+基于用户授权的生产环境只读取证与冻结 UI 矩阵，781 条 authority 路由已全部完成 G1-D02 规则签字：
 
-| 分区 | A：逐条人工决策 | B：已暂缓 | C：已批准不迁 | 合计 |
+| 分区 | A：MIGRATE | B：DEFERRED_POST_LAUNCH | C：NOT_MIGRATED | 合计 |
 |---|---:|---:|---:|---:|
 | S02 contact/auth/admin | 99 | 56 | 1 | 156 |
 | S03 WeCom/segment/outbound | 106 | 76 | 2 | 184 |
 | S04 上层域 | 296 | 136 | 9 | 441 |
 | **总计** | **501** | **268** | **12** | **781** |
 
-规范化逐路由表见 `docs/evidence/p1/route-triage.csv`。G1-D01 已批准 12 条 C 不迁；268 条 B 仅暂缓、最终 signoff 仍 pending；501 条 A 的 route disposition 仍 pending。10 个核心新 OpenAPI 的批准不自动批准任何其余 legacy route。
+规范化逐路由表见 `docs/evidence/p1/route-triage.csv`。A 501 条保留 1:1 旧业务语义，B 268 条上线后重评且不是废弃，C 12 条继续由 G1-D01 锨定不迁。全部 `human_signoff=APPROVED`。10 个核心新 OpenAPI 的批准不代替后续各域的 operation 冻结。
 
 ## 判据
 
@@ -40,10 +40,9 @@
 - 独立回调入口去查询参数访问聚合：`f638b711b1c08790613bbf0e6662882a3d3bcf75ef2c7e00f94a6913d9560e2d`
 - G1-D01 后 781 行分档表：`875596da33d316c31bff9a6103725affa58c44be399ec98239d9e294c34c069b`
 
-## G1-D01 后的剩余决定
+## G1-D02 终态
 
-1. C 档 12 条已全部批准不迁；任何未来恢复都必须走新的人工裁决。
-2. B 档 268 条已暂缓，尚未批准废弃或迁移。
-3. A 档 501 条的 legacy route disposition 仍待处理；10 个核心 OpenAPI 已另行冻结。
-
-在剩余 G1 项完成签字前，不得开始 P2 业务实现。
+1. A 档 501 条全部 `MIGRATE/APPROVED`。
+2. B 档 268 条全部 `DEFERRED_POST_LAUNCH/APPROVED`，不得改写为 `NOT_MIGRATED`。
+3. C 档 12 条全部 `NOT_MIGRATED/APPROVED`；任何未来恢复都必须走新的人工裁决。
+4. 实际数量 781 比旧指令 758 多 23 条，已按实际 tier 签字，未回退或遗漏。

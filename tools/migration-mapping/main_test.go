@@ -17,8 +17,8 @@ func validRow() mappingRow {
 		ConversionRule: "trim text", DefaultStrategy: "preserve nullability after signoff", DropReason: "none",
 		SafetyRule: "fail closed", LegacyKeyStrategy: "SOURCE_PK:name; IMPORT_LEDGER_REQUIRED", WatermarkStrategy: "FULL_ONLY", FKStrategy: "quarantine unresolved references",
 		LegacySourceSHA: legacySHA, SourceEvidence: []string{"migrations/baselines/0001_post_legacy.sql:537"},
-		Decision: "UNREVIEWED", Implementation: "NOT_STARTED", Verification: "NOT_RUN", Signoff: "PENDING_HUMAN_SIGNOFF",
-		DecisionEvidence: []string{}, Notes: "candidate only",
+		Decision: "MIGRATE", Implementation: "NOT_STARTED", Verification: "NOT_RUN", Signoff: "APPROVED",
+		DecisionEvidence: approvedEvidence("MIGRATE"), Notes: "candidate only",
 	}
 }
 
@@ -74,7 +74,8 @@ func TestValidationRejectsUnsafeMutations(t *testing.T) {
 			row.SafetyRule = "retry pending rows"
 		},
 		"missing import ledger": func(row *mappingRow) { row.LegacyKeyStrategy = "SOURCE_PK:name" },
-		"fake signoff":          func(row *mappingRow) { row.Decision = "MIGRATE"; row.Signoff = "APPROVED" },
+		"forged decision":       func(row *mappingRow) { row.Decision = "DEFER" },
+		"forged evidence":       func(row *mappingRow) { row.DecisionEvidence[0] = "G1-D02-FORGED" },
 		"implementation claim":  func(row *mappingRow) { row.Implementation = "IMPLEMENTED" },
 	}
 	for name, mutate := range tests {
@@ -88,6 +89,18 @@ func TestValidationRejectsUnsafeMutations(t *testing.T) {
 				t.Fatal("mutation was accepted")
 			}
 		})
+	}
+}
+
+func TestAbsentSourceMustDefer(t *testing.T) {
+	row := validRow()
+	row.SourcePresence = "ABSENT_AT_HEAD"
+	row.LegacyColumns = nil
+	row.FieldMappings = nil
+	row.Decision = "DROP"
+	row.DecisionEvidence = approvedEvidence("DROP")
+	if _, err := validate(encoded(t, row), validIndex(row), expected{rows: 1}); err == nil {
+		t.Fatal("absent source table was allowed to drop")
 	}
 }
 
