@@ -12,6 +12,7 @@ seed() {
   mkdir -p "$root/docs/architecture" "$root/internal/contact/store/queries" \
     "$root/internal/segment/store/queries" "$root/internal/outbound/worker" \
     "$root/internal/wecom/store" "$root/internal/platform/store" \
+    "$root/internal/events/store/queries" \
     "$root/acceptance/fixtures"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
@@ -22,6 +23,10 @@ seed() {
     'const ddl = "CREATE TABLE acceptance_fixtures.fixture_probe (id bigint PRIMARY KEY)"' \
     'const dml = "INSERT INTO acceptance_fixtures.fixture_probe (id) VALUES (1)"' \
     >"$root/acceptance/fixtures/probe.go"
+  printf '%s\n' \
+    'INSERT INTO event_log (event_type) VALUES ($1)' \
+    'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
+    >"$root/internal/events/store/queries/upsert.sql"
 }
 run_checker() {
   (cd / && env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE \
@@ -47,6 +52,7 @@ mutate() {
     contact-identity) echo 'UPDATE identities SET customer_id = 1;' >"$root/internal/contact/store/queries/write.sql" ;;
     segment-write) echo 'DELETE FROM customers;' >"$root/internal/segment/store/queries/read.sql" ;;
     platform-write) echo 'INSERT INTO event_log DEFAULT VALUES;' >"$root/internal/platform/store/write.sql" ;;
+    contact-event-update) echo 'UPDATE event_log SET dispatched = true;' >"$root/internal/contact/store/queries/write.sql" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
     outbound-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/outbound/worker/client.go" ;;
@@ -58,7 +64,8 @@ mutate() {
   esac
 }
 reject contact-identity 'table write ownership violation'; reject segment-write 'table write ownership violation'
-reject platform-write 'table write ownership violation'; reject unknown-table 'write to unknown table'
+reject platform-write 'table write ownership violation'; reject contact-event-update 'table write ownership violation'
+reject unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'
 reject outbound-read 'WeCom operation ownership violation'; reject wecom-write 'WeCom operation ownership violation'
 reject contact-endpoint 'WeCom operation ownership violation'; reject contact-sdk 'external WeCom client import forbidden'

@@ -9,6 +9,7 @@ import (
 	runtimegenerated "github.com/qianlan33333-png/AI-CRM-v2/internal/api/generated"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
@@ -47,6 +48,7 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 		methods int
 	}{
 		"contact.MergePort":   {(*contactport.MergePort)(nil), 3},
+		"events.Appender":     {(*eventport.Appender)(nil), 1},
 		"identity.Service":    {(*identityport.Service)(nil), 3},
 		"auth.Service":        {(*authport.Service)(nil), 3},
 		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), 1},
