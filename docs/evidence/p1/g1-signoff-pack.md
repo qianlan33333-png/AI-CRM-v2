@@ -2,10 +2,11 @@
 
 ## 状态
 
-- 候选基线：`main@72fb929257af595ab8852dd5b5b1eb1391ff8733`
+- 候选基线：`main@14ce03c27d2ab799d0a955c872e873682e61f473`
 - 当前状态：`G1_PENDING_HUMAN_SIGNOFF`
 - 旧系统事实 SHA：`6cb989c071255437d75953dabb943318a74eb8f4`
-- 真实路径频次表：`docs/evidence/p1/route-triage.csv`（候选 A/B/C=`501/268/12`，待人工签字）
+- 真实路径频次表：`docs/evidence/p1/route-triage.csv`（A/B/C=`501/268/12`；C 已批准不迁、B 暂缓、A route disposition 待签）
+- 已决记录：`docs/evidence/p1/g1-decisions.md`（G1-D01）
 - M0-4 分支保护：`PENDING_USER_CONFIRMATION`
 
 此包只整理已冻结的静态事实与候选合同。没有人工签字的条目仍是候选，不能进入 P2 实现，更不能触发真实外部效果或迁移。
@@ -15,20 +16,20 @@
 `make p1-reconciliation-contract` 在候选基线上精确通过：
 
 ```text
-p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 tables=316 fields=3313 pending_routes=781 pending_tables=315)
+p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 tables=316 fields=3313 pending_routes=769 approved_not_migrated_routes=12 pending_tables=315)
 ```
 
 - S02 contact/auth/admin：156 条。
 - S03 WeCom/segment/outbound：184 条。
 - S04 上层域：441 条。
 - 三批并集 781、交集 0、遗漏 0、重复 0。
-- 781 条当前全部为待人工处置；没有伪签字。
+- 12 条 C 已以 G1-D01 批准不迁；其余 769 条 route mapping 仍待人工处置；没有伪签字。
 
 ### A/B/C 分档候选
 
 用户已授权生产环境只读取证。`docs/evidence/p1/route-triage.csv` 覆盖完整 30 天窗口与全部 781 条 authority 路由：A=501、B=268、C=12；339 条有真实流量，162 条因 UI 引用但零流量保守进入 A。完整方法、最小化边界与输入收据见 `docs/evidence/p1/route-triage.md`。
 
-这些只是候选档位：C 需批量确认，B 需确认默认废弃及例外，A 需逐条决定迁移/合并/废弃。所有行仍为 `PENDING_HUMAN_SIGNOFF`。
+G1-D01 已确认 C 全部不迁、B 暂缓，并批准 10 个核心新 OpenAPI。B 的最终 disposition、A 的 legacy route mapping 与其余 G1 项仍待签。
 
 ## 2. 迁移映射覆盖结论
 
@@ -48,24 +49,24 @@ migration-mapping: PASS (rows=316 physical=217 columns=3312 pending=315)
 
 | # | Operation | Method + path | Legacy mapping IDs | 状态 |
 |---:|---|---|---|---|
-| 1 | `listCustomers` | `GET /api/v1/customers` | `LEGACY-API-0609` | `PENDING_HUMAN_SIGNOFF` |
-| 2 | `getCustomer` | `GET /api/v1/customers/{customer_id}` | `LEGACY-API-0619`, `LEGACY-API-0743` | `PENDING_HUMAN_SIGNOFF` |
-| 3 | `updateCustomer` | `PATCH /api/v1/customers/{customer_id}` | `LEGACY-API-0736` | `PENDING_HUMAN_SIGNOFF` |
-| 4 | `listCustomerEvents` | `GET /api/v1/customers/{customer_id}/events` | `LEGACY-API-0620`, `LEGACY-API-0739`, `LEGACY-API-0745` | `PENDING_HUMAN_SIGNOFF` |
-| 5 | `resolveIdentity` | `POST /api/v1/identity/resolve` | `LEGACY-API-0355`, `LEGACY-API-0680` | `PENDING_HUMAN_SIGNOFF` |
-| 6 | `bindIdentity` | `POST /api/v1/identity/bind` | `LEGACY-API-0709` | `PENDING_HUMAN_SIGNOFF` |
-| 7 | `ingestIdentityEvent` | `POST /api/v1/identity/ingest` | `LEGACY-API-0780` | `PENDING_HUMAN_SIGNOFF` |
-| 8 | `getAuthSession` | `GET /api/v1/auth/session` | `LEGACY-API-0758` | `PENDING_HUMAN_SIGNOFF` |
-| 9 | `logoutAdmin` | `POST /api/v1/auth/logout` | `LEGACY-API-0760` | `PENDING_HUMAN_SIGNOFF` |
-| 10 | `getAdminConfigOverview` | `GET /api/v1/admin/config/overview` | `LEGACY-API-0269` | `PENDING_HUMAN_SIGNOFF` |
+| 1 | `listCustomers` | `GET /api/v1/customers` | `LEGACY-API-0609` | `APPROVED` |
+| 2 | `getCustomer` | `GET /api/v1/customers/{customer_id}` | `LEGACY-API-0619`, `LEGACY-API-0743` | `APPROVED` |
+| 3 | `updateCustomer` | `PATCH /api/v1/customers/{customer_id}` | `LEGACY-API-0736` | `APPROVED` |
+| 4 | `listCustomerEvents` | `GET /api/v1/customers/{customer_id}/events` | `LEGACY-API-0620`, `LEGACY-API-0739`, `LEGACY-API-0745` | `APPROVED` |
+| 5 | `resolveIdentity` | `POST /api/v1/identity/resolve` | `LEGACY-API-0355`, `LEGACY-API-0680` | `APPROVED` |
+| 6 | `bindIdentity` | `POST /api/v1/identity/bind` | `LEGACY-API-0709` | `APPROVED` |
+| 7 | `ingestIdentityEvent` | `POST /api/v1/identity/ingest` | `LEGACY-API-0780` | `APPROVED` |
+| 8 | `getAuthSession` | `GET /api/v1/auth/session` | `LEGACY-API-0758` | `APPROVED` |
+| 9 | `logoutAdmin` | `POST /api/v1/auth/logout` | `LEGACY-API-0760` | `APPROVED` |
+| 10 | `getAdminConfigOverview` | `GET /api/v1/admin/config/overview` | `LEGACY-API-0269` | `APPROVED` |
 
 合同门精确输出：
 
 ```text
-openapi-contract: PASS (candidate_operations=10 pending=10 legacy_links=14)
+openapi-contract: PASS (candidate_operations=10 approved=10 pending=0 legacy_links=14)
 ```
 
-抽查重点：Customer 不含渠道标识字段；IdentityRef 强制 `type/scope/value/assurance/source`；列表为 keyset cursor；统一 `ErrorResponse`；全部 operation 的迁移/合并/废弃与字段定义仍待你签字。
+G1-D01 已按现有边界冻结 10 个 operation。Customer 不含渠道标识字段；IdentityRef 强制 `type/scope/value/assurance/source`；列表为 keyset cursor；统一 `ErrorResponse`。这些 operation 的批准不自动批准其关联 legacy route 的迁移 disposition。
 
 ## 4. 精确 Git 与 CI 收据
 
@@ -75,8 +76,8 @@ openapi-contract: PASS (candidate_operations=10 pending=10 legacy_links=14)
 
 ## 5. G1 人工动作与停止线
 
-1. 审阅已生成的 781 行 A/B/C 候选；先确认 12 条 C，再确认 268 条 B 的例外，最后逐条处理 501 条 A。
-2. 抽查并签署上表 10 个核心 OpenAPI operation 的处置与字段。
+1. 继续处理 501 条 A 的 legacy route disposition；268 条 B 当前仅暂缓；12 条 C 已完成。
+2. 10 个核心 OpenAPI operation 已完成 G1-D01 签字。
 3. 逐页面核对 feature matrix 的线上行为。
 4. 对 316 行迁移映射逐行签字，尤其身份 scope 与历史外发状态。
 5. 确认 M0-4 分支保护状态。
