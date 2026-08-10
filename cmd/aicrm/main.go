@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 )
 
@@ -31,9 +32,14 @@ func run(args []string) int {
 		fmt.Fprintln(os.Stdout, appruntime.UsageLine)
 		return appruntime.ExitOK
 	}
+	startupConfig, err := appconfig.Load(cli.Role)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "aicrm: %v\n", err)
+		return appruntime.ExitRuntime
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := appruntime.Run(ctx, cli.Role, components()); err != nil {
+	if err := appruntime.Run(ctx, cli.Role, components(startupConfig)); err != nil {
 		fmt.Fprintf(os.Stderr, "aicrm: %v\n", err)
 		return appruntime.ExitRuntime
 	}

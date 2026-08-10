@@ -837,7 +837,7 @@ slices:
   - slice_id: P2-01R
     title: transaction-bound-uow-and-housekeeping-rescoped
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged_main_ci_success
     base_sha: 10c7f90f553ff929f570909a835061d16c53d8d0
     dependency: P2-00
     branch: slice/p2-01r-uow-housekeeping
@@ -845,10 +845,10 @@ slices:
     reliability_anchor: REL-2026-08-10
     original_slice: P2-01
     original_slice_disposition: SUPERSEDED_BY_RESCOPE
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/99
+    pr_head_sha: f6be695a558f849dda3ba45f3fff620b17a24814
+    merge_sha: c8326ae0cc8a62c8c193b80ab2a72b27db3660a3
+    main_ci_status: SUCCESS_exact_merge_sha_application_31379929001_repo_31379929038_secret_31379929005
     tests:
       - LOCAL_platform_store_UoW_unit_race_PASS
       - LOCAL_document_grep_backtick_escaping_verification_correction_1
@@ -870,6 +870,36 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED
+  - slice_id: P2-02
+    title: typed-startup-config-and-fail-fast-validation
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: c8326ae0cc8a62c8c193b80ab2a72b27db3660a3
+    dependency: P2-01R
+    branch: slice/p2-02-typed-config
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    tests:
+      - LOCAL_config_focused_race_PASS
+      - LOCAL_process_config_blackbox_PASS
+      - LOCAL_environment_read_arch_lint_and_negatives_PASS
+      - LOCAL_composition_root_config_threading_slice_correction_1
+      - LOCAL_make_ci_go_official_PostgreSQL16_14_PASS
+      - LOCAL_orval_double_generation_and_Web_CI_PASS
+      - LOCAL_gitleaks_config_and_sensitive_path_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+    handwritten_scope: 8_files_343_changed_lines_under_P2_cap_tests_and_verification_fixtures_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    external_gates:
+      - SETTINGS_SECRET_SECURITY_BOUNDARY_NOT_ENTERED
+      - PRODUCTION_CONFIGURATION_NOT_READ
+      - DATABASE_CONNECTION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00
