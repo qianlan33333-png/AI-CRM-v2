@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -350,6 +351,336 @@ func TestGatewaySplitMiddlewareCompositionPreservesRequestIDForRecoveryAndLogs(t
 	}
 }
 
+func TestGatewayAccountBudgetDefaultsToFourAndIsolatesAccounts(t *testing.T) {
+	if DefaultMaxConcurrentPerAccount != 4 {
+		t.Fatalf("DefaultMaxConcurrentPerAccount = %d, want 4", DefaultMaxConcurrentPerAccount)
+	}
+
+	const (
+		limitedAccount  = "acct_limited"
+		isolatedAccount = "acct_isolated"
+	)
+	gateway := mustTestGateway(t, &bytes.Buffer{}, GatewayOptions{
+		Logger: slog.New(slog.NewJSONHandler(io.Discard, nil)),
+	})
+	entered := make(chan struct{}, DefaultMaxConcurrentPerAccount)
+	release := make(chan struct{})
+	accepted := make(chan *httptest.ResponseRecorder, DefaultMaxConcurrentPerAccount)
+	pendingAccepted := DefaultMaxConcurrentPerAccount
+	released := false
+	defer func() {
+		if !released {
+			close(release)
+		}
+		for pendingAccepted > 0 {
+			select {
+			case <-accepted:
+				pendingAccepted--
+			case <-time.After(time.Second):
+				t.Errorf("accepted requests did not finish after release")
+				return
+			}
+		}
+	}()
+
+	handler := composeGatewayHandler(t, gateway, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if AccountID(request.Context()) == limitedAccount {
+			entered <- struct{}{}
+			<-release
+		}
+		writer.WriteHeader(http.StatusNoContent)
+	}), true, false)
+
+	for index := 0; index < DefaultMaxConcurrentPerAccount; index++ {
+		request := mustGatewayRequestForAccount(t, http.MethodGet, "/contacts", fmt.Sprintf("limited-request-%d", index), limitedAccount)
+		go func(request *http.Request) {
+			accepted <- serveGatewayRequest(handler, request)
+		}(request)
+	}
+	for index := 0; index < DefaultMaxConcurrentPerAccount; index++ {
+		select {
+		case <-entered:
+		case <-time.After(time.Second):
+			t.Fatalf("request %d did not acquire one of the default budget slots", index+1)
+		}
+	}
+
+	limitedResponse := make(chan *httptest.ResponseRecorder, 1)
+	limitedRequest := mustGatewayRequestForAccount(t, http.MethodGet, "/contacts", "limited-request-5", limitedAccount)
+	go func() {
+		limitedResponse <- serveGatewayRequest(handler, limitedRequest)
+	}()
+	select {
+	case response := <-limitedResponse:
+		assertGatewayResponse(t, response, http.StatusTooManyRequests, CodeConcurrencyLimited, "limited-request-5")
+	case <-time.After(time.Second):
+		t.Fatal("fifth request waited instead of receiving an immediate 429")
+	}
+
+	isolatedResponse := make(chan *httptest.ResponseRecorder, 1)
+	isolatedRequest := mustGatewayRequestForAccount(t, http.MethodGet, "/contacts", "isolated-request-1", isolatedAccount)
+	go func() {
+		isolatedResponse <- serveGatewayRequest(handler, isolatedRequest)
+	}()
+	select {
+	case response := <-isolatedResponse:
+		assertGatewayResponse(t, response, http.StatusNoContent, "", "isolated-request-1")
+	case <-time.After(time.Second):
+		t.Fatal("different account was blocked by the saturated account budget")
+	}
+
+	close(release)
+	released = true
+	for pendingAccepted > 0 {
+		select {
+		case response := <-accepted:
+			pendingAccepted--
+			assertGatewayResponse(t, response, http.StatusNoContent, "", response.Header().Get(RequestIDHeader))
+		case <-time.After(time.Second):
+			t.Fatal("accepted request did not finish after release")
+		}
+	}
+}
+
+func TestGatewayAccountBudgetShortCircuitsAreLoggedOnceByRequestIDMiddleware(t *testing.T) {
+	tests := []struct {
+		name              string
+		accountID         string
+		holdBudgetSlot    bool
+		requestID         string
+		wantStatus        int
+		wantCode          ErrorCode
+		wantLoggedAccount string
+		wantHandlerCalls  int32
+	}{
+		{
+			name:              "concurrency limit",
+			accountID:         "acct_short_circuit",
+			holdBudgetSlot:    true,
+			requestID:         "short-circuit-429",
+			wantStatus:        http.StatusTooManyRequests,
+			wantCode:          CodeConcurrencyLimited,
+			wantLoggedAccount: "acct_short_circuit",
+			wantHandlerCalls:  1,
+		},
+		{
+			name:              "missing account context",
+			requestID:         "short-circuit-401",
+			wantStatus:        http.StatusUnauthorized,
+			wantCode:          CodeUnauthenticated,
+			wantLoggedAccount: "anonymous",
+			wantHandlerCalls:  0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logs := &bytes.Buffer{}
+			gateway := mustTestGateway(t, logs, GatewayOptions{MaxConcurrentPerAccount: 1})
+			var handlerCalls atomic.Int32
+			started := make(chan struct{}, 1)
+			release := make(chan struct{})
+			heldResponse := make(chan *httptest.ResponseRecorder, 1)
+			released := false
+			heldFinished := false
+			if test.holdBudgetSlot {
+				defer func() {
+					if !released {
+						close(release)
+					}
+					if !heldFinished {
+						select {
+						case <-heldResponse:
+						case <-time.After(time.Second):
+							t.Errorf("held request did not finish after release")
+						}
+					}
+				}()
+			}
+
+			handler := composeGatewayHandler(t, gateway, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				handlerCalls.Add(1)
+				if test.holdBudgetSlot {
+					started <- struct{}{}
+					<-release
+				}
+				writer.WriteHeader(http.StatusNoContent)
+			}), true, false)
+
+			if test.holdBudgetSlot {
+				heldRequest := mustGatewayRequestForAccount(t, http.MethodGet, "/contacts", "held-short-circuit", test.accountID)
+				go func() {
+					heldResponse <- serveGatewayRequest(handler, heldRequest)
+				}()
+				select {
+				case <-started:
+				case <-time.After(time.Second):
+					t.Fatal("first request did not acquire the only budget slot")
+				}
+			}
+
+			request := mustGatewayRequestForAccount(t, http.MethodGet, "/contacts", test.requestID, test.accountID)
+			response := serveGatewayRequest(handler, request)
+			assertGatewayResponse(t, response, test.wantStatus, test.wantCode, test.requestID)
+			if got := handlerCalls.Load(); got != test.wantHandlerCalls {
+				t.Fatalf("handler calls = %d, want %d", got, test.wantHandlerCalls)
+			}
+
+			entry := singleAccessLog(t, logs)
+			if got := entry["request_id"]; got != test.requestID {
+				t.Fatalf("logged request_id = %#v, want %q", got, test.requestID)
+			}
+			if got := entry["status"]; got != float64(test.wantStatus) {
+				t.Fatalf("logged status = %#v, want %d", got, test.wantStatus)
+			}
+			if got := entry["err"]; got != string(test.wantCode) {
+				t.Fatalf("logged err = %#v, want %q", got, test.wantCode)
+			}
+			if got := entry["account"]; got != test.wantLoggedAccount {
+				t.Fatalf("logged account = %#v, want %q", got, test.wantLoggedAccount)
+			}
+
+			if test.holdBudgetSlot {
+				close(release)
+				released = true
+				select {
+				case response := <-heldResponse:
+					heldFinished = true
+					assertGatewayResponse(t, response, http.StatusNoContent, "", "held-short-circuit")
+				case <-time.After(time.Second):
+					t.Fatal("held request did not finish after release")
+				}
+			}
+		})
+	}
+}
+
+func TestGatewayAccountBudgetReleasesSlotsAfterTerminalResponses(t *testing.T) {
+	tests := []struct {
+		name       string
+		requestKey string
+		handler    http.HandlerFunc
+		wantStatus int
+		wantCode   ErrorCode
+	}{
+		{
+			name:       "normal response",
+			requestKey: "normal",
+			handler: func(writer http.ResponseWriter, _ *http.Request) {
+				writer.WriteHeader(http.StatusNoContent)
+			},
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			name:       "handled error",
+			requestKey: "error",
+			handler: func(writer http.ResponseWriter, request *http.Request) {
+				ResponseErrorHandler(writer, request, NewError(CodeConflict, errors.New("expected test error")))
+			},
+			wantStatus: http.StatusConflict,
+			wantCode:   CodeConflict,
+		},
+		{
+			name:       "panic recovery",
+			requestKey: "panic",
+			handler: func(http.ResponseWriter, *http.Request) {
+				panic("expected test panic")
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantCode:   CodeInternal,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gateway := mustTestGateway(t, &bytes.Buffer{}, GatewayOptions{
+				Logger:                  slog.New(slog.NewJSONHandler(io.Discard, nil)),
+				MaxConcurrentPerAccount: 1,
+			})
+			var handlerCalls atomic.Int32
+			handler := composeGatewayHandler(t, gateway, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				handlerCalls.Add(1)
+				test.handler(writer, request)
+			}), true, false)
+
+			for attempt := 1; attempt <= 2; attempt++ {
+				requestID := fmt.Sprintf("release-%s-%d", test.requestKey, attempt)
+				request := mustGatewayRequestForAccount(t, http.MethodGet, "/contacts", requestID, "acct_release")
+				response := serveGatewayRequest(handler, request)
+				assertGatewayResponse(t, response, test.wantStatus, test.wantCode, requestID)
+			}
+			if got := handlerCalls.Load(); got != 2 {
+				t.Fatalf("handler calls = %d, want 2; slot was not released after %s", got, test.name)
+			}
+		})
+	}
+}
+
+func TestGatewayRequestTimeoutDefaultsAndRecoveryNormalizesDeadline(t *testing.T) {
+	if DefaultRequestTimeout != 10*time.Second {
+		t.Fatalf("DefaultRequestTimeout = %s, want 10s", DefaultRequestTimeout)
+	}
+
+	tests := []struct {
+		name  string
+		input time.Duration
+		want  time.Duration
+	}{
+		{name: "default", want: DefaultRequestTimeout},
+		{name: "short injected duration", input: 5 * time.Millisecond, want: 5 * time.Millisecond},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gateway := mustTestGateway(t, &bytes.Buffer{}, GatewayOptions{
+				Logger:         slog.New(slog.NewJSONHandler(io.Discard, nil)),
+				RequestTimeout: test.input,
+			})
+			if got := gateway.requestTimeout; got != test.want {
+				t.Fatalf("gateway request timeout = %s, want %s", got, test.want)
+			}
+		})
+	}
+
+	logs := &bytes.Buffer{}
+	gateway := mustTestGateway(t, logs, GatewayOptions{RequestTimeout: 5 * time.Millisecond})
+	handler := composeGatewayHandler(t, gateway, http.HandlerFunc(func(_ http.ResponseWriter, request *http.Request) {
+		<-request.Context().Done()
+		if !errors.Is(request.Context().Err(), context.DeadlineExceeded) {
+			t.Errorf("request context error = %v, want deadline exceeded", request.Context().Err())
+		}
+	}), false, true)
+	response := serveGateway(handler, http.MethodGet, "/contacts", "timeout-request-1")
+	assertGatewayResponse(t, response, http.StatusServiceUnavailable, CodeDependencyUnavailable, "timeout-request-1")
+	entry := singleAccessLog(t, logs)
+	if got := entry["status"]; got != float64(http.StatusServiceUnavailable) {
+		t.Fatalf("logged status = %#v, want %d", got, http.StatusServiceUnavailable)
+	}
+	if got := entry["err"]; got != string(CodeDependencyUnavailable) {
+		t.Fatalf("logged err = %#v, want %q", got, CodeDependencyUnavailable)
+	}
+}
+
+func TestGatewayRejectsInvalidBudgetAndTimeoutConfiguration(t *testing.T) {
+	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
+	tests := []struct {
+		name    string
+		options GatewayOptions
+	}{
+		{name: "negative max concurrent", options: GatewayOptions{MaxConcurrentPerAccount: -1}},
+		{name: "max concurrent above hard limit", options: GatewayOptions{MaxConcurrentPerAccount: 65}},
+		{name: "timeout below one millisecond", options: GatewayOptions{RequestTimeout: time.Millisecond - time.Nanosecond}},
+		{name: "timeout above five minutes", options: GatewayOptions{RequestTimeout: 5*time.Minute + time.Nanosecond}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.options.Logger = logger
+			if _, err := NewGateway(test.options); !errors.Is(err, ErrInvalidGateway) {
+				t.Fatalf("NewGateway(%+v) error = %v, want ErrInvalidGateway", test.options, err)
+			}
+		})
+	}
+}
+
 func TestGatewayInvalidConfigurationFailsClosed(t *testing.T) {
 	t.Parallel()
 
@@ -407,13 +738,79 @@ func mustTestGateway(t *testing.T, logs *bytes.Buffer, options GatewayOptions) *
 }
 
 func serveGateway(handler http.Handler, method, target, requestID string) *httptest.ResponseRecorder {
+	return serveGatewayRequest(handler, newGatewayRequest(method, target, requestID))
+}
+
+func composeGatewayHandler(t *testing.T, gateway *Gateway, next http.Handler, withAccountBudget, withTimeout bool) http.Handler {
+	t.Helper()
+	handler, err := gateway.RecoveryErrorLog(next)
+	if err != nil {
+		t.Fatalf("RecoveryErrorLog() error = %v", err)
+	}
+	if withTimeout {
+		handler, err = gateway.TimeoutMiddleware(handler)
+		if err != nil {
+			t.Fatalf("TimeoutMiddleware() error = %v", err)
+		}
+	}
+	if withAccountBudget {
+		handler, err = gateway.AccountBudgetMiddleware(handler)
+		if err != nil {
+			t.Fatalf("AccountBudgetMiddleware() error = %v", err)
+		}
+	}
+	handler, err = gateway.RequestIDMiddleware(handler)
+	if err != nil {
+		t.Fatalf("RequestIDMiddleware() error = %v", err)
+	}
+	return handler
+}
+
+func mustGatewayRequestForAccount(t *testing.T, method, target, requestID, accountID string) *http.Request {
+	t.Helper()
+	request := newGatewayRequest(method, target, requestID)
+	if accountID == "" {
+		return request
+	}
+	accountContext, err := ContextWithAccountID(request.Context(), accountID)
+	if err != nil {
+		t.Fatalf("ContextWithAccountID(%q) error = %v", accountID, err)
+	}
+	return request.WithContext(accountContext)
+}
+
+func newGatewayRequest(method, target, requestID string) *http.Request {
 	request := httptest.NewRequest(method, target, nil)
 	if requestID != "" {
 		request.Header.Set(RequestIDHeader, requestID)
 	}
+	return request
+}
+
+func serveGatewayRequest(handler http.Handler, request *http.Request) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	return response
+}
+
+func assertGatewayResponse(t *testing.T, response *httptest.ResponseRecorder, wantStatus int, wantCode ErrorCode, wantRequestID string) {
+	t.Helper()
+	if response.Code != wantStatus {
+		t.Fatalf("status = %d, want %d", response.Code, wantStatus)
+	}
+	if got := response.Header().Get(RequestIDHeader); got != wantRequestID {
+		t.Fatalf("%s = %q, want %q", RequestIDHeader, got, wantRequestID)
+	}
+	if wantCode == "" {
+		return
+	}
+	payload := decodeErrorResponse(t, response)
+	if payload.Code != wantCode {
+		t.Fatalf("error code = %q, want %q", payload.Code, wantCode)
+	}
+	if payload.RequestID != wantRequestID {
+		t.Fatalf("error request id = %q, want %q", payload.RequestID, wantRequestID)
+	}
 }
 
 func decodeErrorResponse(t *testing.T, response *httptest.ResponseRecorder) errorResponse {
