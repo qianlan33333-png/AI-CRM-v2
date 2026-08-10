@@ -10,6 +10,9 @@ import (
 
 type Querier interface {
 	AppendEvent(ctx context.Context, arg AppendEventParams) (int64, error)
+	ClaimUndispatchedEvents(ctx context.Context, batchSize int32) ([]EventLog, error)
+	GetEvent(ctx context.Context, eventID int64) (EventLog, error)
+	MarkEventsDispatched(ctx context.Context, eventIds []int64) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -3,3 +3,17 @@
 //   sqlc v1.28.0
 
 package eventdb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type EventLog struct {
+	ID             int64              `json:"id"`
+	EventType      string             `json:"event_type"`
+	CustomerID     pgtype.Int8        `json:"customer_id"`
+	Payload        []byte             `json:"payload"`
+	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
+	IdempotencyKey string             `json:"idempotency_key"`
+	Dispatched     bool               `json:"dispatched"`
+}

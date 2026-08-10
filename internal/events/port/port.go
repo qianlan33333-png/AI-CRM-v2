@@ -24,6 +24,20 @@ type Event struct {
 	IdempotencyKey string
 }
 
+// Record is the immutable event fact loaded by a River delivery job.
+type Record struct {
+	ID EventID
+	Event
+}
+
+// Subscriber consumes committed event facts. Implementations must persistently
+// deduplicate by Record.ID (or a domain-specific stable key) because delivery is
+// at least once. Multiple subscribers may handle the same event type.
+type Subscriber interface {
+	EventTypes() []string
+	Consume(context.Context, Record) error
+}
+
 // Appender only persists the event in the transaction supplied by UnitOfWork.
 // It does not dispatch work or call an external service.
 type Appender interface {
