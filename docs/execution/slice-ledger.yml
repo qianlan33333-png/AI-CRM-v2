@@ -1162,7 +1162,7 @@ slices:
   - slice_id: P2-09
     title: login-server-session-logout-contract
     owner: Codex-Sol
-    status: in_progress
+    status: ready_for_pr
     base_sha: 391d719957f963037e8fa7a8c5e3c716fad5206a
     dependency: P2-08
     branch: slice/p2-09-login-session
@@ -1190,6 +1190,8 @@ slices:
       - LOCAL_generate_and_orval_double_generation_PASS
       - LOCAL_Web_CI_Node24_18_npm11_12_PASS
       - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_full_ci_go_exact_head_46f3492_PASS
+      - LOCAL_gitleaks_160_commits_sensitive_paths_bundle_PASS
     handwritten_scope: 12_files_776_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1

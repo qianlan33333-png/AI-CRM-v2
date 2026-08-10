@@ -785,7 +785,7 @@ verify_index_sha256 acceptance/p2s09/doc.go \
 verify_index_sha256 acceptance/p2s09/session_integration_test.go \
   3ea3cff9dd9a50f6406edfd4383b9027b4f4812bd391290195794fdf79c45dce
 verify_index_sha256 docs/execution/slices/P2-09.md \
-  8b9745ed02e4c15e7f894cd896817b5fef14cba3def6612db7a160608454f441
+  bd75e25e956d1f1abaccf5e1e4b4e705bee5981f2908c33626193d7a86794160
 verify_index_sha256 docs/evidence/slices/P2-09-auth-service-tests.md \
   5edbbf1d8c4d10761a4a91bf2e2c8cf7206be786226fdb889ce481e049199f36
 verify_index_sha256 docs/execution/slices/P2-07.md \
