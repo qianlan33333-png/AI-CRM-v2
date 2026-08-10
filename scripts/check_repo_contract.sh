@@ -705,7 +705,7 @@ verify_index_sha256 internal/events/dispatcher/dispatcher_test.go \
 verify_index_sha256 internal/events/dispatcher/jobs.go \
   5c9ecd33343c3b382fe3b0af0a0314ec5c9147c7ae3a357e1e26f594ee2d3a39
 verify_index_sha256 docs/execution/slices/P2-07.md \
-  7d36958729b868e95d356c2fcedd1648c988e7364f4436d34681ce558896dde2
+  9205661205205eda14fa4c15fa1820cd1bf6da6916d39155bda6c1e74c227dd9
 verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
   81000988e5933b412931f9797949823afc8d5855cf3a76263ce7ef443dd092d7
 verify_index_sha256 acceptance/p2s01r/doc.go \
