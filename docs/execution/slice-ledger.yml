@@ -1206,6 +1206,43 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-10
+    title: rbac-and-server-side-data-scope
+    owner: Codex-Sol
+    status: ready_for_verification
+    base_sha: 2176fe032eb897c640e5b911a6a7609ecc648e35
+    dependency: P2-09
+    branch: slice/p2-10-rbac-data-scope
+    decision_anchor: ADR-006
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_10_rbac_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/auth/app/policy_test.go
+        base_sha: 9400330c9a63baa313bd5969a5c51ce61bfc67c8
+        delegated_head_sha: d3800270be445c41054b52d8eb652b4068f42d28
+        correction_count: 0
+        file_manifest_sha256: c7dbc1474f6ce79a3b94cca9320bf35b5120af9f8526a1c7aa0950f2f9311bf5
+        diff_sha256: 4b93350facf108ad37cc92c90170ed3d452a1270e3e0158a360fe99d97d35308
+        receipt: docs/evidence/slices/P2-10-rbac-tests.md
+    tests:
+      - LOCAL_auth_port_acceptance_openapi_focused_race_PASS
+      - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+      - LOCAL_generate_and_orval_double_generation_PASS
+    handwritten_scope: 9_files_323_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00
