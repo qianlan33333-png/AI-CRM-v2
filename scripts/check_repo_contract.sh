@@ -379,7 +379,7 @@ verify_index_sha256 docs/evidence/p1/route-triage.csv \
 verify_index_sha256 docs/evidence/p1/g1-decisions.md \
   96686173d77d2a70fd1f4114cb1cd32bbdd4185cda5b2db83c9571825c48e1b3
 verify_index_sha256 docs/execution/slices/G1-D01.md \
-  e2ed348d26ec5cf28b65afb721bff503c863d5f9569ac91a3e4a2911fafca7a6
+  1d2f47dd1af0d27533184e772de2a28d9cc4a663b923bf1bd7ddd6121417be8b
 verify_index_sha256 tools/p1-reconciliation/main.go \
   47a6c9a6dae5b4a4e082a86ad13251edd8cdc370e396abd42d557bae1d9b78be
 verify_index_sha256 tools/p1-reconciliation/main_test.go \

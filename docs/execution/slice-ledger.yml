@@ -664,11 +664,21 @@ slices:
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
+  - slice_id: M0-7
+    title: repair-gitleaks-openapi-version-false-positive
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/95
+    pr_head_sha: c88f69f0a2a9300f9a68045d6726b1e8e7d1d7e0
+    merge_sha: c60f4d01a432bbbfeb25db713b358768e20ae309
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
 phase_closeouts:
   P1:
-    as_of: 2026-08-10T11:00:00+08:00
+    as_of: 2026-08-10T13:31:53+08:00
     status: G1_PENDING_HUMAN_SIGNOFF
-    candidate_main_sha: 14ce03c27d2ab799d0a955c872e873682e61f473
+    candidate_main_sha: c60f4d01a432bbbfeb25db713b358768e20ae309
     evidence: docs/evidence/p1/g1-signoff-pack.md
     route_reconciliation: PASS_781_equals_156_plus_184_plus_441
     migration_reconciliation: PASS_316_tables_3313_field_mappings
