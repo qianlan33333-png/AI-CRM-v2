@@ -11,12 +11,17 @@ seed() {
   local root="$1"
   mkdir -p "$root/docs/architecture" "$root/internal/contact/store/queries" \
     "$root/internal/segment/store/queries" "$root/internal/outbound/worker" \
-    "$root/internal/wecom/store" "$root/internal/platform/store"
+    "$root/internal/wecom/store" "$root/internal/platform/store" \
+    "$root/acceptance/fixtures"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
   printf '%s\n' "SELECT 'UPDATE identities'; -- DELETE FROM tags" 'SELECT * FROM customers;' >"$root/internal/segment/store/queries/read.sql"
   printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/outbound/worker/client.go"
   printf '%s\n' 'package store' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/wecom/store/client.go"
+  printf '%s\n' 'package fixtures' \
+    'const ddl = "CREATE TABLE acceptance_fixtures.fixture_probe (id bigint PRIMARY KEY)"' \
+    'const dml = "INSERT INTO acceptance_fixtures.fixture_probe (id) VALUES (1)"' \
+    >"$root/acceptance/fixtures/probe.go"
 }
 run_checker() {
   (cd / && env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE \
@@ -43,6 +48,7 @@ mutate() {
     segment-write) echo 'DELETE FROM customers;' >"$root/internal/segment/store/queries/read.sql" ;;
     platform-write) echo 'INSERT INTO event_log DEFAULT VALUES;' >"$root/internal/platform/store/write.sql" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
+    public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
     outbound-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/outbound/worker/client.go" ;;
     wecom-write) echo 'package store; const endpoint = "/cgi-bin/message/send"' >"$root/internal/wecom/store/client.go" ;;
     contact-endpoint) mkdir -p "$root/internal/contact/app"; echo 'package app; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/contact/app/client.go" ;;
@@ -53,6 +59,7 @@ mutate() {
 }
 reject contact-identity 'table write ownership violation'; reject segment-write 'table write ownership violation'
 reject platform-write 'table write ownership violation'; reject unknown-table 'write to unknown table'
+reject public-fixture 'write to unknown table'
 reject outbound-read 'WeCom operation ownership violation'; reject wecom-write 'WeCom operation ownership violation'
 reject contact-endpoint 'WeCom operation ownership violation'; reject contact-sdk 'external WeCom client import forbidden'
 reject unknown-operation 'unknown WeCom operation'

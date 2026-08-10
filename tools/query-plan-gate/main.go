@@ -10,6 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,8 +24,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 )
-
-const fixedDatabaseURL = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
 
 var (
 	hexSHA        = regexp.MustCompile(`^[0-9a-f]{40}$`)
@@ -43,7 +42,7 @@ func main() {
 	root := flag.String("root", ".", "repository root")
 	base := flag.String("base", "", "base commit")
 	head := flag.String("head", "", "head commit")
-	databaseURL := flag.String("database-url", "", "fixed loopback PostgreSQL URL")
+	databaseURL := flag.String("database-url", "", "safe literal-loopback PostgreSQL URL")
 	flag.Parse()
 	if err := run(context.Background(), *root, *base, *head, *databaseURL); err != nil {
 		fmt.Fprintln(os.Stderr, "query-plan-gate:", err)
@@ -52,8 +51,8 @@ func main() {
 }
 
 func run(ctx context.Context, root, base, head, databaseURL string) error {
-	if databaseURL != fixedDatabaseURL {
-		return errors.New("QUERY_PLAN_TEST_DATABASE_URL must equal the fixed loopback aicrm_test DSN")
+	if err := validateAcceptanceDatabaseURL(databaseURL); err != nil {
+		return err
 	}
 	if !hexSHA.MatchString(base) || !hexSHA.MatchString(head) {
 		return errors.New("base and head must be exact 40-character lowercase Git SHAs")
@@ -97,6 +96,26 @@ func run(ctx context.Context, root, base, head, databaseURL string) error {
 		return err
 	}
 	fmt.Printf("query-plan-gate: PASS (checked=%d)\n", len(queries))
+	return nil
+}
+
+func validateAcceptanceDatabaseURL(databaseURL string) error {
+	parsed, err := url.Parse(databaseURL)
+	if err != nil || parsed.Scheme != "postgres" || parsed.Path != "/aicrm_test" || parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" || parsed.User == nil {
+		return errors.New("QUERY_PLAN_TEST_DATABASE_URL must be the safe literal-loopback aicrm_test DSN")
+	}
+	password, hasPassword := parsed.User.Password()
+	if parsed.User.Username() != "postgres" || !hasPassword || password != "postgres" {
+		return errors.New("QUERY_PLAN_TEST_DATABASE_URL must be the safe literal-loopback aicrm_test DSN")
+	}
+	host, portText := parsed.Hostname(), parsed.Port()
+	if (host != "127.0.0.1" && host != "::1") || portText == "" {
+		return errors.New("QUERY_PLAN_TEST_DATABASE_URL must be the safe literal-loopback aicrm_test DSN")
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil || port < 1 || port > 65535 {
+		return errors.New("QUERY_PLAN_TEST_DATABASE_URL must be the safe literal-loopback aicrm_test DSN")
+	}
 	return nil
 }
 

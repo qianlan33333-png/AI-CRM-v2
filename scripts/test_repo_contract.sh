@@ -36,12 +36,55 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
-for path in .gitleaks.toml scripts/test_gitleaks_config.sh docs/execution/slices/M0-7.md; do
-  gitleaks_receipt_fixture="$(make_fixture "gitleaks-receipt-${path##*/}")"
-  printf '%s\n' '# gitleaks receipt drift' >>"$gitleaks_receipt_fixture/$path"
-  git -C "$gitleaks_receipt_fixture" add "$path"
+shell_shadow_fixture="$(make_fixture shell-environment-shadow)"
+printf '%s\n' '#!/usr/bin/env bash' 'unsafe() {' '  local PATH=/tmp' '}' >"$shell_shadow_fixture/scripts/unsafe_env_shadow.sh"
+git -C "$shell_shadow_fixture" add scripts/unsafe_env_shadow.sh
+if (cd "$shell_shadow_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "shell local variable shadowing PATH was accepted"
+fi
+
+for file_path in acceptance/fixtures/postgres.go acceptance/fixtures/postgres_test.go docs/execution/slices/P2-00.md; do
+  acceptance_fixture_receipt="$(make_fixture "p2-00-receipt-${file_path##*/}")"
+  case "$file_path" in *.go) printf '%s\n' '// P2-00 receipt drift' >>"$acceptance_fixture_receipt/$file_path" ;; *) printf '%s\n' '# P2-00 receipt drift' >>"$acceptance_fixture_receipt/$file_path" ;; esac
+  git -C "$acceptance_fixture_receipt" add "$file_path"
+  if (cd "$acceptance_fixture_receipt" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-00 acceptance fixture receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
+rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
+git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
+if (cd "$missing_acceptance_helper" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-00 acceptance helper was accepted"
+fi
+
+disconnected_acceptance_target="$(make_fixture disconnected-p2-00-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]acceptance-fixtures([[:space:]]|$)/\1/' "$disconnected_acceptance_target/Makefile"
+rm -f "$disconnected_acceptance_target/Makefile.bak"
+restage_make_receipt "$disconnected_acceptance_target"
+if (cd "$disconnected_acceptance_target" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "ci-go without P2-00 acceptance fixtures was accepted"
+fi
+
+missing_acceptance_dsn="$(make_fixture missing-p2-00-workflow-dsn)"
+sed -i.bak '/^          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:/d' "$missing_acceptance_dsn/.github/workflows/application-go.yml"
+rm -f "$missing_acceptance_dsn/.github/workflows/application-go.yml.bak"
+git -C "$missing_acceptance_dsn" add .github/workflows/application-go.yml
+workflow_digest="$(git -C "$missing_acceptance_dsn" show :.github/workflows/application-go.yml | sha256sum | awk '{print $1}')"
+sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/application-go\.yml/{n;s/[0-9a-f]{64}/$workflow_digest/;}" "$missing_acceptance_dsn/scripts/check_repo_contract.sh"
+rm -f "$missing_acceptance_dsn/scripts/check_repo_contract.sh.bak"
+git -C "$missing_acceptance_dsn" add scripts/check_repo_contract.sh
+if (cd "$missing_acceptance_dsn" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "application workflow without the P2-00 acceptance DSN was accepted"
+fi
+
+for file_path in .gitleaks.toml scripts/test_gitleaks_config.sh docs/execution/slices/M0-7.md; do
+  gitleaks_receipt_fixture="$(make_fixture "gitleaks-receipt-${file_path##*/}")"
+  printf '%s\n' '# gitleaks receipt drift' >>"$gitleaks_receipt_fixture/$file_path"
+  git -C "$gitleaks_receipt_fixture" add "$file_path"
   if (cd "$gitleaks_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "gitleaks contract receipt drift was accepted: $path"
+    fail "gitleaks contract receipt drift was accepted: $file_path"
   fi
 done
 
@@ -90,17 +133,17 @@ for kind in missing-config missing-runner; do
   fi
 done
 
-for path in \
+for file_path in \
   docs/spec/AI-CRM-v2-执行方案.md \
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   docs/spec/AI-CRM-v2-重构详细设计.md \
   docs/spec/SHA256SUMS \
   docs/execution/slices/M0-2.md; do
-  spec_receipt_fixture="$(make_fixture "m0-2-receipt-${path##*/}")"
-  printf '%s\n' '# M0-2 receipt drift' >>"$spec_receipt_fixture/$path"
-  git -C "$spec_receipt_fixture" add "$path"
+  spec_receipt_fixture="$(make_fixture "m0-2-receipt-${file_path##*/}")"
+  printf '%s\n' '# M0-2 receipt drift' >>"$spec_receipt_fixture/$file_path"
+  git -C "$spec_receipt_fixture" add "$file_path"
   if (cd "$spec_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "M0-2 spec receipt drift was accepted: $path"
+    fail "M0-2 spec receipt drift was accepted: $file_path"
   fi
 done
 
@@ -111,12 +154,12 @@ if (cd "$m0_v2_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "M0-2 v2 spec mode drift was accepted"
 fi
 
-for path in tools/query-plan-gate/main.go tools/query-plan-gate/main_test.go scripts/test_query_plan_gate.sh docs/execution/slices/M0-3.md tools/go.mod; do
-  query_plan_receipt_fixture="$(make_fixture "query-plan-receipt-${path##*/}")"
-  case "$path" in *.go) printf '%s\n' '// query plan receipt drift' >>"$query_plan_receipt_fixture/$path" ;; *) printf '%s\n' '# query plan receipt drift' >>"$query_plan_receipt_fixture/$path" ;; esac
-  git -C "$query_plan_receipt_fixture" add "$path"
+for file_path in tools/query-plan-gate/main.go tools/query-plan-gate/main_test.go scripts/test_query_plan_gate.sh docs/execution/slices/M0-3.md tools/go.mod; do
+  query_plan_receipt_fixture="$(make_fixture "query-plan-receipt-${file_path##*/}")"
+  case "$file_path" in *.go) printf '%s\n' '// query plan receipt drift' >>"$query_plan_receipt_fixture/$file_path" ;; *) printf '%s\n' '# query plan receipt drift' >>"$query_plan_receipt_fixture/$file_path" ;; esac
+  git -C "$query_plan_receipt_fixture" add "$file_path"
   if (cd "$query_plan_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "query plan gate receipt drift was accepted: $path"
+    fail "query plan gate receipt drift was accepted: $file_path"
   fi
 done
 
@@ -127,18 +170,18 @@ if (cd "$query_plan_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev
   fail "query plan gate runner mode drift was accepted"
 fi
 
-for path in \
+for file_path in \
   docs/migration-mapping.jsonl \
   docs/evidence/p1/migration-lifecycle-index-6cb989c.json \
   docs/migration-mapping.md \
   tools/migration-mapping/main.go \
   tools/migration-mapping/main_test.go \
   docs/execution/slices/P1-C02.md; do
-  migration_mapping_receipt_fixture="$(make_fixture "migration-mapping-receipt-${path##*/}")"
-  case "$path" in *.go) printf '%s\n' '// P1-C02 receipt drift' >>"$migration_mapping_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-C02 receipt drift' >>"$migration_mapping_receipt_fixture/$path" ;; esac
-  git -C "$migration_mapping_receipt_fixture" add "$path"
+  migration_mapping_receipt_fixture="$(make_fixture "migration-mapping-receipt-${file_path##*/}")"
+  case "$file_path" in *.go) printf '%s\n' '// P1-C02 receipt drift' >>"$migration_mapping_receipt_fixture/$file_path" ;; *) printf '%s\n' '# P1-C02 receipt drift' >>"$migration_mapping_receipt_fixture/$file_path" ;; esac
+  git -C "$migration_mapping_receipt_fixture" add "$file_path"
   if (cd "$migration_mapping_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P1-C02 receipt drift was accepted: $path"
+    fail "P1-C02 receipt drift was accepted: $file_path"
   fi
 done
 
@@ -149,7 +192,7 @@ if (cd "$migration_index_mode_fixture" && scripts/check_repo_contract.sh >/dev/n
   fail "P1-C02 lifecycle index mode drift was accepted"
 fi
 
-for path in \
+for file_path in \
   docs/api-mapping.jsonl \
   docs/evidence/p1/route-triage.csv \
   docs/evidence/p1/g1-decisions.md \
@@ -157,25 +200,25 @@ for path in \
   tools/p1-reconciliation/main.go \
   tools/p1-reconciliation/main_test.go \
   docs/execution/slices/P1-C03.md; do
-  reconciliation_receipt_fixture="$(make_fixture "p1-reconciliation-receipt-${path##*/}")"
-  case "$path" in *.go) printf '%s\n' '// P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$path" ;; esac
-  git -C "$reconciliation_receipt_fixture" add "$path"
+  reconciliation_receipt_fixture="$(make_fixture "p1-reconciliation-receipt-${file_path##*/}")"
+  case "$file_path" in *.go) printf '%s\n' '// P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$file_path" ;; *) printf '%s\n' '# P1-C03 receipt drift' >>"$reconciliation_receipt_fixture/$file_path" ;; esac
+  git -C "$reconciliation_receipt_fixture" add "$file_path"
   if (cd "$reconciliation_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P1-C03 receipt drift was accepted: $path"
+    fail "P1-C03 receipt drift was accepted: $file_path"
   fi
 done
 
-for path in \
+for file_path in \
   docs/evidence/p1/g1-signoff-pack.md \
   docs/evidence/p1/feature-matrix-top20.md \
   docs/evidence/p1/migration-exceptions.md \
   docs/execution/slices/G1-D02.md \
   docs/spec/AI-CRM-v2-P2P3执行计划.md; do
-  g1d02_receipt_fixture="$(make_fixture "g1d02-receipt-${path##*/}")"
-  printf '%s\n' '# G1-D02 receipt drift' >>"$g1d02_receipt_fixture/$path"
-  git -C "$g1d02_receipt_fixture" add "$path"
+  g1d02_receipt_fixture="$(make_fixture "g1d02-receipt-${file_path##*/}")"
+  printf '%s\n' '# G1-D02 receipt drift' >>"$g1d02_receipt_fixture/$file_path"
+  git -C "$g1d02_receipt_fixture" add "$file_path"
   if (cd "$g1d02_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "G1-D02 receipt drift was accepted: $path"
+    fail "G1-D02 receipt drift was accepted: $file_path"
   fi
 done
 
@@ -195,7 +238,7 @@ if (cd "$hollow_reconciliation_fixture" && scripts/check_repo_contract.sh >/dev/
   fail "hollow P1 reconciliation target was accepted"
 fi
 
-for path in \
+for file_path in \
   api/openapi.yaml \
   api/oapi-codegen.yaml \
   api/oapi-codegen-p1-candidate.yaml \
@@ -210,11 +253,11 @@ for path in \
   internal/contact/port/port.go \
   internal/identity/port/port.go \
   internal/platform/port/uow.go; do
-  openapi_receipt_fixture="$(make_fixture "p1-s11-receipt-${path//\//-}")"
-  case "$path" in *.go) printf '%s\n' '// P1-S11 receipt drift' >>"$openapi_receipt_fixture/$path" ;; *) printf '%s\n' '# P1-S11 receipt drift' >>"$openapi_receipt_fixture/$path" ;; esac
-  git -C "$openapi_receipt_fixture" add "$path"
+  openapi_receipt_fixture="$(make_fixture "p1-s11-receipt-${file_path//\//-}")"
+  case "$file_path" in *.go) printf '%s\n' '// P1-S11 receipt drift' >>"$openapi_receipt_fixture/$file_path" ;; *) printf '%s\n' '# P1-S11 receipt drift' >>"$openapi_receipt_fixture/$file_path" ;; esac
+  git -C "$openapi_receipt_fixture" add "$file_path"
   if (cd "$openapi_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P1-S11 receipt drift was accepted: $path"
+    fail "P1-S11 receipt drift was accepted: $file_path"
   fi
 done
 
@@ -379,12 +422,12 @@ done
 scripts_link_fixture="$(make_gitless_matrix_fixture feature-matrix-scripts-symlink)"; mv "$scripts_link_fixture/scripts" "$scripts_link_fixture/scripts.real"; ln -s scripts.real "$scripts_link_fixture/scripts"
 assert_matrix_rejected scripts-symlink "$scripts_link_fixture" 'real script directory required: scripts'
 
-for path in scripts/check_feature_matrix_contract.sh docs/evidence/p1/feature-matrix-id-anchor.v1 docs/execution/slices/P1-S08.md; do
-  receipt_fixture="$(make_fixture "feature-matrix-receipt-${path##*/}")"
-  printf '%s\n' '# P1-S08 receipt drift' >>"$receipt_fixture/$path"
-  git -C "$receipt_fixture" add "$path"
+for file_path in scripts/check_feature_matrix_contract.sh docs/evidence/p1/feature-matrix-id-anchor.v1 docs/execution/slices/P1-S08.md; do
+  receipt_fixture="$(make_fixture "feature-matrix-receipt-${file_path##*/}")"
+  printf '%s\n' '# P1-S08 receipt drift' >>"$receipt_fixture/$file_path"
+  git -C "$receipt_fixture" add "$file_path"
   if (cd "$receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P1-S08 receipt drift was accepted: $path"
+    fail "P1-S08 receipt drift was accepted: $file_path"
   fi
 done
 
@@ -409,16 +452,16 @@ for kind in eval include variable call alternate; do dynamic_matrix_target_fixtu
   if (cd "$dynamic_matrix_target_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then fail "$kind-generated feature matrix override was accepted"; fi
 done
 
-for path in \
+for file_path in \
   tools/legacy-route-export/main.go \
   tools/legacy-route-export/main_test.go \
   docs/execution/slices/P1-S01.md \
   docs/evidence/p1/legacy-routes-6cb989c.json; do
-  p1s01_receipt_fixture="$(make_fixture "p1s01-receipt-${path##*/}")"
-  printf '%s\n' '# P1-S01 receipt drift' >>"$p1s01_receipt_fixture/$path"
-  git -C "$p1s01_receipt_fixture" add "$path"
+  p1s01_receipt_fixture="$(make_fixture "p1s01-receipt-${file_path##*/}")"
+  printf '%s\n' '# P1-S01 receipt drift' >>"$p1s01_receipt_fixture/$file_path"
+  git -C "$p1s01_receipt_fixture" add "$file_path"
   if (cd "$p1s01_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P1-S01 receipt drift was accepted: $path"
+    fail "P1-S01 receipt drift was accepted: $file_path"
   fi
 done
 
@@ -431,7 +474,7 @@ if (cd "$broken_p1s01_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2
   fail "ci-go without the P1-S01 exporter tests was accepted"
 fi
 
-for path in \
+for file_path in \
   tools/snapshot-gate/main.go \
   tools/snapshot-gate/main_test.go \
   acceptance/snapshots/catalog.v1.json \
@@ -442,14 +485,14 @@ for path in \
   docs/execution/slices/M0-5.md \
   docs/architecture/canonical.md \
   .github/CODEOWNERS; do
-  snapshot_receipt_fixture="$(make_fixture "snapshot-gate-receipt-${path##*/}")"
-  case "$path" in
-    *.go) printf '%s\n' '// snapshot gate receipt drift' >>"$snapshot_receipt_fixture/$path" ;;
-    *) printf '%s\n' '# snapshot gate receipt drift' >>"$snapshot_receipt_fixture/$path" ;;
+  snapshot_receipt_fixture="$(make_fixture "snapshot-gate-receipt-${file_path##*/}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// snapshot gate receipt drift' >>"$snapshot_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# snapshot gate receipt drift' >>"$snapshot_receipt_fixture/$file_path" ;;
   esac
-  git -C "$snapshot_receipt_fixture" add "$path"
+  git -C "$snapshot_receipt_fixture" add "$file_path"
   if (cd "$snapshot_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "snapshot gate receipt drift was accepted: $path"
+    fail "snapshot gate receipt drift was accepted: $file_path"
   fi
 done
 
@@ -482,7 +525,7 @@ mkdir -p "$retired_replay_fixture/tools/contract-replay"
 printf '%s\n' 'retired' >"$retired_replay_fixture/tools/contract-replay/README"
 git -C "$retired_replay_fixture" add tools/contract-replay/README
 if (cd "$retired_replay_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail "retired contract replay path was accepted"
+  fail "retired contract replay file_path was accepted"
 fi
 
 tracked_snapshot_actual_fixture="$(make_fixture tracked-snapshot-actual)"
@@ -492,18 +535,18 @@ if (cd "$tracked_snapshot_actual_fixture" && scripts/check_repo_contract.sh >/de
   fail "tracked handwritten snapshot actual was accepted"
 fi
 
-for path in \
+for file_path in \
   scripts/sourcepolicy/main.go \
   scripts/test_source_policy.sh \
   scripts/check_generated_sources.sh \
   scripts/test_gitless_generated_check.sh \
   AGENTS.md \
   docs/execution/slices/M0-6.md; do
-  source_policy_receipt_fixture="$(make_fixture "source-policy-receipt-${path##*/}")"
-  printf '%s\n' '# source policy receipt drift' >>"$source_policy_receipt_fixture/$path"
-  git -C "$source_policy_receipt_fixture" add "$path"
+  source_policy_receipt_fixture="$(make_fixture "source-policy-receipt-${file_path##*/}")"
+  printf '%s\n' '# source policy receipt drift' >>"$source_policy_receipt_fixture/$file_path"
+  git -C "$source_policy_receipt_fixture" add "$file_path"
   if (cd "$source_policy_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "source policy lint receipt drift was accepted: $path"
+    fail "source policy lint receipt drift was accepted: $file_path"
   fi
 done
 
@@ -529,12 +572,12 @@ if (cd "$broken_source_policy_ci_fixture" && scripts/check_repo_contract.sh >/de
   fail "ci-go without source policy lint tests was accepted"
 fi
 
-for path in scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh docs/execution/slices/M0-1.md; do
-  slice_input_receipt_fixture="$(make_fixture "slice-input-receipt-${path##*/}")"
-  printf '%s\n' '# slice input receipt drift' >>"$slice_input_receipt_fixture/$path"
-  git -C "$slice_input_receipt_fixture" add "$path"
+for file_path in scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh docs/execution/slices/M0-1.md; do
+  slice_input_receipt_fixture="$(make_fixture "slice-input-receipt-${file_path##*/}")"
+  printf '%s\n' '# slice input receipt drift' >>"$slice_input_receipt_fixture/$file_path"
+  git -C "$slice_input_receipt_fixture" add "$file_path"
   if (cd "$slice_input_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "slice input contract receipt drift was accepted: $path"
+    fail "slice input contract receipt drift was accepted: $file_path"
   fi
 done
 
@@ -561,12 +604,12 @@ if (cd "$hollow_slice_input_target_fixture" && scripts/check_repo_contract.sh >/
   fail "hollow slice input contract target was accepted"
 fi
 
-for path in scripts/ownership/main.go scripts/test_ownership.sh docs/architecture/table-ownership.yml; do
-  ownership_receipt_fixture="$(make_fixture "ownership-receipt-${path##*/}")"
-  printf '%s\n' '# ownership receipt drift' >>"$ownership_receipt_fixture/$path"
-  git -C "$ownership_receipt_fixture" add "$path"
+for file_path in scripts/ownership/main.go scripts/test_ownership.sh docs/architecture/table-ownership.yml; do
+  ownership_receipt_fixture="$(make_fixture "ownership-receipt-${file_path##*/}")"
+  printf '%s\n' '# ownership receipt drift' >>"$ownership_receipt_fixture/$file_path"
+  git -C "$ownership_receipt_fixture" add "$file_path"
   if (cd "$ownership_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "ownership lint receipt drift was accepted: $path"
+    fail "ownership lint receipt drift was accepted: $file_path"
   fi
 done
 
@@ -585,12 +628,12 @@ if (cd "$broken_ownership_ci_fixture" && scripts/check_repo_contract.sh >/dev/nu
   fail "ci-go without ownership lint tests was accepted"
 fi
 
-for path in scripts/check_arch_imports.go scripts/test_arch_imports.sh; do
-  arch_receipt_fixture="$(make_fixture "arch-receipt-${path##*/}")"
-  printf '%s\n' '// architecture receipt drift' >>"$arch_receipt_fixture/$path"
-  git -C "$arch_receipt_fixture" add "$path"
+for file_path in scripts/check_arch_imports.go scripts/test_arch_imports.sh; do
+  arch_receipt_fixture="$(make_fixture "arch-receipt-${file_path##*/}")"
+  printf '%s\n' '// architecture receipt drift' >>"$arch_receipt_fixture/$file_path"
+  git -C "$arch_receipt_fixture" add "$file_path"
   if (cd "$arch_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "architecture lint receipt drift was accepted: $path"
+    fail "architecture lint receipt drift was accepted: $file_path"
   fi
 done
 
@@ -641,18 +684,18 @@ if (cd "$missing_p0s03_contract_fixture" && scripts/check_repo_contract.sh >/dev
   fail "missing required P0-S03 contract file was accepted"
 fi
 
-for path in \
+for file_path in \
   acceptance/p0s03/query_contract_test.go \
   acceptance/p0s03/source_contract.go \
   acceptance/p0s03/test_contract.sh; do
-  p0s03_receipt_fixture="$(make_fixture "p0s03-receipt-${path##*/}")"
-  case "$path" in
-    *.go) printf '%s\n' '// P0-S03 receipt drift' >>"$p0s03_receipt_fixture/$path" ;;
-    *.sh) printf '%s\n' '# P0-S03 receipt drift' >>"$p0s03_receipt_fixture/$path" ;;
+  p0s03_receipt_fixture="$(make_fixture "p0s03-receipt-${file_path##*/}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P0-S03 receipt drift' >>"$p0s03_receipt_fixture/$file_path" ;;
+    *.sh) printf '%s\n' '# P0-S03 receipt drift' >>"$p0s03_receipt_fixture/$file_path" ;;
   esac
-  git -C "$p0s03_receipt_fixture" add "$path"
+  git -C "$p0s03_receipt_fixture" add "$file_path"
   if (cd "$p0s03_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P0-S03 receipt drift was accepted: $path"
+    fail "P0-S03 receipt drift was accepted: $file_path"
   fi
 done
 
@@ -809,20 +852,20 @@ if (cd "$p0s04_go_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&
   fail "P0-S04 Go contract mode drift was accepted"
 fi
 
-for path in go.mod go.sum; do
-  p0s04_module_pin_fixture="$(make_fixture "p0s04-module-pin-$path")"
-  printf '%s\n' '# P0-S04 module pin drift' >>"$p0s04_module_pin_fixture/$path"
-  git -C "$p0s04_module_pin_fixture" add "$path"
+for file_path in go.mod go.sum; do
+  p0s04_module_pin_fixture="$(make_fixture "p0s04-module-pin-$file_path")"
+  printf '%s\n' '# P0-S04 module pin drift' >>"$p0s04_module_pin_fixture/$file_path"
+  git -C "$p0s04_module_pin_fixture" add "$file_path"
   if (cd "$p0s04_module_pin_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P0-S04 $path content drift was accepted"
+    fail "P0-S04 $file_path content drift was accepted"
   fi
 done
-for path in go.mod go.sum; do
-  p0s04_module_mode_fixture="$(make_fixture "p0s04-module-mode-$path")"
-  chmod 755 "$p0s04_module_mode_fixture/$path"
-  git -C "$p0s04_module_mode_fixture" add "$path"
+for file_path in go.mod go.sum; do
+  p0s04_module_mode_fixture="$(make_fixture "p0s04-module-mode-$file_path")"
+  chmod 755 "$p0s04_module_mode_fixture/$file_path"
+  git -C "$p0s04_module_mode_fixture" add "$file_path"
   if (cd "$p0s04_module_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-    fail "P0-S04 $path mode drift was accepted"
+    fail "P0-S04 $file_path mode drift was accepted"
   fi
 done
 
@@ -1080,19 +1123,19 @@ if (cd "$secrets_context_fixture" && scripts/check_repo_contract.sh >/dev/null 2
   fail "workflow secrets context was accepted"
 fi
 
-envrc_fixture="$(make_fixture envrc-path)"
+envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc
 if (cd "$envrc_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail ".envrc path was accepted"
+  fail ".envrc file_path was accepted"
 fi
 
-runtime_state_fixture="$(make_fixture runtime-state-path)"
+runtime_state_fixture="$(make_fixture runtime-state-file_path)"
 mkdir -p "$runtime_state_fixture/runtime"
 touch "$runtime_state_fixture/runtime/state.json"
 git -C "$runtime_state_fixture" add -f runtime/state.json
 if (cd "$runtime_state_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail "root runtime state path was accepted"
+  fail "root runtime state file_path was accepted"
 fi
 
 secret_fixture="$(make_fixture staged-secret)"

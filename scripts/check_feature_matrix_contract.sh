@@ -25,17 +25,17 @@ expected_header="feature_id,page,section,action,triggered_api,expected_result,no
 g1_d02_evidence="decision=G1-D02-2026-08-10;approved_by=repository_owner;approved_at=2026-08-10;semantics=legacy_behavior_1_to_1;verification=NOT_EXECUTED"
 
 mode_of() {
-  local path="$1" mode
-  mode="$(stat -f '%Lp' "$path" 2>/dev/null || true)"
+  local file_path="$1" mode
+  mode="$(stat -f '%Lp' "$file_path" 2>/dev/null || true)"
   if [[ "$mode" =~ ^[0-7]{3,4}$ ]]; then printf '%s\n' "$mode"; return; fi
-  mode="$(stat -c '%a' "$path" 2>/dev/null || true)"
+  mode="$(stat -c '%a' "$file_path" 2>/dev/null || true)"
   [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
   printf '%s\n' "$mode"
 }
 check_regular() {
-  local path="$1" expected="$2" label="$3" actual
-  [[ -f "$path" && ! -L "$path" ]] || fail "regular file required: $label"
-  actual="$(mode_of "$path")" || fail "cannot read mode: $label"
+  local file_path="$1" expected="$2" label="$3" actual
+  [[ -f "$file_path" && ! -L "$file_path" ]] || fail "regular file required: $label"
+  actual="$(mode_of "$file_path")" || fail "cannot read mode: $label"
   (( (8#$actual & 07777) == 8#$expected )) || fail "mode must be exactly $expected: $label"
 }
 hash_file() {
