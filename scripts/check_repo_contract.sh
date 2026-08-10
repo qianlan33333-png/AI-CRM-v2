@@ -841,7 +841,7 @@ verify_index_sha256 acceptance/p2s11/doc.go \
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
   db8a6c87ebf466f9a0ddf1039ca89fd1a8662c4320173b5a4c86325b571c0b33
 verify_index_sha256 docs/execution/slices/P2-11.md \
-  3b8cb8d21a4238a8eaa600dfeec62389c15a085dc7cbdce7dec32fdaf2618868
+  621f0fa454d672f0bab5f8589d737db91e1b3a7137407a680cc141fccaf7f34b
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 docs/execution/slices/P2-07.md \
