@@ -359,7 +359,13 @@ if (cd "$tracked_snapshot_actual_fixture" && scripts/check_repo_contract.sh >/de
   fail "tracked handwritten snapshot actual was accepted"
 fi
 
-for path in scripts/sourcepolicy/main.go scripts/test_source_policy.sh; do
+for path in \
+  scripts/sourcepolicy/main.go \
+  scripts/test_source_policy.sh \
+  scripts/check_generated_sources.sh \
+  scripts/test_gitless_generated_check.sh \
+  AGENTS.md \
+  docs/execution/slices/M0-6.md; do
   source_policy_receipt_fixture="$(make_fixture "source-policy-receipt-${path##*/}")"
   printf '%s\n' '# source policy receipt drift' >>"$source_policy_receipt_fixture/$path"
   git -C "$source_policy_receipt_fixture" add "$path"
@@ -373,6 +379,13 @@ chmod 644 "$source_policy_runner_mode_fixture/scripts/test_source_policy.sh"
 git -C "$source_policy_runner_mode_fixture" add scripts/test_source_policy.sh
 if (cd "$source_policy_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "source policy lint runner mode drift was accepted"
+fi
+
+generated_runner_mode_fixture="$(make_fixture generated-runner-mode)"
+chmod 644 "$generated_runner_mode_fixture/scripts/test_gitless_generated_check.sh"
+git -C "$generated_runner_mode_fixture" add scripts/test_gitless_generated_check.sh
+if (cd "$generated_runner_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "gitless generated runner mode drift was accepted"
 fi
 
 broken_source_policy_ci_fixture="$(make_fixture broken-source-policy-ci)"

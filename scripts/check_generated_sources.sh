@@ -9,15 +9,20 @@ go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
 expected_manifest="scripts/generated-sources.sha256"
 expected_manifest_sha256="babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8"
-generated_roots=(
-  internal/api/generated
-  internal/platform/store/generated
-)
 
 fail() {
   echo "generated-check: $*" >&2
   exit 1
 }
+
+generated_roots=()
+while IFS= read -r root; do
+  generated_roots[${#generated_roots[@]}]="$root"
+done < <(find internal -type d -name generated -print | LC_ALL=C sort)
+[[ "${#generated_roots[@]}" -gt 0 ]] || fail "no generated source directories found"
+if find internal -name generated ! -type d -print -quit | grep -q .; then
+  fail "generated path must be a real directory"
+fi
 
 hash_file() {
   local path="$1"

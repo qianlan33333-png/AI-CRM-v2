@@ -18,7 +18,8 @@ execution_policy:
     - pr_head_sha
     - merge_sha
     - main_ci_status
-    - correction_count
+    - slice_induced_correction_count
+    - infra_induced_correction_count
   delegated_terra_receipts: full_hash_manifest_only_when_actually_delegated
   delegated_receipt: payload_manifest_including_untracked
   file_manifest_format: sorted_MODE_BYTES_SHA256_PATH
@@ -28,8 +29,8 @@ execution_policy:
     P2: 12_files_800_lines
     P3_P4: 12_files_1000_lines
     hard_cap: 15_files_1500_lines
-  correction_stop_threshold: 2
-  rolling_three_slice_average_threshold: 1
+  correction_stop_threshold: total_corrections_gte_2
+  rolling_three_slice_average_threshold: slice_induced_average_gt_1
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
@@ -39,6 +40,12 @@ ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
   historical_unknown_correction_count: null_not_zero
+  legacy_correction_count_field: preserved_for_records_before_M0_6
+  correction_attribution:
+    slice_induced: slice_code_or_design_defect
+    infra_induced: existing_gate_toolchain_environment_or_ci_defect
+    infra_requires_independent_fix_slice: true
+    total_corrections_gte_2_requires_stop_report: true
   sol_receipts_are_forward_recorded: true
 slices:
   - slice_id: P0-B0
@@ -617,6 +624,26 @@ slices:
     merge_sha: 6732687fbdf22beec09697ab9874dcab76be0702
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     correction_count: 0
+  - slice_id: P1-C03
+    title: enforce-route-and-migration-reconciliation
+    owner: Codex-Sol
+    status: accepted
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/89
+    pr_head_sha: 9435d18e680e76e6ea3c43e1c1102a0673980fcd
+    merge_sha: 084e35724743e5782ab1bdcded5dbbc9f76e1549
+    main_ci_status: PASS_application_go_web_repo_contract_secret_scan
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+  - slice_id: P1-S11
+    title: freeze-core-openapi-and-public-ports-candidates
+    owner: Codex-Sol
+    status: blocked_by_independent_infra_fix
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/90
+    pr_head_sha: ac1ba992e35ba89fa2678fdecdb1de744fa97252
+    merge_sha: null
+    main_ci_status: FAIL_application_go_source_policy_false_positive
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 2
 phase_closeouts:
   P0:
     as_of: 2026-08-09T14:44:17+08:00

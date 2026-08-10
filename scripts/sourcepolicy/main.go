@@ -83,7 +83,7 @@ func walkTree(root, tree string) error {
 
 func generatedGoPath(rel string) bool {
 	parts := strings.Split(rel, "/")
-	return len(parts) == 4 && parts[0] == "internal" && parts[1] == "api" && parts[2] == "generated" || len(parts) == 5 && parts[0] == "internal" && parts[2] == "store" && parts[3] == "generated" && strings.HasSuffix(parts[4], ".go")
+	return len(parts) >= 3 && parts[0] == "internal" && parts[len(parts)-2] == "generated" && strings.HasSuffix(parts[len(parts)-1], ".go")
 }
 
 func allowedSQLPath(rel string) bool {
@@ -184,6 +184,9 @@ func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module
 		if path == "time" && map[string]bool{"NewTicker": true, "Tick": true, "AfterFunc": true}[selector.Sel.Name] {
 			return fmt.Errorf("business timer forbidden in %s: time.%s", rel, selector.Sel.Name)
 		}
+	}
+	if receiver, ok := selector.X.(*ast.SelectorExpr); ok && receiver.Sel.Name == "URL" && selector.Sel.Name == "Query" {
+		return nil
 	}
 	if map[string]bool{"Exec": true, "ExecContext": true, "Query": true, "QueryContext": true, "QueryRow": true, "QueryRowContext": true, "Prepare": true, "PrepareContext": true, "CopyFrom": true, "SendBatch": true}[selector.Sel.Name] {
 		return fmt.Errorf("direct database call forbidden in %s: %s", rel, selector.Sel.Name)

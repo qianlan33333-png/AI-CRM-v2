@@ -54,6 +54,14 @@ if (cd "$unexpected_fixture" && make generate-check >/dev/null 2>&1); then
   fail "unexpected generated source was accepted without Git metadata"
 fi
 
+unregistered_directory_fixture="$(make_fixture unregistered-generated-directory)"
+mkdir -p "$unregistered_directory_fixture/internal/api/candidate/generated"
+printf 'package generated\n' \
+  >"$unregistered_directory_fixture/internal/api/candidate/generated/server.gen.go"
+if (cd "$unregistered_directory_fixture" && make generate-check >/dev/null 2>&1); then
+  fail "an unregistered generated directory bypassed reproducibility checks"
+fi
+
 rewritten_manifest_fixture="$(make_fixture rewritten-generated-manifest)"
 rewritten_path="internal/platform/store/generated/unexpected.go"
 printf 'package generated\n' >"$rewritten_manifest_fixture/$rewritten_path"

@@ -114,6 +114,7 @@ required=(
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
   docs/execution/slices/M0-5.md
+  docs/execution/slices/M0-6.md
   docs/spec/AI-CRM-v2-执行方案.md
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
   docs/spec/AI-CRM-v2-重构详细设计.md
@@ -162,6 +163,7 @@ done <<'EOF'
 100755 scripts/test_ownership.sh
 100644 scripts/sourcepolicy/main.go
 100755 scripts/test_source_policy.sh
+100755 scripts/test_gitless_generated_check.sh
 100755 scripts/check_slice_inputs.sh
 100755 scripts/test_slice_inputs.sh
 100644 tools/snapshot-gate/main.go
@@ -205,6 +207,7 @@ done <<'EOF'
 100644 docs/execution/slices/M0-2.md
 100644 docs/execution/slices/M0-3.md
 100644 docs/execution/slices/M0-5.md
+100644 docs/execution/slices/M0-6.md
 100644 docs/adr/ADR-001.md
 100644 docs/adr/ADR-010.md
 100644 docs/adr/ADR-011.md
@@ -244,7 +247,9 @@ verify_index_sha256 .github/workflows/repo-contract.yml \
 verify_index_sha256 .github/workflows/secret-scan.yml \
   157db46e8147cdca2c71d3044e46d20ddae82374a0368e0fe0b4958d8d3c2488
 verify_index_sha256 scripts/check_generated_sources.sh \
-  f5454daac1f26512bd09292a805fc722e51bcd2efbf77e0f202c13e80c63644d
+  b39fbf67ced48236651c81592928b2d0f5e520c43b49abad54048c1b078f3a3d
+verify_index_sha256 scripts/test_gitless_generated_check.sh \
+  88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
 verify_index_sha256 scripts/generated-sources.sha256 \
   babd2070d3b7c52ad0c2f6d04e6f288e68e733b5f6ccbd707e60a85384521ff8
 verify_index_sha256 scripts/test_orval_generated_check.sh \
@@ -258,9 +263,11 @@ verify_index_sha256 scripts/ownership/main.go \
 verify_index_sha256 scripts/test_ownership.sh \
   d239565f77afe42155e4a09657fdff0abd6c59823aa60f1ec4ff6c565b9087df
 verify_index_sha256 scripts/sourcepolicy/main.go \
-  bf6ed1861b79d86924f43a5db4d0283e67aeaaca56559f3e283fc83ae969127f
+  350924119f5f190d1e399d2e84f8f163d5c5ea7b0dbfc2a0652ba9b7a3c077c0
 verify_index_sha256 scripts/test_source_policy.sh \
-  a5abc23dc6a09f018ede52fcab106dedf73969cb692d65a67e237109470a654f
+  ea5b70241c85adeed28bd6b4f0ad1f887630615b882aac209af4e42e15cc184e
+verify_index_sha256 AGENTS.md \
+  665b9c6e15c4e95feb6fba1c9a7702a094cf84c46e7d1f2d685de7e1881cc8a0
 verify_index_sha256 scripts/check_slice_inputs.sh \
   b7b1711da73974b0a89c79bab020e519095fc8aaf36f737b036027ec3a08cb25
 verify_index_sha256 scripts/test_slice_inputs.sh \
@@ -284,11 +291,11 @@ verify_index_sha256 docs/execution/slices/M0-3.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
   210f6d3c9d0434cba6426ab71fc1cc64bc3a6d3a1a184e55af5f1273c21a8099
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
-  c3f3cdd4f89a0ef0194dfa3d1c0e537af56655ef643f9f5e470e66b6b2647665
+  816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
   a0917b9d2d119a68ba9c32e2d458c7b9a3775f846037748947715fdcfee77ee6
 verify_index_sha256 docs/spec/SHA256SUMS \
-  2da55ce677d94ff3f30689b2beb63f5f787be33751acd6584c61258e85c1b72e
+  2b6a02de88ef52160af312a2d5b52677364ccfa64125eb67cf5bb1e155caec82
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -337,12 +344,14 @@ verify_index_sha256 docs/adr/ADR-011.md \
   3fb1954942b0de9da1989276d535af090c0dcd22841437dbb7d6e49e54b7f92d
 verify_index_sha256 docs/execution/slices/M0-5.md \
   c5a4f1991b8f3ecbb1a3a024c6131aea5fc3d6813ddeb34b323faf2948229609
+verify_index_sha256 docs/execution/slices/M0-6.md \
+  96f5131c60d2eec508557f03ba1322af88c2002a259ec8d455569024d2013125
 verify_index_sha256 docs/architecture/canonical.md \
   ac61872a4ad45e368ba8ebf40ec3da2f6e07399c1ad8487ce695f987275861f2
 verify_index_sha256 docs/architecture/table-ownership.yml \
   c89e1fec21a83f2a94d2bd98e786905bb75a26fafc2c7a30728ce8b24fe998d8
 verify_index_sha256 scripts/test_repo_contract.sh \
-  54141afe7ca38dfd720cc846259edcc07fa0f32d676df4b6a7f5c876aee95ed7
+  b30031285a08251fb041391dd197091e09be922282cc0dd5aed4b112951280d2
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   0102039e07ddb8e55abaa57663ec8885d827fc184aea4042ed5138fc7da50b57
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
