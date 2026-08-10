@@ -165,6 +165,20 @@ for path in \
   fi
 done
 
+for path in \
+  docs/evidence/p1/g1-signoff-pack.md \
+  docs/evidence/p1/feature-matrix-top20.md \
+  docs/evidence/p1/migration-exceptions.md \
+  docs/execution/slices/G1-D02.md \
+  docs/spec/AI-CRM-v2-P2P3执行计划.md; do
+  g1d02_receipt_fixture="$(make_fixture "g1d02-receipt-${path##*/}")"
+  printf '%s\n' '# G1-D02 receipt drift' >>"$g1d02_receipt_fixture/$path"
+  git -C "$g1d02_receipt_fixture" add "$path"
+  if (cd "$g1d02_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "G1-D02 receipt drift was accepted: $path"
+  fi
+done
+
 broken_reconciliation_ci_fixture="$(make_fixture broken-p1-reconciliation-ci)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]p1-reconciliation-contract([[:space:]]|$)/\1/' "$broken_reconciliation_ci_fixture/Makefile"
 rm -f "$broken_reconciliation_ci_fixture/Makefile.bak"
@@ -276,8 +290,8 @@ set +e
 completion_output="$(cd / && /bin/bash "$matrix_valid_fixture/scripts/check_feature_matrix_contract.sh" --completion p1 2>&1)"
 completion_status=$?
 set -e
-[[ "$completion_status" -eq 2 && "$completion_output" == 'feature-matrix-completion: PENDING phase=p1 rows=293 pending=293 synthetic=0 staging=0 production=0' ]] ||
-  fail "P1 completion did not report the frozen PENDING state"
+[[ "$completion_status" -eq 0 && "$completion_output" == 'feature-matrix-completion: PASS phase=p1 rows=293 synthetic=0 staging=0 production=0' ]] ||
+  fail "P1 completion did not report the signed G1-D02 state"
 
 assert_completion() {
   local fixture="$1" phase="$2" expected="$3" output result
@@ -287,21 +301,21 @@ assert_completion() {
   [[ "$result" -eq 2 && "$output" == "$expected" ]] || fail "completion level drifted: $phase/$expected"
 }
 synthetic_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-synthetic)"
-sed -i.bak -e '2s/,"UNREVIEWED","NOT_STARTED","NOT_RUN","PENDING_HUMAN_SIGNOFF"/,"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"/' \
-  -e '2s#,"","","",""$#,"approved_by=tester;approved_at=2026-08-09","pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","method=fixture;command=make-test",""#' \
+sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"/' \
+  -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","method=fixture;command=make-test",""#' \
   "$synthetic_matrix_fixture/docs/feature-matrix.csv"; rm -f "$synthetic_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$synthetic_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid synthetic evidence was rejected"
 assert_completion "$synthetic_matrix_fixture" p4 'feature-matrix-completion: PENDING phase=p4 rows=293 pending=292 synthetic=1 staging=0 production=0'
 assert_completion "$synthetic_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=293 synthetic=1 staging=0 production=0'
 staging_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-staging)"
-sed -i.bak -e '2s/,"UNREVIEWED","NOT_STARTED","NOT_RUN","PENDING_HUMAN_SIGNOFF"/,"MIGRATE","IMPLEMENTED","STAGING_PASS","APPROVED"/' \
-  -e '2s#,"","","",""$#,"approved_by=tester;approved_at=2026-08-09","pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=staging;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=log",""#' \
+sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","STAGING_PASS","APPROVED"/' \
+  -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=staging;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=log",""#' \
   "$staging_matrix_fixture/docs/feature-matrix.csv"; rm -f "$staging_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$staging_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid staging evidence was rejected"
 assert_completion "$staging_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=0 staging=1 production=0'
 production_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-production)"
-sed -i.bak -e '2s/,"UNREVIEWED","NOT_STARTED","NOT_RUN","PENDING_HUMAN_SIGNOFF"/,"MIGRATE","IMPLEMENTED","PRODUCTION_PASS","APPROVED"/' \
-  -e '2s#,"","","",""$#,"approved_by=tester;approved_at=2026-08-09","pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=production;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=receipt;authorization=fixture",""#' \
+sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","PRODUCTION_PASS","APPROVED"/' \
+  -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=production;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=receipt;authorization=fixture",""#' \
   "$production_matrix_fixture/docs/feature-matrix.csv"; rm -f "$production_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$production_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid production evidence was rejected"
 assert_completion "$production_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=0 staging=0 production=1'
@@ -311,8 +325,12 @@ sed -i.bak '3s/LEGACY-S05-002/LEGACY-S05-001/' "$duplicate_matrix_fixture/docs/f
 assert_matrix_rejected duplicate "$duplicate_matrix_fixture" 'duplicate feature_id'
 
 enum_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-enum)"
-sed -i.bak '2s/UNREVIEWED/BROKEN/' "$enum_matrix_fixture/docs/feature-matrix.csv"; rm -f "$enum_matrix_fixture/docs/feature-matrix.csv.bak"
+sed -i.bak '2s/,"MIGRATE",/,"BROKEN",/' "$enum_matrix_fixture/docs/feature-matrix.csv"; rm -f "$enum_matrix_fixture/docs/feature-matrix.csv.bak"
 assert_matrix_rejected enum "$enum_matrix_fixture" 'invalid disposition'
+
+forged_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-forged-decision)"
+sed -i.bak '2s/G1-D02-2026-08-10/G1-D02-FORGED/' "$forged_matrix_fixture/docs/feature-matrix.csv"; rm -f "$forged_matrix_fixture/docs/feature-matrix.csv.bak"
+assert_matrix_rejected forged-decision "$forged_matrix_fixture" 'MIGRATE row lacks exact G1-D02 decision evidence'
 
 target_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-target)"
 sed -i.bak '2s/,""$/,"LEGACY-MISSING-999"/' "$target_matrix_fixture/docs/feature-matrix.csv"; rm -f "$target_matrix_fixture/docs/feature-matrix.csv.bak"
