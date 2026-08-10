@@ -279,7 +279,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  3c41200820e97578bad58d45155b236e3bac1d926380a6f0ead2f0c24d7fe05e
+  5b3c0fd655dfb30964998a473cb1d9569983b44bdebfc01e3472c47b77ede60b
 verify_index_sha256 .github/workflows/application-go.yml \
   eb5a445954504d93ddf0b2b3e6bcbe90dd1344ae3f9a6b63312ee82c107d09bf
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -379,7 +379,7 @@ verify_index_sha256 docs/evidence/p1/route-triage.csv \
 verify_index_sha256 docs/evidence/p1/g1-decisions.md \
   96686173d77d2a70fd1f4114cb1cd32bbdd4185cda5b2db83c9571825c48e1b3
 verify_index_sha256 docs/execution/slices/G1-D01.md \
-  4f44fe051407300a5536d784d8d79e2a3f6d62fbee786024d828b2897c7b0157
+  e2ed348d26ec5cf28b65afb721bff503c863d5f9569ac91a3e4a2911fafca7a6
 verify_index_sha256 tools/p1-reconciliation/main.go \
   47a6c9a6dae5b4a4e082a86ad13251edd8cdc370e396abd42d557bae1d9b78be
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
