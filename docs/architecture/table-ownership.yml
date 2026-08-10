@@ -70,7 +70,9 @@ owners:
 
   auth:
     package: internal/auth
-    tables: [admin_users]
+    tables: [admin_users, admin_sessions]
+    constraints:
+      admin_sessions: token_and_csrf_hashes_only
 
   stats:
     package: internal/stats

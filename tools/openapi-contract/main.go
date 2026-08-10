@@ -140,6 +140,41 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if doc.Components.Schemas["ErrorResponse"] == nil {
 		return errors.New("ErrorResponse schema missing")
 	}
+	if err := validateBrowserSessionContract(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateBrowserSessionContract(doc *openapi3.T) error {
+	scheme := doc.Components.SecuritySchemes["AdminSession"]
+	if scheme == nil || scheme.Value == nil || scheme.Value.Type != "apiKey" ||
+		scheme.Value.In != "cookie" || scheme.Value.Name != "aicrm_session" {
+		return errors.New("AdminSession must remain an opaque aicrm_session cookie")
+	}
+	logout := doc.Paths.Value("/api/v1/auth/logout")
+	if logout == nil || logout.Post == nil {
+		return errors.New("logout operation missing")
+	}
+	var csrf *openapi3.Parameter
+	for _, ref := range logout.Post.Parameters {
+		if ref != nil && ref.Value != nil && ref.Value.Name == "X-CSRF-Token" {
+			csrf = ref.Value
+			break
+		}
+	}
+	if csrf == nil || csrf.In != "header" || !csrf.Required || csrf.Schema == nil || csrf.Schema.Value == nil {
+		return errors.New("logout lacks required X-CSRF-Token header")
+	}
+	schema := csrf.Schema.Value
+	if schema.MinLength != 43 || schema.MaxLength == nil || *schema.MaxLength != 43 || schema.Pattern != "^[A-Za-z0-9_-]{43}$" {
+		return errors.New("logout CSRF token shape is not frozen")
+	}
+	for _, status := range []string{"204", "401", "403"} {
+		if logout.Post.Responses.Value(status) == nil {
+			return fmt.Errorf("logout response missing: %s", status)
+		}
+	}
 	return nil
 }
 

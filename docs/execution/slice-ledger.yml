@@ -1117,15 +1117,19 @@ slices:
   - slice_id: P2-08
     title: http-request-id-unified-errors-recovery-observability
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: d9c9fe33ea9b11ac12b80a201aa3d06bee6cda11
     dependency: P2-07
     branch: slice/p2-08-http-observability
     decision_anchor: ADR-006
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/106
+    pr_head_sha: 2375ef5fd19e1a481b61dcde96b7228a4b6bd126
+    merge_sha: 391d719957f963037e8fa7a8c5e3c716fad5206a
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31421877853
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31421876636
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31421876140
     delegated_tasks:
       - task_id: p2_08_http_gateway_test_corpus
         executor: gpt-5.6-terra
@@ -1149,12 +1153,55 @@ slices:
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 3
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED
+  - slice_id: P2-09
+    title: login-server-session-logout-contract
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: 391d719957f963037e8fa7a8c5e3c716fad5206a
+    dependency: P2-08
+    branch: slice/p2-09-login-session
+    decision_anchor: USER_SECURITY_BOUNDARY_AUTHORIZATION_2026-08-10
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_09_auth_service_test_corpus
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/auth/app/service_test.go
+        base_sha: 9a4bb609dd7adf1269a4ee4436bc130d06ba42f0
+        delegated_head_sha: f6bce0ad974c9ea06a70efa91e3dd013b6f0370f
+        correction_count: 0
+        file_manifest_sha256: 16fc535aa0ecc9f799dc240efaef9530f4fb8f953e248e073f250c51724bab44
+        diff_sha256: b484d991aec9cbf209d569a1de839e2566dc4a2ef341a39135ebce20737b9318
+        receipt: docs/evidence/slices/P2-09-auth-service-tests.md
+    tests:
+      - LOCAL_auth_and_openapi_focused_race_PASS
+      - LOCAL_Terra_hash_receipt_and_independent_race_replay_PASS
+      - LOCAL_official_PostgreSQL16_14_55432_REAL_SESSION_LIFECYCLE_PASS
+      - LOCAL_goose_up_down_up_00004_auth_PASS
+      - LOCAL_generate_and_orval_double_generation_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_full_ci_go_exact_head_46f3492_PASS
+      - LOCAL_gitleaks_160_commits_sensitive_paths_bundle_PASS
+    handwritten_scope: 12_files_776_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    external_gates:
+      - REAL_WECOM_OAUTH_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00

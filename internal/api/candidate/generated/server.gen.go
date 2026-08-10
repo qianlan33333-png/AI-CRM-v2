@@ -338,6 +338,9 @@ type ResolveIdentityResponse struct {
 // ResolveIdentityResponseStatus defines model for ResolveIdentityResponse.Status.
 type ResolveIdentityResponseStatus string
 
+// CSRFToken defines model for CSRFToken.
+type CSRFToken = string
+
 // Cursor defines model for Cursor.
 type Cursor = string
 
@@ -361,6 +364,12 @@ type NotFound = ErrorResponse
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = ErrorResponse
+
+// LogoutAdminParams defines parameters for LogoutAdmin.
+type LogoutAdminParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
 
 // ListCustomersParams defines parameters for ListCustomers.
 type ListCustomersParams struct {
@@ -393,7 +402,7 @@ type ServerInterface interface {
 	GetAdminConfigOverview(w http.ResponseWriter, r *http.Request)
 	// Invalidate the current admin session
 	// (POST /api/v1/auth/logout)
-	LogoutAdmin(w http.ResponseWriter, r *http.Request)
+	LogoutAdmin(w http.ResponseWriter, r *http.Request, params LogoutAdminParams)
 	// Return the authenticated admin principal
 	// (GET /api/v1/auth/session)
 	GetAuthSession(w http.ResponseWriter, r *http.Request)
@@ -432,7 +441,7 @@ func (_ Unimplemented) GetAdminConfigOverview(w http.ResponseWriter, r *http.Req
 
 // Invalidate the current admin session
 // (POST /api/v1/auth/logout)
-func (_ Unimplemented) LogoutAdmin(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) LogoutAdmin(w http.ResponseWriter, r *http.Request, params LogoutAdminParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -516,14 +525,44 @@ func (siw *ServerInterfaceWrapper) GetAdminConfigOverview(w http.ResponseWriter,
 // LogoutAdmin operation middleware
 func (siw *ServerInterfaceWrapper) LogoutAdmin(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params LogoutAdminParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LogoutAdmin(w, r)
+		siw.Handler.LogoutAdmin(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -958,6 +997,7 @@ func (response GetAdminConfigOverview403JSONResponse) VisitGetAdminConfigOvervie
 }
 
 type LogoutAdminRequestObject struct {
+	Params LogoutAdminParams
 }
 
 type LogoutAdminResponseObject interface {
@@ -977,6 +1017,15 @@ type LogoutAdmin401JSONResponse struct{ UnauthorizedJSONResponse }
 func (response LogoutAdmin401JSONResponse) VisitLogoutAdminResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type LogoutAdmin403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response LogoutAdmin403JSONResponse) VisitLogoutAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1377,8 +1426,10 @@ func (sh *strictHandler) GetAdminConfigOverview(w http.ResponseWriter, r *http.R
 }
 
 // LogoutAdmin operation middleware
-func (sh *strictHandler) LogoutAdmin(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) LogoutAdmin(w http.ResponseWriter, r *http.Request, params LogoutAdminParams) {
 	var request LogoutAdminRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.LogoutAdmin(ctx, request.(LogoutAdminRequestObject))

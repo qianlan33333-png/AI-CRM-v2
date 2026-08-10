@@ -364,6 +364,55 @@ if (cd "$hollow_p2s08" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S08 acceptance target was accepted"
 fi
 
+for file_path in \
+  migrations/00004_auth.sql \
+  internal/auth/port/port.go \
+  internal/auth/app/service.go \
+  internal/auth/app/service_test.go \
+  internal/auth/http/handler.go \
+  internal/auth/store/repository.go \
+  internal/auth/store/queries/auth.sql \
+  acceptance/p2s09/doc.go \
+  acceptance/p2s09/session_integration_test.go \
+  docs/execution/slices/P2-09.md \
+  docs/evidence/slices/P2-09-auth-service-tests.md; do
+  auth_receipt_fixture="$(make_fixture "p2-09-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-09 receipt drift' >>"$auth_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P2-09 receipt drift' >>"$auth_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-09 receipt drift' >>"$auth_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$auth_receipt_fixture" add "$file_path"
+  if (cd "$auth_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-09 auth-session receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/auth/app/service.go internal/auth/http/handler.go migrations/00004_auth.sql; do
+  missing_auth_file="$(make_fixture "missing-p2-09-${file_path//\//-}")"
+  rm -f "$missing_auth_file/$file_path"
+  git -C "$missing_auth_file" add -u "$file_path"
+  if (cd "$missing_auth_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-09 auth-session core was accepted: $file_path"
+  fi
+done
+
+disconnected_p2s09="$(make_fixture disconnected-p2-s09-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s09-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s09/Makefile"
+rm -f "$disconnected_p2s09/Makefile.bak"
+restage_make_receipt "$disconnected_p2s09"
+if (cd "$disconnected_p2s09" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S09 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s09="$(make_fixture hollow-p2-s09-target)"
+sed -i.bak '/^p2-s09-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s09/Makefile"
+rm -f "$hollow_p2s09/Makefile.bak"
+restage_make_receipt "$hollow_p2s09"
+if (cd "$hollow_p2s09" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S09 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
