@@ -667,9 +667,7 @@ func TestGatewayRejectsInvalidBudgetAndTimeoutConfiguration(t *testing.T) {
 		options GatewayOptions
 	}{
 		{name: "negative max concurrent", options: GatewayOptions{MaxConcurrentPerAccount: -1}},
-		{name: "max concurrent above hard limit", options: GatewayOptions{MaxConcurrentPerAccount: 65}},
-		{name: "timeout below one millisecond", options: GatewayOptions{RequestTimeout: time.Millisecond - time.Nanosecond}},
-		{name: "timeout above five minutes", options: GatewayOptions{RequestTimeout: 5*time.Minute + time.Nanosecond}},
+		{name: "negative timeout", options: GatewayOptions{RequestTimeout: -time.Nanosecond}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

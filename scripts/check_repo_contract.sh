@@ -200,6 +200,12 @@ required=(
   internal/auth/http/authorization.go
   docs/execution/slices/P2-10.md
   docs/evidence/slices/P2-10-rbac-tests.md
+  cmd/aicrm/api.go
+  cmd/aicrm/api_test.go
+  acceptance/p2s11/doc.go
+  acceptance/p2s11/gateway_router_test.go
+  docs/execution/slices/P2-11.md
+  docs/evidence/slices/P2-11-gateway-tests.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -422,6 +428,12 @@ done <<'EOF'
 100644 internal/auth/http/authorization.go
 100644 docs/execution/slices/P2-10.md
 100644 docs/evidence/slices/P2-10-rbac-tests.md
+100644 cmd/aicrm/api.go
+100644 cmd/aicrm/api_test.go
+100644 acceptance/p2s11/doc.go
+100644 acceptance/p2s11/gateway_router_test.go
+100644 docs/execution/slices/P2-11.md
+100644 docs/evidence/slices/P2-11-gateway-tests.md
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
@@ -469,7 +481,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  65c12cbe35563eb87ccf7676dfad8480a160911beb84602591e0b0b5b6e4ea05
+  d1619a19b80aa342e8f221d30aad872f2e90cb70d4b7c2a63ae4eb434ec9bc11
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -715,7 +727,7 @@ verify_index_sha256 internal/platform/store/uow_test.go \
 verify_index_sha256 cmd/aicrm/main.go \
   52fe62cdda6653e597ca338c4cb9a47605b47fb15c21410f6156f6d05691d180
 verify_index_sha256 cmd/aicrm/components.go \
-  0a5815ac685db52470076d4c93c36e9cfd973e93b5577fdd2c3ded40f0a7ffe4
+  139044324dd6cae717f29629fae7b977e4ef573bc580e7c220d21811ad96b9bf
 verify_index_sha256 cmd/aicrm/components_test.go \
   b81bf5c6370a3e89dbd99308d7ad31cdb03e716e76c77f412544ab32318a56e0
 verify_index_sha256 cmd/aicrm/scheduler.go \
@@ -769,9 +781,9 @@ verify_index_sha256 acceptance/p2s08/gateway_blackbox_test.go \
 verify_index_sha256 internal/platform/http/errors.go \
   21b6da0d4a110b9564f3324d00414ed59405c7577cd3379d00749812f941bf9f
 verify_index_sha256 internal/platform/http/gateway.go \
-  164599817c476db1dc1b623ef662da284a066523c175ca991476f535f5835402
+  41242be737a46bba1036996eff8ceffe173e7af27934d00ded41c3c800ed127b
 verify_index_sha256 internal/platform/http/gateway_test.go \
-  eb8313743a76e962aa23f0da2603db113abac349d04189c67662a13893e97214
+  b9f0a58b7e33195b6ad2fdff0ea74a34a31f75e3bd2eb0ffd9aa17552991f528
 verify_index_sha256 docs/execution/slices/P2-08.md \
   f9c10d171a4256764945f333ba2c591aca6c3824938f1980d849403b15b9e7f4
 verify_index_sha256 docs/evidence/slices/P2-08-http-tests.md \
@@ -820,6 +832,18 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
   0858a75f669f890e77cfd6e4aeb9a7218ab5e2f980f6370a9f00283296d63e54
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
+verify_index_sha256 cmd/aicrm/api.go \
+  e3ba7103fd34397cbf42c24025b012417ff8db81c9fcc5ac812b69fd1b1f388e
+verify_index_sha256 cmd/aicrm/api_test.go \
+  2333f1651527e3c81984b1e6bcdb196c8788344fed1318e3d4dbdf230e3a8d30
+verify_index_sha256 acceptance/p2s11/doc.go \
+  735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
+verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
+  db8a6c87ebf466f9a0ddf1039ca89fd1a8662c4320173b5a4c86325b571c0b33
+verify_index_sha256 docs/execution/slices/P2-11.md \
+  936539f52e7b3470bb5968da52a9cf43e763c4c91aa312568d1a29b4d8c5ee35
+verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
+  db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 docs/execution/slices/P2-07.md \
   4788b3c37af60d5b95704b0e8981a86904575112a635106821a1d180ef8f0c91
 verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
@@ -847,7 +871,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a2bc8589fecac1d17c68785dfa3d281972ebc0b964adc16caa91f2cfd6be7ddb
+  a0debfae265d8450692aa2b60defb4fa0343f1ba3455df5ebcf6003289bba6b9
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1155,6 +1179,16 @@ p2_s10_acceptance_recipe="$(make_target_recipe 'p2-s10-acceptance:')" ||
   fail "P2-S10 acceptance target must run only the frozen RBAC acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s10-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S10 acceptance target"
+
+require_make_line '.PHONY: p2-s11-acceptance' \
+  "Makefile must declare the P2-S11 acceptance target"
+require_unique_make_target p2-s11-acceptance
+p2_s11_acceptance_recipe="$(make_target_recipe 'p2-s11-acceptance:')" ||
+  fail "P2-S11 acceptance target must be unique"
+[[ "$p2_s11_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=60s ./acceptance/p2s11' ]] ||
+  fail "P2-S11 acceptance target must run only the frozen HTTP budget and router acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s11-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S11 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"

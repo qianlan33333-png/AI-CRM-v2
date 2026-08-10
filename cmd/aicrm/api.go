@@ -85,7 +85,11 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 	if err != nil {
 		return nil, err
 	}
-	router.Handle("/healthz", health)
+	health, err = gateway.RoutePatternMiddleware("/healthz", health)
+	if err != nil {
+		return nil, err
+	}
+	router.Method(http.MethodGet, "/healthz", health)
 
 	wrapper := &api.ServerInterfaceWrapper{Handler: candidate, ErrorHandlerFunc: platformhttp.RequestErrorHandler}
 	register := func(method, pattern string, capability authport.Capability, endpoint http.Handler) error {
@@ -105,7 +109,12 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		if wrapErr != nil {
 			return wrapErr
 		}
-		router.Method(method, pattern, authHandler.Authenticate(tail))
+		tail = authHandler.Authenticate(tail)
+		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		router.Method(method, pattern, tail)
 		return nil
 	}
 	routes := []struct {
