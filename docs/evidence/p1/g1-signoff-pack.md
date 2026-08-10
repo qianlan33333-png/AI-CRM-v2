@@ -5,7 +5,7 @@
 - 候选基线：`main@72fb929257af595ab8852dd5b5b1eb1391ff8733`
 - 当前状态：`G1_PENDING_HUMAN_SIGNOFF`
 - 旧系统事实 SHA：`6cb989c071255437d75953dabb943318a74eb8f4`
-- 真实路径频次表：`PENDING_PATH_FREQUENCY_INPUT`
+- 真实路径频次表：`docs/evidence/p1/route-triage.csv`（候选 A/B/C=`501/268/12`，待人工签字）
 - M0-4 分支保护：`PENDING_USER_CONFIRMATION`
 
 此包只整理已冻结的静态事实与候选合同。没有人工签字的条目仍是候选，不能进入 P2 实现，更不能触发真实外部效果或迁移。
@@ -24,11 +24,11 @@ p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 tables=316 fields=33
 - 三批并集 781、交集 0、遗漏 0、重复 0。
 - 781 条当前全部为待人工处置；没有伪签字。
 
-### A/B/C 分档的唯一未满足输入
+### A/B/C 分档候选
 
-尚未收到旧系统路径级频次表，因此没有生成 `docs/evidence/p1/route-triage.md`，也没有猜测任何 A/B/C 档。
+用户已授权生产环境只读取证。`docs/evidence/p1/route-triage.csv` 覆盖完整 30 天窗口与全部 781 条 authority 路由：A=501、B=268、C=12；339 条有真实流量，162 条因 UI 引用但零流量保守进入 A。完整方法、最小化边界与输入收据见 `docs/evidence/p1/route-triage.md`。
 
-所需输入至少包含：`path`、`call_count`、`last_called_at`、统计窗口起止时间；建议窗口不少于 30 天。收到后按 v2 附录 B 结合 UI 引用关系生成 781 行分档表：有真实流量为 A；零流量且无 UI 引用为 B；明确 retired/blocked/fixture/恒定 404·410 为 C。窗口不足 30 天时，前端仍引用的零流量路径必须升为 A 人工看。
+这些只是候选档位：C 需批量确认，B 需确认默认废弃及例外，A 需逐条决定迁移/合并/废弃。所有行仍为 `PENDING_HUMAN_SIGNOFF`。
 
 ## 2. 迁移映射覆盖结论
 
@@ -75,7 +75,7 @@ openapi-contract: PASS (candidate_operations=10 pending=10 legacy_links=14)
 
 ## 5. G1 人工动作与停止线
 
-1. 提供路径级频次表后，生成并审阅 781 行 A/B/C 分档；先 C、再 B、最后逐条 A。
+1. 审阅已生成的 781 行 A/B/C 候选；先确认 12 条 C，再确认 268 条 B 的例外，最后逐条处理 501 条 A。
 2. 抽查并签署上表 10 个核心 OpenAPI operation 的处置与字段。
 3. 逐页面核对 feature matrix 的线上行为。
 4. 对 316 行迁移映射逐行签字，尤其身份 scope 与历史外发状态。

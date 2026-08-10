@@ -662,11 +662,12 @@ phase_closeouts:
     evidence: docs/evidence/p1/g1-signoff-pack.md
     route_reconciliation: PASS_781_equals_156_plus_184_plus_441
     migration_reconciliation: PASS_316_tables_3313_field_mappings
-    route_triage: PENDING_PATH_FREQUENCY_INPUT
+    route_triage: CANDIDATE_A501_B268_C12_PENDING_HUMAN_SIGNOFF
+    route_triage_evidence: docs/evidence/p1/route-triage.md
     openapi_candidates: PASS_10_operations_pending_human_signoff
     external_gates:
       - G1_HUMAN_SIGNOFF_REQUIRED
-      - PATH_FREQUENCY_TABLE_PENDING_USER_INPUT
+      - G1_ROUTE_TRIAGE_HUMAN_SIGNOFF_REQUIRED
       - M0_4_BRANCH_PROTECTION_PENDING_USER_CONFIRMATION
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
