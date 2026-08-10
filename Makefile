@@ -11,7 +11,8 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p2-s04-acceptance
-.PHONY: p2-s05-acceptance p2-s07-acceptance
+.PHONY: p2-s05-acceptance
+.PHONY: p2-s07-acceptance
 .PHONY: arch-import-lint arch-import-lint-test
 .PHONY: ownership-lint ownership-lint-test
 .PHONY: acceptance-fixtures

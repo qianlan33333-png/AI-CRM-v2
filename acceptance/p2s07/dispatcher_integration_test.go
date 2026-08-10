@@ -21,8 +21,6 @@ import (
 	"github.com/riverqueue/river/rivertype"
 )
 
-const crashLockKey int64 = 0x5032533037435248
-
 func TestSIGKILLBetweenEnqueueAndCommitRecoversWithoutLossOrDuplicate(t *testing.T) {
 	databaseURL := os.Getenv("ACCEPTANCE_FIXTURES_TEST_DATABASE_URL")
 	if databaseURL == "" {
@@ -47,17 +45,14 @@ func TestSIGKILLBetweenEnqueueAndCommitRecoversWithoutLossOrDuplicate(t *testing
 	}
 	createFixtures(t, ctx, pool)
 
-	lockConn, err := pool.Acquire(ctx)
+	readyReader, readyWriter, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lockConn.Release()
-	if _, err = lockConn.Exec(ctx, `SELECT pg_advisory_lock($1)`, crashLockKey); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _, _ = lockConn.Exec(context.Background(), `SELECT pg_advisory_unlock($1)`, crashLockKey) }()
+	defer readyReader.Close()
 
 	command := exec.Command(os.Args[0], "-test.run=^TestDispatcherCrashHelper$", "-test.v")
+	command.ExtraFiles = []*os.File{readyWriter}
 	command.Env = append(os.Environ(),
 		"P2S07_CRASH_HELPER=1",
 		"P2S07_DATABASE_URL="+databaseURL,
@@ -68,13 +63,16 @@ func TestSIGKILLBetweenEnqueueAndCommitRecoversWithoutLossOrDuplicate(t *testing
 	if err = command.Start(); err != nil {
 		t.Fatal(err)
 	}
+	if err = readyWriter.Close(); err != nil {
+		t.Fatal(err)
+	}
 	defer func() {
 		if command.ProcessState == nil {
 			_ = command.Process.Kill()
 			_ = command.Wait()
 		}
 	}()
-	waitForAdvisoryBlock(t, ctx, pool)
+	waitForCrashBoundary(t, ctx, readyReader)
 	if err = command.Process.Kill(); err != nil {
 		t.Fatalf("kill helper: %v", err)
 	}
@@ -82,15 +80,9 @@ func TestSIGKILLBetweenEnqueueAndCommitRecoversWithoutLossOrDuplicate(t *testing
 		t.Fatalf("helper exited without SIGKILL: %s", helperOutput.String())
 	}
 	waitForHelperExit(t, ctx, pool)
-	if _, err = lockConn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, crashLockKey); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = pool.Exec(ctx, `DROP TRIGGER block_dispatch_update ON event_log; DROP FUNCTION block_dispatch_update()`); err != nil {
-		t.Fatal(err)
-	}
 
 	assertCounts(t, ctx, pool, false, 0, 0, 0)
-	client, dispatcher := newHarness(t, pool, &auditSubscriber{pool: pool})
+	client, dispatcher := newHarness(t, pool, nil, &auditSubscriber{pool: pool})
 	dispatched, err := dispatcher.Dispatch(ctx)
 	if err != nil || dispatched != 1 {
 		t.Fatalf("restart Dispatch() count/error = %d/%v, want 1/nil", dispatched, err)
@@ -108,6 +100,71 @@ func TestSIGKILLBetweenEnqueueAndCommitRecoversWithoutLossOrDuplicate(t *testing
 	assertCounts(t, ctx, pool, true, 1, 1, 1)
 }
 
+func TestConcurrentDispatchersClaimDisjointBatches(t *testing.T) {
+	databaseURL := os.Getenv("ACCEPTANCE_FIXTURES_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is not set")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	fixture, err := acceptancefixtures.OpenPostgreSQL(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cleanupCancel()
+		if cleanupErr := fixture.Cleanup(cleanupCtx); cleanupErr != nil {
+			t.Errorf("Cleanup() error = %v", cleanupErr)
+		}
+	})
+	pool := openPool(t, ctx, databaseURL, "p2s07-concurrent")
+	if err = platformriver.Migrate(ctx, pool, platformriver.DirectionUp, nil); err != nil {
+		t.Fatal(err)
+	}
+	createFixtures(t, ctx, pool)
+	if _, err = pool.Exec(ctx, `
+INSERT INTO acceptance_fixtures.event_log (event_type, payload, idempotency_key)
+SELECT 'test.changed', jsonb_build_object('sequence', value), 'test.concurrent:' || value
+FROM generate_series(2, 200) AS value`); err != nil {
+		t.Fatal(err)
+	}
+	_, dispatcher := newHarness(t, pool, nil)
+	type result struct {
+		count int
+		err   error
+	}
+	results := make(chan result, 2)
+	for range 2 {
+		go func() {
+			count, dispatchErr := dispatcher.Dispatch(ctx)
+			results <- result{count: count, err: dispatchErr}
+		}()
+	}
+	total := 0
+	for range 2 {
+		result := <-results
+		if result.err != nil {
+			t.Fatal(result.err)
+		}
+		total += result.count
+	}
+	var dispatched, jobs, distinctArgs, defaultJobs int
+	if err = pool.QueryRow(ctx, `
+SELECT
+  (SELECT count(*) FROM event_log WHERE dispatched),
+  (SELECT count(*) FROM river_job WHERE kind = 'events_deliver'),
+  (SELECT count(DISTINCT args) FROM river_job WHERE kind = 'events_deliver'),
+  (SELECT count(*) FROM river_job WHERE kind = 'events_deliver' AND queue = 'default')`).Scan(
+		&dispatched, &jobs, &distinctArgs, &defaultJobs); err != nil {
+		t.Fatal(err)
+	}
+	if total != 200 || dispatched != 200 || jobs != 200 || distinctArgs != 200 || defaultJobs != 0 {
+		t.Fatalf("claimed/dispatched/jobs/distinct/default = %d/%d/%d/%d/%d, want 200/200/200/200/0",
+			total, dispatched, jobs, distinctArgs, defaultJobs)
+	}
+}
+
 func TestDispatcherCrashHelper(t *testing.T) {
 	if os.Getenv("P2S07_CRASH_HELPER") != "1" {
 		return
@@ -116,7 +173,17 @@ func TestDispatcherCrashHelper(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	pool := openPool(t, ctx, databaseURL, "p2s07-crash-helper")
-	_, dispatcher := newHarness(t, pool)
+	ready := os.NewFile(3, "p2s07-crash-ready")
+	if ready == nil {
+		t.Fatal("crash helper readiness pipe is missing")
+	}
+	defer ready.Close()
+	_, dispatcher := newHarness(t, pool, func() {
+		if _, err := ready.Write([]byte{1}); err != nil {
+			panic(err)
+		}
+		select {}
+	})
 	if _, err := dispatcher.Dispatch(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +213,7 @@ func openPool(t *testing.T, ctx context.Context, databaseURL, applicationName st
 func createFixtures(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(ctx, `
-CREATE TABLE event_log (
+CREATE TABLE acceptance_fixtures.event_log (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   event_type text NOT NULL,
   customer_id bigint,
@@ -156,38 +223,34 @@ CREATE TABLE event_log (
   dispatched boolean NOT NULL DEFAULT false
 );
 CREATE INDEX idx_el_undispatched ON event_log (id) WHERE NOT dispatched;
-CREATE TABLE subscriber_audit (
+CREATE TABLE acceptance_fixtures.subscriber_audit (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   event_id bigint NOT NULL
 );
-INSERT INTO event_log (event_type, customer_id, payload, idempotency_key)
-VALUES ('test.changed', 42, '{"value":"kept"}', 'test.changed:42');
-CREATE FUNCTION block_dispatch_update() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  PERFORM pg_advisory_xact_lock(`+"5778772738420462152"+`);
-  RETURN NEW;
-END
-$$;
-CREATE TRIGGER block_dispatch_update
-BEFORE UPDATE OF dispatched ON event_log
-FOR EACH ROW EXECUTE FUNCTION block_dispatch_update();`)
+INSERT INTO acceptance_fixtures.event_log (event_type, customer_id, payload, idempotency_key)
+VALUES ('test.changed', 42, '{"value":"kept"}', 'test.changed:42');`)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 type clientReference struct {
-	client *platformjobqueue.Client
+	client       *platformjobqueue.Client
+	afterEnqueue func()
 }
 
 func (reference *clientReference) EnqueueTx(ctx context.Context, tx pgx.Tx, queue platformjobqueue.Queue, args river.JobArgs, options *river.InsertOpts) (*rivertype.JobInsertResult, error) {
 	if reference == nil || reference.client == nil {
 		return nil, platformjobqueue.ErrClientUnavailable
 	}
-	return reference.client.EnqueueTx(ctx, tx, queue, args, options)
+	result, err := reference.client.EnqueueTx(ctx, tx, queue, args, options)
+	if err == nil && reference.afterEnqueue != nil {
+		reference.afterEnqueue()
+	}
+	return result, err
 }
 
-func newHarness(t *testing.T, pool *pgxpool.Pool, subscribers ...eventport.Subscriber) (*platformjobqueue.Client, *eventdispatcher.Dispatcher) {
+func newHarness(t *testing.T, pool *pgxpool.Pool, afterEnqueue func(), subscribers ...eventport.Subscriber) (*platformjobqueue.Client, *eventdispatcher.Dispatcher) {
 	t.Helper()
 	router, err := eventdispatcher.NewRouter(subscribers...)
 	if err != nil {
@@ -201,7 +264,7 @@ func newHarness(t *testing.T, pool *pgxpool.Pool, subscribers ...eventport.Subsc
 	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueEvent, deliveryWorker); err != nil {
 		t.Fatal(err)
 	}
-	reference := &clientReference{}
+	reference := &clientReference{afterEnqueue: afterEnqueue}
 	dispatcher, err := eventdispatcher.New(platformstore.NewUnitOfWork(pool), reference, eventdispatcher.DefaultBatchSize)
 	if err != nil {
 		t.Fatal(err)
@@ -223,23 +286,26 @@ type auditSubscriber struct {
 func (*auditSubscriber) EventTypes() []string { return []string{"test.changed"} }
 
 func (subscriber *auditSubscriber) Consume(ctx context.Context, event eventport.Record) error {
-	_, err := subscriber.pool.Exec(ctx, `INSERT INTO subscriber_audit (event_id) VALUES ($1)`, event.ID)
+	_, err := subscriber.pool.Exec(ctx, `INSERT INTO acceptance_fixtures.subscriber_audit (event_id) VALUES ($1)`, event.ID)
 	return err
 }
 
-func waitForAdvisoryBlock(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+func waitForCrashBoundary(t *testing.T, ctx context.Context, ready *os.File) {
 	t.Helper()
-	waitFor(t, ctx, func() (bool, error) {
-		var blocked bool
-		err := pool.QueryRow(ctx, `
-SELECT EXISTS (
-  SELECT 1 FROM pg_stat_activity
-  WHERE application_name = 'p2s07-crash-helper'
-    AND wait_event_type = 'Lock'
-    AND wait_event = 'advisory'
-)`).Scan(&blocked)
-		return blocked, err
-	}, "crash helper never reached the enqueue-before-commit boundary")
+	result := make(chan error, 1)
+	go func() {
+		var signal [1]byte
+		_, err := ready.Read(signal[:])
+		result <- err
+	}()
+	select {
+	case err := <-result:
+		if err != nil {
+			t.Fatalf("read crash boundary signal: %v", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("crash helper never reached the enqueue-before-commit boundary")
+	}
 }
 
 func waitForHelperExit(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {

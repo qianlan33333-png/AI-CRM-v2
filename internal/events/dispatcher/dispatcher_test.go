@@ -150,8 +150,32 @@ func TestDeliveryInsertOptionsAreUniqueByArgsAndLeaveQueueUnset(t *testing.T) {
 	if options.UniqueOpts.ByQueue || options.UniqueOpts.ByPeriod != 0 || options.UniqueOpts.ByState != nil || options.UniqueOpts.ExcludeKind {
 		t.Fatalf("deliveryInsertOptions().UniqueOpts = %#v, want only ByArgs enabled", options.UniqueOpts)
 	}
-	if options.Queue != "" || options.Queue == river.QueueDefault {
-		t.Fatalf("deliveryInsertOptions().Queue = %q, want unset and not River default %q", options.Queue, river.QueueDefault)
+	if options.Queue != "" || options.Queue == "default" {
+		t.Fatalf("deliveryInsertOptions().Queue = %q, want unset and not River default", options.Queue)
+	}
+}
+
+func TestDeferredEnqueuerBindsExactlyOnceAndFailsClosedBeforeBind(t *testing.T) {
+	reference := NewDeferredEnqueuer()
+	if _, err := reference.EnqueueTx(context.Background(), nil, platformjobqueue.QueueEvent, DeliverArgs{EventID: 1}, nil); !errors.Is(err, platformjobqueue.ErrClientUnavailable) {
+		t.Fatalf("EnqueueTx() before bind error = %v, want ErrClientUnavailable", err)
+	}
+	if err := reference.Bind(nil); !errors.Is(err, ErrInvalidDispatcher) {
+		t.Fatalf("Bind(nil) error = %v, want ErrInvalidDispatcher", err)
+	}
+	var typedNil *testEnqueuer
+	if err := reference.Bind(typedNil); !errors.Is(err, ErrInvalidDispatcher) {
+		t.Fatalf("Bind(typed nil) error = %v, want ErrInvalidDispatcher", err)
+	}
+	enqueuer := &testEnqueuer{}
+	if err := reference.Bind(enqueuer); err != nil {
+		t.Fatalf("Bind(valid) error = %v", err)
+	}
+	if err := reference.Bind(enqueuer); !errors.Is(err, ErrEnqueuerBound) {
+		t.Fatalf("Bind(second) error = %v, want ErrEnqueuerBound", err)
+	}
+	if _, err := reference.EnqueueTx(context.Background(), nil, platformjobqueue.QueueEvent, DeliverArgs{EventID: 1}, nil); err != nil {
+		t.Fatalf("EnqueueTx() after bind error = %v", err)
 	}
 }
 

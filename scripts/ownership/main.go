@@ -30,7 +30,7 @@ var (
 	writePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\bcreate\s+(?:temporary\s+|temp\s+)?table\s+(?:if\s+not\s+exists\s+)?([a-z0-9_.$"]+)`),
 		regexp.MustCompile(`(?i)\binsert\s+into\s+([a-z0-9_.$"]+)`),
-		regexp.MustCompile(`(?i)\bupdate\s+(?:only\s+)?([a-z0-9_.$"]+)`),
+		regexp.MustCompile(`(?i)\bupdate\s+(?:only\s+)?([a-z0-9_.$"]+)(?:\s+[*])?(?:\s+(?:as\s+)?[a-z0-9_$"]+)?\s+set\b`),
 		regexp.MustCompile(`(?i)\bdelete\s+from\s+(?:only\s+)?([a-z0-9_.$"]+)`),
 		regexp.MustCompile(`(?i)\bmerge\s+into\s+([a-z0-9_.$"]+)`),
 		regexp.MustCompile(`(?i)\bcopy\s+([a-z0-9_.$"]+)(?:\s*\([^)]*\))?\s+from\b`),

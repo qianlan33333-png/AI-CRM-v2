@@ -26,6 +26,7 @@ seed() {
   printf '%s\n' \
     'INSERT INTO event_log (event_type) VALUES ($1)' \
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
+    'SELECT id FROM event_log FOR UPDATE SKIP LOCKED;' \
     >"$root/internal/events/store/queries/upsert.sql"
 }
 run_checker() {
@@ -54,6 +55,7 @@ mutate() {
     platform-write) echo 'INSERT INTO event_log DEFAULT VALUES;' >"$root/internal/platform/store/write.sql" ;;
     contact-event-update) echo 'UPDATE event_log SET dispatched = true;' >"$root/internal/contact/store/queries/write.sql" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
+    update-unknown-table) echo 'UPDATE mystery_table AS target SET id = 2;' >"$root/internal/contact/store/queries/write.sql" ;;
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
     outbound-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/outbound/worker/client.go" ;;
     wecom-write) echo 'package store; const endpoint = "/cgi-bin/message/send"' >"$root/internal/wecom/store/client.go" ;;
@@ -66,6 +68,7 @@ mutate() {
 reject contact-identity 'table write ownership violation'; reject segment-write 'table write ownership violation'
 reject platform-write 'table write ownership violation'; reject contact-event-update 'table write ownership violation'
 reject unknown-table 'write to unknown table'
+reject update-unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'
 reject outbound-read 'WeCom operation ownership violation'; reject wecom-write 'WeCom operation ownership violation'
 reject contact-endpoint 'WeCom operation ownership violation'; reject contact-sdk 'external WeCom client import forbidden'
