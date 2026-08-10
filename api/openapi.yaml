@@ -199,9 +199,12 @@ paths:
       x-p1-signoff-status: APPROVED
       x-p1-decision-evidence: G1-D01-2026-08-10
       x-legacy-mapping-ids: [LEGACY-API-0760]
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
       responses:
         "204": { description: Session invalidated. }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/v1/admin/config/overview:
     get:
       tags: [p1-core-candidate]
@@ -226,6 +229,16 @@ components:
       in: cookie
       name: aicrm_session
   parameters:
+    CSRFToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: Double-submit token bound to the server-side browser session.
+      schema:
+        type: string
+        minLength: 43
+        maxLength: 43
+        pattern: '^[A-Za-z0-9_-]{43}$'
     CustomerID:
       name: customer_id
       in: path
