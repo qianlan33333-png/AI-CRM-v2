@@ -1210,15 +1210,19 @@ slices:
   - slice_id: P2-10
     title: rbac-and-server-side-data-scope
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: 2176fe032eb897c640e5b911a6a7609ecc648e35
     dependency: P2-09
     branch: slice/p2-10-rbac-data-scope
     decision_anchor: ADR-006
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/108
+    pr_head_sha: 0b1e4892c1ba78eeca0279e7619eb55b1235fef5
+    merge_sha: 66f2be3db23c0f31e1c66e5843536ab1b9d7fd68
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31434373299
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31434373345
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31434373315
     delegated_tasks:
       - task_id: p2_10_rbac_test_corpus
         executor: gpt-5.6-terra
@@ -1244,6 +1248,30 @@ slices:
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 5
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-11
+    title: per-account-budget-timeout-and-final-router
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 66f2be3db23c0f31e1c66e5843536ab1b9d7fd68
+    dependency: P2-10
+    branch: slice/p2-11-http-budget-router
+    decision_anchor: ADR-006_DESIGN_8_1_8_3
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks: []
+    tests: []
+    handwritten_scope: PENDING
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
     external_gates:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED

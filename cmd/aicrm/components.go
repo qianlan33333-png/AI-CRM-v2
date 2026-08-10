@@ -46,14 +46,6 @@ func buildComponents(role appruntime.Role, config appconfig.Root, builders compo
 	return selected, nil
 }
 
-func newAPIComponent(appconfig.Root) (appruntime.Component, error) {
-	wait := appruntime.ComponentFunc(func(ctx context.Context) error {
-		<-ctx.Done()
-		return ctx.Err()
-	})
-	return wait, nil
-}
-
 func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
 	if err != nil {
