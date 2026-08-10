@@ -16,7 +16,14 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 		apiListenAddressEnv:   "127.0.0.1:8080",
 		apiPoolMaxConnsEnv:    "10",
 		workerPoolMaxConnsEnv: "9",
+		criticalWorkersEnv:    "2",
+		eventWorkersEnv:       "1",
+		outboundWorkersEnv:    "1",
+		syncWorkersEnv:        "1",
+		heavyWorkersEnv:       "1",
+		aiWorkersEnv:          "1",
 	}
+	sQueues := QueueConcurrency{Critical: 2, Event: 1, Outbound: 1, Sync: 1, Heavy: 1, AI: 1}
 	tests := []struct {
 		name string
 		role appruntime.Role
@@ -24,8 +31,8 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 		want Root
 	}{
 		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}}},
-		{name: "worker", role: appruntime.RoleWorker, omit: apiListenAddressEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, Worker: Worker{PoolMaxConns: 9}}},
-		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9}}},
+		{name: "worker", role: appruntime.RoleWorker, omit: apiListenAddressEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}}},
+		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -49,6 +56,12 @@ func TestLoadReturnsAllRelevantProblemsWithoutValues(t *testing.T) {
 		apiListenAddressEnv:   "127.0.0.1",
 		apiPoolMaxConnsEnv:    "zero",
 		workerPoolMaxConnsEnv: "0",
+		criticalWorkersEnv:    "2",
+		eventWorkersEnv:       "1",
+		outboundWorkersEnv:    "1",
+		syncWorkersEnv:        "1",
+		heavyWorkersEnv:       "1",
+		aiWorkersEnv:          "1",
 	}
 	_, err := load(appruntime.RoleAll, mapLookup(values))
 	if !errors.Is(err, ErrInvalid) {
@@ -65,13 +78,38 @@ func TestLoadReturnsAllRelevantProblemsWithoutValues(t *testing.T) {
 
 func TestLoadRejectsMissingFieldsAndInvalidRole(t *testing.T) {
 	_, err := load(appruntime.RoleAll, mapLookup(nil))
-	want := "invalid startup configuration: database.url is required; api.listen_address is required; api.pool_max_conns is required; worker.pool_max_conns is required"
+	want := "invalid startup configuration: database.url is required; api.listen_address is required; api.pool_max_conns is required; worker.pool_max_conns is required; worker.queues.critical is required; worker.queues.event is required; worker.queues.outbound is required; worker.queues.sync is required; worker.queues.heavy is required; worker.queues.ai is required"
 	if err == nil || err.Error() != want {
 		t.Fatalf("missing load() error = %v, want %q", err, want)
 	}
 	_, err = load(appruntime.Role("invalid"), mapLookup(map[string]string{databaseURLEnv: "postgres://db/aicrm"}))
 	if err == nil || err.Error() != "invalid startup configuration: process.role is invalid" {
 		t.Fatalf("invalid-role load() error = %v", err)
+	}
+}
+
+func TestWorkerQueueBudgetIsFailClosed(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:        "postgres://db/aicrm",
+		workerPoolMaxConnsEnv: "8",
+		criticalWorkersEnv:    "2",
+		eventWorkersEnv:       "1",
+		outboundWorkersEnv:    "1",
+		syncWorkersEnv:        "1",
+		heavyWorkersEnv:       "1",
+		aiWorkersEnv:          "1",
+	}
+	_, err := load(appruntime.RoleWorker, mapLookup(values))
+	want := "invalid startup configuration: worker.pool_max_conns must be at least queue concurrency total + 2"
+	if err == nil || err.Error() != want {
+		t.Fatalf("undersized worker pool error = %v, want %q", err, want)
+	}
+	values[workerPoolMaxConnsEnv] = "9"
+	values[heavyWorkersEnv] = "0"
+	_, err = load(appruntime.RoleWorker, mapLookup(values))
+	want = "invalid startup configuration: worker.queues.heavy must be a positive integer"
+	if err == nil || err.Error() != want {
+		t.Fatalf("invalid heavy queue error = %v, want %q", err, want)
 	}
 }
 

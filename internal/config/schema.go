@@ -17,6 +17,12 @@ const (
 	apiListenAddressEnv   = "AICRM_HTTP_LISTEN_ADDRESS"
 	apiPoolMaxConnsEnv    = "AICRM_API_PGX_MAX_CONNS"
 	workerPoolMaxConnsEnv = "AICRM_WORKER_PGX_MAX_CONNS"
+	criticalWorkersEnv    = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
+	eventWorkersEnv       = "AICRM_RIVER_EVENT_MAX_WORKERS"
+	outboundWorkersEnv    = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
+	syncWorkersEnv        = "AICRM_RIVER_SYNC_MAX_WORKERS"
+	heavyWorkersEnv       = "AICRM_RIVER_HEAVY_MAX_WORKERS"
+	aiWorkersEnv          = "AICRM_RIVER_AI_MAX_WORKERS"
 )
 
 var ErrInvalid = errors.New("invalid startup configuration")
@@ -41,6 +47,25 @@ type API struct {
 
 type Worker struct {
 	PoolMaxConns int32
+	Queues       QueueConcurrency
+}
+
+type QueueConcurrency struct {
+	Critical int32
+	Event    int32
+	Outbound int32
+	Sync     int32
+	Heavy    int32
+	AI       int32
+}
+
+func (queues QueueConcurrency) Total() int32 {
+	return queues.Critical + queues.Event + queues.Outbound + queues.Sync + queues.Heavy + queues.AI
+}
+
+func (queues QueueConcurrency) valid() bool {
+	return queues.Critical > 0 && queues.Event > 0 && queues.Outbound > 0 &&
+		queues.Sync > 0 && queues.Heavy > 0 && queues.AI > 0
 }
 
 // Root contains only startup infrastructure settings. Persisted business settings
@@ -93,6 +118,18 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
+		root.Worker.Queues = QueueConcurrency{
+			Critical: parsePositiveInt32(lookup, criticalWorkersEnv, "worker.queues.critical", &problems),
+			Event:    parsePositiveInt32(lookup, eventWorkersEnv, "worker.queues.event", &problems),
+			Outbound: parsePositiveInt32(lookup, outboundWorkersEnv, "worker.queues.outbound", &problems),
+			Sync:     parsePositiveInt32(lookup, syncWorkersEnv, "worker.queues.sync", &problems),
+			Heavy:    parsePositiveInt32(lookup, heavyWorkersEnv, "worker.queues.heavy", &problems),
+			AI:       parsePositiveInt32(lookup, aiWorkersEnv, "worker.queues.ai", &problems),
+		}
+		queueTotal := root.Worker.Queues.Total()
+		if root.Worker.PoolMaxConns > 0 && root.Worker.Queues.valid() && root.Worker.PoolMaxConns < queueTotal+2 {
+			problems = append(problems, "worker.pool_max_conns must be at least queue concurrency total + 2")
+		}
 	}
 	if len(problems) != 0 {
 		return Root{}, validationError{problems: problems}

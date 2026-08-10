@@ -156,6 +156,68 @@ if (cd "$missing_settings_registry" && scripts/check_repo_contract.sh >/dev/null
   fail "missing P2-03 settings registry was accepted"
 fi
 
+for file_path in \
+  acceptance/p0s01/process_blackbox.sh \
+  acceptance/p0s01/static_contract.sh \
+  acceptance/p2s04/doc.go \
+  acceptance/p2s04/queue_isolation_integration_test.go \
+  cmd/aicrm/main.go \
+  cmd/aicrm/components.go \
+  cmd/aicrm/components_test.go \
+  internal/config/schema.go \
+  internal/config/schema_test.go \
+  internal/platform/jobqueue/client.go \
+  internal/platform/jobqueue/client_test.go \
+  internal/platform/jobqueue/queue.go \
+  internal/platform/jobqueue/queue_policy_test.go \
+  scripts/check_arch_imports.go \
+  scripts/test_arch_imports.sh \
+  docs/execution/slices/P2-04.md \
+  docs/evidence/slices/P2-04-queue-policy-tests.md; do
+  queue_receipt_fixture="$(make_fixture "p2-04-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-04 receipt drift' >>"$queue_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-04 receipt drift' >>"$queue_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$queue_receipt_fixture" add "$file_path"
+  if (cd "$queue_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-04 River queue isolation receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/platform/jobqueue/client.go internal/platform/jobqueue/queue.go; do
+  missing_jobqueue_file="$(make_fixture "missing-p2-04-${file_path##*/}")"
+  rm -f "$missing_jobqueue_file/$file_path"
+  git -C "$missing_jobqueue_file" add -u "$file_path"
+  if (cd "$missing_jobqueue_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-04 jobqueue boundary was accepted: $file_path"
+  fi
+done
+
+non_fail_fast_p0s01="$(make_fixture non-fail-fast-p0s01)"
+sed -i.bak 's#acceptance/p0s01/static_contract[.]sh && \\#acceptance/p0s01/static_contract.sh; \\#' "$non_fail_fast_p0s01/Makefile"
+rm -f "$non_fail_fast_p0s01/Makefile.bak"
+restage_make_receipt "$non_fail_fast_p0s01"
+if (cd "$non_fail_fast_p0s01" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "non-fail-fast P0-S01 acceptance recipe was accepted"
+fi
+
+disconnected_p2s04="$(make_fixture disconnected-p2-s04-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s04-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s04/Makefile"
+rm -f "$disconnected_p2s04/Makefile.bak"
+restage_make_receipt "$disconnected_p2s04"
+if (cd "$disconnected_p2s04" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S04 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s04="$(make_fixture hollow-p2-s04-target)"
+sed -i.bak '/^p2-s04-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s04/Makefile"
+rm -f "$hollow_p2s04/Makefile.bak"
+restage_make_receipt "$hollow_p2s04"
+if (cd "$hollow_p2s04" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S04 acceptance target was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
