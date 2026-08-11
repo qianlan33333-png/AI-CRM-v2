@@ -522,6 +522,37 @@ for file_path in \
   fi
 done
 
+p2s13_card_fixture="$(make_fixture p2-13-card-receipt)"
+printf '%s\n' '# P2-13 receipt drift' >>"$p2s13_card_fixture/docs/execution/slices/P2-13.md"
+git -C "$p2s13_card_fixture" add docs/execution/slices/P2-13.md
+if (cd "$p2s13_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-13 slice card receipt drift was accepted"
+fi
+
+for file_path in \
+  package.json \
+  web/src/auth.ts \
+  web/src/auth.test.ts \
+  web/src/auth-ui.tsx \
+  web/src/auth-ui.test.tsx \
+  web/src/main.tsx \
+  web/src/main.test.tsx \
+  web/src/shell.css \
+  docs/execution/slices/P2-13.md \
+  docs/evidence/slices/P2-13-auth-ui.md; do
+  p2s13_receipt_fixture="$(make_fixture "p2-13-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    package.json) sed -i.bak 's/"test":/"test_drift":/' "$p2s13_receipt_fixture/$file_path"; rm -f "$p2s13_receipt_fixture/$file_path.bak" ;;
+    *.ts|*.tsx) printf '%s\n' '// P2-13 receipt drift' >>"$p2s13_receipt_fixture/$file_path" ;;
+    *.css) printf '%s\n' '/* P2-13 receipt drift */' >>"$p2s13_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-13 receipt drift' >>"$p2s13_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p2s13_receipt_fixture" add "$file_path"
+  if (cd "$p2s13_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-13 auth receipt drift was accepted: $file_path"
+  fi
+done
+
 missing_p2s12_router="$(make_fixture missing-p2-12-router)"
 rm -f "$missing_p2s12_router/web/src/main.tsx"
 git -C "$missing_p2s12_router" add -u web/src/main.tsx

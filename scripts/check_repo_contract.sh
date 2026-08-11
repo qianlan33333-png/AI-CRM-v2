@@ -46,6 +46,10 @@ required=(
   internal/platform/store/contract.go
   internal/platform/river/contract.go
   web/index.html
+  web/src/auth.ts
+  web/src/auth.test.ts
+  web/src/auth-ui.tsx
+  web/src/auth-ui.test.tsx
   web/src/main.tsx
   web/src/main.test.tsx
   web/src/shell.css
@@ -209,6 +213,8 @@ required=(
   docs/evidence/slices/P2-11-gateway-tests.md
   docs/execution/slices/P2-12.md
   docs/evidence/slices/P2-12-web-shell.md
+  docs/execution/slices/P2-13.md
+  docs/evidence/slices/P2-13-auth-ui.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -440,6 +446,12 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-11-gateway-tests.md
 100644 docs/execution/slices/P2-12.md
 100644 docs/evidence/slices/P2-12-web-shell.md
+100644 docs/execution/slices/P2-13.md
+100644 docs/evidence/slices/P2-13-auth-ui.md
+100644 web/src/auth.ts
+100644 web/src/auth.test.ts
+100644 web/src/auth-ui.tsx
+100644 web/src/auth-ui.test.tsx
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
@@ -497,7 +509,7 @@ verify_index_sha256 go.mod \
 verify_index_sha256 go.sum \
   411aa7f8fff51ca54e7b0c3f84323a2bcbec8541a9a16cb01c3e46af1c24dee7
 verify_index_sha256 package.json \
-  0eba96dc7c5cb99afa7334da44ebff47e004d10465cb5f9b2ce31f1993bb3d47
+  a0ce7f09b7397cca843f74b00a7c1d2ee2d019bf287019490d0de09c8460f68f
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
@@ -641,9 +653,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  f8e5e1aa3d9f99842e5395da2d665c521814998a500991565bd77644c263d42b
+  aaf6fd13fb89e5e1667b6726da0154464ff4a2519248099caa618fc07b6eb6ca
 verify_index_sha256 docs/spec/SHA256SUMS \
-  1c3c78deebf5dfe78909d322f1c72cb0f9a52fee8e594b1b005f565edeb6a35a
+  f8dfc7d717fbb54975954201e9a253017900334de60a7a214c517476ddbab65f
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -851,15 +863,27 @@ verify_index_sha256 docs/execution/slices/P2-11.md \
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 web/src/main.tsx \
-  ce8aedeec812313b6fa83896daad4619c8c2a5088915d3bc728f15da3061fa5f
+  8dcf6c1ad3ddfb24efdcd00055b9b7c3c98d2eee9dd7110dc6ad44481303b2f3
 verify_index_sha256 web/src/main.test.tsx \
-  5fbf5a75cc0e4684269938e753c9f0102998284c18a4ba146e331d0985eae73f
+  89a17a07bf650c61935e60f192355a2d14f25437c77c03f901d4efebc8950f20
 verify_index_sha256 web/src/shell.css \
-  f6334efe23684e39b1987ebd3388aded29703c4c6c7a83303f76a287dbc6c25d
+  b9886ea9ba79100b7572e8c5f184172a3c9d118a2793e89fa7b4c5d6cb67201a
 verify_index_sha256 docs/execution/slices/P2-12.md \
   3eba447aab3854dd1ae2b27df5e2167de9b38e7c5d0996aa6a64a1d524b5c8f7
 verify_index_sha256 docs/evidence/slices/P2-12-web-shell.md \
   5d84f724094413672de6f6861e45542bf3b6d12eb39a04cbe06846e09eba0f17
+verify_index_sha256 docs/execution/slices/P2-13.md \
+  e649a864beeed46b2ba604c33e2ae70bb48f083fdc39c62c7ab472c00e02e007
+verify_index_sha256 docs/evidence/slices/P2-13-auth-ui.md \
+  d647a78aa84bddbeb6416cd2b92ed6dc5548b1c3e6e0d357153f2868e2000c3f
+verify_index_sha256 web/src/auth.ts \
+  badb048198605e8bd93e31ce0ad9950243764e5cc0990bb009066e0bf38ee347
+verify_index_sha256 web/src/auth.test.ts \
+  3a11be3776ab06213ae73b43cdf3376e90ed1b65ea88e187529f2d5a2d58568a
+verify_index_sha256 web/src/auth-ui.tsx \
+  cd44efe0eb1216921df18f4f508088a12004a97eb4f148698e46b776f9b6cde6
+verify_index_sha256 web/src/auth-ui.test.tsx \
+  a45b33d9bcc123347b5b6878b16c79fbc8b390798fc423efb82fd0b9582b1ddd
 verify_index_sha256 docs/execution/slices/P2-07.md \
   4788b3c37af60d5b95704b0e8981a86904575112a635106821a1d180ef8f0c91
 verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
@@ -887,7 +911,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b74e5448de02abb7eca575d9f5ea06a3653e274bdddb8a5705cede3a3ab7fb70
+  7634415eb4b185728b533547a384437ab0ed5921d313e7f1e1f3e293742170bd
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

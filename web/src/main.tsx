@@ -2,9 +2,27 @@
 
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  PermissionSessionCache,
+  generatedAuthTransport,
+  performLogout,
+  permittedRoutePaths,
+  type AuthPrincipal,
+  type AuthTransport,
+  type SessionResult,
+} from "./auth";
+import {
+  AccountCard,
+  LoginPage,
+  PermissionNavigation,
+  type AccountSummary,
+  type LogoutState,
+  type PermissionNavigationLink,
+} from "./auth-ui";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
+export const LOGIN_PATH = "/login";
 
 export const routes = [
   {
@@ -71,6 +89,10 @@ export interface NavigationClick {
 
 export interface AppProps {
   navigation?: React.ReactNode;
+  cache?: PermissionSessionCache;
+  transport?: AuthTransport;
+  cookieHeader?: () => string;
+  initialSession?: SessionResult;
 }
 
 export function routeForPathname(pathname: string): AppRoute | undefined {
@@ -172,24 +194,6 @@ export function handleNavigationClick(
   return navigateTo(destination, browser);
 }
 
-function DefaultNavigation({ pathname }: { pathname: string }) {
-  return (
-    <ul className="shell-nav__list">
-      {routes.map((route) => (
-        <li key={route.path}>
-          <a
-            aria-current={route.path === pathname ? "page" : undefined}
-            href={route.path}
-            onClick={(event) => handleNavigationClick(event, route.path)}
-          >
-            {route.navigationLabel}
-          </a>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function PageContent({ route }: { route: AppRoute | undefined }) {
   if (!route) {
     return (
@@ -220,14 +224,138 @@ function PageContent({ route }: { route: AppRoute | undefined }) {
   );
 }
 
-export function App({ navigation }: AppProps) {
+const runtimeCache = new PermissionSessionCache(
+  generatedAuthTransport.getSession,
+);
+
+function runtimeCookieHeader(): string {
+  if (typeof document === "undefined") return "";
+  return document.cookie;
+}
+
+function accountSummary(principal: AuthPrincipal): AccountSummary {
+  const labels: Record<AuthPrincipal["role"], string> = {
+    admin: "管理员",
+    ops: "运营",
+    sales: "销售",
+  };
+  return {
+    displayName: `后台账号 #${principal.adminUserID}`,
+    roleLabel: labels[principal.role],
+  };
+}
+
+export function navigationLinks(
+  principal: AuthPrincipal,
+): readonly PermissionNavigationLink[] {
+  const permitted = new Set(permittedRoutePaths(principal));
+  return routes
+    .filter((route) => permitted.has(route.path))
+    .map((route) => ({ href: route.path, label: route.navigationLabel }));
+}
+
+type AppSessionState = SessionResult | { status: "checking" };
+
+export function App({
+  navigation,
+  cache = runtimeCache,
+  transport = generatedAuthTransport,
+  cookieHeader = runtimeCookieHeader,
+  initialSession,
+}: AppProps) {
   const [pathname, setPathname] = useState(readPathname);
+  const [session, setSession] = useState<AppSessionState>(
+    initialSession ?? { status: "checking" },
+  );
+  const [logoutState, setLogoutState] = useState<LogoutState>("ready");
   const route = routeForPathname(pathname);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     return subscribeToRouteChanges(window, () => setPathname(readPathname()));
   }, []);
+
+  useEffect(() => {
+    if (initialSession) return undefined;
+    let active = true;
+    void cache.load().then((result) => {
+      if (active) setSession(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [cache, initialSession]);
+
+  const retrySession = () => {
+    setSession({ status: "checking" });
+    void cache.load(true).then(setSession);
+  };
+
+  const requestLogout = () => {
+    if (logoutState === "pending") return;
+    let cookies: string;
+    try {
+      cookies = cookieHeader();
+    } catch {
+      setLogoutState("error");
+      return;
+    }
+    setLogoutState("pending");
+    void performLogout(transport, cache, cookies).then((result) => {
+      if (result === "logged_out" || result === "unauthenticated") {
+        setLogoutState("ready");
+        setSession({ status: "unauthenticated" });
+        return;
+      }
+      setLogoutState("error");
+    });
+  };
+
+  const loginView = (() => {
+    if (session.status === "checking") return { kind: "checking" } as const;
+    if (session.status === "unavailable") {
+      return { kind: "service-error", onRetry: retrySession } as const;
+    }
+    if (session.status === "unauthenticated") {
+      return { kind: "anonymous" } as const;
+    }
+    return {
+      kind: "authenticated",
+      account: accountSummary(session.principal),
+      logout: { state: logoutState, onRequest: requestLogout },
+      workbenchLink: { href: "/", label: "返回运营指挥台" },
+      onReturnToWorkbench: (event: React.MouseEvent<HTMLAnchorElement>) =>
+        handleNavigationClick(event, event.currentTarget.href),
+    } as const;
+  })();
+
+  if (session.status !== "authenticated" || pathname === LOGIN_PATH) {
+    return (
+      <div className="app-shell app-shell--login">
+        <a className="skip-link" href="#main-content">
+          跳至主要内容
+        </a>
+        <header className="shell-header">
+          <a
+            aria-label="AI-CRM"
+            className="product-mark"
+            href="/"
+            onClick={(event) => handleNavigationClick(event, "/")}
+          >
+            <span aria-hidden="true">AI</span>
+            <span>CRM</span>
+          </a>
+          <p className="product-context">运营指挥台</p>
+        </header>
+        <main id="main-content" className="login-main" tabIndex={-1}>
+          <LoginPage view={loginView} titleId="app-title" />
+        </main>
+      </div>
+    );
+  }
+
+  const links = navigationLinks(session.principal);
+  const account = accountSummary(session.principal);
 
   return (
     <div className="app-shell">
@@ -245,10 +373,22 @@ export function App({ navigation }: AppProps) {
           <span>CRM</span>
         </a>
         <p className="product-context">运营指挥台</p>
+        <AccountCard
+          account={account}
+          logout={{ state: logoutState, onRequest: requestLogout }}
+        />
       </header>
       <div className="shell-frame">
         <nav className="shell-nav" aria-label="主导航">
-          {navigation ?? <DefaultNavigation pathname={pathname} />}
+          {navigation ?? (
+            <PermissionNavigation
+              activeHref={pathname}
+              links={links}
+              onNavigate={(event) =>
+                handleNavigationClick(event, event.currentTarget.href)
+              }
+            />
+          )}
         </nav>
         <main id="main-content" className="shell-main" tabIndex={-1}>
           <PageContent route={route} />
