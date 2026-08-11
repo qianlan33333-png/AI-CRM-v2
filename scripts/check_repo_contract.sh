@@ -217,6 +217,12 @@ required=(
   docs/evidence/slices/P2-13-auth-ui.md
   docs/execution/slices/P2-14.md
   docs/evidence/slices/P2-14-stages-sqlc.md
+  docs/execution/slices/P2-15.md
+  docs/evidence/slices/P2-15-stage-service-tests.md
+  internal/contact/app/stage_service.go
+  internal/contact/app/stage_service_test.go
+  acceptance/p2s15/doc.go
+  acceptance/p2s15/stage_service_integration_test.go
   internal/contact/store/queries/stages.sql
   internal/contact/store/generated/db.go
   internal/contact/store/generated/models.go
@@ -460,6 +466,12 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-13-auth-ui.md
 100644 docs/execution/slices/P2-14.md
 100644 docs/evidence/slices/P2-14-stages-sqlc.md
+100644 docs/execution/slices/P2-15.md
+100644 docs/evidence/slices/P2-15-stage-service-tests.md
+100644 internal/contact/app/stage_service.go
+100644 internal/contact/app/stage_service_test.go
+100644 acceptance/p2s15/doc.go
+100644 acceptance/p2s15/stage_service_integration_test.go
 100644 internal/contact/store/queries/stages.sql
 100644 internal/contact/store/generated/db.go
 100644 internal/contact/store/generated/models.go
@@ -519,7 +531,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  b17dc46d0fbcd8c8f345438007a4948eb248bfe7af8dcfd53d56aefe775987a9
+  83a769c2424abb0f15988ce7d25c143c9159a2196577bf09bc5294e7324fc792
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -900,6 +912,18 @@ verify_index_sha256 docs/execution/slices/P2-14.md \
   48c6fa497cb10990fd3198843dd202c5d1b6acb704ae6da5a63bb747c43f852c
 verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
   54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
+verify_index_sha256 docs/execution/slices/P2-15.md \
+  82a047eb827f129d01eb329bfd95ea751a30c3526e6247698189f4af047e6386
+verify_index_sha256 docs/evidence/slices/P2-15-stage-service-tests.md \
+  7c086a4d95da8440a60970d1e174ee5f82053e60a9d7f9c51aa79ec3172a0bd9
+verify_index_sha256 internal/contact/app/stage_service.go \
+  9c5ba8595f64ae5b5a32f583338d58a6bed6cf1ec3504ba8ec26744e65f1b570
+verify_index_sha256 internal/contact/app/stage_service_test.go \
+  37e8ed0280ca4b1d1e92a21ec519ba7f3d0bd798f6fb2ff2c0797dcf98aec6a8
+verify_index_sha256 acceptance/p2s15/doc.go \
+  abbcb37df7d455dee12597ec062edee974a15e90d6eafd44624cbf2f56873802
+verify_index_sha256 acceptance/p2s15/stage_service_integration_test.go \
+  feb2004d7cead51fe5016d19c87af1c4439bef11f0bdd8c105191711f4471962
 verify_index_sha256 internal/contact/store/queries/stages.sql \
   0a0ecd3338cabecf50261d114a6036727e29dd87de01019ff7513f8b002162ca
 verify_index_sha256 internal/contact/store/generated/db.go \
@@ -951,7 +975,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a3b2019799748e892ce3d3bcfb6856b02a0f25d35325cffe84072cc6ccbc944c
+  3f07d7b5e1693d96ebe112efaedf3aa3a3de6808d60f5cd2fbc48789885063fb
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1279,6 +1303,16 @@ p2_s14_acceptance_recipe="$(make_target_recipe 'p2-s14-acceptance:')" ||
   fail "P2-S14 acceptance target must run only the frozen stages store acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s14-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S14 acceptance target"
+
+require_make_line '.PHONY: p2-s15-acceptance' \
+  "Makefile must declare the P2-S15 acceptance target"
+require_unique_make_target p2-s15-acceptance
+p2_s15_acceptance_recipe="$(make_target_recipe 'p2-s15-acceptance:')" ||
+  fail "P2-S15 acceptance target must be unique"
+[[ "$p2_s15_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=60s ./acceptance/p2s15' ]] ||
+  fail "P2-S15 acceptance target must run only the frozen transactional stage-event acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s15-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S15 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"

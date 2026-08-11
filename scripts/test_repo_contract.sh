@@ -560,6 +560,13 @@ if (cd "$p2s14_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P2-14 slice card receipt drift was accepted"
 fi
 
+p2s15_card_fixture="$(make_fixture p2-15-card-receipt)"
+printf '%s\n' '# P2-15 receipt drift' >>"$p2s15_card_fixture/docs/execution/slices/P2-15.md"
+git -C "$p2s15_card_fixture" add docs/execution/slices/P2-15.md
+if (cd "$p2s15_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-15 slice card receipt drift was accepted"
+fi
+
 disconnected_p2s14="$(make_fixture disconnected-p2-s14-target)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s14-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s14/Makefile"
 rm -f "$disconnected_p2s14/Makefile.bak"
@@ -575,6 +582,40 @@ restage_make_receipt "$hollow_p2s14"
 if (cd "$hollow_p2s14" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S14 acceptance target was accepted"
 fi
+
+disconnected_p2s15="$(make_fixture disconnected-p2-s15-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s15-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s15/Makefile"
+rm -f "$disconnected_p2s15/Makefile.bak"
+restage_make_receipt "$disconnected_p2s15"
+if (cd "$disconnected_p2s15" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S15 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s15="$(make_fixture hollow-p2-s15-target)"
+sed -i.bak '/^p2-s15-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s15/Makefile"
+rm -f "$hollow_p2s15/Makefile.bak"
+restage_make_receipt "$hollow_p2s15"
+if (cd "$hollow_p2s15" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S15 acceptance target was accepted"
+fi
+
+for file_path in \
+  internal/contact/app/stage_service.go \
+  internal/contact/app/stage_service_test.go \
+  acceptance/p2s15/doc.go \
+  acceptance/p2s15/stage_service_integration_test.go \
+  docs/execution/slices/P2-15.md \
+  docs/evidence/slices/P2-15-stage-service-tests.md; do
+  p2s15_receipt_fixture="$(make_fixture "p2-15-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-15 receipt drift' >>"$p2s15_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-15 receipt drift' >>"$p2s15_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p2s15_receipt_fixture" add "$file_path"
+  if (cd "$p2s15_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-15 stage service receipt drift was accepted: $file_path"
+  fi
+done
 
 for file_path in \
   internal/contact/store/queries/stages.sql \

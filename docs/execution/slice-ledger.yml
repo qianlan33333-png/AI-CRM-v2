@@ -1402,15 +1402,19 @@ slices:
   - slice_id: P2-14
     title: stages-store-and-sqlc
     owner: Codex-Sol
-    status: pr_open
+    status: merged
     base_sha: 407a918d97929eef2b004188437053aa3199ab57
     dependency: P2-13
     branch: slice/p2-14-stages-store-sqlc
     decision_anchor: EXECUTION_PLAN_3_1_E_DESIGN_2_2_TABLE_OWNERSHIP
     pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/112
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_head_sha: 386a96e905af52faa9e37554dd86e9839d50b06a
+    merge_sha: a9a48cd13f5db81df9ad7c0aba2833a867b85c31
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31456955899
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31456955911
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31456955933
     delegated_tasks:
       - task_id: p2_14_stages_sqlc
         executor: gpt-5.6-terra
@@ -1432,6 +1436,50 @@ slices:
       - LOCAL_repo_contract_full_negative_suite_second_run_PASS
       - LOCAL_gitleaks_168_commits_config_sensitive_paths_bundle_PASS
     handwritten_scope: 7_files_204_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 6
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-15
+    title: stages-service-and-transactional-events
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: a9a48cd13f5db81df9ad7c0aba2833a867b85c31
+    dependency: P2-14
+    branch: slice/p2-15-stages-service
+    decision_anchor: EXECUTION_PLAN_3_1_E_IRON_LAW_4_P2_14_STAGE_PORT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/113
+    pr_head_sha: PENDING_UNTIL_FINAL_PR_HEAD
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_15_stage_service_tests
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/contact/app/stage_service_test.go
+        base_sha: 59ea7b986475de078215c72199545949285a2d77
+        delegated_head_sha: 9ce9d7591aea319fb12c49f2de6c7588a726c35d
+        correction_count: 3
+        slice_induced_correction_count: 0
+        infra_induced_correction_count: 0
+        scope_induced_correction_count: 0
+        verification_induced_correction_count: 3
+        file_manifest_sha256: 4b487a07d1ca1b74cfb9ab8d607d98809c205fe70568959af8ddd131ab72f4bf
+        diff_sha256: 02233925be7a9c0241546aa7d9e98d6d089110fbf389f79a75e647f7d6270f0b
+        receipt: docs/evidence/slices/P2-15-stage-service-tests.md
+    tests:
+      - LOCAL_Terra_hash_receipt_independent_recompute_PASS
+      - LOCAL_official_PostgreSQL16_14_55432_stage_create_rename_event_commit_and_appender_failure_rollback_PASS
+      - LOCAL_official_PostgreSQL16_14_55432_goose_up_down_up_PASS
+      - LOCAL_final_HEAD_make_ci_go_query_plan_bound_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_45_tests_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_177_commits_config_sensitive_paths_bundle_PASS
+    handwritten_scope: 3_files_236_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
