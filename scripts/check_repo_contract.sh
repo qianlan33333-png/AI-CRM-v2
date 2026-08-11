@@ -913,7 +913,7 @@ verify_index_sha256 docs/execution/slices/P2-14.md \
 verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
   54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
 verify_index_sha256 docs/execution/slices/P2-15.md \
-  225e91772854caf46aaeeb09fa148a366c5bdac87e889d61e9ecd1fe54fd69d5
+  82a047eb827f129d01eb329bfd95ea751a30c3526e6247698189f4af047e6386
 verify_index_sha256 docs/evidence/slices/P2-15-stage-service-tests.md \
   7c086a4d95da8440a60970d1e174ee5f82053e60a9d7f9c51aa79ec3172a0bd9
 verify_index_sha256 internal/contact/app/stage_service.go \
