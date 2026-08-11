@@ -42,7 +42,11 @@ export interface Customer {
   name: string;
   /** @nullable */
   avatar_url?: string | null;
-  /** @nullable */
+  /**
+   * @minimum -32768
+   * @maximum 32767
+   * @nullable
+   */
   gender?: number | null;
   /**
    * @minimum 1
@@ -75,7 +79,11 @@ export interface CustomerUpdateRequest {
   name?: string;
   /** @nullable */
   avatar_url?: string | null;
-  /** @nullable */
+  /**
+   * @minimum -32768
+   * @maximum 32767
+   * @nullable
+   */
   gender?: number | null;
   /**
    * @minimum 1

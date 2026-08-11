@@ -2007,6 +2007,71 @@ if (cd "$missing_p3c04_ui" && scripts/check_repo_contract.sh >/dev/null 2>&1); t
 fi
 
 for file_path in \
+  acceptance/p3c02a/doc.go \
+  acceptance/p3c02a/customer_mutation_integration_test.go \
+  internal/contact/app/customer_mutation_service.go \
+  internal/contact/app/customer_mutation_service_test.go \
+  internal/contact/store/customer_mutation_repository.go \
+  internal/contact/store/customer_mutation_repository_test.go \
+  internal/contact/store/queries/customer_mutations.sql \
+  internal/contact/store/generated/customer_mutations.sql.go \
+  docs/execution/slices/P3-C02A.md \
+  docs/evidence/slices/P3-C02A-sqlc-store.md \
+  docs/evidence/slices/P3-C02A-service-tests.md; do
+  p3c02a_receipt_fixture="$(make_fixture "p3-c02a-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C02A receipt drift' >>"$p3c02a_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P3-C02A receipt drift' >>"$p3c02a_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C02A receipt drift' >>"$p3c02a_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c02a_receipt_fixture" add "$file_path"
+  if (cd "$p3c02a_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C02A mutation receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_p3c02a_store="$(make_fixture missing-p3-c02a-store)"
+rm -f "$missing_p3c02a_store/internal/contact/store/customer_mutation_repository.go"
+git -C "$missing_p3c02a_store" add -u internal/contact/store/customer_mutation_repository.go
+if (cd "$missing_p3c02a_store" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P3-C02A transaction-bound repository was accepted"
+fi
+
+disconnected_p3c02a_workflow="$(make_fixture disconnected-p3-c02a-workflow)"
+sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02a-acceptance/d' \
+  "$disconnected_p3c02a_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c02a_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c02a_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c02a_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02A real PostgreSQL acceptance disconnected from application CI was accepted"
+fi
+
+hollow_p3c02a_target="$(make_fixture hollow-p3-c02a-target)"
+sed -i.bak '/[.]\/acceptance\/p3c02a/ s/.*/\t@true/' "$hollow_p3c02a_target/Makefile"
+rm -f "$hollow_p3c02a_target/Makefile.bak"
+restage_make_receipt "$hollow_p3c02a_target"
+if (cd "$hollow_p3c02a_target" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P3-C02A acceptance target was accepted"
+fi
+
+csrf_disabled_p3c02a="$(make_fixture p3-c02a-csrf-disabled)"
+sed -i.bak 's#CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)#CapabilityCustomersWrite, false, http.HandlerFunc(wrapper.UpdateCustomer)#' \
+  "$csrf_disabled_p3c02a/cmd/aicrm/api.go"
+rm -f "$csrf_disabled_p3c02a/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$csrf_disabled_p3c02a" cmd/aicrm/api.go
+if (cd "$csrf_disabled_p3c02a" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02A updateCustomer without CSRF protection was accepted"
+fi
+
+unknown_p3c02a_event="$(make_fixture p3-c02a-event-drift)"
+sed -i.bak 's/customer[.]updated/customer.profile_updated/' "$unknown_p3c02a_event/internal/events/port/port.go"
+rm -f "$unknown_p3c02a_event/internal/events/port/port.go.bak"
+restage_p2s18_receipt "$unknown_p3c02a_event" internal/events/port/port.go
+if (cd "$unknown_p3c02a_event" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02A ungoverned customer update event was accepted"
+fi
+
+for file_path in \
   migrations/00006_customer_events.sql \
   acceptance/fixtures/cmd/validate-database-url/main.go \
   acceptance/contact/doc.go \

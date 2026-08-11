@@ -178,7 +178,7 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		{http.MethodGet, "/api/v1/auth/session", authport.CapabilityAuthSessionRead, false, http.HandlerFunc(wrapper.GetAuthSession)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
-		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, false, http.HandlerFunc(wrapper.UpdateCustomer)},
+		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, false, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, false, http.HandlerFunc(wrapper.IngestIdentityEvent)},

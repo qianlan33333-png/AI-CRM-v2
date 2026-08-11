@@ -528,6 +528,7 @@ CREATE TABLE wecom_sync_state (     -- 企微同步游标
 const (
     EvCustomerAdded     = "customer.added"
     EvCustomerDeleted   = "customer.deleted"
+    EvCustomerUpdated   = "customer.updated" // updateCustomer 资料字段真实变化
     EvTagApplied        = "customer.tag_applied"
     EvTagRemoved        = "customer.tag_removed"
     EvStageChanged      = "customer.stage_changed"
