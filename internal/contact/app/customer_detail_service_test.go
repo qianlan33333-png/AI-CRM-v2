@@ -387,6 +387,9 @@ func TestCustomerDetailServiceRejectsInvalidCustomerRows(t *testing.T) {
 		{name: "malformed extra", mutate: func(result *CustomerDetailStoreResult) { result.Customer.Extra = json.RawMessage("{") }},
 		{name: "array extra", mutate: func(result *CustomerDetailStoreResult) { result.Customer.Extra = json.RawMessage("[]") }},
 		{name: "null extra", mutate: func(result *CustomerDetailStoreResult) { result.Customer.Extra = json.RawMessage("null") }},
+		{name: "external identity in extra", mutate: func(result *CustomerDetailStoreResult) {
+			result.Customer.Extra = json.RawMessage(`{"nested":[{"open_id":"identity-secret"}]}`)
+		}},
 	}
 
 	for _, testCase := range tests {

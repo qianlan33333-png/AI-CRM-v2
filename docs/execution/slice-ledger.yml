@@ -2111,14 +2111,49 @@ slices:
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING_FORWARD_RECEIPT
     scale_adjustment: rollback_one_scale_after_P3_C02A_slice_induced_reached_3
-    delegated_tasks: []
+    delegated_tasks:
+      - task_id: /root/p3_c02b_sqlc_store
+        executor_model: gpt-5.6-terra
+        kind: sqlc_query_and_store_after_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        original_frozen_base_sha: 9bc858d4394f68c8045a0531b46eb7ec7a28d59c
+        replay_base_sha: 61f6e685f54bb97992c7fa9adf3efb9c1a523ec3
+        delegated_head_sha: 30ef10541c21fcb70ce219fb6653f4fc51f16d05
+        manifest_sha256: b76292e5dc33284d429d2544ba42708a66a524d3ccd4c0d3375636175018e92e
+        binary_diff_sha256: 9df552135fcb5b15da818af80abf6afe5f2c366b82f2a9ca63cb1f08d484546e
+      - task_id: /root/p3_c02b_service_tests
+        executor_model: gpt-5.6-terra
+        kind: test_corpus_after_service_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        original_frozen_base_sha: 9bc858d4394f68c8045a0531b46eb7ec7a28d59c
+        replay_base_sha: 61f6e685f54bb97992c7fa9adf3efb9c1a523ec3
+        delegated_head_sha: 3360058c0e14fe767a1819981d9f2ee8984b26c9
+        manifest_sha256: e203df2fac964702a70eead8358327d40ea1baaa60e2cc682436485c461a1518
+        binary_diff_sha256: 94cd6f632d75174ecd1a8340d3c283deb4ad548e2b64d574e0825846e3c8aa99
+      - task_id: /root/p3_c02b_handler_tests
+        executor_model: gpt-5.6-terra
+        kind: test_corpus_after_handler_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        replay_base_sha: 61f6e685f54bb97992c7fa9adf3efb9c1a523ec3
+        delegated_head_sha: 6534a782c890923c71fb4ceafeb543ce4f4d9eac
+        manifest_sha256: 740a62cf014f3e5533e9b2460d5ab27ff04936b6c611755799943b5f532ca5cb
+        binary_diff_sha256: 77b77d57ce9e51f2fab847a54df0c3e58d13a8e7597788211ff5a9692bdb918b
+      - task_id: /root/p3_c02b_independent_review
+        executor_model: gpt-5.6-terra
+        kind: independent_customer_detail_read_review
+        status: SOL_REVIEWED_PASS_NO_FILE_MUTATION
     tests:
-      - FOCUSED_AND_FULL_GATES_PENDING
-    handwritten_scope: pending
-    slice_induced_correction_count: 0
+      - CUSTOMER_DETAIL_FOCUSED_RACE_PASS
+      - POSTGRESQL_16_OWNER_SCOPE_AND_TAG_ORDER_ACCEPTANCE_PASS
+      - POSTGRESQL_16_POLLUTED_EXTRA_MUTATION_ROLLBACK_PASS
+      - GENERATORS_TWICE_NO_DIFF_PASS
+      - REPO_CONTRACT_PERMANENT_NEGATIVES_PASS
+      - FULL_GO_WEB_SECRET_GATES_PENDING
+    handwritten_scope: 13_files_811_touched_lines_default_file_cap_exception_below_15_hard_cap_for_shared_channel_neutral_security_guard_and_complete_operation
+    slice_induced_correction_count: 9
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 7
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

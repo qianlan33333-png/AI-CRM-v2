@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getCustomerDetailCustomer = `-- name: GetCustomerDetailCustomer :one
+const getCustomerDetailSnapshot = `-- name: GetCustomerDetailSnapshot :many
 SELECT
   c.id,
   c.name,
@@ -25,82 +25,82 @@ SELECT
   c.is_deleted,
   c.extra,
   c.created_at,
-  c.updated_at
+  c.updated_at,
+  t.id AS tag_id,
+  t.group_id,
+  g.name AS group_name,
+  COALESCE(g.sort_order, 0) AS group_sort_order,
+  t.name AS tag_name,
+  t.sort_order AS tag_sort_order
 FROM customers AS c
+LEFT JOIN customer_tags AS ct ON ct.customer_id = c.id
+LEFT JOIN tags AS t ON t.id = ct.tag_id
+LEFT JOIN tag_groups AS g ON g.id = t.group_id
 WHERE c.id = $1::bigint
   AND NOT c.is_deleted
   AND (
     $2::bigint IS NULL
     OR c.owner_staff_id = $2::bigint
   )
+ORDER BY COALESCE(g.sort_order, 0), t.sort_order, t.id
 `
 
-type GetCustomerDetailCustomerParams struct {
+type GetCustomerDetailSnapshotParams struct {
 	CustomerID   int64       `json:"customer_id"`
 	OwnerStaffID pgtype.Int8 `json:"owner_staff_id"`
 }
 
-func (q *Queries) GetCustomerDetailCustomer(ctx context.Context, arg GetCustomerDetailCustomerParams) (Customer, error) {
-	row := q.db.QueryRow(ctx, getCustomerDetailCustomer, arg.CustomerID, arg.OwnerStaffID)
-	var i Customer
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.AvatarUrl,
-		&i.Gender,
-		&i.StageID,
-		&i.OwnerStaffID,
-		&i.ChannelID,
-		&i.AddedAt,
-		&i.LastInteractAt,
-		&i.IsDeleted,
-		&i.Extra,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+type GetCustomerDetailSnapshotRow struct {
+	ID             int64              `json:"id"`
+	Name           string             `json:"name"`
+	AvatarUrl      pgtype.Text        `json:"avatar_url"`
+	Gender         pgtype.Int2        `json:"gender"`
+	StageID        pgtype.Int8        `json:"stage_id"`
+	OwnerStaffID   pgtype.Int8        `json:"owner_staff_id"`
+	ChannelID      pgtype.Int8        `json:"channel_id"`
+	AddedAt        pgtype.Timestamptz `json:"added_at"`
+	LastInteractAt pgtype.Timestamptz `json:"last_interact_at"`
+	IsDeleted      bool               `json:"is_deleted"`
+	Extra          []byte             `json:"extra"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	TagID          pgtype.Int8        `json:"tag_id"`
+	GroupID        pgtype.Int8        `json:"group_id"`
+	GroupName      pgtype.Text        `json:"group_name"`
+	GroupSortOrder int32              `json:"group_sort_order"`
+	TagName        pgtype.Text        `json:"tag_name"`
+	TagSortOrder   pgtype.Int4        `json:"tag_sort_order"`
 }
 
-const listCustomerDetailTags = `-- name: ListCustomerDetailTags :many
-SELECT
-  t.id,
-  t.group_id,
-  g.name AS group_name,
-  COALESCE(g.sort_order, 0) AS group_sort_order,
-  t.name,
-  t.sort_order
-FROM customer_tags AS ct
-JOIN tags AS t ON t.id = ct.tag_id
-LEFT JOIN tag_groups AS g ON g.id = t.group_id
-WHERE ct.customer_id = $1::bigint
-ORDER BY COALESCE(g.sort_order, 0), t.sort_order, t.id
-`
-
-type ListCustomerDetailTagsRow struct {
-	ID             int64       `json:"id"`
-	GroupID        pgtype.Int8 `json:"group_id"`
-	GroupName      pgtype.Text `json:"group_name"`
-	GroupSortOrder int32       `json:"group_sort_order"`
-	Name           string      `json:"name"`
-	SortOrder      int32       `json:"sort_order"`
-}
-
-func (q *Queries) ListCustomerDetailTags(ctx context.Context, customerID int64) ([]ListCustomerDetailTagsRow, error) {
-	rows, err := q.db.Query(ctx, listCustomerDetailTags, customerID)
+func (q *Queries) GetCustomerDetailSnapshot(ctx context.Context, arg GetCustomerDetailSnapshotParams) ([]GetCustomerDetailSnapshotRow, error) {
+	rows, err := q.db.Query(ctx, getCustomerDetailSnapshot, arg.CustomerID, arg.OwnerStaffID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListCustomerDetailTagsRow{}
+	items := []GetCustomerDetailSnapshotRow{}
 	for rows.Next() {
-		var i ListCustomerDetailTagsRow
+		var i GetCustomerDetailSnapshotRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Name,
+			&i.AvatarUrl,
+			&i.Gender,
+			&i.StageID,
+			&i.OwnerStaffID,
+			&i.ChannelID,
+			&i.AddedAt,
+			&i.LastInteractAt,
+			&i.IsDeleted,
+			&i.Extra,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TagID,
 			&i.GroupID,
 			&i.GroupName,
 			&i.GroupSortOrder,
-			&i.Name,
-			&i.SortOrder,
+			&i.TagName,
+			&i.TagSortOrder,
 		); err != nil {
 			return nil, err
 		}

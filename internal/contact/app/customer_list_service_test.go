@@ -250,6 +250,11 @@ func TestCustomerListServiceFailsClosedForMalformedStoreResults(t *testing.T) {
 			row.Extra = json.RawMessage(`[]`)
 			return row
 		}()}}},
+		{name: "external identity in extra", result: CustomerListStoreResult{Items: []CustomerRecord{func() CustomerRecord {
+			row := validCustomerRecord(1, watermark)
+			row.Extra = json.RawMessage(`{"nested":{"external_userid":"identity-secret"}}`)
+			return row
+		}()}}},
 		{name: "wrong order", result: CustomerListStoreResult{Items: []CustomerRecord{validCustomerRecord(1, watermark.Add(-time.Minute)), validCustomerRecord(2, watermark)}}},
 		{name: "duplicate order key", result: CustomerListStoreResult{Items: []CustomerRecord{validCustomerRecord(1, watermark), validCustomerRecord(1, watermark)}}},
 	}
@@ -261,6 +266,32 @@ func TestCustomerListServiceFailsClosedForMalformedStoreResults(t *testing.T) {
 				t.Fatalf("List() error = %v, want unavailable", err)
 			}
 		})
+	}
+}
+
+func TestChannelNeutralCustomerExtraRejectsExternalIdentityKeyVariants(t *testing.T) {
+	for _, raw := range []json.RawMessage{
+		json.RawMessage(`{"nested":{"externalUserId":"secret"}}`),
+		json.RawMessage(`{"nested":{"external user id":"secret"}}`),
+		json.RawMessage(`{"nested":[{"wecom-tag-id":"secret"}]}`),
+		json.RawMessage(`{"nested":{"alipay_user_id":"secret"}}`),
+		json.RawMessage(`{"nested":{"mp_openid":"secret"}}`),
+		json.RawMessage(`{"nested":{"ext:loyalty":"secret"}}`),
+		json.RawMessage(`{"nested":{"kind":"ext:loyalty","value":"secret"}}`),
+		json.RawMessage(`{"nested":{"kind":"unionid","value":"secret"}}`),
+		json.RawMessage(`{"nested":{"kind":"openid","value":"secret"}}`),
+		json.RawMessage(`{"nested":{"kind":"external_userid","value":"secret"}}`),
+		json.RawMessage(`{"nested":{"kind":"mobile","value":"secret"}}`),
+		json.RawMessage(`{"nested":{"kind":"unionid","k-ind":"business","value":"secret"}}`),
+	} {
+		for attempt := 0; attempt < 100; attempt++ {
+			if IsChannelNeutralCustomerExtra(raw) {
+				t.Fatalf("external identity extra was accepted on attempt %d: %s", attempt, raw)
+			}
+		}
+	}
+	if !IsChannelNeutralCustomerExtra(json.RawMessage(`{"业务字段":{"campaign_id":7},"profile":{"tier":"gold"}}`)) {
+		t.Fatal("channel-neutral business extra was rejected")
 	}
 }
 

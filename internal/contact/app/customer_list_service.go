@@ -283,7 +283,7 @@ func validateCustomerListStoreResult(result CustomerListStoreResult, query Custo
 	}
 	for index, item := range result.Items {
 		if item.ID <= 0 || item.CreatedAt.IsZero() || item.UpdatedAt.IsZero() || item.UpdatedAt.After(query.Watermark) ||
-			!validJSONObject(item.Extra) {
+			!IsChannelNeutralCustomerExtra(item.Extra) {
 			return errors.New("customer list store item is invalid")
 		}
 		if index > 0 {
@@ -297,9 +297,93 @@ func validateCustomerListStoreResult(result CustomerListStoreResult, query Custo
 	return nil
 }
 
-func validJSONObject(raw json.RawMessage) bool {
+// IsChannelNeutralCustomerExtra validates the opaque business extension object
+// while excluding identity facts that belong to the identities domain.
+func IsChannelNeutralCustomerExtra(raw json.RawMessage) bool {
 	trimmed := bytes.TrimSpace(raw)
-	return len(trimmed) >= 2 && trimmed[0] == '{' && trimmed[len(trimmed)-1] == '}' && json.Valid(trimmed)
+	if len(trimmed) < 2 || trimmed[0] != '{' || trimmed[len(trimmed)-1] != '}' {
+		return false
+	}
+	decoder := json.NewDecoder(bytes.NewReader(trimmed))
+	decoder.UseNumber()
+	var value map[string]any
+	if err := decoder.Decode(&value); err != nil || value == nil || ensureJSONEOF(decoder) != nil {
+		return false
+	}
+	return !containsExternalIdentityKey(value)
+}
+
+func containsExternalIdentityKey(value any) bool {
+	switch typed := value.(type) {
+	case map[string]any:
+		hasIdentityValue := false
+		for key := range typed {
+			if canonicalCustomerExtraKey(key) == "value" {
+				hasIdentityValue = true
+				break
+			}
+		}
+		if hasIdentityValue {
+			for key, child := range typed {
+				kind, isString := child.(string)
+				if canonicalCustomerExtraKey(key) == "kind" && isString && isExternalIdentityKind(kind) {
+					return true
+				}
+			}
+		}
+		for key, child := range typed {
+			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(key)), "ext:") {
+				return true
+			}
+			if isForbiddenCustomerExtraKey(canonicalCustomerExtraKey(key)) {
+				return true
+			}
+			if containsExternalIdentityKey(child) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range typed {
+			if containsExternalIdentityKey(child) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func canonicalCustomerExtraKey(key string) string {
+	var canonical strings.Builder
+	canonical.Grow(len(key))
+	for _, character := range key {
+		switch {
+		case character >= 'A' && character <= 'Z':
+			canonical.WriteByte(byte(character + ('a' - 'A')))
+		case character >= 'a' && character <= 'z', character >= '0' && character <= '9':
+			canonical.WriteByte(byte(character))
+		}
+	}
+	return canonical.String()
+}
+
+func isExternalIdentityKind(kind string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(kind))
+	if strings.HasPrefix(normalized, "ext:") {
+		return true
+	}
+	return isForbiddenCustomerExtraKey(canonicalCustomerExtraKey(normalized))
+}
+
+func isForbiddenCustomerExtraKey(canonical string) bool {
+	switch canonical {
+	case "identity", "identities", "externalidentity", "externalidentities",
+		"externaluserid", "wecomexternaluserid", "wecomuserid",
+		"unionid", "wechatunionid", "openid", "mpopenid", "oaopenid", "wechatopenid",
+		"phone", "phonenumber", "mobile", "mobilephone", "alipayuserid", "wecomtagid", "ext":
+		return true
+	default:
+		return false
+	}
 }
 
 func normalizedOptionalTime(value *time.Time) (*time.Time, error) {

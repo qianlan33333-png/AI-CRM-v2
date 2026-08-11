@@ -114,7 +114,7 @@ func writeCustomerDetailError(writer http.ResponseWriter, request *http.Request,
 	code := platformhttp.CodeDependencyUnavailable
 	switch {
 	case errors.Is(err, contactapp.ErrInvalidCustomerDetailQuery):
-		code = platformhttp.CodeMalformedRequest
+		code = platformhttp.CodeNotFound
 	case errors.Is(err, contactapp.ErrCustomerNotFound):
 		code = platformhttp.CodeNotFound
 	}

@@ -91,7 +91,7 @@ func validateCustomerDetailStoreResult(result CustomerDetailStoreResult, input C
 		customer.CreatedAt.After(customer.UpdatedAt) || invalidCustomerDetailID(customer.StageID) ||
 		invalidCustomerDetailID(customer.OwnerStaffID) || invalidCustomerDetailID(customer.ChannelID) ||
 		invalidCustomerDetailTime(customer.AddedAt) || invalidCustomerDetailTime(customer.LastInteractAt) ||
-		!utf8.ValidString(customer.Name) || !validJSONObject(customer.Extra) ||
+		!utf8.ValidString(customer.Name) || !IsChannelNeutralCustomerExtra(customer.Extra) ||
 		(customer.AvatarURL != nil && !validCustomerDetailAvatarURL(*customer.AvatarURL)) {
 		return errors.New("customer detail store returned an invalid customer")
 	}

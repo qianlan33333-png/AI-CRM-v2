@@ -236,7 +236,7 @@ func TestCustomerDetailHandlerFailsClosedForAuthenticationMismatches(t *testing.
 	}
 }
 
-func TestCustomerDetailHandlerMapsInvalidIDsToBadRequestWithoutLeak(t *testing.T) {
+func TestCustomerDetailHandlerMapsInvalidIDsToNotFoundWithoutLeak(t *testing.T) {
 	t.Parallel()
 
 	const secret = "detail-input-secret"
@@ -252,7 +252,7 @@ func TestCustomerDetailHandlerMapsInvalidIDsToBadRequestWithoutLeak(t *testing.T
 			)
 
 			response := serveCustomerDetail(newCustomerDetailHandler(t, application), request, customerID)
-			assertCustomerDetailError(t, response, http.StatusBadRequest, platformhttp.CodeMalformedRequest)
+			assertCustomerDetailError(t, response, http.StatusNotFound, platformhttp.CodeNotFound)
 			assertCustomerDetailResponseDoesNotContain(t, response, secret, "invalid customer detail query")
 			if application.calls != 1 || len(application.inputs) != 1 || application.inputs[0].ID != contactport.CustomerID(customerID) {
 				t.Fatalf("application calls/inputs = %d/%#v, want one input with ID %d", application.calls, application.inputs, customerID)
@@ -420,6 +420,7 @@ func TestCustomerDetailHandlerRejectsInvalidApplicationOutputsWithoutLeak(t *tes
 
 	const customerSecret = "detail-customer-output-secret"
 	const tagSecret = "detail-tag-output-secret"
+	const identitySecret = "detail-external-identity-secret"
 	for _, testCase := range []struct {
 		name      string
 		result    func() contactapp.CustomerDetailStoreResult
@@ -453,6 +454,15 @@ func TestCustomerDetailHandlerRejectsInvalidApplicationOutputsWithoutLeak(t *tes
 				return result
 			},
 			forbidden: tagSecret,
+		},
+		{
+			name: "external identity in extra",
+			result: func() contactapp.CustomerDetailStoreResult {
+				result := customerDetailValidResult()
+				result.Customer.Extra = json.RawMessage(`{"nested":{"phone":"` + identitySecret + `"}}`)
+				return result
+			},
+			forbidden: identitySecret,
 		},
 	} {
 		testCase := testCase
