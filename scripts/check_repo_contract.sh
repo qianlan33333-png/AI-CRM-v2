@@ -557,7 +557,7 @@ verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  c70dc6064086142ace62f5d72d8734301d1227f035448ac0a0e245e3c220f71b
+  ad7a93fc7c0ad095e90b7817f6268eb3a60971d577a95c6859fbfc1108f52f44
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
