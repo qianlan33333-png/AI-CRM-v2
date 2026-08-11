@@ -126,7 +126,8 @@ CREATE TABLE channels (                     -- 来源渠道(活码/渠道码)
   name          TEXT NOT NULL,
   code          TEXT UNIQUE,                -- 渠道码标识
   config        JSONB NOT NULL DEFAULT '{}',
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT channels_config_object CHECK (jsonb_typeof(config) = 'object')
 );
 
 CREATE TABLE stages (                       -- 转化阶段定义
@@ -153,11 +154,17 @@ CREATE TABLE customers (
   is_deleted       BOOLEAN NOT NULL DEFAULT FALSE,  -- 流失/删除
   extra            JSONB NOT NULL DEFAULT '{}',     -- 仅存展示性字段,禁止筛选
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT customers_extra_object CHECK (jsonb_typeof(extra) = 'object')
 );
-CREATE INDEX idx_customers_owner_stage ON customers (owner_staff_id, stage_id) WHERE NOT is_deleted;
-CREATE INDEX idx_customers_stage_interact ON customers (stage_id, last_interact_at DESC) WHERE NOT is_deleted;
-CREATE INDEX idx_customers_channel ON customers (channel_id) WHERE NOT is_deleted;
+CREATE INDEX idx_customers_deleted_keyset ON customers (is_deleted, updated_at DESC, id DESC);
+CREATE INDEX idx_customers_owner_keyset ON customers (owner_staff_id, updated_at DESC, id DESC) WHERE NOT is_deleted;
+CREATE INDEX idx_customers_stage_keyset ON customers (stage_id, updated_at DESC, id DESC) WHERE NOT is_deleted;
+CREATE INDEX idx_customers_channel_keyset ON customers (channel_id, updated_at DESC, id DESC) WHERE NOT is_deleted;
+CREATE INDEX idx_customers_added_keyset ON customers (added_at, updated_at DESC, id DESC) WHERE NOT is_deleted;
+CREATE INDEX idx_customers_interact_keyset ON customers (last_interact_at, updated_at DESC, id DESC) WHERE NOT is_deleted;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX idx_customers_name_trgm ON customers USING GIN (lower(name) gin_trgm_ops);
 -- 按外部标识查客户一律经 identities 表关联，不在 customers 上建外部 ID 索引（ADR-002）
 
 CREATE TABLE tag_groups (
@@ -168,8 +175,10 @@ CREATE TABLE tags (
   id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   group_id      BIGINT REFERENCES tag_groups(id),
   name          TEXT NOT NULL,
-  wecom_tag_id  TEXT UNIQUE                 -- 同步到企微的标签ID,可空(纯本地标签)
+  wecom_tag_id  TEXT UNIQUE,                -- 同步到企微的标签ID,可空(纯本地标签)
+  sort_order    INT NOT NULL DEFAULT 0
 );
+CREATE INDEX idx_tags_catalog ON tags (group_id, sort_order, id);
 CREATE TABLE customer_tags (
   customer_id BIGINT NOT NULL REFERENCES customers(id),
   tag_id      BIGINT NOT NULL REFERENCES tags(id),

@@ -41,6 +41,7 @@ required=(
   migrations/00002_event_log.sql
   migrations/00003_settings.sql
   migrations/00004_auth.sql
+  migrations/00005_contact_core.sql
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -109,6 +110,12 @@ required=(
   acceptance/p3c00/contracts_test.go
   acceptance/p3c00/doc.go
   docs/execution/slices/P3-C00.md
+  acceptance/p3c01a/doc.go
+  acceptance/p3c01a/schema_integration_test.go
+  internal/contact/acceptance/doc.go
+  internal/contact/acceptance/schema_contract_test.go
+  internal/contact/app/customer_query_contract.go
+  docs/execution/slices/P3-C01A.md
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
@@ -382,6 +389,12 @@ done <<'EOF'
 100644 acceptance/p3c00/contracts_test.go
 100644 acceptance/p3c00/doc.go
 100644 docs/execution/slices/P3-C00.md
+100644 acceptance/p3c01a/doc.go
+100644 acceptance/p3c01a/schema_integration_test.go
+100644 internal/contact/acceptance/doc.go
+100644 internal/contact/acceptance/schema_contract_test.go
+100644 internal/contact/app/customer_query_contract.go
+100644 docs/execution/slices/P3-C01A.md
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
@@ -543,6 +556,7 @@ done <<'EOF'
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
+100644 migrations/00005_contact_core.sql
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -586,7 +600,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  52a22e866cecf865bbc0d893c51bee97a726398b9dc5ca1043d386679639f9fa
+  2b636411be5860bd3cbc8ef3e32f1c10077aef009236516666cc6e3a2530378d
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -602,7 +616,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   9a24d8179fb39749b3f8fbde0868db5868206073c2483f95f2a385fa794c678b
 verify_index_sha256 .github/workflows/application-go.yml \
-  71a9695df525aa03886f7020caed85f66e13e5ea1190ad2e8f487a6c7555fbb5
+  8eddd9766a11874d1b362c26d12e775f4eebe056ab9a661e99e26738387fa2e1
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -750,9 +764,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  aaf6fd13fb89e5e1667b6726da0154464ff4a2519248099caa618fc07b6eb6ca
+  cc18696d260c1a3b4dcc481d29f2d3bcf4463ccc10aa06adb32e026f5694bc2c
 verify_index_sha256 docs/spec/SHA256SUMS \
-  f8dfc7d717fbb54975954201e9a253017900334de60a7a214c517476ddbab65f
+  721cf6871b2e28a363ca3b379880cbc82b352313e2d7162fd76499d5ac274567
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -831,6 +845,18 @@ verify_index_sha256 acceptance/p3c00/doc.go \
   ac3af23bf06ff6b0a4af7eb746a276ee4939cd5085a6dae936dafae638eff87f
 verify_index_sha256 docs/execution/slices/P3-C00.md \
   2143d480d2ee9d6de56e72b11e42fe41729d7c554ca55b656c6796cf6b6b02c6
+verify_index_sha256 acceptance/p3c01a/doc.go \
+  14f8d1d61ffae5abfab18d28fa2edc80ab11f36370e0856a8e2d12d6fd19d0a6
+verify_index_sha256 acceptance/p3c01a/schema_integration_test.go \
+  01de0a611897eff7be6fe046b97213b85d4a712ac9f728e251377dfcc5645bf9
+verify_index_sha256 internal/contact/acceptance/doc.go \
+  931ad07bd4ce95e1a08ca59a322bcca893f3c120fae2f81c71a0b5c53626d5f9
+verify_index_sha256 internal/contact/acceptance/schema_contract_test.go \
+  1490527d2e885d373b78b3123d452e7f06848c79840ecb85fd445d83d9d2d583
+verify_index_sha256 internal/contact/app/customer_query_contract.go \
+  9dafa3516a4acdbd2540ccf2575487c4005d321583d5ee9b10d33447c464f951
+verify_index_sha256 docs/execution/slices/P3-C01A.md \
+  cb271879f61d4f901c020641faf22880b3903032252402b8b5a637c6c9aaa2d5
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -911,6 +937,8 @@ verify_index_sha256 docs/evidence/slices/P2-08-http-tests.md \
   a61b50a0d040373515216d96fe1707a14be7a9852e8a1b9e64ba94c07ae35fcc
 verify_index_sha256 migrations/00004_auth.sql \
   777e6634e63db30a4f0ab2e3c17afd0cc98235863753a74efc4871c379e797c3
+verify_index_sha256 migrations/00005_contact_core.sql \
+  226c660db0a572a97c23322b6f1dd0e694f210033d7ab4992b59bd8349ef0432
 verify_index_sha256 internal/auth/app/service.go \
   134595b199e6074160d6a3a6fe127a2c162ae97a364375e17e133e37d4c4d070
 verify_index_sha256 internal/auth/app/service_test.go \
