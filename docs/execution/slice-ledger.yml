@@ -979,7 +979,7 @@ slices:
     slice_induced_correction_count: 2
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 3
+    verification_induced_correction_count: 4
     external_gates:
       - REAL_SECRET_NOT_READ
       - PRODUCTION_DATABASE_NOT_EXECUTED
@@ -2081,7 +2081,8 @@ slices:
       - CUSTOMER_MUTATION_FOCUSED_RACE_PASS
       - POSTGRESQL_16_TRANSACTIONAL_EVENT_ACCEPTANCE_PASS
       - GENERATORS_TWICE_NO_DIFF_PASS
-      - FULL_GATES_AND_MAIN_CI_PENDING
+      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
+      - MAIN_CI_PENDING
     handwritten_scope: under_P3_cap_tests_docs_generated_excluded
     slice_induced_correction_count: 2
     infra_induced_correction_count: 0
