@@ -220,6 +220,14 @@ required=(
   docs/execution/slices/P2-15.md
   docs/evidence/slices/P2-15-stage-service-tests.md
   docs/execution/slices/P2-16.md
+  internal/auth/port/port.go
+  internal/auth/http/authorization_test.go
+  internal/contact/http/handler.go
+  acceptance/p2s16/doc.go
+  acceptance/p2s16/csrf_integration_test.go
+  acceptance/p2s16/snapshot.go
+  acceptance/p2s16/snapshot_test.go
+  acceptance/p2s16/snapshotgen/main.go
   internal/contact/app/stage_service.go
   internal/contact/app/stage_service_test.go
   acceptance/p2s15/doc.go
@@ -470,6 +478,14 @@ done <<'EOF'
 100644 docs/execution/slices/P2-15.md
 100644 docs/evidence/slices/P2-15-stage-service-tests.md
 100644 docs/execution/slices/P2-16.md
+100644 internal/auth/port/port.go
+100644 internal/auth/http/authorization_test.go
+100644 internal/contact/http/handler.go
+100644 acceptance/p2s16/doc.go
+100644 acceptance/p2s16/csrf_integration_test.go
+100644 acceptance/p2s16/snapshot.go
+100644 acceptance/p2s16/snapshot_test.go
+100644 acceptance/p2s16/snapshotgen/main.go
 100644 internal/contact/app/stage_service.go
 100644 internal/contact/app/stage_service_test.go
 100644 acceptance/p2s15/doc.go
@@ -1317,6 +1333,17 @@ p2_s15_acceptance_recipe="$(make_target_recipe 'p2-s15-acceptance:')" ||
   fail "P2-S15 acceptance target must run only the frozen transactional stage-event acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s15-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S15 acceptance target"
+
+require_make_line '.PHONY: p2-s16-acceptance' \
+  "Makefile must declare the P2-S16 acceptance target"
+require_unique_make_target p2-s16-acceptance
+p2_s16_acceptance_recipe="$(make_target_recipe 'p2-s16-acceptance:')" ||
+  fail "P2-S16 acceptance target must be unique"
+expected_p2_s16_recipe=$'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=60s ./acceptance/p2s16\n\t@/bin/bash -eu -o pipefail -c '\''env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run ./acceptance/p2s16/snapshotgen | env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./snapshot-gate compare ../acceptance/snapshots/catalog.v1.json'\'''
+[[ "$p2_s16_acceptance_recipe" = "$expected_p2_s16_recipe" ]] ||
+  fail "P2-S16 acceptance target must run the frozen CSRF and stdin-only snapshot checks"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s16-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S16 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"
