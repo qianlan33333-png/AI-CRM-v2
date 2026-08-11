@@ -669,7 +669,7 @@ slices:
     pr_head_sha: d75730180fb3c0bbcd54ef637dc50f1fdefdb92b
     merge_sha: 0abf07ebd3ea8f3ac795468df0cd7bbacd21ed9c
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 0
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 1
   - slice_id: G1-TRIAGE
     title: produce-production-route-triage-candidates

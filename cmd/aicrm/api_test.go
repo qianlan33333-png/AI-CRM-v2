@@ -52,7 +52,7 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			if test.capability == authport.CapabilityAuthSessionLogout {
 				request.Header.Set("X-CSRF-Token", "router-test-csrf")
 			}
-			if test.capability == authport.CapabilityStagesWrite {
+			if test.capability == authport.CapabilityStagesWrite || test.capability == authport.CapabilityCustomersWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 			}
 			response := httptest.NewRecorder()
@@ -61,6 +61,25 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 				t.Fatalf("authorized capabilities = %v, want [%s]", got, test.capability)
 			}
 		})
+	}
+}
+
+func TestFinalRouterRejectsCustomerWriteWithoutValidCSRF(t *testing.T) {
+	service := &recordingAuth{}
+	authHandler, err := authhttp.NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := newAPIHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), authHandler, authHandler)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPatch, "/api/v1/customers/1", strings.NewReader(`{"name":"安全写入"}`))
+	request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: "router-test-session"})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden || len(service.capabilities()) != 0 {
+		t.Fatalf("status/capabilities = %d/%v, want 403/none", response.Code, service.capabilities())
 	}
 }
 

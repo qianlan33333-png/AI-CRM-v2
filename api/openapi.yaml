@@ -575,7 +575,7 @@ components:
         id: { type: integer, format: int64, minimum: 1 }
         name: { type: string }
         avatar_url: { type: string, format: uri, nullable: true }
-        gender: { type: integer, format: int32, nullable: true }
+        gender: { type: integer, format: int32, minimum: -32768, maximum: 32767, nullable: true }
         stage_id: { type: integer, format: int64, minimum: 1, nullable: true }
         owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
         channel_id: { type: integer, format: int64, minimum: 1, nullable: true }
@@ -592,7 +592,7 @@ components:
       properties:
         name: { type: string }
         avatar_url: { type: string, format: uri, nullable: true }
-        gender: { type: integer, format: int32, nullable: true }
+        gender: { type: integer, format: int32, minimum: -32768, maximum: 32767, nullable: true }
         owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
         channel_id: { type: integer, format: int64, minimum: 1, nullable: true }
         extra: { type: object, additionalProperties: true }

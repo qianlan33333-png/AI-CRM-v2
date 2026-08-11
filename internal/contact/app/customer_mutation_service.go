@@ -57,6 +57,11 @@ type CustomerStageMutation struct {
 	StateChange bool
 }
 
+type CustomerProfileMutation struct {
+	Customer    CustomerRecord
+	StateChange bool
+}
+
 type CustomerEventAppend struct {
 	CustomerID contactport.CustomerID
 	EventType  string
@@ -68,7 +73,7 @@ type CustomerEventAppend struct {
 // CustomerMutationStore is contact-internal and requires a transaction-bound
 // context for every method.
 type CustomerMutationStore interface {
-	UpdateCustomer(context.Context, CustomerUpdateCommand) (CustomerRecord, error)
+	UpdateCustomer(context.Context, CustomerUpdateCommand) (CustomerProfileMutation, error)
 	SetCustomerStage(context.Context, CustomerStageCommand) (CustomerStageMutation, error)
 	AddCustomerTag(context.Context, CustomerTagCommand) (bool, error)
 	RemoveCustomerTag(context.Context, CustomerTagCommand) (bool, error)
@@ -105,13 +110,18 @@ func (service *CustomerMutationService) Update(
 		return CustomerRecord{}, err
 	}
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
-		occurredAt, key, prepareErr := service.eventMetadata("customer.updated")
-		if prepareErr != nil {
-			return prepareErr
-		}
-		customer, err = service.store.UpdateCustomer(txCtx, command)
+		mutation, storeErr := service.store.UpdateCustomer(txCtx, command)
+		err = storeErr
 		if err != nil {
 			return err
+		}
+		customer = mutation.Customer
+		if !mutation.StateChange {
+			return nil
+		}
+		occurredAt, key, prepareErr := service.eventMetadata(eventport.EvCustomerUpdated)
+		if prepareErr != nil {
+			return prepareErr
 		}
 		payload, marshalErr := json.Marshal(struct {
 			CustomerID contactport.CustomerID `json:"customer_id"`
@@ -120,7 +130,7 @@ func (service *CustomerMutationService) Update(
 		if marshalErr != nil {
 			return marshalErr
 		}
-		return service.appendEvents(txCtx, command.ID, "customer.updated", payload, command.Actor, occurredAt, key)
+		return service.appendEvents(txCtx, command.ID, eventport.EvCustomerUpdated, payload, command.Actor, occurredAt, key)
 	})
 	if err != nil {
 		return CustomerRecord{}, errors.Join(ErrCustomerMutationFailed, err)
@@ -147,7 +157,7 @@ func (service *CustomerMutationService) SetStage(
 		if !mutation.StateChange {
 			return nil
 		}
-		occurredAt, key, prepareErr := service.eventMetadata("customer.stage_changed")
+		occurredAt, key, prepareErr := service.eventMetadata(eventport.EvStageChanged)
 		if prepareErr != nil {
 			return prepareErr
 		}
@@ -160,7 +170,7 @@ func (service *CustomerMutationService) SetStage(
 		if marshalErr != nil {
 			return marshalErr
 		}
-		return service.appendEvents(txCtx, command.ID, "customer.stage_changed", payload, command.Actor, occurredAt, key)
+		return service.appendEvents(txCtx, command.ID, eventport.EvStageChanged, payload, command.Actor, occurredAt, key)
 	})
 	if err != nil {
 		return CustomerRecord{}, errors.Join(ErrCustomerMutationFailed, err)
@@ -198,9 +208,9 @@ func (service *CustomerMutationService) mutateTag(
 		if storeErr != nil || !changed {
 			return storeErr
 		}
-		eventType := "customer.tag_removed"
+		eventType := eventport.EvTagRemoved
 		if add {
-			eventType = "customer.tag_applied"
+			eventType = eventport.EvTagApplied
 		}
 		occurredAt, key, prepareErr := service.eventMetadata(eventType)
 		if prepareErr != nil {
