@@ -1452,8 +1452,8 @@ slices:
     dependency: P2-14
     branch: slice/p2-15-stages-service
     decision_anchor: EXECUTION_PLAN_3_1_E_IRON_LAW_4_P2_14_STAGE_PORT
-    pr_url: PENDING
-    pr_head_sha: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/113
+    pr_head_sha: PENDING_UNTIL_FINAL_PR_HEAD
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING
     delegated_tasks:
