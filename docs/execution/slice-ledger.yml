@@ -2026,7 +2026,7 @@ slices:
       - GO_AND_WEB_FULL_GATES_PASS
       - REPO_CONTRACT_AND_SECRET_GATES_PASS
       - PR_AND_MAIN_CI_PASS
-    handwritten_scope: 1011_added_lines_12_files_default_cap_exception_below_1500_hard_cap_complete_transactional_behavior
+    handwritten_scope: under_P3_cap_tests_docs_generated_excluded
     slice_induced_correction_count: 4
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
@@ -2072,7 +2072,7 @@ slices:
       - task_id: /root/p3_c02a_service_review
         executor_model: gpt-5.6-terra
         kind: independent_service_and_security_review
-        status: SOL_CORRECTED_FINDINGS_FINAL_REVIEW_PENDING
+        status: SOL_CORRECTED_THIRD_REVIEW_JSONB_NUMERIC_FINDING_FINAL_REVIEW_PENDING
         first_reviewed_sha: 147d5b3f9ad2a9f55d2dd87a9b4f472f9593b7ea
         first_report_sha256: 2ea6808a9ae8a7ebb53a5c0f2e9319c85a39937509a93115309ee435ebab5b05
         second_reviewed_sha: b83765a77d067dfe380f2ef2732812e09c29ab8e
@@ -2083,8 +2083,8 @@ slices:
       - GENERATORS_TWICE_NO_DIFF_PASS
       - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
       - MAIN_CI_PENDING
-    handwritten_scope: under_P3_cap_tests_docs_generated_excluded
-    slice_induced_correction_count: 2
+    handwritten_scope: 1059_added_lines_12_files_default_cap_exception_below_1500_hard_cap_complete_transactional_behavior
+    slice_induced_correction_count: 3
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 3

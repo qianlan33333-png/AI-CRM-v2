@@ -85,10 +85,10 @@ func TestSameJSONObjectNeverCollapsesDistinctLargeIntegers(t *testing.T) {
 		t.Fatal("sameJSONObject() collapsed distinct integers above float64 exact range")
 	}
 	if !sameJSONObject(
-		json.RawMessage(`{"a":1,"b":2}`),
-		json.RawMessage(`{"b":2,"a":1}`),
+		json.RawMessage(`{"a":1,"b":[10,1e1,{"c":2.0}]}`),
+		json.RawMessage(`{"b":[1e1,10.0,{"c":2}],"a":1.0}`),
 	) {
-		t.Fatal("sameJSONObject() rejected equivalent object key order")
+		t.Fatal("sameJSONObject() rejected PostgreSQL-equivalent object and numeric values")
 	}
 }
 

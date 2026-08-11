@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math/big"
 	"net/url"
 	"reflect"
 	"strings"
@@ -338,10 +339,10 @@ func sameNullableInt16(left, right *int16) bool {
 func sameJSONObject(left, right json.RawMessage) bool {
 	leftValue, leftOK := decodeJSONObjectWithExactNumbers(left)
 	rightValue, rightOK := decodeJSONObjectWithExactNumbers(right)
-	return leftOK && rightOK && reflect.DeepEqual(leftValue, rightValue)
+	return leftOK && rightOK && sameJSONValue(leftValue, rightValue)
 }
 
-func decodeJSONObjectWithExactNumbers(raw json.RawMessage) (any, bool) {
+func decodeJSONObjectWithExactNumbers(raw json.RawMessage) (map[string]any, bool) {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
 	var value any
@@ -352,7 +353,54 @@ func decodeJSONObjectWithExactNumbers(raw json.RawMessage) (any, bool) {
 	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
 		return nil, false
 	}
-	return value, true
+	object, ok := value.(map[string]any)
+	return object, ok
+}
+
+func sameJSONValue(left, right any) bool {
+	switch leftValue := left.(type) {
+	case nil:
+		return right == nil
+	case bool:
+		rightValue, ok := right.(bool)
+		return ok && leftValue == rightValue
+	case string:
+		rightValue, ok := right.(string)
+		return ok && leftValue == rightValue
+	case json.Number:
+		rightValue, ok := right.(json.Number)
+		if !ok {
+			return false
+		}
+		leftNumber, leftOK := new(big.Rat).SetString(leftValue.String())
+		rightNumber, rightOK := new(big.Rat).SetString(rightValue.String())
+		return leftOK && rightOK && leftNumber.Cmp(rightNumber) == 0
+	case []any:
+		rightValue, ok := right.([]any)
+		if !ok || len(leftValue) != len(rightValue) {
+			return false
+		}
+		for index := range leftValue {
+			if !sameJSONValue(leftValue[index], rightValue[index]) {
+				return false
+			}
+		}
+		return true
+	case map[string]any:
+		rightValue, ok := right.(map[string]any)
+		if !ok || len(leftValue) != len(rightValue) {
+			return false
+		}
+		for key, leftItem := range leftValue {
+			rightItem, exists := rightValue[key]
+			if !exists || !sameJSONValue(leftItem, rightItem) {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
 }
 
 func mapCustomerMutationDatabaseError(err error) error {

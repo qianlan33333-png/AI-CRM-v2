@@ -942,21 +942,21 @@ verify_index_sha256 docs/evidence/slices/P3-C04-customer-list-ui.md \
 verify_index_sha256 acceptance/p3c02a/doc.go \
   100b1b52b8089d9bd3f23e9f5e3fef03dd9cf980f578ac9d1450bee21d8c9aab
 verify_index_sha256 acceptance/p3c02a/customer_mutation_integration_test.go \
-  a098212cf3c8f9c2a250d18ee06049e50b269d7419978c0977e8fff075756281
+  f85a6e80cfc625dc4ce623355f3affc12ec142759f1e8f2a80368b3035f8842a
 verify_index_sha256 internal/contact/app/customer_mutation_service.go \
   9f99976cf74dbb2a13c0c8f903f163f458da5e5bc912031c00daf192875af307
 verify_index_sha256 internal/contact/app/customer_mutation_service_test.go \
   7bdf52be9eb0e4c4d403dd642eec1abf288451cc0fd940c8b6011796eba7a5a4
 verify_index_sha256 internal/contact/store/customer_mutation_repository.go \
-  fea8a0925963b810a582cc515a5503544ae52b21e421ed92bf7388fdea67ed77
+  6b01429855647b49b55e6226744d1f3215637a96aff3ef5ba34ecb252a8ea1c8
 verify_index_sha256 internal/contact/store/customer_mutation_repository_test.go \
-  1de9d0f5f331fc471fb2d3f90856e27190efb4f72a2b854ad2924160d720f1a9
+  c37d595160fd6b5c5d0b06ae277c9e5e633963a99526335a4a74c6be020379f2
 verify_index_sha256 internal/contact/store/queries/customer_mutations.sql \
   2c6d972ac26cc4adddf24a9f2419dcee18a2bbf8cc1885c9cd89c5b113902f39
 verify_index_sha256 internal/contact/store/generated/customer_mutations.sql.go \
   bdb9d819b1704a54459ffb2f33169eb2c2cfa492e9e77fd3bf8404d0e9141096
 verify_index_sha256 docs/execution/slices/P3-C02A.md \
-  bdf8bf445d8d5f50aefc77fd107327f100e47154caff3d8aba8237a32e948030
+  3b7fa0edce011243ee5983f39bb3e461ad3da84688b4139846fe682b7a03412a
 verify_index_sha256 docs/evidence/slices/P3-C02A-sqlc-store.md \
   1c4c82565b6531e35bd7b657c583fa1fab4591b871550af145ecab4d966db40b
 verify_index_sha256 docs/evidence/slices/P3-C02A-service-tests.md \

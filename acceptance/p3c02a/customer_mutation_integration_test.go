@@ -27,6 +27,18 @@ func TestCustomerMutationsCommitTimelineAndDomainEventsAtomically(t *testing.T) 
 		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(),
 	)
 
+	updatedAtBeforeNumericNoOp := customerUpdatedAt(t, ctx, fixture, customerID)
+	numericNoOp := json.RawMessage(`{"value":1.0}`)
+	if _, err := service.Update(ctx, contactapp.CustomerUpdateCommand{
+		ID: customerID, Extra: &numericNoOp, Actor: "staff:7",
+	}); err != nil {
+		t.Fatalf("numeric JSON no-op error = %v", err)
+	}
+	if updatedAtAfterNumericNoOp := customerUpdatedAt(t, ctx, fixture, customerID); !updatedAtAfterNumericNoOp.Equal(updatedAtBeforeNumericNoOp) {
+		t.Fatalf("numeric JSON no-op changed updated_at: before=%v after=%v", updatedAtBeforeNumericNoOp, updatedAtAfterNumericNoOp)
+	}
+	assertCounts(t, ctx, fixture, 0, 0)
+
 	newName := "已联系客户"
 	customer, err := service.Update(ctx, contactapp.CustomerUpdateCommand{
 		ID: customerID, Name: &newName, Actor: "staff:7",
@@ -169,7 +181,7 @@ CREATE TABLE acceptance_fixtures.customers (
   added_at TIMESTAMPTZ,
   last_interact_at TIMESTAMPTZ,
   is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-  extra JSONB NOT NULL DEFAULT '{}',
+  extra JSONB NOT NULL DEFAULT '{"value":1}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -308,6 +320,22 @@ func assertCustomerName(
 	).Scan(&got); err != nil || got != want {
 		t.Fatalf("customer name = %q, %v; want %q", got, err, want)
 	}
+}
+
+func customerUpdatedAt(
+	t *testing.T,
+	ctx context.Context,
+	fixture *acceptancefixtures.PostgreSQL,
+	customerID contactport.CustomerID,
+) time.Time {
+	t.Helper()
+	var updatedAt time.Time
+	if err := fixture.Pool().QueryRow(ctx,
+		`SELECT updated_at FROM acceptance_fixtures.customers WHERE id = $1`, customerID,
+	).Scan(&updatedAt); err != nil {
+		t.Fatalf("query customer updated_at: %v", err)
+	}
+	return updatedAt
 }
 
 func jsonEqual(left, right []byte) bool {
