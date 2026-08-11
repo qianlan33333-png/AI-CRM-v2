@@ -6,14 +6,29 @@ fail() {
   exit 2
 }
 
-usage='Usage: build_release_binary.sh --output=<absolute-file>'
-[[ "$#" -eq 1 ]] || fail "$usage"
+usage='Usage: build_release_binary.sh [--command=<aicrm|aicrm-river-migrate>] --output=<absolute-file>'
+[[ "$#" -ge 1 && "$#" -le 2 ]] || fail "$usage"
 
+command_value='aicrm'
 output_value=''
-case "$1" in
-  --output=*) output_value="${1#--output=}" ;;
-  *) fail "$usage" ;;
-esac
+command_seen=0
+for argument in "$@"; do
+  case "$argument" in
+    --command=*)
+      [[ "$command_seen" -eq 0 ]] || fail 'duplicate --command'
+      command_value="${argument#--command=}"
+      command_seen=1
+      ;;
+    --output=*)
+      [[ -z "$output_value" ]] || fail 'duplicate --output'
+      output_value="${argument#--output=}"
+      ;;
+    *) fail "$usage" ;;
+  esac
+done
+[[ "$command_value" = 'aicrm' || "$command_value" = 'aicrm-river-migrate' ]] ||
+  fail 'command must be one of aicrm, aicrm-river-migrate'
+[[ -n "$output_value" ]] || fail "$usage"
 [[ "$output_value" = /* ]] || fail 'output must be an absolute file'
 
 output_name="$(basename -- "$output_value")"
@@ -48,7 +63,7 @@ env -u BASH_ENV -u ENV \
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
   GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   go build -buildvcs=false -trimpath -ldflags="-s -w -buildid=$source_sha" \
-    -o "$temporary_file" ./cmd/aicrm
+    -o "$temporary_file" "./cmd/$command_value"
 chmod 0755 "$temporary_file"
 mv -f -- "$temporary_file" "$output_file"
 trap - EXIT

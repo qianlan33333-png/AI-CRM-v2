@@ -44,6 +44,9 @@ fi
 if scripts/build_release_binary.sh --output="$repository_root/aicrm" >/dev/null 2>&1; then
   fail 'repository output was accepted'
 fi
+if scripts/build_release_binary.sh --command=unknown --output="$temporary_directory/unknown" >/dev/null 2>&1; then
+  fail 'unknown release command was accepted'
+fi
 
 scripts/build_release_binary.sh --output="$temporary_directory/aicrm" >"$temporary_directory/receipt"
 [[ -x "$temporary_directory/aicrm" ]] || fail 'release binary is not executable'
@@ -56,5 +59,13 @@ grep -Fq $'\tGOOS=linux' <<<"$metadata" || fail 'GOOS receipt mismatch'
 grep -Fq $'\tGOARCH=amd64' <<<"$metadata" || fail 'GOARCH receipt mismatch'
 [[ "$(go tool buildid "$temporary_directory/aicrm")" = "$source_sha" ]] ||
   fail 'source SHA build ID mismatch'
+
+scripts/build_release_binary.sh \
+  --command=aicrm-river-migrate \
+  --output="$temporary_directory/aicrm-river-migrate" \
+  >"$temporary_directory/migration-receipt"
+[[ -x "$temporary_directory/aicrm-river-migrate" ]] || fail 'River migration binary is not executable'
+[[ "$(go tool buildid "$temporary_directory/aicrm-river-migrate")" = "$source_sha" ]] ||
+  fail 'River migration binary source SHA build ID mismatch'
 
 printf 'G2 runtime image acceptance: PASS\n'

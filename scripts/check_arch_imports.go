@@ -22,6 +22,11 @@ var domains = map[string]bool{
 	"stats": true, "ops": true,
 }
 
+var compositionRoots = map[string]bool{
+	"aicrm":               true,
+	"aicrm-river-migrate": true,
+}
+
 func main() {
 	root := flag.String("root", ".", "repository root")
 	flag.Parse()
@@ -230,7 +235,7 @@ func checkImport(source, importPath string) error {
 
 func classifySource(source string) (string, bool) {
 	parts := strings.Split(source, "/")
-	if len(parts) >= 2 && parts[0] == "cmd" && parts[1] == "aicrm" {
+	if len(parts) >= 2 && parts[0] == "cmd" && compositionRoots[parts[1]] {
 		return "", true
 	}
 	if len(parts) >= 2 && parts[0] == "internal" && domains[parts[1]] {

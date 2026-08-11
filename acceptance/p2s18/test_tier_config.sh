@@ -49,6 +49,12 @@ validate_environment_file() {
   (( worker_pool >= queue_total + 2 )) || return 1
 }
 
+validate_postgresql_file() {
+  local postgresql_file="$1"
+  [[ -f "$postgresql_file" && ! -L "$postgresql_file" ]] || return 1
+  [[ "$(grep -Fxc "listen_addresses = '*'" "$postgresql_file")" -eq 1 ]] || return 1
+}
+
 validate_compose_file() {
   local compose_file="$1"
   [[ -f "$compose_file" && ! -L "$compose_file" ]] || return 1
@@ -81,6 +87,8 @@ for tier_name in s m l; do
 
   environment_file="$first_directory/aicrm.env"
   validate_environment_file "$environment_file" || fail "$tier_name generated environment failed its contract"
+  validate_postgresql_file "$first_directory/postgresql.conf" ||
+    fail "$tier_name PostgreSQL container-network listener contract drifted"
 done
 
 [[ "$(env_value COMPOSE_PROFILES "$test_directory/s-first/aicrm.env")" = 'combined' ]] || fail 'S profile must be combined'
@@ -111,6 +119,12 @@ if validate_environment_file "$negative_environment"; then fail 'missing fixed q
 cp "$test_directory/s-first/aicrm.env" "$negative_environment"
 printf '%s\n' 'AICRM_RIVER_DEFAULT_MAX_WORKERS=1' >>"$negative_environment"
 if validate_environment_file "$negative_environment"; then fail 'default queue was accepted'; fi
+
+negative_postgresql="$test_directory/negative-postgresql.conf"
+grep -Fv "listen_addresses = '*'" "$test_directory/s-first/postgresql.conf" >"$negative_postgresql"
+if validate_postgresql_file "$negative_postgresql"; then
+  fail 'PostgreSQL localhost-only default was accepted for Compose'
+fi
 
 compose_file="$repository_root/deploy/compose.yml"
 validate_compose_file "$compose_file" || fail 'Compose failed its fixed topology contract'

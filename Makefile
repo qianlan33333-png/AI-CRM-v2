@@ -259,6 +259,7 @@ p2-s18-acceptance:
 	@env -u BASH_ENV -u ENV acceptance/p2s18/test_tier_config.sh
 
 g2-runtime-image-acceptance:
+	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 ./cmd/aicrm-river-migrate
 	@env -u BASH_ENV -u ENV acceptance/g2image/test_runtime_image.sh
 
 arch-import-lint:
