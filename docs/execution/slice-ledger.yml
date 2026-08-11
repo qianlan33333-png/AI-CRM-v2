@@ -1256,15 +1256,19 @@ slices:
   - slice_id: P2-11
     title: per-account-budget-timeout-and-final-router
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: 66f2be3db23c0f31e1c66e5843536ab1b9d7fd68
     dependency: P2-10
     branch: slice/p2-11-http-budget-router
     decision_anchor: ADR-006_DESIGN_8_1_8_3
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/109
+    pr_head_sha: 4f7c5e445320cf00e4ca3d8705f8535ef5a310d2
+    merge_sha: 17ad04468478abc2cf2d844a953ab4e39122d3fc
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31440807609
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31440807687
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31440807614
     delegated_tasks:
       - task_id: p2_11_gateway_test_corpus
         executor: gpt-5.6-terra
@@ -1290,6 +1294,51 @@ slices:
     infra_induced_correction_count: 2
     scope_induced_correction_count: 0
     verification_induced_correction_count: 2
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-12
+    title: react-web-shell-layout-and-client-routing
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 17ad04468478abc2cf2d844a953ab4e39122d3fc
+    dependency: P2-11
+    branch: slice/p2-12-web-shell
+    decision_anchor: EXECUTION_PLAN_3_1_D_DESIGN_4_2_8_1
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_12_web_shell_ui
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_paths:
+          - web/src/main.tsx
+          - web/src/main.test.tsx
+          - web/src/shell.css
+        base_sha: f459f2d2db549c65c0fbbc5876a810a4ae7e32eb
+        delegated_head_sha: 8bf3f1b2011276ee8ca150476995ad6ebbf1881f
+        correction_count: 2
+        slice_induced_correction_count: 1
+        verification_induced_correction_count: 1
+        file_manifest_sha256: c8b554485d9f344e61c83148246a2795d15a073129849fef233d58dc2cb344ab
+        diff_sha256: f4680bdc7d8087bb943f58629193f560394a40c4d9cdeb56fbb6d961232cd1e7
+        receipt: docs/evidence/slices/P2-12-web-shell.md
+    tests:
+      - LOCAL_Terra_hash_receipt_and_Web_CI_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_PASS
+      - LOCAL_goose_up_down_up_00001_through_00004_PostgreSQL16_14_55432_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_worktree_config_sensitive_paths_bundle_PASS
+    handwritten_scope: 4_files_557_changed_lines_under_P2_cap_tests_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 4
     external_gates:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED

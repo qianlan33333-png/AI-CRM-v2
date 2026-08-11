@@ -48,6 +48,7 @@ required=(
   web/index.html
   web/src/main.tsx
   web/src/main.test.tsx
+  web/src/shell.css
   web/src/api/generated/health.ts
   acceptance/p0s01/runtime_contract_test.go
   acceptance/p0s01/process_blackbox.sh
@@ -206,6 +207,8 @@ required=(
   acceptance/p2s11/gateway_router_test.go
   docs/execution/slices/P2-11.md
   docs/evidence/slices/P2-11-gateway-tests.md
+  docs/execution/slices/P2-12.md
+  docs/evidence/slices/P2-12-web-shell.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -283,6 +286,7 @@ done <<'EOF'
 100644 web/index.html
 100644 web/src/main.tsx
 100644 web/src/main.test.tsx
+100644 web/src/shell.css
 100644 web/src/api/generated/health.ts
 100644 .github/workflows/application-go.yml
 100755 scripts/check_repo_contract.sh
@@ -434,6 +438,8 @@ done <<'EOF'
 100644 acceptance/p2s11/gateway_router_test.go
 100644 docs/execution/slices/P2-11.md
 100644 docs/evidence/slices/P2-11-gateway-tests.md
+100644 docs/execution/slices/P2-12.md
+100644 docs/evidence/slices/P2-12-web-shell.md
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
@@ -844,6 +850,16 @@ verify_index_sha256 docs/execution/slices/P2-11.md \
   621f0fa454d672f0bab5f8589d737db91e1b3a7137407a680cc141fccaf7f34b
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
+verify_index_sha256 web/src/main.tsx \
+  ce8aedeec812313b6fa83896daad4619c8c2a5088915d3bc728f15da3061fa5f
+verify_index_sha256 web/src/main.test.tsx \
+  5fbf5a75cc0e4684269938e753c9f0102998284c18a4ba146e331d0985eae73f
+verify_index_sha256 web/src/shell.css \
+  f6334efe23684e39b1987ebd3388aded29703c4c6c7a83303f76a287dbc6c25d
+verify_index_sha256 docs/execution/slices/P2-12.md \
+  3eba447aab3854dd1ae2b27df5e2167de9b38e7c5d0996aa6a64a1d524b5c8f7
+verify_index_sha256 docs/evidence/slices/P2-12-web-shell.md \
+  5d84f724094413672de6f6861e45542bf3b6d12eb39a04cbe06846e09eba0f17
 verify_index_sha256 docs/execution/slices/P2-07.md \
   4788b3c37af60d5b95704b0e8981a86904575112a635106821a1d180ef8f0c91
 verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
@@ -871,7 +887,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a0debfae265d8450692aa2b60defb4fa0343f1ba3455df5ebcf6003289bba6b9
+  b74e5448de02abb7eca575d9f5ea06a3653e274bdddb8a5705cede3a3ab7fb70
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
