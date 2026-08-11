@@ -152,7 +152,7 @@ func (service *Service) ValidateCSRF(ctx context.Context, session authport.Sessi
 	if err != nil {
 		return authport.ErrCSRFInvalid
 	}
-	if service == nil || service.uow == nil || service.repo == nil || service.clock == nil {
+	if ctx == nil || ctx.Err() != nil || service == nil || service.uow == nil || service.repo == nil || service.clock == nil {
 		return authport.ErrAuthenticationUnavailable
 	}
 	now := service.clock().UTC()
@@ -169,6 +169,10 @@ func (service *Service) ValidateCSRF(ctx context.Context, session authport.Sessi
 		}
 		return nil
 	})
+	if err != nil && !errors.Is(err, authport.ErrCSRFInvalid) && !errors.Is(err, authport.ErrUnauthenticated) &&
+		!errors.Is(err, authport.ErrAuthenticationUnavailable) {
+		return errors.Join(authport.ErrAuthenticationUnavailable, err)
+	}
 	return err
 }
 

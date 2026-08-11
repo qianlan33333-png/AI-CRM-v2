@@ -500,6 +500,84 @@ func TestAuthorizeNilServiceFailsClosed(t *testing.T) {
 	}
 }
 
+func TestValidateCSRFBindsHashesToCurrentActiveSession(t *testing.T) {
+	now := time.Date(2026, 8, 11, 14, 0, 0, 0, time.FixedZone("CST", 8*60*60))
+	session := rawToken(sequenceBytes(32))
+	csrf := rawToken(bytes.Repeat([]byte{91}, 32))
+	uow := &fakeAuthUoW{}
+	repository := &fakeAuthRepository{csrfValid: true}
+	service := newTestAuthService(t, uow, repository, Options{Clock: func() time.Time { return now }})
+
+	if err := service.ValidateCSRF(context.Background(), authport.SessionRef(session), authport.CSRFToken(csrf)); err != nil {
+		t.Fatalf("ValidateCSRF() error = %v", err)
+	}
+	if uow.calls != 1 || repository.csrfCalls != 1 || !repository.csrfAt.Equal(now.UTC()) {
+		t.Fatalf("calls/time = uow:%d csrf:%d at:%s, want 1/1/%s", uow.calls, repository.csrfCalls, repository.csrfAt, now.UTC())
+	}
+	assertTokenHash(t, repository.csrfSessionHash, session)
+	assertTokenHash(t, repository.csrfTokenHash, csrf)
+	if bytes.Equal(repository.csrfSessionHash, []byte(session)) || bytes.Equal(repository.csrfTokenHash, []byte(csrf)) {
+		t.Fatal("repository received raw CSRF or session material")
+	}
+}
+
+func TestValidateCSRFFailsClosed(t *testing.T) {
+	session := authport.SessionRef(rawToken(sequenceBytes(32)))
+	csrf := authport.CSRFToken(rawToken(bytes.Repeat([]byte{92}, 32)))
+	sentinel := errors.New("database unavailable")
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	tests := []struct {
+		name       string
+		ctx        context.Context
+		session    authport.SessionRef
+		csrf       authport.CSRFToken
+		uowErr     error
+		csrfValid  bool
+		csrfErr    error
+		want       error
+		underlying error
+		wantCalls  int
+	}{
+		{name: "malformed session", ctx: context.Background(), session: "bad", csrf: csrf, want: authport.ErrUnauthenticated},
+		{name: "malformed csrf", ctx: context.Background(), session: session, csrf: "bad", want: authport.ErrCSRFInvalid},
+		{name: "nil context", session: session, csrf: csrf, want: authport.ErrAuthenticationUnavailable},
+		{name: "cancelled context", ctx: cancelled, session: session, csrf: csrf, want: authport.ErrAuthenticationUnavailable},
+		{name: "session token mismatch", ctx: context.Background(), session: session, csrf: csrf, want: authport.ErrCSRFInvalid, wantCalls: 1},
+		{name: "repository error", ctx: context.Background(), session: session, csrf: csrf, csrfErr: sentinel, want: authport.ErrAuthenticationUnavailable, underlying: sentinel, wantCalls: 1},
+		{name: "uow error", ctx: context.Background(), session: session, csrf: csrf, uowErr: sentinel, want: authport.ErrAuthenticationUnavailable, underlying: sentinel},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			uow := &fakeAuthUoW{err: testCase.uowErr}
+			repository := &fakeAuthRepository{csrfValid: testCase.csrfValid, csrfErr: testCase.csrfErr}
+			service := newTestAuthService(t, uow, repository, Options{})
+			err := service.ValidateCSRF(testCase.ctx, testCase.session, testCase.csrf)
+			if !errors.Is(err, testCase.want) {
+				t.Fatalf("ValidateCSRF() error = %v, want %v", err, testCase.want)
+			}
+			if testCase.underlying != nil && !errors.Is(err, testCase.underlying) {
+				t.Fatalf("ValidateCSRF() error = %v, want underlying %v", err, testCase.underlying)
+			}
+			if repository.csrfCalls != testCase.wantCalls {
+				t.Fatalf("ValidateCSRF() repository calls = %d, want %d", repository.csrfCalls, testCase.wantCalls)
+			}
+		})
+	}
+}
+
+func TestValidateCSRFNilServiceFailsClosed(t *testing.T) {
+	var service *Service
+	err := service.ValidateCSRF(
+		context.Background(),
+		authport.SessionRef(rawToken(sequenceBytes(32))),
+		authport.CSRFToken(rawToken(bytes.Repeat([]byte{93}, 32))),
+	)
+	if !errors.Is(err, authport.ErrAuthenticationUnavailable) {
+		t.Fatalf("ValidateCSRF() error = %v, want ErrAuthenticationUnavailable", err)
+	}
+}
+
 func TestNewServiceRejectsInvalidDependenciesAndLifetimes(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
