@@ -2041,15 +2041,15 @@ slices:
   - slice_id: P3-C02A
     title: contact-customer-profile-stage-tag-transactional-mutations
     owner: Codex-Sol
-    status: ready_for_pr
+    status: accepted
     base_sha: 7795b9fc2d67fe001d23024edc62ec292a81d400
     dependency: P3-C03
     branch: slice/p3-c02a-customer-detail-store
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/131
+    pr_head_sha: e945cb815a739e1a6e72c3bd6055487acb436586
+    merge_sha: 96f93f17662c00987be0edf3d4f8059ae61bd477
+    main_ci_status: PASS_EXACT_MERGE_SHA
     delegated_tasks:
       - task_id: /root/p3_c02a_sqlc_store
         executor_model: gpt-5.6-terra
@@ -2086,12 +2086,39 @@ slices:
       - GENERATORS_TWICE_NO_DIFF_PASS
       - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
       - INDEPENDENT_FINAL_REVIEW_PASS
-      - MAIN_CI_PENDING
+      - PR_AND_MAIN_CI_PASS
     handwritten_scope: 1059_added_lines_12_files_default_cap_exception_below_1500_hard_cap_complete_transactional_behavior
     slice_induced_correction_count: 3
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 4
+    external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C02B
+    title: contact-get-customer-detail
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 96f93f17662c00987be0edf3d4f8059ae61bd477
+    dependency: P3-C02A
+    branch: slice/p3-c02b-customer-detail-read
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    scale_adjustment: rollback_one_scale_after_P3_C02A_slice_induced_reached_3
+    delegated_tasks: []
+    tests:
+      - FOCUSED_AND_FULL_GATES_PENDING
+    handwritten_scope: pending
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
