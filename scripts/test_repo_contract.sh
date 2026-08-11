@@ -581,6 +581,39 @@ if (cd "$p2s17_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P2-17 slice card receipt drift was accepted"
 fi
 
+for file_path in \
+  web/src/auth.ts \
+  web/src/auth.test.ts \
+  web/src/main.tsx \
+  web/src/main.test.tsx \
+  web/src/stages.ts \
+  web/src/stages.test.ts \
+  web/src/stages-ui.tsx \
+  web/src/stages-ui.test.tsx \
+  web/src/shell.css \
+  docs/execution/slices/P2-17.md \
+  docs/evidence/slices/P2-17-stages-ui.md; do
+  p2s17_receipt_fixture="$(make_fixture "p2-17-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.ts|*.tsx) printf '%s\n' '// P2-17 receipt drift' >>"$p2s17_receipt_fixture/$file_path" ;;
+    *.css) printf '%s\n' '/* P2-17 receipt drift */' >>"$p2s17_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-17 receipt drift' >>"$p2s17_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p2s17_receipt_fixture" add "$file_path"
+  if (cd "$p2s17_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-17 stages UI receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in web/src/stages.ts web/src/stages-ui.tsx; do
+  missing_p2s17_file="$(make_fixture "missing-p2-17-${file_path##*/}")"
+  rm -f "$missing_p2s17_file/$file_path"
+  git -C "$missing_p2s17_file" add -u "$file_path"
+  if (cd "$missing_p2s17_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P2-17 stages UI boundary was accepted: $file_path"
+  fi
+done
+
 disconnected_p2s14="$(make_fixture disconnected-p2-s14-target)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s14-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s14/Makefile"
 rm -f "$disconnected_p2s14/Makefile.bak"

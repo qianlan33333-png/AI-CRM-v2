@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   PermissionSessionCache,
@@ -338,6 +338,11 @@ export function App({
     });
   };
 
+  const markSessionUnauthenticated = useCallback(() => {
+    cache.invalidate();
+    setSession({ status: "unauthenticated" });
+  }, [cache]);
+
   const loginView = (() => {
     if (session.status === "checking") return { kind: "checking" } as const;
     if (session.status === "unavailable") {
@@ -383,10 +388,6 @@ export function App({
 
   const links = navigationLinks(session.principal);
   const account = accountSummary(session.principal);
-  const markSessionUnauthenticated = () => {
-    cache.invalidate();
-    setSession({ status: "unauthenticated" });
-  };
 
   return (
     <div className="app-shell">
