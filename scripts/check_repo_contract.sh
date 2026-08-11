@@ -580,7 +580,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  368af239b7a332c0a78b59a95daf5f6100b98e8a2c8f53147bb0121a99c64da9
+  4b3ae8591f860651904647a1079cd3324e54e1597d7f75deef329fe74b7b5b8d
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1084,7 +1084,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  cda7b0383f78256e3255c02d847a9d79f4276c4758211a5407c578e99ffa2aa0
+  e7ffe176248aac94da6e11539c50eb31b5353d47ddf6e8e23dce956783e8f371
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1852,6 +1852,13 @@ grep -Eq '^ci-go:.*[[:space:]]g2-release-archive-contract([[:space:]]|$)' <<<"$p
   fail "G2 release archive contract must remain connected to ci-go"
 grep -Fqx $'\t@env -u BASH_ENV -u ENV scripts/test_package_release_archive.sh' <<<"$p2s18_make" ||
   fail "G2 release archive contract must run the permanent archive tests"
+
+[[ "$(grep -Ec '^g2-web-edge-contract:$' <<<"$p2s18_make")" -eq 1 ]] ||
+  fail "G2 web edge contract target must be declared exactly once"
+grep -Eq '^ci-go:.*[[:space:]]g2-web-edge-contract([[:space:]]|$)' <<<"$p2s18_make" ||
+  fail "G2 web edge contract must remain connected to ci-go"
+grep -Fqx $'\t@env -u BASH_ENV -u ENV scripts/test_g2_web_edge.sh' <<<"$p2s18_make" ||
+  fail "G2 web edge contract must run the permanent edge tests"
 
 p2s18_tier_source="$(git show :internal/platform/deployment/tier.go)"
 for queue_name in CRITICAL EVENT OUTBOUND SYNC HEAVY AI; do

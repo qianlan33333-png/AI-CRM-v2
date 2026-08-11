@@ -712,6 +712,24 @@ if (cd "$hollow_g2_release_archive" && scripts/check_repo_contract.sh >/dev/null
   fail "hollow G2 release archive contract was accepted"
 fi
 
+disconnected_g2_web_edge="$(make_fixture disconnected-g2-web-edge)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]g2-web-edge-contract([[:space:]]|$)/\1/' \
+  "$disconnected_g2_web_edge/Makefile"
+rm -f "$disconnected_g2_web_edge/Makefile.bak"
+restage_make_receipt "$disconnected_g2_web_edge"
+if (cd "$disconnected_g2_web_edge" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "G2 web edge contract disconnected from ci-go was accepted"
+fi
+
+hollow_g2_web_edge="$(make_fixture hollow-g2-web-edge)"
+sed -i.bak '/^g2-web-edge-contract:$/ { n; s/.*/\t@true/; }' \
+  "$hollow_g2_web_edge/Makefile"
+rm -f "$hollow_g2_web_edge/Makefile.bak"
+restage_make_receipt "$hollow_g2_web_edge"
+if (cd "$hollow_g2_web_edge" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow G2 web edge contract was accepted"
+fi
+
 for file_path in \
   web/src/auth.ts \
   web/src/auth.test.ts \
