@@ -659,7 +659,7 @@ slices:
     pr_head_sha: bb1067549a70745231b3afb3d311627e16efdef9
     merge_sha: 72fb929257af595ab8852dd5b5b1eb1391ff8733
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 0
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 2
   - slice_id: M0-6
     title: repair-source-policy-infrastructure-and-correction-attribution
@@ -1607,21 +1607,26 @@ slices:
   - slice_id: G2-T01
     title: traceable-minimal-runtime-image
     owner: Codex-Sol
-    status: in_progress
+    status: completed
     base_sha: 0c4c1bd697631d6242fdf838d17303970635144f
     dependency: P2-18
     branch: infra/g2-test-image
     decision_anchor: USER_STAGING_TARGET_2026_08_11
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/117
+    pr_head_sha: 4863a5cd2897ecb7a13db3b1214fa6959092a348
+    merge_sha: 7cad6482516da7d4071ac98e2317e03dd2460238
+    main_ci_status: PASS_EXACT_MERGE_SHA
     delegated_tasks: []
     tests:
       - LOCAL_RELEASE_BINARY_CONTRACT_PASS
       - LOCAL_CI_GO_PARTIAL_FAIL_CLOSED_POSTGRES_16_13_NOT_16_14
+      - PR_APPLICATION_GO_WEB_REPO_CONTRACT_SECRET_SCAN_PASS
+      - MAIN_7cad648_APPLICATION_GO_WEB_PASS_RUN_31497903122
+      - MAIN_7cad648_REPO_CONTRACT_PASS_RUN_31497903146
+      - MAIN_7cad648_SECRET_SCAN_PASS_RUN_31497903117
       - NEW_TARGET_2C4G_SWAP_2G_PREFLIGHT_PASS
       - NEW_TARGET_DOCKER_29_1_3_COMPOSE_2_40_3_INSTALLED
+      - NEW_TARGET_ACTIVE_SWAP_AT_LEAST_4G_PASS
     handwritten_scope: 6_files_under_P2_cap_tests_docs_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1
@@ -1629,8 +1634,38 @@ slices:
     verification_induced_correction_count: 1
     external_gates:
       - TEST_SERVER_DEPLOYMENT_AUTHORIZED
-      - G2_S_TIER_SWAP_4G_PENDING
+      - G2_S_TIER_SWAP_4G_PASS
       - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+  - slice_id: G2-T02
+    title: river-staging-migration-one-way-entrypoint
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 7cad6482516da7d4071ac98e2317e03dd2460238
+    dependency: G2-T01
+    branch: infra/g2-river-migrate
+    decision_anchor: USER_STAGING_TARGET_2026_08_11
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING
+    main_ci_status: PENDING
+    delegated_tasks: []
+    tests:
+      - LOCAL_RIVER_MIGRATION_CLI_FOCUSED_PASS
+      - LOCAL_RELEASE_BINARY_CONTRACT_PASS
+      - LOCAL_ARCH_IMPORT_EXACT_COMPOSITION_ROOT_POSITIVE_NEGATIVE_PASS
+      - LOCAL_WEB_CI_NODE_24_18_0_NPM_11_12_1_PASS
+      - TEST_SERVER_POSTGRES_16_14_REAL_PG_ACCEPTANCE_PASS
+      - TEST_SERVER_QUERY_PLAN_GATE_CHECKED_0_PASS
+    handwritten_scope: 6_files_under_P2_cap_tests_docs_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    external_gates:
+      - TEST_SERVER_DEPLOYMENT_AUTHORIZED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED

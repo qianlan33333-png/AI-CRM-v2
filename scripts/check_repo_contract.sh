@@ -583,7 +583,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  8ffd0ca1659015bd7279072315506e0a714c8972c1f7dddc48d3f3322d2219e9
+  da83f394de0e50fd4de851701d866ffd7c88dc4f34ca82c42f198753b7c6a8a7
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -693,9 +693,9 @@ verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
-  5e43e7177f16a901c8d242d2d534975b460c845f1f36dd396535c34076cf5847
+  6d06c304c397fd7966ffa7a52d70a888323465e511a7c9db63521b35e0881224
 verify_index_sha256 scripts/test_arch_imports.sh \
-  deeb4088b249ab42d1fc6e3aef517079aa6d6808a8c294bfa1ef2a853c6b35ab
+  2905b7e910816cecb685f0b5e34476c67100a62a21ea1b6e015a6e58a884aa74
 verify_index_sha256 scripts/ownership/main.go \
   94d56f1479ee25eb13643ed97565a73fd5e774178510b118d172d7fd1dbac22e
 verify_index_sha256 scripts/test_ownership.sh \
@@ -981,9 +981,9 @@ verify_index_sha256 docs/execution/slices/P2-18.md \
 verify_index_sha256 docs/evidence/slices/P2-18-tier-config.md \
   51b53dc5e09aec8693f61dac4263993e5e1a8bb7cc48f9886c35d8c86217464e
 verify_index_sha256 internal/platform/deployment/tier.go \
-  5b4122ebefead5744daefea58c384c2951452b583f5bd02c860d897ccd59ae17
+  a179baf803251c646a43119526eb7de4288aeb72511d0ca0aadf96c4e55436e8
 verify_index_sha256 internal/platform/deployment/tier_test.go \
-  58f9d01edfeb523699421331acce7cfa1b73a7d2dd31af5a141d99e6f578e165
+  f84f48aeefbaad25fbc4abaf99e5b41a6ebbaa7a05623b4b3dfda317e0467686
 verify_index_sha256 cmd/aicrm-config/main.go \
   ab12c6c131a67bbfd2b651d1cd815124eaef09508bc32787e42369824d782ed8
 verify_index_sha256 cmd/aicrm-config/main_test.go \
@@ -993,7 +993,7 @@ verify_index_sha256 deploy/compose.yml \
 verify_index_sha256 scripts/staging_deploy.sh \
   755625464a65ef6a71d93d5261e1255b9f0d0becf5678aa015604ff5581c4d49
 verify_index_sha256 acceptance/p2s18/test_tier_config.sh \
-  4bbb50c47d7439fdb9ed60570af8c2746f4b4ee659607e60f714305480bc8310
+  ab73b731c77453c6188d6e2544d20be0e9563c67eb4746eb52ab7de5e20fafd7
 verify_index_sha256 web/src/stages.ts \
   3c161326e176da892546b860d027bd86aca5743ab3c680666f4697645030569b
 verify_index_sha256 web/src/stages.test.ts \
