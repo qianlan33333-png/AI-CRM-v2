@@ -209,6 +209,7 @@ required=(
   docs/evidence/slices/P2-11-gateway-tests.md
   docs/execution/slices/P2-12.md
   docs/evidence/slices/P2-12-web-shell.md
+  docs/execution/slices/P2-13.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -440,6 +441,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-11-gateway-tests.md
 100644 docs/execution/slices/P2-12.md
 100644 docs/evidence/slices/P2-12-web-shell.md
+100644 docs/execution/slices/P2-13.md
 100644 migrations/00002_event_log.sql
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
@@ -641,9 +643,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  f8e5e1aa3d9f99842e5395da2d665c521814998a500991565bd77644c263d42b
+  aaf6fd13fb89e5e1667b6726da0154464ff4a2519248099caa618fc07b6eb6ca
 verify_index_sha256 docs/spec/SHA256SUMS \
-  1c3c78deebf5dfe78909d322f1c72cb0f9a52fee8e594b1b005f565edeb6a35a
+  f8dfc7d717fbb54975954201e9a253017900334de60a7a214c517476ddbab65f
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -860,6 +862,8 @@ verify_index_sha256 docs/execution/slices/P2-12.md \
   3eba447aab3854dd1ae2b27df5e2167de9b38e7c5d0996aa6a64a1d524b5c8f7
 verify_index_sha256 docs/evidence/slices/P2-12-web-shell.md \
   5d84f724094413672de6f6861e45542bf3b6d12eb39a04cbe06846e09eba0f17
+verify_index_sha256 docs/execution/slices/P2-13.md \
+  0668e5d24144a4e0d8971ea6aa361deb718317deb61e6c409c7d2832364c0f87
 verify_index_sha256 docs/execution/slices/P2-07.md \
   4788b3c37af60d5b95704b0e8981a86904575112a635106821a1d180ef8f0c91
 verify_index_sha256 docs/evidence/slices/P2-07-dispatcher-tests.md \
@@ -887,7 +891,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b74e5448de02abb7eca575d9f5ea06a3653e274bdddb8a5705cede3a3ab7fb70
+  c3fd99825ef795dc7d044150b85914061d1dfb842d1e95d45006e06089cfddd5
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

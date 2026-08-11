@@ -522,6 +522,13 @@ for file_path in \
   fi
 done
 
+p2s13_card_fixture="$(make_fixture p2-13-card-receipt)"
+printf '%s\n' '# P2-13 receipt drift' >>"$p2s13_card_fixture/docs/execution/slices/P2-13.md"
+git -C "$p2s13_card_fixture" add docs/execution/slices/P2-13.md
+if (cd "$p2s13_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-13 slice card receipt drift was accepted"
+fi
+
 missing_p2s12_router="$(make_fixture missing-p2-12-router)"
 rm -f "$missing_p2s12_router/web/src/main.tsx"
 git -C "$missing_p2s12_router" add -u web/src/main.tsx

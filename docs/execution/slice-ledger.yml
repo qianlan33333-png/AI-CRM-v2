@@ -1302,15 +1302,19 @@ slices:
   - slice_id: P2-12
     title: react-web-shell-layout-and-client-routing
     owner: Codex-Sol
-    status: in_progress
+    status: merged
     base_sha: 17ad04468478abc2cf2d844a953ab4e39122d3fc
     dependency: P2-11
     branch: slice/p2-12-web-shell
     decision_anchor: EXECUTION_PLAN_3_1_D_DESIGN_4_2_8_1
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/110
+    pr_head_sha: eb494c72d597b0c421a2d9acbf1cedac5a251f94
+    merge_sha: 551878538f16433d1870ecb27b416ef80734498b
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31446069315
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31446069285
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31446069261
     delegated_tasks:
       - task_id: p2_12_web_shell_ui
         executor: gpt-5.6-terra
@@ -1341,6 +1345,31 @@ slices:
     verification_induced_correction_count: 4
     external_gates:
       - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-13
+    title: login-permission-sidebar-and-sixty-second-cache
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 551878538f16433d1870ecb27b416ef80734498b
+    dependency: P2-12
+    branch: slice/p2-13-login-sidebar-permissions
+    decision_anchor: EXECUTION_PLAN_3_1_D_DESIGN_8_1_P2_09_P2_10
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks: []
+    tests: []
+    handwritten_scope: PENDING
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    external_gates:
+      - REAL_WECOM_OAUTH_PENDING_EXTERNAL_GATE
+      - STAGING_BROWSER_LOGIN_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
