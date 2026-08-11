@@ -46,19 +46,17 @@ func TestGeneratedIdentityRefRequiresScopedEvidence(t *testing.T) {
 func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 	contracts := map[string]struct {
 		value   any
-		methods int
+		methods []string
 	}{
-		"contact.MergePort":   {(*contactport.MergePort)(nil), 3},
-		"config.Service":      {(*configport.Service)(nil), 2},
-		"events.Appender":     {(*eventport.Appender)(nil), 1},
-		"identity.Service":    {(*identityport.Service)(nil), 3},
-		"auth.Service":        {(*authport.Service)(nil), 3},
-		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), 1},
+		"contact.MergePort":   {(*contactport.MergePort)(nil), []string{"AppendExternalEvent", "CreateForIdentity", "MergeCustomers"}},
+		"config.Service":      {(*configport.Service)(nil), []string{"Get", "Set"}},
+		"events.Appender":     {(*eventport.Appender)(nil), []string{"Append"}},
+		"identity.Service":    {(*identityport.Service)(nil), []string{"Bind", "Ingest", "Resolve"}},
+		"auth.Service":        {(*authport.Service)(nil), []string{"Authenticate", "Authorize", "Invalidate", "ValidateCSRF"}},
+		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), []string{"Within"}},
 	}
 	for name, contract := range contracts {
-		if got := reflect.TypeOf(contract.value).Elem().NumMethod(); got != contract.methods {
-			t.Errorf("%s methods=%d want=%d", name, got, contract.methods)
-		}
+		assertMethodNames(t, name, reflect.TypeOf(contract.value).Elem(), contract.methods)
 	}
 
 	for _, command := range []any{contactport.CreateForIdentityCommand{}, contactport.MergeCustomersCommand{}, contactport.ExternalEventCommand{}} {
@@ -73,10 +71,22 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 }
 
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
-	if got := reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem().NumMethod(); got != 1 {
-		t.Fatalf("runtime server methods=%d want health-only 1", got)
+	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
+	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
+		"BindIdentity", "CreateStage", "GetAdminConfigOverview", "GetAuthSession", "GetCustomer",
+		"IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListStages", "LogoutAdmin",
+		"RenameStage", "ResolveIdentity", "UpdateCustomer",
+	})
+}
+
+func assertMethodNames(t *testing.T, name string, contract reflect.Type, want []string) {
+	t.Helper()
+	if contract.NumMethod() != len(want) {
+		t.Fatalf("%s methods=%d want=%d", name, contract.NumMethod(), len(want))
 	}
-	if got := reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem().NumMethod(); got != 10 {
-		t.Fatalf("candidate server methods=%d want pending 10", got)
+	for index, methodName := range want {
+		if got := contract.Method(index).Name; got != methodName {
+			t.Fatalf("%s method[%d]=%q want=%q", name, index, got, methodName)
+		}
 	}
 }

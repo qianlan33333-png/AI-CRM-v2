@@ -224,6 +224,13 @@ type BindIdentityResponse struct {
 // BindIdentityResponseStatus defines model for BindIdentityResponse.Status.
 type BindIdentityResponseStatus string
 
+// CreateStageRequest defines model for CreateStageRequest.
+type CreateStageRequest struct {
+	Config    interface{} `json:"config,omitempty"`
+	Name      string      `json:"name"`
+	SortOrder *int32      `json:"sort_order,omitempty"`
+}
+
 // Customer defines model for Customer.
 type Customer struct {
 	AddedAt        *time.Time             `json:"added_at,omitempty"`
@@ -324,6 +331,11 @@ type IngestIdentityEventResponse struct {
 // IngestIdentityEventResponseStatus defines model for IngestIdentityEventResponse.Status.
 type IngestIdentityEventResponseStatus string
 
+// RenameStageRequest defines model for RenameStageRequest.
+type RenameStageRequest struct {
+	Name string `json:"name"`
+}
+
 // ResolveIdentityRequest defines model for ResolveIdentityRequest.
 type ResolveIdentityRequest struct {
 	Ref IdentityRef `json:"ref"`
@@ -338,6 +350,19 @@ type ResolveIdentityResponse struct {
 // ResolveIdentityResponseStatus defines model for ResolveIdentityResponse.Status.
 type ResolveIdentityResponseStatus string
 
+// Stage defines model for Stage.
+type Stage struct {
+	Config    interface{} `json:"config"`
+	Id        int64       `json:"id"`
+	Name      string      `json:"name"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+// StageListResponse defines model for StageListResponse.
+type StageListResponse struct {
+	Items []Stage `json:"items"`
+}
+
 // CSRFToken defines model for CSRFToken.
 type CSRFToken = string
 
@@ -349,6 +374,9 @@ type CustomerID = int64
 
 // Limit defines model for Limit.
 type Limit = int
+
+// StageID defines model for StageID.
+type StageID = int64
 
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
@@ -362,8 +390,14 @@ type Forbidden = ErrorResponse
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
 
+// ServiceUnavailable defines model for ServiceUnavailable.
+type ServiceUnavailable = ErrorResponse
+
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = ErrorResponse
+
+// UnprocessableEntity defines model for UnprocessableEntity.
+type UnprocessableEntity = ErrorResponse
 
 // LogoutAdminParams defines parameters for LogoutAdmin.
 type LogoutAdminParams struct {
@@ -383,6 +417,18 @@ type ListCustomerEventsParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CreateStageParams defines parameters for CreateStage.
+type CreateStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// RenameStageParams defines parameters for RenameStage.
+type RenameStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
 
@@ -394,6 +440,12 @@ type IngestIdentityEventJSONRequestBody = IngestIdentityEventRequest
 
 // ResolveIdentityJSONRequestBody defines body for ResolveIdentity for application/json ContentType.
 type ResolveIdentityJSONRequestBody = ResolveIdentityRequest
+
+// CreateStageJSONRequestBody defines body for CreateStage for application/json ContentType.
+type CreateStageJSONRequestBody = CreateStageRequest
+
+// RenameStageJSONRequestBody defines body for RenameStage for application/json ContentType.
+type RenameStageJSONRequestBody = RenameStageRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -427,6 +479,15 @@ type ServerInterface interface {
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(w http.ResponseWriter, r *http.Request)
+	// List global customer stages in deterministic order
+	// (GET /api/v1/stages)
+	ListStages(w http.ResponseWriter, r *http.Request)
+	// Create one global customer stage
+	// (POST /api/v1/stages)
+	CreateStage(w http.ResponseWriter, r *http.Request, params CreateStageParams)
+	// Rename one global customer stage
+	// (PATCH /api/v1/stages/{stage_id})
+	RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -490,6 +551,24 @@ func (_ Unimplemented) IngestIdentityEvent(w http.ResponseWriter, r *http.Reques
 // Resolve one scoped identity without implicit creation
 // (POST /api/v1/identity/resolve)
 func (_ Unimplemented) ResolveIdentity(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List global customer stages in deterministic order
+// (GET /api/v1/stages)
+func (_ Unimplemented) ListStages(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one global customer stage
+// (POST /api/v1/stages)
+func (_ Unimplemented) CreateStage(w http.ResponseWriter, r *http.Request, params CreateStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rename one global customer stage
+// (PATCH /api/v1/stages/{stage_id})
+func (_ Unimplemented) RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -805,6 +884,135 @@ func (siw *ServerInterfaceWrapper) ResolveIdentity(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListStages operation middleware
+func (siw *ServerInterfaceWrapper) ListStages(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStages(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateStage operation middleware
+func (siw *ServerInterfaceWrapper) CreateStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateStageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateStage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RenameStage operation middleware
+func (siw *ServerInterfaceWrapper) RenameStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "stage_id" -------------
+	var stageId StageID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stage_id", chi.URLParam(r, "stage_id"), &stageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stage_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RenameStageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RenameStage(w, r, stageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -948,6 +1156,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/identity/resolve", wrapper.ResolveIdentity)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/stages", wrapper.ListStages)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/stages", wrapper.CreateStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/stages/{stage_id}", wrapper.RenameStage)
+	})
 
 	return r
 }
@@ -960,7 +1177,11 @@ type ForbiddenJSONResponse ErrorResponse
 
 type NotFoundJSONResponse ErrorResponse
 
+type ServiceUnavailableJSONResponse ErrorResponse
+
 type UnauthorizedJSONResponse ErrorResponse
+
+type UnprocessableEntityJSONResponse ErrorResponse
 
 type GetAdminConfigOverviewRequestObject struct {
 }
@@ -1365,6 +1586,198 @@ func (response ResolveIdentity403JSONResponse) VisitResolveIdentityResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListStagesRequestObject struct {
+}
+
+type ListStagesResponseObject interface {
+	VisitListStagesResponse(w http.ResponseWriter) error
+}
+
+type ListStages200JSONResponse StageListResponse
+
+func (response ListStages200JSONResponse) VisitListStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStages401JSONResponse) VisitListStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStages503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStages503JSONResponse) VisitListStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStageRequestObject struct {
+	Params CreateStageParams
+	Body   *CreateStageJSONRequestBody
+}
+
+type CreateStageResponseObject interface {
+	VisitCreateStageResponse(w http.ResponseWriter) error
+}
+
+type CreateStage201JSONResponse Stage
+
+func (response CreateStage201JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateStage400JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateStage401JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateStage403JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateStage409JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStage422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CreateStage422JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateStage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateStage503JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStageRequestObject struct {
+	StageId StageID `json:"stage_id"`
+	Params  RenameStageParams
+	Body    *RenameStageJSONRequestBody
+}
+
+type RenameStageResponseObject interface {
+	VisitRenameStageResponse(w http.ResponseWriter) error
+}
+
+type RenameStage200JSONResponse Stage
+
+func (response RenameStage200JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RenameStage400JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RenameStage401JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RenameStage403JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RenameStage404JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RenameStage409JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response RenameStage422JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RenameStage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RenameStage503JSONResponse) VisitRenameStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List non-secret configuration readiness
@@ -1397,6 +1810,15 @@ type StrictServerInterface interface {
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(ctx context.Context, request ResolveIdentityRequestObject) (ResolveIdentityResponseObject, error)
+	// List global customer stages in deterministic order
+	// (GET /api/v1/stages)
+	ListStages(ctx context.Context, request ListStagesRequestObject) (ListStagesResponseObject, error)
+	// Create one global customer stage
+	// (POST /api/v1/stages)
+	CreateStage(ctx context.Context, request CreateStageRequestObject) (CreateStageResponseObject, error)
+	// Rename one global customer stage
+	// (PATCH /api/v1/stages/{stage_id})
+	RenameStage(ctx context.Context, request RenameStageRequestObject) (RenameStageResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -1700,6 +2122,97 @@ func (sh *strictHandler) ResolveIdentity(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ResolveIdentityResponseObject); ok {
 		if err := validResponse.VisitResolveIdentityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStages operation middleware
+func (sh *strictHandler) ListStages(w http.ResponseWriter, r *http.Request) {
+	var request ListStagesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStages(ctx, request.(ListStagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStagesResponseObject); ok {
+		if err := validResponse.VisitListStagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateStage operation middleware
+func (sh *strictHandler) CreateStage(w http.ResponseWriter, r *http.Request, params CreateStageParams) {
+	var request CreateStageRequestObject
+
+	request.Params = params
+
+	var body CreateStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateStage(ctx, request.(CreateStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateStageResponseObject); ok {
+		if err := validResponse.VisitCreateStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RenameStage operation middleware
+func (sh *strictHandler) RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams) {
+	var request RenameStageRequestObject
+
+	request.StageId = stageId
+	request.Params = params
+
+	var body RenameStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RenameStage(ctx, request.(RenameStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RenameStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RenameStageResponseObject); ok {
+		if err := validResponse.VisitRenameStageResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

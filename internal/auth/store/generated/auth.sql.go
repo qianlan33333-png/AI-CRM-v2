@@ -130,3 +130,31 @@ func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) (i
 	err := row.Scan(&id)
 	return id, err
 }
+
+const validateSessionCSRF = `-- name: ValidateSessionCSRF :one
+SELECT EXISTS (
+  SELECT 1
+  FROM admin_sessions AS s
+  JOIN admin_users AS u ON u.id = s.admin_user_id
+  WHERE s.session_token_hash = $1
+    AND s.csrf_token_hash = $2
+    AND s.revoked_at IS NULL
+    AND s.expires_at > $3
+    AND s.session_version = u.session_version
+    AND u.is_active
+    AND u.login_enabled
+)
+`
+
+type ValidateSessionCSRFParams struct {
+	SessionTokenHash []byte             `json:"session_token_hash"`
+	CsrfTokenHash    []byte             `json:"csrf_token_hash"`
+	Now              pgtype.Timestamptz `json:"now"`
+}
+
+func (q *Queries) ValidateSessionCSRF(ctx context.Context, arg ValidateSessionCSRFParams) (bool, error) {
+	row := q.db.QueryRow(ctx, validateSessionCSRF, arg.SessionTokenHash, arg.CsrfTokenHash, arg.Now)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

@@ -567,6 +567,13 @@ if (cd "$p2s15_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P2-15 slice card receipt drift was accepted"
 fi
 
+p2s16_card_fixture="$(make_fixture p2-16-card-receipt)"
+printf '%s\n' '# P2-16 receipt drift' >>"$p2s16_card_fixture/docs/execution/slices/P2-16.md"
+git -C "$p2s16_card_fixture" add docs/execution/slices/P2-16.md
+if (cd "$p2s16_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-16 slice card receipt drift was accepted"
+fi
+
 disconnected_p2s14="$(make_fixture disconnected-p2-s14-target)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s14-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s14/Makefile"
 rm -f "$disconnected_p2s14/Makefile.bak"
@@ -598,6 +605,40 @@ restage_make_receipt "$hollow_p2s15"
 if (cd "$hollow_p2s15" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S15 acceptance target was accepted"
 fi
+
+disconnected_p2s16="$(make_fixture disconnected-p2-s16-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s16-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s16/Makefile"
+rm -f "$disconnected_p2s16/Makefile.bak"
+restage_make_receipt "$disconnected_p2s16"
+if (cd "$disconnected_p2s16" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S16 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s16="$(make_fixture hollow-p2-s16-target)"
+sed -i.bak '/^p2-s16-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s16/Makefile"
+rm -f "$hollow_p2s16/Makefile.bak"
+restage_make_receipt "$hollow_p2s16"
+if (cd "$hollow_p2s16" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S16 acceptance target was accepted"
+fi
+
+for file_path in \
+  internal/auth/port/port.go \
+  internal/auth/http/authorization_test.go \
+  internal/contact/http/handler.go \
+  internal/contact/http/handler_test.go \
+  acceptance/p2s16/doc.go \
+  acceptance/p2s16/csrf_integration_test.go \
+  acceptance/p2s16/snapshot.go \
+  acceptance/p2s16/snapshot_test.go \
+  acceptance/p2s16/snapshotgen/main.go; do
+  p2s16_receipt_fixture="$(make_fixture "p2-16-receipt-${file_path//\//-}")"
+  printf '%s\n' '// P2-16 receipt drift' >>"$p2s16_receipt_fixture/$file_path"
+  git -C "$p2s16_receipt_fixture" add "$file_path"
+  if (cd "$p2s16_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-16 stages API receipt drift was accepted: $file_path"
+  fi
+done
 
 for file_path in \
   internal/contact/app/stage_service.go \

@@ -32,9 +32,9 @@ go_env=(env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE \
 
 runner="$test_root/bin/snapshot-gate"
 catalog="$test_root/acceptance/snapshots/catalog.v1.json"
-expected='snapshot-gate: PASS (0 cases; validation only)'
+expected='snapshot-gate: PASS (3 cases; validation only)'
 [[ "$(cd / && "$runner" validate "$catalog")" = "$expected" ]] || {
-  echo "snapshot-gate-tests: canonical empty catalog was rejected" >&2
+  echo "snapshot-gate-tests: canonical three-case catalog was rejected" >&2
   exit 1
 }
 

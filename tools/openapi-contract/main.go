@@ -14,11 +14,15 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-var candidateOperations = map[string]bool{
+var p1CandidateOperations = map[string]bool{
 	"listCustomers": true, "getCustomer": true, "updateCustomer": true,
 	"listCustomerEvents": true, "resolveIdentity": true, "bindIdentity": true,
 	"ingestIdentityEvent": true, "getAuthSession": true, "logoutAdmin": true,
 	"getAdminConfigOverview": true,
+}
+
+var p2StageOperations = map[string]bool{
+	"listStages": true, "createStage": true, "renameStage": true,
 }
 
 type authorizationContract struct {
@@ -37,9 +41,13 @@ var authorizationContracts = map[string]authorizationContract{
 	"getAuthSession":         {"auth.session.read", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
 	"logoutAdmin":            {"auth.session.logout", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
 	"getAdminConfigOverview": {"config.overview.read", map[string]string{"admin": "global"}},
+	"listStages":             {"stages.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
+	"createStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
+	"renameStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
+const p2StageDecisionEvidence = "P2-16-2026-08-11"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -53,7 +61,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (candidate_operations=10 approved=10 pending=0 legacy_links=14)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=14 p2_stage_operations=3)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -99,33 +107,42 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if len(doc.Security) == 0 {
 		return errors.New("business API lacks default security")
 	}
-	seen, links := map[string]bool{}, 0
+	seenP1, seenP2, links := map[string]bool{}, map[string]bool{}, 0
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if !candidateOperations[op.OperationID] || seen[op.OperationID] {
+			if seenP1[op.OperationID] || seenP2[op.OperationID] ||
+				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
-			seen[op.OperationID] = true
-			status, ok := op.Extensions["x-p1-signoff-status"].(string)
-			if !ok || status != "APPROVED" {
-				return fmt.Errorf("%s lacks approved G1 signoff", op.OperationID)
-			}
-			evidence, ok := op.Extensions["x-p1-decision-evidence"].(string)
-			if !ok || evidence != g1DecisionEvidence {
-				return fmt.Errorf("%s has missing or forged G1 evidence", op.OperationID)
-			}
-			ids, err := stringList(op.Extensions["x-legacy-mapping-ids"])
-			if err != nil || len(ids) == 0 {
-				return fmt.Errorf("%s lacks legacy links", op.OperationID)
-			}
-			for _, id := range ids {
-				if !known[id] {
-					return fmt.Errorf("%s links unknown mapping %s", op.OperationID, id)
+			if p1CandidateOperations[op.OperationID] {
+				seenP1[op.OperationID] = true
+				status, ok := op.Extensions["x-p1-signoff-status"].(string)
+				if !ok || status != "APPROVED" {
+					return fmt.Errorf("%s lacks approved G1 signoff", op.OperationID)
 				}
-				links++
+				evidence, ok := op.Extensions["x-p1-decision-evidence"].(string)
+				if !ok || evidence != g1DecisionEvidence {
+					return fmt.Errorf("%s has missing or forged G1 evidence", op.OperationID)
+				}
+				ids, err := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if err != nil || len(ids) == 0 {
+					return fmt.Errorf("%s lacks legacy links", op.OperationID)
+				}
+				for _, id := range ids {
+					if !known[id] {
+						return fmt.Errorf("%s links unknown mapping %s", op.OperationID, id)
+					}
+					links++
+				}
+			} else {
+				seenP2[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p2-decision-evidence"].(string)
+				if !ok || evidence != p2StageDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P2 stage evidence", op.OperationID)
+				}
 			}
 			contract := authorizationContracts[op.OperationID]
 			capability, ok := op.Extensions["x-aicrm-capability"].(string)
@@ -141,12 +158,17 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seen) != 10 || links != 14 {
-		return fmt.Errorf("candidate inventory mismatch: operations=%d links=%d", len(seen), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || links != 14 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d links=%d", len(seenP1), len(seenP2), links)
 	}
-	for id := range candidateOperations {
-		if !seen[id] {
+	for id := range p1CandidateOperations {
+		if !seenP1[id] {
 			return fmt.Errorf("missing candidate operation: %s", id)
+		}
+	}
+	for id := range p2StageOperations {
+		if !seenP2[id] {
+			return fmt.Errorf("missing P2 stage operation: %s", id)
 		}
 	}
 	customer := doc.Components.Schemas["Customer"]
@@ -172,6 +194,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 		return errors.New("ErrorResponse schema missing")
 	}
 	if err := validateBrowserSessionContract(doc); err != nil {
+		return err
+	}
+	if err := validateStageContract(doc); err != nil {
 		return err
 	}
 	return nil
@@ -205,6 +230,50 @@ func validateBrowserSessionContract(doc *openapi3.T) error {
 		if logout.Post.Responses.Value(status) == nil {
 			return fmt.Errorf("logout response missing: %s", status)
 		}
+	}
+	return nil
+}
+
+func validateStageContract(doc *openapi3.T) error {
+	stages := doc.Paths.Value("/api/v1/stages")
+	stage := doc.Paths.Value("/api/v1/stages/{stage_id}")
+	if stages == nil || stages.Get == nil || stages.Post == nil || stage == nil || stage.Patch == nil {
+		return errors.New("P2 stage operations are incomplete")
+	}
+	for name, operation := range map[string]*openapi3.Operation{
+		"createStage": stages.Post,
+		"renameStage": stage.Patch,
+	} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		for _, status := range []string{"401", "403", "422", "503"} {
+			if operation.Responses.Value(status) == nil {
+				return fmt.Errorf("%s response missing: %s", name, status)
+			}
+		}
+	}
+	if stages.Post.Responses.Value("201") == nil || stage.Patch.Responses.Value("200") == nil ||
+		stage.Patch.Responses.Value("404") == nil {
+		return errors.New("P2 stage success or not-found responses drifted")
+	}
+	return nil
+}
+
+func validateRequiredCSRF(operation *openapi3.Operation) error {
+	var csrf *openapi3.Parameter
+	for _, ref := range operation.Parameters {
+		if ref != nil && ref.Value != nil && ref.Value.Name == "X-CSRF-Token" {
+			csrf = ref.Value
+			break
+		}
+	}
+	if csrf == nil || csrf.In != "header" || !csrf.Required || csrf.Schema == nil || csrf.Schema.Value == nil {
+		return errors.New("required X-CSRF-Token header is missing")
+	}
+	schema := csrf.Schema.Value
+	if schema.MinLength != 43 || schema.MaxLength == nil || *schema.MaxLength != 43 || schema.Pattern != "^[A-Za-z0-9_-]{43}$" {
+		return errors.New("CSRF token shape is not frozen")
 	}
 	return nil
 }

@@ -1,5 +1,78 @@
 {
   "version": 1,
   "ignore_paths": [],
-  "cases": []
+  "cases": [
+    {
+      "operation_id": "createStage",
+      "case_id": "success",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/stages",
+        "body": {
+          "name": "Qualified",
+          "sort_order": 2,
+          "config": {
+            "color": "blue"
+          }
+        }
+      },
+      "expected_response": {
+        "status": 201,
+        "body": {
+          "id": 101,
+          "name": "Qualified",
+          "sort_order": 2,
+          "config": {
+            "color": "blue"
+          }
+        }
+      }
+    },
+    {
+      "operation_id": "listStages",
+      "case_id": "success",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/stages",
+        "body": null
+      },
+      "expected_response": {
+        "status": 200,
+        "body": {
+          "items": [
+            {
+              "id": 101,
+              "name": "Qualified",
+              "sort_order": 2,
+              "config": {
+                "color": "blue"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "operation_id": "renameStage",
+      "case_id": "success",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/v1/stages/101",
+        "body": {
+          "name": "Customer"
+        }
+      },
+      "expected_response": {
+        "status": 200,
+        "body": {
+          "id": 101,
+          "name": "Customer",
+          "sort_order": 2,
+          "config": {
+            "color": "blue"
+          }
+        }
+      }
+    }
+  ]
 }

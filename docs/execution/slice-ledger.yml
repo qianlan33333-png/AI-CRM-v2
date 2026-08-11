@@ -801,7 +801,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 4
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 4
+    verification_induced_correction_count: 5
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
@@ -867,7 +867,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 3
+    verification_induced_correction_count: 4
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
@@ -1447,15 +1447,19 @@ slices:
   - slice_id: P2-15
     title: stages-service-and-transactional-events
     owner: Codex-Sol
-    status: in_progress
+    status: merged
     base_sha: a9a48cd13f5db81df9ad7c0aba2833a867b85c31
     dependency: P2-14
     branch: slice/p2-15-stages-service
     decision_anchor: EXECUTION_PLAN_3_1_E_IRON_LAW_4_P2_14_STAGE_PORT
     pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/113
-    pr_head_sha: PENDING_UNTIL_FINAL_PR_HEAD
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_head_sha: ad48634f03e4c305cc5aef28032bf34f58283855
+    merge_sha: 7c6a35c799ed55b4ff6e99220300763248a06e8e
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31461952661
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31461952714
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31461952656
     delegated_tasks:
       - task_id: p2_15_stage_service_tests
         executor: gpt-5.6-terra
@@ -1485,6 +1489,52 @@ slices:
     scope_induced_correction_count: 0
     verification_induced_correction_count: 6
     external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-16
+    title: stages-openapi-handler-and-first-real-snapshot
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 7c6a35c799ed55b4ff6e99220300763248a06e8e
+    dependency: P2-15
+    branch: slice/p2-16-stages-api-snapshot
+    decision_anchor: EXECUTION_PLAN_3_1_E_ADR_006_ADR_011_P2_15_STAGE_SERVICE
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_16_handler_tests_r2
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/contact/http/handler_test.go
+        base_sha: 45c086c4e06d2af62f2208a4df788e2b8dc95f03
+        delegated_head_sha: 1f4f2cbfe95bef2f046620b78d543cb4c277752a
+        correction_count: 1
+        slice_induced_correction_count: 0
+        infra_induced_correction_count: 1
+        scope_induced_correction_count: 0
+        verification_induced_correction_count: 0
+        file_manifest_sha256: 4d30c3bc6404457ee7eb68d52c73e8364d50467ba36903764080c99f02f1652e
+        diff_sha256: c9663b9aedfd368ee229b729f155c4fbb58849924a8dabbd777346f6ad3a0027
+        receipt: docs/evidence/slices/P2-16-stage-handler-tests.md
+    tests:
+      - LOCAL_Terra_hash_receipt_independent_recompute_PASS
+      - LOCAL_focused_auth_handler_openapi_race_PASS
+      - LOCAL_generated_router_stage_snapshot_three_cases_double_generation_PASS
+      - LOCAL_official_PostgreSQL16_14_55432_active_session_CSRF_binding_revoked_expired_and_database_error_fail_closed_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_45_tests_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_188_commits_sensitive_paths_bundle_PASS
+    handwritten_scope: 14_files_666_changed_lines_P2_soft_file_cap_exceeded_by_2_to_close_OpenAPI_CSRF_handler_snapshot_and_permanent_gate_under_15_1500_hard_cap_tests_generated_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 4
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    external_gates:
+      - STAGING_BROWSER_STAGES_CRUD_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED

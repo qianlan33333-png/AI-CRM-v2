@@ -13,6 +13,7 @@ type Querier interface {
 	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
 	InsertAdminSession(ctx context.Context, arg InsertAdminSessionParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) (int64, error)
+	ValidateSessionCSRF(ctx context.Context, arg ValidateSessionCSRFParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

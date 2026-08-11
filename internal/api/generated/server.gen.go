@@ -39,6 +39,9 @@ type HealthResponseStatus string
 // CustomerID defines model for CustomerID.
 type CustomerID = int64
 
+// StageID defines model for StageID.
+type StageID = int64
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Process liveness

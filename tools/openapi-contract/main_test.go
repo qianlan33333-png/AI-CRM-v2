@@ -91,6 +91,23 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/identity/resolve").Post.Responses.Delete("403")
 			reject(t, doc, ids)
 		},
+		"missing stage evidence": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Paths.Value("/api/v1/stages").Get.Extensions, "x-p2-decision-evidence")
+			reject(t, doc, ids)
+		},
+		"sales stage write widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/stages").Post.Extensions["x-aicrm-rbac-scopes"] = map[string]any{
+				"admin": "global", "ops": "global", "sales": "global",
+			}
+			reject(t, doc, ids)
+		},
+		"stage write without csrf": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/stages/{stage_id}").Patch.Parameters = nil
+			reject(t, doc, ids)
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, test)
