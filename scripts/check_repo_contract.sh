@@ -224,6 +224,14 @@ required=(
   docs/execution/slices/P2-17.md
   docs/evidence/slices/P2-17-stages-ui.md
   docs/execution/slices/P2-18.md
+  docs/evidence/slices/P2-18-tier-config.md
+  internal/platform/deployment/tier.go
+  internal/platform/deployment/tier_test.go
+  cmd/aicrm-config/main.go
+  cmd/aicrm-config/main_test.go
+  deploy/compose.yml
+  scripts/staging_deploy.sh
+  acceptance/p2s18/test_tier_config.sh
   web/src/stages.ts
   web/src/stages.test.ts
   web/src/stages-ui.tsx
@@ -491,6 +499,14 @@ done <<'EOF'
 100644 docs/execution/slices/P2-17.md
 100644 docs/evidence/slices/P2-17-stages-ui.md
 100644 docs/execution/slices/P2-18.md
+100644 docs/evidence/slices/P2-18-tier-config.md
+100644 internal/platform/deployment/tier.go
+100644 internal/platform/deployment/tier_test.go
+100644 cmd/aicrm-config/main.go
+100644 cmd/aicrm-config/main_test.go
+100644 deploy/compose.yml
+100755 scripts/staging_deploy.sh
+100755 acceptance/p2s18/test_tier_config.sh
 100644 web/src/stages.ts
 100644 web/src/stages.test.ts
 100644 web/src/stages-ui.tsx
@@ -567,7 +583,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  4eb2244f774aadb6418ae97a8e0d4fa4ad7edca828a4e70f1766a602d0d15a1c
+  40cce1a8c0057543e883237288b08c797ceb8017bb161a450a2d49e7b3c6ab13
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -962,6 +978,22 @@ verify_index_sha256 docs/evidence/slices/P2-17-stages-ui.md \
   244927f511b6d2bff674ac8fa806c21c51ce8ae67d55716f4f07241ae2f0e19f
 verify_index_sha256 docs/execution/slices/P2-18.md \
   12d12a92f60ee6b4bde7db7eccd0c41d1b000f57058c44b97db511b2763e487b
+verify_index_sha256 docs/evidence/slices/P2-18-tier-config.md \
+  51b53dc5e09aec8693f61dac4263993e5e1a8bb7cc48f9886c35d8c86217464e
+verify_index_sha256 internal/platform/deployment/tier.go \
+  5b4122ebefead5744daefea58c384c2951452b583f5bd02c860d897ccd59ae17
+verify_index_sha256 internal/platform/deployment/tier_test.go \
+  58f9d01edfeb523699421331acce7cfa1b73a7d2dd31af5a141d99e6f578e165
+verify_index_sha256 cmd/aicrm-config/main.go \
+  ab12c6c131a67bbfd2b651d1cd815124eaef09508bc32787e42369824d782ed8
+verify_index_sha256 cmd/aicrm-config/main_test.go \
+  56580426c014a8ed62cb9774629ae3468f55b5ed941df3f7600e892df1e32283
+verify_index_sha256 deploy/compose.yml \
+  1a5c68290299aa87ddbab9485e293c21b5883b120f621051132a39204b2fd9fb
+verify_index_sha256 scripts/staging_deploy.sh \
+  755625464a65ef6a71d93d5261e1255b9f0d0becf5678aa015604ff5581c4d49
+verify_index_sha256 acceptance/p2s18/test_tier_config.sh \
+  4bbb50c47d7439fdb9ed60570af8c2746f4b4ee659607e60f714305480bc8310
 verify_index_sha256 web/src/stages.ts \
   3c161326e176da892546b860d027bd86aca5743ab3c680666f4697645030569b
 verify_index_sha256 web/src/stages.test.ts \
@@ -1045,7 +1077,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b4098e048026997a73f529a02a306ba8aeceaae762cfc87eb02eca96ff18f96f
+  56d1b6564389f4ff0d1bceae2af675bf337c6aae36d80611a24077d284c90f57
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1792,6 +1824,44 @@ shell_shadow_matches="$(
 )"
 [[ -z "$shell_shadow_matches" ]] ||
   fail "shell loop/local variables must not shadow environment names: $shell_shadow_matches"
+
+p2s18_make="$(git show :Makefile)"
+[[ "$(grep -Ec '^p2-s18-acceptance:$' <<<"$p2s18_make")" -eq 1 ]] ||
+  fail "P2-S18 acceptance target must be declared exactly once"
+grep -Eq '^ci-go:.*[[:space:]]p2-s18-acceptance([[:space:]]|$)' <<<"$p2s18_make" ||
+  fail "P2-S18 acceptance target must remain connected to ci-go"
+grep -Fq '$(GO) test -race -count=1 ./internal/platform/deployment ./cmd/aicrm-config' <<<"$p2s18_make" ||
+  fail "P2-S18 generator race tests must remain in the acceptance target"
+grep -Fq 'acceptance/p2s18/test_tier_config.sh' <<<"$p2s18_make" ||
+  fail "P2-S18 black-box acceptance must remain in the acceptance target"
+
+p2s18_tier_source="$(git show :internal/platform/deployment/tier.go)"
+for queue_name in CRITICAL EVENT OUTBOUND SYNC HEAVY AI; do
+  [[ "$(grep -Fc "AICRM_RIVER_${queue_name}_MAX_WORKERS=" <<<"$p2s18_tier_source")" -eq 1 ]] ||
+    fail "P2-S18 generated environment must contain the fixed queue exactly once: $queue_name"
+done
+! grep -Eiq 'AICRM_RIVER_DEFAULT|QueueDefault' <<<"$p2s18_tier_source" ||
+  fail "P2-S18 must not generate or reference a default River queue"
+for forbidden_key in DATABASE_URL PASSWORD TOKEN COOKIE SECRET WECOM; do
+  ! grep -Fq "AICRM_${forbidden_key}=" <<<"$p2s18_tier_source" ||
+    fail "P2-S18 generated environment must not contain credential key: $forbidden_key"
+done
+
+p2s18_compose="$(git show :deploy/compose.yml)"
+grep -Fq 'image: postgres:16.14-bookworm' <<<"$p2s18_compose" ||
+  fail "P2-S18 Compose PostgreSQL image drifted"
+[[ "$(grep -Fxc '    profiles: [split]' <<<"$p2s18_compose")" -eq 2 ]] ||
+  fail "P2-S18 Compose must keep exactly two split-role services"
+! grep -Eiq '(redis|kafka|rabbitmq|nats|kubernetes)' <<<"$p2s18_compose" ||
+  fail "P2-S18 Compose introduced forbidden infrastructure"
+
+p2s18_staging="$(git show :scripts/staging_deploy.sh)"
+authorization_line="$(grep -nF 'AICRM_ALLOW_STAGING_DEPLOY=1 is required for --apply' <<<"$p2s18_staging" | cut -d: -f1)"
+first_docker_line="$(grep -nF 'docker compose' <<<"$p2s18_staging" | head -1 | cut -d: -f1)"
+[[ "$authorization_line" =~ ^[0-9]+$ && "$first_docker_line" =~ ^[0-9]+$ && "$authorization_line" -lt "$first_docker_line" ]] ||
+  fail "P2-S18 staging authorization must fail before the first Docker call"
+! grep -Eq '(^|[;&|[:space:]])(goose|migrate)([;&|[:space:]]|$)' <<<"$p2s18_staging" ||
+  fail "P2-S18 staging script must not run migrations"
 
 scripts/scan_sensitive_paths.sh
 

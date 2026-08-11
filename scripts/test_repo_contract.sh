@@ -30,6 +30,9 @@ make_fixture() {
 restage_make_receipt() { local fixture="$1" digest
   git -C "$fixture" add Makefile; digest="$(git -C "$fixture" show :Makefile | sha256sum | awk '{print $1}')"
   sed -i.bak -E "/^verify_index_sha256 Makefile/{n;s/[0-9a-f]{64}/$digest/;}" "$fixture/scripts/check_repo_contract.sh"; rm -f "$fixture/scripts/check_repo_contract.sh.bak"; git -C "$fixture" add scripts/check_repo_contract.sh; }
+restage_p2s18_receipt() { local fixture="$1" receipt_file="$2" digest escaped_file
+  git -C "$fixture" add "$receipt_file"; digest="$(git -C "$fixture" show ":$receipt_file" | sha256sum | awk '{print $1}')"; escaped_file="${receipt_file//\//\\/}"
+  sed -i.bak -E "/^verify_index_sha256 $escaped_file/{n;s/[0-9a-f]{64}/$digest/;}" "$fixture/scripts/check_repo_contract.sh"; rm -f "$fixture/scripts/check_repo_contract.sh.bak"; git -C "$fixture" add scripts/check_repo_contract.sh; }
 
 baseline_fixture="$(make_fixture baseline)"
 if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -586,6 +589,58 @@ printf '%s\n' '# P2-18 receipt drift' >>"$p2s18_card_fixture/docs/execution/slic
 git -C "$p2s18_card_fixture" add docs/execution/slices/P2-18.md
 if (cd "$p2s18_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P2-18 slice card receipt drift was accepted"
+fi
+
+for file_path in \
+  internal/platform/deployment/tier.go \
+  internal/platform/deployment/tier_test.go \
+  cmd/aicrm-config/main.go \
+  cmd/aicrm-config/main_test.go \
+  deploy/compose.yml \
+  scripts/staging_deploy.sh \
+  acceptance/p2s18/test_tier_config.sh \
+  docs/evidence/slices/P2-18-tier-config.md; do
+  p2s18_receipt_fixture="$(make_fixture "p2-18-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-18 receipt drift' >>"$p2s18_receipt_fixture/$file_path" ;;
+    *.yml|*.yaml) printf '%s\n' '# P2-18 receipt drift' >>"$p2s18_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-18 receipt drift' >>"$p2s18_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p2s18_receipt_fixture" add "$file_path"
+  if (cd "$p2s18_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-18 receipt drift was accepted: $file_path"
+  fi
+done
+
+disconnected_p2s18="$(make_fixture disconnected-p2-s18-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s18-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s18/Makefile"
+rm -f "$disconnected_p2s18/Makefile.bak"
+restage_make_receipt "$disconnected_p2s18"
+if (cd "$disconnected_p2s18" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S18 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s18="$(make_fixture hollow-p2-s18-target)"
+sed -i.bak '/^p2-s18-acceptance:$/ { n; s/.*/\t@true/; n; s/.*/\t@true/; }' "$hollow_p2s18/Makefile"
+rm -f "$hollow_p2s18/Makefile.bak"
+restage_make_receipt "$hollow_p2s18"
+if (cd "$hollow_p2s18" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S18 acceptance target was accepted"
+fi
+
+default_queue_p2s18="$(make_fixture p2-s18-default-queue)"
+sed -i.bak 's/AICRM_RIVER_AI_MAX_WORKERS=/AICRM_RIVER_DEFAULT_MAX_WORKERS=/' "$default_queue_p2s18/internal/platform/deployment/tier.go"
+rm -f "$default_queue_p2s18/internal/platform/deployment/tier.go.bak"
+restage_p2s18_receipt "$default_queue_p2s18" internal/platform/deployment/tier.go
+if (cd "$default_queue_p2s18" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S18 default queue was accepted after receipt refresh"
+fi
+
+extra_stateful_p2s18="$(make_fixture p2-s18-extra-stateful)"
+printf '%s\n' '  redis:' '    image: redis:latest' >>"$extra_stateful_p2s18/deploy/compose.yml"
+restage_p2s18_receipt "$extra_stateful_p2s18" deploy/compose.yml
+if (cd "$extra_stateful_p2s18" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S18 extra stateful Compose component was accepted after receipt refresh"
 fi
 
 for file_path in \

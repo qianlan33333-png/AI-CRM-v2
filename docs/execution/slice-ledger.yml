@@ -1588,12 +1588,16 @@ slices:
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING
     delegated_tasks: []
-    tests: []
-    handwritten_scope: PENDING
-    slice_induced_correction_count: 0
-    infra_induced_correction_count: 0
-    scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    tests:
+      - LOCAL_focused_tier_generator_CLI_race_PASS
+      - LOCAL_SML_double_generation_exact_values_modes_and_negative_contract_PASS
+      - LOCAL_staging_render_only_PASS_DEPLOYMENT_NOT_EXECUTED
+      - LOCAL_fake_Docker_apply_shape_PASS_NOT_REAL_DEPLOYMENT_EVIDENCE
+    handwritten_scope: 6_files_514_changed_lines_under_P2_cap_tests_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 1
+    verification_induced_correction_count: 3
     external_gates:
       - G2_STAGING_DEPLOYMENT_PENDING_EXTERNAL_GATE
       - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE

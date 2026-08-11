@@ -1,0 +1,68 @@
+name: aicrm
+
+x-aicrm-app: &aicrm-app
+  image: ${AICRM_IMAGE:?AICRM_IMAGE is required}
+  env_file:
+    - ${AICRM_GENERATED_ENV_FILE:?AICRM_GENERATED_ENV_FILE is required}
+  environment:
+    AICRM_DATABASE_URL: ${AICRM_DATABASE_URL:?AICRM_DATABASE_URL is required}
+  depends_on:
+    postgres:
+      condition: service_healthy
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  stop_grace_period: 15s
+
+services:
+  postgres:
+    image: postgres:16.14-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AICRM_POSTGRES_DB:-aicrm}
+      POSTGRES_USER: ${AICRM_POSTGRES_USER:-aicrm}
+      POSTGRES_PASSWORD: ${AICRM_POSTGRES_PASSWORD:?AICRM_POSTGRES_PASSWORD is required}
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ${AICRM_POSTGRESQL_CONF_FILE:?AICRM_POSTGRESQL_CONF_FILE is required}:/etc/postgresql/postgresql.conf:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+
+  app:
+    <<: *aicrm-app
+    profiles: [combined]
+    command: ["--role=all"]
+    ports:
+      - 127.0.0.1:${AICRM_HTTP_PORT:-8080}:8080
+
+  api:
+    <<: *aicrm-app
+    profiles: [split]
+    command: ["--role=api"]
+    ports:
+      - 127.0.0.1:${AICRM_HTTP_PORT:-8080}:8080
+
+  worker:
+    <<: *aicrm-app
+    profiles: [split]
+    command: ["--role=worker"]
+
+volumes:
+  postgres-data:
