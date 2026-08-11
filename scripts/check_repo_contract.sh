@@ -219,6 +219,7 @@ required=(
   docs/evidence/slices/P2-14-stages-sqlc.md
   docs/execution/slices/P2-15.md
   docs/evidence/slices/P2-15-stage-service-tests.md
+  docs/execution/slices/P2-16.md
   internal/contact/app/stage_service.go
   internal/contact/app/stage_service_test.go
   acceptance/p2s15/doc.go
@@ -468,6 +469,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-14-stages-sqlc.md
 100644 docs/execution/slices/P2-15.md
 100644 docs/evidence/slices/P2-15-stage-service-tests.md
+100644 docs/execution/slices/P2-16.md
 100644 internal/contact/app/stage_service.go
 100644 internal/contact/app/stage_service_test.go
 100644 acceptance/p2s15/doc.go
@@ -916,6 +918,8 @@ verify_index_sha256 docs/execution/slices/P2-15.md \
   82a047eb827f129d01eb329bfd95ea751a30c3526e6247698189f4af047e6386
 verify_index_sha256 docs/evidence/slices/P2-15-stage-service-tests.md \
   7c086a4d95da8440a60970d1e174ee5f82053e60a9d7f9c51aa79ec3172a0bd9
+verify_index_sha256 docs/execution/slices/P2-16.md \
+  7ec39c6175b3eae4a047653d367d4b247276bc558c052bcbfc03d92b0d15e092
 verify_index_sha256 internal/contact/app/stage_service.go \
   9c5ba8595f64ae5b5a32f583338d58a6bed6cf1ec3504ba8ec26744e65f1b570
 verify_index_sha256 internal/contact/app/stage_service_test.go \
