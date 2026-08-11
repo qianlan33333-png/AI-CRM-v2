@@ -649,7 +649,7 @@ slices:
     pr_head_sha: 9435d18e680e76e6ea3c43e1c1102a0673980fcd
     merge_sha: 084e35724743e5782ab1bdcded5dbbc9f76e1549
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 0
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
   - slice_id: P1-S11
     title: freeze-core-openapi-and-public-ports-candidates
@@ -1600,6 +1600,36 @@ slices:
     verification_induced_correction_count: 3
     external_gates:
       - G2_STAGING_DEPLOYMENT_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+  - slice_id: G2-T01
+    title: traceable-minimal-runtime-image
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 0c4c1bd697631d6242fdf838d17303970635144f
+    dependency: P2-18
+    branch: infra/g2-test-image
+    decision_anchor: USER_STAGING_TARGET_2026_08_11
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING
+    main_ci_status: PENDING
+    delegated_tasks: []
+    tests:
+      - LOCAL_RELEASE_BINARY_CONTRACT_PASS
+      - LOCAL_CI_GO_PARTIAL_FAIL_CLOSED_POSTGRES_16_13_NOT_16_14
+      - NEW_TARGET_2C4G_SWAP_2G_PREFLIGHT_PASS
+      - NEW_TARGET_DOCKER_29_1_3_COMPOSE_2_40_3_INSTALLED
+    handwritten_scope: 6_files_under_P2_cap_tests_docs_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    external_gates:
+      - TEST_SERVER_DEPLOYMENT_AUTHORIZED
+      - G2_S_TIER_SWAP_4G_PENDING
       - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
