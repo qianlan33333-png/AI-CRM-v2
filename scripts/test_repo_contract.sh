@@ -581,6 +581,13 @@ if (cd "$p2s17_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P2-17 slice card receipt drift was accepted"
 fi
 
+p2s18_card_fixture="$(make_fixture p2-18-card-receipt)"
+printf '%s\n' '# P2-18 receipt drift' >>"$p2s18_card_fixture/docs/execution/slices/P2-18.md"
+git -C "$p2s18_card_fixture" add docs/execution/slices/P2-18.md
+if (cd "$p2s18_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-18 slice card receipt drift was accepted"
+fi
+
 for file_path in \
   web/src/auth.ts \
   web/src/auth.test.ts \

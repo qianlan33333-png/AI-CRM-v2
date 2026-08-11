@@ -223,6 +223,7 @@ required=(
   docs/evidence/slices/P2-16-stage-handler-tests.md
   docs/execution/slices/P2-17.md
   docs/evidence/slices/P2-17-stages-ui.md
+  docs/execution/slices/P2-18.md
   web/src/stages.ts
   web/src/stages.test.ts
   web/src/stages-ui.tsx
@@ -489,6 +490,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-16-stage-handler-tests.md
 100644 docs/execution/slices/P2-17.md
 100644 docs/evidence/slices/P2-17-stages-ui.md
+100644 docs/execution/slices/P2-18.md
 100644 web/src/stages.ts
 100644 web/src/stages.test.ts
 100644 web/src/stages-ui.tsx
@@ -958,6 +960,8 @@ verify_index_sha256 docs/execution/slices/P2-17.md \
   e264c335226ac1b883c9d0c02098521a31ad3742c8e7649f5c0ae99136982adc
 verify_index_sha256 docs/evidence/slices/P2-17-stages-ui.md \
   244927f511b6d2bff674ac8fa806c21c51ce8ae67d55716f4f07241ae2f0e19f
+verify_index_sha256 docs/execution/slices/P2-18.md \
+  12d12a92f60ee6b4bde7db7eccd0c41d1b000f57058c44b97db511b2763e487b
 verify_index_sha256 web/src/stages.ts \
   3c161326e176da892546b860d027bd86aca5743ab3c680666f4697645030569b
 verify_index_sha256 web/src/stages.test.ts \
@@ -1041,7 +1045,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a8f0ab698fd0c24ef7a8cf0c89b35255f5c5b7cebc117fd3a70e8976815607cf
+  b4098e048026997a73f529a02a306ba8aeceaae762cfc87eb02eca96ff18f96f
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
