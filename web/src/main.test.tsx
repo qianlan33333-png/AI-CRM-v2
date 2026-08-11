@@ -81,6 +81,11 @@ describe("Web shell routes", () => {
     const home = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(home).toContain("AI-CRM 运营指挥台");
 
+    vi.stubGlobal("window", { location: { pathname: "/stages" } });
+    const stages = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(stages).toContain("阶段管理");
+    expect(stages).not.toContain("P2-17 将在此接入真实能力");
+
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
     const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(missing).toContain("404");

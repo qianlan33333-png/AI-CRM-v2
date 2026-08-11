@@ -19,6 +19,8 @@ import {
   type LogoutState,
   type PermissionNavigationLink,
 } from "./auth-ui";
+import { StagesPage } from "./stages-ui";
+import type { StageTransport } from "./stages";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -91,6 +93,7 @@ export interface AppProps {
   navigation?: React.ReactNode;
   cache?: PermissionSessionCache;
   transport?: AuthTransport;
+  stageTransport?: StageTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -194,7 +197,19 @@ export function handleNavigationClick(
   return navigateTo(destination, browser);
 }
 
-function PageContent({ route }: { route: AppRoute | undefined }) {
+function PageContent({
+  route,
+  principal,
+  stageTransport,
+  cookieHeader,
+  onUnauthenticated,
+}: {
+  route: AppRoute | undefined;
+  principal: AuthPrincipal;
+  stageTransport?: StageTransport;
+  cookieHeader: () => string;
+  onUnauthenticated: () => void;
+}) {
   if (!route) {
     return (
       <section
@@ -212,6 +227,17 @@ function PageContent({ route }: { route: AppRoute | undefined }) {
           返回运营指挥台
         </a>
       </section>
+    );
+  }
+
+  if (route.path === "/stages") {
+    return (
+      <StagesPage
+        role={principal.role}
+        transport={stageTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
     );
   }
 
@@ -260,6 +286,7 @@ export function App({
   navigation,
   cache = runtimeCache,
   transport = generatedAuthTransport,
+  stageTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -356,6 +383,10 @@ export function App({
 
   const links = navigationLinks(session.principal);
   const account = accountSummary(session.principal);
+  const markSessionUnauthenticated = () => {
+    cache.invalidate();
+    setSession({ status: "unauthenticated" });
+  };
 
   return (
     <div className="app-shell">
@@ -391,7 +422,13 @@ export function App({
           )}
         </nav>
         <main id="main-content" className="shell-main" tabIndex={-1}>
-          <PageContent route={route} />
+          <PageContent
+            route={route}
+            principal={session.principal}
+            stageTransport={stageTransport}
+            cookieHeader={cookieHeader}
+            onUnauthenticated={markSessionUnauthenticated}
+          />
         </main>
       </div>
       <aside className="environment-status" aria-label="环境状态" role="status">
