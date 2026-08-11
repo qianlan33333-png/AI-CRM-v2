@@ -738,9 +738,9 @@ verify_index_sha256 scripts/ownership/main.go \
 verify_index_sha256 scripts/test_ownership.sh \
   5a887619857112b7ab55c72bc417c6d51f7804722dfed33c9b56b8d93787ebeb
 verify_index_sha256 acceptance/fixtures/postgres.go \
-  2ad5addf7cddd04b4b054fe9372e05f0177468825227af71cab08eab5f5db7d8
+  e9e04301d41b57d59eb49f74d75767803a2847c41ee5fab8c383adb586de670b
 verify_index_sha256 acceptance/fixtures/postgres_test.go \
-  1663c7affa6575965b956a54f4af839c8ae8187e220ba689a4b03a5fa9a74e62
+  60b0d65c2fa950765166b5ad1cc65f6a5d962f496d50ce6231c34520377fecf3
 verify_index_sha256 docs/execution/slices/P2-00.md \
   7f625dc6dd0017266faaf779a79ca093bf600bb4b51adc61660751be86b16022
 verify_index_sha256 scripts/sourcepolicy/main.go \
@@ -872,7 +872,7 @@ verify_index_sha256 internal/contact/http/customer_list_handler.go \
 verify_index_sha256 internal/contact/http/customer_list_handler_test.go \
   eaef2b6013f82ff8aa7f4161f535b6a098c8e8a72fa0823f38a4eb670756c1e9
 verify_index_sha256 docs/execution/slices/P3-C01D.md \
-  9ec85fb8021c605784b5d6552d661a64b19406336f425d5ca77a6ee70ef41fb8
+  5cde468ee19f7c46fe1c2cd8268fbb930e22b53eca4529ee22a901f80e485be5
 verify_index_sha256 docs/evidence/slices/P3-C01D-customer-handler-tests.md \
   d18b0701238ffb170a4e76441383bcb228e52e6d7ec2a6caf231927a29f1fce9
 verify_index_sha256 docs/execution/slices/P1-S11.md \

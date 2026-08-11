@@ -1934,9 +1934,9 @@ slices:
       - PR_AND_MAIN_CI_PENDING
     handwritten_scope: under_P3_cap_tests_docs_ledger_excluded
     slice_induced_correction_count: 2
-    infra_induced_correction_count: 0
+    infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 4
+    verification_induced_correction_count: 5
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
