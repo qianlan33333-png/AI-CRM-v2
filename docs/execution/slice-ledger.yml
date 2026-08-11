@@ -39,7 +39,7 @@ execution_policy:
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P3
-current_phase_status: P3_CONTACT_LIST_SERVICE_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
+current_phase_status: P3_CONTACT_LIST_STORE_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -650,7 +650,7 @@ slices:
     merge_sha: 084e35724743e5782ab1bdcded5dbbc9f76e1549
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     slice_induced_correction_count: 2
-    infra_induced_correction_count: 0
+    infra_induced_correction_count: 2
   - slice_id: P1-S11
     title: freeze-core-openapi-and-public-ports-candidates
     owner: Codex-Sol
@@ -896,7 +896,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 4
     external_gates:
       - SETTINGS_SECRET_SECURITY_BOUNDARY_NOT_ENTERED
       - PRODUCTION_CONFIGURATION_NOT_READ
@@ -1831,15 +1831,19 @@ slices:
   - slice_id: P3-C01C
     title: contact-customer-list-application-service
     owner: Codex-Sol
-    status: in_progress
+    status: accepted
     base_sha: 4f9a5a51e9d49f4bf3abb06ddeff048306b79e69
     dependency: P3-C01A
     branch: slice/p3-c01c-customer-list-service
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/126
+    pr_head_sha: e57f23f273f4d3509e19b3face0b1fa3186f38a4
+    merge_sha: efe1b961603be8470a595a064b3367c8ef3a0346
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31527481149
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31527481137
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31527481168
     delegated_tasks: []
     tests:
       - CUSTOMER_LIST_SERVICE_FOCUSED_RACE_PASS
@@ -1847,12 +1851,51 @@ slices:
       - GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
       - QUERY_PLAN_GATE_PASS_CHECKED_0_NO_SQL_CHANGED
       - LOCAL_P0S04_FIXED_5432_INTEGRATION_NOT_EXECUTED_EXISTING_INSTANCE_PRESERVED
-      - PR_CI_PENDING
+      - PR_AND_MAIN_CI_PASS
     handwritten_scope: under_P3_cap_tests_docs_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 3
+    verification_induced_correction_count: 4
+    external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C01B
+    title: contact-customer-list-sqlc-store
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: efe1b961603be8470a595a064b3367c8ef3a0346
+    dependency: P3-C01A_P3-C01C
+    branch: slice/p3-c01b-customer-list-store
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    delegated_tasks:
+      - task_id: /root/p3_c01b_sqlc_queries
+        executor_model: gpt-5.6-terra
+        kind: sqlc_query_implementation_after_schema_and_port_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 4f9a5a51e9d49f4bf3abb06ddeff048306b79e69
+        delegated_head_sha: 22a98b177d390241fcc7e3f85b117fbaa83ee401
+        manifest_sha256: 040329fc43d9e21d3156db064dce955a756997808c80e6513d4ba504cb99b3aa
+        binary_diff_sha256: 04624a5a2b48da004d515e7235feeed108c285f5d54f792966e271933dcf62a1
+    tests:
+      - SQLC_GENERATE_TWICE_NO_DIFF_PASS
+      - CONTACT_STORE_FOCUSED_RACE_PASS
+      - POSTGRESQL_16_FILTER_KEYSET_BOUNDED_TOTAL_ACCEPTANCE_PASS
+      - QUERY_PLAN_GATE_PASS_CHECKED_2
+      - GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
+      - PR_CI_PENDING
+    handwritten_scope: under_P3_cap_tests_generated_docs_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
