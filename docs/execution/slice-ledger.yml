@@ -1545,15 +1545,19 @@ slices:
   - slice_id: P2-17
     title: stages-page-and-orval-client-integration
     owner: Codex-Sol
-    status: ready_for_pr
+    status: merged
     base_sha: 9ebd074c68381b2a2a5f8c15ecd1c2cb38a9f45d
     dependency: P2-16
     branch: slice/p2-17-stages-ui
     decision_anchor: EXECUTION_PLAN_3_1_E_P2_10_P2_13_P2_16
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/115
+    pr_head_sha: 0f0e500337ddf3c4ca4b79cd71001083446258a6
+    merge_sha: 49d870719d2528aa4e6a05cab54bb90085691b82
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31478715216
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31478715195
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31478715190
     delegated_tasks: []
     tests:
       - LOCAL_Terra_Max_three_clean_worktree_attempts_NO_ARTIFACT_Sol_fallback_recorded_honestly
@@ -1565,12 +1569,41 @@ slices:
     slice_induced_correction_count: 2
     infra_induced_correction_count: 1
     scope_induced_correction_count: 1
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     external_gates:
       - STAGING_BROWSER_STAGES_CRUD_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-18
+    title: tier-config-compose-and-staging-script
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 49d870719d2528aa4e6a05cab54bb90085691b82
+    dependency: P2-17
+    branch: slice/p2-18-tier-deploy
+    decision_anchor: EXECUTION_PLAN_3_1_F_REL_2026_08_10_DESIGN_1_3
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks: []
+    tests:
+      - LOCAL_focused_tier_generator_CLI_race_PASS
+      - LOCAL_SML_double_generation_exact_values_modes_and_negative_contract_PASS
+      - LOCAL_staging_render_only_PASS_DEPLOYMENT_NOT_EXECUTED
+      - LOCAL_fake_Docker_apply_shape_PASS_NOT_REAL_DEPLOYMENT_EVIDENCE
+    handwritten_scope: 6_files_514_changed_lines_under_P2_cap_tests_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 1
+    verification_induced_correction_count: 3
+    external_gates:
+      - G2_STAGING_DEPLOYMENT_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
 phase_closeouts:
   P1:
     as_of: 2026-08-10T15:30:00+08:00
