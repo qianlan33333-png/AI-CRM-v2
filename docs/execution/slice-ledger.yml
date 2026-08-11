@@ -39,7 +39,7 @@ execution_policy:
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P3
-current_phase_status: P3_CONTACT_LIST_UI_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
+current_phase_status: P3_CONTACT_TIMELINE_PARTITIONS_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -649,7 +649,7 @@ slices:
     pr_head_sha: 9435d18e680e76e6ea3c43e1c1102a0673980fcd
     merge_sha: 084e35724743e5782ab1bdcded5dbbc9f76e1549
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 2
+    slice_induced_correction_count: 4
     infra_induced_correction_count: 2
   - slice_id: P1-S11
     title: freeze-core-openapi-and-public-ports-candidates
@@ -932,7 +932,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 3
+    verification_induced_correction_count: 4
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -979,7 +979,7 @@ slices:
     slice_induced_correction_count: 2
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 2
+    verification_induced_correction_count: 3
     external_gates:
       - REAL_SECRET_NOT_READ
       - PRODUCTION_DATABASE_NOT_EXECUTED
@@ -1027,7 +1027,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -1951,15 +1951,19 @@ slices:
   - slice_id: P3-C04
     title: contact-customer-list-ui
     owner: Codex-Sol
-    status: in_progress
+    status: accepted
     base_sha: f1c2fa84595fb66bb42e7333c163035cd997689a
     dependency: P3-C01D
     branch: slice/p3-c04-customer-list-ui
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/129
+    pr_head_sha: 3fdc8b2751f31b03bf3ed50975054ffb3ded253c
+    merge_sha: b9605b4e3336f578debc2e1bd79593283166d733
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31535520626
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31535520641
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31535520623
     delegated_tasks:
       - task_id: /root/p3_c04_customer_list_ui
         executor_model: gpt-5.6-terra
@@ -1974,13 +1978,61 @@ slices:
       - ORVAL_GENERATE_TWICE_NO_DIFF_PASS
       - GO_AND_WEB_FULL_GATES_PASS
       - REPO_CONTRACT_AND_SECRET_GATES_PASS
-      - PR_AND_MAIN_CI_PENDING
+      - PR_AND_MAIN_CI_PASS
     handwritten_scope: default_cap_exception_under_P3_hard_cap_complete_ui_route_and_gate
     slice_induced_correction_count: 3
     infra_induced_correction_count: 1
     scope_induced_correction_count: 1
     verification_induced_correction_count: 1
     external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C03
+    title: contact-customer-event-monthly-partitions
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: b9605b4e3336f578debc2e1bd79593283166d733
+    dependency: P3-C01A
+    branch: slice/p3-c03-customer-event-partitions
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    delegated_tasks:
+      - task_id: /root/p3_c03_partition_worker_tests
+        executor_model: gpt-5.6-terra
+        kind: test_corpus_after_worker_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: b9605b4e3336f578debc2e1bd79593283166d733
+        delegated_head_sha: 2f6b4e1350c050bb23bf6b2f695b3ee50b26b5ba
+        manifest_sha256: ac7759ec5a3e41a4818ae46e04642bef399c22febd71f53ca0c6cce65efcea34
+        binary_diff_sha256: df75097a5c541b1a262f801455684ab90e0a7b019b0a1d879f88754689002f2a
+      - task_id: /root/p3_c03_independent_review
+        executor_model: gpt-5.6-terra
+        kind: independent_migration_and_reconciliation_review
+        status: SOL_REVIEWED_PASS_NO_FILE_MUTATION
+        frozen_base_sha: b9605b4e3336f578debc2e1bd79593283166d733
+        reviewed_binary_diff_sha256: ae4b7ca6bb7d9ffd6229bceb19231314e2550f7a7b448a0b1ddd3f230b4054c4
+        output_report_sha256: efdc81ab7342ccb799d64d12b647227a2657aed490824bd5ba0003794e9ebc11
+    tests:
+      - POSTGRESQL_16_MIGRATION_UP_DOWN_UP_PASS
+      - CUSTOMER_EVENT_PARTITION_ROUTING_ACCEPTANCE_PASS
+      - WORKER_AND_SCHEDULER_FOCUSED_TESTS_PASS
+      - GENERATORS_TWICE_NO_DIFF_PASS
+      - GO_AND_WEB_FULL_GATES_PASS
+      - REPO_CONTRACT_AND_SECRET_GATES_PASS
+      - PR_AND_MAIN_CI_PENDING
+    handwritten_scope: under_P3_cap_tests_docs_generated_excluded
+    slice_induced_correction_count: 4
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 4
+    external_gates:
+      - HISTORICAL_PARTITION_RANGE_FROM_PRODUCTION_PREFLIGHT_PENDING_EXTERNAL_GATE
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
       - REAL_WECOM_NOT_EXECUTED

@@ -2006,6 +2006,66 @@ if (cd "$missing_p3c04_ui" && scripts/check_repo_contract.sh >/dev/null 2>&1); t
   fail "missing P3-C04 customer list UI was accepted"
 fi
 
+for file_path in \
+  migrations/00006_customer_events.sql \
+  acceptance/fixtures/cmd/validate-database-url/main.go \
+  acceptance/contact/doc.go \
+  acceptance/contact/partition_integration_test.go \
+  internal/contact/store/event_partitions.go \
+  internal/contact/store/event_partitions_test.go \
+  internal/contact/store/queries/event_partitions.sql \
+  internal/contact/store/generated/event_partitions.sql.go \
+  internal/contact/worker/event_partitions.go \
+  internal/contact/worker/event_partitions_test.go \
+  docs/execution/slices/P3-C03.md \
+  docs/evidence/slices/P3-C03-partition-worker-tests.md; do
+  p3c03_receipt_fixture="$(make_fixture "p3-c03-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C03 receipt drift' >>"$p3c03_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P3-C03 receipt drift' >>"$p3c03_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C03 receipt drift' >>"$p3c03_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c03_receipt_fixture" add "$file_path"
+  if (cd "$p3c03_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C03 partition receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in migrations/00006_customer_events.sql internal/contact/worker/event_partitions.go acceptance/contact/partition_integration_test.go; do
+  missing_p3c03_file="$(make_fixture "missing-p3-c03-${file_path//\//-}")"
+  rm -f "$missing_p3c03_file/$file_path"
+  git -C "$missing_p3c03_file" add -u "$file_path"
+  if (cd "$missing_p3c03_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-C03 partition boundary was accepted: $file_path"
+  fi
+done
+
+disconnected_p3c03_workflow="$(make_fixture disconnected-p3-c03-workflow)"
+sed -i.bak '/P3C03_TEST_DATABASE_URL=.*p3-c03-migration-acceptance/d' \
+  "$disconnected_p3c03_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c03_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c03_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c03_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C03 migration acceptance disconnected from application CI was accepted"
+fi
+
+hollow_p3c03_target="$(make_fixture hollow-p3-c03-target)"
+sed -i.bak '/[.]\/acceptance\/contact/ s/.*/\t@true/' \
+  "$hollow_p3c03_target/Makefile"
+rm -f "$hollow_p3c03_target/Makefile.bak"
+restage_make_receipt "$hollow_p3c03_target"
+if (cd "$hollow_p3c03_target" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P3-C03 migration acceptance target was accepted"
+fi
+
+default_p3c03_partition="$(make_fixture p3-c03-default-partition)"
+printf '%s\n' 'CREATE TABLE customer_events_default PARTITION OF public.customer_events DEFAULT;' \
+  >>"$default_p3c03_partition/migrations/00006_customer_events.sql"
+restage_p2s18_receipt "$default_p3c03_partition" migrations/00006_customer_events.sql
+if (cd "$default_p3c03_partition" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "unbounded P3-C03 default partition was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

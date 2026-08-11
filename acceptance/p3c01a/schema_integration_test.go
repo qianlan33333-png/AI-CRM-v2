@@ -75,10 +75,6 @@ ORDER BY indexname`)
 	if err = pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm')`).Scan(&trigram); err != nil || !trigram {
 		t.Fatalf("pg_trgm installed=%t err=%v", trigram, err)
 	}
-	var timelineExists bool
-	if err = pool.QueryRow(ctx, `SELECT to_regclass('public.customer_events') IS NOT NULL`).Scan(&timelineExists); err != nil || timelineExists {
-		t.Fatalf("customer_events exists=%t err=%v; C-3 owns timeline DDL", timelineExists, err)
-	}
 }
 
 func queryStrings(t *testing.T, ctx context.Context, pool *pgxpool.Pool, statement string) []string {

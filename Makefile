@@ -21,7 +21,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p2-s15-acceptance
 .PHONY: p2-s16-acceptance
 .PHONY: p2-s18-acceptance
-.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance
+.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c03-migration-acceptance
 .PHONY: g2-runtime-image-acceptance
 .PHONY: g2-release-archive-contract
 .PHONY: g2-web-edge-contract
@@ -113,14 +113,23 @@ migration-guard-negative:
 		status=$$?; \
 		set -e; \
 		test "$$status" -eq 2; \
-		grep -Fq 'ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 is required' "$$output"
+		grep -Fq 'ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 is required' "$$output"; \
+		secret='dsn-password-sentinel'; \
+		set +e; \
+		ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
+			MIGRATION_TEST_DATABASE_URL="postgres://postgres:$${secret}@127.0.0.1:55432/aicrm_test?sslmode=disable" \
+			$(MAKE) --no-print-directory migration-integration >"$$output" 2>&1; \
+		status=$$?; \
+		set -e; \
+		test "$$status" -eq 2; \
+		grep -Fq 'MIGRATION_TEST_DATABASE_URL failed safe acceptance validation' "$$output"; \
+		! grep -Fq "$$secret" "$$output"
 
 migration-integration:
 	@test "$${ALLOW_DESTRUCTIVE_MIGRATION_TEST:-}" = "1" || { \
 		echo "ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 is required" >&2; exit 2; }
-	@test "$${MIGRATION_TEST_DATABASE_URL:-}" = \
-		"postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable" || { \
-		echo "MIGRATION_TEST_DATABASE_URL must be the fixed loopback aicrm_test DSN" >&2; exit 2; }
+	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+		$(GO) run ./acceptance/fixtures/cmd/validate-database-url || exit 2
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
 		"$$MIGRATION_TEST_DATABASE_URL" up
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
@@ -373,5 +382,9 @@ p3-c01a-contract:
 p3-c01a-migration-acceptance:
 	@test -n "$${P3C01A_TEST_DATABASE_URL:-}" || { echo "P3C01A_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=30s ./acceptance/p3c01a -args -database-url "$$P3C01A_TEST_DATABASE_URL"
+
+p3-c03-migration-acceptance:
+	@test -n "$${P3C03_TEST_DATABASE_URL:-}" || { echo "P3C03_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=45s ./acceptance/contact -args -database-url "$$P3C03_TEST_DATABASE_URL"
 
 ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance p2-s08-acceptance p2-s09-acceptance p2-s10-acceptance p2-s11-acceptance p2-s14-acceptance p2-s15-acceptance p2-s16-acceptance p2-s18-acceptance p3-c00-acceptance p3-c01a-contract g2-runtime-image-acceptance g2-release-archive-contract g2-web-edge-contract arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test

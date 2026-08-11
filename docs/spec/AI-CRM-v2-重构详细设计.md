@@ -191,17 +191,28 @@ CREATE INDEX idx_customer_tags_tag ON customer_tags (tag_id, customer_id);
 -- 时间线: 按月分区 append-only
 CREATE TABLE customer_events (
   id          BIGINT GENERATED ALWAYS AS IDENTITY,
-  customer_id BIGINT NOT NULL,
+  customer_id BIGINT NOT NULL REFERENCES customers(id),
   event_type  TEXT NOT NULL,      -- added/deleted/tag_applied/tag_removed/stage_changed/
                                   -- message_sent/survey_submitted/note/... 与旧系统枚举对齐
   payload     JSONB NOT NULL DEFAULT '{}',
   actor       TEXT NOT NULL DEFAULT 'system',
   occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (occurred_at, id)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (occurred_at, id),
+  CHECK (btrim(event_type) <> ''),
+  CHECK (jsonb_typeof(payload) = 'object'),
+  CHECK (btrim(actor) <> '' AND char_length(actor) <= 200)
 ) PARTITION BY RANGE (occurred_at);
-CREATE INDEX idx_ce_customer_time ON customer_events (customer_id, occurred_at DESC);
-CREATE INDEX idx_ce_brin ON customer_events USING BRIN (occurred_at);
--- 分区由启动任务自动预建未来3个月, 迁移脚本按历史数据范围建
+CREATE INDEX idx_customer_events_customer_timeline
+  ON customer_events (customer_id, occurred_at DESC, id DESC);
+CREATE INDEX idx_customer_events_occurred_brin
+  ON customer_events USING BRIN (occurred_at) WITH (pages_per_range = 32);
+-- migration 先建 UTC 当月+未来3个月；heavy 队列 River periodic job 每日并在
+-- worker 启动时调用唯一维护函数。函数用 transaction advisory lock 串行化并发
+-- 预建，且只允许0–36个月窗口；历史迁移按只读 preflight 得到的月份范围
+-- 显式建分区，未建分区的写入 fail-closed，不落入无界 default partition。
+-- 父表 BEFORE UPDATE OR DELETE trigger 以 SQLSTATE 55000 强制 append-only；
+-- 历史保留/归档使用分区级 DDL，不改写已入库事件。
 
 -- ============ 人群域 (segment 模块, 对应旧系统"AI Audience/人群包") ============
 
