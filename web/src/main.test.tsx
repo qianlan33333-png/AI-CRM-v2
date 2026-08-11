@@ -134,19 +134,19 @@ describe("Web shell routes", () => {
   it("shows only routes allowed by the frozen role table", () => {
     expect(
       navigationLinks(adminSession.principal).map((link) => link.href),
-    ).toEqual(["/", "/customers", "/settings"]);
+    ).toEqual(["/", "/customers", "/stages", "/settings"]);
     expect(
       navigationLinks({ adminUserID: 8, role: "ops" }).map((link) => link.href),
-    ).toEqual(["/", "/customers"]);
+    ).toEqual(["/", "/customers", "/stages"]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
         (link) => link.href,
       ),
-    ).toEqual(["/", "/customers"]);
+    ).toEqual(["/", "/customers", "/stages"]);
 
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(html).toContain('href="/settings"');
-    expect(html).not.toContain('href="/stages"');
+    expect(html).toContain('href="/stages"');
     expect(html).not.toContain('href="/segments"');
     expect(html).not.toContain('href="/outbound"');
   });
