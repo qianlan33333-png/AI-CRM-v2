@@ -626,6 +626,7 @@ for file_path in \
   internal/auth/port/port.go \
   internal/auth/http/authorization_test.go \
   internal/contact/http/handler.go \
+  internal/contact/http/handler_test.go \
   acceptance/p2s16/doc.go \
   acceptance/p2s16/csrf_integration_test.go \
   acceptance/p2s16/snapshot.go \
