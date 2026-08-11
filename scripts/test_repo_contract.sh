@@ -16,15 +16,52 @@ done
 repo_root="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
 test_root="$(mktemp -d -t aicrm-v2-repo-contract-test.XXXXXX)"
 trap 'rm -rf "$test_root"' EXIT
+staged_tree="$(git -C "$repo_root" write-tree)"
+baseline_repository="$test_root/.baseline-repository"
+reusable_fixture="$test_root/reusable-fixture"
+gitless_root="$test_root/gitless-fixtures"
+
+printf 'repo-contract-tests: preparing reusable baseline %s\n' "$staged_tree" >&2
+mkdir -p "$baseline_repository"
+mkdir -p "$gitless_root"
+git -C "$repo_root" archive --format=tar "$staged_tree" |
+  tar -xf - -C "$baseline_repository"
+git -C "$baseline_repository" init -q
+git -C "$baseline_repository" add -A
+git -C "$baseline_repository" \
+  -c user.name=repo-contract-tests \
+  -c user.email=repo-contract-tests@invalid.example \
+  commit --quiet --no-gpg-sign -m 'reusable staged baseline'
+[[ "$(git -C "$baseline_repository" rev-parse 'HEAD^{tree}')" = "$staged_tree" ]] ||
+  fail "reusable baseline tree differs from the staged repository tree"
+git clone --quiet "$baseline_repository" "$reusable_fixture" ||
+  fail "could not create the reusable negative-test fixture"
 
 make_fixture() {
   local name="$1"
-  local fixture="$test_root/$name"
-  mkdir -p "$fixture"
-  git -C "$repo_root" archive --format=tar "$(git -C "$repo_root" write-tree)" |
+  local started_at elapsed_seconds
+  started_at="$SECONDS"
+  printf 'repo-contract-tests: fixture %-52s' "$name" >&2
+  git -C "$reusable_fixture" reset --hard --quiet HEAD ||
+    fail "could not reset reusable fixture for: $name"
+  git -C "$reusable_fixture" clean -ffdxq ||
+    fail "could not clean reusable fixture for: $name"
+  [[ "$(git -C "$reusable_fixture" write-tree)" = "$staged_tree" ]] ||
+    fail "reusable fixture tree drifted before: $name"
+  elapsed_seconds=$((SECONDS - started_at))
+  printf ' ready (%ss)\n' "$elapsed_seconds" >&2
+  printf '%s\n' "$reusable_fixture"
+}
+make_gitless_fixture() {
+  local name="$1"
+  local fixture started_at elapsed_seconds
+  fixture="$(mktemp -d "$gitless_root/${name}.XXXXXX")"
+  started_at="$SECONDS"
+  printf 'repo-contract-tests: fixture %-52s' "$name" >&2
+  git -C "$baseline_repository" archive --format=tar HEAD |
     tar -xf - -C "$fixture"
-  git -C "$fixture" init -q
-  git -C "$fixture" add -A
+  elapsed_seconds=$((SECONDS - started_at))
+  printf ' ready (%ss)\n' "$elapsed_seconds" >&2
   printf '%s\n' "$fixture"
 }
 restage_make_receipt() { local fixture="$1" digest
@@ -37,6 +74,20 @@ restage_p2s18_receipt() { local fixture="$1" receipt_file="$2" digest escaped_fi
 baseline_fixture="$(make_fixture baseline)"
 if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "valid staged baseline was rejected"
+fi
+
+receipt_verifier_drift="$(make_fixture receipt-verifier-drift)"
+printf '%s\n' '# receipt verifier drift' >>"$receipt_verifier_drift/scripts/verify_repo_receipts.pl"
+git -C "$receipt_verifier_drift" add scripts/verify_repo_receipts.pl
+if (cd "$receipt_verifier_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "receipt verifier content drift was accepted"
+fi
+
+receipt_verifier_mode="$(make_fixture receipt-verifier-mode)"
+chmod 0644 "$receipt_verifier_mode/scripts/verify_repo_receipts.pl"
+git -C "$receipt_verifier_mode" add scripts/verify_repo_receipts.pl
+if (cd "$receipt_verifier_mode" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "non-executable receipt verifier was accepted"
 fi
 
 shell_shadow_fixture="$(make_fixture shell-environment-shadow)"
@@ -1048,8 +1099,7 @@ fi
 
 make_gitless_matrix_fixture() {
   local fixture
-  fixture="$(make_fixture "$1")"
-  rm -rf "$fixture/.git"
+  fixture="$(make_gitless_fixture "$1")"
   [[ ! -e "$fixture/.git" ]] || fail "feature matrix fixture retained Git metadata"
   printf '%s\n' "$fixture"
 }
@@ -1614,11 +1664,10 @@ reset_p0s04_fixture() {
   rm -f "$fixture/internal/platform/river/runtime.go" \
     "$fixture/internal/platform/river/migrate.go" \
     "$fixture/internal/platform/river/runtime_test.go"
-  rm -rf "$fixture/.git"
 }
 make_p0s04_fixture() {
   local fixture
-  fixture="$(make_fixture "$1")"
+  fixture="$(make_gitless_fixture "$1")"
   reset_p0s04_fixture "$fixture"
   printf '%s\n' "$fixture"
 }
@@ -1631,7 +1680,7 @@ assert_p0s04_pending() {
     fail "canonical empty P0-S04 $gate gate did not report PENDING"
 }
 
-p0s04_empty_fixture="$(make_fixture p0s04-canonical-empty)"
+p0s04_empty_fixture="$(make_gitless_fixture p0s04-canonical-empty)"
 for file in runtime.go migrate.go runtime_test.go; do
   candidate="$p0s04_empty_fixture/internal/platform/river/$file"
   [[ -e "$candidate" || -L "$candidate" ]] || printf '%s\n' 'package platformriver' >"$candidate"
