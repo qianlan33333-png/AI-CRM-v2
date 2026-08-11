@@ -2026,7 +2026,7 @@ slices:
       - GO_AND_WEB_FULL_GATES_PASS
       - REPO_CONTRACT_AND_SECRET_GATES_PASS
       - PR_AND_MAIN_CI_PASS
-    handwritten_scope: under_P3_cap_tests_docs_generated_excluded
+    handwritten_scope: 1011_added_lines_12_files_default_cap_exception_below_1500_hard_cap_complete_transactional_behavior
     slice_induced_correction_count: 4
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0

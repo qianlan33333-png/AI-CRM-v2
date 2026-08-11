@@ -956,7 +956,7 @@ verify_index_sha256 internal/contact/store/queries/customer_mutations.sql \
 verify_index_sha256 internal/contact/store/generated/customer_mutations.sql.go \
   bdb9d819b1704a54459ffb2f33169eb2c2cfa492e9e77fd3bf8404d0e9141096
 verify_index_sha256 docs/execution/slices/P3-C02A.md \
-  d5f8cf552a6ed81b042120cb0070b0fae061447b0552f88cf0ec3454b6cc1c07
+  bdf8bf445d8d5f50aefc77fd107327f100e47154caff3d8aba8237a32e948030
 verify_index_sha256 docs/evidence/slices/P3-C02A-sqlc-store.md \
   1c4c82565b6531e35bd7b657c583fa1fab4591b871550af145ecab4d966db40b
 verify_index_sha256 docs/evidence/slices/P3-C02A-service-tests.md \
