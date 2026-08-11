@@ -18,6 +18,10 @@ import (
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	authstore "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -32,6 +36,25 @@ type apiComponent struct {
 	address string
 }
 
+type candidateHandler struct {
+	*authhttp.Handler
+	stages *contacthttp.Handler
+}
+
+var _ api.ServerInterface = (*candidateHandler)(nil)
+
+func (handler *candidateHandler) ListStages(writer http.ResponseWriter, request *http.Request) {
+	handler.stages.ListStages(writer, request)
+}
+
+func (handler *candidateHandler) CreateStage(writer http.ResponseWriter, request *http.Request, params api.CreateStageParams) {
+	handler.stages.CreateStage(writer, request, params)
+}
+
+func (handler *candidateHandler) RenameStage(writer http.ResponseWriter, request *http.Request, stageID api.StageID, params api.RenameStageParams) {
+	handler.stages.RenameStage(writer, request, stageID, params)
+}
+
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
 	if err != nil || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
@@ -42,7 +65,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err != nil {
 		return nil, errInvalidAPIComponent
 	}
-	service, err := authapp.NewService(platformstore.NewUnitOfWork(pool), authstore.NewRepository(), authapp.Options{})
+	uow := platformstore.NewUnitOfWork(pool)
+	service, err := authapp.NewService(uow, authstore.NewRepository(), authapp.Options{})
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -52,8 +76,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	stageHandler, err := contacthttp.NewHandler(contactapp.NewStageService(
+		uow, contactstore.NewRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate := &candidateHandler{Handler: authHandler, stages: stageHandler}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	handler, err := newAPIHandler(logger, authHandler, authHandler)
+	handler, err := newAPIHandler(logger, authHandler, candidate)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -92,7 +124,7 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 	router.Method(http.MethodGet, "/healthz", health)
 
 	wrapper := &api.ServerInterfaceWrapper{Handler: candidate, ErrorHandlerFunc: platformhttp.RequestErrorHandler}
-	register := func(method, pattern string, capability authport.Capability, endpoint http.Handler) error {
+	register := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
 		tail, wrapErr := recovery(endpoint)
 		if wrapErr != nil {
 			return wrapErr
@@ -109,6 +141,12 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		if wrapErr != nil {
 			return wrapErr
 		}
+		if csrf {
+			tail, wrapErr = authHandler.RequireCSRF(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+		}
 		tail = authHandler.Authenticate(tail)
 		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
 		if wrapErr != nil {
@@ -120,21 +158,25 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 	routes := []struct {
 		method, pattern string
 		capability      authport.Capability
+		csrf            bool
 		endpoint        http.Handler
 	}{
-		{http.MethodGet, "/api/v1/admin/config/overview", authport.CapabilityConfigOverviewRead, http.HandlerFunc(wrapper.GetAdminConfigOverview)},
-		{http.MethodPost, "/api/v1/auth/logout", authport.CapabilityAuthSessionLogout, http.HandlerFunc(wrapper.LogoutAdmin)},
-		{http.MethodGet, "/api/v1/auth/session", authport.CapabilityAuthSessionRead, http.HandlerFunc(wrapper.GetAuthSession)},
-		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, http.HandlerFunc(wrapper.ListCustomers)},
-		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, http.HandlerFunc(wrapper.GetCustomer)},
-		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, http.HandlerFunc(wrapper.UpdateCustomer)},
-		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, http.HandlerFunc(wrapper.ListCustomerEvents)},
-		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, http.HandlerFunc(wrapper.BindIdentity)},
-		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, http.HandlerFunc(wrapper.IngestIdentityEvent)},
-		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, http.HandlerFunc(wrapper.ResolveIdentity)},
+		{http.MethodGet, "/api/v1/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.GetAdminConfigOverview)},
+		{http.MethodPost, "/api/v1/auth/logout", authport.CapabilityAuthSessionLogout, false, http.HandlerFunc(wrapper.LogoutAdmin)},
+		{http.MethodGet, "/api/v1/auth/session", authport.CapabilityAuthSessionRead, false, http.HandlerFunc(wrapper.GetAuthSession)},
+		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
+		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, false, http.HandlerFunc(wrapper.UpdateCustomer)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},
+		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, false, http.HandlerFunc(wrapper.BindIdentity)},
+		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, false, http.HandlerFunc(wrapper.IngestIdentityEvent)},
+		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},
+		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead, false, http.HandlerFunc(wrapper.ListStages)},
+		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.CreateStage)},
+		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
 	}
 	for _, route := range routes {
-		if err = register(route.method, route.pattern, route.capability, route.endpoint); err != nil {
+		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 			return nil, err
 		}
 	}

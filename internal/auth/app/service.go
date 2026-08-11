@@ -32,6 +32,7 @@ type repository interface {
 	FindVerifiedLogin(context.Context, authport.VerifiedLogin) (authstore.LoginUser, error)
 	InsertSession(context.Context, []byte, []byte, authstore.LoginUser, time.Time, time.Time) error
 	GetActive(context.Context, []byte, time.Time) (authport.Principal, error)
+	ValidateCSRF(context.Context, []byte, []byte, time.Time) (bool, error)
 	Revoke(context.Context, []byte, []byte, time.Time) error
 }
 
@@ -140,6 +141,35 @@ func (service *Service) Authorize(ctx context.Context, principal authport.Princi
 		return authport.Authorization{}, authport.ErrUnauthorized
 	}
 	return authorize(principal, capability)
+}
+
+func (service *Service) ValidateCSRF(ctx context.Context, session authport.SessionRef, csrf authport.CSRFToken) error {
+	tokenHash, err := hashToken(string(session))
+	if err != nil {
+		return authport.ErrUnauthenticated
+	}
+	csrfHash, err := hashToken(string(csrf))
+	if err != nil {
+		return authport.ErrCSRFInvalid
+	}
+	if service == nil || service.uow == nil || service.repo == nil || service.clock == nil {
+		return authport.ErrAuthenticationUnavailable
+	}
+	now := service.clock().UTC()
+	if now.IsZero() {
+		return authport.ErrAuthenticationUnavailable
+	}
+	err = service.uow.Within(ctx, func(txCtx context.Context) error {
+		valid, validateErr := service.repo.ValidateCSRF(txCtx, tokenHash, csrfHash, now)
+		if validateErr != nil {
+			return errors.Join(authport.ErrAuthenticationUnavailable, validateErr)
+		}
+		if !valid {
+			return authport.ErrCSRFInvalid
+		}
+		return nil
+	})
+	return err
 }
 
 func (service *Service) Invalidate(ctx context.Context, session authport.SessionRef, csrf authport.CSRFToken) error {

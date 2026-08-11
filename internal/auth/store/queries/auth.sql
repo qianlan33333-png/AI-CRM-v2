@@ -36,3 +36,17 @@ WHERE session_token_hash = sqlc.arg(session_token_hash)
   AND revoked_at IS NULL
   AND expires_at > sqlc.arg(revoked_at)
 RETURNING id;
+
+-- name: ValidateSessionCSRF :one
+SELECT EXISTS (
+  SELECT 1
+  FROM admin_sessions AS s
+  JOIN admin_users AS u ON u.id = s.admin_user_id
+  WHERE s.session_token_hash = sqlc.arg(session_token_hash)
+    AND s.csrf_token_hash = sqlc.arg(csrf_token_hash)
+    AND s.revoked_at IS NULL
+    AND s.expires_at > sqlc.arg(now)
+    AND s.session_version = u.session_version
+    AND u.is_active
+    AND u.login_enabled
+);

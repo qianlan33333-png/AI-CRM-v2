@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -39,6 +40,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve},
+		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead},
+		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite},
+		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 	}
 	for _, test := range tests {
 		t.Run(test.method+" "+test.path, func(t *testing.T) {
@@ -47,6 +51,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: "router-test-session"})
 			if test.capability == authport.CapabilityAuthSessionLogout {
 				request.Header.Set("X-CSRF-Token", "router-test-csrf")
+			}
+			if test.capability == authport.CapabilityStagesWrite {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 			}
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
@@ -132,6 +139,10 @@ func (service *recordingAuth) Authorize(_ context.Context, _ authport.Principal,
 		scope = authport.ScopeSelf
 	}
 	return authport.Authorization{Capability: capability, Scope: scope}, nil
+}
+
+func (*recordingAuth) ValidateCSRF(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
 }
 
 func (*recordingAuth) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {

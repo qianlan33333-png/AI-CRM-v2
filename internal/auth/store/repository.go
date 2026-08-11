@@ -61,6 +61,16 @@ func (repository *Repository) GetActive(ctx context.Context, tokenHash []byte, n
 	return authport.Principal{AdminUserID: row.ID, Role: authport.Role(row.Role), StaffID: int64Pointer(row.StaffID)}, nil
 }
 
+func (repository *Repository) ValidateCSRF(ctx context.Context, tokenHash, csrfHash []byte, now time.Time) (bool, error) {
+	queries, err := queriesFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	return queries.ValidateSessionCSRF(ctx, authdb.ValidateSessionCSRFParams{
+		SessionTokenHash: tokenHash, CsrfTokenHash: csrfHash, Now: timestamp(now),
+	})
+}
+
 func (repository *Repository) Revoke(ctx context.Context, tokenHash, csrfHash []byte, revokedAt time.Time) error {
 	queries, err := queriesFromContext(ctx)
 	if err != nil {

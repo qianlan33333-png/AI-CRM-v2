@@ -31,13 +31,15 @@ func (uow *fakeAuthUoW) Within(ctx context.Context, callback func(context.Contex
 }
 
 type fakeAuthRepository struct {
-	findCalls, insertCalls, getCalls, revokeCalls int
+	findCalls, insertCalls, getCalls, csrfCalls, revokeCalls int
 
 	loginUser authstore.LoginUser
 	findErr   error
 	insertErr error
 	principal authport.Principal
 	getErr    error
+	csrfValid bool
+	csrfErr   error
 	revokeErr error
 
 	findLogin authport.VerifiedLogin
@@ -48,8 +50,11 @@ type fakeAuthRepository struct {
 	insertAuthTime    time.Time
 	insertExpiresAt   time.Time
 
-	getSessionHash []byte
-	getAt          time.Time
+	getSessionHash  []byte
+	getAt           time.Time
+	csrfSessionHash []byte
+	csrfTokenHash   []byte
+	csrfAt          time.Time
 
 	revokeSessionHash []byte
 	revokeCSRFHash    []byte
@@ -77,6 +82,14 @@ func (repository *fakeAuthRepository) GetActive(_ context.Context, sessionHash [
 	repository.getSessionHash = append([]byte(nil), sessionHash...)
 	repository.getAt = now
 	return repository.principal, repository.getErr
+}
+
+func (repository *fakeAuthRepository) ValidateCSRF(_ context.Context, sessionHash, csrfHash []byte, now time.Time) (bool, error) {
+	repository.csrfCalls++
+	repository.csrfSessionHash = append([]byte(nil), sessionHash...)
+	repository.csrfTokenHash = append([]byte(nil), csrfHash...)
+	repository.csrfAt = now
+	return repository.csrfValid, repository.csrfErr
 }
 
 func (repository *fakeAuthRepository) Revoke(_ context.Context, sessionHash, csrfHash []byte, revokedAt time.Time) error {

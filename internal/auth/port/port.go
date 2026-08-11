@@ -42,6 +42,8 @@ const (
 	CapabilityIdentityBind       Capability = "identity.bind"
 	CapabilityIdentityIngest     Capability = "identity.ingest"
 	CapabilityConfigOverviewRead Capability = "config.overview.read"
+	CapabilityStagesRead         Capability = "stages.read"
+	CapabilityStagesWrite        Capability = "stages.write"
 )
 
 func (capability Capability) Known() bool {
@@ -49,7 +51,7 @@ func (capability Capability) Known() bool {
 	case CapabilityAuthSessionRead, CapabilityAuthSessionLogout,
 		CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead,
 		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
-		CapabilityConfigOverviewRead:
+		CapabilityConfigOverviewRead, CapabilityStagesRead, CapabilityStagesWrite:
 		return true
 	default:
 		return false
@@ -161,7 +163,8 @@ func validAuthorization(authorization Authorization) bool {
 			return authorization.OwnerStaffID == 0
 		}
 		return authorization.Scope == ScopeOwnerStaff && authorization.OwnerStaffID > 0
-	case CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest, CapabilityConfigOverviewRead:
+	case CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest, CapabilityConfigOverviewRead,
+		CapabilityStagesRead, CapabilityStagesWrite:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:
 		return false
@@ -177,5 +180,6 @@ type Issuer interface {
 type Service interface {
 	Authenticate(context.Context, SessionRef) (Principal, error)
 	Authorize(context.Context, Principal, Capability) (Authorization, error)
+	ValidateCSRF(context.Context, SessionRef, CSRFToken) error
 	Invalidate(context.Context, SessionRef, CSRFToken) error
 }

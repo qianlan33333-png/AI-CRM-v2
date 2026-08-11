@@ -7,3 +7,4 @@ generate:
 output-options:
   include-tags:
     - p1-core-candidate
+    - p2-stages

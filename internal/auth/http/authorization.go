@@ -37,3 +37,34 @@ func (handler *Handler) Authorize(capability authport.Capability, next http.Hand
 		next.ServeHTTP(writer, request.WithContext(ctx))
 	}), nil
 }
+
+// RequireCSRF validates the browser token against the current server-side
+// session. It is mounted only on cookie-authenticated state-changing routes.
+func (handler *Handler) RequireCSRF(next http.Handler) (http.Handler, error) {
+	if handler == nil || nilService(handler.auth) || next == nil {
+		return nil, authport.ErrUnauthorized
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		session, ok := authport.SessionFromContext(request.Context())
+		if !ok {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthenticated, authport.ErrUnauthenticated))
+			return
+		}
+		values := request.Header.Values("X-CSRF-Token")
+		if len(values) != 1 {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrCSRFInvalid))
+			return
+		}
+		if err := handler.auth.ValidateCSRF(request.Context(), session, authport.CSRFToken(values[0])); err != nil {
+			code := platformhttp.CodeUnauthorized
+			if errors.Is(err, authport.ErrUnauthenticated) {
+				code = platformhttp.CodeUnauthenticated
+			} else if errors.Is(err, authport.ErrAuthenticationUnavailable) {
+				code = platformhttp.CodeDependencyUnavailable
+			}
+			platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+			return
+		}
+		next.ServeHTTP(writer, request)
+	}), nil
+}

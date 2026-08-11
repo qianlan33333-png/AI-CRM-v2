@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: AI-CRM v2 API
-  version: 0.2.0-g1-frozen
-  description: Canonical HTTP contract. Generated code must not be edited. The ten P1 core operations are frozen by G1-D01.
+  version: 0.3.0-p2-stages
+  description: Canonical HTTP contract. Generated code must not be edited. The ten P1 core operations remain frozen by G1-D01; P2-16 adds the stages sample operations.
 security:
   - AdminSession: []
 paths:
@@ -113,6 +113,83 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/stages:
+    get:
+      tags: [p2-stages]
+      operationId: listStages
+      summary: List global customer stages in deterministic order
+      x-p2-decision-evidence: P2-16-2026-08-11
+      x-aicrm-capability: stages.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      responses:
+        "200":
+          description: Ordered stage definitions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageListResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p2-stages]
+      operationId: createStage
+      summary: Create one global customer stage
+      x-p2-decision-evidence: P2-16-2026-08-11
+      x-aicrm-capability: stages.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStageRequest"
+      responses:
+        "201":
+          description: Created stage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stage"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/stages/{stage_id}:
+    parameters:
+      - $ref: "#/components/parameters/StageID"
+    patch:
+      tags: [p2-stages]
+      operationId: renameStage
+      summary: Rename one global customer stage
+      x-p2-decision-evidence: P2-16-2026-08-11
+      x-aicrm-capability: stages.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameStageRequest"
+      responses:
+        "200":
+          description: Renamed stage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stage"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/identity/resolve:
     post:
       tags: [p1-core-candidate]
@@ -267,6 +344,11 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64, minimum: 1 }
+    StageID:
+      name: stage_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
     Cursor:
       name: cursor
       in: query
@@ -292,6 +374,12 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     Conflict:
       description: Current state conflicts with the command.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    UnprocessableEntity:
+      description: The command violates a field-level validation rule.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    ServiceUnavailable:
+      description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
     HealthResponse:
@@ -373,6 +461,35 @@ components:
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/CustomerEvent" } }
         next_cursor: { type: string, minLength: 1, nullable: true }
+    Stage:
+      type: object
+      additionalProperties: false
+      required: [id, name, sort_order, config]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1 }
+        sort_order: { type: integer, format: int32 }
+        config: {}
+    StageListResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Stage" } }
+    CreateStageRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        sort_order: { type: integer, format: int32, default: 0 }
+        config: {}
+    RenameStageRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
     IdentityRef:
       type: object
       additionalProperties: false

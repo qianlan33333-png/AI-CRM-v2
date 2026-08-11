@@ -12,6 +12,8 @@ func TestAuthorizationContextRejectsCapabilityScopeMismatch(t *testing.T) {
 		{Capability: CapabilityCustomersRead, Scope: ScopeSelf},
 		{Capability: CapabilityIdentityResolve, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
 		{Capability: CapabilityConfigOverviewRead, Scope: ScopeSelf},
+		{Capability: CapabilityStagesRead, Scope: ScopeSelf},
+		{Capability: CapabilityStagesWrite, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
 	}
 	for _, authorization := range tests {
 		ctx, err := WithAuthorization(context.Background(), authorization)
@@ -27,6 +29,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead,
 		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
 		CapabilityConfigOverviewRead,
+		CapabilityStagesRead, CapabilityStagesWrite,
 	} {
 		if !capability.Known() {
 			t.Fatalf("capability %q is not known", capability)

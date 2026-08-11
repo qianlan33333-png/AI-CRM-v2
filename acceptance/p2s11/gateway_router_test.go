@@ -157,6 +157,9 @@ func TestAPIProcessPublishesHealthAndProtectsFrozenOperations(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/bind"},
 		{http.MethodPost, "/api/v1/identity/ingest"},
 		{http.MethodPost, "/api/v1/identity/resolve"},
+		{http.MethodGet, "/api/v1/stages"},
+		{http.MethodPost, "/api/v1/stages"},
+		{http.MethodPatch, "/api/v1/stages/1"},
 	}
 	for _, operation := range operations {
 		request, err := http.NewRequest(operation.method, "http://"+address+operation.path, strings.NewReader("{}"))
@@ -198,6 +201,10 @@ func (frozenAuth) Authorize(_ context.Context, principal authport.Principal, cap
 		return authport.Authorization{}, authport.ErrUnauthorized
 	}
 	return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
+}
+
+func (frozenAuth) ValidateCSRF(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
 }
 
 func (frozenAuth) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {
