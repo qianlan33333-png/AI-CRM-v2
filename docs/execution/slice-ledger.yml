@@ -979,7 +979,7 @@ slices:
     slice_induced_correction_count: 2
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     external_gates:
       - REAL_SECRET_NOT_READ
       - PRODUCTION_DATABASE_NOT_EXECUTED

@@ -42,8 +42,11 @@
 - `scope_induced=1`：首次冻结卡把 P2-16 执行卡误列为 implementation
   input，slice-input 门拒绝；改为允许的详细设计与冻结 OpenAPI，
   未扩宽检查器。
-- `verification_induced=1`：预读 P2-18 时首次使用不存在的 shell glob，
-  zsh 在读取前 fail-closed；改为对存在目录执行 `rg`，未修改文件。
+- `verification_induced=2`：预读 P2-18 时首次使用不存在的 shell glob，
+  zsh 在读取前 fail-closed；改为对存在目录执行 `rg`。最终
+  `make ci-go` 首次绑定时手工扩写短 SHA 得到不存在的 commit，
+  query-plan 门精确拒绝；改为先读取 `git rev-parse HEAD` 的 40 位值后
+  从头重跑，未修改检查器。
 
 ## 外部门
 
