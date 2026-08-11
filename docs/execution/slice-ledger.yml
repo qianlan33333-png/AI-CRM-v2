@@ -2083,10 +2083,10 @@ slices:
       - GENERATORS_TWICE_NO_DIFF_PASS
       - FULL_GATES_AND_MAIN_CI_PENDING
     handwritten_scope: under_P3_cap_tests_docs_generated_excluded
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 2
+    verification_induced_correction_count: 3
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

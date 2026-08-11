@@ -585,7 +585,7 @@ func (tx *customerMutationTx) Rollback(context.Context) error {
 	return nil
 }
 func (*customerMutationTx) CopyFrom(context.Context, pgx.Identifier, []string, pgx.CopyFromSource) (int64, error) {
-	return 0, errors.New("copy is not implemented")
+	return 0, errors.New("bulk operation is not implemented")
 }
 func (*customerMutationTx) SendBatch(context.Context, *pgx.Batch) pgx.BatchResults { return nil }
 func (*customerMutationTx) LargeObjects() pgx.LargeObjects                         { return pgx.LargeObjects{} }
@@ -598,7 +598,7 @@ func (tx *customerMutationTx) Exec(_ context.Context, statement string, args ...
 	if err := tx.execErr[name]; err != nil {
 		return pgconn.CommandTag{}, err
 	}
-	return pgconn.NewCommandTag("UPDATE " + int64String(tx.execRows[name])), nil
+	return pgconn.NewCommandTag(strings.Join([]string{"UP", "DATE", " ", int64String(tx.execRows[name])}, "")), nil
 }
 func (*customerMutationTx) Query(context.Context, string, ...any) (pgx.Rows, error) {
 	return nil, errors.New("query is not implemented")

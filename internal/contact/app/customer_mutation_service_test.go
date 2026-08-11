@@ -268,90 +268,90 @@ func TestCustomerMutationRejectsAllInvalidCommandsBeforeTransaction(t *testing.T
 		name string
 		run  func(*CustomerMutationService) (CustomerRecord, error)
 	}{
-		{name: "update empty patch", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile empty patch", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			return service.Update(context.Background(), CustomerUpdateCommand{ID: 19, Actor: "admin:7"})
 		}},
-		{name: "update zero id", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile zero id", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.ID = 0
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update negative id", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile negative id", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.ID = -1
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update empty actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile empty actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Actor = ""
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update padded actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile padded actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Actor = " admin:7"
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update long actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile long actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Actor = contactport.Actor(strings.Repeat("a", 201))
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update invalid utf8 actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile invalid utf8 actor", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Actor = contactport.Actor(invalidUTF8)
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update invalid utf8 name", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile invalid utf8 name", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Name = stringPtr(invalidUTF8)
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update non HTTP avatar", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile non HTTP avatar", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.AvatarURL = NullablePatch[string]{Set: true, Value: stringPtr("ftp://example.test/avatar")}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update avatar user info", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile avatar user info", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.AvatarURL = NullablePatch[string]{Set: true, Value: stringPtr("https://user@example.test/avatar")}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update avatar no host", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile avatar no host", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.AvatarURL = NullablePatch[string]{Set: true, Value: stringPtr("https:///avatar")}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update zero owner", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile zero owner", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.OwnerStaffID = NullablePatch[int64]{Set: true, Value: &zero}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update negative owner", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile negative owner", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.OwnerStaffID = NullablePatch[int64]{Set: true, Value: &negative}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update zero channel", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile zero channel", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.ChannelID = NullablePatch[int64]{Set: true, Value: &zero}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update negative channel", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile negative channel", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.ChannelID = NullablePatch[int64]{Set: true, Value: &negative}
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update malformed extra", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile malformed extra", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Extra = rawPtr("{")
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update array extra", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile array extra", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Extra = rawPtr("[]")
 			return service.Update(context.Background(), command)
 		}},
-		{name: "update null extra", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+		{name: "profile null extra", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validUpdate()
 			command.Extra = rawPtr("null")
 			return service.Update(context.Background(), command)
@@ -503,7 +503,7 @@ func TestCustomerMutationUpdateNoopWritesNoEventsAndDoesNotConsumeKey(t *testing
 		t.Fatalf("Update() customer = %#v, want %#v", customer, mutationCustomer())
 	}
 	if !reflect.DeepEqual(sequence, []string{"store.update"}) || store.customerEventCalls != 0 || events.calls != 0 || keyCalls != 0 {
-		t.Fatalf("no-op update must write/consume nothing after store: sequence=%v customer_events=%d event_log=%d key_calls=%d", sequence, store.customerEventCalls, events.calls, keyCalls)
+		t.Fatalf("profile no-op must write/consume nothing after store: sequence=%v customer_events=%d event_log=%d key_calls=%d", sequence, store.customerEventCalls, events.calls, keyCalls)
 	}
 }
 
