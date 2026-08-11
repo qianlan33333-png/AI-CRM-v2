@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/url"
 	"reflect"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -123,12 +122,11 @@ func validCustomerTagRecord(tag CustomerTagRecord) bool {
 	if tag.GroupID == nil || tag.GroupName == nil {
 		return tag.GroupID == nil && tag.GroupName == nil && tag.GroupSortOrder == 0
 	}
-	return *tag.GroupID > 0 && validCustomerTagName(*tag.GroupName)
+	return *tag.GroupID > 0 && utf8.ValidString(*tag.GroupName)
 }
 
 func validCustomerTagName(value string) bool {
-	return value != "" && value == strings.TrimSpace(value) && utf8.ValidString(value) &&
-		utf8.RuneCountInString(value) <= 200
+	return value != "" && utf8.ValidString(value) && utf8.RuneCountInString(value) <= 200
 }
 
 func customerTagLess(left, right CustomerTagRecord) bool {
