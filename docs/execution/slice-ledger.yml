@@ -659,7 +659,7 @@ slices:
     pr_head_sha: bb1067549a70745231b3afb3d311627e16efdef9
     merge_sha: 72fb929257af595ab8852dd5b5b1eb1391ff8733
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 2
   - slice_id: M0-6
     title: repair-source-policy-infrastructure-and-correction-attribution
