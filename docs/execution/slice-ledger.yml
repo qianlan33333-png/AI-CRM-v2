@@ -801,7 +801,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 4
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 4
+    verification_induced_correction_count: 5
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED

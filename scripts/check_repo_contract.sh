@@ -1001,7 +1001,7 @@ verify_index_sha256 acceptance/p2s01r/uow_integration_test.go \
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   6aeeed7538c430b1d18861fade94ba0428fac5b3c2c2f6493e51bea08e3d178e
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
-  f412452642b3b03f9f776ad471996e1b6d2df962c7a8b0016122b6a430f1d91f
+  8b709c1b9aa3e511ada07889889a34f9c8be0a932dcea36e3e96490d371bc6f0
 verify_index_sha256 docs/adr/ADR-001.md \
   e4da265cf5ffd9962d1f77f2410538e09e8b41d1cb37c1584c3d57265480e28d
 verify_index_sha256 docs/adr/ADR-010.md \
