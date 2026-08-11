@@ -53,6 +53,11 @@ required=(
   web/src/auth-ui.test.tsx
   web/src/main.tsx
   web/src/main.test.tsx
+  web/src/customers.ts
+  web/src/customers.test.ts
+  web/src/customers-ui.tsx
+  web/src/customers-ui.test.tsx
+  web/src/customers-list.css
   web/src/shell.css
   web/src/api/generated/health.ts
   acceptance/p0s01/runtime_contract_test.go
@@ -120,6 +125,8 @@ required=(
   internal/contact/http/customer_list_handler_test.go
   docs/execution/slices/P3-C01D.md
   docs/evidence/slices/P3-C01D-customer-handler-tests.md
+  docs/execution/slices/P3-C04.md
+  docs/evidence/slices/P3-C04-customer-list-ui.md
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
@@ -341,6 +348,11 @@ done <<'EOF'
 100644 web/index.html
 100644 web/src/main.tsx
 100644 web/src/main.test.tsx
+100644 web/src/customers.ts
+100644 web/src/customers.test.ts
+100644 web/src/customers-ui.tsx
+100644 web/src/customers-ui.test.tsx
+100644 web/src/customers-list.css
 100644 web/src/shell.css
 100644 web/src/api/generated/health.ts
 100644 .github/workflows/application-go.yml
@@ -404,6 +416,8 @@ done <<'EOF'
 100644 internal/contact/http/customer_list_handler_test.go
 100644 docs/execution/slices/P3-C01D.md
 100644 docs/evidence/slices/P3-C01D-customer-handler-tests.md
+100644 docs/execution/slices/P3-C04.md
+100644 docs/evidence/slices/P3-C04-customer-list-ui.md
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
@@ -875,6 +889,10 @@ verify_index_sha256 docs/execution/slices/P3-C01D.md \
   05cdc71e2649af2f481728338192dfe96ae6264aa2b39d0ec5404bf5f4b9a9a7
 verify_index_sha256 docs/evidence/slices/P3-C01D-customer-handler-tests.md \
   d18b0701238ffb170a4e76441383bcb228e52e6d7ec2a6caf231927a29f1fce9
+verify_index_sha256 docs/execution/slices/P3-C04.md \
+  5c413a9ff757d5819a1030c5c1e9993772db8e0c6920ecd41788f09ac5fa90a9
+verify_index_sha256 docs/evidence/slices/P3-C04-customer-list-ui.md \
+  66ab535cf46c4935057f0f5a6b0787c3b55ac8c1d351f82aaa1839ddd5519e97
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1012,9 +1030,19 @@ verify_index_sha256 docs/execution/slices/P2-11.md \
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 web/src/main.tsx \
-  e9906774ac9647bb6c480b748f4151f49b6fd943e810d11af1f856efbe2cd0ef
+  799e39ea92a77fa4687fc16fe18e572ee6724768a53bd05b09de18c207624b6c
 verify_index_sha256 web/src/main.test.tsx \
-  aa9dfd2b7e4fb12bcd29d556a2a5eb8eebfba7856927c01794dd30cd2dfde47b
+  d26ca2f058a911e48950e83f7ca6dd39b616e82bfad3aa84b325506a4e788bd9
+verify_index_sha256 web/src/customers.ts \
+  a4dddd6400879040c8269b2e69620db20401d42890050464ab815d4e139772a0
+verify_index_sha256 web/src/customers.test.ts \
+  5a5d6e31f3b6c2097a614bb06177ccdc23a76114faef2dda64fede1261879103
+verify_index_sha256 web/src/customers-ui.tsx \
+  a9b6d658a5c15b32fae61aa51f0ec9d7f6d72a2fb2330bc7fc7e7481b8ef25e0
+verify_index_sha256 web/src/customers-ui.test.tsx \
+  87c3b414351ff52237fbee09403a6d311157fcd36a9d90944d4f25723f3e4650
+verify_index_sha256 web/src/customers-list.css \
+  e2e9522f30b1cd44606667f4372bb5fb76b143111a36bac36bf625ed3e6a8b3e
 verify_index_sha256 web/src/shell.css \
   993a7d533476836bab13f051f2a063d60e4f513224d355af485616de04bb033e
 verify_index_sha256 docs/execution/slices/P2-12.md \
@@ -1144,7 +1172,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b1004235ae7e78e23b1abb6c09491e2d043692b63c460d2b695cebda3a2c3530
+  eb5d43e35d24184504bd3cd98980f28644c07b16f83cef05bf3471e1bb394282
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

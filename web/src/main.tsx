@@ -19,6 +19,8 @@ import {
   type LogoutState,
   type PermissionNavigationLink,
 } from "./auth-ui";
+import { CustomerListPage } from "./customers-ui";
+import type { CustomerTransport } from "./customers";
 import { StagesPage } from "./stages-ui";
 import type { StageTransport } from "./stages";
 import "./shell.css";
@@ -93,6 +95,7 @@ export interface AppProps {
   navigation?: React.ReactNode;
   cache?: PermissionSessionCache;
   transport?: AuthTransport;
+  customerTransport?: CustomerTransport;
   stageTransport?: StageTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
@@ -200,12 +203,14 @@ export function handleNavigationClick(
 function PageContent({
   route,
   principal,
+  customerTransport,
   stageTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
   route: AppRoute | undefined;
   principal: AuthPrincipal;
+  customerTransport?: CustomerTransport;
   stageTransport?: StageTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
@@ -236,6 +241,16 @@ function PageContent({
         role={principal.role}
         transport={stageTransport}
         readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
+  if (route.path === "/customers") {
+    return (
+      <CustomerListPage
+        role={principal.role}
+        transport={customerTransport}
         onUnauthenticated={onUnauthenticated}
       />
     );
@@ -286,6 +301,7 @@ export function App({
   navigation,
   cache = runtimeCache,
   transport = generatedAuthTransport,
+  customerTransport,
   stageTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
@@ -426,6 +442,7 @@ export function App({
           <PageContent
             route={route}
             principal={session.principal}
+            customerTransport={customerTransport}
             stageTransport={stageTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
