@@ -264,6 +264,7 @@ required=(
   acceptance/p2s15/stage_service_integration_test.go
   internal/contact/store/queries/stages.sql
   internal/contact/store/generated/db.go
+  internal/contact/store/generated/customers.sql.go
   internal/contact/store/generated/models.go
   internal/contact/store/generated/querier.go
   internal/contact/store/generated/stages.sql.go
@@ -543,6 +544,7 @@ done <<'EOF'
 100644 acceptance/p2s15/stage_service_integration_test.go
 100644 internal/contact/store/queries/stages.sql
 100644 internal/contact/store/generated/db.go
+100644 internal/contact/store/generated/customers.sql.go
 100644 internal/contact/store/generated/models.go
 100644 internal/contact/store/generated/querier.go
 100644 internal/contact/store/generated/stages.sql.go
@@ -628,11 +630,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  bbaa05e58ab875e23e5c54e15bbadf8770fae606388711aaa9132fab3a1a2fb1
+  36244bcf4bbca4126e09a9e1543b98ed0295d8ccf9de09b00d3ff28638c624e6
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  0673bc942de359dd1bad1449e324bf56ea5a3a1a9f2d46d76c1e4be1d001a662
+  eb49819599e72d21787fa33893c6bab5be4421fabc042944a68c8cb477725d50
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1077,10 +1079,12 @@ verify_index_sha256 internal/contact/store/queries/stages.sql \
   0a0ecd3338cabecf50261d114a6036727e29dd87de01019ff7513f8b002162ca
 verify_index_sha256 internal/contact/store/generated/db.go \
   e3ef23479f44c12b0c868db745a22448a5d14cc7e4311ef4b2d2652bd1aca0a0
+verify_index_sha256 internal/contact/store/generated/customers.sql.go \
+  4c77bb954881911f0ec29c4fbe4817b9401bbbc5360dc56279cd3f1490c0a64a
 verify_index_sha256 internal/contact/store/generated/models.go \
-  05cdfc65f87e81fd7a136bd5748bcee0f70c96e2a97373f91cd9af4e70594234
+  9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
-  5542260d4931507fdb894a2f18b39d0b1cc0e70c40f8cacb7d6fceaec0243718
+  4010d8205aa7a3c8df4001724f91960271f3dcaa8c21f85b18cbe920b1c4f61f
 verify_index_sha256 internal/contact/store/generated/stages.sql.go \
   24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
 verify_index_sha256 internal/contact/store/repository.go \

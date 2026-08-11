@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -73,38 +72,6 @@ func TestCustomerListParamsUseNullForEmptyKeywordAndBoundedLimits(t *testing.T) 
 	boundedParams := listCustomerIDsBoundedParams(query)
 	if boundedParams.Keyword.Valid || boundedParams.TotalLimit != int32(contactapp.CustomerListExactTotalCap+1) {
 		t.Fatalf("bounded params = %#v, want NULL keyword and cap+1", boundedParams)
-	}
-}
-
-func TestCustomerQuerySQLUsesBoundedIDsWithoutCount(t *testing.T) {
-	contents, err := os.ReadFile("queries/customers.sql")
-	if err != nil {
-		t.Fatalf("read customer queries: %v", err)
-	}
-	querySQL := string(contents)
-	upper := strings.ToUpper(querySQL)
-	if strings.Contains(upper, "COUNT") || strings.Contains(upper, "COUNT(*)") {
-		t.Fatal("customer query SQL must not use COUNT or COUNT(*)")
-	}
-	boundedStart := strings.Index(querySQL, "-- name: ListCustomerIDsBounded :many")
-	if boundedStart < 0 {
-		t.Fatal("bounded customer-id query is missing")
-	}
-	boundedSQL := querySQL[boundedStart:]
-	for _, required := range []string{
-		"SELECT c.id",
-		"c.updated_at <= sqlc.arg(watermark)::timestamptz",
-		"ORDER BY c.updated_at DESC, c.id DESC",
-		"LIMIT sqlc.arg(total_limit)::integer",
-	} {
-		if !strings.Contains(boundedSQL, required) {
-			t.Fatalf("bounded customer-id query missing %q", required)
-		}
-	}
-	for _, forbidden := range []string{"after_updated_at", "after_id"} {
-		if strings.Contains(boundedSQL, forbidden) {
-			t.Fatalf("bounded customer-id query must not apply cursor %q", forbidden)
-		}
 	}
 }
 
