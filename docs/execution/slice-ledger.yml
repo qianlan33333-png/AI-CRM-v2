@@ -1411,13 +1411,23 @@ slices:
     pr_head_sha: PENDING
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING
-    delegated_tasks: []
+    delegated_tasks:
+      - task_id: p2_14_stages_sqlc
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/contact/store/queries/stages.sql
+        base_sha: f2c620193ab4fa8b2e686a05ddd2f70b20113daf
+        delegated_head_sha: bf0428aa92207f316511e099407ba581ea5d4ecc
+        correction_count: 0
+        file_manifest_sha256: 2280623933483d2df3c31637151d75272a0c9904b9cc962f3789d2e7abd2d854
+        diff_sha256: d9f8f1e647e2bc39ca3dbef86486199e75a575ee077417de779924ce0c6ef613
+        receipt: docs/evidence/slices/P2-14-stages-sqlc.md
     tests: []
-    handwritten_scope: PENDING
+    handwritten_scope: 7_files_204_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

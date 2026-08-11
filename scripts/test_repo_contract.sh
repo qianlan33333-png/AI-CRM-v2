@@ -560,6 +560,45 @@ if (cd "$p2s14_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P2-14 slice card receipt drift was accepted"
 fi
 
+disconnected_p2s14="$(make_fixture disconnected-p2-s14-target)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s14-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s14/Makefile"
+rm -f "$disconnected_p2s14/Makefile.bak"
+restage_make_receipt "$disconnected_p2s14"
+if (cd "$disconnected_p2s14" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-S14 acceptance target disconnected from ci-go was accepted"
+fi
+
+hollow_p2s14="$(make_fixture hollow-p2-s14-target)"
+sed -i.bak '/^p2-s14-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p2s14/Makefile"
+rm -f "$hollow_p2s14/Makefile.bak"
+restage_make_receipt "$hollow_p2s14"
+if (cd "$hollow_p2s14" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P2-S14 acceptance target was accepted"
+fi
+
+for file_path in \
+  internal/contact/store/queries/stages.sql \
+  internal/contact/store/generated/db.go \
+  internal/contact/store/generated/models.go \
+  internal/contact/store/generated/querier.go \
+  internal/contact/store/generated/stages.sql.go \
+  internal/contact/store/repository.go \
+  acceptance/p2s14/doc.go \
+  acceptance/p2s14/stages_store_integration_test.go \
+  docs/execution/slices/P2-14.md \
+  docs/evidence/slices/P2-14-stages-sqlc.md; do
+  p2s14_receipt_fixture="$(make_fixture "p2-14-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P2-14 receipt drift' >>"$p2s14_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P2-14 receipt drift' >>"$p2s14_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-14 receipt drift' >>"$p2s14_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p2s14_receipt_fixture" add "$file_path"
+  if (cd "$p2s14_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-14 stages store receipt drift was accepted: $file_path"
+  fi
+done
+
 missing_p2s12_router="$(make_fixture missing-p2-12-router)"
 rm -f "$missing_p2s12_router/web/src/main.tsx"
 git -C "$missing_p2s12_router" add -u web/src/main.tsx

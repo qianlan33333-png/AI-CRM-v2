@@ -216,6 +216,15 @@ required=(
   docs/execution/slices/P2-13.md
   docs/evidence/slices/P2-13-auth-ui.md
   docs/execution/slices/P2-14.md
+  docs/evidence/slices/P2-14-stages-sqlc.md
+  internal/contact/store/queries/stages.sql
+  internal/contact/store/generated/db.go
+  internal/contact/store/generated/models.go
+  internal/contact/store/generated/querier.go
+  internal/contact/store/generated/stages.sql.go
+  internal/contact/store/repository.go
+  acceptance/p2s14/doc.go
+  acceptance/p2s14/stages_store_integration_test.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -450,6 +459,15 @@ done <<'EOF'
 100644 docs/execution/slices/P2-13.md
 100644 docs/evidence/slices/P2-13-auth-ui.md
 100644 docs/execution/slices/P2-14.md
+100644 docs/evidence/slices/P2-14-stages-sqlc.md
+100644 internal/contact/store/queries/stages.sql
+100644 internal/contact/store/generated/db.go
+100644 internal/contact/store/generated/models.go
+100644 internal/contact/store/generated/querier.go
+100644 internal/contact/store/generated/stages.sql.go
+100644 internal/contact/store/repository.go
+100644 acceptance/p2s14/doc.go
+100644 acceptance/p2s14/stages_store_integration_test.go
 100644 web/src/auth.ts
 100644 web/src/auth.test.ts
 100644 web/src/auth-ui.tsx
@@ -501,7 +519,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  d1619a19b80aa342e8f221d30aad872f2e90cb70d4b7c2a63ae4eb434ec9bc11
+  b17dc46d0fbcd8c8f345438007a4948eb248bfe7af8dcfd53d56aefe775987a9
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -529,11 +547,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  3847e48b46c76321a0a8c1544f2399fbfeb1700561d473df99cef40d75358077
+  c01955e3de777ee399d396d96e4754651bc5bbf94938f389514b0636b09eeec2
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
 verify_index_sha256 scripts/generated-sources.sha256 \
-  ac13376344eaefbb6597cf5a5318cee1721d698b0ea0ef8db8e99d1da19c7a6a
+  d23614469ab3060484805bd4b772f0d5d8cb19c28ed3779f576a17bc6a7fcd45
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 docs/backlog/post-launch.md \
@@ -879,7 +897,25 @@ verify_index_sha256 docs/execution/slices/P2-13.md \
 verify_index_sha256 docs/evidence/slices/P2-13-auth-ui.md \
   d647a78aa84bddbeb6416cd2b92ed6dc5548b1c3e6e0d357153f2868e2000c3f
 verify_index_sha256 docs/execution/slices/P2-14.md \
-  a8494c695663bb790cb47fe0fafe8ea120a3d6edaa1709a7883c54695bab80f9
+  7b609585f2cc4645bbf291cf17170abbb0583ce14e3354213f5c9a8037c7dbc7
+verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
+  54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
+verify_index_sha256 internal/contact/store/queries/stages.sql \
+  0a0ecd3338cabecf50261d114a6036727e29dd87de01019ff7513f8b002162ca
+verify_index_sha256 internal/contact/store/generated/db.go \
+  e3ef23479f44c12b0c868db745a22448a5d14cc7e4311ef4b2d2652bd1aca0a0
+verify_index_sha256 internal/contact/store/generated/models.go \
+  05cdfc65f87e81fd7a136bd5748bcee0f70c96e2a97373f91cd9af4e70594234
+verify_index_sha256 internal/contact/store/generated/querier.go \
+  5542260d4931507fdb894a2f18b39d0b1cc0e70c40f8cacb7d6fceaec0243718
+verify_index_sha256 internal/contact/store/generated/stages.sql.go \
+  24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
+verify_index_sha256 internal/contact/store/repository.go \
+  e3ca8720cf6789a7b6aab4603513622b7feff27a42fb2f86ca394250951c7bab
+verify_index_sha256 acceptance/p2s14/doc.go \
+  372bee4c9610e5cd4ab9696e2efe65fed8fa42868e3e86ab632a8883d7f09869
+verify_index_sha256 acceptance/p2s14/stages_store_integration_test.go \
+  c9768333556d987e7e01c522d2229362438114900af5191420415ca8b9d40143
 verify_index_sha256 web/src/auth.ts \
   badb048198605e8bd93e31ce0ad9950243764e5cc0990bb009066e0bf38ee347
 verify_index_sha256 web/src/auth.test.ts \
@@ -915,7 +951,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  c519507192e3c527a62cb60d58921708b92c117d27e314a55ef4155f4832cde9
+  a3b2019799748e892ce3d3bcfb6856b02a0f25d35325cffe84072cc6ccbc944c
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
