@@ -1311,13 +1311,34 @@ slices:
     pr_head_sha: PENDING
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING
-    delegated_tasks: []
-    tests: []
-    handwritten_scope: PENDING
-    slice_induced_correction_count: 0
+    delegated_tasks:
+      - task_id: p2_12_web_shell_ui
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_paths:
+          - web/src/main.tsx
+          - web/src/main.test.tsx
+          - web/src/shell.css
+        base_sha: f459f2d2db549c65c0fbbc5876a810a4ae7e32eb
+        delegated_head_sha: 8bf3f1b2011276ee8ca150476995ad6ebbf1881f
+        correction_count: 2
+        slice_induced_correction_count: 1
+        verification_induced_correction_count: 1
+        file_manifest_sha256: c8b554485d9f344e61c83148246a2795d15a073129849fef233d58dc2cb344ab
+        diff_sha256: f4680bdc7d8087bb943f58629193f560394a40c4d9cdeb56fbb6d961232cd1e7
+        receipt: docs/evidence/slices/P2-12-web-shell.md
+    tests:
+      - LOCAL_Terra_hash_receipt_and_Web_CI_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_PASS
+      - LOCAL_goose_up_down_up_00001_through_00004_PostgreSQL16_14_55432_PASS
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_worktree_config_sensitive_paths_bundle_PASS
+    handwritten_scope: 4_files_557_changed_lines_under_P2_cap_tests_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 4
     external_gates:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED

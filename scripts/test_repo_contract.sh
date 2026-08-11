@@ -504,6 +504,31 @@ if (cd "$hollow_p2s11" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "hollow P2-S11 acceptance target was accepted"
 fi
 
+for file_path in \
+  web/src/main.tsx \
+  web/src/main.test.tsx \
+  web/src/shell.css \
+  docs/execution/slices/P2-12.md \
+  docs/evidence/slices/P2-12-web-shell.md; do
+  web_shell_receipt_fixture="$(make_fixture "p2-12-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.tsx) printf '%s\n' '// P2-12 receipt drift' >>"$web_shell_receipt_fixture/$file_path" ;;
+    *.css) printf '%s\n' '/* P2-12 receipt drift */' >>"$web_shell_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P2-12 receipt drift' >>"$web_shell_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$web_shell_receipt_fixture" add "$file_path"
+  if (cd "$web_shell_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P2-12 Web shell receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_p2s12_router="$(make_fixture missing-p2-12-router)"
+rm -f "$missing_p2s12_router/web/src/main.tsx"
+git -C "$missing_p2s12_router" add -u web/src/main.tsx
+if (cd "$missing_p2s12_router" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P2-12 Web router was accepted"
+fi
+
 missing_acceptance_helper="$(make_fixture missing-p2-00-helper)"
 rm -f "$missing_acceptance_helper/acceptance/fixtures/postgres.go"
 git -C "$missing_acceptance_helper" add -u acceptance/fixtures/postgres.go
