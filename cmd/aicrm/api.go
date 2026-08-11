@@ -38,10 +38,15 @@ type apiComponent struct {
 
 type candidateHandler struct {
 	*authhttp.Handler
-	stages *contacthttp.Handler
+	customers *contacthttp.CustomerListHandler
+	stages    *contacthttp.Handler
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
+
+func (handler *candidateHandler) ListCustomers(writer http.ResponseWriter, request *http.Request, params api.ListCustomersParams) {
+	handler.customers.ListCustomers(writer, request, params)
+}
 
 func (handler *candidateHandler) ListStages(writer http.ResponseWriter, request *http.Request) {
 	handler.stages.ListStages(writer, request)
@@ -83,7 +88,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	candidate := &candidateHandler{Handler: authHandler, stages: stageHandler}
+	customerHandler, err := contacthttp.NewCustomerListHandler(contactapp.NewCustomerListService(
+		uow, contactstore.NewCustomerQueryRepository(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate := &candidateHandler{Handler: authHandler, customers: customerHandler, stages: stageHandler}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	handler, err := newAPIHandler(logger, authHandler, candidate)
 	if err != nil {
