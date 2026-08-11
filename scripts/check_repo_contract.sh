@@ -955,9 +955,9 @@ verify_index_sha256 docs/execution/slices/P2-16.md \
 verify_index_sha256 docs/evidence/slices/P2-16-stage-handler-tests.md \
   0a69becbba6446898f62ada1815b9f29d73d869fd18f12467f637c0ccf07d70b
 verify_index_sha256 docs/execution/slices/P2-17.md \
-  34d82dccfc3353bdbf9e8b91a652c34cd5e5f19d9d938ab8c4043ccd03770791
+  e264c335226ac1b883c9d0c02098521a31ad3742c8e7649f5c0ae99136982adc
 verify_index_sha256 docs/evidence/slices/P2-17-stages-ui.md \
-  3a464fb7681e7d5ce944c84f46b0633f188cc7b554d1fc7988f280101403e79e
+  cb4a8f7a56f225534c87578ede5e2c5eb3f52841981e2b7cc013e52bd24edcd0
 verify_index_sha256 web/src/stages.ts \
   3c161326e176da892546b860d027bd86aca5743ab3c680666f4697645030569b
 verify_index_sha256 web/src/stages.test.ts \

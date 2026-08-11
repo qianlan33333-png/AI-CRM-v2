@@ -39,7 +39,9 @@
   早返回之前，保持 React hook 顺序。
 - `infra_induced=1`：Terra Max 三次 clean 调度均无工具产出，Sol 在
   同一冻结范围内接管。
-- `scope_induced=0`。
+- `scope_induced=1`：首次冻结卡把 P2-16 执行卡误列为 implementation
+  input，slice-input 门拒绝；改为允许的详细设计与冻结 OpenAPI，
+  未扩宽检查器。
 - `verification_induced=1`：预读 P2-18 时首次使用不存在的 shell glob，
   zsh 在读取前 fail-closed；改为对存在目录执行 `rg`，未修改文件。
 
