@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	"github.com/riverqueue/river"
@@ -11,6 +12,17 @@ import (
 
 type schedulerDispatchWorker struct {
 	river.WorkerDefaults[eventdispatcher.DispatchArgs]
+}
+
+type schedulerPartitionWorker struct {
+	river.WorkerDefaults[contactworker.EventPartitionMaintenanceArgs]
+}
+
+func (*schedulerPartitionWorker) Work(
+	context.Context,
+	*river.Job[contactworker.EventPartitionMaintenanceArgs],
+) error {
+	return nil
 }
 
 func (*schedulerDispatchWorker) Work(context.Context, *river.Job[eventdispatcher.DispatchArgs]) error {
@@ -22,11 +34,14 @@ func TestSchedulerPlanRegistersEventDispatcher(t *testing.T) {
 	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueEvent, &schedulerDispatchWorker{}); err != nil {
 		t.Fatal(err)
 	}
+	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, &schedulerPartitionWorker{}); err != nil {
+		t.Fatal(err)
+	}
 	plan, err := schedulerPlan(workers)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if jobs := plan.Jobs(); len(jobs) != 1 {
-		t.Fatalf("schedulerPlan() jobs = %d, want 1", len(jobs))
+	if jobs := plan.Jobs(); len(jobs) != 2 {
+		t.Fatalf("schedulerPlan() jobs = %d, want 2", len(jobs))
 	}
 }

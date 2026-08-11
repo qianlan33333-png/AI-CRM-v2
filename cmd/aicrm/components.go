@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
@@ -58,6 +61,20 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	queues := config.Worker.Queues
 	workers := platformjobqueue.NewWorkerRegistry()
+	partitionMaintainer, err := contactstore.NewEventPartitionMaintainer(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	partitionWorker, err := contactworker.NewEventPartitionMaintenanceWorker(partitionMaintainer, time.Now)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, partitionWorker); err != nil {
+		pool.Close()
+		return nil, err
+	}
 	router, err := eventdispatcher.NewRouter()
 	if err != nil {
 		pool.Close()

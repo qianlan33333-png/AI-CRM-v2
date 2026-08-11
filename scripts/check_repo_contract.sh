@@ -42,6 +42,7 @@ required=(
   migrations/00003_settings.sql
   migrations/00004_auth.sql
   migrations/00005_contact_core.sql
+  migrations/00006_customer_events.sql
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -127,6 +128,17 @@ required=(
   docs/evidence/slices/P3-C01D-customer-handler-tests.md
   docs/execution/slices/P3-C04.md
   docs/evidence/slices/P3-C04-customer-list-ui.md
+  acceptance/fixtures/cmd/validate-database-url/main.go
+  acceptance/contact/doc.go
+  acceptance/contact/partition_integration_test.go
+  internal/contact/store/event_partitions.go
+  internal/contact/store/event_partitions_test.go
+  internal/contact/store/queries/event_partitions.sql
+  internal/contact/store/generated/event_partitions.sql.go
+  internal/contact/worker/event_partitions.go
+  internal/contact/worker/event_partitions_test.go
+  docs/execution/slices/P3-C03.md
+  docs/evidence/slices/P3-C03-partition-worker-tests.md
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
@@ -418,6 +430,17 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C01D-customer-handler-tests.md
 100644 docs/execution/slices/P3-C04.md
 100644 docs/evidence/slices/P3-C04-customer-list-ui.md
+100644 acceptance/fixtures/cmd/validate-database-url/main.go
+100644 acceptance/contact/doc.go
+100644 acceptance/contact/partition_integration_test.go
+100644 internal/contact/store/event_partitions.go
+100644 internal/contact/store/event_partitions_test.go
+100644 internal/contact/store/queries/event_partitions.sql
+100644 internal/contact/store/generated/event_partitions.sql.go
+100644 internal/contact/worker/event_partitions.go
+100644 internal/contact/worker/event_partitions_test.go
+100644 docs/execution/slices/P3-C03.md
+100644 docs/evidence/slices/P3-C03-partition-worker-tests.md
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
@@ -581,6 +604,7 @@ done <<'EOF'
 100644 migrations/00003_settings.sql
 100644 migrations/00004_auth.sql
 100644 migrations/00005_contact_core.sql
+100644 migrations/00006_customer_events.sql
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -624,7 +648,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  2b636411be5860bd3cbc8ef3e32f1c10077aef009236516666cc6e3a2530378d
+  8eaf7bf1874dd2b473f92e27b56aa0847adb9fe7d3d7f544047bdcc549e15be8
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -640,7 +664,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   9a24d8179fb39749b3f8fbde0868db5868206073c2483f95f2a385fa794c678b
 verify_index_sha256 .github/workflows/application-go.yml \
-  8eddd9766a11874d1b362c26d12e775f4eebe056ab9a661e99e26738387fa2e1
+  43545b46490702ccd0bc9e61631fd5508bd100b9e27a802bc8203b6513228ea5
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -652,11 +676,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  36244bcf4bbca4126e09a9e1543b98ed0295d8ccf9de09b00d3ff28638c624e6
+  66f38ea0aedc4bcc14b9467c3a9789d847bd41163074909f7040377401493259
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  eb49819599e72d21787fa33893c6bab5be4421fabc042944a68c8cb477725d50
+  e164e58ce171f9855a9f61d88d7e30cbae03380148ed01e75dfd245b32b73085
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -788,9 +812,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  cc18696d260c1a3b4dcc481d29f2d3bcf4463ccc10aa06adb32e026f5694bc2c
+  cd2309ae35f8a0d78d003d7fd5ccb34221cd86802b0975666d4f7835da0cefad
 verify_index_sha256 docs/spec/SHA256SUMS \
-  721cf6871b2e28a363ca3b379880cbc82b352313e2d7162fd76499d5ac274567
+  48fc11fb5646fa771a05ef9eb224e983c8c501e29367a4e2ecd5e458c5c9faef
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -872,7 +896,7 @@ verify_index_sha256 docs/execution/slices/P3-C00.md \
 verify_index_sha256 acceptance/p3c01a/doc.go \
   14f8d1d61ffae5abfab18d28fa2edc80ab11f36370e0856a8e2d12d6fd19d0a6
 verify_index_sha256 acceptance/p3c01a/schema_integration_test.go \
-  01de0a611897eff7be6fe046b97213b85d4a712ac9f728e251377dfcc5645bf9
+  7b040fdcddea50f19a1646e3d3d38a998556c8fe5d40399b257cbcadb233cefd
 verify_index_sha256 internal/contact/acceptance/doc.go \
   931ad07bd4ce95e1a08ca59a322bcca893f3c120fae2f81c71a0b5c53626d5f9
 verify_index_sha256 internal/contact/acceptance/schema_contract_test.go \
@@ -893,6 +917,30 @@ verify_index_sha256 docs/execution/slices/P3-C04.md \
   5c413a9ff757d5819a1030c5c1e9993772db8e0c6920ecd41788f09ac5fa90a9
 verify_index_sha256 docs/evidence/slices/P3-C04-customer-list-ui.md \
   66ab535cf46c4935057f0f5a6b0787c3b55ac8c1d351f82aaa1839ddd5519e97
+verify_index_sha256 migrations/00006_customer_events.sql \
+  c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
+verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
+  db77a60e15d2f8e6b17a329f7c5973d00377b70e168f08c868c044acc7e6bb24
+verify_index_sha256 acceptance/contact/doc.go \
+  30428d601628ce702889a782f74da6ccf56a120b5c12022e3e7a5adca5ae2d05
+verify_index_sha256 acceptance/contact/partition_integration_test.go \
+  bec8125543430b6a4838ddc460ea7dbf39f05f0a12aff7e8deab51fe6f9237b4
+verify_index_sha256 internal/contact/store/event_partitions.go \
+  e5985879bc4dc0cff1681eb4a9101d00e1d3e77e55188db197bc7c663c0fbf4a
+verify_index_sha256 internal/contact/store/event_partitions_test.go \
+  2e03bbb83f3ee0fb816713635dc65bca0ba39643b8b86ad949c25ab933ae9a87
+verify_index_sha256 internal/contact/store/queries/event_partitions.sql \
+  04ffbec296243e9a210c517b012cf0323799f3f6916397350cd5d88bfabc678a
+verify_index_sha256 internal/contact/store/generated/event_partitions.sql.go \
+  50e45dddb59a803cd6088f0ae2b7171a987b46e179fe7e76199998ee70376941
+verify_index_sha256 internal/contact/worker/event_partitions.go \
+  10baa570ae166a6af519a1816b2793dedcc8c6f1107b21a69dd36081ee3cfc41
+verify_index_sha256 internal/contact/worker/event_partitions_test.go \
+  3227e6707531282ba1520000bdd565d41a4b479f6d4775af12155df1494b9718
+verify_index_sha256 docs/execution/slices/P3-C03.md \
+  8f4cde8b2d43d4e96d531734f8cdc4202c9f11f66b33f650664a42ec6c103dec
+verify_index_sha256 docs/evidence/slices/P3-C03-partition-worker-tests.md \
+  56b9ce2aaa579594d3b937b88a0b03994183c2d40e7690135b3dc0684293e1ec
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -910,13 +958,13 @@ verify_index_sha256 internal/platform/store/uow_test.go \
 verify_index_sha256 cmd/aicrm/main.go \
   52fe62cdda6653e597ca338c4cb9a47605b47fb15c21410f6156f6d05691d180
 verify_index_sha256 cmd/aicrm/components.go \
-  139044324dd6cae717f29629fae7b977e4ef573bc580e7c220d21811ad96b9bf
+  70e2c4ef4073da4f5f562b4966e4db42998cc8e11c16e34dcdae30356f70704f
 verify_index_sha256 cmd/aicrm/components_test.go \
   b81bf5c6370a3e89dbd99308d7ad31cdb03e716e76c77f412544ab32318a56e0
 verify_index_sha256 cmd/aicrm/scheduler.go \
-  d7936cbc8fc7b0e82fde8d681d71547ba73f3a63ff2e462933651fd29a96bccd
+  b31c60bfd11ee2a70546d6bfe0420e7a957d1baefa3a6ecb48a6d8013ad41c76
 verify_index_sha256 cmd/aicrm/scheduler_test.go \
-  7ad730aa9e418e96c1002571a8b936a6e87c1a1b8ff62137fbab6996c3368ef9
+  775381cd93cdcc96307b947e57541529ebca147dfedd524673c7bc54e090d15a
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
@@ -1104,7 +1152,7 @@ verify_index_sha256 internal/contact/http/handler_test.go \
 verify_index_sha256 acceptance/p2s16/doc.go \
   990e3e9960d3f5c6433c5924b58883df7dc6cbec8593d0dee61098d207004fff
 verify_index_sha256 acceptance/p2s16/csrf_integration_test.go \
-  8a85de22d2a74aeb057af8a470d06f4e50a051f529494f0f35b8f44b0df7e43f
+  3091eb04593e0277076ca5aaa74f44023d2b0cbe591e0ceba9e4b2067f046bba
 verify_index_sha256 acceptance/p2s16/snapshot.go \
   f2ca9b322bc23e4738891fc8e8a7bb840b362852d2d7f8deb381236744b6d852
 verify_index_sha256 acceptance/p2s16/snapshot_test.go \
@@ -1128,7 +1176,7 @@ verify_index_sha256 internal/contact/store/generated/customers.sql.go \
 verify_index_sha256 internal/contact/store/generated/models.go \
   9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
-  4010d8205aa7a3c8df4001724f91960271f3dcaa8c21f85b18cbe920b1c4f61f
+  7329114ca3ba907cac9cf82b7244025ebc84c20936e8e5af2ea6b558f0700bb8
 verify_index_sha256 internal/contact/store/generated/stages.sql.go \
   24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
 verify_index_sha256 internal/contact/store/repository.go \
@@ -1172,7 +1220,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  eb5d43e35d24184504bd3cd98980f28644c07b16f83cef05bf3471e1bb394282
+  dcab6973d1da46da412f7260c05ae60701324454a6e1573e3a11088b6360a627
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1975,6 +2023,32 @@ first_docker_line="$(grep -nF 'docker compose' <<<"$p2s18_staging" | head -1 | c
   fail "P2-S18 staging authorization must fail before the first Docker call"
 ! grep -Eq '(^|[;&|[:space:]])(goose|migrate)([;&|[:space:]]|$)' <<<"$p2s18_staging" ||
   fail "P2-S18 staging script must not run migrations"
+
+p3c03_make="$(git show :Makefile)"
+[[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||
+  fail "P3-C03 migration acceptance target must be declared exactly once"
+grep -Fq '$(GO) test -race -count=1 -timeout=45s ./acceptance/contact -args -database-url "$$P3C03_TEST_DATABASE_URL"' <<<"$p3c03_make" ||
+  fail "P3-C03 target must run the real PostgreSQL partition acceptance"
+
+p3c03_workflow="$(git show :.github/workflows/application-go.yml)"
+grep -Fqx '          P3C03_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c03-migration-acceptance' <<<"$p3c03_workflow" ||
+  fail "application workflow must run P3-C03 after migration up/down/up"
+
+p3c03_migration="$(git show :migrations/00006_customer_events.sql)"
+grep -Fq 'CREATE FUNCTION public.aicrm_ensure_customer_event_partitions(' <<<"$p3c03_migration" ||
+  fail "P3-C03 partition maintainer must be created in public explicitly"
+grep -Fq 'BEFORE UPDATE OR DELETE ON public.customer_events' <<<"$p3c03_migration" ||
+  fail "P3-C03 customer timeline must remain database-enforced append-only"
+! grep -Eq 'PARTITION[[:space:]]+OF[[:space:]]+public[.]customer_events[[:space:]]+DEFAULT' <<<"$p3c03_migration" ||
+  fail "P3-C03 must not add an unbounded default timeline partition"
+
+p3c03_scheduler="$(git show :cmd/aicrm/scheduler.go)"
+grep -Fq 'ID:         "contact.customer_events.partitions"' <<<"$p3c03_scheduler" ||
+  fail "P3-C03 periodic partition job ID drifted"
+grep -Fq 'Queue:      platformjobqueue.QueueHeavy' <<<"$p3c03_scheduler" ||
+  fail "P3-C03 partition maintenance must remain isolated on heavy"
+grep -Fq 'RunOnStart: true' <<<"$p3c03_scheduler" ||
+  fail "P3-C03 partition maintenance must run when the worker starts"
 
 scripts/scan_sensitive_paths.sh
 

@@ -78,7 +78,7 @@ func (uow fixtureUoW) Within(ctx context.Context, callback func(context.Context)
 		if err != nil {
 			return err
 		}
-		if _, err = tx.Exec(txCtx, `SET LOCAL search_path TO acceptance_fixtures, public`); err != nil {
+		if _, err = tx.Exec(txCtx, `SET LOCAL search_path TO acceptance_fixtures, pg_catalog`); err != nil {
 			return err
 		}
 		return callback(txCtx)

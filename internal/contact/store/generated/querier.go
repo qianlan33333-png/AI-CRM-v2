@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	EnsureCustomerEventPartitions(ctx context.Context, arg EnsureCustomerEventPartitionsParams) error
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
 	ListCustomerIDsBounded(ctx context.Context, arg ListCustomerIDsBoundedParams) ([]int64, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
