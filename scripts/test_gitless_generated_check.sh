@@ -28,6 +28,17 @@ valid_fixture="$(make_fixture valid)"
 if [[ -f "$valid_fixture/cmd/aicrm/main.go" ]]; then
   (cd "$valid_fixture" && acceptance/p0s01/static_contract.sh >/dev/null) ||
     fail "P0-S01 static contract failed in a valid gitless source archive"
+  scanner_bin="$test_root/scanner-bin"
+  mkdir -p "$scanner_bin"
+  printf '%s\n' '#!/bin/sh' 'exit 2' >"$scanner_bin/grep"
+  chmod 755 "$scanner_bin/grep"
+  scanner_log="$test_root/scanner-failure.log"
+  if (cd "$valid_fixture" &&
+    PATH="$scanner_bin:$PATH" acceptance/p0s01/static_contract.sh >"$scanner_log" 2>&1); then
+    fail "P0-S01 static contract accepted a failed scanner"
+  fi
+  grep -Fq 'p0-s01-static: scanner failed while checking' "$scanner_log" ||
+    fail "P0-S01 static contract did not report the scanner failure"
   (cd "$valid_fixture" && acceptance/p0s01/process_blackbox.sh >/dev/null) ||
     fail "P0-S01 process contract failed in a valid gitless source archive"
 else

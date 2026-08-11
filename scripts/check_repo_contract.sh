@@ -549,7 +549,7 @@ verify_index_sha256 docs/execution/slices/M0-7.md \
 verify_index_sha256 scripts/check_generated_sources.sh \
   c01955e3de777ee399d396d96e4754651bc5bbf94938f389514b0636b09eeec2
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
-  88ca0a11cd975e488dcc408b1c50cf6b575d367926a7c633c94a5e42f634612e
+  a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
   d23614469ab3060484805bd4b772f0d5d8cb19c28ed3779f576a17bc6a7fcd45
 verify_index_sha256 scripts/test_orval_generated_check.sh \
@@ -781,7 +781,7 @@ verify_index_sha256 internal/config/schema_test.go \
 verify_index_sha256 acceptance/p0s01/process_blackbox.sh \
   dca96d9df61c3c67e2254d59e22c300850b58841d93eca70b3f1743df294ce6b
 verify_index_sha256 acceptance/p0s01/static_contract.sh \
-  b28b4d45732651b879b82144597a70677f1bd83524f4fb2c62f2a32da8358232
+  da67ff4f8a2e96b649cfe7940d9c0b96f1b11463f39e5152b8796073200d325a
 verify_index_sha256 acceptance/p2s04/doc.go \
   475ea9f04231b77cb8a7400395055f75f9bb80711729b8203393dfba0e817d3a
 verify_index_sha256 acceptance/p2s04/queue_isolation_integration_test.go \
@@ -897,7 +897,7 @@ verify_index_sha256 docs/execution/slices/P2-13.md \
 verify_index_sha256 docs/evidence/slices/P2-13-auth-ui.md \
   d647a78aa84bddbeb6416cd2b92ed6dc5548b1c3e6e0d357153f2868e2000c3f
 verify_index_sha256 docs/execution/slices/P2-14.md \
-  482126c56d257ffeb832413cc3cdb5ba7d22ffa8b43f53c764b889b06c1ec72a
+  48c6fa497cb10990fd3198843dd202c5d1b6acb704ae6da5a63bb747c43f852c
 verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
   54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
 verify_index_sha256 internal/contact/store/queries/stages.sql \
