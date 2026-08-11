@@ -932,7 +932,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 4
+    verification_induced_correction_count: 2
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -1351,15 +1351,19 @@ slices:
   - slice_id: P2-13
     title: login-permission-sidebar-and-sixty-second-cache
     owner: Codex-Sol
-    status: in_progress
+    status: merged
     base_sha: 551878538f16433d1870ecb27b416ef80734498b
     dependency: P2-12
     branch: slice/p2-13-login-sidebar-permissions
     decision_anchor: EXECUTION_PLAN_3_1_D_DESIGN_8_1_P2_09_P2_10
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/111
+    pr_head_sha: e9053e0fdcbe0a7c30d595e072910ef889c3c67a
+    merge_sha: 407a918d97929eef2b004188437053aa3199ab57
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31450916454
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31450916446
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31450916451
     delegated_tasks:
       - task_id: p2_13_auth_ui
         executor: gpt-5.6-terra
@@ -1388,10 +1392,51 @@ slices:
     slice_induced_correction_count: 2
     infra_induced_correction_count: 2
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 2
+    verification_induced_correction_count: 4
     external_gates:
       - REAL_WECOM_OAUTH_PENDING_EXTERNAL_GATE
       - STAGING_BROWSER_LOGIN_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-14
+    title: stages-store-and-sqlc
+    owner: Codex-Sol
+    status: pr_open
+    base_sha: 407a918d97929eef2b004188437053aa3199ab57
+    dependency: P2-13
+    branch: slice/p2-14-stages-store-sqlc
+    decision_anchor: EXECUTION_PLAN_3_1_E_DESIGN_2_2_TABLE_OWNERSHIP
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/112
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks:
+      - task_id: p2_14_stages_sqlc
+        executor: gpt-5.6-terra
+        reasoning: max
+        allowed_path: internal/contact/store/queries/stages.sql
+        base_sha: f2c620193ab4fa8b2e686a05ddd2f70b20113daf
+        delegated_head_sha: bf0428aa92207f316511e099407ba581ea5d4ecc
+        correction_count: 0
+        file_manifest_sha256: 2280623933483d2df3c31637151d75272a0c9904b9cc962f3789d2e7abd2d854
+        diff_sha256: d9f8f1e647e2bc39ca3dbef86486199e75a575ee077417de779924ce0c6ef613
+        receipt: docs/evidence/slices/P2-14-stages-sqlc.md
+    tests:
+      - LOCAL_Terra_hash_receipt_independent_recompute_PASS
+      - LOCAL_sqlc_vet_and_double_generation_no_diff_PASS
+      - LOCAL_official_PostgreSQL16_14_55432_goose_up_down_up_PASS
+      - LOCAL_real_PostgreSQL16_transaction_bound_order_config_rename_missing_expired_context_rollback_PASS
+      - LOCAL_final_HEAD_make_ci_go_query_plan_bound_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_45_tests_PASS
+      - LOCAL_repo_contract_full_negative_suite_second_run_PASS
+      - LOCAL_gitleaks_168_commits_config_sensitive_paths_bundle_PASS
+    handwritten_scope: 7_files_204_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 6
+    external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED

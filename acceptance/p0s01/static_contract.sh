@@ -24,6 +24,29 @@ for path in "${implementation_files[@]}" internal/platform/runtime/runtime_test.
   }
 done
 
+reject_matches() {
+  local label="$1" mode="$2" pattern="$3" output status=0
+  shift 3
+  if [[ "$mode" = insensitive ]]; then
+    output="$(grep -Ein -- "$pattern" "$@" 2>&1)" || status=$?
+  else
+    output="$(grep -En -- "$pattern" "$@" 2>&1)" || status=$?
+  fi
+  case "$status" in
+    0)
+      printf '%s\n' "$output" >&2
+      echo "p0-s01-static: $label" >&2
+      exit 1
+      ;;
+    1) ;;
+    *)
+      printf '%s\n' "$output" >&2
+      echo "p0-s01-static: scanner failed while checking $label" >&2
+      exit 2
+      ;;
+  esac
+}
+
 forbidden='"net"|"net/http"|github\.com/jackc/pgx|github\.com/riverqueue/river|os\.Getenv|time\.(NewTicker|Tick|AfterFunc)|log\.(Fatal|Fatalf|Fatalln)'
 runtime_contract_files=(
   cmd/aicrm/main.go
@@ -31,20 +54,15 @@ runtime_contract_files=(
   internal/platform/runtime/run.go
   internal/platform/runtime/runtime_test.go
 )
-if rg -n "$forbidden" "${runtime_contract_files[@]}"; then
-  echo "p0-s01-static: forbidden dependency or lifecycle escape found" >&2
-  exit 1
-fi
+reject_matches "forbidden dependency or lifecycle escape found" sensitive \
+  "$forbidden" "${runtime_contract_files[@]}"
 composition_escape='os\.Getenv|time\.(NewTicker|Tick|AfterFunc)|log\.(Fatal|Fatalf|Fatalln)'
-if rg -n "$composition_escape" "${implementation_files[@]}" internal/platform/runtime/runtime_test.go; then
-  echo "p0-s01-static: forbidden composition lifecycle escape found" >&2
-  exit 1
-fi
+reject_matches "forbidden composition lifecycle escape found" sensitive \
+  "$composition_escape" "${implementation_files[@]}" internal/platform/runtime/runtime_test.go
 
-if rg -ni '\b(ready|healthy|river initialized)\b' "${implementation_files[@]}"; then
-  echo "p0-s01-static: placeholder makes a readiness claim" >&2
-  exit 1
-fi
+reject_matches "placeholder makes a readiness claim" insensitive \
+  '(^|[^[:alnum:]_])(ready|healthy|river initialized)([^[:alnum:]_]|$)' \
+  "${implementation_files[@]}"
 
 module_path="$(go list -m -f '{{.Path}}')"
 unexpected_dependencies="$(
