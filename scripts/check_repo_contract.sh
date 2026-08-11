@@ -217,6 +217,7 @@ required=(
   docs/evidence/slices/P2-13-auth-ui.md
   docs/execution/slices/P2-14.md
   docs/evidence/slices/P2-14-stages-sqlc.md
+  docs/execution/slices/P2-15.md
   internal/contact/store/queries/stages.sql
   internal/contact/store/generated/db.go
   internal/contact/store/generated/models.go
@@ -460,6 +461,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-13-auth-ui.md
 100644 docs/execution/slices/P2-14.md
 100644 docs/evidence/slices/P2-14-stages-sqlc.md
+100644 docs/execution/slices/P2-15.md
 100644 internal/contact/store/queries/stages.sql
 100644 internal/contact/store/generated/db.go
 100644 internal/contact/store/generated/models.go
@@ -900,6 +902,8 @@ verify_index_sha256 docs/execution/slices/P2-14.md \
   48c6fa497cb10990fd3198843dd202c5d1b6acb704ae6da5a63bb747c43f852c
 verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
   54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
+verify_index_sha256 docs/execution/slices/P2-15.md \
+  bbade5d9040fea9ea909d08adb9a7ee3b449cd07d2d3ee9dfbb1b684885ce7d7
 verify_index_sha256 internal/contact/store/queries/stages.sql \
   0a0ecd3338cabecf50261d114a6036727e29dd87de01019ff7513f8b002162ca
 verify_index_sha256 internal/contact/store/generated/db.go \
@@ -951,7 +955,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a3b2019799748e892ce3d3bcfb6856b02a0f25d35325cffe84072cc6ccbc944c
+  f01401dba9b5440d54bcf9ffff4fc3cb0919550057c1984bfd59d801bfd41e24
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
