@@ -669,8 +669,8 @@ slices:
     pr_head_sha: d75730180fb3c0bbcd54ef637dc50f1fdefdb92b
     merge_sha: 0abf07ebd3ea8f3ac795468df0cd7bbacd21ed9c
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 0
-    infra_induced_correction_count: 0
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 1
   - slice_id: G1-TRIAGE
     title: produce-production-route-triage-candidates
     owner: Codex-Sol
@@ -896,7 +896,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 1
     external_gates:
       - SETTINGS_SECRET_SECURITY_BOUNDARY_NOT_ENTERED
       - PRODUCTION_CONFIGURATION_NOT_READ
@@ -1680,15 +1680,19 @@ slices:
   - slice_id: G2-T03
     title: test-deployment-evidence-and-release-archive-cleanliness
     owner: Codex-Sol
-    status: in_progress
+    status: completed
     base_sha: 05247dd16da571af9fefb081c46eb9facb2ddc38
     dependency: G2-T02
     branch: infra/g2-deployment-evidence
     decision_anchor: USER_STAGING_DEPLOYMENT_AUTHORIZED_2026_08_11
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/119
+    pr_head_sha: a1a87e37fd0cbbc295da876678ce549fc0cb6731
+    merge_sha: 6cbb8fff02ed6a3bd2c10abd95fa5de33220bad4
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31512844912
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31512845065
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31512844911
     delegated_tasks: []
     tests:
       - EXACT_MAIN_05247dd_APPLICATION_WEB_PASS_RUN_31501801845
@@ -1711,6 +1715,34 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED
+  - slice_id: G2-T04
+    title: https-web-edge
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 6cbb8fff02ed6a3bd2c10abd95fa5de33220bad4
+    dependency: G2-T03
+    branch: infra/g2-web-edge
+    decision_anchor: USER_G2_PUBLIC_HOST_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    delegated_tasks: []
+    tests:
+      - LOCAL_EDGE_CONTRACT_POSITIVE_NEGATIVE_PENDING
+      - CADDY_VALIDATE_PENDING
+      - HTTPS_BROWSER_ACCEPTANCE_PENDING_EXTERNAL_GATE
+    handwritten_scope: 5_files_under_P2_cap_tests_docs_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    external_gates:
+      - TEST_SERVER_DEPLOYMENT_AUTHORIZED
+      - PUBLIC_HOST_AA_YOUCANGOGOGO_COM_AUTHORIZED
+      - REAL_WECOM_OAUTH_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
