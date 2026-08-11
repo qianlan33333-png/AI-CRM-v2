@@ -574,6 +574,13 @@ if (cd "$p2s16_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P2-16 slice card receipt drift was accepted"
 fi
 
+p2s17_card_fixture="$(make_fixture p2-17-card-receipt)"
+printf '%s\n' '# P2-17 receipt drift' >>"$p2s17_card_fixture/docs/execution/slices/P2-17.md"
+git -C "$p2s17_card_fixture" add docs/execution/slices/P2-17.md
+if (cd "$p2s17_card_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P2-17 slice card receipt drift was accepted"
+fi
+
 disconnected_p2s14="$(make_fixture disconnected-p2-s14-target)"
 sed -i.bak -E '/^ci-go:/ s/[[:space:]]p2-s14-acceptance([[:space:]]|$)/\1/' "$disconnected_p2s14/Makefile"
 rm -f "$disconnected_p2s14/Makefile.bak"

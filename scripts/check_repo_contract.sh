@@ -221,6 +221,7 @@ required=(
   docs/evidence/slices/P2-15-stage-service-tests.md
   docs/execution/slices/P2-16.md
   docs/evidence/slices/P2-16-stage-handler-tests.md
+  docs/execution/slices/P2-17.md
   internal/auth/port/port.go
   internal/auth/http/authorization_test.go
   internal/contact/http/handler.go
@@ -481,6 +482,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-15-stage-service-tests.md
 100644 docs/execution/slices/P2-16.md
 100644 docs/evidence/slices/P2-16-stage-handler-tests.md
+100644 docs/execution/slices/P2-17.md
 100644 internal/auth/port/port.go
 100644 internal/auth/http/authorization_test.go
 100644 internal/contact/http/handler.go
@@ -942,6 +944,8 @@ verify_index_sha256 docs/execution/slices/P2-16.md \
   7ec39c6175b3eae4a047653d367d4b247276bc558c052bcbfc03d92b0d15e092
 verify_index_sha256 docs/evidence/slices/P2-16-stage-handler-tests.md \
   0a69becbba6446898f62ada1815b9f29d73d869fd18f12467f637c0ccf07d70b
+verify_index_sha256 docs/execution/slices/P2-17.md \
+  34d82dccfc3353bdbf9e8b91a652c34cd5e5f19d9d938ab8c4043ccd03770791
 verify_index_sha256 internal/auth/http/authorization_test.go \
   f7512b38ffec491002262026b971d87dbae994b9e9b374b1ee699c7385aab9fa
 verify_index_sha256 internal/contact/http/handler.go \
@@ -1017,7 +1021,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  7ec847447e33a52e6256dac23cf6dda61570b237833e088d218ac86bb5ea1b0d
+  af202d65dab6a746ed3213bbc33337ebb785824171763026346fd3fefbefdd80
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

@@ -1495,15 +1495,19 @@ slices:
   - slice_id: P2-16
     title: stages-openapi-handler-and-first-real-snapshot
     owner: Codex-Sol
-    status: in_progress
+    status: merged
     base_sha: 7c6a35c799ed55b4ff6e99220300763248a06e8e
     dependency: P2-15
     branch: slice/p2-16-stages-api-snapshot
     decision_anchor: EXECUTION_PLAN_3_1_E_ADR_006_ADR_011_P2_15_STAGE_SERVICE
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/114
+    pr_head_sha: c21baeacd532632735c67d8a3dd43b2cc01aaa2f
+    merge_sha: 9ebd074c68381b2a2a5f8c15ecd1c2cb38a9f45d
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31469860283
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31469860274
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31469860275
     delegated_tasks:
       - task_id: p2_16_handler_tests_r2
         executor: gpt-5.6-terra
@@ -1532,7 +1536,31 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 4
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 3
+    verification_induced_correction_count: 5
+    external_gates:
+      - STAGING_BROWSER_STAGES_CRUD_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - DEPLOYMENT_NOT_EXECUTED
+  - slice_id: P2-17
+    title: stages-page-and-orval-client-integration
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 9ebd074c68381b2a2a5f8c15ecd1c2cb38a9f45d
+    dependency: P2-16
+    branch: slice/p2-17-stages-ui
+    decision_anchor: EXECUTION_PLAN_3_1_E_P2_10_P2_13_P2_16
+    pr_url: PENDING
+    pr_head_sha: PENDING
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING
+    delegated_tasks: []
+    tests: []
+    handwritten_scope: PENDING
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
     external_gates:
       - STAGING_BROWSER_STAGES_CRUD_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED
