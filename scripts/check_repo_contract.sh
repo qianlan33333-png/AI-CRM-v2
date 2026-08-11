@@ -266,6 +266,7 @@ required=(
   scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
+  scripts/verify_repo_receipts.pl
   scripts/generated-sources.sha256
   scripts/scan_sensitive_paths.sh
   scripts/test_gitleaks_config.sh
@@ -301,26 +302,12 @@ required=(
 
 for file_path in "${required[@]}"; do
   [[ -f "$file_path" ]] || fail "missing required file: $file_path"
-  [[ "$(git ls-files -s -- "$file_path" | wc -l | tr -d ' ')" = "1" ]] ||
-    fail "required file is missing or has an ambiguous index entry: $file_path"
-  index_mode="$(git ls-files -s -- "$file_path" | awk '{print $1}')"
-  case "$index_mode" in
-    100644|100755) ;;
-    *) fail "required file_path must be a regular tracked file: $file_path (mode $index_mode)" ;;
-  esac
 done
+scripts/verify_repo_receipts.pl required "${required[@]}"
 
-verify_index_mode() {
-  local file_path="$1"
-  local expected="$2"
-  local actual
-  actual="$(git ls-files -s -- "$file_path" | awk 'NR == 1 { print $1 }')"
-  [[ "$actual" = "$expected" ]] ||
-    fail "pinned repository mode drifted: $file_path ($actual)"
-}
-
+mode_arguments=()
 while IFS=' ' read -r expected file_path; do
-  verify_index_mode "$file_path" "$expected"
+  mode_arguments+=("$expected" "$file_path")
 done <<'EOF'
 100644 Makefile
 100644 CONTRIBUTING.md
@@ -338,6 +325,7 @@ done <<'EOF'
 100644 web/src/api/generated/health.ts
 100644 .github/workflows/application-go.yml
 100755 scripts/check_repo_contract.sh
+100755 scripts/verify_repo_receipts.pl
 100644 scripts/check_arch_imports.go
 100755 scripts/test_arch_imports.sh
 100644 scripts/ownership/main.go
@@ -572,14 +560,13 @@ done <<'EOF'
 100644 docs/spec/AI-CRM-v2-重构详细设计.md
 100644 docs/spec/SHA256SUMS
 EOF
+scripts/verify_repo_receipts.pl modes "${mode_arguments[@]}"
 
+receipt_arguments=()
 verify_index_sha256() {
   local file_path="$1"
   local expected="$2"
-  local actual
-  actual="$(git show ":$file_path" | sha256sum | awk '{print $1}')"
-  [[ "$actual" = "$expected" ]] ||
-    fail "pinned repository content drifted: $file_path ($actual)"
+  receipt_arguments+=("$expected" "$file_path")
 }
 
 verify_index_sha256 Makefile \
@@ -1077,7 +1064,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  56d1b6564389f4ff0d1bceae2af675bf337c6aae36d80611a24077d284c90f57
+  fc966716f0ea2373939e5c5e120383898bf2f2432bf17835fd9697de561cac3e
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1106,6 +1093,10 @@ verify_index_sha256 acceptance/p0s04/test_static_contract.sh \
   8b53e98baeba0c106a489ad3ea9e3b65d618433a3e740b4109ec032e0dd6b97e
 verify_index_sha256 docs/execution/slices/P0-S04.md \
   bb8cc8f7ff0ef4d6e76c8c124bafc661f562a230ec25826b8318a82311281608
+verify_index_sha256 scripts/verify_repo_receipts.pl \
+  d28a528cfc1aa8d8a5c6fa62b652699059bb632e8640fbd868ba0e3967881e27
+
+scripts/verify_repo_receipts.pl receipts "${receipt_arguments[@]}"
 
 makefile="$(git show ':Makefile')"; alternate="$(find . -maxdepth 1 \( -name GNUmakefile -o -name makefile \) -print -quit)"; [[ -z "$alternate" ]] || fail "alternate Make entrypoint is forbidden: ${alternate#./}"
 ! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
