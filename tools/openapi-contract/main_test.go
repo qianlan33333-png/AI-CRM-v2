@@ -108,6 +108,41 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/stages/{stage_id}").Patch.Parameters = nil
 			reject(t, doc, ids)
 		},
+		"missing contact evidence": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Paths.Value("/api/v1/customers").Get.Extensions, "x-p3-decision-evidence")
+			reject(t, doc, ids)
+		},
+		"unknown contact legacy link": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/tags").Get.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-9999"}
+			reject(t, doc, ids)
+		},
+		"offset pagination reintroduced": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"
+			reject(t, doc, ids)
+		},
+		"estimated total removed": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["CustomerListResponse"].Value.Required = []string{"items", "next_cursor", "total", "watermark"}
+			reject(t, doc, ids)
+		},
+		"stage smuggled into profile update": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["CustomerUpdateRequest"].Value.Properties["stage_id"] = doc.Components.Schemas["HealthResponse"]
+			reject(t, doc, ids)
+		},
+		"event actor became optional": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["CustomerEvent"].Value.Required = []string{"id", "customer_id", "event_type", "payload", "occurred_at"}
+			reject(t, doc, ids)
+		},
+		"customer tag write without csrf": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/customers/{customer_id}/tags/{tag_id}").Put.Parameters = nil
+			reject(t, doc, ids)
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, test)

@@ -38,8 +38,8 @@ execution_policy:
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
-current_phase: G2
-current_phase_status: G2_BACKEND_DEPLOYED_BROWSER_GATE_PENDING
+current_phase: P3
+current_phase_status: P3_CONTACT_CONTRACT_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -932,7 +932,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 2
+    verification_induced_correction_count: 3
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -1753,6 +1753,34 @@ slices:
       - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
       - G2_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
       - REAL_WECOM_OAUTH_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C00
+    title: freeze-contact-openapi-and-public-port
+    owner: Codex-Sol
+    status: ready_for_pr
+    base_sha: 3ba8e27f4a26168bce4abd97b2729bc5bed26f97
+    dependency: G2-T04_CODE_COMPLETE
+    branch: slice/p3-c00-contact-contract
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    delegated_tasks: []
+    tests:
+      - OPENAPI_CONTACT_CONTRACT_FOCUSED_PASS
+      - P3_C00_ACCEPTANCE_PASS
+      - OAPI_CODEGEN_AND_ORVAL_TWICE_NO_DIFF_PASS
+    handwritten_scope: under_P3_cap_tests_generated_docs_ledger_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:

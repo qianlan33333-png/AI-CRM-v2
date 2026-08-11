@@ -42,6 +42,9 @@ type CustomerID = int64
 // StageID defines model for StageID.
 type StageID = int64
 
+// TagID defines model for TagID.
+type TagID = int64
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Process liveness

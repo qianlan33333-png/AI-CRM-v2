@@ -25,6 +25,17 @@ var p2StageOperations = map[string]bool{
 	"listStages": true, "createStage": true, "renameStage": true,
 }
 
+var p3ContactOperations = map[string]bool{
+	"listTags": true, "setCustomerStage": true,
+	"addCustomerTag": true, "removeCustomerTag": true,
+}
+
+var contactOperations = map[string]bool{
+	"listCustomers": true, "getCustomer": true, "updateCustomer": true,
+	"listCustomerEvents": true, "listTags": true, "setCustomerStage": true,
+	"addCustomerTag": true, "removeCustomerTag": true,
+}
+
 type authorizationContract struct {
 	capability string
 	scopes     map[string]string
@@ -44,10 +55,15 @@ var authorizationContracts = map[string]authorizationContract{
 	"listStages":             {"stages.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
 	"createStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
 	"renameStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listTags":               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
+	"setCustomerStage":       {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"addCustomerTag":         {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"removeCustomerTag":      {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
 const p2StageDecisionEvidence = "P2-16-2026-08-11"
+const p3ContactDecisionEvidence = "P3-C00-2026-08-12"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -61,7 +77,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=14 p2_stage_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -107,14 +123,14 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if len(doc.Security) == 0 {
 		return errors.New("business API lacks default security")
 	}
-	seenP1, seenP2, links := map[string]bool{}, map[string]bool{}, 0
+	seenP1, seenP2, seenP3, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] ||
-				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID]) {
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3[op.OperationID] ||
+				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] && !p3ContactOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -137,11 +153,31 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					}
 					links++
 				}
-			} else {
+			} else if p2StageOperations[op.OperationID] {
 				seenP2[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p2-decision-evidence"].(string)
 				if !ok || evidence != p2StageDecisionEvidence {
 					return fmt.Errorf("%s has missing or forged P2 stage evidence", op.OperationID)
+				}
+			} else {
+				seenP3[op.OperationID] = true
+				if ids, ok := op.Extensions["x-legacy-mapping-ids"]; ok {
+					legacyIDs, err := stringList(ids)
+					if err != nil || len(legacyIDs) == 0 {
+						return fmt.Errorf("%s has invalid legacy links", op.OperationID)
+					}
+					for _, id := range legacyIDs {
+						if !known[id] {
+							return fmt.Errorf("%s links unknown mapping %s", op.OperationID, id)
+						}
+						links++
+					}
+				}
+			}
+			if contactOperations[op.OperationID] {
+				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
+				if !ok || evidence != p3ContactDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P3 contact evidence", op.OperationID)
 				}
 			}
 			contract := authorizationContracts[op.OperationID]
@@ -158,8 +194,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || links != 14 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d links=%d", len(seenP1), len(seenP2), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3) != 4 || links != 16 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d links=%d", len(seenP1), len(seenP2), len(seenP3), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -169,6 +205,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p2StageOperations {
 		if !seenP2[id] {
 			return fmt.Errorf("missing P2 stage operation: %s", id)
+		}
+	}
+	for id := range p3ContactOperations {
+		if !seenP3[id] {
+			return fmt.Errorf("missing P3 contact operation: %s", id)
 		}
 	}
 	customer := doc.Components.Schemas["Customer"]
@@ -197,6 +238,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 		return err
 	}
 	if err := validateStageContract(doc); err != nil {
+		return err
+	}
+	if err := validateContactContract(doc); err != nil {
 		return err
 	}
 	return nil
@@ -256,6 +300,87 @@ func validateStageContract(doc *openapi3.T) error {
 	if stages.Post.Responses.Value("201") == nil || stage.Patch.Responses.Value("200") == nil ||
 		stage.Patch.Responses.Value("404") == nil {
 		return errors.New("P2 stage success or not-found responses drifted")
+	}
+	return nil
+}
+
+func validateContactContract(doc *openapi3.T) error {
+	customers := doc.Paths.Value("/api/v1/customers")
+	detail := doc.Paths.Value("/api/v1/customers/{customer_id}")
+	events := doc.Paths.Value("/api/v1/customers/{customer_id}/events")
+	stage := doc.Paths.Value("/api/v1/customers/{customer_id}/stage")
+	tags := doc.Paths.Value("/api/v1/customers/{customer_id}/tags/{tag_id}")
+	catalog := doc.Paths.Value("/api/v1/tags")
+	if customers == nil || customers.Get == nil || detail == nil || detail.Get == nil || detail.Patch == nil ||
+		events == nil || events.Get == nil || stage == nil || stage.Put == nil ||
+		tags == nil || tags.Put == nil || tags.Delete == nil || catalog == nil || catalog.Get == nil {
+		return errors.New("P3 contact operations are incomplete")
+	}
+
+	wantFilters := []string{
+		"added_after", "added_before", "channel_id", "cursor", "is_deleted", "keyword", "last_interact_after",
+		"last_interact_before", "limit", "owner_staff_id", "stage_id", "tag_id",
+	}
+	gotFilters := make([]string, 0, len(customers.Get.Parameters))
+	for _, ref := range customers.Get.Parameters {
+		if ref == nil || ref.Value == nil || ref.Value.In != "query" {
+			return errors.New("listCustomers has invalid query parameter")
+		}
+		if ref.Value.Name == "offset" {
+			return errors.New("listCustomers must not expose offset pagination")
+		}
+		gotFilters = append(gotFilters, ref.Value.Name)
+	}
+	sort.Strings(gotFilters)
+	if fmt.Sprint(gotFilters) != fmt.Sprint(wantFilters) {
+		return fmt.Errorf("listCustomers filters=%v", gotFilters)
+	}
+
+	listResponse := doc.Components.Schemas["CustomerListResponse"]
+	if listResponse == nil || listResponse.Value == nil {
+		return errors.New("CustomerListResponse schema missing")
+	}
+	required := append([]string(nil), listResponse.Value.Required...)
+	sort.Strings(required)
+	wantRequired := []string{"items", "next_cursor", "total", "total_is_estimate", "watermark"}
+	if fmt.Sprint(required) != fmt.Sprint(wantRequired) {
+		return fmt.Errorf("CustomerListResponse required=%v", required)
+	}
+
+	update := doc.Components.Schemas["CustomerUpdateRequest"]
+	if update == nil || update.Value == nil {
+		return errors.New("CustomerUpdateRequest schema missing")
+	}
+	for _, name := range []string{"stage_id", "external_userid", "unionid", "openid", "phone", "mobile"} {
+		if _, ok := update.Value.Properties[name]; ok {
+			return fmt.Errorf("CustomerUpdateRequest contains forbidden field: %s", name)
+		}
+	}
+
+	event := doc.Components.Schemas["CustomerEvent"]
+	if event == nil || event.Value == nil || event.Value.Properties["actor"] == nil {
+		return errors.New("CustomerEvent actor is not frozen")
+	}
+	actorRequired := false
+	for _, name := range event.Value.Required {
+		actorRequired = actorRequired || name == "actor"
+	}
+	if !actorRequired {
+		return errors.New("CustomerEvent actor became optional")
+	}
+
+	for name, operation := range map[string]*openapi3.Operation{
+		"updateCustomer": detail.Patch, "setCustomerStage": stage.Put,
+		"addCustomerTag": tags.Put, "removeCustomerTag": tags.Delete,
+	} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		for _, status := range []string{"401", "403"} {
+			if operation.Responses.Value(status) == nil {
+				return fmt.Errorf("%s response missing: %s", name, status)
+			}
+		}
 	}
 	return nil
 }
