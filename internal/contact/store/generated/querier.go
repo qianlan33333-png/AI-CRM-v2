@@ -10,6 +10,8 @@ import (
 
 type Querier interface {
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
+	ListCustomerIDsBounded(ctx context.Context, arg ListCustomerIDsBoundedParams) ([]int64, error)
+	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListStages(ctx context.Context) ([]Stage, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error)
 }
