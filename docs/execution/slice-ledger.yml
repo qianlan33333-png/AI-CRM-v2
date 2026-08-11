@@ -1524,7 +1524,11 @@ slices:
       - LOCAL_focused_auth_handler_openapi_race_PASS
       - LOCAL_generated_router_stage_snapshot_three_cases_double_generation_PASS
       - LOCAL_official_PostgreSQL16_14_55432_active_session_CSRF_binding_revoked_expired_and_database_error_fail_closed_PASS
-    handwritten_scope: PENDING
+      - LOCAL_full_ci_go_real_PostgreSQL16_14_55432_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_45_tests_PASS
+      - LOCAL_repo_contract_full_negative_suite_PASS
+      - LOCAL_gitleaks_188_commits_sensitive_paths_bundle_PASS
+    handwritten_scope: 14_files_666_changed_lines_P2_soft_file_cap_exceeded_by_2_to_close_OpenAPI_CSRF_handler_snapshot_and_permanent_gate_under_15_1500_hard_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 1
     infra_induced_correction_count: 4
     scope_induced_correction_count: 0
