@@ -4,9 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getHealthz } from "./api/generated/health";
 import {
   App,
+  LOGIN_PATH,
   ROUTE_CHANGE_EVENT,
   handleNavigationClick,
   navigateTo,
+  navigationLinks,
   routeForPathname,
   routeForURL,
   routes,
@@ -15,6 +17,11 @@ import {
   type BrowserNavigator,
   type NavigationClick,
 } from "./main";
+
+const adminSession = {
+  status: "authenticated",
+  principal: { adminUserID: 7, role: "admin" },
+} as const;
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -71,11 +78,11 @@ describe("Web shell routes", () => {
     expect(routeForPathname("/customer")).toBeUndefined();
     expect(routeForPathname("/settings/security")).toBeUndefined();
 
-    const home = renderToStaticMarkup(<App />);
+    const home = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(home).toContain("AI-CRM 运营指挥台");
 
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
-    const missing = renderToStaticMarkup(<App />);
+    const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(missing).toContain("404");
     expect(missing).toContain("未找到页面");
   });
@@ -90,7 +97,10 @@ describe("Web shell routes", () => {
 
   it("renders skip navigation, landmarks, one h1, injected navigation, and environment status", () => {
     const html = renderToStaticMarkup(
-      <App navigation={<a href="/custom">自定义导航</a>} />,
+      <App
+        initialSession={adminSession}
+        navigation={<a href="/custom">自定义导航</a>}
+      />,
     );
 
     expect(html).toContain('href="#main-content"');
@@ -102,6 +112,57 @@ describe("Web shell routes", () => {
     expect(html).toContain("自定义导航");
     expect(html).toContain('aria-label="环境状态"');
     expect(html.match(/<h1\b/g)).toHaveLength(1);
+  });
+
+  it("renders fail-closed login states without a fake provider request", () => {
+    const anonymous = renderToStaticMarkup(
+      <App initialSession={{ status: "unauthenticated" }} />,
+    );
+    expect(anonymous).toContain("登录运营工作台");
+    expect(anonymous).toContain("企业微信登录（待接入）");
+    expect(anonymous).toContain("disabled");
+    expect(anonymous).not.toContain("qr");
+    expect(anonymous.match(/<h1\b/g)).toHaveLength(1);
+
+    const unavailable = renderToStaticMarkup(
+      <App initialSession={{ status: "unavailable" }} />,
+    );
+    expect(unavailable).toContain("暂时无法确认登录状态");
+    expect(unavailable).toContain("重试");
+  });
+
+  it("shows only routes allowed by the frozen role table", () => {
+    expect(
+      navigationLinks(adminSession.principal).map((link) => link.href),
+    ).toEqual(["/", "/customers", "/settings"]);
+    expect(
+      navigationLinks({ adminUserID: 8, role: "ops" }).map((link) => link.href),
+    ).toEqual(["/", "/customers"]);
+    expect(
+      navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
+        (link) => link.href,
+      ),
+    ).toEqual(["/", "/customers"]);
+
+    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(html).toContain('href="/settings"');
+    expect(html).not.toContain('href="/stages"');
+    expect(html).not.toContain('href="/segments"');
+    expect(html).not.toContain('href="/outbound"');
+  });
+
+  it("renders an authenticated account view only for the exact login route", () => {
+    vi.stubGlobal("window", { location: { pathname: LOGIN_PATH } });
+    const login = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(login).toContain("已登录");
+    expect(login).toContain("后台账号 #7");
+    expect(login).toContain("返回运营工作台");
+
+    vi.stubGlobal("window", { location: { pathname: `${LOGIN_PATH}/` } });
+    const nearMiss = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
+    expect(nearMiss).toContain("404");
   });
 });
 

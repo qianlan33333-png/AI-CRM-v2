@@ -14,8 +14,8 @@
     "orval:check": "make orval-check",
     "orval:contract": "scripts/test_orval_generated_check.sh",
     "lint": "node --input-type=module -e \"import { ESLint } from 'eslint'; import parser from '@typescript-eslint/parser'; const eslint = new ESLint({ overrideConfigFile: true, overrideConfig: [{ ignores: ['web/src/api/generated/**'] }, { files: ['**/*.ts', '**/*.tsx'], languageOptions: { parser, parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } } }, rules: { 'no-console': 'error', 'no-debugger': 'error', 'no-unused-vars': ['error', { varsIgnorePattern: '^React$' }] } }] }); const results = await eslint.lintFiles(['web/src']); const output = (await eslint.loadFormatter('stylish')).format(results); if (output) console.log(output); if (results.some((result) => result.errorCount > 0)) process.exit(1);\"",
-    "typecheck": "tsc --noEmit --strict --skipLibCheck --jsx react --module ESNext --moduleResolution Bundler --target ES2022 --lib ES2022,DOM --types vitest/globals,node web/src/main.tsx web/src/main.test.tsx",
-    "test": "vitest run --environment node web/src/main.test.tsx",
+    "typecheck": "tsc --noEmit --strict --skipLibCheck --jsx react --module ESNext --moduleResolution Bundler --target ES2022 --lib ES2022,DOM --types vitest/globals,node web/src/*.ts web/src/*.tsx",
+    "test": "vitest run --environment node web/src/*.test.ts web/src/*.test.tsx",
     "build": "vite build web",
     "audit": "npm audit --audit-level=high",
     "ci": "npm run version:check && npm run orval:check && npm run orval:contract && npm run lint && npm run typecheck && npm test && npm run build && npm run audit"
