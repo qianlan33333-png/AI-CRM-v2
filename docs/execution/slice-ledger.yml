@@ -1402,7 +1402,7 @@ slices:
   - slice_id: P2-14
     title: stages-store-and-sqlc
     owner: Codex-Sol
-    status: in_progress
+    status: ready_for_pr
     base_sha: 407a918d97929eef2b004188437053aa3199ab57
     dependency: P2-13
     branch: slice/p2-14-stages-store-sqlc
@@ -1422,7 +1422,15 @@ slices:
         file_manifest_sha256: 2280623933483d2df3c31637151d75272a0c9904b9cc962f3789d2e7abd2d854
         diff_sha256: d9f8f1e647e2bc39ca3dbef86486199e75a575ee077417de779924ce0c6ef613
         receipt: docs/evidence/slices/P2-14-stages-sqlc.md
-    tests: []
+    tests:
+      - LOCAL_Terra_hash_receipt_independent_recompute_PASS
+      - LOCAL_sqlc_vet_and_double_generation_no_diff_PASS
+      - LOCAL_official_PostgreSQL16_14_55432_goose_up_down_up_PASS
+      - LOCAL_real_PostgreSQL16_transaction_bound_order_config_rename_missing_expired_context_rollback_PASS
+      - LOCAL_final_HEAD_make_ci_go_query_plan_bound_PASS
+      - LOCAL_Web_CI_Node24_18_npm11_12_1_Orval_double_generation_45_tests_PASS
+      - LOCAL_repo_contract_full_negative_suite_second_run_PASS
+      - LOCAL_gitleaks_168_commits_config_sensitive_paths_bundle_PASS
     handwritten_scope: 7_files_204_changed_lines_under_P2_cap_tests_generated_docs_receipts_ledger_excluded
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
