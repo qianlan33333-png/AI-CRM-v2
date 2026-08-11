@@ -779,7 +779,7 @@ verify_index_sha256 tools/openapi-contract/main.go \
 verify_index_sha256 tools/openapi-contract/main_test.go \
   4ac53339a8d854cb80a77d74eac005fa2ee941478298f8375b333782e4472b2a
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
-  6d96d7c81d3ac28bdd4c8a6455fa7675a133936f92861b25a2f8250dbff2889f
+  ea662d62faa7e80568382a3236e2bcf4ed1a3aebe415f38528faff9552405c65
 verify_index_sha256 acceptance/p1s11/doc.go \
   8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
 verify_index_sha256 docs/execution/slices/P1-S11.md \
