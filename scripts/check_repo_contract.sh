@@ -215,6 +215,7 @@ required=(
   docs/evidence/slices/P2-12-web-shell.md
   docs/execution/slices/P2-13.md
   docs/evidence/slices/P2-13-auth-ui.md
+  docs/execution/slices/P2-14.md
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -448,6 +449,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-12-web-shell.md
 100644 docs/execution/slices/P2-13.md
 100644 docs/evidence/slices/P2-13-auth-ui.md
+100644 docs/execution/slices/P2-14.md
 100644 web/src/auth.ts
 100644 web/src/auth.test.ts
 100644 web/src/auth-ui.tsx
@@ -733,7 +735,7 @@ verify_index_sha256 docs/execution/slices/P1-S11.md \
 verify_index_sha256 internal/auth/port/port.go \
   6051c323f5913e37fcc672cb1538e1f08f6726081bc2651be6ccd654f9fe5369
 verify_index_sha256 internal/contact/port/port.go \
-  c25b7d5551878d8e8b1a33617f11d8080dbd02aba9c28e254346c752bb0dc0cc
+  ffc24ba99eae2f845b773d5cda572779901f8246ea7a7a0eb976feb571e5e27b
 verify_index_sha256 internal/identity/port/port.go \
   321d6518b3e5fec57f3591307334e9fac67c06018bec727790f45e0e55ab5627
 verify_index_sha256 internal/platform/port/uow.go \
@@ -876,6 +878,8 @@ verify_index_sha256 docs/execution/slices/P2-13.md \
   e649a864beeed46b2ba604c33e2ae70bb48f083fdc39c62c7ab472c00e02e007
 verify_index_sha256 docs/evidence/slices/P2-13-auth-ui.md \
   d647a78aa84bddbeb6416cd2b92ed6dc5548b1c3e6e0d357153f2868e2000c3f
+verify_index_sha256 docs/execution/slices/P2-14.md \
+  a8494c695663bb790cb47fe0fafe8ea120a3d6edaa1709a7883c54695bab80f9
 verify_index_sha256 web/src/auth.ts \
   badb048198605e8bd93e31ce0ad9950243764e5cc0990bb009066e0bf38ee347
 verify_index_sha256 web/src/auth.test.ts \
@@ -911,7 +915,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  7634415eb4b185728b533547a384437ab0ed5921d313e7f1e1f3e293742170bd
+  c519507192e3c527a62cb60d58921708b92c117d27e314a55ef4155f4832cde9
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
