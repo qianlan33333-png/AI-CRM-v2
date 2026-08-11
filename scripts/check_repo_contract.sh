@@ -116,6 +116,10 @@ required=(
   internal/contact/acceptance/schema_contract_test.go
   internal/contact/app/customer_query_contract.go
   docs/execution/slices/P3-C01A.md
+  internal/contact/http/customer_list_handler.go
+  internal/contact/http/customer_list_handler_test.go
+  docs/execution/slices/P3-C01D.md
+  docs/evidence/slices/P3-C01D-customer-handler-tests.md
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
@@ -396,6 +400,10 @@ done <<'EOF'
 100644 internal/contact/acceptance/schema_contract_test.go
 100644 internal/contact/app/customer_query_contract.go
 100644 docs/execution/slices/P3-C01A.md
+100644 internal/contact/http/customer_list_handler.go
+100644 internal/contact/http/customer_list_handler_test.go
+100644 docs/execution/slices/P3-C01D.md
+100644 docs/evidence/slices/P3-C01D-customer-handler-tests.md
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
@@ -859,6 +867,14 @@ verify_index_sha256 internal/contact/app/customer_query_contract.go \
   9dafa3516a4acdbd2540ccf2575487c4005d321583d5ee9b10d33447c464f951
 verify_index_sha256 docs/execution/slices/P3-C01A.md \
   cb271879f61d4f901c020641faf22880b3903032252402b8b5a637c6c9aaa2d5
+verify_index_sha256 internal/contact/http/customer_list_handler.go \
+  b8673e84e4aebe2bb349759c1db60f9ca65ec34632e90a232eb48c3d9e061b18
+verify_index_sha256 internal/contact/http/customer_list_handler_test.go \
+  eaef2b6013f82ff8aa7f4161f535b6a098c8e8a72fa0823f38a4eb670756c1e9
+verify_index_sha256 docs/execution/slices/P3-C01D.md \
+  9ec85fb8021c605784b5d6552d661a64b19406336f425d5ca77a6ee70ef41fb8
+verify_index_sha256 docs/evidence/slices/P3-C01D-customer-handler-tests.md \
+  d18b0701238ffb170a4e76441383bcb228e52e6d7ec2a6caf231927a29f1fce9
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -984,7 +1000,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  c6269e74ba108a76a3b71bae2b15d65c6a04c49606c7d4daa689b85eead5cb10
+  79662d5afc20de3d0a973d86b1aa9d3fd60bb77200e0b3fa17ccf490a785a9c1
 verify_index_sha256 cmd/aicrm/api_test.go \
   80c2f017d5b1db0f0989acb101ea141726cb200f779516da284f3fe5efa8fff9
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -1128,7 +1144,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  e7ffe176248aac94da6e11539c50eb31b5353d47ddf6e8e23dce956783e8f371
+  b1004235ae7e78e23b1abb6c09491e2d043692b63c460d2b695cebda3a2c3530
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

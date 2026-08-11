@@ -38,6 +38,9 @@ func (handler *CustomerListHandler) ListCustomers(
 	params generated.ListCustomersParams,
 ) {
 	if handler == nil || nilCustomerListApplication(handler.application) || request == nil {
+		if request == nil {
+			request = &http.Request{}
+		}
 		writeCustomerListError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil), false)
 		return
 	}
@@ -125,7 +128,7 @@ func customerListInput(params generated.ListCustomersParams, ownerStaffID *int64
 }
 
 func customerListResponse(result contactapp.CustomerListResult) (generated.CustomerListResponse, error) {
-	if result.Items == nil || result.Total < int64(len(result.Items)) || result.Total > contactapp.CustomerListExactTotalCap || result.Watermark.IsZero() ||
+	if result.Total < int64(len(result.Items)) || result.Total > contactapp.CustomerListExactTotalCap || result.Watermark.IsZero() ||
 		(result.TotalIsEstimate && result.Total != contactapp.CustomerListExactTotalCap) ||
 		(result.NextCursor != nil && (*result.NextCursor == "" || len(result.Items) == 0)) {
 		return generated.CustomerListResponse{}, errors.New("customer list application returned an invalid result")

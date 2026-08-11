@@ -363,7 +363,7 @@ func TestCustomerListHandlerMapsFullResponseAndPreservesExtraNumbers(t *testing.
 			UpdatedAt:      updatedAt,
 		}},
 		NextCursor:      &nextCursor,
-		Total:           17,
+		Total:           contactapp.CustomerListExactTotalCap,
 		TotalIsEstimate: true,
 		Watermark:       watermark,
 	}
@@ -392,7 +392,7 @@ func TestCustomerListHandlerMapsFullResponseAndPreservesExtraNumbers(t *testing.
 		!item.CreatedAt.Equal(createdAt) || !item.UpdatedAt.Equal(updatedAt) {
 		t.Fatalf("mapped customer times = %#v", item)
 	}
-	if body.NextCursor == nil || *body.NextCursor != nextCursor || body.Total != 17 || !body.TotalIsEstimate || !body.Watermark.Equal(watermark) {
+	if body.NextCursor == nil || *body.NextCursor != nextCursor || body.Total != contactapp.CustomerListExactTotalCap || !body.TotalIsEstimate || !body.Watermark.Equal(watermark) {
 		t.Fatalf("mapped page = %#v", body)
 	}
 

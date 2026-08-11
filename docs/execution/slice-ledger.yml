@@ -867,7 +867,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 4
+    verification_induced_correction_count: 5
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
@@ -1922,18 +1922,21 @@ slices:
       - task_id: /root/p3_c01d_customer_handler_tests
         executor_model: gpt-5.6-terra
         kind: test_corpus_after_http_contract_freeze
-        status: IN_PROGRESS
+        status: SOL_REVIEWED_AND_INTEGRATED
         frozen_base_sha: cb3210f27766cb053f542c4f206c12f02b5b663e
+        delegated_head_sha: c41260438cf5981fde69e5350213f3f04f476942
+        manifest_sha256: bc8c1ef02d49296d58964b0d8e022f567920f9b61a46edcc18e03c2e88c74b5c
+        binary_diff_sha256: 12bdd4865bab52ba650a8ca199e7ffd110d032dc9034e77b89f61ea13decdc61
     tests:
       - CUSTOMER_LIST_HTTP_FOCUSED_RACE_PENDING
       - GENERATORS_TWICE_NO_DIFF_PENDING
       - GO_WEB_REPO_CONTRACT_SECRET_GATES_PENDING
       - PR_AND_MAIN_CI_PENDING
     handwritten_scope: under_P3_cap_tests_docs_ledger_excluded
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 4
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
