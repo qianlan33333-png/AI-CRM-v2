@@ -218,7 +218,9 @@ required=(
   docs/execution/slices/P2-14.md
   docs/evidence/slices/P2-14-stages-sqlc.md
   docs/execution/slices/P2-15.md
+  docs/evidence/slices/P2-15-stage-service-tests.md
   internal/contact/app/stage_service.go
+  internal/contact/app/stage_service_test.go
   acceptance/p2s15/doc.go
   acceptance/p2s15/stage_service_integration_test.go
   internal/contact/store/queries/stages.sql
@@ -465,7 +467,9 @@ done <<'EOF'
 100644 docs/execution/slices/P2-14.md
 100644 docs/evidence/slices/P2-14-stages-sqlc.md
 100644 docs/execution/slices/P2-15.md
+100644 docs/evidence/slices/P2-15-stage-service-tests.md
 100644 internal/contact/app/stage_service.go
+100644 internal/contact/app/stage_service_test.go
 100644 acceptance/p2s15/doc.go
 100644 acceptance/p2s15/stage_service_integration_test.go
 100644 internal/contact/store/queries/stages.sql
@@ -909,9 +913,13 @@ verify_index_sha256 docs/execution/slices/P2-14.md \
 verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
   54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
 verify_index_sha256 docs/execution/slices/P2-15.md \
-  077296cc2f8877dc9ca575f53519169e88240e11682f74a52da5ffe61d366626
+  225e91772854caf46aaeeb09fa148a366c5bdac87e889d61e9ecd1fe54fd69d5
+verify_index_sha256 docs/evidence/slices/P2-15-stage-service-tests.md \
+  7c086a4d95da8440a60970d1e174ee5f82053e60a9d7f9c51aa79ec3172a0bd9
 verify_index_sha256 internal/contact/app/stage_service.go \
   9c5ba8595f64ae5b5a32f583338d58a6bed6cf1ec3504ba8ec26744e65f1b570
+verify_index_sha256 internal/contact/app/stage_service_test.go \
+  37e8ed0280ca4b1d1e92a21ec519ba7f3d0bd798f6fb2ff2c0797dcf98aec6a8
 verify_index_sha256 acceptance/p2s15/doc.go \
   abbcb37df7d455dee12597ec062edee974a15e90d6eafd44624cbf2f56873802
 verify_index_sha256 acceptance/p2s15/stage_service_integration_test.go \
@@ -967,7 +975,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  0e05628982b928b57c4832d2ec4e5d232ad746e0daa90b6310c517837379768b
+  3f07d7b5e1693d96ebe112efaedf3aa3a3de6808d60f5cd2fbc48789885063fb
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

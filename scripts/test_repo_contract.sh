@@ -601,9 +601,11 @@ fi
 
 for file_path in \
   internal/contact/app/stage_service.go \
+  internal/contact/app/stage_service_test.go \
   acceptance/p2s15/doc.go \
   acceptance/p2s15/stage_service_integration_test.go \
-  docs/execution/slices/P2-15.md; do
+  docs/execution/slices/P2-15.md \
+  docs/evidence/slices/P2-15-stage-service-tests.md; do
   p2s15_receipt_fixture="$(make_fixture "p2-15-receipt-${file_path//\//-}")"
   case "$file_path" in
     *.go) printf '%s\n' '// P2-15 receipt drift' >>"$p2s15_receipt_fixture/$file_path" ;;
