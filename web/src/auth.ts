@@ -174,7 +174,7 @@ export function permittedRoutePaths(
   });
   if (!validated) return [];
 
-  const paths = ["/", "/customers"];
+  const paths = ["/", "/customers", "/stages"];
   if (validated.role === "admin") paths.push("/settings");
   return paths;
 }

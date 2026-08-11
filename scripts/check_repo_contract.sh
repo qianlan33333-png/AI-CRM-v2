@@ -221,6 +221,12 @@ required=(
   docs/evidence/slices/P2-15-stage-service-tests.md
   docs/execution/slices/P2-16.md
   docs/evidence/slices/P2-16-stage-handler-tests.md
+  docs/execution/slices/P2-17.md
+  docs/evidence/slices/P2-17-stages-ui.md
+  web/src/stages.ts
+  web/src/stages.test.ts
+  web/src/stages-ui.tsx
+  web/src/stages-ui.test.tsx
   internal/auth/port/port.go
   internal/auth/http/authorization_test.go
   internal/contact/http/handler.go
@@ -481,6 +487,12 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-15-stage-service-tests.md
 100644 docs/execution/slices/P2-16.md
 100644 docs/evidence/slices/P2-16-stage-handler-tests.md
+100644 docs/execution/slices/P2-17.md
+100644 docs/evidence/slices/P2-17-stages-ui.md
+100644 web/src/stages.ts
+100644 web/src/stages.test.ts
+100644 web/src/stages-ui.tsx
+100644 web/src/stages-ui.test.tsx
 100644 internal/auth/port/port.go
 100644 internal/auth/http/authorization_test.go
 100644 internal/contact/http/handler.go
@@ -917,11 +929,11 @@ verify_index_sha256 docs/execution/slices/P2-11.md \
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 web/src/main.tsx \
-  8dcf6c1ad3ddfb24efdcd00055b9b7c3c98d2eee9dd7110dc6ad44481303b2f3
+  e9906774ac9647bb6c480b748f4151f49b6fd943e810d11af1f856efbe2cd0ef
 verify_index_sha256 web/src/main.test.tsx \
-  89a17a07bf650c61935e60f192355a2d14f25437c77c03f901d4efebc8950f20
+  aa9dfd2b7e4fb12bcd29d556a2a5eb8eebfba7856927c01794dd30cd2dfde47b
 verify_index_sha256 web/src/shell.css \
-  b9886ea9ba79100b7572e8c5f184172a3c9d118a2793e89fa7b4c5d6cb67201a
+  993a7d533476836bab13f051f2a063d60e4f513224d355af485616de04bb033e
 verify_index_sha256 docs/execution/slices/P2-12.md \
   3eba447aab3854dd1ae2b27df5e2167de9b38e7c5d0996aa6a64a1d524b5c8f7
 verify_index_sha256 docs/evidence/slices/P2-12-web-shell.md \
@@ -942,6 +954,18 @@ verify_index_sha256 docs/execution/slices/P2-16.md \
   7ec39c6175b3eae4a047653d367d4b247276bc558c052bcbfc03d92b0d15e092
 verify_index_sha256 docs/evidence/slices/P2-16-stage-handler-tests.md \
   0a69becbba6446898f62ada1815b9f29d73d869fd18f12467f637c0ccf07d70b
+verify_index_sha256 docs/execution/slices/P2-17.md \
+  e264c335226ac1b883c9d0c02098521a31ad3742c8e7649f5c0ae99136982adc
+verify_index_sha256 docs/evidence/slices/P2-17-stages-ui.md \
+  244927f511b6d2bff674ac8fa806c21c51ce8ae67d55716f4f07241ae2f0e19f
+verify_index_sha256 web/src/stages.ts \
+  3c161326e176da892546b860d027bd86aca5743ab3c680666f4697645030569b
+verify_index_sha256 web/src/stages.test.ts \
+  f0eeee59c943e35c19e85d049573f3ff72f96d3e7e3cea841c5ef379c2a53f86
+verify_index_sha256 web/src/stages-ui.tsx \
+  56883ff280af8a19ffa3e69e79e34972ac640dee2dfd2eba04afc132cceb5513
+verify_index_sha256 web/src/stages-ui.test.tsx \
+  27a5be752ac1312c866f88ff5482aafb7033373f3a5ba7c26324f8036c076af9
 verify_index_sha256 internal/auth/http/authorization_test.go \
   f7512b38ffec491002262026b971d87dbae994b9e9b374b1ee699c7385aab9fa
 verify_index_sha256 internal/contact/http/handler.go \
@@ -983,9 +1007,9 @@ verify_index_sha256 acceptance/p2s14/doc.go \
 verify_index_sha256 acceptance/p2s14/stages_store_integration_test.go \
   c9768333556d987e7e01c522d2229362438114900af5191420415ca8b9d40143
 verify_index_sha256 web/src/auth.ts \
-  badb048198605e8bd93e31ce0ad9950243764e5cc0990bb009066e0bf38ee347
+  dddcd144109e5e86b3df79ce4cc76ed09cdede90ce879e0c458b71f6f404c14f
 verify_index_sha256 web/src/auth.test.ts \
-  3a11be3776ab06213ae73b43cdf3376e90ed1b65ea88e187529f2d5a2d58568a
+  1c53880d61fd71f8ee0e0737db2f376998a105cb745d350257680d7790fe3598
 verify_index_sha256 web/src/auth-ui.tsx \
   cd44efe0eb1216921df18f4f508088a12004a97eb4f148698e46b776f9b6cde6
 verify_index_sha256 web/src/auth-ui.test.tsx \
@@ -1017,7 +1041,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  7ec847447e33a52e6256dac23cf6dda61570b237833e088d218ac86bb5ea1b0d
+  a8f0ab698fd0c24ef7a8cf0c89b35255f5c5b7cebc117fd3a70e8976815607cf
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
