@@ -22,6 +22,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p2-s16-acceptance
 .PHONY: p2-s18-acceptance
 .PHONY: g2-runtime-image-acceptance
+.PHONY: g2-release-archive-contract
 .PHONY: arch-import-lint arch-import-lint-test
 .PHONY: ownership-lint ownership-lint-test
 .PHONY: acceptance-fixtures
@@ -262,6 +263,9 @@ g2-runtime-image-acceptance:
 	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 ./cmd/aicrm-river-migrate
 	@env -u BASH_ENV -u ENV acceptance/g2image/test_runtime_image.sh
 
+g2-release-archive-contract:
+	@env -u BASH_ENV -u ENV scripts/test_package_release_archive.sh
+
 arch-import-lint:
 	@env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run scripts/check_arch_imports.go -root .
 
@@ -355,4 +359,4 @@ query-plan-gate-test: query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./query-plan-gate
 	@/usr/bin/env -u BASH_ENV -u ENV GO="$(GO)" /bin/bash scripts/test_query_plan_gate.sh
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance p2-s08-acceptance p2-s09-acceptance p2-s10-acceptance p2-s11-acceptance p2-s14-acceptance p2-s15-acceptance p2-s16-acceptance p2-s18-acceptance g2-runtime-image-acceptance arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance p2-s08-acceptance p2-s09-acceptance p2-s10-acceptance p2-s11-acceptance p2-s14-acceptance p2-s15-acceptance p2-s16-acceptance p2-s18-acceptance g2-runtime-image-acceptance g2-release-archive-contract arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test

@@ -694,6 +694,24 @@ if (cd "$extra_stateful_p2s18" && scripts/check_repo_contract.sh >/dev/null 2>&1
   fail "P2-S18 extra stateful Compose component was accepted after receipt refresh"
 fi
 
+disconnected_g2_release_archive="$(make_fixture disconnected-g2-release-archive)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]g2-release-archive-contract([[:space:]]|$)/\1/' \
+  "$disconnected_g2_release_archive/Makefile"
+rm -f "$disconnected_g2_release_archive/Makefile.bak"
+restage_make_receipt "$disconnected_g2_release_archive"
+if (cd "$disconnected_g2_release_archive" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "G2 release archive contract disconnected from ci-go was accepted"
+fi
+
+hollow_g2_release_archive="$(make_fixture hollow-g2-release-archive)"
+sed -i.bak '/^g2-release-archive-contract:$/ { n; s/.*/\t@true/; }' \
+  "$hollow_g2_release_archive/Makefile"
+rm -f "$hollow_g2_release_archive/Makefile.bak"
+restage_make_receipt "$hollow_g2_release_archive"
+if (cd "$hollow_g2_release_archive" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow G2 release archive contract was accepted"
+fi
+
 for file_path in \
   web/src/auth.ts \
   web/src/auth.test.ts \
