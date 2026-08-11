@@ -897,7 +897,7 @@ verify_index_sha256 docs/execution/slices/P2-13.md \
 verify_index_sha256 docs/evidence/slices/P2-13-auth-ui.md \
   d647a78aa84bddbeb6416cd2b92ed6dc5548b1c3e6e0d357153f2868e2000c3f
 verify_index_sha256 docs/execution/slices/P2-14.md \
-  7b609585f2cc4645bbf291cf17170abbb0583ce14e3354213f5c9a8037c7dbc7
+  482126c56d257ffeb832413cc3cdb5ba7d22ffa8b43f53c764b889b06c1ec72a
 verify_index_sha256 docs/evidence/slices/P2-14-stages-sqlc.md \
   54aa76745fe22675191cc6df9bb669e8230a8976f007ce1c1059189918dd99c1
 verify_index_sha256 internal/contact/store/queries/stages.sql \
@@ -1269,6 +1269,16 @@ p2_s11_acceptance_recipe="$(make_target_recipe 'p2-s11-acceptance:')" ||
   fail "P2-S11 acceptance target must run only the frozen HTTP budget and router acceptance package"
 [[ "$ci_go_target" =~ (^|[[:space:]])p2-s11-acceptance($|[[:space:]]) ]] ||
   fail "ci-go must depend on the P2-S11 acceptance target"
+
+require_make_line '.PHONY: p2-s14-acceptance' \
+  "Makefile must declare the P2-S14 acceptance target"
+require_unique_make_target p2-s14-acceptance
+p2_s14_acceptance_recipe="$(make_target_recipe 'p2-s14-acceptance:')" ||
+  fail "P2-S14 acceptance target must be unique"
+[[ "$p2_s14_acceptance_recipe" = $'\t@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=60s ./acceptance/p2s14' ]] ||
+  fail "P2-S14 acceptance target must run only the frozen stages store acceptance package"
+[[ "$ci_go_target" =~ (^|[[:space:]])p2-s14-acceptance($|[[:space:]]) ]] ||
+  fail "ci-go must depend on the P2-S14 acceptance target"
 
 require_make_line '.PHONY: arch-import-lint arch-import-lint-test' \
   "Makefile must declare the architecture import lint targets"
