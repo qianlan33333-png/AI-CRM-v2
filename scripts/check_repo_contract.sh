@@ -583,7 +583,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  40cce1a8c0057543e883237288b08c797ceb8017bb161a450a2d49e7b3c6ab13
+  8ffd0ca1659015bd7279072315506e0a714c8972c1f7dddc48d3f3322d2219e9
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \

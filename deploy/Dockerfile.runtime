@@ -1,0 +1,11 @@
+FROM scratch
+
+ARG AICRM_SOURCE_SHA
+
+LABEL org.opencontainers.image.source="https://github.com/qianlan33333-png/AI-CRM-v2" \
+      org.opencontainers.image.revision="${AICRM_SOURCE_SHA}"
+
+COPY --chown=65532:65532 aicrm /aicrm
+
+USER 65532:65532
+ENTRYPOINT ["/aicrm"]
