@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 func TestOpenPostgreSQLRejectsAnyNonFixtureDatabase(t *testing.T) {
@@ -115,16 +113,7 @@ func TestPostgreSQLTransactionRollbackAndCleanup(t *testing.T) {
 	if err = fixture.Cleanup(ctx); err != nil {
 		t.Fatalf("Cleanup() error = %v", err)
 	}
-	conn, err := pgx.Connect(ctx, databaseURL)
-	if err != nil {
-		t.Fatalf("connect after cleanup: %v", err)
-	}
-	defer conn.Close(ctx)
-	var schema *string
-	if err = conn.QueryRow(ctx, `SELECT to_regnamespace('acceptance_fixtures')::text`).Scan(&schema); err != nil {
-		t.Fatalf("query cleaned schema: %v", err)
-	}
-	if schema != nil {
-		t.Fatalf("acceptance fixture schema still exists after cleanup: %q", *schema)
+	if _, err = fixture.Begin(ctx); !errors.Is(err, ErrFixtureClosed) {
+		t.Fatalf("Begin() after cleanup error = %v, want ErrFixtureClosed", err)
 	}
 }

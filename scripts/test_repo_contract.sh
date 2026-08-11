@@ -1960,6 +1960,29 @@ if (cd "$secrets_context_fixture" && scripts/check_repo_contract.sh >/dev/null 2
   fail "workflow secrets context was accepted"
 fi
 
+for file_path in \
+  internal/contact/http/customer_list_handler.go \
+  internal/contact/http/customer_list_handler_test.go \
+  docs/execution/slices/P3-C01D.md \
+  docs/evidence/slices/P3-C01D-customer-handler-tests.md; do
+  p3c01d_receipt_fixture="$(make_fixture "p3-c01d-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C01D receipt drift' >>"$p3c01d_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C01D receipt drift' >>"$p3c01d_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c01d_receipt_fixture" add "$file_path"
+  if (cd "$p3c01d_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C01D customer HTTP receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_p3c01d_handler="$(make_fixture missing-p3-c01d-handler)"
+rm -f "$missing_p3c01d_handler/internal/contact/http/customer_list_handler.go"
+git -C "$missing_p3c01d_handler" add -u internal/contact/http/customer_list_handler.go
+if (cd "$missing_p3c01d_handler" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P3-C01D customer HTTP handler was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

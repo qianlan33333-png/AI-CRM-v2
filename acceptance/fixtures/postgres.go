@@ -124,6 +124,12 @@ func (f *PostgreSQL) Cleanup(ctx context.Context) error {
 	if _, err := f.lockConn.Exec(ctx, `DROP SCHEMA IF EXISTS acceptance_fixtures CASCADE`); err != nil {
 		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("drop acceptance schema: %w", err))
 	}
+	var schema *string
+	if err := f.lockConn.QueryRow(ctx, `SELECT to_regnamespace('acceptance_fixtures')::text`).Scan(&schema); err != nil {
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("verify acceptance schema cleanup: %w", err))
+	} else if schema != nil {
+		cleanupErr = errors.Join(cleanupErr, errors.New("acceptance fixture schema still exists after cleanup"))
+	}
 	if _, err := f.lockConn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, advisoryLockKey); err != nil {
 		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("unlock acceptance schema: %w", err))
 	}
