@@ -872,7 +872,7 @@ verify_index_sha256 internal/contact/http/customer_list_handler.go \
 verify_index_sha256 internal/contact/http/customer_list_handler_test.go \
   eaef2b6013f82ff8aa7f4161f535b6a098c8e8a72fa0823f38a4eb670756c1e9
 verify_index_sha256 docs/execution/slices/P3-C01D.md \
-  5cde468ee19f7c46fe1c2cd8268fbb930e22b53eca4529ee22a901f80e485be5
+  05cdc71e2649af2f481728338192dfe96ae6264aa2b39d0ec5404bf5f4b9a9a7
 verify_index_sha256 docs/evidence/slices/P3-C01D-customer-handler-tests.md \
   d18b0701238ffb170a4e76441383bcb228e52e6d7ec2a6caf231927a29f1fce9
 verify_index_sha256 docs/execution/slices/P1-S11.md \
