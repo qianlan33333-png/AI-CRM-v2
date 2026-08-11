@@ -25,7 +25,7 @@ aa.youcangogogo.com {
 	header @assets Cache-Control "public, max-age=31536000, immutable"
 
 	handle {
-		root * /opt/aicrm/web/current
+		root * /var/www/aicrm/current
 		try_files {path} /index.html
 		file_server
 	}
