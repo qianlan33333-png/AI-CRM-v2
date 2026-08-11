@@ -7,8 +7,9 @@
 
 `05247dd16da571af9fefb081c46eb9facb2ddc38`
 
-该结论仅表示测试服务器后端、数据库与队列运行通过，不表示浏览器登录、
-Stages CRUD、真实企微链路或 G2 人工门已通过。
+该结论表示测试服务器后端、数据库、队列和服务器本机 HTTPS Web 边缘层
+运行通过，不表示公网 HTTPS、浏览器登录、Stages CRUD、真实企微链路或
+G2 人工门已通过。
 
 ## 源码与 CI
 
@@ -67,12 +68,30 @@ Stages CRUD、真实企微链路或 G2 人工门已通过。
 - `scripts/staging_deploy.sh --apply`：`NOT_EXECUTED`。本次需先 migration
   后 app，故按安全顺序显式执行 Compose；不能把 render/apply 脚本输出当作
   真实部署证据。
-- Web 静态托管与浏览器 Stages CRUD：`PENDING_EXTERNAL_GATE`。
+- 公网 HTTPS 443：`PENDING_EXTERNAL_GATE`。服务端 Caddy 已监听 TCP/UDP
+  443、UFW inactive、nftables INPUT accept；公网 HTTP 80 可达并返回 308，
+  但外部 TLS 连接在云侧安全组处失败。
+- 浏览器登录与 Stages CRUD：`PENDING_EXTERNAL_GATE`。
 - 真实企微 OAuth、回调、加好友、群发和手机收信：
   `PENDING_EXTERNAL_GATE`。
 - 生产数据库只读 preflight、live migration 和生产部署：
   `PENDING_EXTERNAL_GATE`。
 - G2 人工签字：`PENDING_EXTERNAL_GATE`。
+
+## HTTPS Web 边缘层追加证据
+
+- 合同 PR #121，修正 PR #122；最终代码与 Web 发布物绑定 main
+  `68b3b7e3dd35b95e5e785ed89ba23bb9029f89b5`。
+- exact-main CI：application/Web `31518175824`、repo-contract
+  `31518175761`、secret scan `31518175802`，全部 PASS。
+- Web 归档 SHA-256：
+  `a19c533e7dfa19305bf1489193b09641c4a2e472323f18cfc8a045c88448fcc3`；
+  发布根为 root-owned `/var/www/aicrm`，未放宽含运行配置的 `/opt/aicrm`。
+- Caddy `v2.11.4` 官方 Linux amd64 资产 SHA-256：
+  `c41708ffb4af9bc6d19f7d22a7a034804352a21ecc62e1d3dfe3d58e30b38a3e`。
+- 服务器本机真实证书校验成功：首页和 `/healthz` 均为 200；证书 SAN
+  `aa.youcangogogo.com`，Let's Encrypt `YE1` 签发，有效期至
+  2026-11-09 16:22:52 UTC。
 
 ## 清理与回滚
 

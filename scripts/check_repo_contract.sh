@@ -622,7 +622,7 @@ verify_index_sha256 scripts/test_package_release_archive.sh \
 verify_index_sha256 docs/execution/slices/G2-T03.md \
   50d056e21443ade6d38605b0a534d4f86a55331d8394418c179e161eccaa8f4e
 verify_index_sha256 docs/evidence/g2/test-server-deployment.md \
-  259c4590466a356259168f1e246667339202808812c056f8021871269c668b14
+  03ce78968aa820d18e6c4ec3539c04d34a8cfda4cc232baa7a555ae1e88992e0
 verify_index_sha256 docs/evidence/phases/P2-closeout.md \
   80f355388180006365fda2c9f49b71499ad5f25ab4b8e05320d2fd0c7befae2c
 verify_index_sha256 docs/backlog/post-launch.md \
