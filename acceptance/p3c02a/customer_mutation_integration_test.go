@@ -35,6 +35,12 @@ func TestCustomerMutationsCommitTimelineAndDomainEventsAtomically(t *testing.T) 
 		t.Fatalf("Update() = %#v, %v", customer, err)
 	}
 	assertEventParity(t, ctx, fixture, 1, "customer.updated", customerID)
+	if _, err = service.Update(ctx, contactapp.CustomerUpdateCommand{
+		ID: customerID, Name: &newName, Actor: "staff:7",
+	}); err != nil {
+		t.Fatalf("idempotent Update() error = %v", err)
+	}
+	assertCounts(t, ctx, fixture, 1, 0)
 
 	customer, err = service.SetStage(ctx, contactapp.CustomerStageCommand{
 		ID: customerID, StageID: &stageTwo, Actor: "staff:7",

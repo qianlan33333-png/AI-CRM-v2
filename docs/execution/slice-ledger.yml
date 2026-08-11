@@ -1993,15 +1993,15 @@ slices:
   - slice_id: P3-C03
     title: contact-customer-event-monthly-partitions
     owner: Codex-Sol
-    status: ready_for_pr
+    status: accepted
     base_sha: b9605b4e3336f578debc2e1bd79593283166d733
     dependency: P3-C01A
     branch: slice/p3-c03-customer-event-partitions
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/130
+    pr_head_sha: f9386b7497824291cf02876fa38a557d48980614
+    merge_sha: 7795b9fc2d67fe001d23024edc62ec292a81d400
+    main_ci_status: PASS_EXACT_MERGE_SHA
     delegated_tasks:
       - task_id: /root/p3_c03_partition_worker_tests
         executor_model: gpt-5.6-terra
@@ -2025,7 +2025,7 @@ slices:
       - GENERATORS_TWICE_NO_DIFF_PASS
       - GO_AND_WEB_FULL_GATES_PASS
       - REPO_CONTRACT_AND_SECRET_GATES_PASS
-      - PR_AND_MAIN_CI_PENDING
+      - PR_AND_MAIN_CI_PASS
     handwritten_scope: under_P3_cap_tests_docs_generated_excluded
     slice_induced_correction_count: 4
     infra_induced_correction_count: 1
@@ -2050,17 +2050,43 @@ slices:
     pr_head_sha: PENDING_FORWARD_RECEIPT
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING_FORWARD_RECEIPT
-    delegated_tasks: []
+    delegated_tasks:
+      - task_id: /root/p3_c02a_sqlc_store
+        executor_model: gpt-5.6-terra
+        kind: sqlc_query_and_store_after_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        original_frozen_base_sha: 147d5b3f9ad2a9f55d2dd87a9b4f472f9593b7ea
+        replay_base_sha: b83765a77d067dfe380f2ef2732812e09c29ab8e
+        delegated_head_sha: 871d759f386eb7ee1146a692f757cf388a146903
+        manifest_sha256: b24882075d60961fe975ff080b19ccbe8c2c9c6437ca915178aff3a1756afa12
+        binary_diff_sha256: 56db76b221aa6786f25cb3ede0aeed6b6196c90152230613c699bd92c8988e68
+      - task_id: /root/p3_c02a_service_tests
+        executor_model: gpt-5.6-terra
+        kind: test_corpus_after_service_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        original_frozen_base_sha: 147d5b3f9ad2a9f55d2dd87a9b4f472f9593b7ea
+        replay_base_sha: b83765a77d067dfe380f2ef2732812e09c29ab8e
+        delegated_head_sha: 724cb62571e9a1293b9036e0bfd48d09a040a5f9
+        manifest_sha256: 06675e424e9e75daac428f378ff24b229e7ff4789cdc52d7ef57d90902f926a3
+        binary_diff_sha256: 88942a536f02ff027bb30f38374e27ea748a515a050ec88f74ac02eefe34ff0e
+      - task_id: /root/p3_c02a_service_review
+        executor_model: gpt-5.6-terra
+        kind: independent_service_and_security_review
+        status: SOL_CORRECTED_FINDINGS_FINAL_REVIEW_PENDING
+        first_reviewed_sha: 147d5b3f9ad2a9f55d2dd87a9b4f472f9593b7ea
+        first_report_sha256: 2ea6808a9ae8a7ebb53a5c0f2e9319c85a39937509a93115309ee435ebab5b05
+        second_reviewed_sha: b83765a77d067dfe380f2ef2732812e09c29ab8e
+        second_report_sha256: 51ea989a4c726358665ff6b2b2138f876ceee0ab1256d4d25d363fe482d9c42c
     tests:
-      - CUSTOMER_MUTATION_FOCUSED_RACE_PENDING
-      - POSTGRESQL_16_TRANSACTIONAL_EVENT_ACCEPTANCE_PENDING
-      - GENERATORS_TWICE_NO_DIFF_PENDING
+      - CUSTOMER_MUTATION_FOCUSED_RACE_PASS
+      - POSTGRESQL_16_TRANSACTIONAL_EVENT_ACCEPTANCE_PASS
+      - GENERATORS_TWICE_NO_DIFF_PASS
       - FULL_GATES_AND_MAIN_CI_PENDING
     handwritten_scope: under_P3_cap_tests_docs_generated_excluded
-    slice_induced_correction_count: 0
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 2
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

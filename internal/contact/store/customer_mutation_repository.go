@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/url"
 	"reflect"
 	"strings"
@@ -335,10 +336,23 @@ func sameNullableInt16(left, right *int16) bool {
 }
 
 func sameJSONObject(left, right json.RawMessage) bool {
-	var leftValue any
-	var rightValue any
-	return json.Unmarshal(left, &leftValue) == nil && json.Unmarshal(right, &rightValue) == nil &&
-		reflect.DeepEqual(leftValue, rightValue)
+	leftValue, leftOK := decodeJSONObjectWithExactNumbers(left)
+	rightValue, rightOK := decodeJSONObjectWithExactNumbers(right)
+	return leftOK && rightOK && reflect.DeepEqual(leftValue, rightValue)
+}
+
+func decodeJSONObjectWithExactNumbers(raw json.RawMessage) (any, bool) {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil, false
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		return nil, false
+	}
+	return value, true
 }
 
 func mapCustomerMutationDatabaseError(err error) error {
@@ -348,6 +362,9 @@ func mapCustomerMutationDatabaseError(err error) error {
 	}
 	switch databaseError.Code {
 	case "23503":
+		if strings.Contains(databaseError.ConstraintName, "_stage_id_") {
+			return contactport.ErrStageNotFound
+		}
 		if strings.Contains(databaseError.ConstraintName, "_tag_id_") {
 			return contactapp.ErrCustomerTagNotFound
 		}

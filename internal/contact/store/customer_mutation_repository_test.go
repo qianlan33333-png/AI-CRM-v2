@@ -78,6 +78,20 @@ func TestUpdateCustomerParamsPreserveOmittedAndExplicitNullSemantics(t *testing.
 	}
 }
 
+func TestSameJSONObjectNeverCollapsesDistinctLargeIntegers(t *testing.T) {
+	left := json.RawMessage(`{"value":9007199254740992}`)
+	right := json.RawMessage(`{"value":9007199254740993}`)
+	if sameJSONObject(left, right) {
+		t.Fatal("sameJSONObject() collapsed distinct integers above float64 exact range")
+	}
+	if !sameJSONObject(
+		json.RawMessage(`{"a":1,"b":2}`),
+		json.RawMessage(`{"b":2,"a":1}`),
+	) {
+		t.Fatal("sameJSONObject() rejected equivalent object key order")
+	}
+}
+
 func TestCustomerUpdateChangesRespectsPatchesAndJSONBSemantics(t *testing.T) {
 	avatarURL := "https://example.test/avatar"
 	gender := int16(2)
@@ -205,7 +219,7 @@ func TestCustomerMutationRepositoryUpdatesFullCustomerAndSanitizesErrors(t *test
 		want error
 	}{
 		{name: "missing customer", err: pgx.ErrNoRows, want: contactapp.ErrCustomerNotFound},
-		{name: "stage foreign key", err: &pgconn.PgError{Code: "23503", ConstraintName: "customers_stage_id_fkey", Message: "sensitive database detail"}, want: contactapp.ErrCustomerConflict},
+		{name: "stage foreign key", err: &pgconn.PgError{Code: "23503", ConstraintName: "customers_stage_id_fkey", Message: "sensitive database detail"}, want: contactport.ErrStageNotFound},
 		{name: "unique conflict", err: &pgconn.PgError{Code: "23505", Message: "sensitive database detail"}, want: contactapp.ErrCustomerConflict},
 		{name: "unknown database error", err: errors.New("sensitive database detail"), want: contactapp.ErrCustomerMutationFailed},
 	} {
@@ -299,7 +313,7 @@ func TestCustomerMutationRepositorySetsStageWithLockAndIdempotence(t *testing.T)
 				name:  "missing stage foreign key",
 				lock:  mutationRowResult{customer: customerPointer(mutationCustomerRow(42, nil))},
 				stage: mutationRowResult{err: &pgconn.PgError{Code: "23503", ConstraintName: "customers_stage_id_fkey", Message: "hidden"}},
-				want:  contactapp.ErrCustomerConflict,
+				want:  contactport.ErrStageNotFound,
 			},
 		}
 		for _, testCase := range tests {
