@@ -1402,13 +1402,13 @@ slices:
   - slice_id: P2-14
     title: stages-store-and-sqlc
     owner: Codex-Sol
-    status: ready_for_pr
+    status: pr_open
     base_sha: 407a918d97929eef2b004188437053aa3199ab57
     dependency: P2-13
     branch: slice/p2-14-stages-store-sqlc
     decision_anchor: EXECUTION_PLAN_3_1_E_DESIGN_2_2_TABLE_OWNERSHIP
-    pr_url: PENDING
-    pr_head_sha: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/112
+    pr_head_sha: PENDING_FORWARD_RECEIPT
     merge_sha: PENDING_FORWARD_RECEIPT
     main_ci_status: PENDING
     delegated_tasks:
