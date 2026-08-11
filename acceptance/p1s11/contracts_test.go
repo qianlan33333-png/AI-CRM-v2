@@ -73,9 +73,10 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
-		"BindIdentity", "CreateStage", "GetAdminConfigOverview", "GetAuthSession", "GetCustomer",
-		"IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListStages", "LogoutAdmin",
-		"RenameStage", "ResolveIdentity", "UpdateCustomer",
+		"AddCustomerTag", "BindIdentity", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
+		"GetCustomer", "IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListStages",
+		"ListTags", "LogoutAdmin", "RemoveCustomerTag", "RenameStage", "ResolveIdentity",
+		"SetCustomerStage", "UpdateCustomer",
 	})
 }
 

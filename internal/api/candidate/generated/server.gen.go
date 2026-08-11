@@ -248,9 +248,15 @@ type Customer struct {
 	UpdatedAt      time.Time              `json:"updated_at"`
 }
 
+// CustomerDetailResponse defines model for CustomerDetailResponse.
+type CustomerDetailResponse struct {
+	Customer Customer `json:"customer"`
+	Tags     []Tag    `json:"tags"`
+}
+
 // CustomerEvent defines model for CustomerEvent.
 type CustomerEvent struct {
-	CreatedAt  time.Time              `json:"created_at"`
+	Actor      string                 `json:"actor"`
 	CustomerId int64                  `json:"customer_id"`
 	EventType  string                 `json:"event_type"`
 	Id         int64                  `json:"id"`
@@ -266,8 +272,11 @@ type CustomerEventListResponse struct {
 
 // CustomerListResponse defines model for CustomerListResponse.
 type CustomerListResponse struct {
-	Items      []Customer `json:"items"`
-	NextCursor *string    `json:"next_cursor"`
+	Items           []Customer `json:"items"`
+	NextCursor      *string    `json:"next_cursor"`
+	Total           int64      `json:"total"`
+	TotalIsEstimate bool       `json:"total_is_estimate"`
+	Watermark       time.Time  `json:"watermark"`
 }
 
 // CustomerUpdateRequest defines model for CustomerUpdateRequest.
@@ -278,7 +287,6 @@ type CustomerUpdateRequest struct {
 	Gender       *int32                  `json:"gender,omitempty"`
 	Name         *string                 `json:"name,omitempty"`
 	OwnerStaffId *int64                  `json:"owner_staff_id,omitempty"`
-	StageId      *int64                  `json:"stage_id,omitempty"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -350,6 +358,11 @@ type ResolveIdentityResponse struct {
 // ResolveIdentityResponseStatus defines model for ResolveIdentityResponse.Status.
 type ResolveIdentityResponseStatus string
 
+// SetCustomerStageRequest defines model for SetCustomerStageRequest.
+type SetCustomerStageRequest struct {
+	StageId *int64 `json:"stage_id"`
+}
+
 // Stage defines model for Stage.
 type Stage struct {
 	Config    interface{} `json:"config"`
@@ -363,8 +376,31 @@ type StageListResponse struct {
 	Items []Stage `json:"items"`
 }
 
+// Tag defines model for Tag.
+type Tag struct {
+	GroupId   *int64  `json:"group_id,omitempty"`
+	GroupName *string `json:"group_name,omitempty"`
+	Id        int64   `json:"id"`
+	Name      string  `json:"name"`
+	SortOrder int32   `json:"sort_order"`
+}
+
+// TagListResponse defines model for TagListResponse.
+type TagListResponse struct {
+	Items []Tag `json:"items"`
+}
+
+// AddedAfterFilter defines model for AddedAfterFilter.
+type AddedAfterFilter = time.Time
+
+// AddedBeforeFilter defines model for AddedBeforeFilter.
+type AddedBeforeFilter = time.Time
+
 // CSRFToken defines model for CSRFToken.
 type CSRFToken = string
+
+// ChannelIDFilter defines model for ChannelIDFilter.
+type ChannelIDFilter = int64
 
 // Cursor defines model for Cursor.
 type Cursor = string
@@ -372,11 +408,35 @@ type Cursor = string
 // CustomerID defines model for CustomerID.
 type CustomerID = int64
 
+// CustomerKeyword defines model for CustomerKeyword.
+type CustomerKeyword = string
+
+// IsDeletedFilter defines model for IsDeletedFilter.
+type IsDeletedFilter = bool
+
+// LastInteractAfterFilter defines model for LastInteractAfterFilter.
+type LastInteractAfterFilter = time.Time
+
+// LastInteractBeforeFilter defines model for LastInteractBeforeFilter.
+type LastInteractBeforeFilter = time.Time
+
 // Limit defines model for Limit.
 type Limit = int
 
+// OwnerStaffIDFilter defines model for OwnerStaffIDFilter.
+type OwnerStaffIDFilter = int64
+
 // StageID defines model for StageID.
 type StageID = int64
+
+// StageIDFilter defines model for StageIDFilter.
+type StageIDFilter = int64
+
+// TagID defines model for TagID.
+type TagID = int64
+
+// TagIDFilter defines model for TagIDFilter.
+type TagIDFilter = int64
 
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
@@ -407,14 +467,50 @@ type LogoutAdminParams struct {
 
 // ListCustomersParams defines parameters for ListCustomers.
 type ListCustomersParams struct {
-	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor             *Cursor                   `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit              *Limit                    `form:"limit,omitempty" json:"limit,omitempty"`
+	Keyword            *CustomerKeyword          `form:"keyword,omitempty" json:"keyword,omitempty"`
+	OwnerStaffId       *OwnerStaffIDFilter       `form:"owner_staff_id,omitempty" json:"owner_staff_id,omitempty"`
+	StageId            *StageIDFilter            `form:"stage_id,omitempty" json:"stage_id,omitempty"`
+	ChannelId          *ChannelIDFilter          `form:"channel_id,omitempty" json:"channel_id,omitempty"`
+	TagId              *TagIDFilter              `form:"tag_id,omitempty" json:"tag_id,omitempty"`
+	IsDeleted          *IsDeletedFilter          `form:"is_deleted,omitempty" json:"is_deleted,omitempty"`
+	AddedAfter         *AddedAfterFilter         `form:"added_after,omitempty" json:"added_after,omitempty"`
+	AddedBefore        *AddedBeforeFilter        `form:"added_before,omitempty" json:"added_before,omitempty"`
+	LastInteractAfter  *LastInteractAfterFilter  `form:"last_interact_after,omitempty" json:"last_interact_after,omitempty"`
+	LastInteractBefore *LastInteractBeforeFilter `form:"last_interact_before,omitempty" json:"last_interact_before,omitempty"`
+}
+
+// UpdateCustomerParams defines parameters for UpdateCustomer.
+type UpdateCustomerParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 
 // ListCustomerEventsParams defines parameters for ListCustomerEvents.
 type ListCustomerEventsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// SetCustomerStageParams defines parameters for SetCustomerStage.
+type SetCustomerStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// RemoveCustomerTagParams defines parameters for RemoveCustomerTag.
+type RemoveCustomerTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// AddCustomerTagParams defines parameters for AddCustomerTag.
+type AddCustomerTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 
 // CreateStageParams defines parameters for CreateStage.
@@ -431,6 +527,9 @@ type RenameStageParams struct {
 
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
+
+// SetCustomerStageJSONRequestBody defines body for SetCustomerStage for application/json ContentType.
+type SetCustomerStageJSONRequestBody = SetCustomerStageRequest
 
 // BindIdentityJSONRequestBody defines body for BindIdentity for application/json ContentType.
 type BindIdentityJSONRequestBody = BindIdentityRequest
@@ -466,10 +565,19 @@ type ServerInterface interface {
 	GetCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID)
 	// Update customer-owned profile fields
 	// (PATCH /api/v1/customers/{customer_id})
-	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID)
+	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams)
 	// List append-only customer events using a keyset cursor
 	// (GET /api/v1/customers/{customer_id}/events)
 	ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams)
+	// Set or clear a customer's stage
+	// (PUT /api/v1/customers/{customer_id}/stage)
+	SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams)
+	// Idempotently remove one local tag from a customer
+	// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
+	RemoveCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params RemoveCustomerTagParams)
+	// Idempotently apply one local tag to a customer
+	// (PUT /api/v1/customers/{customer_id}/tags/{tag_id})
+	AddCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params AddCustomerTagParams)
 	// Bind a scoped identity to a channel-neutral customer
 	// (POST /api/v1/identity/bind)
 	BindIdentity(w http.ResponseWriter, r *http.Request)
@@ -488,6 +596,9 @@ type ServerInterface interface {
 	// Rename one global customer stage
 	// (PATCH /api/v1/stages/{stage_id})
 	RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams)
+	// List the local tag catalog in deterministic order
+	// (GET /api/v1/tags)
+	ListTags(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -526,13 +637,31 @@ func (_ Unimplemented) GetCustomer(w http.ResponseWriter, r *http.Request, custo
 
 // Update customer-owned profile fields
 // (PATCH /api/v1/customers/{customer_id})
-func (_ Unimplemented) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+func (_ Unimplemented) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List append-only customer events using a keyset cursor
 // (GET /api/v1/customers/{customer_id}/events)
 func (_ Unimplemented) ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Set or clear a customer's stage
+// (PUT /api/v1/customers/{customer_id}/stage)
+func (_ Unimplemented) SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Idempotently remove one local tag from a customer
+// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
+func (_ Unimplemented) RemoveCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params RemoveCustomerTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Idempotently apply one local tag to a customer
+// (PUT /api/v1/customers/{customer_id}/tags/{tag_id})
+func (_ Unimplemented) AddCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params AddCustomerTagParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -569,6 +698,12 @@ func (_ Unimplemented) CreateStage(w http.ResponseWriter, r *http.Request, param
 // Rename one global customer stage
 // (PATCH /api/v1/stages/{stage_id})
 func (_ Unimplemented) RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the local tag catalog in deterministic order
+// (GET /api/v1/tags)
+func (_ Unimplemented) ListTags(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -701,6 +836,86 @@ func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// ------------- Optional query parameter "keyword" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", r.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "keyword", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "owner_staff_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_staff_id", r.URL.Query(), &params.OwnerStaffId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_staff_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "stage_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "stage_id", r.URL.Query(), &params.StageId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stage_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "channel_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "channel_id", r.URL.Query(), &params.ChannelId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "tag_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "tag_id", r.URL.Query(), &params.TagId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "is_deleted" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "is_deleted", r.URL.Query(), &params.IsDeleted, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "is_deleted", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "added_after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "added_after", r.URL.Query(), &params.AddedAfter, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "added_after", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "added_before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "added_before", r.URL.Query(), &params.AddedBefore, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "added_before", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "last_interact_after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "last_interact_after", r.URL.Query(), &params.LastInteractAfter, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "last_interact_after", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "last_interact_before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "last_interact_before", r.URL.Query(), &params.LastInteractBefore, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "last_interact_before", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListCustomers(w, r, params)
 	}))
@@ -763,8 +978,36 @@ func (siw *ServerInterfaceWrapper) UpdateCustomer(w http.ResponseWriter, r *http
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateCustomerParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateCustomer(w, r, customerId)
+		siw.Handler.UpdateCustomer(w, r, customerId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -815,6 +1058,201 @@ func (siw *ServerInterfaceWrapper) ListCustomerEvents(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListCustomerEvents(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCustomerStage operation middleware
+func (siw *ServerInterfaceWrapper) SetCustomerStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetCustomerStageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCustomerStage(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveCustomerTag operation middleware
+func (siw *ServerInterfaceWrapper) RemoveCustomerTag(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId TagID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", chi.URLParam(r, "tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RemoveCustomerTagParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveCustomerTag(w, r, customerId, tagId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddCustomerTag operation middleware
+func (siw *ServerInterfaceWrapper) AddCustomerTag(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId TagID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", chi.URLParam(r, "tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AddCustomerTagParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddCustomerTag(w, r, customerId, tagId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1013,6 +1451,26 @@ func (siw *ServerInterfaceWrapper) RenameStage(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListTags operation middleware
+func (siw *ServerInterfaceWrapper) ListTags(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTags(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1148,6 +1606,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/events", wrapper.ListCustomerEvents)
 	})
 	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/customers/{customer_id}/stage", wrapper.SetCustomerStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/customers/{customer_id}/tags/{tag_id}", wrapper.RemoveCustomerTag)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/customers/{customer_id}/tags/{tag_id}", wrapper.AddCustomerTag)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/identity/bind", wrapper.BindIdentity)
 	})
 	r.Group(func(r chi.Router) {
@@ -1164,6 +1631,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/api/v1/stages/{stage_id}", wrapper.RenameStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/tags", wrapper.ListTags)
 	})
 
 	return r
@@ -1311,6 +1781,15 @@ func (response ListCustomers401JSONResponse) VisitListCustomersResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListCustomers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomers403JSONResponse) VisitListCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetCustomerRequestObject struct {
 	CustomerId CustomerID `json:"customer_id"`
 }
@@ -1319,7 +1798,7 @@ type GetCustomerResponseObject interface {
 	VisitGetCustomerResponse(w http.ResponseWriter) error
 }
 
-type GetCustomer200JSONResponse Customer
+type GetCustomer200JSONResponse CustomerDetailResponse
 
 func (response GetCustomer200JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -1337,6 +1816,15 @@ func (response GetCustomer401JSONResponse) VisitGetCustomerResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetCustomer403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomer403JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetCustomer404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetCustomer404JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
@@ -1348,6 +1836,7 @@ func (response GetCustomer404JSONResponse) VisitGetCustomerResponse(w http.Respo
 
 type UpdateCustomerRequestObject struct {
 	CustomerId CustomerID `json:"customer_id"`
+	Params     UpdateCustomerParams
 	Body       *UpdateCustomerJSONRequestBody
 }
 
@@ -1382,6 +1871,15 @@ func (response UpdateCustomer401JSONResponse) VisitUpdateCustomerResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type UpdateCustomer403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateCustomer403JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type UpdateCustomer404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response UpdateCustomer404JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
@@ -1396,6 +1894,17 @@ type UpdateCustomer409JSONResponse struct{ ConflictJSONResponse }
 func (response UpdateCustomer409JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateCustomer422JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1436,11 +1945,221 @@ func (response ListCustomerEvents401JSONResponse) VisitListCustomerEventsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListCustomerEvents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerEvents403JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListCustomerEvents404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response ListCustomerEvents404JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStageRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     SetCustomerStageParams
+	Body       *SetCustomerStageJSONRequestBody
+}
+
+type SetCustomerStageResponseObject interface {
+	VisitSetCustomerStageResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerStage200JSONResponse Customer
+
+func (response SetCustomerStage200JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetCustomerStage400JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetCustomerStage401JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetCustomerStage403JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetCustomerStage404JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetCustomerStage409JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response SetCustomerStage422JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTagRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	TagId      TagID      `json:"tag_id"`
+	Params     RemoveCustomerTagParams
+}
+
+type RemoveCustomerTagResponseObject interface {
+	VisitRemoveCustomerTagResponse(w http.ResponseWriter) error
+}
+
+type RemoveCustomerTag204Response struct {
+}
+
+func (response RemoveCustomerTag204Response) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveCustomerTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RemoveCustomerTag400JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RemoveCustomerTag401JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RemoveCustomerTag403JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RemoveCustomerTag404JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RemoveCustomerTag409JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTagRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	TagId      TagID      `json:"tag_id"`
+	Params     AddCustomerTagParams
+}
+
+type AddCustomerTagResponseObject interface {
+	VisitAddCustomerTagResponse(w http.ResponseWriter) error
+}
+
+type AddCustomerTag204Response struct {
+}
+
+func (response AddCustomerTag204Response) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type AddCustomerTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AddCustomerTag400JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AddCustomerTag401JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AddCustomerTag403JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AddCustomerTag404JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AddCustomerTag409JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1778,6 +2497,31 @@ func (response RenameStage503JSONResponse) VisitRenameStageResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListTagsRequestObject struct {
+}
+
+type ListTagsResponseObject interface {
+	VisitListTagsResponse(w http.ResponseWriter) error
+}
+
+type ListTags200JSONResponse TagListResponse
+
+func (response ListTags200JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTags401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListTags401JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List non-secret configuration readiness
@@ -1801,6 +2545,15 @@ type StrictServerInterface interface {
 	// List append-only customer events using a keyset cursor
 	// (GET /api/v1/customers/{customer_id}/events)
 	ListCustomerEvents(ctx context.Context, request ListCustomerEventsRequestObject) (ListCustomerEventsResponseObject, error)
+	// Set or clear a customer's stage
+	// (PUT /api/v1/customers/{customer_id}/stage)
+	SetCustomerStage(ctx context.Context, request SetCustomerStageRequestObject) (SetCustomerStageResponseObject, error)
+	// Idempotently remove one local tag from a customer
+	// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
+	RemoveCustomerTag(ctx context.Context, request RemoveCustomerTagRequestObject) (RemoveCustomerTagResponseObject, error)
+	// Idempotently apply one local tag to a customer
+	// (PUT /api/v1/customers/{customer_id}/tags/{tag_id})
+	AddCustomerTag(ctx context.Context, request AddCustomerTagRequestObject) (AddCustomerTagResponseObject, error)
 	// Bind a scoped identity to a channel-neutral customer
 	// (POST /api/v1/identity/bind)
 	BindIdentity(ctx context.Context, request BindIdentityRequestObject) (BindIdentityResponseObject, error)
@@ -1819,6 +2572,9 @@ type StrictServerInterface interface {
 	// Rename one global customer stage
 	// (PATCH /api/v1/stages/{stage_id})
 	RenameStage(ctx context.Context, request RenameStageRequestObject) (RenameStageResponseObject, error)
+	// List the local tag catalog in deterministic order
+	// (GET /api/v1/tags)
+	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -1977,10 +2733,11 @@ func (sh *strictHandler) GetCustomer(w http.ResponseWriter, r *http.Request, cus
 }
 
 // UpdateCustomer operation middleware
-func (sh *strictHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+func (sh *strictHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams) {
 	var request UpdateCustomerRequestObject
 
 	request.CustomerId = customerId
+	request.Params = params
 
 	var body UpdateCustomerJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -2029,6 +2786,96 @@ func (sh *strictHandler) ListCustomerEvents(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListCustomerEventsResponseObject); ok {
 		if err := validResponse.VisitListCustomerEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCustomerStage operation middleware
+func (sh *strictHandler) SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams) {
+	var request SetCustomerStageRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	var body SetCustomerStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCustomerStage(ctx, request.(SetCustomerStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCustomerStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCustomerStageResponseObject); ok {
+		if err := validResponse.VisitSetCustomerStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveCustomerTag operation middleware
+func (sh *strictHandler) RemoveCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params RemoveCustomerTagParams) {
+	var request RemoveCustomerTagRequestObject
+
+	request.CustomerId = customerId
+	request.TagId = tagId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveCustomerTag(ctx, request.(RemoveCustomerTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveCustomerTag")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveCustomerTagResponseObject); ok {
+		if err := validResponse.VisitRemoveCustomerTagResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddCustomerTag operation middleware
+func (sh *strictHandler) AddCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params AddCustomerTagParams) {
+	var request AddCustomerTagRequestObject
+
+	request.CustomerId = customerId
+	request.TagId = tagId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddCustomerTag(ctx, request.(AddCustomerTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddCustomerTag")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddCustomerTagResponseObject); ok {
+		if err := validResponse.VisitAddCustomerTagResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2213,6 +3060,30 @@ func (sh *strictHandler) RenameStage(w http.ResponseWriter, r *http.Request, sta
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RenameStageResponseObject); ok {
 		if err := validResponse.VisitRenameStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTags operation middleware
+func (sh *strictHandler) ListTags(w http.ResponseWriter, r *http.Request) {
+	var request ListTagsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTags(ctx, request.(ListTagsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTags")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTagsResponseObject); ok {
+		if err := validResponse.VisitListTagsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
