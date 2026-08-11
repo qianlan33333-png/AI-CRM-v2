@@ -225,6 +225,9 @@ required=(
   docs/evidence/slices/P2-17-stages-ui.md
   docs/execution/slices/P2-18.md
   docs/evidence/slices/P2-18-tier-config.md
+  docs/execution/slices/G2-T03.md
+  docs/evidence/g2/test-server-deployment.md
+  docs/evidence/phases/P2-closeout.md
   internal/platform/deployment/tier.go
   internal/platform/deployment/tier_test.go
   cmd/aicrm-config/main.go
@@ -273,6 +276,8 @@ required=(
   scripts/test_build_slice_bundle.sh
   scripts/test_gitless_generated_check.sh
   scripts/test_orval_generated_check.sh
+  scripts/package_release_archive.sh
+  scripts/test_package_release_archive.sh
   scripts/test_arch_imports.sh
   scripts/test_query_plan_gate.sh
   scripts/test_repo_contract.sh
@@ -333,6 +338,8 @@ done <<'EOF'
 100644 scripts/sourcepolicy/main.go
 100755 scripts/test_source_policy.sh
 100755 scripts/test_gitless_generated_check.sh
+100755 scripts/package_release_archive.sh
+100755 scripts/test_package_release_archive.sh
 100755 scripts/check_slice_inputs.sh
 100755 scripts/test_slice_inputs.sh
 100644 tools/snapshot-gate/main.go
@@ -488,6 +495,9 @@ done <<'EOF'
 100644 docs/evidence/slices/P2-17-stages-ui.md
 100644 docs/execution/slices/P2-18.md
 100644 docs/evidence/slices/P2-18-tier-config.md
+100644 docs/execution/slices/G2-T03.md
+100644 docs/evidence/g2/test-server-deployment.md
+100644 docs/evidence/phases/P2-closeout.md
 100644 internal/platform/deployment/tier.go
 100644 internal/platform/deployment/tier_test.go
 100644 cmd/aicrm-config/main.go
@@ -570,7 +580,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  da83f394de0e50fd4de851701d866ffd7c88dc4f34ca82c42f198753b7c6a8a7
+  368af239b7a332c0a78b59a95daf5f6100b98e8a2c8f53147bb0121a99c64da9
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -605,6 +615,16 @@ verify_index_sha256 scripts/generated-sources.sha256 \
   57144db46b0a7d7c4e2565f8d2e126dcda64357ea268d804a7d20be2c88b0652
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
+verify_index_sha256 scripts/package_release_archive.sh \
+  823c105ee3255b7ac28888a00bdabd54b275dd2aeedd7e6963ead8b0c98c16d4
+verify_index_sha256 scripts/test_package_release_archive.sh \
+  78707542d4221d4aa477c0dd05a3b91e22ba5b729f3b8cd4f93ec5ab98746e01
+verify_index_sha256 docs/execution/slices/G2-T03.md \
+  50d056e21443ade6d38605b0a534d4f86a55331d8394418c179e161eccaa8f4e
+verify_index_sha256 docs/evidence/g2/test-server-deployment.md \
+  259c4590466a356259168f1e246667339202808812c056f8021871269c668b14
+verify_index_sha256 docs/evidence/phases/P2-closeout.md \
+  80f355388180006365fda2c9f49b71499ad5f25ab4b8e05320d2fd0c7befae2c
 verify_index_sha256 docs/backlog/post-launch.md \
   3248fa362b357e72f562531feb5ba01297f0a19b275a1e61d40108a4fe522b31
 verify_index_sha256 docs/execution/implementation-plan.md \
@@ -1064,7 +1084,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  fc966716f0ea2373939e5c5e120383898bf2f2432bf17835fd9697de561cac3e
+  cda7b0383f78256e3255c02d847a9d79f4276c4758211a5407c578e99ffa2aa0
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1825,6 +1845,13 @@ grep -Fq '$(GO) test -race -count=1 ./internal/platform/deployment ./cmd/aicrm-c
   fail "P2-S18 generator race tests must remain in the acceptance target"
 grep -Fq 'acceptance/p2s18/test_tier_config.sh' <<<"$p2s18_make" ||
   fail "P2-S18 black-box acceptance must remain in the acceptance target"
+
+[[ "$(grep -Ec '^g2-release-archive-contract:$' <<<"$p2s18_make")" -eq 1 ]] ||
+  fail "G2 release archive contract target must be declared exactly once"
+grep -Eq '^ci-go:.*[[:space:]]g2-release-archive-contract([[:space:]]|$)' <<<"$p2s18_make" ||
+  fail "G2 release archive contract must remain connected to ci-go"
+grep -Fqx $'\t@env -u BASH_ENV -u ENV scripts/test_package_release_archive.sh' <<<"$p2s18_make" ||
+  fail "G2 release archive contract must run the permanent archive tests"
 
 p2s18_tier_source="$(git show :internal/platform/deployment/tier.go)"
 for queue_name in CRITICAL EVENT OUTBOUND SYNC HEAVY AI; do

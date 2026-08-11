@@ -38,8 +38,8 @@ execution_policy:
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
-current_phase: P2
-current_phase_status: P2_IN_PROGRESS
+current_phase: G2
+current_phase_status: G2_BACKEND_DEPLOYED_BROWSER_GATE_PENDING
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -649,7 +649,7 @@ slices:
     pr_head_sha: 9435d18e680e76e6ea3c43e1c1102a0673980fcd
     merge_sha: 084e35724743e5782ab1bdcded5dbbc9f76e1549
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 0
   - slice_id: P1-S11
     title: freeze-core-openapi-and-public-ports-candidates
@@ -1578,15 +1578,19 @@ slices:
   - slice_id: P2-18
     title: tier-config-compose-and-staging-script
     owner: Codex-Sol
-    status: in_progress
+    status: merged
     base_sha: 49d870719d2528aa4e6a05cab54bb90085691b82
     dependency: P2-17
     branch: slice/p2-18-tier-deploy
     decision_anchor: EXECUTION_PLAN_3_1_F_REL_2026_08_10_DESIGN_1_3
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/116
+    pr_head_sha: d2a3247e3c6c397d9801774f44dda62dc216e58b
+    merge_sha: 0c4c1bd697631d6242fdf838d17303970635144f
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31489713217
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31489713213
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31489713186
     delegated_tasks: []
     tests:
       - LOCAL_focused_tier_generator_CLI_race_PASS
@@ -1642,15 +1646,19 @@ slices:
   - slice_id: G2-T02
     title: river-staging-migration-one-way-entrypoint
     owner: Codex-Sol
-    status: in_progress
+    status: completed
     base_sha: 7cad6482516da7d4071ac98e2317e03dd2460238
     dependency: G2-T01
     branch: infra/g2-river-migrate
     decision_anchor: USER_STAGING_TARGET_2026_08_11
-    pr_url: PENDING
-    pr_head_sha: PENDING
-    merge_sha: PENDING
-    main_ci_status: PENDING
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/118
+    pr_head_sha: b210ccee40a9c7d7be0136453c696cf43eb802c1
+    merge_sha: 05247dd16da571af9fefb081c46eb9facb2ddc38
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31501801845
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31501801808
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31501801884
     delegated_tasks: []
     tests:
       - LOCAL_RIVER_MIGRATION_CLI_FOCUSED_PASS
@@ -1669,7 +1677,58 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED
+  - slice_id: G2-T03
+    title: test-deployment-evidence-and-release-archive-cleanliness
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 05247dd16da571af9fefb081c46eb9facb2ddc38
+    dependency: G2-T02
+    branch: infra/g2-deployment-evidence
+    decision_anchor: USER_STAGING_DEPLOYMENT_AUTHORIZED_2026_08_11
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    delegated_tasks: []
+    tests:
+      - EXACT_MAIN_05247dd_APPLICATION_WEB_PASS_RUN_31501801845
+      - EXACT_MAIN_05247dd_REPO_CONTRACT_PASS_RUN_31501801808_18M14S
+      - EXACT_MAIN_05247dd_SECRET_SCAN_PASS_RUN_31501801884
+      - TEST_SERVER_POSTGRES_16_14_GOOSE_V4_RIVER_6_PASS
+      - TEST_SERVER_SIX_QUEUES_S_TIER_2_1_1_1_1_1_PGX9_PASS
+      - TEST_SERVER_LOOPBACK_ONLY_HEALTH_200_SESSION_401_PASS
+      - TEST_SERVER_NONROOT_READONLY_CAPDROP_RESTART_RECOVERY_PASS
+      - LOCAL_REAL_RELEASE_CLEAN_REPACKAGE_NO_APPLEDOUBLE_PASS
+    handwritten_scope: 3_files_under_P2_cap_tests_docs_ledger_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 5
+    external_gates:
+      - TEST_SERVER_BACKEND_DEPLOYED
+      - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
+      - G2_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
 phase_closeouts:
+  P2:
+    as_of: 2026-08-11T23:00:00+08:00
+    status: G2_READY
+    final_main_sha: 0c4c1bd697631d6242fdf838d17303970635144f
+    evidence: docs/evidence/phases/P2-closeout.md
+    completed_slices: P2_00_P2_01R_P2_02_THROUGH_P2_18
+    superseded_slices:
+      - P2_01_SUPERSEDED_BY_RESCOPE
+    final_main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31489713217
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31489713213
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31489713186
+    external_gates:
+      - G2_BROWSER_LOGIN_AND_STAGES_CRUD_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
   P1:
     as_of: 2026-08-10T15:30:00+08:00
     status: P2_READY
