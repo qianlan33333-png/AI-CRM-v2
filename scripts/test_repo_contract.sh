@@ -1983,6 +1983,29 @@ if (cd "$missing_p3c01d_handler" && scripts/check_repo_contract.sh >/dev/null 2>
   fail "missing P3-C01D customer HTTP handler was accepted"
 fi
 
+for file_path in \
+  web/src/customers.ts \
+  web/src/customers.test.ts \
+  web/src/customers-ui.tsx \
+  web/src/customers-ui.test.tsx \
+  web/src/customers-list.css \
+  docs/execution/slices/P3-C04.md \
+  docs/evidence/slices/P3-C04-customer-list-ui.md; do
+  p3c04_receipt_fixture="$(make_fixture "p3-c04-receipt-${file_path//\//-}")"
+  printf '\n' >>"$p3c04_receipt_fixture/$file_path"
+  git -C "$p3c04_receipt_fixture" add "$file_path"
+  if (cd "$p3c04_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C04 customer list UI receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_p3c04_ui="$(make_fixture missing-p3-c04-ui)"
+rm -f "$missing_p3c04_ui/web/src/customers-ui.tsx"
+git -C "$missing_p3c04_ui" add -u web/src/customers-ui.tsx
+if (cd "$missing_p3c04_ui" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P3-C04 customer list UI was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

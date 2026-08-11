@@ -86,6 +86,14 @@ describe("Web shell routes", () => {
     expect(stages).toContain("阶段管理");
     expect(stages).not.toContain("P2-17 将在此接入真实能力");
 
+    vi.stubGlobal("window", { location: { pathname: "/customers" } });
+    const customers = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
+    expect(customers).toContain("客户列表");
+    expect(customers).toContain("筛选条件");
+    expect(customers).not.toContain("客户模块边界已预留");
+
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
     const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(missing).toContain("404");
