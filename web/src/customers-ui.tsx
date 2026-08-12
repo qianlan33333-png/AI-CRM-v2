@@ -19,7 +19,11 @@ export interface CustomerListPageProps {
   readonly role: CustomerRole;
   readonly transport?: CustomerTransport;
   readonly onUnauthenticated?: () => void;
+  readonly onCustomerNavigate?: CustomerNavigateHandler;
 }
+
+export type CustomerNavigateHandler =
+  React.MouseEventHandler<HTMLAnchorElement>;
 
 export type CustomerListScreen =
   | { readonly kind: "loading" }
@@ -65,16 +69,28 @@ function totalLabel(page: CustomerListPage): string {
     : `共 ${page.total.toLocaleString("en-US")} 名客户`;
 }
 
-function CustomerRows({ items }: { readonly items: readonly CustomerRecord[] }) {
+function CustomerRows({
+  items,
+  onCustomerNavigate,
+}: {
+  readonly items: readonly CustomerRecord[];
+  readonly onCustomerNavigate?: CustomerNavigateHandler;
+}) {
   return (
     <tbody>
       {items.map((customer) => (
         <tr key={customer.id}>
           <th scope="row">
-            <span className="customer-list__customer-name">
+            <a
+              className="customer-list__customer-name"
+              href={`/customers/${customer.id}`}
+              onClick={onCustomerNavigate}
+            >
               {customer.name.trim() === "" ? "未命名客户" : customer.name}
+            </a>
+            <span className="customer-list__customer-id">
+              OneID {customer.id}
             </span>
-            <span className="customer-list__customer-id">OneID {customer.id}</span>
           </th>
           <td>{valueOrPlaceholder(customer.ownerStaffID, "未分配")}</td>
           <td>{valueOrPlaceholder(customer.stageID, "未设置")}</td>
@@ -93,6 +109,7 @@ export interface CustomerListContentProps {
   readonly screen: CustomerListScreen;
   readonly onRetry: () => void;
   readonly onLoadMore: () => void;
+  readonly onCustomerNavigate?: CustomerNavigateHandler;
 }
 
 /**
@@ -104,6 +121,7 @@ export function CustomerListContent({
   screen,
   onRetry,
   onLoadMore,
+  onCustomerNavigate,
 }: CustomerListContentProps): React.ReactElement {
   if (screen.kind === "loading") {
     return (
@@ -161,7 +179,10 @@ export function CustomerListContent({
               <th scope="col">状态</th>
             </tr>
           </thead>
-          <CustomerRows items={page.items} />
+          <CustomerRows
+            items={page.items}
+            onCustomerNavigate={onCustomerNavigate}
+          />
         </table>
       </div>
       {screen.paginationFailure && (
@@ -325,7 +346,10 @@ function CustomerListFiltersForm({
             onChange={onInputChange}
           />
         </label>
-        <label className="customer-list__checkbox" htmlFor="customer-is-deleted">
+        <label
+          className="customer-list__checkbox"
+          htmlFor="customer-is-deleted"
+        >
           <input
             checked={draft.isDeleted}
             id="customer-is-deleted"
@@ -352,6 +376,7 @@ export function CustomerListPage({
   role,
   transport = generatedCustomerTransport,
   onUnauthenticated,
+  onCustomerNavigate,
 }: CustomerListPageProps): React.ReactElement {
   const [draft, setDraft] = useState<CustomerListFilterDraft>({
     ...defaultCustomerListFilterDraft,
@@ -484,7 +509,11 @@ export function CustomerListPage({
   };
 
   const loadMore = () => {
-    if (screen.kind !== "ready" || !screen.page.nextCursor || screen.loadingMore) {
+    if (
+      screen.kind !== "ready" ||
+      !screen.page.nextCursor ||
+      screen.loadingMore
+    ) {
       return;
     }
     void requestPage({
@@ -516,6 +545,7 @@ export function CustomerListPage({
         screen={screen}
         onLoadMore={loadMore}
         onRetry={retry}
+        onCustomerNavigate={onCustomerNavigate}
       />
     </section>
   );

@@ -262,7 +262,14 @@ function exactObject(
 }
 
 function parseCustomer(value: unknown): CustomerProfile | undefined {
-  const required = ["id", "name", "is_deleted", "extra", "created_at", "updated_at"];
+  const required = [
+    "id",
+    "name",
+    "is_deleted",
+    "extra",
+    "created_at",
+    "updated_at",
+  ];
   const allowed = [
     ...required,
     "avatar_url",
@@ -298,13 +305,17 @@ function parseCustomer(value: unknown): CustomerProfile | undefined {
   return {
     id: value.id,
     name: value.name,
-    ...(typeof value.avatar_url === "string" ? { avatarURL: value.avatar_url } : {}),
+    ...(typeof value.avatar_url === "string"
+      ? { avatarURL: value.avatar_url }
+      : {}),
     ...(typeof value.gender === "number" ? { gender: value.gender } : {}),
     ...(typeof value.stage_id === "number" ? { stageID: value.stage_id } : {}),
     ...(typeof value.owner_staff_id === "number"
       ? { ownerStaffID: value.owner_staff_id }
       : {}),
-    ...(typeof value.channel_id === "number" ? { channelID: value.channel_id } : {}),
+    ...(typeof value.channel_id === "number"
+      ? { channelID: value.channel_id }
+      : {}),
     ...(typeof value.added_at === "string" ? { addedAt: value.added_at } : {}),
     ...(typeof value.last_interact_at === "string"
       ? { lastInteractAt: value.last_interact_at }
@@ -322,10 +333,21 @@ function parseTag(value: unknown): CustomerTag | undefined {
   if (
     !positiveInteger(value.id) ||
     typeof value.name !== "string" ||
-    value.name.length === 0 ||
+    value.name.trim().length === 0 ||
+    value.name.length > 200 ||
     !safeInteger(value.sort_order) ||
+    value.sort_order < -2_147_483_648 ||
+    value.sort_order > 2_147_483_647 ||
     !optionalPositiveInteger(value.group_id) ||
     !optionalString(value.group_name)
+  ) {
+    return undefined;
+  }
+  const hasGroupID = typeof value.group_id === "number";
+  const hasGroupName = typeof value.group_name === "string";
+  if (
+    hasGroupID !== hasGroupName ||
+    (hasGroupName && value.group_name.trim().length === 0)
   ) {
     return undefined;
   }
@@ -388,7 +410,12 @@ function parseEvent(value: unknown): CustomerTimelineEvent | undefined {
 function parseEventPage(
   value: unknown,
   customerID: number,
-): { readonly events: readonly CustomerTimelineEvent[]; readonly haveMore: boolean } | undefined {
+):
+  | {
+      readonly events: readonly CustomerTimelineEvent[];
+      readonly haveMore: boolean;
+    }
+  | undefined {
   if (!exactObject(value, ["items", "next_cursor"], ["items", "next_cursor"])) {
     return undefined;
   }
@@ -419,7 +446,12 @@ function parseEventPage(
 export function parseCustomerDetailResponse(
   value: unknown,
   customerID: number,
-): { readonly customer: CustomerProfile; readonly tags: readonly CustomerTag[] } | undefined {
+):
+  | {
+      readonly customer: CustomerProfile;
+      readonly tags: readonly CustomerTag[];
+    }
+  | undefined {
   if (!positiveInteger(customerID)) return undefined;
   if (!exactObject(value, ["customer", "tags"], ["customer", "tags"])) {
     return undefined;
@@ -551,7 +583,10 @@ export async function submitCustomerProfileUpdate(
     channel_id: update.channelID,
   };
   try {
-    return completeMutation(await transport.update(customerID, request, options), 200);
+    return completeMutation(
+      await transport.update(customerID, request, options),
+      200,
+    );
   } catch {
     return { status: "unavailable" };
   }
@@ -588,7 +623,11 @@ async function submitTagMutation(
   csrfToken: string,
 ): Promise<CustomerMutationResult> {
   const options = mutationOptions(csrfToken);
-  if (!validMutationCustomerID(customerID) || !positiveInteger(tagID) || !options) {
+  if (
+    !validMutationCustomerID(customerID) ||
+    !positiveInteger(tagID) ||
+    !options
+  ) {
     return { status: "invalid" };
   }
   try {

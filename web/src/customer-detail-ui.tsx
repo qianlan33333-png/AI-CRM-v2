@@ -64,7 +64,8 @@ function draftFromCustomer(customer: CustomerProfile): ProfileDraft {
     gender: customer.gender === undefined ? "" : String(customer.gender),
     ownerStaffID:
       customer.ownerStaffID === undefined ? "" : String(customer.ownerStaffID),
-    channelID: customer.channelID === undefined ? "" : String(customer.channelID),
+    channelID:
+      customer.channelID === undefined ? "" : String(customer.channelID),
   };
 }
 
@@ -143,13 +144,21 @@ export function CustomerDetailPage({
   initialSnapshot,
 }: CustomerDetailPageProps): React.ReactElement {
   const [page, setPage] = useState<PageState>(() =>
-    initialSnapshot ? { kind: "ready", snapshot: initialSnapshot } : { kind: "loading" },
+    initialSnapshot
+      ? { kind: "ready", snapshot: initialSnapshot }
+      : { kind: "loading" },
   );
   const [notice, setNotice] = useState<string>();
   const [profile, setProfile] = useState<ProfileDraft>(() =>
     initialSnapshot
       ? draftFromCustomer(initialSnapshot.customer)
-      : { name: "", avatarURL: "", gender: "", ownerStaffID: "", channelID: "" },
+      : {
+          name: "",
+          avatarURL: "",
+          gender: "",
+          ownerStaffID: "",
+          channelID: "",
+        },
   );
   const [stageValue, setStageValue] = useState("");
   const [selectedTagID, setSelectedTagID] = useState("");
@@ -171,12 +180,15 @@ export function CustomerDetailPage({
     void refresh();
   }, [refresh]);
 
-  const loadedCustomer = page.kind === "ready" ? page.snapshot.customer : undefined;
+  const loadedCustomer =
+    page.kind === "ready" ? page.snapshot.customer : undefined;
   useEffect(() => {
     if (!loadedCustomer) return;
     setProfile(draftFromCustomer(loadedCustomer));
     setStageValue(
-      loadedCustomer.stageID === undefined ? "" : String(loadedCustomer.stageID),
+      loadedCustomer.stageID === undefined
+        ? ""
+        : String(loadedCustomer.stageID),
     );
   }, [loadedCustomer]);
 
@@ -214,7 +226,7 @@ export function CustomerDetailPage({
       const refreshed = await loadCustomerDetail(transport, customerID);
       if (sequence !== loadSequence.current) return;
       if (refreshed.status !== "loaded") {
-        applyLoadResult(refreshed, setPage, onUnauthenticated);
+        if (refreshed.status === "unauthenticated") onUnauthenticated?.();
         setNotice("操作已提交，但未能重新读取服务端事实。请稍后刷新确认。");
         return;
       }
@@ -228,7 +240,9 @@ export function CustomerDetailPage({
     }
   };
 
-  const requestProfileSave = async (event: React.FormEvent<HTMLFormElement>) => {
+  const requestProfileSave = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     const update = parseProfileDraft(profile);
     if (!update) {
@@ -383,7 +397,10 @@ export function CustomerDetailPage({
       )}
 
       <div className="customer-detail-page__grid">
-        <form className="customer-detail-page__card" onSubmit={requestProfileSave}>
+        <form
+          className="customer-detail-page__card"
+          onSubmit={requestProfileSave}
+        >
           <fieldset disabled={mutationPending}>
             <legend>资料操作</legend>
             <label htmlFor="customer-name">名称</label>
@@ -392,7 +409,10 @@ export function CustomerDetailPage({
               name="customer-name"
               value={profile.name}
               onChange={(event) =>
-                setProfile((current) => ({ ...current, name: event.currentTarget.value }))
+                setProfile((current) => ({
+                  ...current,
+                  name: event.currentTarget.value,
+                }))
               }
             />
             <label htmlFor="customer-avatar-url">头像地址</label>
@@ -414,7 +434,10 @@ export function CustomerDetailPage({
               name="customer-gender"
               value={profile.gender}
               onChange={(event) =>
-                setProfile((current) => ({ ...current, gender: event.currentTarget.value }))
+                setProfile((current) => ({
+                  ...current,
+                  gender: event.currentTarget.value,
+                }))
               }
             />
             <label htmlFor="customer-owner">负责人编号</label>
@@ -449,11 +472,17 @@ export function CustomerDetailPage({
           </fieldset>
         </form>
 
-        <form className="customer-detail-page__card" onSubmit={requestStageSave}>
+        <form
+          className="customer-detail-page__card"
+          onSubmit={requestStageSave}
+        >
           <fieldset disabled={mutationPending}>
             <legend>阶段</legend>
             <p className="customer-detail-page__meta">
-              当前阶段：{customer.stageID === undefined ? "未设置" : `#${customer.stageID}`}
+              当前阶段：
+              {customer.stageID === undefined
+                ? "未设置"
+                : `#${customer.stageID}`}
             </p>
             <label htmlFor="customer-stage-id">阶段编号</label>
             <input
@@ -470,7 +499,10 @@ export function CustomerDetailPage({
           </fieldset>
         </form>
 
-        <section className="customer-detail-page__card" aria-labelledby="customer-tags-title">
+        <section
+          className="customer-detail-page__card"
+          aria-labelledby="customer-tags-title"
+        >
           <h2 id="customer-tags-title">标签</h2>
           {tags.length === 0 ? (
             <p className="customer-detail-page__meta" role="status">
@@ -500,7 +532,9 @@ export function CustomerDetailPage({
                 id="customer-tag-id"
                 name="customer-tag-id"
                 value={selectedTagID}
-                onChange={(event) => setSelectedTagID(event.currentTarget.value)}
+                onChange={(event) =>
+                  setSelectedTagID(event.currentTarget.value)
+                }
               >
                 <option value="">请选择</option>
                 {availableTags.map((tag) => (
@@ -517,7 +551,10 @@ export function CustomerDetailPage({
         </section>
       </div>
 
-      <section className="customer-detail-page__card" aria-labelledby="customer-timeline-title">
+      <section
+        className="customer-detail-page__card"
+        aria-labelledby="customer-timeline-title"
+      >
         <h2 id="customer-timeline-title">时间线</h2>
         {events.length === 0 ? (
           <p className="customer-detail-page__meta" role="status">
@@ -529,7 +566,9 @@ export function CustomerDetailPage({
               <li key={event.id}>
                 <strong>{event.eventType}</strong>
                 <span>执行者：{event.actor}</span>
-                <time dateTime={event.occurredAt}>{formatDateTime(event.occurredAt)}</time>
+                <time dateTime={event.occurredAt}>
+                  {formatDateTime(event.occurredAt)}
+                </time>
               </li>
             ))}
           </ol>

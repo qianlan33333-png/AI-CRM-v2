@@ -69,10 +69,16 @@ function client(
 ): CustomerDetailTransport {
   return {
     get: vi.fn(async () => responses.get ?? detailResponse),
-    update: vi.fn(async () => responses.update ?? { status: 200, data: rawCustomer }),
-    setStage: vi.fn(async () => responses.setStage ?? { status: 200, data: rawCustomer }),
+    update: vi.fn(
+      async () => responses.update ?? { status: 200, data: rawCustomer },
+    ),
+    setStage: vi.fn(
+      async () => responses.setStage ?? { status: 200, data: rawCustomer },
+    ),
     addTag: vi.fn(async () => responses.addTag ?? { status: 204, data: {} }),
-    removeTag: vi.fn(async () => responses.removeTag ?? { status: 204, data: {} }),
+    removeTag: vi.fn(
+      async () => responses.removeTag ?? { status: 204, data: {} },
+    ),
     listEvents: vi.fn(async () => responses.events ?? eventsResponse),
     listTags: vi.fn(async () => responses.tags ?? tagsResponse),
   };
@@ -95,9 +101,7 @@ describe("customer detail response parsing", () => {
         createdAt: "2026-08-11T00:00:00Z",
         updatedAt: "2026-08-12T02:00:00Z",
       },
-      tags: [
-        { id: 9, groupName: "意向", name: "已报名", sortOrder: 10 },
-      ],
+      tags: [{ id: 9, groupName: "意向", name: "已报名", sortOrder: 10 }],
     });
   });
 
@@ -108,11 +112,29 @@ describe("customer detail response parsing", () => {
     { customer: { ...rawCustomer, id: 8 }, tags: [] },
     { customer: { ...rawCustomer, updated_at: "not-a-time" }, tags: [] },
     { customer: { ...rawCustomer, created_at: "2026-08-11" }, tags: [] },
-    { customer: { ...rawCustomer, avatar_url: "javascript:alert(1)" }, tags: [] },
-    { customer: { ...rawCustomer, avatar_url: "data:text/plain,unsafe" }, tags: [] },
-    { customer: { ...rawCustomer, avatar_url: "ftp://assets.invalid/a" }, tags: [] },
-    { customer: { ...rawCustomer, avatar_url: "https:assets.invalid/a" }, tags: [] },
-    { customer: { ...rawCustomer, avatar_url: "https://name:secret@assets.invalid/a" }, tags: [] },
+    {
+      customer: { ...rawCustomer, avatar_url: "javascript:alert(1)" },
+      tags: [],
+    },
+    {
+      customer: { ...rawCustomer, avatar_url: "data:text/plain,unsafe" },
+      tags: [],
+    },
+    {
+      customer: { ...rawCustomer, avatar_url: "ftp://assets.invalid/a" },
+      tags: [],
+    },
+    {
+      customer: { ...rawCustomer, avatar_url: "https:assets.invalid/a" },
+      tags: [],
+    },
+    {
+      customer: {
+        ...rawCustomer,
+        avatar_url: "https://name:secret@assets.invalid/a",
+      },
+      tags: [],
+    },
     { customer: { ...rawCustomer, gender: 32_768 }, tags: [] },
     { customer: { ...rawCustomer, gender: -32_769 }, tags: [] },
     {
@@ -124,6 +146,9 @@ describe("customer detail response parsing", () => {
       tags: [],
     },
     { customer: rawCustomer, tags: [{ ...rawTag, id: 0 }] },
+    { customer: rawCustomer, tags: [{ ...rawTag, group_name: null }] },
+    { customer: rawCustomer, tags: [{ ...rawTag, group_id: null }] },
+    { customer: rawCustomer, tags: [{ ...rawTag, sort_order: 2_147_483_648 }] },
     { customer: rawCustomer, tags: [rawTag, rawTag] },
   ])("rejects malformed or mismatched detail %#", (value) => {
     expect(parseCustomerDetailResponse(value, 7)).toBeUndefined();
@@ -149,6 +174,7 @@ describe("customer detail response parsing", () => {
     { items: "nope" },
     { items: [rawTag], extra: true },
     { items: [{ ...rawTag, group_name: 7 }] },
+    { items: [{ ...rawTag, group_name: "   " }] },
   ])("rejects an expanded or malformed tag catalog %#", (value) => {
     expect(parseTagCatalog(value)).toBeUndefined();
   });
@@ -184,7 +210,10 @@ describe("customer detail loading", () => {
     await expect(
       loadCustomerDetail(
         client({
-          events: { status: 200, data: { items: [rawEvent], next_cursor: null } },
+          events: {
+            status: 200,
+            data: { items: [rawEvent], next_cursor: null },
+          },
         }),
         7,
       ),
@@ -201,7 +230,9 @@ describe("customer detail loading", () => {
     ["get", 503, "unavailable"],
   ] as const)("classifies %s status %i as %s", async (target, status, want) => {
     const transport = client({ [target]: { status, data: {} } });
-    await expect(loadCustomerDetail(transport, 7)).resolves.toEqual({ status: want });
+    await expect(loadCustomerDetail(transport, 7)).resolves.toEqual({
+      status: want,
+    });
   });
 
   it("fails closed for a rejected request, mismatched event, or invalid id", async () => {
@@ -224,7 +255,6 @@ describe("customer detail loading", () => {
       status: "unavailable",
     });
   });
-
 });
 
 describe("customer detail mutations", () => {
@@ -292,7 +322,12 @@ describe("customer detail mutations", () => {
     [503, "unavailable"],
   ] as const)("classifies write status %i as %s", async (status, want) => {
     await expect(
-      submitCustomerProfileUpdate(client({ update: { status, data: {} } }), 7, update, csrf),
+      submitCustomerProfileUpdate(
+        client({ update: { status, data: {} } }),
+        7,
+        update,
+        csrf,
+      ),
     ).resolves.toEqual({ status: want });
   });
 
@@ -302,7 +337,12 @@ describe("customer detail mutations", () => {
       submitCustomerProfileUpdate(transport, 0, update, csrf),
     ).resolves.toEqual({ status: "invalid" });
     await expect(
-      submitCustomerProfileUpdate(transport, 7, { ...update, name: "  " }, csrf),
+      submitCustomerProfileUpdate(
+        transport,
+        7,
+        { ...update, name: "  " },
+        csrf,
+      ),
     ).resolves.toEqual({ status: "invalid" });
     await expect(
       submitCustomerStageChange(transport, 7, 3, "short"),
@@ -327,12 +367,7 @@ describe("customer detail mutations", () => {
     ]) {
       const candidate = client();
       await expect(
-        submitCustomerProfileUpdate(
-          candidate,
-          7,
-          invalidUpdate,
-          csrf,
-        ),
+        submitCustomerProfileUpdate(candidate, 7, invalidUpdate, csrf),
       ).resolves.toEqual({ status: "invalid" });
       expect(candidate.update).not.toHaveBeenCalled();
     }
