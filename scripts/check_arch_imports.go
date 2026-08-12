@@ -25,6 +25,7 @@ var domains = map[string]bool{
 var compositionRoots = map[string]bool{
 	"aicrm":               true,
 	"aicrm-river-migrate": true,
+	"aicrm-contact-perf":  true,
 }
 
 func main() {

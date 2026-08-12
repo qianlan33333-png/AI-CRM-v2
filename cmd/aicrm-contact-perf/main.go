@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"sort"
@@ -49,6 +50,7 @@ var (
 type options struct {
 	databaseURL string
 	sourceSHA   string
+	mainCIURL   string
 	receiptPath string
 	samples     int
 	warmups     int
@@ -74,6 +76,7 @@ type datasetEvidence struct {
 
 type environmentEvidence struct {
 	SourceSHA          string `json:"source_sha"`
+	MainCIURL          string `json:"main_ci_url"`
 	BinaryVCSRevision  string `json:"binary_vcs_revision"`
 	BinaryVCSModified  bool   `json:"binary_vcs_modified"`
 	Database           string `json:"database"`
@@ -89,13 +92,14 @@ type environmentEvidence struct {
 }
 
 type planEvidence struct {
-	Query          string   `json:"query"`
-	ExecutionMS    float64  `json:"execution_ms"`
-	PlanningMS     float64  `json:"planning_ms"`
-	SharedHit      int64    `json:"shared_hit_blocks"`
-	SharedRead     int64    `json:"shared_read_blocks"`
-	NodeTypes      []string `json:"node_types"`
-	ForbiddenScans []string `json:"forbidden_seq_scans"`
+	Query          string          `json:"query"`
+	ExecutionMS    float64         `json:"execution_ms"`
+	PlanningMS     float64         `json:"planning_ms"`
+	SharedHit      int64           `json:"shared_hit_blocks"`
+	SharedRead     int64           `json:"shared_read_blocks"`
+	NodeTypes      []string        `json:"node_types"`
+	ForbiddenScans []string        `json:"forbidden_seq_scans"`
+	Explain        json.RawMessage `json:"explain_analyze_buffers"`
 }
 
 type caseEvidence struct {
@@ -213,7 +217,7 @@ func main() {
 		os.Exit(2)
 	}
 	if opts.receiptPath != "" {
-		if err := verifyReceiptFile(opts.receiptPath, opts.sourceSHA); err != nil {
+		if err := verifyReceiptFile(opts.receiptPath, opts.sourceSHA, opts.mainCIURL); err != nil {
 			fmt.Fprintln(os.Stderr, "contact-perf-receipt: invalid")
 			os.Exit(1)
 		}
@@ -244,6 +248,7 @@ func parseOptions(arguments []string) (options, error) {
 	var databaseURLFile string
 	set.StringVar(&databaseURLFile, "database-url-file", "", "private isolated performance database URL file")
 	set.StringVar(&result.sourceSHA, "source-sha", "", "exact main source SHA")
+	set.StringVar(&result.mainCIURL, "main-ci-url", "", "exact successful main CI run URL")
 	set.StringVar(&result.receiptPath, "verify-receipt", "", "verify a saved S-tier receipt")
 	set.IntVar(&result.samples, "samples", requiredSamples, "measured calls per combination")
 	set.IntVar(&result.warmups, "warmups", requiredWarmups, "warmup calls per combination")
@@ -251,7 +256,8 @@ func parseOptions(arguments []string) (options, error) {
 		return options{}, errors.New("invalid arguments")
 	}
 	if result.receiptPath != "" {
-		if databaseURLFile != "" || !isExactSHA(result.sourceSHA) || result.samples != requiredSamples || result.warmups != requiredWarmups {
+		if databaseURLFile != "" || !isExactSHA(result.sourceSHA) || !isTrustedMainCIURL(result.mainCIURL) ||
+			result.samples != requiredSamples || result.warmups != requiredWarmups {
 			return options{}, errors.New("invalid arguments")
 		}
 		return result, nil
@@ -265,7 +271,7 @@ func parseOptions(arguments []string) (options, error) {
 		return options{}, errors.New("invalid arguments")
 	}
 	if err := validateDatabaseURL(result.databaseURL); err != nil || !isExactSHA(result.sourceSHA) ||
-		result.samples < requiredSamples || result.warmups < requiredWarmups {
+		!isTrustedMainCIURL(result.mainCIURL) || result.samples < requiredSamples || result.warmups < requiredWarmups {
 		return options{}, errors.New("invalid arguments")
 	}
 	return result, nil
@@ -307,8 +313,8 @@ func readBoundedRegularFile(path string, maximum int64, private bool) ([]byte, e
 	return contents, nil
 }
 
-func verifyReceiptFile(path, expectedSHA string) error {
-	contents, err := readBoundedRegularFile(path, 64<<20, false)
+func verifyReceiptFile(path, expectedSHA, expectedMainCIURL string) error {
+	contents, err := readBoundedRegularFile(path, 256<<20, false)
 	if err != nil {
 		return errors.New("read receipt")
 	}
@@ -321,7 +327,7 @@ func verifyReceiptFile(path, expectedSHA string) error {
 	if err := ensureJSONEOF(decoder); err != nil {
 		return err
 	}
-	return validateReceipt(value, expectedSHA)
+	return validateReceipt(value, expectedSHA, expectedMainCIURL)
 }
 
 func ensureJSONEOF(decoder *json.Decoder) error {
@@ -335,7 +341,7 @@ func ensureJSONEOF(decoder *json.Decoder) error {
 	return nil
 }
 
-func validateReceipt(value report, expectedSHA string) error {
+func validateReceipt(value report, expectedSHA, expectedMainCIURL string) error {
 	if value.Kind != "contact_customer_list_s_tier_hard_gate" || value.EvidenceClass != "authorized_test_server_synthetic" ||
 		!value.Passed || value.ThresholdMS != latencyLimit.Milliseconds() || value.CombinationCount != 4096 ||
 		len(value.Cases) != 4096 || value.SampleCount < 4096*requiredSamples || value.GlobalP50MS < 0 ||
@@ -347,7 +353,8 @@ func validateReceipt(value report, expectedSHA string) error {
 		return errors.New("receipt timestamp is invalid")
 	}
 	environment := value.Environment
-	if !isExactSHA(expectedSHA) || environment.SourceSHA != expectedSHA || environment.BinaryVCSRevision != expectedSHA || environment.BinaryVCSModified ||
+	if !isExactSHA(expectedSHA) || !isTrustedMainCIURL(expectedMainCIURL) || environment.SourceSHA != expectedSHA ||
+		environment.MainCIURL != expectedMainCIURL || environment.BinaryVCSRevision != expectedSHA || environment.BinaryVCSModified ||
 		environment.Database != requiredDatabase || environment.PostgreSQLVersion != "160014" || environment.CPUs != 2 ||
 		environment.MemoryKiB < 3_500_000 || environment.MemoryKiB > 4_800_000 || environment.SwapKiB < 4_000_000 ||
 		environment.GoMemoryLimitBytes != 768*1024*1024 || environment.SharedBuffers != "1GB" ||
@@ -387,6 +394,12 @@ func validateReceipt(value report, expectedSHA string) error {
 				len(plan.NodeTypes) == 0 || len(plan.ForbiddenScans) != 0 {
 				return errors.New("receipt query plan is invalid")
 			}
+			decoded, decodeErr := decodePlanEvidence(plan.Query, plan.Explain)
+			if decodeErr != nil || plan.ExecutionMS != decoded.ExecutionMS || plan.PlanningMS != decoded.PlanningMS ||
+				plan.SharedHit != decoded.SharedHit || plan.SharedRead != decoded.SharedRead ||
+				!reflect.DeepEqual(plan.NodeTypes, decoded.NodeTypes) || !reflect.DeepEqual(plan.ForbiddenScans, decoded.ForbiddenScans) {
+				return errors.New("receipt query plan evidence is inconsistent")
+			}
 			planNames[plan.Query] = true
 		}
 	}
@@ -424,6 +437,25 @@ func safePort(port string) bool {
 	return err == nil && value > 0 && value <= 65535
 }
 
+func isTrustedMainCIURL(raw string) bool {
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed == nil || parsed.Scheme != "https" || parsed.Host != "github.com" || parsed.User != nil ||
+		parsed.RawQuery != "" || parsed.Fragment != "" || parsed.RawFragment != "" || parsed.Opaque != "" {
+		return false
+	}
+	const prefix = "/qianlan33333-png/AI-CRM-v2/actions/runs/"
+	runID := strings.TrimPrefix(parsed.Path, prefix)
+	if runID == parsed.Path || runID == "" || runID[0] == '0' {
+		return false
+	}
+	for _, character := range runID {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func isExactSHA(value string) bool {
 	if len(value) != 40 {
 		return false
@@ -454,7 +486,7 @@ func execute(ctx context.Context, opts options) (*report, error) {
 		return nil, errors.New("connect isolated performance database")
 	}
 
-	environment, err := inspectEnvironment(ctx, pool, opts.sourceSHA)
+	environment, err := inspectEnvironment(ctx, pool, opts.sourceSHA, opts.mainCIURL)
 	if err != nil {
 		return nil, err
 	}
@@ -503,15 +535,15 @@ func execute(ctx context.Context, opts options) (*report, error) {
 	if !result.Passed {
 		return result, errors.New("performance threshold or plan contract failed")
 	}
-	if err := validateReceipt(*result, opts.sourceSHA); err != nil {
+	if err := validateReceipt(*result, opts.sourceSHA, opts.mainCIURL); err != nil {
 		return result, errors.New("generated performance receipt failed its own frozen contract")
 	}
 	return result, nil
 }
 
-func inspectEnvironment(ctx context.Context, pool *pgxpool.Pool, sourceSHA string) (environmentEvidence, error) {
+func inspectEnvironment(ctx context.Context, pool *pgxpool.Pool, sourceSHA, mainCIURL string) (environmentEvidence, error) {
 	result := environmentEvidence{
-		SourceSHA: sourceSHA, CPUs: runtime.NumCPU(), GoMemoryLimitBytes: debug.SetMemoryLimit(-1),
+		SourceSHA: sourceSHA, MainCIURL: mainCIURL, CPUs: runtime.NumCPU(), GoMemoryLimitBytes: debug.SetMemoryLimit(-1),
 	}
 	revision, modified, err := binaryVCS()
 	if err != nil || revision != sourceSHA || modified {
@@ -828,6 +860,13 @@ func explainQuery(ctx context.Context, pool *pgxpool.Pool, statement capturedQue
 	if err := pool.QueryRow(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+statement.SQL, statement.Args...).Scan(&raw); err != nil {
 		return planEvidence{}, errors.New("execute exact captured query plan")
 	}
+	return decodePlanEvidence(statement.Name, raw)
+}
+
+func decodePlanEvidence(query string, raw []byte) (planEvidence, error) {
+	if len(raw) < 2 || len(raw) > 256<<10 {
+		return planEvidence{}, errors.New("exact captured query plan size is invalid")
+	}
 	var roots []struct {
 		Plan          map[string]any `json:"Plan"`
 		PlanningTime  float64        `json:"Planning Time"`
@@ -836,7 +875,10 @@ func explainQuery(ctx context.Context, pool *pgxpool.Pool, statement capturedQue
 	if err := json.Unmarshal(raw, &roots); err != nil || len(roots) != 1 || roots[0].Plan == nil {
 		return planEvidence{}, errors.New("decode exact captured query plan")
 	}
-	result := planEvidence{Query: statement.Name, PlanningMS: roots[0].PlanningTime, ExecutionMS: roots[0].ExecutionTime}
+	result := planEvidence{
+		Query: query, PlanningMS: roots[0].PlanningTime, ExecutionMS: roots[0].ExecutionTime,
+		Explain: append(json.RawMessage(nil), raw...),
+	}
 	walkPlan(roots[0].Plan, &result)
 	sort.Strings(result.NodeTypes)
 	sort.Strings(result.ForbiddenScans)

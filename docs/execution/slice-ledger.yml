@@ -2542,18 +2542,28 @@ slices:
       - focused_race_and_vet_PASS
       - source_policy_lint_and_copy_path_negatives_PASS
       - repo_contract_and_full_permanent_negatives_PASS
+      - full_ci_go_serial_real_pg_55432_PASS
+      - web_ci_node24_npm11_186_tests_build_audit_PASS
+      - gitleaks_no_leaks_PASS
       - real_test_server_PERFORMANCE_NOT_EXECUTED
-    handwritten_scope: 4_files_979_changed_lines_tests_and_governance_excluded
-    slice_induced_correction_count: 0
+    handwritten_scope: 5_files_1030_changed_lines_default_cap_exception_for_complete_raw_explain_receipt_tests_and_governance_excluded
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 0
-    scope_induced_correction_count: 4
-    verification_induced_correction_count: 1
+    scope_induced_correction_count: 5
+    verification_induced_correction_count: 5
     correction_notes:
       - scope:draft_DSN_contract_was_aligned_to_A1_literal_loopback_file_only_and_safe_open_stat_read
       - scope:draft_live_execution_was_aligned_to_the_strict_receipt_contract_for_full_non_overlapping_continuation_pages
       - scope:receipt_verification_now_requires_a_caller_supplied_trusted_main_SHA_instead_of_internal_SHA_self_consistency
       - scope:runner_specific_clean_VCS_metadata_build_was_separated_from_the_buildvcs_false_release_builder
+      - scope:real_repository_runner_required_one_exact_architecture_composition_root_with_copy_path_negative
+      - slice:independent_review_found_receipt_missing_the_frozen_trusted_main_CI_URL_binding_then_run_and_verify_modes_were_made_to_require_it
+      - slice:independent_review_found_EXPLAIN_was_only_summarized_then_each_complete_raw_JSON_plan_was_persisted_and_reparsed_to_verify_the_summary
       - verification:local_draft_cherry_pick_sequence_reissued_one_already_applied_commit_then_skipped_it_without_tree_drift
+      - verification:first_full_Go_gate_used_parallel_shared_acceptance_schema_then_existing_serial_55432_strategy_was_reapplied_without_weakening
+      - verification:second_full_Go_gate_omitted_the_P0S03_explicit_fail_closed_integration_switch_then_reissued_with_the_same_safe_55432_DSN
+      - verification:serial_full_Go_gate_final_query_plan_step_required_its_own_safe_DSN_and_exact_base_head_inputs_then_that_last_gate_was_reissued_and_passed
+      - verification:local_gh_version_did_not_support_pr_create_json_output_then_PR_creation_was_reissued_without_that_reporting_flag
     external_gates:
       - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED_FOR_P3_C06B
       - REAL_WECOM_NOT_EXECUTED

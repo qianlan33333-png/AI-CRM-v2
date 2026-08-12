@@ -2483,11 +2483,27 @@ if (cd "$p3c06a2_matrix_fixture" && scripts/check_repo_contract.sh >/dev/null 2>
 fi
 
 p3c06a2_self_validation_fixture="$(make_fixture p3-c06a2-self-validation)"
-sed -i.bak '/validateReceipt(\*result, opts.sourceSHA)/d' \
+sed -i.bak '/validateReceipt(\*result, opts.sourceSHA, opts.mainCIURL)/d' \
   "$p3c06a2_self_validation_fixture/cmd/aicrm-contact-perf/main.go"
 git -C "$p3c06a2_self_validation_fixture" add cmd/aicrm-contact-perf/main.go
 if (cd "$p3c06a2_self_validation_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C06A2 live receipt self-validation removal was accepted"
+fi
+
+p3c06a2_main_ci_fixture="$(make_fixture p3-c06a2-main-ci-binding)"
+sed -i.bak '/set.StringVar(&result.mainCIURL, "main-ci-url"/d' \
+  "$p3c06a2_main_ci_fixture/cmd/aicrm-contact-perf/main.go"
+git -C "$p3c06a2_main_ci_fixture" add cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06a2_main_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A2 main CI receipt binding removal was accepted"
+fi
+
+p3c06a2_raw_explain_fixture="$(make_fixture p3-c06a2-raw-explain)"
+sed -i.bak '/decodePlanEvidence(plan.Query, plan.Explain)/d' \
+  "$p3c06a2_raw_explain_fixture/cmd/aicrm-contact-perf/main.go"
+git -C "$p3c06a2_raw_explain_fixture" add cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06a2_raw_explain_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A2 raw EXPLAIN receipt verification removal was accepted"
 fi
 
 p3c06a2_ci_fixture="$(make_fixture p3-c06a2-ci-disconnect)"

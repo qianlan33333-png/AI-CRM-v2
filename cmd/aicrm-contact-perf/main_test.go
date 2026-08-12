@@ -14,6 +14,7 @@ import (
 )
 
 const testSourceSHA = "33f6e19792a6d44686642236fb99d6a4e76c3369"
+const testMainCIURL = "https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31569336280"
 
 func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 	root := t.TempDir()
@@ -25,6 +26,7 @@ func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 	valid := []string{
 		"--database-url-file=" + path,
 		"--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369",
+		"--main-ci-url=" + testMainCIURL,
 	}
 	opts, err := parseOptions(valid)
 	if err != nil || opts.samples != requiredSamples || opts.warmups != requiredWarmups {
@@ -33,6 +35,7 @@ func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 	secret := "must-not-leak"
 	invalid := [][]string{
 		{},
+		{"--database-url-file=" + path, "--source-sha=" + testSourceSHA},
 		{"--database-url=" + value, "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
 		{"--database-url=postgres://postgres:" + secret + "@postgres:5432/aicrm?sslmode=disable", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
 		{"--database-url=postgres://postgres:" + secret + "@postgres:5432/aicrm_perf?sslmode=require", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
@@ -53,13 +56,14 @@ func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 }
 
 func TestParseOptionsAcceptsOnlyExclusiveReceiptVerificationMode(t *testing.T) {
-	opts, err := parseOptions([]string{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA})
+	opts, err := parseOptions([]string{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA, "--main-ci-url=" + testMainCIURL})
 	if err != nil || opts.receiptPath != "/tmp/p3-c06.json" {
 		t.Fatalf("parse receipt mode = %#v, %v", opts, err)
 	}
 	for _, arguments := range [][]string{
 		{"--verify-receipt=/tmp/p3-c06.json"},
-		{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA, "--samples=21"},
+		{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA},
+		{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA, "--main-ci-url=" + testMainCIURL, "--samples=21"},
 		{"--verify-receipt=/tmp/p3-c06.json", "--database-url=postgres://u:p@postgres/aicrm_perf?sslmode=disable"},
 	} {
 		if _, parseErr := parseOptions(arguments); parseErr == nil {
@@ -111,7 +115,7 @@ func TestParseOptionsRequiresDatabaseURLFileOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	sha := "33f6e19792a6d44686642236fb99d6a4e76c3369"
-	opts, err := parseOptions([]string{"--database-url-file=" + path, "--source-sha=" + sha})
+	opts, err := parseOptions([]string{"--database-url-file=" + path, "--source-sha=" + sha, "--main-ci-url=" + testMainCIURL})
 	if err != nil || opts.databaseURL != value {
 		t.Fatalf("parse file URL mode = %#v, %v", opts, err)
 	}
@@ -138,6 +142,23 @@ func TestValidateDatabaseURLMatchesGeneratorLoopbackContract(t *testing.T) {
 	} {
 		if err := validateDatabaseURL(value); err == nil {
 			t.Fatalf("validateDatabaseURL(%q) succeeded", value)
+		}
+	}
+}
+
+func TestTrustedMainCIURLRequiresExactRepositoryActionsRun(t *testing.T) {
+	if !isTrustedMainCIURL(testMainCIURL) {
+		t.Fatal("expected main CI URL was rejected")
+	}
+	for _, value := range []string{
+		"",
+		"http://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/1",
+		"https://github.com/other/AI-CRM-v2/actions/runs/1",
+		"https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/0",
+		"https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/1?attempt=2",
+	} {
+		if isTrustedMainCIURL(value) {
+			t.Fatalf("unsafe main CI URL %q was accepted", value)
 		}
 	}
 }
@@ -226,7 +247,7 @@ func TestWalkPlanRejectsOnlyTargetSequentialScansAndCollectsEvidence(t *testing.
 
 func TestValidateReceiptRequiresEveryFastPlanSafeScenario(t *testing.T) {
 	valid := validReceipt()
-	if err := validateReceipt(valid, testSourceSHA); err != nil {
+	if err := validateReceipt(valid, testSourceSHA, testMainCIURL); err != nil {
 		t.Fatalf("validateReceipt(valid) error = %v", err)
 	}
 
@@ -243,15 +264,19 @@ func TestValidateReceiptRequiresEveryFastPlanSafeScenario(t *testing.T) {
 			value.Environment.SourceSHA = strings.Repeat("a", 40)
 			value.Environment.BinaryVCSRevision = strings.Repeat("a", 40)
 		}},
+		{name: "unexpected main CI", mutate: func(value *report) {
+			value.Environment.MainCIURL = "https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/1"
+		}},
 		{name: "missing time distribution", mutate: func(value *report) { value.Dataset.AddedBefore = 0 }},
 		{name: "negative buffers", mutate: func(value *report) { value.Cases[0].Plans[0].SharedRead = -1 }},
+		{name: "inconsistent raw plan", mutate: func(value *report) { value.Cases[0].Plans[0].ExecutionMS = 2 }},
 		{name: "fake environment", mutate: func(value *report) { value.EvidenceClass = "local" }},
 	}
 	for _, test := range mutations {
 		t.Run(test.name, func(t *testing.T) {
 			candidate := validReceipt()
 			test.mutate(&candidate)
-			if err := validateReceipt(candidate, testSourceSHA); err == nil {
+			if err := validateReceipt(candidate, testSourceSHA, testMainCIURL); err == nil {
 				t.Fatal("invalid receipt was accepted")
 			}
 		})
@@ -269,13 +294,13 @@ func TestVerifyReceiptFileIsStrictAndRejectsSymlink(t *testing.T) {
 	if err := osWriteFile(path, encoded); err != nil {
 		t.Fatal(err)
 	}
-	if err := verifyReceiptFile(path, testSourceSHA); err != nil {
+	if err := verifyReceiptFile(path, testSourceSHA, testMainCIURL); err != nil {
 		t.Fatalf("verifyReceiptFile(valid) error = %v", err)
 	}
 	if err := osWriteFile(path, append(encoded, []byte(` {}`)...)); err != nil {
 		t.Fatal(err)
 	}
-	if err := verifyReceiptFile(path, testSourceSHA); err == nil {
+	if err := verifyReceiptFile(path, testSourceSHA, testMainCIURL); err == nil {
 		t.Fatal("trailing JSON was accepted")
 	}
 	if err := osWriteFile(path, encoded); err != nil {
@@ -285,7 +310,7 @@ func TestVerifyReceiptFileIsStrictAndRejectsSymlink(t *testing.T) {
 	if err := os.Symlink(path, link); err != nil {
 		t.Fatal(err)
 	}
-	if err := verifyReceiptFile(link, testSourceSHA); err == nil {
+	if err := verifyReceiptFile(link, testSourceSHA, testMainCIURL); err == nil {
 		t.Fatal("symlink receipt was accepted")
 	}
 }
@@ -330,7 +355,7 @@ func validReceipt() report {
 		Kind: "contact_customer_list_s_tier_hard_gate", EvidenceClass: "authorized_test_server_synthetic",
 		GeneratedAt: "2026-08-12T00:00:00Z", ThresholdMS: 200, Passed: true,
 		Environment: environmentEvidence{
-			SourceSHA: sha, BinaryVCSRevision: sha, Database: requiredDatabase, PostgreSQLVersion: "160014",
+			SourceSHA: sha, MainCIURL: testMainCIURL, BinaryVCSRevision: sha, Database: requiredDatabase, PostgreSQLVersion: "160014",
 			CPUs: 2, MemoryKiB: 4_000_000, SwapKiB: 4_194_304, GoMemoryLimitBytes: 768 * 1024 * 1024,
 			SharedBuffers: "1GB", EffectiveCacheSize: "2GB", WorkMem: "8MB", MaxConnections: "40",
 		},
@@ -350,11 +375,15 @@ func validReceipt() report {
 			Limit: item.limit, Samples: requiredSamples, P50MS: 3, P95MS: 4, MaxMS: 5,
 			Matched: int(item.limit), HasMore: true,
 			Plans: []planEvidence{
-				{Query: "ListCustomerIDsBounded", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Only Scan"}, ForbiddenScans: []string{}},
-				{Query: "ListCustomers", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Scan"}, ForbiddenScans: []string{}},
+				{Query: "ListCustomerIDsBounded", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Only Scan"}, ForbiddenScans: []string{}, Explain: rawPlan("Index Only Scan")},
+				{Query: "ListCustomers", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Scan"}, ForbiddenScans: []string{}, Explain: rawPlan("Index Scan")},
 			},
 		})
 	}
 	result.SlowestCase = result.Cases[0].ID
 	return result
+}
+
+func rawPlan(nodeType string) json.RawMessage {
+	return json.RawMessage(`[{"Plan":{"Node Type":"` + nodeType + `","Shared Hit Blocks":0,"Shared Read Blocks":0},"Planning Time":0.1,"Execution Time":1}]`)
 }

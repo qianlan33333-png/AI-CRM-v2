@@ -922,9 +922,9 @@ verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
-  6d06c304c397fd7966ffa7a52d70a888323465e511a7c9db63521b35e0881224
+  d256748dc6bec9a60773872d7c59444f12ae43ba0e9285a4bd8a476e305e5392
 verify_index_sha256 scripts/test_arch_imports.sh \
-  2905b7e910816cecb685f0b5e34476c67100a62a21ea1b6e015a6e58a884aa74
+  7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
   94d56f1479ee25eb13643ed97565a73fd5e774178510b118d172d7fd1dbac22e
 verify_index_sha256 scripts/test_ownership.sh \
@@ -1218,13 +1218,13 @@ verify_index_sha256 docs/execution/slices/P3-C06.md \
 verify_index_sha256 docs/evidence/slices/P3-C06-synthetic-data.md \
   4ab11a23ee9b7336b05eddbbd35a2d5d0516341f3aa11610a873b06cace83a96
 verify_index_sha256 cmd/aicrm-contact-perf/main.go \
-  775e7ee0765a53032de269654b707f7c2a61846f91d96e84eaef3e53cf693961
+  55506b1a20f8797925414863fd197d3cea17b75888f5f14260beaf4660cff260
 verify_index_sha256 cmd/aicrm-contact-perf/main_test.go \
-  51ae206b35995dd17f43643dad8438a541d503faf53f61d8afc57b9cb3cf0933
+  7c04131ab98913d3f1305e10f12b243ee90d5e82c67644df6764d2a8f618b8fd
 verify_index_sha256 docs/execution/slices/P3-C06A2.md \
-  3e6b079dde75121bae6f0a8ecbe4b53ddae18cd7217e3702f22ac917c605b4cc
+  8fc11d267b9b208a3ff686ede72dcb627de3ec9dd0a6a1101b02d6055d08ccce
 verify_index_sha256 docs/evidence/slices/P3-C06A2-runner.md \
-  24639803d29a9f0ac0f79b5a3cfaeec90b1de70a9351f1a7253253ad939895e5
+  9be6ab90bd98152b390974a1f7992f4b8de6177c1401517576906c46d7fec284
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1528,7 +1528,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a4d250a3ac85019d73f3cb7e7cac574726e9daed512b52d68a87dd2a353ec481
+  3d515b0f8035bc484c5ca80177a672eddd3d649e7c3337497d2392a93888de89
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2632,8 +2632,12 @@ for anchor in \
   'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)' \
   'contactstore.NewCustomerQueryRepository()' \
   'platformstore.NewUnitOfWork(pool)' \
-  'validateReceipt(*result, opts.sourceSHA)' \
+  'validateReceipt(*result, opts.sourceSHA, opts.mainCIURL)' \
   'environment.SourceSHA != expectedSHA' \
+  'environment.MainCIURL != expectedMainCIURL' \
+  'set.StringVar(&result.mainCIURL, "main-ci-url"' \
+  'Explain        json.RawMessage' \
+  'decodePlanEvidence(plan.Query, plan.Explain)' \
   'result.GlobalP95MS < float64(latencyLimit)' \
   'host == "127.0.0.1" || host == "::1"' \
   'readBoundedRegularFile(path, 4096, true)'; do
@@ -2646,6 +2650,10 @@ grep -Fq 'set.StringVar(&databaseURLFile, "database-url-file"' <<<"$p3c06_runner
   fail "P3-C06A2 private database URL file is required"
 grep -Fq 'set.StringVar(&result.sourceSHA, "source-sha"' <<<"$p3c06_runner" ||
   fail "P3-C06A2 trusted source SHA input is required"
+grep -Fq '"aicrm-contact-perf":' <<<"$(git show :scripts/check_arch_imports.go)" ||
+  fail "P3-C06A2 exact architecture composition root is missing"
+grep -Fq 'performance-composition-copy' <<<"$(git show :scripts/test_arch_imports.sh)" ||
+  fail "P3-C06A2 architecture composition copy-path negative is missing"
 [[ "$(grep -Ec '^p3-c06a2-contract:$' <<<"$p3c06_make")" -eq 1 ]] ||
   fail "P3-C06A2 contract target must be declared exactly once"
 grep -Eq '^ci-go:.* p3-c06a2-contract( |$)' <<<"$p3c06_make" ||
