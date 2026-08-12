@@ -1176,7 +1176,7 @@ verify_index_sha256 docs/evidence/slices/P3-C02B-handler-tests.md \
 verify_index_sha256 acceptance/p3c02d/doc.go \
   0f9904b5bcbbc94986169fe7a93f51637cc731f85c07b9e7713d7ad4fe6216a7
 verify_index_sha256 acceptance/p3c02d/customer_event_integration_test.go \
-  7731f6f231a9a4418c805149e852b1a2b998c9703201c7136deb3511f26fea33
+  f0996da91507bbf648d836cf6778574cae5e7b18aae94d0f255f73f7dbe8dd3b
 verify_index_sha256 internal/contact/app/customer_event_service.go \
   aca56952728b7d738d2c392621b734c61d7fc88c8e6617f5168372c40c86ae5a
 verify_index_sha256 internal/contact/app/customer_event_service_test.go \
@@ -1604,7 +1604,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  d0e711e7031b6ff3c81fa0a2f0ca02959591965430b37b5402d8d4d676935e79
+  53f9691a0f14b4d102ed8d2198675d4e0778ad0c36fdfa3b342b708548d6aa5f
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2562,6 +2562,23 @@ grep -Fq 'productionQuery := generatedCustomerEventQuery(t)' <<<"$p3c02d_accepta
   fail "P3-C02D EXPLAIN must execute the generated production query"
 grep -Fq '"EXPLAIN (COSTS OFF)\n"+productionQuery' <<<"$p3c02d_acceptance" ||
   fail "P3-C02D generated production query is not connected to EXPLAIN"
+for anchor in \
+  'CREATE TABLE acceptance_fixtures.customer_merge_lineage (' \
+  'merged_customer_id BIGINT PRIMARY KEY REFERENCES acceptance_fixtures.customers(id),' \
+  'primary_customer_id BIGINT NOT NULL REFERENCES acceptance_fixtures.customers(id),' \
+  'CONSTRAINT customer_merge_lineage_distinct CHECK (merged_customer_id <> primary_customer_id),' \
+  'CONSTRAINT customer_merge_lineage_actor CHECK (' \
+  'CONSTRAINT customer_merge_lineage_reason CHECK (' \
+  'CREATE INDEX idx_customer_merge_lineage_primary' \
+  'ON acceptance_fixtures.customer_merge_lineage (primary_customer_id, merged_customer_id);' \
+  '"FROM customer_merge_lineage AS lineage", "FROM acceptance_fixtures.customer_merge_lineage AS lineage", 1'; do
+  grep -Fq "$anchor" <<<"$p3c02d_acceptance" ||
+    fail "P3-C02D lineage-aware fixture drifted: $anchor"
+done
+grep -Fq 'strings.Contains(plan.String(), "Seq Scan on customer_events")' <<<"$p3c02d_acceptance" ||
+  fail "P3-C02D EXPLAIN must reject a customer_events sequential scan without rejecting lineage setup scans"
+grep -Fq 'strings.Contains(plan.String(), "customer_events_timeline_idx")' <<<"$p3c02d_acceptance" ||
+  fail "P3-C02D EXPLAIN must retain the timeline index assertion"
 
 p3c02e_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c02e-acceptance:$' <<<"$p3c02e_make")" -eq 1 ]] ||

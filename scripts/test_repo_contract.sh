@@ -2330,6 +2330,33 @@ if (cd "$simplified_explain_p3c02d" && scripts/check_repo_contract.sh >/dev/null
   fail "P3-C02D simplified EXPLAIN substitute was accepted"
 fi
 
+missing_lineage_fixture_p3c02d="$(make_fixture p3-c02d-missing-lineage-fixture)"
+sed -i.bak '/CREATE TABLE acceptance_fixtures.customer_merge_lineage (/,/CREATE INDEX idx_customer_merge_lineage_primary/d' \
+  "$missing_lineage_fixture_p3c02d/acceptance/p3c02d/customer_event_integration_test.go"
+rm -f "$missing_lineage_fixture_p3c02d/acceptance/p3c02d/customer_event_integration_test.go.bak"
+git -C "$missing_lineage_fixture_p3c02d" add acceptance/p3c02d/customer_event_integration_test.go
+if (cd "$missing_lineage_fixture_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D lineage fixture removal was accepted"
+fi
+
+missing_lineage_explain_rewrite_p3c02d="$(make_fixture p3-c02d-missing-lineage-explain-rewrite)"
+sed -i.bak '/"FROM customer_merge_lineage AS lineage", "FROM acceptance_fixtures.customer_merge_lineage AS lineage", 1/d' \
+  "$missing_lineage_explain_rewrite_p3c02d/acceptance/p3c02d/customer_event_integration_test.go"
+rm -f "$missing_lineage_explain_rewrite_p3c02d/acceptance/p3c02d/customer_event_integration_test.go.bak"
+git -C "$missing_lineage_explain_rewrite_p3c02d" add acceptance/p3c02d/customer_event_integration_test.go
+if (cd "$missing_lineage_explain_rewrite_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D lineage EXPLAIN rewrite removal was accepted"
+fi
+
+timeline_seq_scan_escape_p3c02d="$(make_fixture p3-c02d-timeline-seq-scan-escape)"
+sed -i.bak 's/Seq Scan on customer_events/Seq Scan on all relations/' \
+  "$timeline_seq_scan_escape_p3c02d/acceptance/p3c02d/customer_event_integration_test.go"
+rm -f "$timeline_seq_scan_escape_p3c02d/acceptance/p3c02d/customer_event_integration_test.go.bak"
+git -C "$timeline_seq_scan_escape_p3c02d" add acceptance/p3c02d/customer_event_integration_test.go
+if (cd "$timeline_seq_scan_escape_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D customer-events sequential-scan escape was accepted"
+fi
+
 for file_path in \
   acceptance/p3c02e/doc.go \
   acceptance/p3c02e/tag_catalog_integration_test.go \

@@ -2953,6 +2953,37 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: P3-C07B0
+    title: c02d-lineage-fixture-compatibility
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_single_commit
+    base_sha: 1e7055c8e793acd727a7f4b245cbd389aec702a4
+    dependency: P3_C07A_MERGED_EXACT_MAIN
+    branch: fix/p3-c07b0-c02d-fixture-compat
+    decision_anchor: P3-C07B0-2026-08-13
+    scope:
+      - acceptance_p3c02d_lineage_schema_forward_compatibility
+      - generated_sql_explain_schema_rewrite_for_lineage_relation
+      - repo_contract_permanent_negative_protection
+    excluded_scope:
+      - production_migration_or_contact_business_behavior
+      - P3_C07B1_lineage_timeline_implementation
+      - segment_identity_openapi_public_ports_and_C07C
+    tests:
+      - LOCAL_POSTGRESQL_16_14_55432_PURE_MAIN_P3C02D_ACCEPTANCE_PASS
+      - LOCAL_POSTGRESQL_16_14_55432_C07B1_STAGED_WIP_READ_ONLY_FUNCTIONAL_OVERLAY_PASS
+      - LOCAL_REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
+      - LOCAL_FULL_CI_GO_REAL_POSTGRESQL_16_14_55432_PASS
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes:
+      - infra:pre_C07A_C02D_isolated_fixture_schema_omitted_the_C07A_lineage_relation
+      - infra:lineage_CTE_setup_scan_must_not_weaken_the_customer_events_index_plan_gate
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
