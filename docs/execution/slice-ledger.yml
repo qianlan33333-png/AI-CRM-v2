@@ -39,7 +39,7 @@ execution_policy:
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P3
-current_phase_status: P3_CONTACT_TIMELINE_PARTITIONS_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
+current_phase_status: P3_CONTACT_CUSTOMER_MUTATION_HTTP_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -2101,15 +2101,19 @@ slices:
   - slice_id: P3-C02B
     title: contact-get-customer-detail
     owner: Codex-Sol
-    status: in_progress
+    status: accepted
     base_sha: 96f93f17662c00987be0edf3d4f8059ae61bd477
     dependency: P3-C02A
     branch: slice/p3-c02b-customer-detail-read
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/132
+    pr_head_sha: dcd03a7ac73e964a036108f2e001ed752e8ceb8b
+    merge_sha: db896f6ed24489e024b3243bd838fdd7e306ca1e
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31549801547
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31549801553
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31549801546
     scale_adjustment: rollback_one_scale_after_P3_C02A_slice_induced_reached_3
     delegated_tasks:
       - task_id: /root/p3_c02b_sqlc_store
@@ -2142,18 +2146,63 @@ slices:
         executor_model: gpt-5.6-terra
         kind: independent_customer_detail_read_review
         status: SOL_REVIEWED_PASS_NO_FILE_MUTATION
+        final_reviewed_sha: dcd03a7ac73e964a036108f2e001ed752e8ceb8b
+        final_tree_sha: 1d6b9d029fcc5df77b1f1290883b7086f4c9d100
+        final_binary_diff_sha256: c0708b52d2f5a92b5bd347d470b8ac3674bb7cdb63be0da8072d7e9b7bee7aa6
+        final_manifest_sha256: 6527dc85cf737ddeaeab6bef974f2e4dba1cf12b7e3b0b71fd57890d4040e601
+        final_report_sha256: 51131ec1c81bfaddc77e537ae597413f4e21a92b8015a088a89a5230b900a759
     tests:
       - CUSTOMER_DETAIL_FOCUSED_RACE_PASS
       - POSTGRESQL_16_OWNER_SCOPE_AND_TAG_ORDER_ACCEPTANCE_PASS
       - POSTGRESQL_16_POLLUTED_EXTRA_MUTATION_ROLLBACK_PASS
       - GENERATORS_TWICE_NO_DIFF_PASS
       - REPO_CONTRACT_PERMANENT_NEGATIVES_PASS
-      - FULL_GO_WEB_SECRET_GATES_PENDING
+      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
+      - PR_AND_MAIN_CI_PASS_EXACT_MERGE_SHA
     handwritten_scope: 13_files_811_touched_lines_default_file_cap_exception_below_15_hard_cap_for_shared_channel_neutral_security_guard_and_complete_operation
     slice_induced_correction_count: 9
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 7
+    external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C02C
+    title: contact-customer-mutation-http
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: db896f6ed24489e024b3243bd838fdd7e306ca1e
+    dependency: P3-C02B
+    branch: slice/p3-c02c-customer-mutation-http
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    scope:
+      - updateCustomer
+      - setCustomerStage
+      - addCustomerTag
+      - removeCustomerTag
+      - owner_scope_inside_transaction_lock
+      - strict_presence_aware_request_body
+      - runtime_routes_and_csrf
+    delegated_tasks: []
+    tests:
+      - CUSTOMER_MUTATION_FOCUSED_RACE_PASS
+      - POSTGRESQL_16_OWNER_SCOPE_LOCK_ACCEPTANCE_PASS
+      - TERRA_TEST_CORPUS_PENDING
+      - GENERATORS_TWICE_NO_DIFF_PENDING
+      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PENDING
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes:
+      - verification:first_real_pg_probe_reused_actor_specific_parity_helper_with_admin_actor_then_aligned_fixture_actor_to_staff_7
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

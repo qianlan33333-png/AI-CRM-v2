@@ -47,7 +47,9 @@ func (repository *CustomerMutationRepository) UpdateCustomer(
 		return contactapp.CustomerProfileMutation{}, err
 	}
 
-	locked, err := queries.LockActiveCustomerForMutation(ctx, int64(command.ID))
+	locked, err := queries.LockActiveCustomerForMutation(ctx, lockActiveCustomerParams(
+		command.ID, command.ScopeOwnerStaffID,
+	))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactapp.CustomerProfileMutation{}, contactapp.ErrCustomerNotFound
 	}
@@ -87,7 +89,9 @@ func (repository *CustomerMutationRepository) SetCustomerStage(
 		return contactapp.CustomerStageMutation{}, err
 	}
 
-	locked, err := queries.LockActiveCustomerForMutation(ctx, int64(command.ID))
+	locked, err := queries.LockActiveCustomerForMutation(ctx, lockActiveCustomerParams(
+		command.ID, command.ScopeOwnerStaffID,
+	))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactapp.CustomerStageMutation{}, contactapp.ErrCustomerNotFound
 	}
@@ -213,7 +217,9 @@ func lockCustomerAndValidateTag(
 	queries contactdb.Querier,
 	command contactapp.CustomerTagCommand,
 ) error {
-	if _, err := queries.LockActiveCustomerForMutation(ctx, int64(command.ID)); errors.Is(err, pgx.ErrNoRows) {
+	if _, err := queries.LockActiveCustomerForMutation(ctx, lockActiveCustomerParams(
+		command.ID, command.ScopeOwnerStaffID,
+	)); errors.Is(err, pgx.ErrNoRows) {
 		return contactapp.ErrCustomerNotFound
 	} else if err != nil {
 		return mapCustomerMutationDatabaseError(err)
@@ -224,6 +230,16 @@ func lockCustomerAndValidateTag(
 		return mapCustomerMutationDatabaseError(err)
 	}
 	return nil
+}
+
+func lockActiveCustomerParams(
+	customerID contactport.CustomerID,
+	scopeOwnerStaffID *int64,
+) contactdb.LockActiveCustomerForMutationParams {
+	return contactdb.LockActiveCustomerForMutationParams{
+		CustomerID:        int64(customerID),
+		ScopeOwnerStaffID: nullableInt64(scopeOwnerStaffID),
+	}
 }
 
 func customerMutationQueriesFromContext(ctx context.Context) (*contactdb.Queries, error) {
@@ -431,6 +447,7 @@ func mapCustomerMutationDatabaseError(err error) error {
 
 func validateCustomerUpdateCommand(command contactapp.CustomerUpdateCommand) error {
 	if command.ID <= 0 || !validCustomerMutationActor(command.Actor) ||
+		invalidCustomerMutationScope(command.ScopeOwnerStaffID) ||
 		(command.Name == nil && !command.AvatarURL.Set && !command.Gender.Set &&
 			!command.OwnerStaffID.Set && !command.ChannelID.Set && command.Extra == nil) {
 		return contactapp.ErrInvalidCustomerMutation
@@ -454,6 +471,7 @@ func validateCustomerUpdateCommand(command contactapp.CustomerUpdateCommand) err
 
 func validateCustomerStageCommand(command contactapp.CustomerStageCommand) error {
 	if command.ID <= 0 || !validCustomerMutationActor(command.Actor) ||
+		invalidCustomerMutationScope(command.ScopeOwnerStaffID) ||
 		(command.StageID != nil && *command.StageID <= 0) {
 		return contactapp.ErrInvalidCustomerMutation
 	}
@@ -461,10 +479,15 @@ func validateCustomerStageCommand(command contactapp.CustomerStageCommand) error
 }
 
 func validateCustomerTagCommand(command contactapp.CustomerTagCommand) error {
-	if command.ID <= 0 || command.TagID <= 0 || !validCustomerMutationActor(command.Actor) {
+	if command.ID <= 0 || command.TagID <= 0 || !validCustomerMutationActor(command.Actor) ||
+		invalidCustomerMutationScope(command.ScopeOwnerStaffID) {
 		return contactapp.ErrInvalidCustomerMutation
 	}
 	return nil
+}
+
+func invalidCustomerMutationScope(value *int64) bool {
+	return value != nil && *value <= 0
 }
 
 func validateCustomerEventAppend(command contactapp.CustomerEventAppend) error {

@@ -18,7 +18,7 @@ type Querier interface {
 	ListCustomerIDsBounded(ctx context.Context, arg ListCustomerIDsBoundedParams) ([]int64, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListStages(ctx context.Context) ([]Stage, error)
-	LockActiveCustomerForMutation(ctx context.Context, customerID int64) (Customer, error)
+	LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)

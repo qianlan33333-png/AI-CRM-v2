@@ -29,26 +29,32 @@ type NullablePatch[T any] struct {
 }
 
 type CustomerUpdateCommand struct {
-	ID           contactport.CustomerID
-	Name         *string
-	AvatarURL    NullablePatch[string]
-	Gender       NullablePatch[int16]
-	OwnerStaffID NullablePatch[int64]
-	ChannelID    NullablePatch[int64]
-	Extra        *json.RawMessage
-	Actor        contactport.Actor
+	ID contactport.CustomerID
+	// ScopeOwnerStaffID is the authorization predicate, not a profile patch.
+	// Nil means global scope; a value requires the currently locked customer
+	// to be owned by that staff member.
+	ScopeOwnerStaffID *int64
+	Name              *string
+	AvatarURL         NullablePatch[string]
+	Gender            NullablePatch[int16]
+	OwnerStaffID      NullablePatch[int64]
+	ChannelID         NullablePatch[int64]
+	Extra             *json.RawMessage
+	Actor             contactport.Actor
 }
 
 type CustomerStageCommand struct {
-	ID      contactport.CustomerID
-	StageID *int64
-	Actor   contactport.Actor
+	ID                contactport.CustomerID
+	ScopeOwnerStaffID *int64
+	StageID           *int64
+	Actor             contactport.Actor
 }
 
 type CustomerTagCommand struct {
-	ID    contactport.CustomerID
-	TagID int64
-	Actor contactport.Actor
+	ID                contactport.CustomerID
+	ScopeOwnerStaffID *int64
+	TagID             int64
+	Actor             contactport.Actor
 }
 
 type CustomerStageMutation struct {
@@ -282,6 +288,7 @@ func (service *CustomerMutationService) ready() error {
 
 func validateCustomerUpdate(command CustomerUpdateCommand) error {
 	if command.ID <= 0 || !validCustomerActor(command.Actor) ||
+		invalidScopeOwnerStaffID(command.ScopeOwnerStaffID) ||
 		(command.Name == nil && !command.AvatarURL.Set && !command.Gender.Set &&
 			!command.OwnerStaffID.Set && !command.ChannelID.Set && command.Extra == nil) {
 		return ErrInvalidCustomerMutation
@@ -305,6 +312,7 @@ func validateCustomerUpdate(command CustomerUpdateCommand) error {
 
 func validateCustomerStage(command CustomerStageCommand) error {
 	if command.ID <= 0 || !validCustomerActor(command.Actor) ||
+		invalidScopeOwnerStaffID(command.ScopeOwnerStaffID) ||
 		(command.StageID != nil && *command.StageID <= 0) {
 		return ErrInvalidCustomerMutation
 	}
@@ -312,10 +320,15 @@ func validateCustomerStage(command CustomerStageCommand) error {
 }
 
 func validateCustomerTag(command CustomerTagCommand) error {
-	if command.ID <= 0 || command.TagID <= 0 || !validCustomerActor(command.Actor) {
+	if command.ID <= 0 || command.TagID <= 0 || !validCustomerActor(command.Actor) ||
+		invalidScopeOwnerStaffID(command.ScopeOwnerStaffID) {
 		return ErrInvalidCustomerMutation
 	}
 	return nil
+}
+
+func invalidScopeOwnerStaffID(value *int64) bool {
+	return value != nil && *value <= 0
 }
 
 func validCustomerActor(actor contactport.Actor) bool {

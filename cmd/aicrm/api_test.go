@@ -36,6 +36,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers/1", authport.CapabilityCustomersRead},
 		{http.MethodPatch, "/api/v1/customers/1", authport.CapabilityCustomersWrite},
+		{http.MethodPut, "/api/v1/customers/1/stage", authport.CapabilityCustomersWrite},
+		{http.MethodPut, "/api/v1/customers/1/tags/2", authport.CapabilityCustomersWrite},
+		{http.MethodDelete, "/api/v1/customers/1/tags/2", authport.CapabilityCustomersWrite},
 		{http.MethodGet, "/api/v1/customers/1/events", authport.CapabilityCustomerEventsRead},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest},
@@ -74,12 +77,23 @@ func TestFinalRouterRejectsCustomerWriteWithoutValidCSRF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequest(http.MethodPatch, "/api/v1/customers/1", strings.NewReader(`{"name":"安全写入"}`))
-	request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: "router-test-session"})
-	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, request)
-	if response.Code != http.StatusForbidden || len(service.capabilities()) != 0 {
-		t.Fatalf("status/capabilities = %d/%v, want 403/none", response.Code, service.capabilities())
+	for _, test := range []struct {
+		method, path string
+		body         string
+	}{
+		{http.MethodPatch, "/api/v1/customers/1", `{"name":"安全写入"}`},
+		{http.MethodPut, "/api/v1/customers/1/stage", `{"stage_id":null}`},
+		{http.MethodPut, "/api/v1/customers/1/tags/2", ""},
+		{http.MethodDelete, "/api/v1/customers/1/tags/2", ""},
+	} {
+		service.reset()
+		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))
+		request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: "router-test-session"})
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden || len(service.capabilities()) != 0 {
+			t.Fatalf("%s %s status/capabilities = %d/%v, want 403/none", test.method, test.path, response.Code, service.capabilities())
+		}
 	}
 }
 

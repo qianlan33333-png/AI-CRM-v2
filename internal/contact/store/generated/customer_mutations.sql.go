@@ -106,12 +106,21 @@ SELECT
   c.updated_at
 FROM customers AS c
 WHERE c.id = $1::bigint
+  AND (
+    $2::bigint IS NULL
+    OR c.owner_staff_id = $2::bigint
+  )
   AND NOT c.is_deleted
 FOR UPDATE
 `
 
-func (q *Queries) LockActiveCustomerForMutation(ctx context.Context, customerID int64) (Customer, error) {
-	row := q.db.QueryRow(ctx, lockActiveCustomerForMutation, customerID)
+type LockActiveCustomerForMutationParams struct {
+	CustomerID        int64       `json:"customer_id"`
+	ScopeOwnerStaffID pgtype.Int8 `json:"scope_owner_staff_id"`
+}
+
+func (q *Queries) LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error) {
+	row := q.db.QueryRow(ctx, lockActiveCustomerForMutation, arg.CustomerID, arg.ScopeOwnerStaffID)
 	var i Customer
 	err := row.Scan(
 		&i.ID,
