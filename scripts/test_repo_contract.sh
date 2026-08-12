@@ -2423,6 +2423,48 @@ if (cd "$missing_p3c02e_snapshot" && scripts/check_repo_contract.sh >/dev/null 2
 fi
 
 for file_path in \
+  web/src/customer-detail.ts \
+  web/src/customer-detail.test.ts \
+  web/src/customer-detail-ui.tsx \
+  web/src/customer-detail-ui.test.tsx \
+  web/src/customer-detail.css \
+  docs/execution/slices/P3-C05.md \
+  docs/evidence/slices/P3-C05-ui.md \
+  docs/evidence/slices/P3-C05-route-tests.md; do
+  p3c05_receipt_fixture="$(make_fixture "p3-c05-receipt-${file_path//\//-}")"
+  printf '%s\n' '/* P3-C05 receipt drift */' >>"$p3c05_receipt_fixture/$file_path"
+  git -C "$p3c05_receipt_fixture" add "$file_path"
+  if (cd "$p3c05_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C05 receipt drift was accepted: $file_path"
+  fi
+done
+
+leading_zero_p3c05="$(make_fixture p3-c05-leading-zero-route)"
+sed -i.bak 's/\[1-9\]\\d\*/\\d+/' "$leading_zero_p3c05/web/src/main.tsx"
+rm -f "$leading_zero_p3c05/web/src/main.tsx.bak"
+restage_p2s18_receipt "$leading_zero_p3c05" web/src/main.tsx
+if (cd "$leading_zero_p3c05" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C05 leading-zero customer route was accepted"
+fi
+
+double_submit_p3c05="$(make_fixture p3-c05-double-submit)"
+sed -i.bak '/if (lock[.]current) return undefined;/d' \
+  "$double_submit_p3c05/web/src/customer-detail-ui.tsx"
+rm -f "$double_submit_p3c05/web/src/customer-detail-ui.tsx.bak"
+restage_p2s18_receipt "$double_submit_p3c05" web/src/customer-detail-ui.tsx
+if (cd "$double_submit_p3c05" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C05 double-submit regression was accepted"
+fi
+
+identity_exposure_p3c05="$(make_fixture p3-c05-identity-exposure)"
+printf '%s\n' 'export const wecom_tag_id = "forbidden";' \
+  >>"$identity_exposure_p3c05/web/src/customer-detail.ts"
+restage_p2s18_receipt "$identity_exposure_p3c05" web/src/customer-detail.ts
+if (cd "$identity_exposure_p3c05" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C05 channel-specific identity exposure was accepted"
+fi
+
+for file_path in \
   migrations/00006_customer_events.sql \
   acceptance/fixtures/cmd/validate-database-url/main.go \
   acceptance/contact/doc.go \

@@ -21,6 +21,8 @@ import {
 } from "./auth-ui";
 import { CustomerListPage } from "./customers-ui";
 import type { CustomerTransport } from "./customers";
+import { CustomerDetailPage } from "./customer-detail-ui";
+import type { CustomerDetailTransport } from "./customer-detail";
 import { StagesPage } from "./stages-ui";
 import type { StageTransport } from "./stages";
 import "./shell.css";
@@ -96,6 +98,7 @@ export interface AppProps {
   cache?: PermissionSessionCache;
   transport?: AuthTransport;
   customerTransport?: CustomerTransport;
+  customerDetailTransport?: CustomerDetailTransport;
   stageTransport?: StageTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
@@ -103,6 +106,13 @@ export interface AppProps {
 
 export function routeForPathname(pathname: string): AppRoute | undefined {
   return routes.find((route) => route.path === pathname);
+}
+
+export function customerIDForPathname(pathname: string): number | undefined {
+  const match = /^\/customers\/([1-9]\d*)$/.exec(pathname);
+  if (!match) return undefined;
+  const customerID = Number(match[1]);
+  return Number.isSafeInteger(customerID) ? customerID : undefined;
 }
 
 export function routeForURL(
@@ -204,6 +214,8 @@ function PageContent({
   route,
   principal,
   customerTransport,
+  customerDetailTransport,
+  customerID,
   stageTransport,
   cookieHeader,
   onUnauthenticated,
@@ -211,10 +223,23 @@ function PageContent({
   route: AppRoute | undefined;
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
+  customerDetailTransport?: CustomerDetailTransport;
+  customerID?: number;
   stageTransport?: StageTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
+  if (customerID !== undefined) {
+    return (
+      <CustomerDetailPage
+        customerID={customerID}
+        transport={customerDetailTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   if (!route) {
     return (
       <section
@@ -252,6 +277,9 @@ function PageContent({
         role={principal.role}
         transport={customerTransport}
         onUnauthenticated={onUnauthenticated}
+        onCustomerNavigate={(event) =>
+          handleNavigationClick(event, event.currentTarget.href)
+        }
       />
     );
   }
@@ -302,6 +330,7 @@ export function App({
   cache = runtimeCache,
   transport = generatedAuthTransport,
   customerTransport,
+  customerDetailTransport,
   stageTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
@@ -312,6 +341,7 @@ export function App({
   );
   const [logoutState, setLogoutState] = useState<LogoutState>("ready");
   const route = routeForPathname(pathname);
+  const customerID = customerIDForPathname(pathname);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -430,7 +460,7 @@ export function App({
         <nav className="shell-nav" aria-label="主导航">
           {navigation ?? (
             <PermissionNavigation
-              activeHref={pathname}
+              activeHref={customerID === undefined ? pathname : "/customers"}
               links={links}
               onNavigate={(event) =>
                 handleNavigationClick(event, event.currentTarget.href)
@@ -443,6 +473,8 @@ export function App({
             route={route}
             principal={session.principal}
             customerTransport={customerTransport}
+            customerDetailTransport={customerDetailTransport}
+            customerID={customerID}
             stageTransport={stageTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
