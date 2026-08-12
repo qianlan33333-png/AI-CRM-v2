@@ -200,6 +200,59 @@ type Appender interface {
 Append 要求 txCtx，按 IdempotencyKey 幂等写 `event_log`。它不分发、不调用网络；
 提交后的 dispatcher/River 是至少一次，消费者必须以 event ID/业务幂等键去重。
 
+## segment/port
+
+```go
+type SegmentID int64
+type CustomerID int64
+type Definition json.RawMessage
+type RefreshMode string   // manual|scheduled
+type RefreshStatus string // idle|running|failed
+
+type Segment struct {
+    ID SegmentID
+    Name string
+    Definition Definition
+    RefreshMode RefreshMode
+    RefreshCron *string
+    MemberCount int64
+    RefreshedAt *time.Time
+    RefreshStatus RefreshStatus
+    CreatedAt time.Time
+    UpdatedAt time.Time
+}
+type Page struct { Items []Segment; NextCursor string }
+type MemberPage struct { CustomerIDs []CustomerID; NextCursor string }
+type CreateCommand struct {
+    Name string; Definition Definition; RefreshMode RefreshMode; RefreshCron *string
+    Actor Actor; IdempotencyKey string
+}
+type UpdateCommand struct {
+    SegmentID SegmentID; Name *string; Definition *Definition
+    RefreshMode *RefreshMode; RefreshCron *string; Actor Actor; IdempotencyKey string
+}
+type RefreshCommand struct { SegmentID SegmentID; Actor Actor; IdempotencyKey string }
+type Service interface {
+    List(context.Context, string, int32) (Page, error)
+    Get(context.Context, SegmentID) (Segment, error)
+    Create(context.Context, CreateCommand) (Segment, error)
+    Update(context.Context, UpdateCommand) (Segment, error)
+    ListMembers(context.Context, SegmentID, string, int32) (MemberPage, error)
+    RequestRefresh(context.Context, RefreshCommand) (Segment, error)
+}
+```
+
+- `Definition` 是闭合 DSL v1 JSON；Segment 是其唯一 parser/compiler 和 `segments` /
+  `segment_members` 写入方。调用者不能传 SQL、字段名、运算符或查询模板之外的任意
+  可执行输入。DSL 语法、错误码与固定 sqlc query-family 要求见 `P3-S00.md`。
+- `MemberPage` 只暴露 channel-neutral OneID；需要 Customer 展示数据的 HTTP adapter
+  在 Segment 自己的读路径投影，其他域不得直接读 Segment store/generated。
+- Create、Update、RequestRefresh 的 IdempotencyKey 必填。同 key 同规范化命令返回
+  原事实；异 payload 返回 conflict 且零副作用。RequestRefresh 只接受 durable command，
+  不代表 members 已更新、更不代表 outbound 已发送。
+- scheduled refresh 与 members replacement 必须由后续 River `heavy` worker 在事务边界
+  落地；跨域只能消费已提交事实或调用该 port，不能借 Segment definition 自行筛选。
+
 ## outbound/port
 
 ```go

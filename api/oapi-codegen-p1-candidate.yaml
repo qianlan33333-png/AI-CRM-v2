@@ -10,3 +10,4 @@ output-options:
     - p2-stages
     - p3-contact
     - p3-identity
+    - p3-segment

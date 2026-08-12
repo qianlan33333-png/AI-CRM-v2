@@ -2738,6 +2738,53 @@ if (cd "$disconnected_p3c07a_workflow" && scripts/check_repo_contract.sh >/dev/n
   fail "P3-C07A migration acceptance disconnected from application CI was accepted"
 fi
 
+for file_path in \
+  migrations/00008_segment_contract.sql \
+  internal/segment/port/port.go \
+  internal/segment/port/port_test.go \
+  docs/execution/slices/P3-S00.md; do
+  missing_p3s00_contract="$(make_fixture "missing-p3-s00-${file_path//\//-}")"
+  rm -f "$missing_p3s00_contract/$file_path"
+  git -C "$missing_p3s00_contract" add -u "$file_path"
+  if (cd "$missing_p3s00_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-S00 central contract was accepted: $file_path"
+  fi
+done
+
+missing_p3s00_port_contract="$(make_fixture missing-p3-s00-port-contract-section)"
+sed -i.bak '/^## segment\/port$/,/^## outbound\/port$/ { /^## outbound\/port$/!d; }' \
+  "$missing_p3s00_port_contract/docs/architecture/port-contracts.md"
+rm -f "$missing_p3s00_port_contract/docs/architecture/port-contracts.md.bak"
+restage_p2s18_receipt "$missing_p3s00_port_contract" docs/architecture/port-contracts.md
+if (cd "$missing_p3s00_port_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S00 Segment port-contract section removal was accepted"
+fi
+
+p3s00_overreach_migration="$(make_fixture p3-s00-migration-identity-overreach)"
+printf '%s\n' 'CREATE TABLE identities (id BIGINT);' \
+  >>"$p3s00_overreach_migration/migrations/00008_segment_contract.sql"
+restage_p2s18_receipt "$p3s00_overreach_migration" migrations/00008_segment_contract.sql
+if (cd "$p3s00_overreach_migration" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S00 migration Identity overreach was accepted"
+fi
+
+p3s00_unsafe_dsl="$(make_fixture p3-s00-unsafe-dsl-boundary)"
+sed -i.bak 's/运行时不得发射、拼接、format 或执行 SQL 文本/运行时可执行 SQL 文本/' \
+  "$p3s00_unsafe_dsl/docs/execution/slices/P3-S00.md"
+rm -f "$p3s00_unsafe_dsl/docs/execution/slices/P3-S00.md.bak"
+restage_p2s18_receipt "$p3s00_unsafe_dsl" docs/execution/slices/P3-S00.md
+if (cd "$p3s00_unsafe_dsl" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S00 dynamic SQL boundary weakening was accepted"
+fi
+
+p3s00_missing_csrf="$(make_fixture p3-s00-missing-csrf)"
+perl -0pi -e 's{(operationId: createSegment.*?)- \$ref: "#/components/parameters/CSRFToken"}{$1- \$ref: "#/components/parameters/CSRFTokenRemoved"}s' \
+  "$p3s00_missing_csrf/api/openapi.yaml"
+restage_p2s18_receipt "$p3s00_missing_csrf" api/openapi.yaml
+if (cd "$p3s00_missing_csrf" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S00 CSRF boundary weakening was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

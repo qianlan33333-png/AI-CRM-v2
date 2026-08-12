@@ -36,6 +36,11 @@ var p3IdentityOperations = map[string]bool{
 	"rejectIdentityMergeReview": true,
 }
 
+var p3SegmentOperations = map[string]bool{
+	"listSegments": true, "createSegment": true, "getSegment": true,
+	"updateSegment": true, "listSegmentMembers": true, "requestSegmentRefresh": true,
+}
+
 var identityOperations = map[string]bool{
 	"resolveIdentity": true, "bindIdentity": true, "ingestIdentityEvent": true,
 	"listIdentityMergeReviews": true, "approveIdentityMergeReview": true,
@@ -46,6 +51,11 @@ var contactOperations = map[string]bool{
 	"listCustomers": true, "getCustomer": true, "updateCustomer": true,
 	"listCustomerEvents": true, "listTags": true, "setCustomerStage": true,
 	"addCustomerTag": true, "removeCustomerTag": true,
+}
+
+var segmentOperations = map[string]bool{
+	"listSegments": true, "createSegment": true, "getSegment": true,
+	"updateSegment": true, "listSegmentMembers": true, "requestSegmentRefresh": true,
 }
 
 type authorizationContract struct {
@@ -74,12 +84,19 @@ var authorizationContracts = map[string]authorizationContract{
 	"setCustomerStage":           {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"addCustomerTag":             {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"removeCustomerTag":          {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSegments":               {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getSegment":                 {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listSegmentMembers":         {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createSegment":              {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
+	"updateSegment":              {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
+	"requestSegmentRefresh":      {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
 const p2StageDecisionEvidence = "P2-16-2026-08-11"
 const p3ContactDecisionEvidence = "P3-C00-2026-08-12"
 const p3IdentityDecisionEvidence = "P3-I00-2026-08-12"
+const p3SegmentDecisionEvidence = "P3-S00-2026-08-12"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -93,7 +110,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -140,15 +157,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 		return errors.New("business API lacks default security")
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
-	seenP3Contact, seenP3Identity, links := map[string]bool{}, map[string]bool{}, 0
+	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -191,8 +208,10 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 						links++
 					}
 				}
-			} else {
+			} else if p3IdentityOperations[op.OperationID] {
 				seenP3Identity[op.OperationID] = true
+			} else {
+				seenP3Segment[op.OperationID] = true
 			}
 			if contactOperations[op.OperationID] {
 				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
@@ -204,6 +223,12 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
 				if !ok || evidence != p3IdentityDecisionEvidence {
 					return fmt.Errorf("%s has missing or forged P3 identity evidence", op.OperationID)
+				}
+			}
+			if segmentOperations[op.OperationID] {
+				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
+				if !ok || evidence != p3SegmentDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
 			contract := authorizationContracts[op.OperationID]
@@ -223,8 +248,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || links != 16 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || links != 16 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -244,6 +269,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p3IdentityOperations {
 		if !seenP3Identity[id] {
 			return fmt.Errorf("missing P3 identity operation: %s", id)
+		}
+	}
+	for id := range p3SegmentOperations {
+		if !seenP3Segment[id] {
+			return fmt.Errorf("missing P3 segment operation: %s", id)
 		}
 	}
 	customer := doc.Components.Schemas["Customer"]
@@ -292,6 +322,85 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	if err := validateIdentityContract(doc); err != nil {
 		return err
+	}
+	if err := validateSegmentContract(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateSegmentContract(doc *openapi3.T) error {
+	segments := doc.Paths.Value("/api/v1/segments")
+	segment := doc.Paths.Value("/api/v1/segments/{segment_id}")
+	members := doc.Paths.Value("/api/v1/segments/{segment_id}/members")
+	refresh := doc.Paths.Value("/api/v1/segments/{segment_id}/refresh")
+	if segments == nil || segments.Get == nil || segments.Post == nil || segment == nil || segment.Get == nil || segment.Patch == nil ||
+		members == nil || members.Get == nil || refresh == nil || refresh.Post == nil {
+		return errors.New("P3 segment operations are incomplete")
+	}
+	for _, contract := range []struct {
+		operation *openapi3.Operation
+		status    string
+		schema    string
+	}{
+		{segments.Get, "200", "SegmentPage"}, {segments.Post, "201", "Segment"},
+		{segment.Get, "200", "Segment"}, {segment.Patch, "200", "Segment"},
+		{members.Get, "200", "SegmentMemberPage"}, {refresh.Post, "202", "SegmentRefreshAccepted"},
+	} {
+		if !operationResponseUsesStatusLocalSchema(contract.operation, contract.status, contract.schema) {
+			return fmt.Errorf("%s response schema ref drifted", contract.operation.OperationID)
+		}
+	}
+	for _, contract := range []struct {
+		operation *openapi3.Operation
+		schema    string
+	}{
+		{segments.Post, "CreateSegmentRequest"}, {segment.Patch, "UpdateSegmentRequest"},
+	} {
+		if !operationRequestUsesLocalSchema(contract.operation, contract.schema) {
+			return fmt.Errorf("%s request schema ref drifted", contract.operation.OperationID)
+		}
+	}
+	for _, operation := range []*openapi3.Operation{segments.Post, segment.Patch, refresh.Post} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", operation.OperationID, err)
+		}
+		if !hasRequiredHeader(operation, "Idempotency-Key") || operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s lacks idempotency, conflict, or unavailable response", operation.OperationID)
+		}
+	}
+	for _, operation := range []*openapi3.Operation{segments.Get, segment.Get, members.Get} {
+		if operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s lacks unavailable response", operation.OperationID)
+		}
+	}
+	definition := doc.Components.Schemas["SegmentDefinition"]
+	if definition == nil || definition.Value == nil || len(definition.Value.OneOf) != 3 {
+		return errors.New("SegmentDefinition must remain a three-node closed AST")
+	}
+	for _, name := range []string{"SegmentDefinitionAnd", "SegmentDefinitionOr", "SegmentDefinitionPredicate"} {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil || schema.Value.AdditionalProperties.Has == nil || *schema.Value.AdditionalProperties.Has {
+			return fmt.Errorf("%s must remain a closed AST node", name)
+		}
+	}
+	predicate := doc.Components.Schemas["SegmentDefinitionPredicate"].Value
+	for field, want := range map[string][]string{
+		"field": {"added_at", "channel_id", "is_deleted", "last_interact_at", "owner_staff_id", "stage_id", "tag_id"},
+		"op":    {"after", "before", "eq", "has_any", "in"},
+	} {
+		property := predicate.Properties[field]
+		if property == nil || property.Value == nil {
+			return fmt.Errorf("SegmentDefinitionPredicate missing %s", field)
+		}
+		got, err := stringList(property.Value.Enum)
+		if err != nil {
+			return err
+		}
+		sort.Strings(got)
+		if !reflect.DeepEqual(got, want) {
+			return fmt.Errorf("SegmentDefinitionPredicate.%s=%v", field, got)
+		}
 	}
 	return nil
 }
@@ -445,10 +554,14 @@ func operationRequestUsesLocalSchema(operation *openapi3.Operation, schemaName s
 }
 
 func operationResponseUsesLocalSchema(operation *openapi3.Operation, schemaName string) bool {
+	return operationResponseUsesStatusLocalSchema(operation, "200", schemaName)
+}
+
+func operationResponseUsesStatusLocalSchema(operation *openapi3.Operation, status, schemaName string) bool {
 	if operation == nil {
 		return false
 	}
-	response := operation.Responses.Value("200")
+	response := operation.Responses.Value(status)
 	if response == nil || response.Value == nil {
 		return false
 	}

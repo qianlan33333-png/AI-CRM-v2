@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
@@ -28,6 +29,66 @@ func (e HealthResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for SegmentDefinitionPredicateField.
+const (
+	AddedAt        SegmentDefinitionPredicateField = "added_at"
+	ChannelId      SegmentDefinitionPredicateField = "channel_id"
+	IsDeleted      SegmentDefinitionPredicateField = "is_deleted"
+	LastInteractAt SegmentDefinitionPredicateField = "last_interact_at"
+	OwnerStaffId   SegmentDefinitionPredicateField = "owner_staff_id"
+	StageId        SegmentDefinitionPredicateField = "stage_id"
+	TagId          SegmentDefinitionPredicateField = "tag_id"
+)
+
+// Valid indicates whether the value is a known member of the SegmentDefinitionPredicateField enum.
+func (e SegmentDefinitionPredicateField) Valid() bool {
+	switch e {
+	case AddedAt:
+		return true
+	case ChannelId:
+		return true
+	case IsDeleted:
+		return true
+	case LastInteractAt:
+		return true
+	case OwnerStaffId:
+		return true
+	case StageId:
+		return true
+	case TagId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentDefinitionPredicateOp.
+const (
+	After  SegmentDefinitionPredicateOp = "after"
+	Before SegmentDefinitionPredicateOp = "before"
+	Eq     SegmentDefinitionPredicateOp = "eq"
+	HasAny SegmentDefinitionPredicateOp = "has_any"
+	In     SegmentDefinitionPredicateOp = "in"
+)
+
+// Valid indicates whether the value is a known member of the SegmentDefinitionPredicateOp enum.
+func (e SegmentDefinitionPredicateOp) Valid() bool {
+	switch e {
+	case After:
+		return true
+	case Before:
+		return true
+	case Eq:
+		return true
+	case HasAny:
+		return true
+	case In:
+		return true
+	default:
+		return false
+	}
+}
+
 // HealthResponse defines model for HealthResponse.
 type HealthResponse struct {
 	Status HealthResponseStatus `json:"status"`
@@ -36,14 +97,133 @@ type HealthResponse struct {
 // HealthResponseStatus defines model for HealthResponse.Status.
 type HealthResponseStatus string
 
+// SegmentDefinition defines model for SegmentDefinition.
+type SegmentDefinition struct {
+	union json.RawMessage
+}
+
+// SegmentDefinitionAnd defines model for SegmentDefinitionAnd.
+type SegmentDefinitionAnd struct {
+	And []SegmentDefinition `json:"and"`
+}
+
+// SegmentDefinitionOr defines model for SegmentDefinitionOr.
+type SegmentDefinitionOr struct {
+	Or []SegmentDefinition `json:"or"`
+}
+
+// SegmentDefinitionPredicate defines model for SegmentDefinitionPredicate.
+type SegmentDefinitionPredicate struct {
+	Field SegmentDefinitionPredicateField `json:"field"`
+	Op    SegmentDefinitionPredicateOp    `json:"op"`
+	Value interface{}                     `json:"value"`
+}
+
+// SegmentDefinitionPredicateField defines model for SegmentDefinitionPredicate.Field.
+type SegmentDefinitionPredicateField string
+
+// SegmentDefinitionPredicateOp defines model for SegmentDefinitionPredicate.Op.
+type SegmentDefinitionPredicateOp string
+
 // CustomerID defines model for CustomerID.
 type CustomerID = int64
+
+// SegmentID defines model for SegmentID.
+type SegmentID = int64
 
 // StageID defines model for StageID.
 type StageID = int64
 
 // TagID defines model for TagID.
 type TagID = int64
+
+// AsSegmentDefinitionAnd returns the union data inside the SegmentDefinition as a SegmentDefinitionAnd
+func (t SegmentDefinition) AsSegmentDefinitionAnd() (SegmentDefinitionAnd, error) {
+	var body SegmentDefinitionAnd
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionAnd overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionAnd
+func (t *SegmentDefinition) FromSegmentDefinitionAnd(v SegmentDefinitionAnd) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionAnd performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionAnd
+func (t *SegmentDefinition) MergeSegmentDefinitionAnd(v SegmentDefinitionAnd) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSegmentDefinitionOr returns the union data inside the SegmentDefinition as a SegmentDefinitionOr
+func (t SegmentDefinition) AsSegmentDefinitionOr() (SegmentDefinitionOr, error) {
+	var body SegmentDefinitionOr
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionOr overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionOr
+func (t *SegmentDefinition) FromSegmentDefinitionOr(v SegmentDefinitionOr) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionOr performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionOr
+func (t *SegmentDefinition) MergeSegmentDefinitionOr(v SegmentDefinitionOr) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSegmentDefinitionPredicate returns the union data inside the SegmentDefinition as a SegmentDefinitionPredicate
+func (t SegmentDefinition) AsSegmentDefinitionPredicate() (SegmentDefinitionPredicate, error) {
+	var body SegmentDefinitionPredicate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionPredicate overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionPredicate
+func (t *SegmentDefinition) FromSegmentDefinitionPredicate(v SegmentDefinitionPredicate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionPredicate performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionPredicate
+func (t *SegmentDefinition) MergeSegmentDefinitionPredicate(v SegmentDefinitionPredicate) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SegmentDefinition) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SegmentDefinition) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
