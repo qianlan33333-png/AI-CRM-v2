@@ -801,7 +801,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 4
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 6
+    verification_induced_correction_count: 5
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
@@ -2219,12 +2219,14 @@ slices:
       - CUSTOMER_MUTATION_FOCUSED_RACE_PASS
       - POSTGRESQL_16_OWNER_SCOPE_LOCK_ACCEPTANCE_PASS
       - TERRA_TEST_CORPUS_SOL_REVIEWED_AND_INTEGRATED
-      - GENERATORS_TWICE_NO_DIFF_PENDING
-      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PENDING
+      - GENERATORS_TWICE_NO_DIFF_PASS
+      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
+      - POSTGRESQL_16_MIGRATION_AND_FOCUSED_ACCEPTANCE_PASS
+    handwritten_scope: 9_files_802_changed_lines_under_P3_cap_tests_generated_manifests_and_evidence_excluded
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 5
+    verification_induced_correction_count: 9
     correction_notes:
       - slice:terra_handler_test_cross_domain_auth_http_import_removed_while_cmd_router_csrf_blackbox_retained
       - verification:first_real_pg_probe_reused_actor_specific_parity_helper_with_admin_actor_then_aligned_fixture_actor_to_staff_7
@@ -2233,6 +2235,9 @@ slices:
       - verification:generated_checker_frozen_manifest_digest_updated_with_manifest
       - verification:full_ci_go_rerun_with_required_real_pg_environment_flags_on_isolated_55432
       - verification:terra_test_assertion_text_renamed_to_avoid_source_policy_sql_literal_false_positive
+      - verification:web_ci_rerun_with_frozen_node_24_18_and_npm_11_12_path_order
+      - verification:p0s04_official_river_migration_acceptance_started_from_clean_river_objects_after_application_migrations
+      - verification:p0s04_partial_first_probe_river_type_and_metadata_cleanup_before_clean_rerun
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
