@@ -59,7 +59,7 @@ func TestCustomerEventRepositoryListsTimelineWithOwnerScopedKeyset(t *testing.T)
 	payload := []byte(`{"source":"test"}`)
 	tx := &customerEventTx{rows: []contactdb.ListCustomerEventsRow{
 		customerEventRow(42, 15, occurredAt, payload),
-		customerEventRow(42, 14, occurredAt.Add(-time.Minute), []byte(`{"source":"older"}`)),
+		customerEventRow(84, 14, occurredAt.Add(-time.Minute), []byte(`{"source":"older"}`)),
 		customerEventRow(42, 13, occurredAt.Add(-2*time.Minute), []byte(`{"source":"more"}`)),
 	}}
 	uow := platformstore.NewUnitOfWork(&customerEventBeginner{tx: tx})
@@ -78,6 +78,9 @@ func TestCustomerEventRepositoryListsTimelineWithOwnerScopedKeyset(t *testing.T)
 	}
 	if !result.HasMore || len(result.Items) != 2 || result.Items[0].ID != 15 || result.Items[1].ID != 14 {
 		t.Fatalf("result = %#v, want first two events and HasMore", result)
+	}
+	if result.Items[0].CustomerID != 42 || result.Items[1].CustomerID != 84 {
+		t.Fatalf("event customer ids = %d/%d, want original root/descendant ids", result.Items[0].CustomerID, result.Items[1].CustomerID)
 	}
 	if result.Items[0].OccurredAt.Location() != time.UTC || !result.Items[0].OccurredAt.Equal(occurredAt) {
 		t.Fatalf("OccurredAt = %s (%s), want UTC representation of %s", result.Items[0].OccurredAt, result.Items[0].OccurredAt.Location(), occurredAt)
@@ -103,11 +106,16 @@ func TestCustomerEventRepositoryListsTimelineWithOwnerScopedKeyset(t *testing.T)
 	}
 	for _, required := range []string{
 		"-- name: ListCustomerEvents :many",
+		"WITH RECURSIVE root_customer AS",
+		"FROM customer_merge_lineage AS lineage",
+		"JOIN lineage_ids AS parent",
 		"LEFT JOIN LATERAL",
+		"CROSS JOIN LATERAL",
 		"AND NOT c.is_deleted",
 		"c.owner_staff_id = $5::bigint",
 		"AND (ce.occurred_at, ce.id) <",
 		"ORDER BY ce.occurred_at DESC, ce.id DESC",
+		"ORDER BY candidate.occurred_at DESC, candidate.id DESC",
 		"LIMIT $3::integer",
 	} {
 		if !strings.Contains(tx.statement, required) {
@@ -163,7 +171,7 @@ func TestCustomerEventRepositoryFailsClosedOnMalformedRowsAndDatabaseErrors(t *t
 		tx   *customerEventTx
 		want error
 	}{
-		{name: "cross customer row", tx: &customerEventTx{rows: []contactdb.ListCustomerEventsRow{customerEventRow(7, 15, at, []byte(`{}`))}}},
+		{name: "zero event customer", tx: &customerEventTx{rows: []contactdb.ListCustomerEventsRow{customerEventRow(0, 15, at, []byte(`{}`))}}},
 		{name: "mixed sentinel row", tx: &customerEventTx{rows: []contactdb.ListCustomerEventsRow{customerEventRow(42, 15, at, []byte(`{}`)), {CustomerID: 42}}}},
 		{name: "database error", tx: &customerEventTx{queryErr: errors.New("database unavailable")}},
 		{name: "no rows error", tx: &customerEventTx{queryErr: pgx.ErrNoRows}, want: contactapp.ErrCustomerNotFound},

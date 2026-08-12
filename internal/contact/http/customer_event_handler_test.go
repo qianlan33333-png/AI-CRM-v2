@@ -348,7 +348,7 @@ func TestCustomerEventHandlerPreservesPayloadNumbersDeepStructureAndUTC(t *testi
 	application := &customerEventApplicationStub{result: contactapp.CustomerEventResult{
 		Items: []contactapp.CustomerEventRecord{{
 			ID:         91,
-			CustomerID: contactport.CustomerID(41),
+			CustomerID: contactport.CustomerID(84),
 			EventType:  "customer.stage_changed",
 			Payload:    json.RawMessage(`{"large":9007199254740993.125,"nested":{"rank":2,"deep":{"exact":9007199254740993}},"active":true}`),
 			Actor:      "admin:73",
@@ -384,7 +384,7 @@ func TestCustomerEventHandlerPreservesPayloadNumbersDeepStructureAndUTC(t *testi
 		t.Fatalf("response items/next cursor = %#v/%v, want one item and %q", body.Items, body.NextCursor, nextCursor)
 	}
 	item := body.Items[0]
-	if item.ID != 91 || item.CustomerID != 41 || item.EventType != "customer.stage_changed" || item.Actor != "admin:73" {
+	if item.ID != 91 || item.CustomerID != 84 || item.EventType != "customer.stage_changed" || item.Actor != "admin:73" {
 		t.Fatalf("response item fields = %#v, want exact generated event", item)
 	}
 	if item.OccurredAt.Location() != time.UTC || !item.OccurredAt.Equal(occurredAt.UTC()) {
@@ -469,14 +469,6 @@ func TestCustomerEventHandlerRejectsInvalidApplicationResults(t *testing.T) {
 			result: func() contactapp.CustomerEventResult {
 				result := customerEventResultWithOneItem()
 				result.Items[0].CustomerID = 0
-				return result
-			},
-		},
-		{
-			name: "cross customer event",
-			result: func() contactapp.CustomerEventResult {
-				result := customerEventResultWithOneItem()
-				result.Items[0].CustomerID = 99
 				return result
 			},
 		},

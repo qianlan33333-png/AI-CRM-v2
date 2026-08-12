@@ -2303,13 +2303,13 @@ if (cd "$duplicate_cursor_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2
   fail "P3-C02D duplicate cursor key bypass was accepted"
 fi
 
-cross_customer_p3c02d="$(make_fixture p3-c02d-cross-customer)"
-sed -i.bak 's/item[.]CustomerID != expectedCustomerID/item.CustomerID <= 0/' \
-  "$cross_customer_p3c02d/internal/contact/http/customer_event_handler.go"
-rm -f "$cross_customer_p3c02d/internal/contact/http/customer_event_handler.go.bak"
-restage_p2s18_receipt "$cross_customer_p3c02d" internal/contact/http/customer_event_handler.go
-if (cd "$cross_customer_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail "P3-C02D cross-customer response was accepted"
+invalid_customer_p3c02d="$(make_fixture p3-c02d-invalid-event-customer)"
+sed -i.bak 's/item[.]CustomerID <= 0/false/' \
+  "$invalid_customer_p3c02d/internal/contact/http/customer_event_handler.go"
+rm -f "$invalid_customer_p3c02d/internal/contact/http/customer_event_handler.go.bak"
+restage_p2s18_receipt "$invalid_customer_p3c02d" internal/contact/http/customer_event_handler.go
+if (cd "$invalid_customer_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D invalid event customer ID was accepted"
 fi
 
 empty_cursor_p3c02d="$(make_fixture p3-c02d-empty-cursor)"
@@ -2763,6 +2763,46 @@ rm -f "$disconnected_p3c07a_workflow/.github/workflows/application-go.yml.bak"
 restage_p2s18_receipt "$disconnected_p3c07a_workflow" .github/workflows/application-go.yml
 if (cd "$disconnected_p3c07a_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C07A migration acceptance disconnected from application CI was accepted"
+fi
+
+for file_path in \
+  acceptance/contact/lineage_timeline_integration_test.go \
+  docs/execution/slices/P3-C07B1.md; do
+  p3c07b1_receipt_fixture="$(make_fixture "p3-c07b1-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C07B1 receipt drift' >>"$p3c07b1_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C07B1 receipt drift' >>"$p3c07b1_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c07b1_receipt_fixture" add "$file_path"
+  if (cd "$p3c07b1_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C07B1 receipt drift was accepted: $file_path"
+  fi
+done
+
+p3c07b1_without_lineage="$(make_fixture p3-c07b1-without-lineage-recursion)"
+sed -i.bak 's/WITH RECURSIVE root_customer AS/WITH root_customer AS/' \
+  "$p3c07b1_without_lineage/internal/contact/store/queries/customer_events.sql"
+rm -f "$p3c07b1_without_lineage/internal/contact/store/queries/customer_events.sql.bak"
+restage_p2s18_receipt "$p3c07b1_without_lineage" internal/contact/store/queries/customer_events.sql
+if (cd "$p3c07b1_without_lineage" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B1 non-recursive lineage timeline was accepted"
+fi
+
+p3c07b1_without_three_pages="$(make_fixture p3-c07b1-without-three-pages)"
+sed -i.bak 's/pageCount < 3/pageCount < 1/' \
+  "$p3c07b1_without_three_pages/acceptance/contact/lineage_timeline_integration_test.go"
+rm -f "$p3c07b1_without_three_pages/acceptance/contact/lineage_timeline_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b1_without_three_pages" acceptance/contact/lineage_timeline_integration_test.go
+if (cd "$p3c07b1_without_three_pages" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B1 without three-page keyset coverage was accepted"
+fi
+
+p3c07b1_explain_scope="$(make_fixture p3-c07b1-explain-scope)"
+printf '%s\n' '// EXPLAIN belongs to P3-C07B2.' \
+  >>"$p3c07b1_explain_scope/acceptance/contact/lineage_timeline_integration_test.go"
+restage_p2s18_receipt "$p3c07b1_explain_scope" acceptance/contact/lineage_timeline_integration_test.go
+if (cd "$p3c07b1_explain_scope" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B1 EXPLAIN scope expansion was accepted"
 fi
 
 for file_path in \

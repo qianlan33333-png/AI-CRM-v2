@@ -127,7 +127,7 @@ func customerEventResponse(expectedCustomerID contactport.CustomerID, result con
 	items := make([]generated.CustomerEvent, 0, len(result.Items))
 	for _, item := range result.Items {
 		payload, err := decodeCustomerEventPayload(item.Payload)
-		if err != nil || expectedCustomerID <= 0 || item.ID <= 0 || item.CustomerID != expectedCustomerID ||
+		if err != nil || expectedCustomerID <= 0 || item.ID <= 0 || item.CustomerID <= 0 ||
 			item.EventType == "" || item.Actor == "" || item.OccurredAt.IsZero() {
 			return generated.CustomerEventListResponse{}, errors.New("customer event application returned an invalid item")
 		}

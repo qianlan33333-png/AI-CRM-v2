@@ -231,10 +231,12 @@ required=(
   docs/execution/slices/P3-C03.md
   docs/evidence/slices/P3-C03-partition-worker-tests.md
   acceptance/contact/merge_lineage_integration_test.go
+  acceptance/contact/lineage_timeline_integration_test.go
   internal/contact/store/merge_port_repository.go
   internal/contact/store/merge_port_repository_test.go
   docs/execution/slices/P3-C07.md
   docs/execution/slices/P3-C07A.md
+  docs/execution/slices/P3-C07B1.md
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
@@ -625,10 +627,12 @@ done <<'EOF'
 100644 docs/execution/slices/P3-C03.md
 100644 docs/evidence/slices/P3-C03-partition-worker-tests.md
 100644 acceptance/contact/merge_lineage_integration_test.go
+100644 acceptance/contact/lineage_timeline_integration_test.go
 100644 internal/contact/store/merge_port_repository.go
 100644 internal/contact/store/merge_port_repository_test.go
 100644 docs/execution/slices/P3-C07.md
 100644 docs/execution/slices/P3-C07A.md
+100644 docs/execution/slices/P3-C07B1.md
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
@@ -878,11 +882,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  f89227dfccc3c36f47b470e5d74827176374c76b88a6238adc9393f1a0e06b2f
+  d91a8568f29ab891eccd5bc74004af8a3765c499ad54be4df2dbb4648808818b
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  bdbf546121aa15f4a236a3f08cc62a6b20672f4109077ca3c7ac860c553a00ad
+  94b64117090a50f9d0738cac211727b42f49815e5acc748ba709954bd0d1adb7
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1192,21 +1196,21 @@ verify_index_sha256 acceptance/p3c02d/doc.go \
 verify_index_sha256 acceptance/p3c02d/customer_event_integration_test.go \
   f0996da91507bbf648d836cf6778574cae5e7b18aae94d0f255f73f7dbe8dd3b
 verify_index_sha256 internal/contact/app/customer_event_service.go \
-  aca56952728b7d738d2c392621b734c61d7fc88c8e6617f5168372c40c86ae5a
+  cfd26bbb7fcc822202549477e3099ad7391a219dbbb286db873c37d6cabaadf3
 verify_index_sha256 internal/contact/app/customer_event_service_test.go \
-  e6bbadc300f404124a4470f42544ac2ad33b779c51126b6e6ca882cb8cb1b0f9
+  58cc29829d32dca6768005f8a958eef22bccef3dfca197f085fac64b9069ec40
 verify_index_sha256 internal/contact/http/customer_event_handler.go \
-  76c34d5ce040a1e023ebc9602e57737b357cded318ac46c467189ac08fb07360
+  f4eebe68533a4e7b45a094afcefda4a04f73f6c4d53f620648ff8d58a9d076b9
 verify_index_sha256 internal/contact/http/customer_event_handler_test.go \
-  1b4e4e191531d955d1f1db53fd7205c6f5ddb3bef933db27c9c0d1bc128babdf
+  2ce187a0581e11698f8be9010eeb3f6bf7ecc468b31bd4cf666158e63ea3cf8d
 verify_index_sha256 internal/contact/store/customer_event_repository.go \
-  bc59738a92bf7df2ff36fe338c1665dc33224f2725b502febf2c412ac02bd107
+  3d2b91e763ffc4f419c16b3a50f8dc57df80965ea171d013b28865dcc96de834
 verify_index_sha256 internal/contact/store/customer_event_repository_test.go \
-  418532145251936b4d6693f77945f0fb28af3b132d8c2313702d0d9e2d7b0851
+  ad56c93c94901b20c67f20dbed0415f7322643de68ed700392b8d2c86421b9fd
 verify_index_sha256 internal/contact/store/queries/customer_events.sql \
-  752d19f93601cfe79e1c101da0e156148b020a9b6622cfc9332cbb430cded2b1
+  93c226f0ba36f49812ab5e9fc2be6d0c98b839625b3daf34a19270bbaf5812a0
 verify_index_sha256 internal/contact/store/generated/customer_events.sql.go \
-  57e41ba88cfea061d5964fe0425318e1101300a8a065c56ba641d46051a72dfc
+  98db91969c639e0711f439cd8bf62e32c7e10f87bc9ade62d3c38f65894ea2da
 verify_index_sha256 docs/execution/slices/P3-C02D.md \
   d8dffa82e7fb1a5b9a30ac8cf78a41fb1cc6e78e1744d8661092f69fff353eaf
 verify_index_sha256 docs/evidence/slices/P3-C02D-sqlc-store.md \
@@ -1329,6 +1333,10 @@ verify_index_sha256 docs/execution/slices/P3-C07.md \
   88e142d8f5416d1267889376d200836eefa408bbcad9475debc1421b81531a62
 verify_index_sha256 docs/execution/slices/P3-C07A.md \
   0285ff8d1cf0e5f7fb6d6529053ca4a88a3d8c9103afd2bc284e27f79420ba1d
+verify_index_sha256 acceptance/contact/lineage_timeline_integration_test.go \
+  d53de174f0ac26c20671c2123933a92b324d8fa6fd884d4152233db816e5c6ff
+verify_index_sha256 docs/execution/slices/P3-C07B1.md \
+  cac2f64aedab170cb4d890a3e2a54fd972728fd20d04ba1e085483e99392edd5
 verify_index_sha256 migrations/00008_segment_contract.sql \
   7c0e007360a6045b3eff5abe5b772928a5ad990950e508a50c8918007c0ea569
 verify_index_sha256 internal/segment/port/port.go \
@@ -1354,7 +1362,7 @@ verify_index_sha256 docs/execution/slices/P3-S02.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  8c930ae540a76baacc4ba10151b5f56d3c17ee96db12d61b8900d84849b4171c
+  4a95b00fddbbb402398fa8a03bb21fc8f4d9d107f228c7167baa10bb08b0c36f
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1636,7 +1644,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  e06740a30c4607fe453a8990b03183861705e249582192d088f5eec69111bdc1
+  b2ec19ca532c0b3c3a73ce5ea015479ad38e0e59c6049dd413d66fa2c5d6015b
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2554,7 +2562,7 @@ grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATA
   fail "application workflow must run P3-C02D against the migration database"
 
 p3c02d_query="$(git show :internal/contact/store/queries/customer_events.sql)"
-grep -Fq 'ce.customer_id = c.id' <<<"$p3c02d_query" ||
+grep -Fq 'ce.customer_id = event_customer.customer_id' <<<"$p3c02d_query" ||
   fail "P3-C02D timeline query lost customer scope"
 grep -Fq 'c.owner_staff_id = sqlc.narg(owner_staff_id)::bigint' <<<"$p3c02d_query" ||
   fail "P3-C02D owner scope must remain a SQL predicate"
@@ -2576,8 +2584,8 @@ grep -Fq 'cursor.FilterHash != expectedFilterHash' <<<"$p3c02d_service" ||
 p3c02d_handler="$(git show :internal/contact/http/customer_event_handler.go)"
 grep -Fq 'if *params.Cursor == "" {' <<<"$p3c02d_handler" ||
   fail "P3-C02D handler must reject an explicitly empty cursor"
-grep -Fq 'item.CustomerID != expectedCustomerID' <<<"$p3c02d_handler" ||
-  fail "P3-C02D handler must reject cross-customer application results"
+grep -Fq 'item.CustomerID <= 0' <<<"$p3c02d_handler" ||
+  fail "P3-C02D handler must reject invalid event customer IDs"
 grep -Fq 'authorization.Capability != authport.CapabilityCustomerEventsRead' <<<"$p3c02d_handler" ||
   fail "P3-C02D handler lost customer.events.read authorization"
 
@@ -2967,6 +2975,72 @@ for governance_anchor in \
   '    supersedes: P3-C07'; do
   grep -Fq "$governance_anchor" <<<"$p3c07_ledger" ||
     fail "P3-C07 rescope ledger receipt drifted: $governance_anchor"
+done
+
+p3c07b1_query="$(git show :internal/contact/store/queries/customer_events.sql)"
+for anchor in \
+  'WITH RECURSIVE root_customer AS' \
+  'AND NOT c.is_deleted' \
+  'c.owner_staff_id = sqlc.narg(owner_staff_id)::bigint' \
+  'FROM customer_merge_lineage AS lineage' \
+  'JOIN lineage_ids AS parent' \
+  'ON lineage.primary_customer_id = parent.customer_id' \
+  'WHERE ce.customer_id = event_customer.customer_id' \
+  'AND (ce.occurred_at, ce.id) < (' \
+  'ORDER BY candidate.occurred_at DESC, candidate.id DESC'; do
+  grep -Fq "$anchor" <<<"$p3c07b1_query" ||
+    fail "P3-C07B1 lineage timeline query drifted: $anchor"
+done
+! grep -Eiq '(^|[^[:alpha:]])(offset|count[[:space:]]*[(])' <<<"$p3c07b1_query" ||
+  fail "P3-C07B1 timeline query must not use OFFSET or COUNT"
+
+p3c07b1_repository="$(git show :internal/contact/store/customer_event_repository.go)"
+grep -Fq 'customerEventQueriesFromContext(ctx)' <<<"$p3c07b1_repository" ||
+  fail "P3-C07B1 repository lost transaction-bound query access"
+! grep -Fq 'NewUnitOfWork' <<<"$p3c07b1_repository" ||
+  fail "P3-C07B1 repository opened a nested UnitOfWork"
+
+p3c07b1_acceptance="$(git show :acceptance/contact/lineage_timeline_integration_test.go)"
+for anchor in \
+  'TestLineageTimelineUsesStableGlobalKeysetAndPreservesOrigin' \
+  'OwnerStaffID: &ownerStaffID' \
+  'pageCount < 3' \
+  'repeated across keyset pages' \
+  'want descending ids' \
+  'direct merged customer=' \
+  'wrong owner error=' \
+  'openContactLineagePool(t)'; do
+  grep -Fq "$anchor" <<<"$p3c07b1_acceptance" ||
+    fail "P3-C07B1 real PostgreSQL behavior acceptance drifted: $anchor"
+done
+! grep -Fq 'EXPLAIN' <<<"$p3c07b1_acceptance" ||
+  fail "P3-C07B1 absorbed the excluded C07B2 EXPLAIN scope"
+
+p3c07b1_card="$(git show :docs/execution/slices/P3-C07B1.md)"
+for anchor in \
+  'Base SHA：`cefaf5fd35ff7b7154b9b769fa859a496f042713`' \
+  'slice_induced_correction_count=3' \
+  '本片无 DDL' \
+  'P3-C07B2' \
+  'P3-C07C' \
+  'PRODUCTION_DATABASE_NOT_EXECUTED' \
+  'P3_C07B0_PR_144'; do
+  grep -Fq "$anchor" <<<"$p3c07b1_card" ||
+    fail "P3-C07B1 card boundary drifted: $anchor"
+done
+
+for governance_anchor in \
+  '  - slice_id: P3-C07B' \
+  '    status: HARD_STOP_READ_ONLY_SUPERSEDED_BY_RESCOPE' \
+  '    source_task_id: 019ff61a-73b3-7291-a4de-7d5f352580a8' \
+  '    slice_induced_correction_count: 3' \
+  '  - slice_id: P3-C07B1' \
+  '    supersedes: P3-C07B' \
+  '    scope_induced_correction_count: 1' \
+  '    verification_induced_correction_count: 9' \
+  '      - C07B2_EXPLAIN_AND_PERFORMANCE_NOT_EXECUTED'; do
+  grep -Fq "$governance_anchor" <<<"$p3c07_ledger" ||
+    fail "P3-C07B1 rescope ledger receipt drifted: $governance_anchor"
 done
 
 p3s00_migration="$(git show :migrations/00008_segment_contract.sql)"

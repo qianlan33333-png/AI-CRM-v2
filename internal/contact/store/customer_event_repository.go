@@ -63,7 +63,7 @@ func (*CustomerEventRepository) ListCustomerEvents(
 	}
 	items := make([]contactapp.CustomerEventRecord, 0, len(rows))
 	for _, row := range rows {
-		if row.CustomerID != int64(query.CustomerID) || row.EventID <= 0 {
+		if row.CustomerID <= 0 || row.EventID <= 0 {
 			return contactapp.CustomerEventStoreResult{}, errInvalidCustomerEventRow
 		}
 		items = append(items, contactapp.CustomerEventRecord{

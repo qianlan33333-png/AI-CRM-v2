@@ -438,7 +438,7 @@ func TestC02DCustomerEventServiceFailsClosedForInvalidStoreRows(t *testing.T) {
 		{name: "has more without item", input: CustomerEventInput{CustomerID: 41, Limit: 2}, result: CustomerEventStoreResult{HasMore: true}},
 		{name: "more rows than limit", input: CustomerEventInput{CustomerID: 41, Limit: 1}, result: CustomerEventStoreResult{Items: []CustomerEventRecord{valid(9, c02dEventTime(20)), valid(8, c02dEventTime(19))}}},
 		{name: "zero event id", input: CustomerEventInput{CustomerID: 41, Limit: 2}, result: CustomerEventStoreResult{Items: []CustomerEventRecord{valid(0, c02dEventTime(20))}}},
-		{name: "wrong customer", input: CustomerEventInput{CustomerID: 41, Limit: 2}, result: CustomerEventStoreResult{Items: []CustomerEventRecord{c02dEventRecord(9, 42, c02dEventTime(20))}}},
+		{name: "zero event customer", input: CustomerEventInput{CustomerID: 41, Limit: 2}, result: CustomerEventStoreResult{Items: []CustomerEventRecord{c02dEventRecord(9, 0, c02dEventTime(20))}}},
 		{name: "empty event type", input: CustomerEventInput{CustomerID: 41, Limit: 2}, result: CustomerEventStoreResult{Items: []CustomerEventRecord{func() CustomerEventRecord { row := valid(9, c02dEventTime(20)); row.EventType = ""; return row }()}}},
 		{name: "space padded event type", input: CustomerEventInput{CustomerID: 41, Limit: 2}, result: CustomerEventStoreResult{Items: []CustomerEventRecord{func() CustomerEventRecord {
 			row := valid(9, c02dEventTime(20))
@@ -506,13 +506,13 @@ func TestC02DCustomerEventServiceAcceptsSameTimestampDescendingIDsAndDeepCopies(
 	originalPayload := json.RawMessage(`{"nested":{"source":"store"}}`)
 	store := &c02dEventStore{result: CustomerEventStoreResult{Items: []CustomerEventRecord{
 		{ID: 9, CustomerID: 41, EventType: "customer.updated", Payload: originalPayload, Actor: "staff:7", OccurredAt: occurredAt},
-		{ID: 8, CustomerID: 41, EventType: "customer.updated", Payload: json.RawMessage(`{"source":"store"}`), Actor: "staff:7", OccurredAt: occurredAt},
+		{ID: 8, CustomerID: 84, EventType: "customer.updated", Payload: json.RawMessage(`{"source":"store"}`), Actor: "staff:7", OccurredAt: occurredAt},
 	}}}
 	result, err := NewCustomerEventService(&c02dEventUoW{}, store).List(context.Background(), CustomerEventInput{CustomerID: 41, Limit: 2})
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
-	if len(result.Items) != 2 || result.Items[0].ID != 9 || result.Items[1].ID != 8 || result.NextCursor != nil {
+	if len(result.Items) != 2 || result.Items[0].ID != 9 || result.Items[1].ID != 8 || result.Items[1].CustomerID != 84 || result.NextCursor != nil {
 		t.Fatalf("result = %#v", result)
 	}
 	if result.Items[0].OccurredAt.Location() != time.UTC || !result.Items[0].OccurredAt.Equal(occurredAt) {
