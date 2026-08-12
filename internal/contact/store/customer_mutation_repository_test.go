@@ -411,6 +411,264 @@ func TestCustomerMutationRepositoryAddsAndRemovesTagsIdempotently(t *testing.T) 
 	})
 }
 
+func TestCustomerMutationRepositoryScopesLocksBeforeEveryMutationQuery(t *testing.T) {
+	ownerStaffID := int64(17)
+	scopes := []struct {
+		name              string
+		scopeOwnerStaffID *int64
+	}{
+		{name: "global nil scope"},
+		{name: "sales owner scope", scopeOwnerStaffID: &ownerStaffID},
+	}
+
+	operations := []struct {
+		name      string
+		prepare   func(*customerMutationTx)
+		run       func(context.Context, *CustomerMutationRepository, *int64) error
+		wantOrder []string
+	}{
+		{
+			name: "update",
+			prepare: func(tx *customerMutationTx) {
+				locked := mutationCustomerRow(42, nil)
+				updated := mutationCustomerRow(42, nil)
+				tx.rows["LockActiveCustomerForMutation"] = mutationRowResult{customer: &locked}
+				tx.rows["UpdateCustomer"] = mutationRowResult{customer: &updated}
+			},
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				name := "Grace"
+				_, err := repository.UpdateCustomer(ctx, contactapp.CustomerUpdateCommand{
+					ID: 42, Name: &name, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+			wantOrder: []string{"LockActiveCustomerForMutation", "UpdateCustomer"},
+		},
+		{
+			name: "set stage",
+			prepare: func(tx *customerMutationTx) {
+				previousID := int64(2)
+				stageID := int64(3)
+				locked := mutationCustomerRow(42, &previousID)
+				updated := mutationCustomerRow(42, &stageID)
+				tx.rows["LockActiveCustomerForMutation"] = mutationRowResult{customer: &locked}
+				tx.rows["SetCustomerStage"] = mutationRowResult{customer: &updated}
+			},
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				stageID := int64(3)
+				_, err := repository.SetCustomerStage(ctx, contactapp.CustomerStageCommand{
+					ID: 42, StageID: &stageID, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+			wantOrder: []string{"LockActiveCustomerForMutation", "SetCustomerStage"},
+		},
+		{
+			name: "add tag",
+			prepare: func(tx *customerMutationTx) {
+				locked := mutationCustomerRow(42, nil)
+				tagID := int64(7)
+				tx.rows["LockActiveCustomerForMutation"] = mutationRowResult{customer: &locked}
+				tx.rows["GetCustomerTag"] = mutationRowResult{int64Value: &tagID}
+				tx.execRows["AddCustomerTag"] = 1
+			},
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				_, err := repository.AddCustomerTag(ctx, contactapp.CustomerTagCommand{
+					ID: 42, TagID: 7, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+			wantOrder: []string{"LockActiveCustomerForMutation", "GetCustomerTag", "AddCustomerTag"},
+		},
+		{
+			name: "remove tag",
+			prepare: func(tx *customerMutationTx) {
+				locked := mutationCustomerRow(42, nil)
+				tagID := int64(7)
+				tx.rows["LockActiveCustomerForMutation"] = mutationRowResult{customer: &locked}
+				tx.rows["GetCustomerTag"] = mutationRowResult{int64Value: &tagID}
+				tx.execRows["RemoveCustomerTag"] = 1
+			},
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				_, err := repository.RemoveCustomerTag(ctx, contactapp.CustomerTagCommand{
+					ID: 42, TagID: 7, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+			wantOrder: []string{"LockActiveCustomerForMutation", "GetCustomerTag", "RemoveCustomerTag"},
+		},
+	}
+
+	for _, scope := range scopes {
+		scope := scope
+		t.Run(scope.name, func(t *testing.T) {
+			for _, operation := range operations {
+				operation := operation
+				t.Run(operation.name, func(t *testing.T) {
+					tx := newCustomerMutationTx()
+					operation.prepare(tx)
+					err := withinCustomerMutationTx(tx, func(ctx context.Context) error {
+						return operation.run(ctx, NewCustomerMutationRepository(), scope.scopeOwnerStaffID)
+					})
+					if err != nil {
+						t.Fatalf("mutation error = %v", err)
+					}
+					assertLockActiveCustomerForMutationArguments(t, tx, 42, scope.scopeOwnerStaffID)
+					assertCustomerMutationOperationOrder(t, tx, operation.wantOrder)
+				})
+			}
+		})
+	}
+}
+
+func TestCustomerMutationRepositoryRejectsIllegalScopesBeforeSQL(t *testing.T) {
+	invalidScopes := []struct {
+		name  string
+		value int64
+	}{
+		{name: "zero owner", value: 0},
+		{name: "negative owner", value: -1},
+	}
+	operations := []struct {
+		name string
+		run  func(context.Context, *CustomerMutationRepository, *int64) error
+	}{
+		{
+			name: "update",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				name := "Grace"
+				_, err := repository.UpdateCustomer(ctx, contactapp.CustomerUpdateCommand{
+					ID: 42, Name: &name, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+		{
+			name: "set stage",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				stageID := int64(3)
+				_, err := repository.SetCustomerStage(ctx, contactapp.CustomerStageCommand{
+					ID: 42, StageID: &stageID, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+		{
+			name: "add tag",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				_, err := repository.AddCustomerTag(ctx, contactapp.CustomerTagCommand{
+					ID: 42, TagID: 7, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+		{
+			name: "remove tag",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				_, err := repository.RemoveCustomerTag(ctx, contactapp.CustomerTagCommand{
+					ID: 42, TagID: 7, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+	}
+
+	for _, invalidScope := range invalidScopes {
+		invalidScope := invalidScope
+		t.Run(invalidScope.name, func(t *testing.T) {
+			for _, operation := range operations {
+				operation := operation
+				t.Run(operation.name, func(t *testing.T) {
+					scopeOwnerStaffID := invalidScope.value
+					tx := newCustomerMutationTx()
+					err := withinCustomerMutationTx(tx, func(ctx context.Context) error {
+						return operation.run(ctx, NewCustomerMutationRepository(), &scopeOwnerStaffID)
+					})
+					if !errors.Is(err, contactapp.ErrInvalidCustomerMutation) {
+						t.Fatalf("mutation error = %v, want invalid mutation", err)
+					}
+					assertCustomerMutationOperationOrder(t, tx, nil)
+				})
+			}
+		})
+	}
+}
+
+func TestCustomerMutationRepositoryLockNoRowsIsCustomerNotFound(t *testing.T) {
+	ownerStaffID := int64(17)
+	scopes := []struct {
+		name              string
+		scopeOwnerStaffID *int64
+	}{
+		{name: "global nil scope"},
+		{name: "sales owner scope", scopeOwnerStaffID: &ownerStaffID},
+	}
+	operations := []struct {
+		name string
+		run  func(context.Context, *CustomerMutationRepository, *int64) error
+	}{
+		{
+			name: "update",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				name := "Grace"
+				_, err := repository.UpdateCustomer(ctx, contactapp.CustomerUpdateCommand{
+					ID: 42, Name: &name, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+		{
+			name: "set stage",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				stageID := int64(3)
+				_, err := repository.SetCustomerStage(ctx, contactapp.CustomerStageCommand{
+					ID: 42, StageID: &stageID, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+		{
+			name: "add tag",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				_, err := repository.AddCustomerTag(ctx, contactapp.CustomerTagCommand{
+					ID: 42, TagID: 7, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+		{
+			name: "remove tag",
+			run: func(ctx context.Context, repository *CustomerMutationRepository, scopeOwnerStaffID *int64) error {
+				_, err := repository.RemoveCustomerTag(ctx, contactapp.CustomerTagCommand{
+					ID: 42, TagID: 7, ScopeOwnerStaffID: scopeOwnerStaffID, Actor: "operator",
+				})
+				return err
+			},
+		},
+	}
+
+	for _, scope := range scopes {
+		scope := scope
+		t.Run(scope.name, func(t *testing.T) {
+			for _, operation := range operations {
+				operation := operation
+				t.Run(operation.name, func(t *testing.T) {
+					tx := newCustomerMutationTx()
+					tx.rows["LockActiveCustomerForMutation"] = mutationRowResult{err: pgx.ErrNoRows}
+					err := withinCustomerMutationTx(tx, func(ctx context.Context) error {
+						return operation.run(ctx, NewCustomerMutationRepository(), scope.scopeOwnerStaffID)
+					})
+					if !errors.Is(err, contactapp.ErrCustomerNotFound) {
+						t.Fatalf("mutation error = %v, want customer not found", err)
+					}
+					assertLockActiveCustomerForMutationArguments(t, tx, 42, scope.scopeOwnerStaffID)
+					assertCustomerMutationOperationOrder(t, tx, []string{"LockActiveCustomerForMutation"})
+				})
+			}
+		})
+	}
+}
+
 func TestCustomerMutationRepositoryAppendsCurrentTimelineEvent(t *testing.T) {
 	occurredAt := time.Date(2026, time.August, 12, 8, 30, 0, 0, time.FixedZone("CST", 8*60*60))
 	payload := json.RawMessage(`{"stage_id":3}`)
@@ -532,6 +790,35 @@ func assertInt64Argument(t *testing.T, value any, want int64, valid bool, label 
 	}
 }
 
+func assertLockActiveCustomerForMutationArguments(
+	t *testing.T,
+	tx *customerMutationTx,
+	wantCustomerID int64,
+	wantScopeOwnerStaffID *int64,
+) {
+	t.Helper()
+	args, ok := tx.queryArgs["LockActiveCustomerForMutation"]
+	if !ok || len(args) != 2 {
+		t.Fatalf("LockActiveCustomerForMutation arguments = %#v, want customer and scope", args)
+	}
+	if customerID, ok := args[0].(int64); !ok || customerID != wantCustomerID {
+		t.Fatalf("LockActiveCustomerForMutation customer_id = %#v, want %d", args[0], wantCustomerID)
+	}
+	wantScopeOwnerStaffIDValue := int64(0)
+	wantScopeOwnerStaffIDValid := wantScopeOwnerStaffID != nil
+	if wantScopeOwnerStaffID != nil {
+		wantScopeOwnerStaffIDValue = *wantScopeOwnerStaffID
+	}
+	assertInt64Argument(t, args[1], wantScopeOwnerStaffIDValue, wantScopeOwnerStaffIDValid, "lock scope_owner_staff_id")
+}
+
+func assertCustomerMutationOperationOrder(t *testing.T, tx *customerMutationTx, want []string) {
+	t.Helper()
+	if got := strings.Join(tx.operationOrder, ","); got != strings.Join(want, ",") {
+		t.Fatalf("mutation operation order = %v, want %v", tx.operationOrder, want)
+	}
+}
+
 func withinCustomerMutationTx(tx *customerMutationTx, callback func(context.Context) error) error {
 	uow := platformstore.NewUnitOfWork(&customerMutationBeginner{tx: tx})
 	return uow.Within(context.Background(), callback)
@@ -553,14 +840,15 @@ func (beginner *customerMutationBeginner) BeginTx(context.Context, pgx.TxOptions
 }
 
 type customerMutationTx struct {
-	rows       map[string]mutationRowResult
-	execRows   map[string]int64
-	execErr    map[string]error
-	queryArgs  map[string][]any
-	execArgs   map[string][]any
-	queryOrder []string
-	commits    int
-	rollbacks  int
+	rows           map[string]mutationRowResult
+	execRows       map[string]int64
+	execErr        map[string]error
+	queryArgs      map[string][]any
+	execArgs       map[string][]any
+	queryOrder     []string
+	operationOrder []string
+	commits        int
+	rollbacks      int
 }
 
 func newCustomerMutationTx() *customerMutationTx {
@@ -594,6 +882,7 @@ func (*customerMutationTx) Prepare(context.Context, string, string) (*pgconn.Sta
 }
 func (tx *customerMutationTx) Exec(_ context.Context, statement string, args ...any) (pgconn.CommandTag, error) {
 	name := customerMutationQueryName(statement)
+	tx.operationOrder = append(tx.operationOrder, name)
 	tx.execArgs[name] = append([]any(nil), args...)
 	if err := tx.execErr[name]; err != nil {
 		return pgconn.CommandTag{}, err
@@ -605,6 +894,7 @@ func (*customerMutationTx) Query(context.Context, string, ...any) (pgx.Rows, err
 }
 func (tx *customerMutationTx) QueryRow(_ context.Context, statement string, args ...any) pgx.Row {
 	name := customerMutationQueryName(statement)
+	tx.operationOrder = append(tx.operationOrder, name)
 	tx.queryOrder = append(tx.queryOrder, name)
 	tx.queryArgs[name] = append([]any(nil), args...)
 	result, ok := tx.rows[name]
