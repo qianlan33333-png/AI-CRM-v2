@@ -244,7 +244,7 @@ func validateCustomerEventStoreResult(result CustomerEventStoreResult, query Cus
 	}
 	for index, item := range result.Items {
 		_, offset := item.OccurredAt.Zone()
-		if item.ID <= 0 || item.CustomerID != query.CustomerID || item.OccurredAt.IsZero() || offset != 0 ||
+		if item.ID <= 0 || item.CustomerID <= 0 || item.OccurredAt.IsZero() || offset != 0 ||
 			!validCustomerEventText(item.EventType, 0) || !validCustomerEventText(item.Actor, 200) ||
 			!validCustomerEventPayload(item.Payload) {
 			return errors.New("customer event store item is invalid")
