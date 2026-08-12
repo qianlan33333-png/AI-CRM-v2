@@ -118,7 +118,7 @@ port 提供有界运维视图及已授权的 River 重试/取消操作，不得�
 
 | 字段 | 含义 |
 |---|---|
-| `Kind` | `wecom_external_userid`、`unionid`、scope 内 openid、`phone` 或 `ext:*` |
+| `Kind` | `wecom_external_userid`、`unionid`、`mp_openid`、`oa_openid`、`alipay_user_id`、`phone` 或 `ext` |
 | `Scope` | 标识所属命名空间，所有 Kind 均必填；不同 scope 不互通 |
 | `Value` | 调用者获得的原始值；只有 identity 模块能生成内部 normalized value |
 | `Assurance` | 至少区分 `verified` 与 `declared` |
@@ -130,10 +130,32 @@ port 提供有界运维视图及已授权的 River 重试/取消操作，不得�
 - `Bind`：`bound | already_bound | merged | manual_review | rejected`。
 - `Ingest`：`attributed | pending | conflict`。
 
+P3-I00 将不可逆合并语义进一步冻结如下：
+
+- HTTP/admin 请求只能形成 `declared/admin` 证据；`verified` 只能由完成自身验签或
+  provider 凭据验证的内部 adapter 构造，任何请求体自报值都不能升级 assurance。
+- 自定义 identity 的 Kind 统一为 `ext`，provider namespace 统一放在必填
+  `scope=ext:<namespace>`；不再同时把 namespace 编进 Kind。
+- verified unionid 冲突只在同一开放平台 scope 内进入自动规则。恰好一个
+  effective customer root 具有 verified `wecom_external_userid` 时，它是 primary；
+  两边都有或都没有时返回 `manual_review`，禁止以较小 ID、姓名、时间、字段数量
+  或调用顺序猜测 primary。
+- 锁顺序仍按 customer ID 升序，但锁顺序不是业务优先级。合并审计记录 policy
+  version `verified_unionid_unique_wecom_v1`。
+- verified phone 冲突与无法唯一选择 primary 的 unionid 冲突都创建或复用人工
+  review；review approve 必须显式选择 current candidate root 内的 primary，并在同一
+  UoW/锁内重验 pending/version/evidence/candidate-set，漂移即 409 且零副作用。
+- review 展示指纹必须是 typed-secret-backed、版本化 HMAC-SHA256 的 128-bit
+  base64url 截断值；禁止 raw/normalized identity、无密钥 hash 或 handler 自算。
+- `customer.merged` payload 只含 primary/merged customer ID、merge audit ID、
+  `auto|manual` mode 与 policy version；禁止外部 identity、PII 或 raw match key；
+  idempotency key 固定为 `customer.merged:<merge_audit_id>`。
+
 Scope 的 canonical 形式固定为：unionid 使用
 `wechat-open-platform:<account-id>`，公众号/小程序 openid 使用
 `wechat-app:<appid>`，企微 external userid 使用 `wecom-corp:<corp-id>`，手机号
-使用 `phone:e164`，扩展身份使用登记的 provider namespace。任何模块不得自行
+使用 `phone:e164`，支付宝使用 `alipay-app:<app-id>`，扩展身份使用登记的
+`ext:<namespace>`。任何模块不得自行
 规范化并建立外部 ID 映射，也不得预判客户合并。`customers.id` 是唯一内部
 OneID，渠道 ID 只能存在于 `identities`。
 

@@ -56,7 +56,10 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			if test.capability == authport.CapabilityAuthSessionLogout {
 				request.Header.Set("X-CSRF-Token", "router-test-csrf")
 			}
-			if test.capability == authport.CapabilityStagesWrite || test.capability == authport.CapabilityCustomersWrite {
+			if test.capability == authport.CapabilityStagesWrite ||
+				test.capability == authport.CapabilityCustomersWrite ||
+				test.capability == authport.CapabilityIdentityBind ||
+				test.capability == authport.CapabilityIdentityIngest {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 			}
 			response := httptest.NewRecorder()
@@ -68,7 +71,7 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 	}
 }
 
-func TestFinalRouterRejectsCustomerWriteWithoutValidCSRF(t *testing.T) {
+func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 	service := &recordingAuth{}
 	authHandler, err := authhttp.NewHandler(service)
 	if err != nil {
@@ -86,6 +89,8 @@ func TestFinalRouterRejectsCustomerWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPut, "/api/v1/customers/1/stage", `{"stage_id":null}`},
 		{http.MethodPut, "/api/v1/customers/1/tags/2", ""},
 		{http.MethodDelete, "/api/v1/customers/1/tags/2", ""},
+		{http.MethodPost, "/api/v1/identity/bind", `{}`},
+		{http.MethodPost, "/api/v1/identity/ingest", `{}`},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

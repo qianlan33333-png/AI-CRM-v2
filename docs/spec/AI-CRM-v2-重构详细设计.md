@@ -350,12 +350,15 @@ CREATE INDEX idx_ss_survey ON survey_submissions (survey_id, submitted_at DESC);
 
 -- ============ 身份域 (identity 模块独占写权限, 设计详见 §7) ============
 
+-- P3-I00-2026-08-12：以下仅保留为历史 schema 草图，不得据此生成 migration。
+-- I-1 必须另行冻结字段、状态机、幂等、租约、索引及 append-only 约束。
+
 CREATE TABLE identities (           -- 身份图谱: 一个客户挂 N 条外部标识
   id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   customer_id BIGINT REFERENCES customers(id),  -- 可空 = 游离身份(未归因, 等待匹配)
   id_type     TEXT NOT NULL,        -- wecom_external_userid / unionid / mp_openid /
-                                    -- oa_openid / alipay_user_id / phone / ext:{自定义}
-  scope       TEXT NOT NULL DEFAULT '',  -- 身份含义的必填部分，不可省略（ADR-002）：
+                                    -- oa_openid / alipay_user_id / phone / ext
+  scope       TEXT NOT NULL CHECK (btrim(scope) <> ''), -- 身份含义的必填部分，不可省略（ADR-002）：
                                          -- unionid → 微信开放平台账号；mp/oa_openid → appid；
                                          -- wecom_external_userid → corp_id；phone → E.164 命名空间
   id_value    TEXT NOT NULL,
@@ -371,7 +374,7 @@ CREATE TABLE customer_merges (      -- 合并审计: 只追加, 不可删
   id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   primary_id   BIGINT NOT NULL,     -- 保留的主记录
   merged_id    BIGINT NOT NULL,     -- 被并入的记录(customers 行保留, is_deleted=true 并标记)
-  match_key    TEXT NOT NULL,       -- 触发合并的标识: unionid:{v} / phone:{v} / manual
+  match_key    TEXT NOT NULL,       -- typed-secret-backed versioned HMAC 指纹 / manual
   mode         TEXT NOT NULL,       -- auto/manual
   operated_by  TEXT NOT NULL,
   detail       JSONB NOT NULL DEFAULT '{}',
@@ -385,7 +388,7 @@ CREATE TABLE pending_events (       -- 归因失败的外部事件暂存, 身份
   payload     JSONB NOT NULL,
   source      TEXT NOT NULL,
   occurred_at TIMESTAMPTZ NOT NULL,
-  status      TEXT NOT NULL DEFAULT 'pending',  -- pending/attributed/expired
+  status      TEXT NOT NULL DEFAULT 'pending',  -- I-1 冻结 attribution/conflict/merge_review 状态机
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_pe_pending ON pending_events (status) WHERE status = 'pending';
@@ -672,26 +675,16 @@ T+30d  旧服务器只读保留, 到期销毁
 ### 7.1 核心原则
 
 1. **`customers.id` 就是 OneID**，渠道中立，不等于任何外部 ID。企微 external_userid 与 alipay_user_id、手机号一样，只是 `identities` 表里的一条边——企微是权重最高的渠道，但不是身份体系的主键。
-2. **匹配键分级**：`unionid`（微信生态内打通，需各客户企微后台绑定微信开放平台后才能从外部联系人详情获取——这是 FDE 落地 checklist 必查项）> `phone + verified`（跨生态打通）> 各 openid（仅在各自 scope 内有效）。`declared` 级手机号（用户自填未验证）只做弱关联提示，不触发自动归并。
+2. **匹配键分级**：同 scope 的 verified `unionid` 是唯一可进入自动合并判定的桥接键（需各客户企微后台绑定微信开放平台后才能从外部联系人详情获取——这是 FDE 落地 checklist 必查项）；`phone + verified` 只能进入人工待合并；各 openid 仅在各自 scope 内精确解析。`declared` 级手机号（用户自填未验证）只做弱关联提示，不触发自动归并。
 3. **核心系统内任何模块不得自建 ID 映射**（铁律 6）。wecom 模块拿到 external_userid/unionid、survey 模块拿到 openid/手机号，一律调 identity 模块登记。
 
 ### 7.2 identity 模块接口
 
-```go
-// internal/identity/port.go
-type IDRef struct { Type, Scope, Value string }
-
-type Service interface {
-    // 外部标识 → 客户。查不到返回 found=false, 不隐式建档
-    Resolve(ctx context.Context, ref IDRef) (customerID int64, found bool, err error)
-    // 绑定标识到客户。若该标识已绑定在另一客户上 → 触发 §7.3 合并流程
-    Bind(ctx context.Context, customerID int64, ref IDRef, confidence, source string) error
-    // 组件上报事件 + 其已知的全部标识: 能归因→写时间线并顺手 Bind 新标识;
-    // 不能归因→存 pending_events, 后续任何 Bind 成功后由 worker 自动回放
-    Ingest(ctx context.Context, refs []IDRef, eventType string, payload map[string]any,
-           source string, occurredAt time.Time) error
-}
-```
+P3-I00-2026-08-12 已取代本节早期伪代码；唯一可实现接口见
+`internal/identity/port/port.go`。Resolve 只返回 `found/not_found/conflict` 枚举，
+禁止隐式建档；Bind/Ingest 采用稳定幂等键，浏览器请求不得自报 verified/source；
+人工待合并使用版本化 list/approve/reject port。旧的 `found bool`、无幂等键 Bind
+与直接信任 confidence/source 的签名均已作废。
 
 `Ingest` 是外部组件的主入口：支付组件收到支付宝回调，只需要把"支付成功"事件连同它手里的 `alipay_user_id` + 订单手机号一起上报，归因是核心的事，组件不需要理解企微。
 
@@ -699,7 +692,7 @@ type Service interface {
 
 | 触发情形 | 处理 |
 |---|---|
-| Bind 时发现 `unionid` 已在另一客户名下 | **自动合并**：保留信息更全者为主记录（企微在档 > 仅游离身份），从记录 `is_deleted=true` 并写 `customer_merges`；标签取并集、时间线归并（事件带原始 customer_id 存 payload 备查）、segment_members 下次刷新自然修正 |
+| Bind 时发现同 scope 的 verified `unionid` 已在另一客户名下 | **条件自动合并**：只有两个 effective root 中恰好一个拥有 verified `wecom_external_userid` 时，该 root 才是 primary；双方都有或双方都没有时进入人工待合并。锁按 customer ID 升序只用于防死锁，不参与业务主记录选择。禁止使用“信息更全”或 ID 大小猜测 primary。 |
 | Bind 时发现 `phone(verified)` 冲突 | **进人工待办**（后台"待合并"列表，运营确认后手动合并）——手机号存在换主人的现实可能 |
 | `phone(declared)` 或 openid 冲突 | 不合并，仅在客户详情页展示"疑似同人"提示 |
 | 任何自动合并 | 发 `customer.merged` 事件（供扩展组件 webhook 订阅更新其本地引用） |
@@ -712,14 +705,14 @@ type Service interface {
 
 ```
 POST /ext/v1/identity/resolve      # IDRef → customer_id
-POST /ext/v1/identity/bind         # 绑定标识(需声明 confidence/source)
+POST /ext/v1/identity/bind         # 绑定 ref；API key 决定 source，外部声明只能是 declared
 POST /ext/v1/events/ingest         # 上报事件+标识, 核心归因落时间线
 GET  /ext/v1/customers/{id}        # 客户档案只读(字段级脱敏按 key 权限配置)
 POST /ext/v1/outbound/enqueue      # 组件触发发消息(经核心限速队列, 不许自己调企微)
 GET  /ext/v1/webhooks              # 订阅 customer.merged / tag_applied 等事件回推
 ```
 
-鉴权：每组件一个 API key（settings 管理），key 绑定权限范围与脱敏级别；全部调用写审计。事件经 Ingest 落时间线后，automation 模块即可对"支付成功"这类外部事件配触发规则——**扩展组件天然获得自动化能力，无需自己实现**。
+鉴权：每组件一个 API key（settings 管理），key 绑定权限范围、可信 source 与脱敏级别；全部调用写审计。Extension 请求体不得自报 verified/confidence/source；只有完成自身 provider 验真的内部 adapter 才能构造 verified 证据。事件经 Ingest 落时间线后，automation 模块即可对"支付成功"这类外部事件配触发规则——**扩展组件天然获得自动化能力，无需自己实现**。
 
 ### 7.5 本期范围界定（守住"只重做已有功能"）
 

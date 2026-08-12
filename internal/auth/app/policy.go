@@ -35,6 +35,12 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityIdentityIngest: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityIdentityReviewRead: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
+	authport.CapabilityIdentityReviewWrite: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
 	authport.CapabilityConfigOverviewRead: {
 		admin: authport.ScopeGlobal,
 	},

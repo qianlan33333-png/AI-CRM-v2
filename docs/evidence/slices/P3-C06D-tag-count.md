@@ -44,3 +44,30 @@
 
 Terra 未 push/PR/merge；Sol 独立同步 acceptance 合同、生成物清单、全量门禁与
 最终发布。
+
+## 新 main 最终硬门
+
+- source/main SHA：`2021056bb0c88685c3c39a3996a1a2e5a48680b1`
+- application main CI：`https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31590947581`
+- 环境：授权测试服务器，2 CPU、`3,813,268 KiB` 内存、`4,263,928 KiB`
+  swap，PostgreSQL `16.14`，独立 `aicrm_perf` 数据库与 loopback `55433`，
+  `GOMEMLIMIT=768MiB`；未连接 staging/production/5432。
+- 数据：200,000 customers、600,000 customer_tags，其中 deleted 10,000。
+- matrix：4,096 combinations / 81,920 measured samples；每 case 恰好两条
+  `CountCustomerIDsBounded → ListCustomers`，各保存完整 raw EXPLAIN。
+- global P50/P95/max：`33.476691 / 80.841787 / 159.584511 ms`。
+- 最慢 case：
+  `selectors-29-deleted-true-added-none-interact-closed-page-next-limit-50`，
+  P95 `149.773834ms`；所有 case P95 均 `<200ms`。
+- forbidden target Seq Scan：`0`；runner process exit `0`；同一 binary、SHA 与
+  main CI URL 的离线 verifier exit `0` / `contact-perf-receipt: PASS`。
+- receipt：105,072,184 bytes；SHA-256
+  `15f0c05bfc54552a0884f500a2a1d7405420e54bb80601b77b2fdb59cbb36dd6`。
+
+后台 launcher 首次以未引用的 `printf %s\\n` 写出字面量 `0n`。原始两字节 marker
+已保留为 `runner.exit.original`，SHA-256
+`3ad4ee182e21c25db763cda6359ecc441b8ea32ea4d6631c012aac7fa7d362dc`；在确认 launcher
+进程 exit 0 且离线 verifier exit 0 后，另写 canonical `0<LF>` marker，未改 receipt。
+
+最终结论：`HARD_GATE_PASS`。这份证据只证明授权测试服务器上的 synthetic S 档
+性能，不冒充 staging、生产或真实用户链路。

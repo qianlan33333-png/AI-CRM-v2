@@ -28,6 +28,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityAuthSessionRead, CapabilityAuthSessionLogout,
 		CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead,
 		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
+		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite,
 		CapabilityConfigOverviewRead,
 		CapabilityStagesRead, CapabilityStagesWrite,
 	} {
@@ -37,5 +38,27 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 	}
 	if Capability("customers.delete").Known() {
 		t.Fatal("unknown capability became known")
+	}
+}
+
+func TestIdentityReviewCapabilitiesStayGlobal(t *testing.T) {
+	for capability, want := range map[Capability]string{
+		CapabilityIdentityReviewRead:  "identity.review.read",
+		CapabilityIdentityReviewWrite: "identity.review.write",
+	} {
+		if string(capability) != want || !capability.Known() {
+			t.Fatalf("capability %q drifted", capability)
+		}
+		ctx, err := WithAuthorization(context.Background(), Authorization{
+			Capability: capability,
+			Scope:      ScopeGlobal,
+		})
+		if err != nil {
+			t.Fatalf("WithAuthorization(%q, global) = %v; want accepted", capability, err)
+		}
+		got, ok := AuthorizationFromContext(ctx)
+		if !ok || got != (Authorization{Capability: capability, Scope: ScopeGlobal}) {
+			t.Fatalf("AuthorizationFromContext() = %#v, %v; want global %q", got, ok, capability)
+		}
 	}
 }

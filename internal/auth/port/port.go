@@ -33,17 +33,19 @@ type Principal struct {
 type Capability string
 
 const (
-	CapabilityAuthSessionRead    Capability = "auth.session.read"
-	CapabilityAuthSessionLogout  Capability = "auth.session.logout"
-	CapabilityCustomersRead      Capability = "customers.read"
-	CapabilityCustomersWrite     Capability = "customers.write"
-	CapabilityCustomerEventsRead Capability = "customer.events.read"
-	CapabilityIdentityResolve    Capability = "identity.resolve"
-	CapabilityIdentityBind       Capability = "identity.bind"
-	CapabilityIdentityIngest     Capability = "identity.ingest"
-	CapabilityConfigOverviewRead Capability = "config.overview.read"
-	CapabilityStagesRead         Capability = "stages.read"
-	CapabilityStagesWrite        Capability = "stages.write"
+	CapabilityAuthSessionRead     Capability = "auth.session.read"
+	CapabilityAuthSessionLogout   Capability = "auth.session.logout"
+	CapabilityCustomersRead       Capability = "customers.read"
+	CapabilityCustomersWrite      Capability = "customers.write"
+	CapabilityCustomerEventsRead  Capability = "customer.events.read"
+	CapabilityIdentityResolve     Capability = "identity.resolve"
+	CapabilityIdentityBind        Capability = "identity.bind"
+	CapabilityIdentityIngest      Capability = "identity.ingest"
+	CapabilityIdentityReviewRead  Capability = "identity.review.read"
+	CapabilityIdentityReviewWrite Capability = "identity.review.write"
+	CapabilityConfigOverviewRead  Capability = "config.overview.read"
+	CapabilityStagesRead          Capability = "stages.read"
+	CapabilityStagesWrite         Capability = "stages.write"
 )
 
 func (capability Capability) Known() bool {
@@ -51,6 +53,7 @@ func (capability Capability) Known() bool {
 	case CapabilityAuthSessionRead, CapabilityAuthSessionLogout,
 		CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead,
 		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
+		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite,
 		CapabilityConfigOverviewRead, CapabilityStagesRead, CapabilityStagesWrite:
 		return true
 	default:
@@ -163,7 +166,8 @@ func validAuthorization(authorization Authorization) bool {
 			return authorization.OwnerStaffID == 0
 		}
 		return authorization.Scope == ScopeOwnerStaff && authorization.OwnerStaffID > 0
-	case CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest, CapabilityConfigOverviewRead,
+	case CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
+		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite, CapabilityConfigOverviewRead,
 		CapabilityStagesRead, CapabilityStagesWrite:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:

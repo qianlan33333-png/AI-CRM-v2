@@ -191,7 +191,7 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 | 片 | 行为 | 委派 |
 |---|---|---|
 | I-1 | 标识规范化 + upsert（scope 按 ADR-002：unionid→开放平台账号 / openid→appid / external_userid→corp_id / phone→E.164） | Sol |
-| I-2 | Resolve（查不到返回 found=false，**禁止隐式建档**） | Sol |
+| I-2 | Resolve（查不到返回 `not_found`，**禁止隐式建档**） | Sol |
 | I-3 | Bind + 冲突检测分流 | Sol |
 | I-4 | 自动合并（仅 verified unionid 冲突） | **Sol 独占** |
 | I-5 | Ingest（归因成功落时间线 / 失败入 pending_events） | Sol |

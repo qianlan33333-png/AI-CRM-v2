@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -30,6 +31,17 @@ var p3ContactOperations = map[string]bool{
 	"addCustomerTag": true, "removeCustomerTag": true,
 }
 
+var p3IdentityOperations = map[string]bool{
+	"listIdentityMergeReviews": true, "approveIdentityMergeReview": true,
+	"rejectIdentityMergeReview": true,
+}
+
+var identityOperations = map[string]bool{
+	"resolveIdentity": true, "bindIdentity": true, "ingestIdentityEvent": true,
+	"listIdentityMergeReviews": true, "approveIdentityMergeReview": true,
+	"rejectIdentityMergeReview": true,
+}
+
 var contactOperations = map[string]bool{
 	"listCustomers": true, "getCustomer": true, "updateCustomer": true,
 	"listCustomerEvents": true, "listTags": true, "setCustomerStage": true,
@@ -42,28 +54,32 @@ type authorizationContract struct {
 }
 
 var authorizationContracts = map[string]authorizationContract{
-	"listCustomers":          {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"getCustomer":            {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"updateCustomer":         {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"listCustomerEvents":     {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"resolveIdentity":        {"identity.resolve", map[string]string{"admin": "global", "ops": "global"}},
-	"bindIdentity":           {"identity.bind", map[string]string{"admin": "global", "ops": "global"}},
-	"ingestIdentityEvent":    {"identity.ingest", map[string]string{"admin": "global", "ops": "global"}},
-	"getAuthSession":         {"auth.session.read", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
-	"logoutAdmin":            {"auth.session.logout", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
-	"getAdminConfigOverview": {"config.overview.read", map[string]string{"admin": "global"}},
-	"listStages":             {"stages.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
-	"createStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
-	"renameStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
-	"listTags":               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"setCustomerStage":       {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"addCustomerTag":         {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"removeCustomerTag":      {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listCustomers":              {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getCustomer":                {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"updateCustomer":             {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listCustomerEvents":         {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"resolveIdentity":            {"identity.resolve", map[string]string{"admin": "global", "ops": "global"}},
+	"bindIdentity":               {"identity.bind", map[string]string{"admin": "global", "ops": "global"}},
+	"ingestIdentityEvent":        {"identity.ingest", map[string]string{"admin": "global", "ops": "global"}},
+	"listIdentityMergeReviews":   {"identity.review.read", map[string]string{"admin": "global", "ops": "global"}},
+	"approveIdentityMergeReview": {"identity.review.write", map[string]string{"admin": "global", "ops": "global"}},
+	"rejectIdentityMergeReview":  {"identity.review.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getAuthSession":             {"auth.session.read", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
+	"logoutAdmin":                {"auth.session.logout", map[string]string{"admin": "self", "ops": "self", "sales": "self"}},
+	"getAdminConfigOverview":     {"config.overview.read", map[string]string{"admin": "global"}},
+	"listStages":                 {"stages.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
+	"createStage":                {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
+	"renameStage":                {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listTags":                   {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"setCustomerStage":           {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"addCustomerTag":             {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"removeCustomerTag":          {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
 const p2StageDecisionEvidence = "P2-16-2026-08-11"
 const p3ContactDecisionEvidence = "P3-C00-2026-08-12"
+const p3IdentityDecisionEvidence = "P3-I00-2026-08-12"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -77,7 +93,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -123,14 +139,16 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if len(doc.Security) == 0 {
 		return errors.New("business API lacks default security")
 	}
-	seenP1, seenP2, seenP3, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
+	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
+	seenP3Contact, seenP3Identity, links := map[string]bool{}, map[string]bool{}, 0
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3[op.OperationID] ||
-				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] && !p3ContactOperations[op.OperationID]) {
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] ||
+				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -159,8 +177,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if !ok || evidence != p2StageDecisionEvidence {
 					return fmt.Errorf("%s has missing or forged P2 stage evidence", op.OperationID)
 				}
-			} else {
-				seenP3[op.OperationID] = true
+			} else if p3ContactOperations[op.OperationID] {
+				seenP3Contact[op.OperationID] = true
 				if ids, ok := op.Extensions["x-legacy-mapping-ids"]; ok {
 					legacyIDs, err := stringList(ids)
 					if err != nil || len(legacyIDs) == 0 {
@@ -173,11 +191,19 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 						links++
 					}
 				}
+			} else {
+				seenP3Identity[op.OperationID] = true
 			}
 			if contactOperations[op.OperationID] {
 				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
 				if !ok || evidence != p3ContactDecisionEvidence {
 					return fmt.Errorf("%s has missing or forged P3 contact evidence", op.OperationID)
+				}
+			}
+			if identityOperations[op.OperationID] {
+				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
+				if !ok || evidence != p3IdentityDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P3 identity evidence", op.OperationID)
 				}
 			}
 			contract := authorizationContracts[op.OperationID]
@@ -197,8 +223,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3) != 4 || links != 16 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d links=%d", len(seenP1), len(seenP2), len(seenP3), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || links != 16 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -211,8 +237,13 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 		}
 	}
 	for id := range p3ContactOperations {
-		if !seenP3[id] {
+		if !seenP3Contact[id] {
 			return fmt.Errorf("missing P3 contact operation: %s", id)
+		}
+	}
+	for id := range p3IdentityOperations {
+		if !seenP3Identity[id] {
+			return fmt.Errorf("missing P3 identity operation: %s", id)
 		}
 	}
 	customer := doc.Components.Schemas["Customer"]
@@ -230,9 +261,22 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	required := append([]string(nil), identity.Value.Required...)
 	sort.Strings(required)
-	want := []string{"assurance", "scope", "source", "type", "value"}
+	want := []string{"scope", "type", "value"}
 	if fmt.Sprint(required) != fmt.Sprint(want) {
 		return fmt.Errorf("IdentityRef required fields=%v", required)
+	}
+	if len(identity.Value.Properties) != 3 || identity.Value.AdditionalProperties.Has == nil ||
+		*identity.Value.AdditionalProperties.Has {
+		return errors.New("IdentityRef must be a closed type/scope/value admin shape")
+	}
+	kinds, err := stringList(identity.Value.Properties["type"].Value.Enum)
+	if err != nil {
+		return errors.New("IdentityRef type enum is invalid")
+	}
+	sort.Strings(kinds)
+	wantKinds := []string{"alipay_user_id", "ext", "mp_openid", "oa_openid", "phone", "unionid", "wecom_external_userid"}
+	if !reflect.DeepEqual(kinds, wantKinds) {
+		return fmt.Errorf("IdentityRef type enum=%v", kinds)
 	}
 	if doc.Components.Schemas["ErrorResponse"] == nil {
 		return errors.New("ErrorResponse schema missing")
@@ -246,7 +290,221 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if err := validateContactContract(doc); err != nil {
 		return err
 	}
+	if err := validateIdentityContract(doc); err != nil {
+		return err
+	}
 	return nil
+}
+
+func validateIdentityContract(doc *openapi3.T) error {
+	resolve := doc.Paths.Value("/api/v1/identity/resolve")
+	bind := doc.Paths.Value("/api/v1/identity/bind")
+	ingest := doc.Paths.Value("/api/v1/identity/ingest")
+	reviews := doc.Paths.Value("/api/v1/identity/merge-reviews")
+	approve := doc.Paths.Value("/api/v1/identity/merge-reviews/{review_id}/approve")
+	reject := doc.Paths.Value("/api/v1/identity/merge-reviews/{review_id}/reject")
+	if resolve == nil || resolve.Post == nil || bind == nil || bind.Post == nil || ingest == nil || ingest.Post == nil ||
+		reviews == nil || reviews.Get == nil || approve == nil || approve.Post == nil || reject == nil || reject.Post == nil {
+		return errors.New("P3 identity operations are incomplete")
+	}
+	for _, contract := range []struct {
+		operation *openapi3.Operation
+		request   string
+		response  string
+	}{
+		{resolve.Post, "ResolveIdentityRequest", "ResolveIdentityResponse"},
+		{bind.Post, "BindIdentityRequest", "BindIdentityResponse"},
+		{ingest.Post, "IngestIdentityEventRequest", "IngestIdentityEventResponse"},
+		{reviews.Get, "", "IdentityMergeReviewPage"},
+		{approve.Post, "ApproveIdentityMergeReviewRequest", "IdentityMergeReview"},
+		{reject.Post, "RejectIdentityMergeReviewRequest", "IdentityMergeReview"},
+	} {
+		if contract.request != "" && !operationRequestUsesLocalSchema(contract.operation, contract.request) {
+			return fmt.Errorf("%s request schema ref drifted", contract.operation.OperationID)
+		}
+		if !operationResponseUsesLocalSchema(contract.operation, contract.response) {
+			return fmt.Errorf("%s response schema ref drifted", contract.operation.OperationID)
+		}
+	}
+	for name, operation := range map[string]*openapi3.Operation{
+		"bindIdentity": bind.Post, "ingestIdentityEvent": ingest.Post,
+		"approveIdentityMergeReview": approve.Post, "rejectIdentityMergeReview": reject.Post,
+	} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		if !hasRequiredHeader(operation, "Idempotency-Key") {
+			return fmt.Errorf("%s lacks required Idempotency-Key", name)
+		}
+		if operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s lacks conflict or unavailable response", name)
+		}
+	}
+	for _, operation := range []*openapi3.Operation{resolve.Post, reviews.Get} {
+		if operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s lacks unavailable response", operation.OperationID)
+		}
+	}
+	for _, operation := range []*openapi3.Operation{resolve.Post, bind.Post, ingest.Post, approve.Post, reject.Post} {
+		if operation.Responses.Value("422") == nil {
+			return fmt.Errorf("%s lacks semantic validation response", operation.OperationID)
+		}
+	}
+	ref := doc.Components.Schemas["IdentityRef"]
+	if ref == nil || ref.Value == nil || ref.Value.Properties["assurance"] != nil || ref.Value.Properties["source"] != nil {
+		return errors.New("admin IdentityRef must not accept assurance or source")
+	}
+	for _, contract := range []struct {
+		name     string
+		variants map[string][]string
+	}{
+		{"ResolveIdentityResponse", map[string][]string{
+			"ResolveIdentityFound": {"customer_id", "status"}, "ResolveIdentityNotFound": {"status"},
+			"ResolveIdentityConflict": {"status"},
+		}},
+		{"BindIdentityResponse", map[string][]string{
+			"BindIdentityBound": {"customer_id", "status"}, "BindIdentityAlreadyBound": {"customer_id", "status"},
+			"BindIdentityMerged":       {"customer_id", "merge_audit_id", "primary_customer_id", "status"},
+			"BindIdentityManualReview": {"review_id", "status"}, "BindIdentityRejected": {"status"},
+		}},
+		{"IngestIdentityEventResponse", map[string][]string{
+			"IngestIdentityEventAttributed": {"customer_id", "event_id", "status"},
+			"IngestIdentityEventPending":    {"pending_event_id", "status"},
+			"IngestIdentityEventConflict":   {"pending_event_id", "status"},
+		}},
+	} {
+		if err := validateStrictStatusUnion(doc, contract.name, contract.variants); err != nil {
+			return err
+		}
+	}
+	review := doc.Components.Schemas["IdentityMergeReview"]
+	if review == nil || review.Value == nil || review.Value.Properties["identity_fingerprint"] == nil ||
+		review.Value.Properties["value"] != nil || review.Value.Properties["normalized_value"] != nil {
+		return errors.New("merge review identity redaction drifted")
+	}
+	wantReviewFields := []string{"created_at", "customer_ids", "identity_fingerprint", "resolved_at", "review_id", "scope", "status", "type", "version"}
+	gotReviewFields := make([]string, 0, len(review.Value.Properties))
+	for field := range review.Value.Properties {
+		gotReviewFields = append(gotReviewFields, field)
+	}
+	sort.Strings(gotReviewFields)
+	if !reflect.DeepEqual(gotReviewFields, wantReviewFields) || review.Value.AdditionalProperties.Has == nil ||
+		*review.Value.AdditionalProperties.Has {
+		return fmt.Errorf("merge review response fields=%v", gotReviewFields)
+	}
+	reviewRequired := append([]string(nil), review.Value.Required...)
+	sort.Strings(reviewRequired)
+	if !reflect.DeepEqual(reviewRequired, wantReviewFields) {
+		return fmt.Errorf("merge review response required=%v", reviewRequired)
+	}
+	customerIDs := review.Value.Properties["customer_ids"].Value
+	if customerIDs == nil || customerIDs.MinItems != 2 || customerIDs.MaxItems == nil ||
+		*customerIDs.MaxItems != 2 || !customerIDs.UniqueItems {
+		return errors.New("merge review must contain exactly two unique current roots")
+	}
+	fingerprint := review.Value.Properties["identity_fingerprint"].Value
+	if fingerprint == nil || fingerprint.Pattern != `^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$` {
+		return errors.New("merge review fingerprint is not a versioned secret-backed HMAC")
+	}
+	page := doc.Components.Schemas["IdentityMergeReviewPage"]
+	if page == nil || page.Value == nil {
+		return errors.New("IdentityMergeReviewPage is missing")
+	}
+	pageFields := make([]string, 0, len(page.Value.Properties))
+	for field := range page.Value.Properties {
+		pageFields = append(pageFields, field)
+	}
+	sort.Strings(pageFields)
+	if page.Value.Type == nil || !page.Value.Type.Is("object") ||
+		!reflect.DeepEqual(pageFields, []string{"items", "next_cursor"}) ||
+		page.Value.AdditionalProperties.Has == nil || *page.Value.AdditionalProperties.Has {
+		return fmt.Errorf("IdentityMergeReviewPage fields=%v", pageFields)
+	}
+	pageRequired := append([]string(nil), page.Value.Required...)
+	sort.Strings(pageRequired)
+	if !reflect.DeepEqual(pageRequired, []string{"items", "next_cursor"}) {
+		return fmt.Errorf("IdentityMergeReviewPage required=%v", pageRequired)
+	}
+	items := page.Value.Properties["items"]
+	nextCursor := page.Value.Properties["next_cursor"]
+	if items == nil || items.Value == nil || items.Value.Type == nil || !items.Value.Type.Is("array") ||
+		items.Value.Items == nil || items.Value.Items.Ref != "#/components/schemas/IdentityMergeReview" ||
+		nextCursor == nil || nextCursor.Value == nil || nextCursor.Value.Type == nil ||
+		!nextCursor.Value.Type.Is("string") || !nextCursor.Value.Nullable {
+		return errors.New("IdentityMergeReviewPage item or cursor shape drifted")
+	}
+	return nil
+}
+
+func operationRequestUsesLocalSchema(operation *openapi3.Operation, schemaName string) bool {
+	if operation == nil || operation.RequestBody == nil || operation.RequestBody.Value == nil {
+		return false
+	}
+	media := operation.RequestBody.Value.Content["application/json"]
+	return media != nil && media.Schema != nil && media.Schema.Ref == "#/components/schemas/"+schemaName
+}
+
+func operationResponseUsesLocalSchema(operation *openapi3.Operation, schemaName string) bool {
+	if operation == nil {
+		return false
+	}
+	response := operation.Responses.Value("200")
+	if response == nil || response.Value == nil {
+		return false
+	}
+	media := response.Value.Content["application/json"]
+	return media != nil && media.Schema != nil && media.Schema.Ref == "#/components/schemas/"+schemaName
+}
+
+func validateStrictStatusUnion(doc *openapi3.T, name string, variants map[string][]string) error {
+	union := doc.Components.Schemas[name]
+	if union == nil || union.Value == nil || len(union.Value.OneOf) != len(variants) ||
+		union.Value.Discriminator == nil || union.Value.Discriminator.PropertyName != "status" ||
+		len(union.Value.Discriminator.Mapping) != len(variants) {
+		return fmt.Errorf("%s status union drifted", name)
+	}
+	seen := map[string]bool{}
+	for _, variantRef := range union.Value.OneOf {
+		const prefix = "#/components/schemas/"
+		if variantRef == nil || !strings.HasPrefix(variantRef.Ref, prefix) {
+			return fmt.Errorf("%s has an inline or external variant", name)
+		}
+		variantName := strings.TrimPrefix(variantRef.Ref, prefix)
+		wantRequired, ok := variants[variantName]
+		if !ok || seen[variantName] {
+			return fmt.Errorf("%s has unexpected variant %s", name, variantName)
+		}
+		seen[variantName] = true
+		variant := doc.Components.Schemas[variantName]
+		if variant == nil || variant.Value == nil || variant.Value.Type == nil || !variant.Value.Type.Is("object") ||
+			variant.Value.AdditionalProperties.Has == nil || *variant.Value.AdditionalProperties.Has ||
+			len(variant.Value.Properties) != len(wantRequired) {
+			return fmt.Errorf("%s variant %s permits ambiguous fields", name, variantName)
+		}
+		gotRequired := append([]string(nil), variant.Value.Required...)
+		sort.Strings(gotRequired)
+		if !reflect.DeepEqual(gotRequired, wantRequired) {
+			return fmt.Errorf("%s variant %s required=%v", name, variantName, gotRequired)
+		}
+		status := variant.Value.Properties["status"]
+		if status == nil || status.Value == nil || len(status.Value.Enum) != 1 {
+			return fmt.Errorf("%s variant %s lacks a single status", name, variantName)
+		}
+		statusValue, ok := status.Value.Enum[0].(string)
+		if !ok || union.Value.Discriminator.Mapping[statusValue] != prefix+variantName {
+			return fmt.Errorf("%s variant %s discriminator mapping drifted", name, variantName)
+		}
+	}
+	return nil
+}
+
+func hasRequiredHeader(operation *openapi3.Operation, name string) bool {
+	for _, ref := range operation.Parameters {
+		if ref != nil && ref.Value != nil && ref.Value.In == "header" && ref.Value.Name == name && ref.Value.Required {
+			return true
+		}
+	}
+	return false
 }
 
 func validateBrowserSessionContract(doc *openapi3.T) error {

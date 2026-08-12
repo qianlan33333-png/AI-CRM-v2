@@ -1,6 +1,7 @@
 package p1s11_test
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -15,6 +16,109 @@ import (
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
+func TestGeneratedIdentityStatusUnionsUseWireDiscriminators(t *testing.T) {
+	assert := func(t *testing.T, want string, response any, decoded any, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, err := json.Marshal(response)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var object map[string]any
+		if err := json.Unmarshal(raw, &object); err != nil {
+			t.Fatal(err)
+		}
+		if object["status"] != want || decoded == nil {
+			t.Fatalf("generated union status/decoded = %v/%T; want %q/non-nil", object["status"], decoded, want)
+		}
+	}
+	resolve := []struct {
+		status string
+		build  func() (generated.ResolveIdentityResponse, error)
+	}{
+		{"found", func() (response generated.ResolveIdentityResponse, err error) {
+			err = response.FromResolveIdentityFound(generated.ResolveIdentityFound{CustomerId: 1})
+			return
+		}},
+		{"not_found", func() (response generated.ResolveIdentityResponse, err error) {
+			err = response.FromResolveIdentityNotFound(generated.ResolveIdentityNotFound{})
+			return
+		}},
+		{"conflict", func() (response generated.ResolveIdentityResponse, err error) {
+			err = response.FromResolveIdentityConflict(generated.ResolveIdentityConflict{})
+			return
+		}},
+	}
+	for _, test := range resolve {
+		response, err := test.build()
+		if err != nil {
+			t.Fatal(err)
+		}
+		decoded, decodeErr := response.ValueByDiscriminator()
+		assert(t, test.status, response, decoded, decodeErr)
+	}
+	bind := []struct {
+		status string
+		build  func() (generated.BindIdentityResponse, error)
+	}{
+		{"bound", func() (response generated.BindIdentityResponse, err error) {
+			err = response.FromBindIdentityBound(generated.BindIdentityBound{CustomerId: 1})
+			return
+		}},
+		{"already_bound", func() (response generated.BindIdentityResponse, err error) {
+			err = response.FromBindIdentityAlreadyBound(generated.BindIdentityAlreadyBound{CustomerId: 1})
+			return
+		}},
+		{"merged", func() (response generated.BindIdentityResponse, err error) {
+			err = response.FromBindIdentityMerged(generated.BindIdentityMerged{CustomerId: 1, PrimaryCustomerId: 1, MergeAuditId: 2})
+			return
+		}},
+		{"manual_review", func() (response generated.BindIdentityResponse, err error) {
+			err = response.FromBindIdentityManualReview(generated.BindIdentityManualReview{ReviewId: 1})
+			return
+		}},
+		{"rejected", func() (response generated.BindIdentityResponse, err error) {
+			err = response.FromBindIdentityRejected(generated.BindIdentityRejected{})
+			return
+		}},
+	}
+	for _, test := range bind {
+		response, err := test.build()
+		if err != nil {
+			t.Fatal(err)
+		}
+		decoded, decodeErr := response.ValueByDiscriminator()
+		assert(t, test.status, response, decoded, decodeErr)
+	}
+	ingest := []struct {
+		status string
+		build  func() (generated.IngestIdentityEventResponse, error)
+	}{
+		{"attributed", func() (response generated.IngestIdentityEventResponse, err error) {
+			err = response.FromIngestIdentityEventAttributed(generated.IngestIdentityEventAttributed{CustomerId: 1, EventId: 2})
+			return
+		}},
+		{"pending", func() (response generated.IngestIdentityEventResponse, err error) {
+			err = response.FromIngestIdentityEventPending(generated.IngestIdentityEventPending{PendingEventId: 1})
+			return
+		}},
+		{"conflict", func() (response generated.IngestIdentityEventResponse, err error) {
+			err = response.FromIngestIdentityEventConflict(generated.IngestIdentityEventConflict{PendingEventId: 1})
+			return
+		}},
+	}
+	for _, test := range ingest {
+		response, err := test.build()
+		if err != nil {
+			t.Fatal(err)
+		}
+		decoded, decodeErr := response.ValueByDiscriminator()
+		assert(t, test.status, response, decoded, decodeErr)
+	}
+}
+
 func TestGeneratedCustomerIsChannelNeutral(t *testing.T) {
 	typeOf := reflect.TypeOf(generated.Customer{})
 	for index := 0; index < typeOf.NumField(); index++ {
@@ -27,12 +131,15 @@ func TestGeneratedCustomerIsChannelNeutral(t *testing.T) {
 	}
 }
 
-func TestGeneratedIdentityRefRequiresScopedEvidence(t *testing.T) {
+func TestGeneratedIdentityRefKeepsTrustServerSide(t *testing.T) {
 	typeOf := reflect.TypeOf(generated.IdentityRef{})
-	want := map[string]bool{"type": true, "scope": true, "value": true, "assurance": true, "source": true}
+	want := map[string]bool{"type": true, "scope": true, "value": true}
 	for index := 0; index < typeOf.NumField(); index++ {
 		field := typeOf.Field(index)
 		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		if name == "assurance" || name == "source" {
+			t.Fatalf("IdentityRef lets an admin request self-assert trust: %s", name)
+		}
 		delete(want, name)
 		if field.Type.Kind() == reflect.Pointer {
 			t.Fatalf("IdentityRef.%s became optional", field.Name)
@@ -48,10 +155,13 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 		value   any
 		methods []string
 	}{
-		"contact.MergePort":   {(*contactport.MergePort)(nil), []string{"AppendExternalEvent", "CreateForIdentity", "MergeCustomers"}},
-		"config.Service":      {(*configport.Service)(nil), []string{"Get", "Set"}},
-		"events.Appender":     {(*eventport.Appender)(nil), []string{"Append"}},
-		"identity.Service":    {(*identityport.Service)(nil), []string{"Bind", "Ingest", "Resolve"}},
+		"contact.MergePort": {(*contactport.MergePort)(nil), []string{"AppendExternalEvent", "CreateForIdentity", "MergeCustomers"}},
+		"config.Service":    {(*configport.Service)(nil), []string{"Get", "Set"}},
+		"events.Appender":   {(*eventport.Appender)(nil), []string{"Append"}},
+		"identity.Service":  {(*identityport.Service)(nil), []string{"Bind", "Ingest", "Resolve"}},
+		"identity.ReviewService": {(*identityport.ReviewService)(nil), []string{
+			"ApproveMergeReview", "ListMergeReviews", "RejectMergeReview",
+		}},
 		"auth.Service":        {(*authport.Service)(nil), []string{"Authenticate", "Authorize", "Invalidate", "ValidateCSRF"}},
 		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), []string{"Within"}},
 	}
@@ -73,10 +183,10 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
-		"AddCustomerTag", "BindIdentity", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
-		"GetCustomer", "IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListStages",
-		"ListTags", "LogoutAdmin", "RemoveCustomerTag", "RenameStage", "ResolveIdentity",
-		"SetCustomerStage", "UpdateCustomer",
+		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
+		"GetCustomer", "IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
+		"ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
+		"RemoveCustomerTag", "RenameStage", "ResolveIdentity", "SetCustomerStage", "UpdateCustomer",
 	})
 }
 

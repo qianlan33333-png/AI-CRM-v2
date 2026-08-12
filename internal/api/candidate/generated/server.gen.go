@@ -6,6 +6,7 @@ package generated
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -61,45 +62,114 @@ func (e AuthSessionResponseRole) Valid() bool {
 	}
 }
 
-// Defines values for BindIdentityResponseStatus.
+// Defines values for BindIdentityAlreadyBoundStatus.
 const (
-	AlreadyBound BindIdentityResponseStatus = "already_bound"
-	Bound        BindIdentityResponseStatus = "bound"
-	ManualReview BindIdentityResponseStatus = "manual_review"
-	Merged       BindIdentityResponseStatus = "merged"
-	Rejected     BindIdentityResponseStatus = "rejected"
+	AlreadyBound BindIdentityAlreadyBoundStatus = "already_bound"
 )
 
-// Valid indicates whether the value is a known member of the BindIdentityResponseStatus enum.
-func (e BindIdentityResponseStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the BindIdentityAlreadyBoundStatus enum.
+func (e BindIdentityAlreadyBoundStatus) Valid() bool {
 	switch e {
 	case AlreadyBound:
-		return true
-	case Bound:
-		return true
-	case ManualReview:
-		return true
-	case Merged:
-		return true
-	case Rejected:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for IdentityRefAssurance.
+// Defines values for BindIdentityBoundStatus.
 const (
-	Declared IdentityRefAssurance = "declared"
-	Verified IdentityRefAssurance = "verified"
+	Bound BindIdentityBoundStatus = "bound"
 )
 
-// Valid indicates whether the value is a known member of the IdentityRefAssurance enum.
-func (e IdentityRefAssurance) Valid() bool {
+// Valid indicates whether the value is a known member of the BindIdentityBoundStatus enum.
+func (e BindIdentityBoundStatus) Valid() bool {
 	switch e {
-	case Declared:
+	case Bound:
 		return true
-	case Verified:
+	default:
+		return false
+	}
+}
+
+// Defines values for BindIdentityManualReviewStatus.
+const (
+	ManualReview BindIdentityManualReviewStatus = "manual_review"
+)
+
+// Valid indicates whether the value is a known member of the BindIdentityManualReviewStatus enum.
+func (e BindIdentityManualReviewStatus) Valid() bool {
+	switch e {
+	case ManualReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BindIdentityMergedStatus.
+const (
+	Merged BindIdentityMergedStatus = "merged"
+)
+
+// Valid indicates whether the value is a known member of the BindIdentityMergedStatus enum.
+func (e BindIdentityMergedStatus) Valid() bool {
+	switch e {
+	case Merged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BindIdentityRejectedStatus.
+const (
+	BindIdentityRejectedStatusRejected BindIdentityRejectedStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the BindIdentityRejectedStatus enum.
+func (e BindIdentityRejectedStatus) Valid() bool {
+	switch e {
+	case BindIdentityRejectedStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityMergeReviewStatus.
+const (
+	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
+	IdentityMergeReviewStatusPending  IdentityMergeReviewStatus = "pending"
+	IdentityMergeReviewStatusRejected IdentityMergeReviewStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the IdentityMergeReviewStatus enum.
+func (e IdentityMergeReviewStatus) Valid() bool {
+	switch e {
+	case IdentityMergeReviewStatusApproved:
+		return true
+	case IdentityMergeReviewStatusPending:
+		return true
+	case IdentityMergeReviewStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityMergeReviewType.
+const (
+	IdentityMergeReviewTypePhone   IdentityMergeReviewType = "phone"
+	IdentityMergeReviewTypeUnionid IdentityMergeReviewType = "unionid"
+)
+
+// Valid indicates whether the value is a known member of the IdentityMergeReviewType enum.
+func (e IdentityMergeReviewType) Valid() bool {
+	switch e {
+	case IdentityMergeReviewTypePhone:
+		return true
+	case IdentityMergeReviewTypeUnionid:
 		return true
 	default:
 		return false
@@ -108,73 +178,121 @@ func (e IdentityRefAssurance) Valid() bool {
 
 // Defines values for IdentityRefType.
 const (
-	AlipayUserId        IdentityRefType = "alipay_user_id"
-	Ext                 IdentityRefType = "ext"
-	MpOpenid            IdentityRefType = "mp_openid"
-	OaOpenid            IdentityRefType = "oa_openid"
-	Phone               IdentityRefType = "phone"
-	Unionid             IdentityRefType = "unionid"
-	WecomExternalUserid IdentityRefType = "wecom_external_userid"
+	IdentityRefTypeAlipayUserId        IdentityRefType = "alipay_user_id"
+	IdentityRefTypeExt                 IdentityRefType = "ext"
+	IdentityRefTypeMpOpenid            IdentityRefType = "mp_openid"
+	IdentityRefTypeOaOpenid            IdentityRefType = "oa_openid"
+	IdentityRefTypePhone               IdentityRefType = "phone"
+	IdentityRefTypeUnionid             IdentityRefType = "unionid"
+	IdentityRefTypeWecomExternalUserid IdentityRefType = "wecom_external_userid"
 )
 
 // Valid indicates whether the value is a known member of the IdentityRefType enum.
 func (e IdentityRefType) Valid() bool {
 	switch e {
-	case AlipayUserId:
+	case IdentityRefTypeAlipayUserId:
 		return true
-	case Ext:
+	case IdentityRefTypeExt:
 		return true
-	case MpOpenid:
+	case IdentityRefTypeMpOpenid:
 		return true
-	case OaOpenid:
+	case IdentityRefTypeOaOpenid:
 		return true
-	case Phone:
+	case IdentityRefTypePhone:
 		return true
-	case Unionid:
+	case IdentityRefTypeUnionid:
 		return true
-	case WecomExternalUserid:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for IngestIdentityEventResponseStatus.
-const (
-	IngestIdentityEventResponseStatusAttributed IngestIdentityEventResponseStatus = "attributed"
-	IngestIdentityEventResponseStatusConflict   IngestIdentityEventResponseStatus = "conflict"
-	IngestIdentityEventResponseStatusPending    IngestIdentityEventResponseStatus = "pending"
-)
-
-// Valid indicates whether the value is a known member of the IngestIdentityEventResponseStatus enum.
-func (e IngestIdentityEventResponseStatus) Valid() bool {
-	switch e {
-	case IngestIdentityEventResponseStatusAttributed:
-		return true
-	case IngestIdentityEventResponseStatusConflict:
-		return true
-	case IngestIdentityEventResponseStatusPending:
+	case IdentityRefTypeWecomExternalUserid:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for ResolveIdentityResponseStatus.
+// Defines values for IngestIdentityEventAttributedStatus.
 const (
-	ResolveIdentityResponseStatusConflict ResolveIdentityResponseStatus = "conflict"
-	ResolveIdentityResponseStatusFound    ResolveIdentityResponseStatus = "found"
-	ResolveIdentityResponseStatusNotFound ResolveIdentityResponseStatus = "not_found"
+	Attributed IngestIdentityEventAttributedStatus = "attributed"
 )
 
-// Valid indicates whether the value is a known member of the ResolveIdentityResponseStatus enum.
-func (e ResolveIdentityResponseStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the IngestIdentityEventAttributedStatus enum.
+func (e IngestIdentityEventAttributedStatus) Valid() bool {
 	switch e {
-	case ResolveIdentityResponseStatusConflict:
+	case Attributed:
 		return true
-	case ResolveIdentityResponseStatusFound:
+	default:
+		return false
+	}
+}
+
+// Defines values for IngestIdentityEventConflictStatus.
+const (
+	IngestIdentityEventConflictStatusConflict IngestIdentityEventConflictStatus = "conflict"
+)
+
+// Valid indicates whether the value is a known member of the IngestIdentityEventConflictStatus enum.
+func (e IngestIdentityEventConflictStatus) Valid() bool {
+	switch e {
+	case IngestIdentityEventConflictStatusConflict:
 		return true
-	case ResolveIdentityResponseStatusNotFound:
+	default:
+		return false
+	}
+}
+
+// Defines values for IngestIdentityEventPendingStatus.
+const (
+	Pending IngestIdentityEventPendingStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the IngestIdentityEventPendingStatus enum.
+func (e IngestIdentityEventPendingStatus) Valid() bool {
+	switch e {
+	case Pending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveIdentityConflictStatus.
+const (
+	ResolveIdentityConflictStatusConflict ResolveIdentityConflictStatus = "conflict"
+)
+
+// Valid indicates whether the value is a known member of the ResolveIdentityConflictStatus enum.
+func (e ResolveIdentityConflictStatus) Valid() bool {
+	switch e {
+	case ResolveIdentityConflictStatusConflict:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveIdentityFoundStatus.
+const (
+	Found ResolveIdentityFoundStatus = "found"
+)
+
+// Valid indicates whether the value is a known member of the ResolveIdentityFoundStatus enum.
+func (e ResolveIdentityFoundStatus) Valid() bool {
+	switch e {
+	case Found:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveIdentityNotFoundStatus.
+const (
+	ResolveIdentityNotFoundStatusNotFound ResolveIdentityNotFoundStatus = "not_found"
+)
+
+// Valid indicates whether the value is a known member of the ResolveIdentityNotFoundStatus enum.
+func (e ResolveIdentityNotFoundStatus) Valid() bool {
+	switch e {
+	case ResolveIdentityNotFoundStatusNotFound:
 		return true
 	default:
 		return false
@@ -196,6 +314,13 @@ type AdminConfigOverviewResponse struct {
 	Items []AdminConfigEntry `json:"items"`
 }
 
+// ApproveIdentityMergeReviewRequest defines model for ApproveIdentityMergeReviewRequest.
+type ApproveIdentityMergeReviewRequest struct {
+	ExpectedVersion   int64  `json:"expected_version"`
+	PrimaryCustomerId int64  `json:"primary_customer_id"`
+	Reason            string `json:"reason"`
+}
+
 // AuthSessionResponse defines model for AuthSessionResponse.
 type AuthSessionResponse struct {
 	AdminUserId int64                   `json:"admin_user_id"`
@@ -206,23 +331,64 @@ type AuthSessionResponse struct {
 // AuthSessionResponseRole defines model for AuthSessionResponse.Role.
 type AuthSessionResponseRole string
 
+// BindIdentityAlreadyBound defines model for BindIdentityAlreadyBound.
+type BindIdentityAlreadyBound struct {
+	CustomerId int64                          `json:"customer_id"`
+	Status     BindIdentityAlreadyBoundStatus `json:"status"`
+}
+
+// BindIdentityAlreadyBoundStatus defines model for BindIdentityAlreadyBound.Status.
+type BindIdentityAlreadyBoundStatus string
+
+// BindIdentityBound defines model for BindIdentityBound.
+type BindIdentityBound struct {
+	CustomerId int64                   `json:"customer_id"`
+	Status     BindIdentityBoundStatus `json:"status"`
+}
+
+// BindIdentityBoundStatus defines model for BindIdentityBound.Status.
+type BindIdentityBoundStatus string
+
+// BindIdentityManualReview defines model for BindIdentityManualReview.
+type BindIdentityManualReview struct {
+	ReviewId int64                          `json:"review_id"`
+	Status   BindIdentityManualReviewStatus `json:"status"`
+}
+
+// BindIdentityManualReviewStatus defines model for BindIdentityManualReview.Status.
+type BindIdentityManualReviewStatus string
+
+// BindIdentityMerged defines model for BindIdentityMerged.
+type BindIdentityMerged struct {
+	CustomerId        int64                    `json:"customer_id"`
+	MergeAuditId      int64                    `json:"merge_audit_id"`
+	PrimaryCustomerId int64                    `json:"primary_customer_id"`
+	Status            BindIdentityMergedStatus `json:"status"`
+}
+
+// BindIdentityMergedStatus defines model for BindIdentityMerged.Status.
+type BindIdentityMergedStatus string
+
+// BindIdentityRejected defines model for BindIdentityRejected.
+type BindIdentityRejected struct {
+	Status BindIdentityRejectedStatus `json:"status"`
+}
+
+// BindIdentityRejectedStatus defines model for BindIdentityRejected.Status.
+type BindIdentityRejectedStatus string
+
 // BindIdentityRequest defines model for BindIdentityRequest.
 type BindIdentityRequest struct {
-	CustomerId int64       `json:"customer_id"`
-	Ref        IdentityRef `json:"ref"`
+	CustomerId int64 `json:"customer_id"`
+
+	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+	Ref IdentityRef `json:"ref"`
 }
 
 // BindIdentityResponse defines model for BindIdentityResponse.
 type BindIdentityResponse struct {
-	CustomerId        int64                      `json:"customer_id"`
-	MergeAuditId      *int64                     `json:"merge_audit_id,omitempty"`
-	PrimaryCustomerId *int64                     `json:"primary_customer_id,omitempty"`
-	ReviewId          *int64                     `json:"review_id,omitempty"`
-	Status            BindIdentityResponseStatus `json:"status"`
+	union json.RawMessage
 }
-
-// BindIdentityResponseStatus defines model for BindIdentityResponse.Status.
-type BindIdentityResponseStatus string
 
 // CreateStageRequest defines model for CreateStageRequest.
 type CreateStageRequest struct {
@@ -303,60 +469,132 @@ type FieldError struct {
 	Reason string `json:"reason"`
 }
 
-// IdentityRef defines model for IdentityRef.
-type IdentityRef struct {
-	Assurance IdentityRefAssurance `json:"assurance"`
-	Scope     string               `json:"scope"`
-	Source    string               `json:"source"`
-	Type      IdentityRefType      `json:"type"`
-	Value     string               `json:"value"`
+// IdentityMergeReview defines model for IdentityMergeReview.
+type IdentityMergeReview struct {
+	CreatedAt   time.Time `json:"created_at"`
+	CustomerIds []int64   `json:"customer_ids"`
+
+	// IdentityFingerprint Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
+	IdentityFingerprint string `json:"identity_fingerprint"`
+
+	// ResolvedAt Explicitly null while pending; non-null after approval or rejection.
+	ResolvedAt *time.Time                `json:"resolved_at"`
+	ReviewId   int64                     `json:"review_id"`
+	Scope      string                    `json:"scope"`
+	Status     IdentityMergeReviewStatus `json:"status"`
+	Type       IdentityMergeReviewType   `json:"type"`
+	Version    int64                     `json:"version"`
 }
 
-// IdentityRefAssurance defines model for IdentityRef.Assurance.
-type IdentityRefAssurance string
+// IdentityMergeReviewStatus defines model for IdentityMergeReview.Status.
+type IdentityMergeReviewStatus string
+
+// IdentityMergeReviewType defines model for IdentityMergeReview.Type.
+type IdentityMergeReviewType string
+
+// IdentityMergeReviewPage defines model for IdentityMergeReviewPage.
+type IdentityMergeReviewPage struct {
+	Items      []IdentityMergeReview `json:"items"`
+	NextCursor *string               `json:"next_cursor"`
+}
+
+// IdentityRef Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+type IdentityRef struct {
+	Scope string          `json:"scope"`
+	Type  IdentityRefType `json:"type"`
+	Value string          `json:"value"`
+}
 
 // IdentityRefType defines model for IdentityRef.Type.
 type IdentityRefType string
 
+// IngestIdentityEventAttributed defines model for IngestIdentityEventAttributed.
+type IngestIdentityEventAttributed struct {
+	CustomerId int64                               `json:"customer_id"`
+	EventId    int64                               `json:"event_id"`
+	Status     IngestIdentityEventAttributedStatus `json:"status"`
+}
+
+// IngestIdentityEventAttributedStatus defines model for IngestIdentityEventAttributed.Status.
+type IngestIdentityEventAttributedStatus string
+
+// IngestIdentityEventConflict defines model for IngestIdentityEventConflict.
+type IngestIdentityEventConflict struct {
+	PendingEventId int64                             `json:"pending_event_id"`
+	Status         IngestIdentityEventConflictStatus `json:"status"`
+}
+
+// IngestIdentityEventConflictStatus defines model for IngestIdentityEventConflict.Status.
+type IngestIdentityEventConflictStatus string
+
+// IngestIdentityEventPending defines model for IngestIdentityEventPending.
+type IngestIdentityEventPending struct {
+	PendingEventId int64                            `json:"pending_event_id"`
+	Status         IngestIdentityEventPendingStatus `json:"status"`
+}
+
+// IngestIdentityEventPendingStatus defines model for IngestIdentityEventPending.Status.
+type IngestIdentityEventPendingStatus string
+
 // IngestIdentityEventRequest defines model for IngestIdentityEventRequest.
 type IngestIdentityEventRequest struct {
-	EventType      string                 `json:"event_type"`
-	IdempotencyKey string                 `json:"idempotency_key"`
-	OccurredAt     time.Time              `json:"occurred_at"`
-	Payload        map[string]interface{} `json:"payload"`
-	Refs           []IdentityRef          `json:"refs"`
-	Source         string                 `json:"source"`
+	EventType  string                 `json:"event_type"`
+	OccurredAt time.Time              `json:"occurred_at"`
+	Payload    map[string]interface{} `json:"payload"`
+	Refs       []IdentityRef          `json:"refs"`
 }
 
 // IngestIdentityEventResponse defines model for IngestIdentityEventResponse.
 type IngestIdentityEventResponse struct {
-	CustomerId     *int64                            `json:"customer_id,omitempty"`
-	EventId        *int64                            `json:"event_id,omitempty"`
-	PendingEventId *int64                            `json:"pending_event_id,omitempty"`
-	Status         IngestIdentityEventResponseStatus `json:"status"`
+	union json.RawMessage
 }
 
-// IngestIdentityEventResponseStatus defines model for IngestIdentityEventResponse.Status.
-type IngestIdentityEventResponseStatus string
+// RejectIdentityMergeReviewRequest defines model for RejectIdentityMergeReviewRequest.
+type RejectIdentityMergeReviewRequest struct {
+	ExpectedVersion int64  `json:"expected_version"`
+	Reason          string `json:"reason"`
+}
 
 // RenameStageRequest defines model for RenameStageRequest.
 type RenameStageRequest struct {
 	Name string `json:"name"`
 }
 
+// ResolveIdentityConflict defines model for ResolveIdentityConflict.
+type ResolveIdentityConflict struct {
+	Status ResolveIdentityConflictStatus `json:"status"`
+}
+
+// ResolveIdentityConflictStatus defines model for ResolveIdentityConflict.Status.
+type ResolveIdentityConflictStatus string
+
+// ResolveIdentityFound defines model for ResolveIdentityFound.
+type ResolveIdentityFound struct {
+	CustomerId int64                      `json:"customer_id"`
+	Status     ResolveIdentityFoundStatus `json:"status"`
+}
+
+// ResolveIdentityFoundStatus defines model for ResolveIdentityFound.Status.
+type ResolveIdentityFoundStatus string
+
+// ResolveIdentityNotFound defines model for ResolveIdentityNotFound.
+type ResolveIdentityNotFound struct {
+	Status ResolveIdentityNotFoundStatus `json:"status"`
+}
+
+// ResolveIdentityNotFoundStatus defines model for ResolveIdentityNotFound.Status.
+type ResolveIdentityNotFoundStatus string
+
 // ResolveIdentityRequest defines model for ResolveIdentityRequest.
 type ResolveIdentityRequest struct {
+	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
 	Ref IdentityRef `json:"ref"`
 }
 
 // ResolveIdentityResponse defines model for ResolveIdentityResponse.
 type ResolveIdentityResponse struct {
-	CustomerId *int64                        `json:"customer_id,omitempty"`
-	Status     ResolveIdentityResponseStatus `json:"status"`
+	union json.RawMessage
 }
-
-// ResolveIdentityResponseStatus defines model for ResolveIdentityResponse.Status.
-type ResolveIdentityResponseStatus string
 
 // SetCustomerStageRequest defines model for SetCustomerStageRequest.
 type SetCustomerStageRequest struct {
@@ -411,6 +649,9 @@ type CustomerID = int64
 // CustomerKeyword defines model for CustomerKeyword.
 type CustomerKeyword = string
 
+// IdempotencyKey defines model for IdempotencyKey.
+type IdempotencyKey = string
+
 // IsDeletedFilter defines model for IsDeletedFilter.
 type IsDeletedFilter = bool
 
@@ -422,6 +663,9 @@ type LastInteractBeforeFilter = time.Time
 
 // Limit defines model for Limit.
 type Limit = int
+
+// MergeReviewID defines model for MergeReviewID.
+type MergeReviewID = int64
 
 // OwnerStaffIDFilter defines model for OwnerStaffIDFilter.
 type OwnerStaffIDFilter = int64
@@ -513,6 +757,49 @@ type AddCustomerTagParams struct {
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 
+// BindIdentityParams defines parameters for BindIdentity.
+type BindIdentityParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// IngestIdentityEventParams defines parameters for IngestIdentityEvent.
+type IngestIdentityEventParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListIdentityMergeReviewsParams defines parameters for ListIdentityMergeReviews.
+type ListIdentityMergeReviewsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ApproveIdentityMergeReviewParams defines parameters for ApproveIdentityMergeReview.
+type ApproveIdentityMergeReviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RejectIdentityMergeReviewParams defines parameters for RejectIdentityMergeReview.
+type RejectIdentityMergeReviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // CreateStageParams defines parameters for CreateStage.
 type CreateStageParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -537,6 +824,12 @@ type BindIdentityJSONRequestBody = BindIdentityRequest
 // IngestIdentityEventJSONRequestBody defines body for IngestIdentityEvent for application/json ContentType.
 type IngestIdentityEventJSONRequestBody = IngestIdentityEventRequest
 
+// ApproveIdentityMergeReviewJSONRequestBody defines body for ApproveIdentityMergeReview for application/json ContentType.
+type ApproveIdentityMergeReviewJSONRequestBody = ApproveIdentityMergeReviewRequest
+
+// RejectIdentityMergeReviewJSONRequestBody defines body for RejectIdentityMergeReview for application/json ContentType.
+type RejectIdentityMergeReviewJSONRequestBody = RejectIdentityMergeReviewRequest
+
 // ResolveIdentityJSONRequestBody defines body for ResolveIdentity for application/json ContentType.
 type ResolveIdentityJSONRequestBody = ResolveIdentityRequest
 
@@ -545,6 +838,423 @@ type CreateStageJSONRequestBody = CreateStageRequest
 
 // RenameStageJSONRequestBody defines body for RenameStage for application/json ContentType.
 type RenameStageJSONRequestBody = RenameStageRequest
+
+// AsBindIdentityBound returns the union data inside the BindIdentityResponse as a BindIdentityBound
+func (t BindIdentityResponse) AsBindIdentityBound() (BindIdentityBound, error) {
+	var body BindIdentityBound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityBound overwrites any union data inside the BindIdentityResponse as the provided BindIdentityBound
+func (t *BindIdentityResponse) FromBindIdentityBound(v BindIdentityBound) error {
+	v.Status = "bound"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityBound performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityBound
+func (t *BindIdentityResponse) MergeBindIdentityBound(v BindIdentityBound) error {
+	v.Status = "bound"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityAlreadyBound returns the union data inside the BindIdentityResponse as a BindIdentityAlreadyBound
+func (t BindIdentityResponse) AsBindIdentityAlreadyBound() (BindIdentityAlreadyBound, error) {
+	var body BindIdentityAlreadyBound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityAlreadyBound overwrites any union data inside the BindIdentityResponse as the provided BindIdentityAlreadyBound
+func (t *BindIdentityResponse) FromBindIdentityAlreadyBound(v BindIdentityAlreadyBound) error {
+	v.Status = "already_bound"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityAlreadyBound performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityAlreadyBound
+func (t *BindIdentityResponse) MergeBindIdentityAlreadyBound(v BindIdentityAlreadyBound) error {
+	v.Status = "already_bound"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityMerged returns the union data inside the BindIdentityResponse as a BindIdentityMerged
+func (t BindIdentityResponse) AsBindIdentityMerged() (BindIdentityMerged, error) {
+	var body BindIdentityMerged
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityMerged overwrites any union data inside the BindIdentityResponse as the provided BindIdentityMerged
+func (t *BindIdentityResponse) FromBindIdentityMerged(v BindIdentityMerged) error {
+	v.Status = "merged"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityMerged performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityMerged
+func (t *BindIdentityResponse) MergeBindIdentityMerged(v BindIdentityMerged) error {
+	v.Status = "merged"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityManualReview returns the union data inside the BindIdentityResponse as a BindIdentityManualReview
+func (t BindIdentityResponse) AsBindIdentityManualReview() (BindIdentityManualReview, error) {
+	var body BindIdentityManualReview
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityManualReview overwrites any union data inside the BindIdentityResponse as the provided BindIdentityManualReview
+func (t *BindIdentityResponse) FromBindIdentityManualReview(v BindIdentityManualReview) error {
+	v.Status = "manual_review"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityManualReview performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityManualReview
+func (t *BindIdentityResponse) MergeBindIdentityManualReview(v BindIdentityManualReview) error {
+	v.Status = "manual_review"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityRejected returns the union data inside the BindIdentityResponse as a BindIdentityRejected
+func (t BindIdentityResponse) AsBindIdentityRejected() (BindIdentityRejected, error) {
+	var body BindIdentityRejected
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityRejected overwrites any union data inside the BindIdentityResponse as the provided BindIdentityRejected
+func (t *BindIdentityResponse) FromBindIdentityRejected(v BindIdentityRejected) error {
+	v.Status = "rejected"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityRejected performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityRejected
+func (t *BindIdentityResponse) MergeBindIdentityRejected(v BindIdentityRejected) error {
+	v.Status = "rejected"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t BindIdentityResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t BindIdentityResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "already_bound":
+		return t.AsBindIdentityAlreadyBound()
+	case "bound":
+		return t.AsBindIdentityBound()
+	case "manual_review":
+		return t.AsBindIdentityManualReview()
+	case "merged":
+		return t.AsBindIdentityMerged()
+	case "rejected":
+		return t.AsBindIdentityRejected()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t BindIdentityResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *BindIdentityResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsIngestIdentityEventAttributed returns the union data inside the IngestIdentityEventResponse as a IngestIdentityEventAttributed
+func (t IngestIdentityEventResponse) AsIngestIdentityEventAttributed() (IngestIdentityEventAttributed, error) {
+	var body IngestIdentityEventAttributed
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIngestIdentityEventAttributed overwrites any union data inside the IngestIdentityEventResponse as the provided IngestIdentityEventAttributed
+func (t *IngestIdentityEventResponse) FromIngestIdentityEventAttributed(v IngestIdentityEventAttributed) error {
+	v.Status = "attributed"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIngestIdentityEventAttributed performs a merge with any union data inside the IngestIdentityEventResponse, using the provided IngestIdentityEventAttributed
+func (t *IngestIdentityEventResponse) MergeIngestIdentityEventAttributed(v IngestIdentityEventAttributed) error {
+	v.Status = "attributed"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsIngestIdentityEventPending returns the union data inside the IngestIdentityEventResponse as a IngestIdentityEventPending
+func (t IngestIdentityEventResponse) AsIngestIdentityEventPending() (IngestIdentityEventPending, error) {
+	var body IngestIdentityEventPending
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIngestIdentityEventPending overwrites any union data inside the IngestIdentityEventResponse as the provided IngestIdentityEventPending
+func (t *IngestIdentityEventResponse) FromIngestIdentityEventPending(v IngestIdentityEventPending) error {
+	v.Status = "pending"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIngestIdentityEventPending performs a merge with any union data inside the IngestIdentityEventResponse, using the provided IngestIdentityEventPending
+func (t *IngestIdentityEventResponse) MergeIngestIdentityEventPending(v IngestIdentityEventPending) error {
+	v.Status = "pending"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsIngestIdentityEventConflict returns the union data inside the IngestIdentityEventResponse as a IngestIdentityEventConflict
+func (t IngestIdentityEventResponse) AsIngestIdentityEventConflict() (IngestIdentityEventConflict, error) {
+	var body IngestIdentityEventConflict
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIngestIdentityEventConflict overwrites any union data inside the IngestIdentityEventResponse as the provided IngestIdentityEventConflict
+func (t *IngestIdentityEventResponse) FromIngestIdentityEventConflict(v IngestIdentityEventConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIngestIdentityEventConflict performs a merge with any union data inside the IngestIdentityEventResponse, using the provided IngestIdentityEventConflict
+func (t *IngestIdentityEventResponse) MergeIngestIdentityEventConflict(v IngestIdentityEventConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t IngestIdentityEventResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t IngestIdentityEventResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "attributed":
+		return t.AsIngestIdentityEventAttributed()
+	case "conflict":
+		return t.AsIngestIdentityEventConflict()
+	case "pending":
+		return t.AsIngestIdentityEventPending()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t IngestIdentityEventResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *IngestIdentityEventResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsResolveIdentityFound returns the union data inside the ResolveIdentityResponse as a ResolveIdentityFound
+func (t ResolveIdentityResponse) AsResolveIdentityFound() (ResolveIdentityFound, error) {
+	var body ResolveIdentityFound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResolveIdentityFound overwrites any union data inside the ResolveIdentityResponse as the provided ResolveIdentityFound
+func (t *ResolveIdentityResponse) FromResolveIdentityFound(v ResolveIdentityFound) error {
+	v.Status = "found"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResolveIdentityFound performs a merge with any union data inside the ResolveIdentityResponse, using the provided ResolveIdentityFound
+func (t *ResolveIdentityResponse) MergeResolveIdentityFound(v ResolveIdentityFound) error {
+	v.Status = "found"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsResolveIdentityNotFound returns the union data inside the ResolveIdentityResponse as a ResolveIdentityNotFound
+func (t ResolveIdentityResponse) AsResolveIdentityNotFound() (ResolveIdentityNotFound, error) {
+	var body ResolveIdentityNotFound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResolveIdentityNotFound overwrites any union data inside the ResolveIdentityResponse as the provided ResolveIdentityNotFound
+func (t *ResolveIdentityResponse) FromResolveIdentityNotFound(v ResolveIdentityNotFound) error {
+	v.Status = "not_found"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResolveIdentityNotFound performs a merge with any union data inside the ResolveIdentityResponse, using the provided ResolveIdentityNotFound
+func (t *ResolveIdentityResponse) MergeResolveIdentityNotFound(v ResolveIdentityNotFound) error {
+	v.Status = "not_found"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsResolveIdentityConflict returns the union data inside the ResolveIdentityResponse as a ResolveIdentityConflict
+func (t ResolveIdentityResponse) AsResolveIdentityConflict() (ResolveIdentityConflict, error) {
+	var body ResolveIdentityConflict
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResolveIdentityConflict overwrites any union data inside the ResolveIdentityResponse as the provided ResolveIdentityConflict
+func (t *ResolveIdentityResponse) FromResolveIdentityConflict(v ResolveIdentityConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResolveIdentityConflict performs a merge with any union data inside the ResolveIdentityResponse, using the provided ResolveIdentityConflict
+func (t *ResolveIdentityResponse) MergeResolveIdentityConflict(v ResolveIdentityConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ResolveIdentityResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t ResolveIdentityResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "conflict":
+		return t.AsResolveIdentityConflict()
+	case "found":
+		return t.AsResolveIdentityFound()
+	case "not_found":
+		return t.AsResolveIdentityNotFound()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t ResolveIdentityResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ResolveIdentityResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -580,10 +1290,19 @@ type ServerInterface interface {
 	AddCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params AddCustomerTagParams)
 	// Bind a scoped identity to a channel-neutral customer
 	// (POST /api/v1/identity/bind)
-	BindIdentity(w http.ResponseWriter, r *http.Request)
+	BindIdentity(w http.ResponseWriter, r *http.Request, params BindIdentityParams)
 	// Attribute or persist an external event without guessing identity
 	// (POST /api/v1/identity/ingest)
-	IngestIdentityEvent(w http.ResponseWriter, r *http.Request)
+	IngestIdentityEvent(w http.ResponseWriter, r *http.Request, params IngestIdentityEventParams)
+	// List pending identity merge reviews without exposing raw identities
+	// (GET /api/v1/identity/merge-reviews)
+	ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams)
+	// Approve one versioned merge review with an explicit primary customer
+	// (POST /api/v1/identity/merge-reviews/{review_id}/approve)
+	ApproveIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params ApproveIdentityMergeReviewParams)
+	// Reject one versioned merge review without changing bindings
+	// (POST /api/v1/identity/merge-reviews/{review_id}/reject)
+	RejectIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params RejectIdentityMergeReviewParams)
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(w http.ResponseWriter, r *http.Request)
@@ -667,13 +1386,31 @@ func (_ Unimplemented) AddCustomerTag(w http.ResponseWriter, r *http.Request, cu
 
 // Bind a scoped identity to a channel-neutral customer
 // (POST /api/v1/identity/bind)
-func (_ Unimplemented) BindIdentity(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) BindIdentity(w http.ResponseWriter, r *http.Request, params BindIdentityParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Attribute or persist an external event without guessing identity
 // (POST /api/v1/identity/ingest)
-func (_ Unimplemented) IngestIdentityEvent(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) IngestIdentityEvent(w http.ResponseWriter, r *http.Request, params IngestIdentityEventParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List pending identity merge reviews without exposing raw identities
+// (GET /api/v1/identity/merge-reviews)
+func (_ Unimplemented) ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Approve one versioned merge review with an explicit primary customer
+// (POST /api/v1/identity/merge-reviews/{review_id}/approve)
+func (_ Unimplemented) ApproveIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params ApproveIdentityMergeReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reject one versioned merge review without changing bindings
+// (POST /api/v1/identity/merge-reviews/{review_id}/reject)
+func (_ Unimplemented) RejectIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params RejectIdentityMergeReviewParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1265,14 +2002,67 @@ func (siw *ServerInterfaceWrapper) AddCustomerTag(w http.ResponseWriter, r *http
 // BindIdentity operation middleware
 func (siw *ServerInterfaceWrapper) BindIdentity(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BindIdentityParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BindIdentity(w, r)
+		siw.Handler.BindIdentity(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1285,14 +2075,272 @@ func (siw *ServerInterfaceWrapper) BindIdentity(w http.ResponseWriter, r *http.R
 // IngestIdentityEvent operation middleware
 func (siw *ServerInterfaceWrapper) IngestIdentityEvent(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
 
 	r = r.WithContext(ctx)
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params IngestIdentityEventParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.IngestIdentityEvent(w, r)
+		siw.Handler.IngestIdentityEvent(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIdentityMergeReviews operation middleware
+func (siw *ServerInterfaceWrapper) ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIdentityMergeReviewsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIdentityMergeReviews(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveIdentityMergeReview operation middleware
+func (siw *ServerInterfaceWrapper) ApproveIdentityMergeReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "review_id" -------------
+	var reviewId MergeReviewID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "review_id", chi.URLParam(r, "review_id"), &reviewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "review_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveIdentityMergeReviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveIdentityMergeReview(w, r, reviewId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectIdentityMergeReview operation middleware
+func (siw *ServerInterfaceWrapper) RejectIdentityMergeReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "review_id" -------------
+	var reviewId MergeReviewID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "review_id", chi.URLParam(r, "review_id"), &reviewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "review_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RejectIdentityMergeReviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectIdentityMergeReview(w, r, reviewId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1619,6 +2667,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/identity/ingest", wrapper.IngestIdentityEvent)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/identity/merge-reviews", wrapper.ListIdentityMergeReviews)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/identity/merge-reviews/{review_id}/approve", wrapper.ApproveIdentityMergeReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/identity/merge-reviews/{review_id}/reject", wrapper.RejectIdentityMergeReview)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/identity/resolve", wrapper.ResolveIdentity)
@@ -2165,7 +3222,8 @@ func (response AddCustomerTag409JSONResponse) VisitAddCustomerTagResponse(w http
 }
 
 type BindIdentityRequestObject struct {
-	Body *BindIdentityJSONRequestBody
+	Params BindIdentityParams
+	Body   *BindIdentityJSONRequestBody
 }
 
 type BindIdentityResponseObject interface {
@@ -2217,8 +3275,29 @@ func (response BindIdentity409JSONResponse) VisitBindIdentityResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type BindIdentity422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response BindIdentity422JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response BindIdentity503JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type IngestIdentityEventRequestObject struct {
-	Body *IngestIdentityEventJSONRequestBody
+	Params IngestIdentityEventParams
+	Body   *IngestIdentityEventJSONRequestBody
 }
 
 type IngestIdentityEventResponseObject interface {
@@ -2257,6 +3336,256 @@ type IngestIdentityEvent403JSONResponse struct{ ForbiddenJSONResponse }
 func (response IngestIdentityEvent403JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent409JSONResponse struct{ ConflictJSONResponse }
+
+func (response IngestIdentityEvent409JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response IngestIdentityEvent422JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response IngestIdentityEvent503JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviewsRequestObject struct {
+	Params ListIdentityMergeReviewsParams
+}
+
+type ListIdentityMergeReviewsResponseObject interface {
+	VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error
+}
+
+type ListIdentityMergeReviews200JSONResponse IdentityMergeReviewPage
+
+func (response ListIdentityMergeReviews200JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListIdentityMergeReviews400JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListIdentityMergeReviews401JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListIdentityMergeReviews403JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListIdentityMergeReviews503JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReviewRequestObject struct {
+	ReviewId MergeReviewID `json:"review_id"`
+	Params   ApproveIdentityMergeReviewParams
+	Body     *ApproveIdentityMergeReviewJSONRequestBody
+}
+
+type ApproveIdentityMergeReviewResponseObject interface {
+	VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error
+}
+
+type ApproveIdentityMergeReview200JSONResponse IdentityMergeReview
+
+func (response ApproveIdentityMergeReview200JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ApproveIdentityMergeReview400JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ApproveIdentityMergeReview401JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ApproveIdentityMergeReview403JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ApproveIdentityMergeReview404JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ApproveIdentityMergeReview409JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ApproveIdentityMergeReview422JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ApproveIdentityMergeReview503JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReviewRequestObject struct {
+	ReviewId MergeReviewID `json:"review_id"`
+	Params   RejectIdentityMergeReviewParams
+	Body     *RejectIdentityMergeReviewJSONRequestBody
+}
+
+type RejectIdentityMergeReviewResponseObject interface {
+	VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error
+}
+
+type RejectIdentityMergeReview200JSONResponse IdentityMergeReview
+
+func (response RejectIdentityMergeReview200JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RejectIdentityMergeReview400JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RejectIdentityMergeReview401JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RejectIdentityMergeReview403JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RejectIdentityMergeReview404JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RejectIdentityMergeReview409JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response RejectIdentityMergeReview422JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RejectIdentityMergeReview503JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -2301,6 +3630,26 @@ type ResolveIdentity403JSONResponse struct{ ForbiddenJSONResponse }
 func (response ResolveIdentity403JSONResponse) VisitResolveIdentityResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveIdentity422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ResolveIdentity422JSONResponse) VisitResolveIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ResolveIdentity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ResolveIdentity503JSONResponse) VisitResolveIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -2578,6 +3927,15 @@ type StrictServerInterface interface {
 	// Attribute or persist an external event without guessing identity
 	// (POST /api/v1/identity/ingest)
 	IngestIdentityEvent(ctx context.Context, request IngestIdentityEventRequestObject) (IngestIdentityEventResponseObject, error)
+	// List pending identity merge reviews without exposing raw identities
+	// (GET /api/v1/identity/merge-reviews)
+	ListIdentityMergeReviews(ctx context.Context, request ListIdentityMergeReviewsRequestObject) (ListIdentityMergeReviewsResponseObject, error)
+	// Approve one versioned merge review with an explicit primary customer
+	// (POST /api/v1/identity/merge-reviews/{review_id}/approve)
+	ApproveIdentityMergeReview(ctx context.Context, request ApproveIdentityMergeReviewRequestObject) (ApproveIdentityMergeReviewResponseObject, error)
+	// Reject one versioned merge review without changing bindings
+	// (POST /api/v1/identity/merge-reviews/{review_id}/reject)
+	RejectIdentityMergeReview(ctx context.Context, request RejectIdentityMergeReviewRequestObject) (RejectIdentityMergeReviewResponseObject, error)
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(ctx context.Context, request ResolveIdentityRequestObject) (ResolveIdentityResponseObject, error)
@@ -2902,8 +4260,10 @@ func (sh *strictHandler) AddCustomerTag(w http.ResponseWriter, r *http.Request, 
 }
 
 // BindIdentity operation middleware
-func (sh *strictHandler) BindIdentity(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) BindIdentity(w http.ResponseWriter, r *http.Request, params BindIdentityParams) {
 	var request BindIdentityRequestObject
+
+	request.Params = params
 
 	var body BindIdentityJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -2933,8 +4293,10 @@ func (sh *strictHandler) BindIdentity(w http.ResponseWriter, r *http.Request) {
 }
 
 // IngestIdentityEvent operation middleware
-func (sh *strictHandler) IngestIdentityEvent(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) IngestIdentityEvent(w http.ResponseWriter, r *http.Request, params IngestIdentityEventParams) {
 	var request IngestIdentityEventRequestObject
+
+	request.Params = params
 
 	var body IngestIdentityEventJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -2956,6 +4318,100 @@ func (sh *strictHandler) IngestIdentityEvent(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(IngestIdentityEventResponseObject); ok {
 		if err := validResponse.VisitIngestIdentityEventResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIdentityMergeReviews operation middleware
+func (sh *strictHandler) ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams) {
+	var request ListIdentityMergeReviewsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIdentityMergeReviews(ctx, request.(ListIdentityMergeReviewsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIdentityMergeReviews")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIdentityMergeReviewsResponseObject); ok {
+		if err := validResponse.VisitListIdentityMergeReviewsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveIdentityMergeReview operation middleware
+func (sh *strictHandler) ApproveIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params ApproveIdentityMergeReviewParams) {
+	var request ApproveIdentityMergeReviewRequestObject
+
+	request.ReviewId = reviewId
+	request.Params = params
+
+	var body ApproveIdentityMergeReviewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveIdentityMergeReview(ctx, request.(ApproveIdentityMergeReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveIdentityMergeReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveIdentityMergeReviewResponseObject); ok {
+		if err := validResponse.VisitApproveIdentityMergeReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectIdentityMergeReview operation middleware
+func (sh *strictHandler) RejectIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params RejectIdentityMergeReviewParams) {
+	var request RejectIdentityMergeReviewRequestObject
+
+	request.ReviewId = reviewId
+	request.Params = params
+
+	var body RejectIdentityMergeReviewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectIdentityMergeReview(ctx, request.(RejectIdentityMergeReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectIdentityMergeReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectIdentityMergeReviewResponseObject); ok {
+		if err := validResponse.VisitRejectIdentityMergeReviewResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -9,3 +9,4 @@ output-options:
     - p1-core-candidate
     - p2-stages
     - p3-contact
+    - p3-identity
