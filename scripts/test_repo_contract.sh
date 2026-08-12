@@ -3154,6 +3154,30 @@ if (cd "$r4b_receipt_owner" && scripts/check_repo_contract.sh >/dev/null 2>&1); 
   fail "P3-R4B receipt ownership drift was accepted"
 fi
 
+r3b_missing_migration="$(make_fixture p3-c07c-r3b-missing-migration)"
+rm -f "$r3b_missing_migration/migrations/00011_contact_external_event_idempotency.sql"
+git -C "$r3b_missing_migration" add -u migrations/00011_contact_external_event_idempotency.sql
+if (cd "$r3b_missing_migration" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07C-R3B missing migration was accepted"
+fi
+
+r3b_extra_table="$(make_fixture p3-c07c-r3b-extra-table)"
+printf '%s\n' 'CREATE TABLE contact_registry_escape_hatch (id BIGINT PRIMARY KEY);' \
+  >>"$r3b_extra_table/migrations/00011_contact_external_event_idempotency.sql"
+restage_p2s18_receipt "$r3b_extra_table" migrations/00011_contact_external_event_idempotency.sql
+if (cd "$r3b_extra_table" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07C-R3B extra table was accepted"
+fi
+
+r3b_owner_drift="$(make_fixture p3-c07c-r3b-owner-drift)"
+sed -i.bak 's/      - customer_event_idempotency/      - registry_escape_hatch/' \
+  "$r3b_owner_drift/docs/architecture/table-ownership.yml"
+rm -f "$r3b_owner_drift/docs/architecture/table-ownership.yml.bak"
+restage_p2s18_receipt "$r3b_owner_drift" docs/architecture/table-ownership.yml
+if (cd "$r3b_owner_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07C-R3B owner drift was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc
