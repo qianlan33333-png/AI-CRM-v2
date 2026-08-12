@@ -45,6 +45,7 @@ required=(
   migrations/00006_customer_events.sql
   migrations/00007_contact_merge_lineage.sql
   migrations/00008_segment_contract.sql
+  migrations/00009_identity_storage_contract.sql
   internal/segment/port/port.go
   internal/segment/port/port_test.go
   internal/segment/dsl/ast.go
@@ -219,6 +220,10 @@ required=(
   docs/execution/slices/P3-C06D.md
   docs/evidence/slices/P3-C06D-tag-count.md
   docs/execution/slices/P3-I00.md
+  docs/adr/ADR-012.md
+  docs/execution/slices/P3-I01A1R.md
+  acceptance/identity/doc.go
+  acceptance/identity/storage_contract_test.go
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -268,6 +273,8 @@ required=(
   internal/events/store/generated/querier.go
   internal/identity/port/port.go
   internal/identity/port/port_test.go
+  internal/config/port/hmac_keyring.go
+  internal/config/port/hmac_keyring_test.go
   internal/platform/port/uow.go
   internal/platform/store/uow.go
   internal/platform/store/uow_test.go
@@ -615,6 +622,10 @@ done <<'EOF'
 100644 docs/execution/slices/P3-C06D.md
 100644 docs/evidence/slices/P3-C06D-tag-count.md
 100644 docs/execution/slices/P3-I00.md
+100644 docs/adr/ADR-012.md
+100644 docs/execution/slices/P3-I01A1R.md
+100644 acceptance/identity/doc.go
+100644 acceptance/identity/storage_contract_test.go
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -664,6 +675,8 @@ done <<'EOF'
 100644 internal/events/store/generated/querier.go
 100644 internal/identity/port/port.go
 100644 internal/identity/port/port_test.go
+100644 internal/config/port/hmac_keyring.go
+100644 internal/config/port/hmac_keyring_test.go
 100644 internal/platform/port/uow.go
 100644 internal/platform/store/uow.go
 100644 internal/platform/store/uow_test.go
@@ -801,6 +814,7 @@ done <<'EOF'
 100644 migrations/00006_customer_events.sql
 100644 migrations/00007_contact_merge_lineage.sql
 100644 migrations/00008_segment_contract.sql
+100644 migrations/00009_identity_storage_contract.sql
 100644 internal/segment/port/port.go
 100644 internal/segment/port/port_test.go
 100644 internal/segment/dsl/ast.go
@@ -854,7 +868,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  552fab7dd1372b035f11044f5bef865955c350b5b32949c96eaaf356c9f11677
+  0c7c86b80df2dd9658b58a2c90061c40374372aedf5c6fc6278cd19e145baa2f
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -868,9 +882,9 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
+  df26da082fb3ebd69148465706c6019f714456aa307d906c251eed31eac8091b
 verify_index_sha256 .github/workflows/application-go.yml \
-  2a899ec1ae66389d5713c8961f1b3b8c88d938f171b837fdad070b37515c30f3
+  408ff14b4d8d46bc13c7e65632dda763659c9bb804d216636c0947e387923ae2
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -882,11 +896,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  d91a8568f29ab891eccd5bc74004af8a3765c499ad54be4df2dbb4648808818b
+  d101518dc5502bcab46406a87a25da3710eb18180e9d2c34bd31912660087a82
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  94b64117090a50f9d0738cac211727b42f49815e5acc748ba709954bd0d1adb7
+  4c241ac5096929e127536ff34d66cf412d8e49610ffd01b388efa2ec9cff2e26
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -980,9 +994,9 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
-  94d56f1479ee25eb13643ed97565a73fd5e774178510b118d172d7fd1dbac22e
+  949b61cc7e8cc18c506304a566116f367472f10c1d2de6ce99f6a8a588f0f6ad
 verify_index_sha256 scripts/test_ownership.sh \
-  5a887619857112b7ab55c72bc417c6d51f7804722dfed33c9b56b8d93787ebeb
+  8a6e1b783a88ab5bd89ab16e80f2a72f3f7cd65f69a76e108a9394a801ee919e
 verify_index_sha256 acceptance/fixtures/postgres.go \
   e9e04301d41b57d59eb49f74d75767803a2847c41ee5fab8c383adb586de670b
 verify_index_sha256 acceptance/fixtures/postgres_test.go \
@@ -994,7 +1008,7 @@ verify_index_sha256 scripts/sourcepolicy/main.go \
 verify_index_sha256 scripts/test_source_policy.sh \
   5946cd133bf3e213a8d5635a231ca6161a71a9cfd785e69d87bfac7099704b80
 verify_index_sha256 AGENTS.md \
-  6d7bbe6739e98fd878d9fa7550726841f616f0190778b03587025a0cc025173f
+  6a213297fe2165393e5355e5e84ad00059b4b9f4cfc74306211a690096be53fa
 verify_index_sha256 scripts/check_slice_inputs.sh \
   b7b1711da73974b0a89c79bab020e519095fc8aaf36f737b036027ec3a08cb25
 verify_index_sha256 scripts/test_slice_inputs.sh \
@@ -1078,7 +1092,7 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  4170fa3739b23720f66e2d00d95e6b79be8ef5f975d5b6d5611408dcc2e3cc60
+  e0992fc792a4a36a1f08cefb057b73b9be8e78027bf4e65f0d807ab6ed261772
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
@@ -1086,7 +1100,7 @@ verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
 verify_index_sha256 internal/api/generated/server.gen.go \
   f1e66b50f9ba6722b663967ec1da44cf6bda718246d66a82aef9179c670f2e38
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
-  082045f31bef73aa4d970b2f97396c9eda4e66bc2fef28c97f19036c65fcfec9
+  9f12883c3daa79e2e0dbef9133389b447e9df7a2262c7dd4a2e4ad28f1b521fe
 verify_index_sha256 tools/openapi-contract/main.go \
   3ab60ef983670fc847c91d7c8ad51baba53a476f7e152f162e1e59efbbc9c721
 verify_index_sha256 tools/openapi-contract/main_test.go \
@@ -1297,6 +1311,16 @@ verify_index_sha256 docs/evidence/slices/P3-C06D-tag-count.md \
   6a328bb6e0d0dba614498c64fa183b230254aa06847aa2e49b2ed40189c7a0d2
 verify_index_sha256 docs/execution/slices/P3-I00.md \
   3f4c4c870960c5d5afa84a40cac23f3412dd6f345d6bc6ebb6016cef353d4303
+verify_index_sha256 docs/adr/ADR-012.md \
+  4aab996bb3ea9c6e5002c0136851ee3d64b166db82dc743294fbb88eb1528fed
+verify_index_sha256 docs/execution/slices/P3-I01A1R.md \
+  6773d0a0b9d8c2c1e85617620c0dde7e6afb6abeffef9c6392437149b9f14987
+verify_index_sha256 migrations/00009_identity_storage_contract.sql \
+  3d972d7b9bc1e455f55153e361daf5f1320dbc8607d3399612224c59b2b05fee
+verify_index_sha256 acceptance/identity/doc.go \
+  8a4265afd5ddf721a58989882777a8a875f671463d62d48b3987e484e13f0b79
+verify_index_sha256 acceptance/identity/storage_contract_test.go \
+  21f851147566f241fd68ac06ae3cf3e1a10db75af7f846d2267cdb2982e11751
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1360,9 +1384,9 @@ verify_index_sha256 internal/segment/compiler/compiler_test.go \
 verify_index_sha256 docs/execution/slices/P3-S02.md \
   f9b5f078beedfbdb30c703bca22672bf80ccd45abf121270e700b48040dbf1f7
 verify_index_sha256 docs/architecture/port-contracts.md \
-  4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
+  52b378131861049e3bcc7961a83bded40ba330cbbe4a80bbb42aed03d0030cb5
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  4a95b00fddbbb402398fa8a03bb21fc8f4d9d107f228c7167baa10bb08b0c36f
+  14715472733720bc0ab39386b0feccf8afcecfbc511f01b7c416885ea6306e7e
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1370,9 +1394,13 @@ verify_index_sha256 internal/auth/port/port.go \
 verify_index_sha256 internal/contact/port/port.go \
   6dcfb247f751beaf0b1e2c286f4b201bb5d5589055bfd0e967961a13d38d7463
 verify_index_sha256 internal/identity/port/port.go \
-  bc3f25a61d71865c511fb41bb34871a03b223508fccdf1f33586a8193850ff13
+  784cc7858ee5f2993dc8961a856815aaa393aa4b23ad5adb3e95bd67aa4ee5b2
 verify_index_sha256 internal/identity/port/port_test.go \
-  91e5f66dc7b240334826ad6dd5212685e1fb9b1d8d677c7dea1a27dbb824cb27
+  d5ea696172a354aaf5e04c514c06fb541c71a8956750f1edbf6ea7bdb9ed4a61
+verify_index_sha256 internal/config/port/hmac_keyring.go \
+  c9bc0290eea9ed63ed4cd32cd2a647cff4095871482e225e8f5d1c2e3a751f04
+verify_index_sha256 internal/config/port/hmac_keyring_test.go \
+  06d8f7f8f97c3ed329b6200c17381dffd396764bd2381506a1c9ead539af6ce5
 verify_index_sha256 internal/platform/port/uow.go \
   f8f9b381c9cdbcabbeea9403e8379c33464b7356522abdb383d0e09a6f5996c1
 verify_index_sha256 internal/platform/store/uow.go \
@@ -1640,11 +1668,11 @@ verify_index_sha256 docs/execution/slices/M0-5.md \
 verify_index_sha256 docs/execution/slices/M0-6.md \
   96f5131c60d2eec508557f03ba1322af88c2002a259ec8d455569024d2013125
 verify_index_sha256 docs/architecture/canonical.md \
-  bd26d6209a0ce7160d596b22e70d8b1bdf615bbf658309f4e2466c4d292cb3fb
+  8cfc4318d7e98750703b12feccfdbae95e943f957e79da4056c67cc2af24de28
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
+  421185b6be919fdf2fb9eaa0cab9870cb0cebe186dc44e10cc0b8fc2f1f5ffd5
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b2ec19ca532c0b3c3a73ce5ea015479ad38e0e59c6049dd413d66fa2c5d6015b
+  53638cd21631ef83036b349d41fed3f5d1592fedd2af3daf5650c0c97a0c8b6c
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3042,6 +3070,81 @@ for governance_anchor in \
   grep -Fq "$governance_anchor" <<<"$p3c07_ledger" ||
     fail "P3-C07B1 rescope ledger receipt drifted: $governance_anchor"
 done
+
+p3i01a1_migration="$(git show :migrations/00009_identity_storage_contract.sql)"
+for anchor in \
+  'CREATE TABLE identities (' \
+  'UNIQUE (kind, scope, normalized_value)' \
+  'normalizer_version      SMALLINT NOT NULL' \
+  'review_fingerprint      BYTEA NOT NULL' \
+  'fingerprint_key_version SMALLINT NOT NULL' \
+  'CREATE TABLE customer_merges (' \
+  'aicrm_identity_merge_detail_valid(detail)' \
+  'CREATE TABLE pending_events (' \
+  'CREATE TABLE identity_operation_receipts (' \
+  'key_digest               BYTEA NOT NULL' \
+  'payload_hmac             BYTEA NOT NULL' \
+  "state                    TEXT NOT NULL DEFAULT 'in_progress'" \
+  'UNIQUE (operation, idempotency_scope, key_digest)' \
+  'aicrm_identity_receipt_result_valid(operation, result)' \
+  'CREATE CONSTRAINT TRIGGER identity_receipts_completed_before_commit' \
+  'DEFERRABLE INITIALLY DEFERRED' \
+  'CREATE TRIGGER identity_receipts_transition' \
+  'CREATE TRIGGER customer_merges_append_only' \
+  'DROP TABLE identity_operation_receipts;' \
+  'DROP TABLE pending_events;' \
+  'DROP TABLE customer_merges;' \
+  'DROP TABLE identities;'; do
+  grep -Fq -- "$anchor" <<<"$p3i01a1_migration" || fail "P3-I01A1 identity migration drifted: $anchor"
+done
+grep -Fq "ARRAY['source_identity_ids', 'trigger_kind', 'assurance']" <<<"$p3i01a1_migration" || fail "customer_merges detail must remain a closed redacted audit object"
+[[ "$(grep -Ec '^CREATE TABLE ' <<<"$p3i01a1_migration")" -eq 4 ]] || fail "P3-I01A1 migration must create exactly four Identity-owned tables"
+! grep -Eq '^[[:space:]]*(raw_identity|raw_value|id_value|idempotency_key)[[:space:]]+[A-Z]' <<<"$p3i01a1_migration" || fail "raw identity or raw idempotency key persistence was accepted"
+for table in customer_merges pending_events identity_operation_receipts; do
+  block="$(sed -n "/^CREATE TABLE $table (/,/^);$/p" <<<"$p3i01a1_migration")"
+  ! grep -Eq '^[[:space:]]*normalized_value[[:space:]]' <<<"$block" || fail "normalized_value escaped identities-owned storage into $table"
+done
+grep -Fq 'normalized_value        TEXT NOT NULL' <<<"$(sed -n '/^CREATE TABLE identities (/,/^);$/p' <<<"$p3i01a1_migration")" || fail "identities lost its legal normalized_value storage"
+! grep -Eiq 'CREATE (UNIQUE )?INDEX[^;]*(identity_operation_receipts|identity_receipts)[^;]*(state|USING[[:space:]]+GIN)' <<<"$p3i01a1_migration" || fail "receipt queue/GIN index was accepted"
+
+p3i01a1_adr="$(git show :docs/adr/ADR-012.md)"
+for anchor in 'identity_operation_receipts' 'INSERT ... ON CONFLICT DO NOTHING RETURNING' '普通 INSERT 捕获 `23505` 后继续查询' 'SELECT-before-INSERT' '跨 UoW' '提交 `in_progress`' '不建 GIN/state 索引、不设 TTL' '`40001`/`40P01` 只能有界重试整个 UoW'; do
+  grep -Fq "$anchor" <<<"$p3i01a1_adr" || fail "ADR-012 lost receipt boundary: $anchor"
+done
+
+p3i01a1_card="$(git show :docs/execution/slices/P3-I01A1R.md)"
+for anchor in 'raw_identity_forbidden_everywhere' 'normalized_identity_forbidden_outside_identities_owned_storage' 'normalized_identity_allowed_in_identities_unique_lookup' 'fingerprint_not_resolve_key_or_raw_surrogate' '至少 87 组' '先得 `23505`、再得' '`25P02`' 'INGEST_EXTERNAL_EVENT_NOT_STARTED_C07C_GATE'; do
+  grep -Fq "$anchor" <<<"$p3i01a1_card" || fail "P3-I01A1 frozen matrix drifted: $anchor"
+done
+
+p3i01a1_port="$(git show :internal/identity/port/port.go)"
+for anchor in 'type IdempotencyScope struct {' 'func NewAdminIdempotencyScope(' 'func NewIntegrationIdempotencyScope(' 'IdempotencyScope IdempotencyScope' 'ErrIdempotencyConflict' 'ErrReceiptUnavailable' 'NormalizerV1' 'CommandSchemaV1' 'ResultSchemaV1'; do
+  grep -Fq "$anchor" <<<"$p3i01a1_port" || fail "P3-I01A1 Identity port drifted: $anchor"
+done
+
+p3i01a1_keyring="$(git show :internal/config/port/hmac_keyring.go)"
+for anchor in 'HMACPurposeIdentityFingerprint' 'HMACPurposeIdentityReceiptPayload' 'CurrentVersion(context.Context, HMACPurpose)' 'Sign(context.Context, HMACPurpose, HMACKeyVersion, []byte)' 'Verify(context.Context, HMACPurpose, HMACKeyVersion, []byte, HMACDigest)' 'Historical versions remain verify-only'; do
+  grep -Fq "$anchor" <<<"$p3i01a1_keyring" || fail "P3-I01A1 typed keyring drifted: $anchor"
+done
+! grep -Eq 'KeyBytes|RawKey|\[\]byte[[:space:]]*\}' <<<"$p3i01a1_keyring" || fail "typed keyring exposed key bytes"
+
+p3i01a1_ownership="$(git show :docs/architecture/table-ownership.yml)"
+for anchor in '      - identity_operation_receipts' 'identity_operation_receipts: transaction_bound_idempotency_technical_receipts_not_pending_or_river_queue'; do
+  grep -Fq "$anchor" <<<"$p3i01a1_ownership" || fail "P3-I01A1 ownership drifted: $anchor"
+done
+
+p3i01a1_openapi="$(git show :api/openapi.yaml)"
+p3i01a1_paths="$(sed -n '/^  \/api\/v1\/identity\/bind:/,/^  \/api\/v1\/auth\/session:/p' <<<"$p3i01a1_openapi")"
+[[ "$(grep -Fc 'x-aicrm-idempotency-scope: authenticated-principal-or-integration' <<<"$p3i01a1_paths")" -eq 4 ]] || fail "Identity mutation operations lost authenticated idempotency scope"
+[[ "$(grep -Fc '$ref: "#/components/responses/IdentityCommandConflict"' <<<"$p3i01a1_paths")" -eq 4 ]] || fail "Identity mutation operations lost private 409 contract"
+for anchor in 'only a 32-byte digest may be persisted' 'No new side effect is committed and no identity, key, HMAC, prior payload, or receipt detail is disclosed.' 'required historical typed HMAC key is unavailable' 'must never be logged, persisted, echoed in an error, event, receipt, or snapshot.'; do
+  grep -Fq "$anchor" <<<"$p3i01a1_openapi" || fail "P3-I01A1 OpenAPI privacy boundary drifted: $anchor"
+done
+
+p3i01a1_make="$(git show :Makefile)"
+grep -Fq '$(GO) test -race -count=1 -timeout=60s ./acceptance/identity -args -database-url "$$P3I01A1_TEST_DATABASE_URL"' <<<"$p3i01a1_make" || fail "P3-I01A1 PostgreSQL acceptance target drifted"
+p3i01a1_workflow="$(git show :.github/workflows/application-go.yml)"
+grep -Fqx '          P3I01A1_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-i01a1-acceptance' <<<"$p3i01a1_workflow" || fail "application workflow must run P3-I01A1 after migration up/down/up"
 
 p3s00_migration="$(git show :migrations/00008_segment_contract.sql)"
 for anchor in \

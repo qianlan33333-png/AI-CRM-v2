@@ -20,8 +20,10 @@
 4. 任何业务状态变化必须与 `event_log` 在同一数据库事务提交或回滚。
 5. 配置只能通过 config 的强类型结构读取；禁止散落 `os.Getenv` 或直查
    settings。
-6. `identities`、`customer_merges`、`pending_events` 只允许 identity 写；
-   外部标识只能经 identity port 解析、绑定或归因。
+6. `identities`、`customer_merges`、`pending_events` 与 identity 技术辅助表
+   `identity_operation_receipts` 只允许 identity 写；外部标识只能经 identity port
+   解析、绑定或归因。辅助表只承载 ADR-012 的 transaction-bound 持久幂等收据，
+   禁止复用为业务 pending/review 队列。
 7. 客户定制组件不进入核心仓库，只能通过 gateway Extension API 接入；
    `/examples` 仅允许不可部署的测试参照。
 8. 业务周期任务一律使用 River periodic jobs；禁止 `time.Ticker`、

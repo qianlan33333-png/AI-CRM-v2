@@ -3155,6 +3155,83 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-I01A1
+    title: identity-storage-normalization-receipt-central-contract
+    owner: Codex-Sol
+    status: SUPERSEDED_BY_RESCOPE
+    base_sha: 1e7055c8e793acd727a7f4b245cbd389aec702a4
+    dependency: P3_I00_P3_C07A_P3_S00_MERGED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-i01a-identity-storage-normalization-contract
+    decision_anchor: P3-I01A-V3-ACCEPTED-AND-FROZEN-2026-08-13
+    architecture_decision: ADR-012
+    continuation:
+      - P3-I01A2_NORMALIZER_FINGERPRINT_RECEIPT_REPOSITORY_AND_REAL_PG
+    scope:
+      - identities_customer_merges_pending_events_and_identity_operation_receipts_ddl
+      - normalizer_v1_scope_phone_and_version_contract
+      - transaction_bound_receipt_reservation_and_completed_result_contract
+      - typed_hmac_keyring_and_server_derived_idempotency_scope
+      - ownership_canonical_openapi_privacy_and_context_aware_static_negatives
+    excluded_scope:
+      - normalizer_and_repository_runtime_implementation_P3_I01A2
+      - resolve_bind_merge_review_runtime_behavior
+      - ingest_external_event_blocked_by_P3_C07C
+      - UI_real_provider_production_database_live_migration_or_external_send
+    tests:
+      - PENDING_LOCAL_AND_CI
+    handwritten_scope: PENDING_FINAL_DIFF
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes:
+      - slice:first_ADR_file_number_selected_009_was_already_owned_by_spec_first_generation_then_the_existing_file_was_restored_byte_exact_and_the_identity_decision_moved_to_ADR_012_before_staging
+      - verification:fresh_worktree_lacked_pinned_Orval_node_modules_then_npm_ci_ignore_scripts_installed_the_lockfile_exact_dependencies_and_make_generate_passed_without_repository_dependency_changes
+      - verification:first_diff_review_found_customer_merges_detail_was_only_an_unbounded_JSON_object_then_it_was_narrowed_to_a_closed_redacted_audit_shape_with_PG_and_static_negatives
+    superseded_by: P3-I01A1R
+    hard_stop_reason: slice_induced_correction_count_reached_3
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - INGEST_EXTERNAL_EVENT_NOT_STARTED_C07C_GATE
+
+  - slice_id: P3-I01A1R
+    title: identity-storage-normalization-receipt-central-contract
+    owner: Codex-Sol
+    status: in_development
+    base_sha: 861447ec652ce565edb8e79b274fb098ba23e81a
+    dependency: P3_I00_P3_C07A_P3_S00_MERGED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-i01a1r-identity-central
+    decision_anchor: P3-I01A-V3-ACCEPTED-AND-FROZEN-2026-08-13
+    architecture_decision: ADR-012
+    continuation:
+      - P3-I01A2_NORMALIZER_FINGERPRINT_RECEIPT_REPOSITORY_AND_REAL_PG
+    scope:
+      - accepted_ADR_012_four_identity_owned_tables
+      - ownership_canonical_identity_port_openapi_and_typed_hmac_keyring_freeze
+      - portable_repo_contract_positive_and_permanent_negative_fixtures
+    excluded_scope:
+      - normalizer_fingerprint_runtime_implementation_P3_I01A2
+      - receipt_repository_uow_and_concurrency_algorithm
+      - ingest_external_event_C07C_UI_or_real_external_adapters
+    tests:
+      - PENDING_LOCAL_AND_CI
+    handwritten_scope: PENDING_FINAL_DIFF
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    supersedes: P3-I01A1
+    correction_notes:
+      - rescope:rebuild_from_clean_exact_main_while_preserving_P3_I01A1_hard_stop_history
+      - slice:exact_main_replay_updated_the_central_generated_source_manifest_for_the_openapi_candidate_contract
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - INGEST_EXTERNAL_EVENT_NOT_STARTED_C07C_GATE
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

@@ -51,6 +51,7 @@ mutate() {
   local name="$1" root="$2"
   case "$name" in
     contact-identity) echo 'UPDATE identities SET customer_id = 1;' >"$root/internal/contact/store/queries/write.sql" ;;
+    contact-identity-receipt) echo 'INSERT INTO identity_operation_receipts (operation) VALUES ('\''bind'\'');' >"$root/internal/contact/store/queries/write.sql" ;;
     segment-write) echo 'DELETE FROM customers;' >"$root/internal/segment/store/queries/read.sql" ;;
     platform-write) echo 'INSERT INTO event_log DEFAULT VALUES;' >"$root/internal/platform/store/write.sql" ;;
     contact-event-update) echo 'UPDATE event_log SET dispatched = true;' >"$root/internal/contact/store/queries/write.sql" ;;
@@ -67,6 +68,7 @@ mutate() {
   esac
 }
 reject contact-identity 'table write ownership violation'; reject segment-write 'table write ownership violation'
+reject contact-identity-receipt 'table write ownership violation'
 reject platform-write 'table write ownership violation'; reject contact-event-update 'table write ownership violation'
 reject contact-auth-session 'table write ownership violation'
 reject unknown-table 'write to unknown table'

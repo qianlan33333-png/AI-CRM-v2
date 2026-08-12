@@ -32,10 +32,12 @@ owners:
       - identities
       - customer_merges
       - pending_events
+      - identity_operation_receipts
     constraints:
-      identities: customer_id_nullable
+      identities: customer_id_nullable_raw_identity_forbidden_normalized_value_only_here
       customer_merges: append_only
       pending_events: attribution_pending_and_merge_review_queue
+      identity_operation_receipts: transaction_bound_idempotency_technical_receipts_not_pending_or_river_queue
 
   segment:
     package: internal/segment

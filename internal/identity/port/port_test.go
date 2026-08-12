@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -45,6 +46,48 @@ func TestFrozenIdentityKindsAssurancesAndStatuses(t *testing.T) {
 	}
 	if MergeReviewPending != "pending" || MergeReviewApproved != "approved" || MergeReviewRejected != "rejected" {
 		t.Fatal("merge review status values drifted")
+	}
+}
+
+func TestServerDerivedIdempotencyScopesAreClosedAndStable(t *testing.T) {
+	admin, err := NewAdminIdempotencyScope(17)
+	if err != nil || admin.String() != "admin:17" || !admin.Valid() {
+		t.Fatalf("admin scope = %q/%v, error = %v", admin.String(), admin.Valid(), err)
+	}
+	integration, err := NewIntegrationIdempotencyScope("gateway", 23)
+	if err != nil || integration.String() != "integration:gateway:23" || !integration.Valid() {
+		t.Fatalf("integration scope = %q/%v, error = %v", integration.String(), integration.Valid(), err)
+	}
+	for _, invalid := range []struct {
+		provider string
+		id       int64
+	}{
+		{"", 1}, {"Gateway", 1}, {"gateway/raw", 1}, {"gateway", 0},
+	} {
+		if _, err := NewIntegrationIdempotencyScope(invalid.provider, invalid.id); !errors.Is(err, ErrInvalidIdempotencyScope) {
+			t.Fatalf("NewIntegrationIdempotencyScope(%q, %d) error = %v", invalid.provider, invalid.id, err)
+		}
+	}
+	if _, err := NewAdminIdempotencyScope(0); !errors.Is(err, ErrInvalidIdempotencyScope) {
+		t.Fatalf("NewAdminIdempotencyScope(0) error = %v", err)
+	}
+}
+
+func TestMutationCommandsCarryTypedServerScope(t *testing.T) {
+	scope, err := NewAdminIdempotencyScope(9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bind := BindCommand{IdempotencyScope: scope, IdempotencyKey: "bind-key"}
+	ingest := IngestCommand{IdempotencyScope: scope, IdempotencyKey: "ingest-key"}
+	approve := ApproveMergeReviewCommand{IdempotencyScope: scope, IdempotencyKey: "approve-key"}
+	reject := RejectMergeReviewCommand{IdempotencyScope: scope, IdempotencyKey: "reject-key"}
+	if bind.IdempotencyScope.String() != scope.String() || ingest.IdempotencyScope.String() != scope.String() ||
+		approve.IdempotencyScope.String() != scope.String() || reject.IdempotencyScope.String() != scope.String() {
+		t.Fatal("mutation command lost typed idempotency scope")
+	}
+	if NormalizerV1 != 1 || CommandSchemaV1 != 1 || ResultSchemaV1 != 1 {
+		t.Fatal("identity schema version contract drifted")
 	}
 }
 

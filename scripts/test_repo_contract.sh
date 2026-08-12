@@ -70,6 +70,13 @@ restage_make_receipt() { local fixture="$1" digest
 restage_p2s18_receipt() { local fixture="$1" receipt_file="$2" digest escaped_file
   git -C "$fixture" add "$receipt_file"; digest="$(git -C "$fixture" show ":$receipt_file" | sha256sum | awk '{print $1}')"; escaped_file="${receipt_file//\//\\/}"
   sed -i.bak -E "/^verify_index_sha256 $escaped_file/{n;s/[0-9a-f]{64}/$digest/;}" "$fixture/scripts/check_repo_contract.sh"; rm -f "$fixture/scripts/check_repo_contract.sh.bak"; git -C "$fixture" add scripts/check_repo_contract.sh; }
+replace_fixture_text_once() { local fixture="$1" relative_path="$2" from="$3" to="$4"
+  FIXTURE_FROM="$from" FIXTURE_TO="$to" perl -0pi -e '
+    my $from = $ENV{FIXTURE_FROM};
+    my $to = $ENV{FIXTURE_TO};
+    my $count = s/\Q$from\E/$to/g;
+    die "expected exactly one replacement, got $count\n" unless $count == 1;
+  ' "$fixture/$relative_path"; }
 
 baseline_fixture="$(make_fixture baseline)"
 if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -2902,6 +2909,77 @@ restage_p2s18_receipt "$p3s02_compiler_execution" internal/segment/compiler/comp
 if (cd "$p3s02_compiler_execution" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-S02 direct execution overreach was accepted"
 fi
+
++for file_path in \
+  docs/adr/ADR-012.md \
+  docs/execution/slices/P3-I01A1R.md \
+  migrations/00009_identity_storage_contract.sql \
+  internal/config/port/hmac_keyring.go \
+  acceptance/identity/storage_contract_test.go; do
+  missing_p3i01a1="$(make_fixture "missing-p3-i01a1-${file_path//\//-}")"
+  rm -f "$missing_p3i01a1/$file_path"
+  git -C "$missing_p3i01a1" add -u "$file_path"
+  if (cd "$missing_p3i01a1" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-I01A1 central contract was accepted: $file_path"
+  fi
+done
+
+p3i01a1_normalized_escape="$(make_fixture p3-i01a1-normalized-outside-identities)"
+replace_fixture_text_once "$p3i01a1_normalized_escape" migrations/00009_identity_storage_contract.sql \
+  $'CREATE TABLE customer_merges (\n' $'CREATE TABLE customer_merges (\n  normalized_value TEXT,\n'
+restage_p2s18_receipt "$p3i01a1_normalized_escape" migrations/00009_identity_storage_contract.sql
+if (cd "$p3i01a1_normalized_escape" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "normalized_value outside identities-owned storage was accepted"
+fi
+
+p3i01a1_missing_normalized="$(make_fixture p3-i01a1-identities-missing-normalized)"
+replace_fixture_text_once "$p3i01a1_missing_normalized" migrations/00009_identity_storage_contract.sql \
+  'normalized_value        TEXT NOT NULL' 'normalized_identity_removed TEXT NOT NULL'
+restage_p2s18_receipt "$p3i01a1_missing_normalized" migrations/00009_identity_storage_contract.sql
+if (cd "$p3i01a1_missing_normalized" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "identities without legal normalized_value storage was accepted"
+fi
+
+p3i01a1_receipt_index="$(make_fixture p3-i01a1-receipt-state-index)"
+printf '%s\n' 'CREATE INDEX forbidden_receipt_state ON identity_operation_receipts (state);' \
+  >>"$p3i01a1_receipt_index/migrations/00009_identity_storage_contract.sql"
+restage_p2s18_receipt "$p3i01a1_receipt_index" migrations/00009_identity_storage_contract.sql
+if (cd "$p3i01a1_receipt_index" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "identity receipt state index was accepted"
+fi
+
+p3i01a1_merge_detail="$(make_fixture p3-i01a1-identity-bearing-merge-detail)"
+replace_fixture_text_once "$p3i01a1_merge_detail" migrations/00009_identity_storage_contract.sql \
+  "ARRAY['source_identity_ids', 'trigger_kind', 'assurance']" "ARRAY['source_identity_ids', 'trigger_kind', 'assurance', 'normalized_value']"
+restage_p2s18_receipt "$p3i01a1_merge_detail" migrations/00009_identity_storage_contract.sql
+if (cd "$p3i01a1_merge_detail" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "identity-bearing customer_merges detail was accepted"
+fi
+
+p3i01a1_unsafe_reservation="$(make_fixture p3-i01a1-unsafe-reservation)"
+replace_fixture_text_once "$p3i01a1_unsafe_reservation" docs/adr/ADR-012.md \
+  'INSERT ... ON CONFLICT DO NOTHING RETURNING' 'ordinary INSERT then catch 23505'
+restage_p2s18_receipt "$p3i01a1_unsafe_reservation" docs/adr/ADR-012.md
+if (cd "$p3i01a1_unsafe_reservation" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "unsafe Identity receipt reservation algorithm was accepted"
+fi
+
+p3i01a1_missing_key_purpose="$(make_fixture p3-i01a1-missing-payload-key-purpose)"
+replace_fixture_text_once "$p3i01a1_missing_key_purpose" internal/config/port/hmac_keyring.go \
+  $'\tHMACPurposeIdentityReceiptPayload HMACPurpose = "identity_receipt_payload"\n' ''
+restage_p2s18_receipt "$p3i01a1_missing_key_purpose" internal/config/port/hmac_keyring.go
+if (cd "$p3i01a1_missing_key_purpose" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "typed keyring without receipt domain separation was accepted"
+fi
+
+p3i01a1_body_scope="$(make_fixture p3-i01a1-body-selected-scope)"
+replace_fixture_text_once "$p3i01a1_body_scope" api/openapi.yaml \
+  $'      x-aicrm-idempotency-scope: authenticated-principal-or-integration\n' ''
+restage_p2s18_receipt "$p3i01a1_body_scope" api/openapi.yaml
+if (cd "$p3i01a1_body_scope" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "Identity operations without authenticated idempotency scope were accepted"
+fi
+
 
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"

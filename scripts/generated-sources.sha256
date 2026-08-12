@@ -1,4 +1,4 @@
-082045f31bef73aa4d970b2f97396c9eda4e66bc2fef28c97f19036c65fcfec9  internal/api/candidate/generated/server.gen.go
+9f12883c3daa79e2e0dbef9133389b447e9df7a2262c7dd4a2e4ad28f1b521fe  internal/api/candidate/generated/server.gen.go
 f1e66b50f9ba6722b663967ec1da44cf6bda718246d66a82aef9179c670f2e38  internal/api/generated/server.gen.go
 2ef674e81977dfe0c8fc61121f27aeb9603f0a7c82f3ea3771e1be2de6f8729e  internal/auth/store/generated/auth.sql.go
 121194f70f0c6bd5ff393988502dac16cb3ebd421032d65a6de2d8f176c2f832  internal/auth/store/generated/db.go

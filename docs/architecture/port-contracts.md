@@ -23,6 +23,7 @@
 ```go
 type IDKind string       // wecom_external_userid|unionid|mp_openid|oa_openid|alipay_user_id|phone|ext
 type Assurance string    // verified|declared
+type IdempotencyScope string // server-derived authenticated principal/integration
 
 type IDRef struct {
     Kind IDKind
@@ -40,6 +41,7 @@ type BindCommand struct {
     CustomerID CustomerID
     Ref IDRef
     Actor Actor
+    IdempotencyScope IdempotencyScope
     IdempotencyKey string
 }
 type BindResult struct {
@@ -57,6 +59,7 @@ type IngestCommand struct {
     Payload json.RawMessage
     Source string
     OccurredAt time.Time
+    IdempotencyScope IdempotencyScope
     IdempotencyKey string
 }
 type IngestResult struct {
@@ -85,6 +88,7 @@ type ApproveMergeReviewCommand struct {
     PrimaryCustomerID CustomerID
     Reason string
     Actor Actor
+    IdempotencyScope IdempotencyScope
     IdempotencyKey string
 }
 type RejectMergeReviewCommand struct {
@@ -92,6 +96,7 @@ type RejectMergeReviewCommand struct {
     ExpectedVersion int64
     Reason string
     Actor Actor
+    IdempotencyScope IdempotencyScope
     IdempotencyKey string
 }
 
@@ -107,6 +112,10 @@ type ReviewService interface {
 }
 ```
 
+`IdempotencyScope` 只能由认证 principal 或 integration 的稳定内部标识构造，不能从
+HTTP body、`IDRef.Scope`、Actor 文本或自报 source 复制。raw `IdempotencyKey` 只存在
+于调用栈，repository 仅持久化其 32-byte SHA-256 digest。
+
 - 调用者传入原始 Value；Kind、Scope、Value 的验证和内部规范化只在 identity
   完成，调用者不得 lower-case、拼接或自建映射。Scope 对所有 Kind 必填：
   unionid 使用 `wechat-open-platform:<account-id>`，openid 使用
@@ -121,6 +130,23 @@ type ReviewService interface {
   ReviewID 指向 identity 在 `pending_events` 中持久化的 `merge_review` 项。
 - `attributed` 必须已写客户时间线和 event_log；`pending` 必须已持久化待回放事件；
   `conflict` 必须持久化冲突而不得落到任意客户。IdempotencyKey 必填。
+- mutation 的持久幂等状态只在 identity-owned `identity_operation_receipts`，禁止复用
+  `pending_events` 或进程内 cache。reservation、全部领域写、event_log 与 completed
+  result 同一 UoW；唯一并发算法为 `INSERT ... ON CONFLICT DO NOTHING RETURNING`，
+  loser 在同一未 aborted transaction 的新 statement 读 completed receipt。
+- 同 key 同规范化 payload 返回原闭集 result；异 payload 为 409 且零副作用。普通
+  INSERT 捕获 `23505` 后 SELECT、SELECT-before-INSERT、跨 UoW complete 与提交
+  `in_progress` 均禁止。未知 schema/state/result 或缺历史 HMAC key fail-closed。
+- raw identity 永不持久化；normalized value 只允许在 `identities.normalized_value`
+  与必要精确查询。fingerprint 只用于 review/audit，不能作为 Resolve key。
+
+### Typed HMAC keyring
+
+identity 只依赖 `config/port.HMACKeyring` 的签名/验证能力，不读取 key bytes、settings
+或散落环境变量。purpose 固定区分 review fingerprint 与 receipt payload；当前版本可
+签名，仍被 `fingerprint_key_version` / `payload_hmac_key_version` 引用的旧版本只能
+verify-only 且不得删除。实现只允许从部署环境或只读挂载 secret source 构建 keyring，
+不得通过 HTTP、settings、日志或 error 注入/导出。
 - HTTP/admin adapter 只能构造 `declared/admin` 的 IDRef；verified 证据只能来自已完成
   provider 验真的内部 adapter。identity 必须再次校验 Kind/Scope/Source 组合。
 - verified unionid 自动合并采用 `verified_unionid_unique_wecom_v1`：恰好一个

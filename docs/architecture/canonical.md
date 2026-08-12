@@ -96,7 +96,7 @@ port 提供有界运维视图及已授权的 River 重试/取消操作，不得�
 | 所有者 | 独占写入对象 | 其他模块的合法方式 |
 |---|---|---|
 | contact | `customers`、`customer_tags`、`customer_events` 以及客户域表 | 调 contact port；合并时使用 transaction-bound `MergePort` |
-| identity | `identities`、`customer_merges`、`pending_events` | 调 identity `Resolve/Bind/Ingest` |
+| identity | `identities`、`customer_merges`、`pending_events`；技术辅助 `identity_operation_receipts` | 调 identity `Resolve/Bind/Ingest` |
 | outbound | outbound 表与所有企微写 API | 调 `EnqueueOne/EnqueueBatch` |
 | wecom | 企微读取、回调验签解密与同步游标 | 读取企微后把外部标识交给 identity；客户写入调 contact |
 | events | `event_log` 与 dispatcher | 在业务事务中调 events `Append` |
@@ -158,6 +158,19 @@ Scope 的 canonical 形式固定为：unionid 使用
 `ext:<namespace>`。任何模块不得自行
 规范化并建立外部 ID 映射，也不得预判客户合并。`customers.id` 是唯一内部
 OneID，渠道 ID 只能存在于 `identities`。
+
+Identity 的正式存储边界由 ADR-012 冻结：raw identity 永不持久化；
+`normalized_value` 只允许存在于 `identities.normalized_value` 及其精确唯一查询；
+review fingerprint 是 versioned secret-backed HMAC，只用于 review/audit，不是 Resolve
+键。`identity_operation_receipts` 是 identity-owned 技术辅助表，只保存
+server-derived scope、raw `Idempotency-Key` 的 32-byte digest、版本化 payload HMAC
+与闭集脱敏结果；它不属于 pending/review/River 队列。
+
+Bind、Ingest 与 review mutation 的 reservation、领域写入、`event_log` 和 completed
+result 必须在同一 UoW。reservation 唯一允许使用
+`INSERT ... ON CONFLICT DO NOTHING RETURNING`；loser 在同一未 aborted transaction 的
+新 statement 读取 completed receipt。禁止先查后插、捕获 `23505` 后继续查询、跨
+UoW complete 或提交 `in_progress`。
 
 ### 6.2 Transaction-bound contact/events
 

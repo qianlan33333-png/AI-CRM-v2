@@ -531,7 +531,7 @@ type BindIdentityRejectedStatus string
 type BindIdentityRequest struct {
 	CustomerId int64 `json:"customer_id"`
 
-	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only. value is raw caller input used only by Identity normalization and must never be logged, persisted, echoed in an error, event, receipt, or snapshot.
 	Ref IdentityRef `json:"ref"`
 }
 
@@ -659,7 +659,7 @@ type IdentityMergeReviewPage struct {
 	NextCursor *string               `json:"next_cursor"`
 }
 
-// IdentityRef Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+// IdentityRef Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only. value is raw caller input used only by Identity normalization and must never be logged, persisted, echoed in an error, event, receipt, or snapshot.
 type IdentityRef struct {
 	Scope string          `json:"scope"`
 	Type  IdentityRefType `json:"type"`
@@ -748,7 +748,7 @@ type ResolveIdentityNotFoundStatus string
 
 // ResolveIdentityRequest defines model for ResolveIdentityRequest.
 type ResolveIdentityRequest struct {
-	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only. value is raw caller input used only by Identity normalization and must never be logged, persisted, echoed in an error, event, receipt, or snapshot.
 	Ref IdentityRef `json:"ref"`
 }
 
@@ -935,6 +935,12 @@ type Conflict = ErrorResponse
 // Forbidden defines model for Forbidden.
 type Forbidden = ErrorResponse
 
+// IdentityCommandConflict defines model for IdentityCommandConflict.
+type IdentityCommandConflict = ErrorResponse
+
+// IdentityReceiptUnavailable defines model for IdentityReceiptUnavailable.
+type IdentityReceiptUnavailable = ErrorResponse
+
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
 
@@ -1006,7 +1012,7 @@ type BindIdentityParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -1015,7 +1021,7 @@ type IngestIdentityEventParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -1031,7 +1037,7 @@ type ApproveIdentityMergeReviewParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -1040,7 +1046,7 @@ type RejectIdentityMergeReviewParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -1056,7 +1062,7 @@ type CreateSegmentParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -1065,7 +1071,7 @@ type UpdateSegmentParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -1081,7 +1087,7 @@ type RequestSegmentRefreshParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	// IdempotencyKey Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
@@ -3512,6 +3518,10 @@ type ConflictJSONResponse ErrorResponse
 
 type ForbiddenJSONResponse ErrorResponse
 
+type IdentityCommandConflictJSONResponse ErrorResponse
+
+type IdentityReceiptUnavailableJSONResponse ErrorResponse
+
 type NotFoundJSONResponse ErrorResponse
 
 type ServiceUnavailableJSONResponse ErrorResponse
@@ -4076,7 +4086,9 @@ func (response BindIdentity403JSONResponse) VisitBindIdentityResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type BindIdentity409JSONResponse struct{ ConflictJSONResponse }
+type BindIdentity409JSONResponse struct {
+	IdentityCommandConflictJSONResponse
+}
 
 func (response BindIdentity409JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4096,7 +4108,9 @@ func (response BindIdentity422JSONResponse) VisitBindIdentityResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type BindIdentity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+type BindIdentity503JSONResponse struct {
+	IdentityReceiptUnavailableJSONResponse
+}
 
 func (response BindIdentity503JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4150,7 +4164,9 @@ func (response IngestIdentityEvent403JSONResponse) VisitIngestIdentityEventRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type IngestIdentityEvent409JSONResponse struct{ ConflictJSONResponse }
+type IngestIdentityEvent409JSONResponse struct {
+	IdentityCommandConflictJSONResponse
+}
 
 func (response IngestIdentityEvent409JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4170,7 +4186,9 @@ func (response IngestIdentityEvent422JSONResponse) VisitIngestIdentityEventRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type IngestIdentityEvent503JSONResponse struct{ ServiceUnavailableJSONResponse }
+type IngestIdentityEvent503JSONResponse struct {
+	IdentityReceiptUnavailableJSONResponse
+}
 
 func (response IngestIdentityEvent503JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4287,7 +4305,9 @@ func (response ApproveIdentityMergeReview404JSONResponse) VisitApproveIdentityMe
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ApproveIdentityMergeReview409JSONResponse struct{ ConflictJSONResponse }
+type ApproveIdentityMergeReview409JSONResponse struct {
+	IdentityCommandConflictJSONResponse
+}
 
 func (response ApproveIdentityMergeReview409JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4307,7 +4327,9 @@ func (response ApproveIdentityMergeReview422JSONResponse) VisitApproveIdentityMe
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ApproveIdentityMergeReview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+type ApproveIdentityMergeReview503JSONResponse struct {
+	IdentityReceiptUnavailableJSONResponse
+}
 
 func (response ApproveIdentityMergeReview503JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4371,7 +4393,9 @@ func (response RejectIdentityMergeReview404JSONResponse) VisitRejectIdentityMerg
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RejectIdentityMergeReview409JSONResponse struct{ ConflictJSONResponse }
+type RejectIdentityMergeReview409JSONResponse struct {
+	IdentityCommandConflictJSONResponse
+}
 
 func (response RejectIdentityMergeReview409JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -4391,7 +4415,9 @@ func (response RejectIdentityMergeReview422JSONResponse) VisitRejectIdentityMerg
 	return json.NewEncoder(w).Encode(response)
 }
 
-type RejectIdentityMergeReview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+type RejectIdentityMergeReview503JSONResponse struct {
+	IdentityReceiptUnavailableJSONResponse
+}
 
 func (response RejectIdentityMergeReview503JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")

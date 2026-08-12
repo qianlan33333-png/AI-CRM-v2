@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: AI-CRM v2 API
-  version: 0.6.0-p3-segment-contract
-  description: Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
+  version: 0.7.0-p3-identity-storage-contract
+  description: Canonical HTTP contract. Generated code must not be edited. P3-I01A1 freezes Identity storage, normalization, durable receipt, authenticated idempotency scope, and typed HMAC keyring boundaries.
 security:
   - AdminSession: []
 paths:
@@ -482,6 +482,7 @@ paths:
       x-aicrm-capability: identity.bind
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-idempotency-scope: authenticated-principal-or-integration
       parameters:
         - $ref: "#/components/parameters/CSRFToken"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -501,9 +502,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409": { $ref: "#/components/responses/IdentityCommandConflict" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+        "503": { $ref: "#/components/responses/IdentityReceiptUnavailable" }
   /api/v1/identity/ingest:
     post:
       tags: [p1-core-candidate]
@@ -515,6 +516,7 @@ paths:
       x-aicrm-capability: identity.ingest
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-idempotency-scope: authenticated-principal-or-integration
       parameters:
         - $ref: "#/components/parameters/CSRFToken"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -534,9 +536,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409": { $ref: "#/components/responses/IdentityCommandConflict" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+        "503": { $ref: "#/components/responses/IdentityReceiptUnavailable" }
   /api/v1/identity/merge-reviews:
     get:
       tags: [p3-identity]
@@ -567,6 +569,7 @@ paths:
       x-p3-decision-evidence: P3-I00-2026-08-12
       x-aicrm-capability: identity.review.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-idempotency-scope: authenticated-principal-or-integration
       parameters:
         - $ref: "#/components/parameters/MergeReviewID"
         - $ref: "#/components/parameters/CSRFToken"
@@ -588,9 +591,9 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409": { $ref: "#/components/responses/IdentityCommandConflict" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+        "503": { $ref: "#/components/responses/IdentityReceiptUnavailable" }
   /api/v1/identity/merge-reviews/{review_id}/reject:
     post:
       tags: [p3-identity]
@@ -599,6 +602,7 @@ paths:
       x-p3-decision-evidence: P3-I00-2026-08-12
       x-aicrm-capability: identity.review.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-idempotency-scope: authenticated-principal-or-integration
       parameters:
         - $ref: "#/components/parameters/MergeReviewID"
         - $ref: "#/components/parameters/CSRFToken"
@@ -620,9 +624,9 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409": { $ref: "#/components/responses/IdentityCommandConflict" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+        "503": { $ref: "#/components/responses/IdentityReceiptUnavailable" }
   /api/v1/auth/session:
     get:
       tags: [p1-core-candidate]
@@ -697,8 +701,12 @@ components:
       name: Idempotency-Key
       in: header
       required: true
-      description: Stable caller key; reusing it with a different normalized command is a conflict.
-      schema: { type: string, minLength: 16, maxLength: 128 }
+      description: Stable raw caller key scoped by the server to the authenticated principal or integration; the request body and identity scope cannot choose this scope, and only a 32-byte digest may be persisted. Reuse with a different normalized command returns 409 without echoing either command or key.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._~:/+=-]{16,128}$'
     MergeReviewID:
       name: review_id
       in: path
@@ -801,11 +809,17 @@ components:
     Conflict:
       description: Current state conflicts with the command.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    IdentityCommandConflict:
+      description: The authenticated receipt scope and key already identify a different normalized command, or the requested review version is stale. No new side effect is committed and no identity, key, HMAC, prior payload, or receipt detail is disclosed.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     UnprocessableEntity:
       description: The command violates a field-level validation rule.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     ServiceUnavailable:
       description: A required dependency is unavailable.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    IdentityReceiptUnavailable:
+      description: Identity storage or the required historical typed HMAC key is unavailable, or a receipt has an unknown state/schema/result. Processing fails closed without disclosing identity or receipt content.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
     HealthResponse:
@@ -1041,7 +1055,7 @@ components:
     IdentityRef:
       type: object
       additionalProperties: false
-      description: Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+      description: Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only. value is raw caller input used only by Identity normalization and must never be logged, persisted, echoed in an error, event, receipt, or snapshot.
       required: [type, scope, value]
       properties:
         type:
