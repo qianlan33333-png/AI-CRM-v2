@@ -2478,9 +2478,10 @@ slices:
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
     scope_induced_correction_count: 1
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     correction_notes:
       - verification:initial_worktree_creation_followup_git_inspection_ran_in_stale_root_then_exact_new_worktree_was_revalidated_without_mutation
+      - verification:test_server_swapon_output_flag_was_not_supported_by_ubuntu_util_linux_then_read_only_evidence_was_recollected_with_plain_swapon_show
       - scope:readonly_audit_found_presence_only_matrix_omitted_time_bound_modes_real_keyset_page_and_limit_variants
     external_gates:
       - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED
