@@ -3263,6 +3263,19 @@ slices:
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-R4B
+    title: identity-storage-only-00010
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: 7a2243c23fa0d0000bae8ec9035ca89ccd449bc5
+    dependency: P3_R4A_CLOSED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-r4b-identity-storage
+    scope: [migration_00010_four_identity_owned_tables_down, ownership_canonical_unknown_table_deny, postgres_16_14_catalog_and_constraint_acceptance]
+    excluded_scope: [ADR_OpenAPI_ports_auth_keyring_runtime, R3C_security_gates_R3D_ports, contact_C07C_00011, normalizer_fingerprint_repository_UoW_Resolve_Bind_Ingest_UI]
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 4
+    correction_notes: [infra:55437_aicrm_test_retained_untracked_identity_objects_at_Goose_10_before_clean_chain_validation, infra:initial_dropdb_URI_option_was_unsupported_and_made_no_database_change_before_explicit_host_port_user_rerun, infra:local_ci_go_rerun_initially_omitted_existing_P0S03_PG_INTEGRATION_and_safe_test_DSN, infra:local_ci_go_rerun_initially_omitted_existing_ACCEPTANCE_FIXTURES_TEST_DATABASE_URL]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:
   P2:
