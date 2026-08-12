@@ -2638,6 +2638,73 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C06D
+    title: contact-tag-driven-bounded-count-performance-optimization
+    owner: Codex-Sol
+    status: local_gates_pass_independent_review_pass
+    base_sha: 5d5b2a4ef00f10f19b42b184d6cbb2a24c1825d2
+    dependency: P3-C06C
+    branch: slice/p3-c06d-tag-count-optimization
+    decision_anchor: P3_C06C_S_TIER_RERUN_2026_08_12
+    scope:
+      - mutually_exclusive_tag_null_and_tag_driven_bounded_count_branches
+      - tag_index_to_customer_primary_key_lateral_plan
+      - exact_10000_and_10001_semantics_and_two_query_contract_preserved
+      - full_filter_equivalence_without_cursor_offset_or_target_seq_scan
+      - EXPLAIN_uses_the_same_cache_describe_execution_mode_as_production
+    delegated_tasks:
+      - task_id: p3_c06d_sqlc_optimization
+        executor: Terra-Max
+        status: SOL_REVIEW_INTEGRATED
+        frozen_parent: 5d5b2a4ef00f10f19b42b184d6cbb2a24c1825d2
+        delegated_head: 1e74fd56d7ec612e6f371d818770941764248468
+        manifest_sha256: e6d519f1b7e0bb9aab0046c29048beda42b61eef4dea56a1671a8ab0d4e044e3
+      - task_id: p3_c06d_receipt_review
+        executor: Terra-Max
+        status: FINAL_PASS_NO_FILE_MUTATION
+        reviewed_head_sha: 07448b91c9e95e84a4312b491e76a48c8bb822a0
+        reviewed_tree_sha: e2b399dc3edb0913515a9aa4d86cd6207dad57f6
+        final_manifest_sha256: e9ace4d9ea82e8e61873c673891160b57c9e3e62460cc12705c861f75c5efb29
+        final_binary_diff_sha256: 7df551a7deec53ec771d3597021a4b6f85f584d44a298c5c2547f4db992e18ee
+        stable_patch_id: fc9213ea158821db5698f7641d99945eb8dcf3f2
+    tests:
+      - focused_store_runner_and_p3c01b_race_PASS
+      - sqlc_twice_no_diff_PASS
+      - test_server_candidate_EXPLAIN_observation_approximately_50ms_no_target_seq_scan_PASS
+      - full_ci_go_PASS_before_ledger_only_final_review_closeout_code_tree_unchanged
+      - web_ci_Node24_npm11_186_tests_build_audit_PASS
+      - repo_contract_full_negatives_and_secret_scan_PASS
+      - independent_final_review_PASS
+      - new_main_2C4G_4096_matrix_NOT_EXECUTED
+    handwritten_scope: 2_runtime_files_137_physical_changed_lines_SQL_and_test_server_runner_tests_generated_governance_excluded
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 3
+    scope_induced_correction_count: 3
+    verification_induced_correction_count: 9
+    correction_notes:
+      - governance:user_authorized_continuation_through_P4_defers_threshold_report_without_weakening_gates
+      - slice:Terra_first_mutual_exclusion_assertion_was_too_broad_then_was_narrowed_to_the_exact_tagged_branch_NULL_forbidden_shape_before_Sol_adoption
+      - slice:first_Sol_real_PG_exact_tag_cap_fixture_inserted_9999_watermark_visible_rows_then_the_generate_series_upper_bound_was_corrected_to_prove_exact_10000
+      - infra:Terra_local_55432_PostgreSQL_instance_exited_during_seed_then_an_independent_55435_instance_was_used
+      - infra:Terra_found_55434_owned_by_another_isolated_acceptance_instance_then_used_55435_without_touching_either_instance
+      - infra:first_Sol_real_PG_rerun_shared_the_55434_schema_with_a_still_running_focused_process_then_only_that_local_test_process_and_idle_backend_were_terminated_before_an_isolated_rerun
+      - scope:P3_C06C_rerun_proved_the_remaining_failure_was_exclusively_tag_and_tag_keyword_bounded_count_and_required_a_new_targeted_slice
+      - scope:initial_C06D_card_did_not_require_EXPLAIN_to_use_the_same_CacheDescribe_mode_as_the_production_repository_then_the_runner_and_customer_tags_Seq_Scan_negative_were_aligned
+      - scope:initial_C06D_card_did_not_require_permanent_central_negatives_for_tag_driven_and_EXPLAIN_mode_regressions_then_both_repo_contract_cases_were_added
+      - verification:Terra_first_private_test_credential_cleanup_command_was_rejected_by_the_safety_policy_then_the_receipt_was_recomputed_from_a_private_fixed_file_without_weakening_verification
+      - verification:the_existing_P3_C01B_static_contract_pinned_the_prior_single_customers_branch_then_Sol_upgraded_it_to_require_mutually_exclusive_tag_driven_semantics
+      - verification:Terra_first_receipt_manifest_hashed_raw_git_ls_tree_rows_then_both_agents_recomputed_MODE_BYTES_CONTENT_SHA_PATH_with_a_final_LF
+      - verification:first_repo_contract_negatives_called_an_undefined_run_check_helper_and_would_false_pass_on_command_not_found_then_the_existing_real_checker_fixture_shape_was_used
+      - verification:first_ledger_test_label_claimed_both_candidate_EXPLAINs_under_50ms_but_one_was_50_346ms_then_exact_observations_and_approximately_50ms_wording_replaced_the_overclaim
+      - verification:first_generated_manifest_update_did_not_update_the_generator_self_pin_then_the_clean_commit_gate_failed_closed_and_both_the_self_pin_and_repo_pin_were_synchronized
+      - verification:first_final_ledger_checker_invocation_ran_before_staging_the_counter_fix_then_the_change_was_staged_before_the_same_fail_closed_checker_was_rerun
+      - verification:first_final_counter_patch_matched_historical_P2_fields_instead_of_the_P3_C06D_block_then_the_historical_values_were_restored_and_the_exact_slice_context_was_used
+      - verification:final_base_diff_audit_found_the_preexisting_C06D_candidate_had_also_drifted_P2_00_from_the_merged_main_value_5_to_6_then_restored_the_exact_merged_main_value
+    external_gates:
+      - NEW_MAIN_2C4G_4096_MATRIX_REQUIRES_THIS_SLICE_MERGE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

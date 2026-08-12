@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -28,7 +29,13 @@ func TestCustomerQuerySQLCountsOnlyTheCappedBoundedIDs(t *testing.T) {
 	boundedSQL := querySQL[boundedStart:]
 	for _, required := range []string{
 		"SELECT count(*)::bigint",
-		"FROM (\nSELECT c.id",
+		"UNION ALL",
+		"sqlc.narg(tag_id)::bigint IS NULL",
+		"sqlc.narg(tag_id)::bigint IS NOT NULL",
+		"FROM customer_tags AS ct",
+		"CROSS JOIN LATERAL (",
+		"ct.tag_id = sqlc.narg(tag_id)::bigint",
+		"c.id = ct.customer_id",
 		"c.updated_at <= sqlc.arg(watermark)::timestamptz",
 		"ORDER BY c.updated_at DESC, c.id DESC",
 		"LIMIT sqlc.arg(total_limit)::integer",
@@ -123,7 +130,11 @@ INSERT INTO acceptance_fixtures.customer_tags (customer_id, tag_id) VALUES (1, 4
 		_, txErr = tx.Exec(txCtx, `
 INSERT INTO acceptance_fixtures.customers (id, name, is_deleted, extra, created_at, updated_at)
 SELECT id, 'bulk-' || id, false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z'
-FROM generate_series(100, 10096) AS id`)
+FROM generate_series(100, 10096) AS id;
+INSERT INTO acceptance_fixtures.customer_tags (customer_id, tag_id)
+SELECT id, 99 FROM generate_series(100, 10096) AS id;
+INSERT INTO acceptance_fixtures.customer_tags (customer_id, tag_id)
+VALUES (1, 99), (2, 99), (3, 99), (5, 99)`)
 		if txErr != nil {
 			return txErr
 		}
@@ -131,17 +142,41 @@ FROM generate_series(100, 10096) AS id`)
 		if listErr != nil || bounded.BoundedTotal != contactapp.CustomerListExactTotalCap {
 			t.Fatalf("bounded total = %d, %v, want exact cap", bounded.BoundedTotal, listErr)
 		}
+		tag99 := int64(99)
+		tagged := validQuery()
+		tagged.TagID = &tag99
+		bounded, listErr = repository.ListCustomers(txCtx, tagged)
+		if listErr != nil || bounded.BoundedTotal != contactapp.CustomerListExactTotalCap {
+			t.Fatalf("tag bounded total = %d, %v, want exact cap", bounded.BoundedTotal, listErr)
+		}
+		if _, txErr = tx.Exec(txCtx, "SAVEPOINT duplicate_tag"); txErr != nil {
+			return txErr
+		}
+		_, duplicateErr := tx.Exec(txCtx, "INSERT INTO acceptance_fixtures.customer_tags (customer_id, tag_id) VALUES (1, 99)")
+		var pgErr *pgconn.PgError
+		if !errors.As(duplicateErr, &pgErr) || pgErr.Code != "23505" {
+			t.Fatalf("duplicate customer tag error = %v, want SQLSTATE 23505", duplicateErr)
+		}
+		if _, txErr = tx.Exec(txCtx, "ROLLBACK TO SAVEPOINT duplicate_tag"); txErr != nil {
+			return txErr
+		}
 		_, txErr = tx.Exec(txCtx, `
 INSERT INTO acceptance_fixtures.customers (id, name, is_deleted, extra, created_at, updated_at)
 VALUES
   (10097, 'over-cap-10097', false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z'),
-  (10098, 'over-cap-10098', false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z')`)
+  (10098, 'over-cap-10098', false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z');
+INSERT INTO acceptance_fixtures.customer_tags (customer_id, tag_id)
+VALUES (10097, 99), (10098, 99)`)
 		if txErr != nil {
 			return txErr
 		}
 		bounded, listErr = repository.ListCustomers(txCtx, validQuery())
 		if listErr != nil || bounded.BoundedTotal != contactapp.CustomerListExactTotalCap+1 {
 			t.Fatalf("bounded total = %d, %v, want cap+1", bounded.BoundedTotal, listErr)
+		}
+		bounded, listErr = repository.ListCustomers(txCtx, tagged)
+		if listErr != nil || bounded.BoundedTotal != contactapp.CustomerListExactTotalCap+1 {
+			t.Fatalf("tag bounded total = %d, %v, want cap+1", bounded.BoundedTotal, listErr)
 		}
 		return errors.New("rollback fixture")
 	})

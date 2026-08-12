@@ -2540,6 +2540,24 @@ if (cd "$p3c06c_runner_query_fixture" && scripts/check_repo_contract.sh >/dev/nu
   fail "P3-C06C exact count-query runner binding removal was accepted"
 fi
 
+p3c06d_tag_branch_fixture="$(make_fixture p3-c06d-tag-driven-branch)"
+sed -i.bak 's/FROM customer_tags AS ct/FROM customers AS ct/' \
+  "$p3c06d_tag_branch_fixture/internal/contact/store/queries/customers.sql"
+rm -f "$p3c06d_tag_branch_fixture/internal/contact/store/queries/customers.sql.bak"
+restage_p2s18_receipt "$p3c06d_tag_branch_fixture" internal/contact/store/queries/customers.sql
+if (cd "$p3c06d_tag_branch_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06D tag-driven bounded-count regression was accepted"
+fi
+
+p3c06d_explain_mode_fixture="$(make_fixture p3-c06d-explain-mode)"
+sed -i.bak 's/explainArgs := append(\[\]any{pgx.QueryExecModeCacheDescribe}/explainArgs := append([]any{pgx.QueryExecModeCacheStatement}/' \
+  "$p3c06d_explain_mode_fixture/cmd/aicrm-contact-perf/main.go"
+rm -f "$p3c06d_explain_mode_fixture/cmd/aicrm-contact-perf/main.go.bak"
+restage_p2s18_receipt "$p3c06d_explain_mode_fixture" cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06d_explain_mode_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06D EXPLAIN execution-mode regression was accepted"
+fi
+
 p3c06c_description_cache_fixture="$(make_fixture p3-c06c-description-cache-zero)"
 sed -i.bak 's/capacity < 1/capacity < 0/' \
   "$p3c06c_description_cache_fixture/internal/config/schema.go"

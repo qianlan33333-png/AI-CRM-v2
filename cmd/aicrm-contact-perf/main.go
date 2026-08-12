@@ -857,7 +857,8 @@ func overlaps(first, second contactapp.CustomerListStoreResult) bool {
 
 func explainQuery(ctx context.Context, pool *pgxpool.Pool, statement capturedQuery) (planEvidence, error) {
 	var raw []byte
-	if err := pool.QueryRow(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+statement.SQL, statement.Args...).Scan(&raw); err != nil {
+	explainArgs := append([]any{pgx.QueryExecModeCacheDescribe}, statement.Args...)
+	if err := pool.QueryRow(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+statement.SQL, explainArgs...).Scan(&raw); err != nil {
 		return planEvidence{}, errors.New("execute exact captured query plan")
 	}
 	return decodePlanEvidence(statement.Name, raw)

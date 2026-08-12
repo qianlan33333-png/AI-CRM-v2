@@ -245,6 +245,18 @@ func TestWalkPlanRejectsOnlyTargetSequentialScansAndCollectsEvidence(t *testing.
 	}
 }
 
+func TestWalkPlanRejectsCustomerTagsSequentialScan(t *testing.T) {
+	evidence := planEvidence{}
+	walkPlan(map[string]any{
+		"Node Type":     "Seq Scan",
+		"Relation Name": "customer_tags",
+	}, &evidence)
+	sortEvidence(&evidence)
+	if !reflect.DeepEqual(evidence.ForbiddenScans, []string{"customer_tags"}) {
+		t.Fatalf("forbidden scans = %v, want customer_tags", evidence.ForbiddenScans)
+	}
+}
+
 func TestValidateReceiptRequiresEveryFastPlanSafeScenario(t *testing.T) {
 	valid := validReceipt()
 	if err := validateReceipt(valid, testSourceSHA, testMainCIURL); err != nil {
