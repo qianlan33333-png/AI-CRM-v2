@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"runtime"
@@ -45,6 +47,7 @@ var (
 type options struct {
 	databaseURL string
 	sourceSHA   string
+	receiptPath string
 	samples     int
 	warmups     int
 }
@@ -201,6 +204,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, "contact-perf: invalid arguments")
 		os.Exit(2)
 	}
+	if opts.receiptPath != "" {
+		if err := verifyReceiptFile(opts.receiptPath); err != nil {
+			fmt.Fprintln(os.Stderr, "contact-perf-receipt: invalid")
+			os.Exit(1)
+		}
+		fmt.Println("contact-perf-receipt: PASS")
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Hour)
 	defer cancel()
 	result, err := execute(ctx, opts)
@@ -224,16 +235,112 @@ func parseOptions(arguments []string) (options, error) {
 	var result options
 	set.StringVar(&result.databaseURL, "database-url", "", "isolated performance database URL")
 	set.StringVar(&result.sourceSHA, "source-sha", "", "exact main source SHA")
+	set.StringVar(&result.receiptPath, "verify-receipt", "", "verify a saved S-tier receipt")
 	set.IntVar(&result.samples, "samples", requiredSamples, "measured calls per combination")
 	set.IntVar(&result.warmups, "warmups", requiredWarmups, "warmup calls per combination")
 	if err := set.Parse(arguments); err != nil || len(set.Args()) != 0 {
 		return options{}, errors.New("invalid arguments")
+	}
+	if result.receiptPath != "" {
+		if result.databaseURL != "" || result.sourceSHA != "" || result.samples != requiredSamples || result.warmups != requiredWarmups {
+			return options{}, errors.New("invalid arguments")
+		}
+		return result, nil
 	}
 	if err := validateDatabaseURL(result.databaseURL); err != nil || !isExactSHA(result.sourceSHA) ||
 		result.samples < requiredSamples || result.warmups < requiredWarmups {
 		return options{}, errors.New("invalid arguments")
 	}
 	return result, nil
+}
+
+func verifyReceiptFile(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() < 2 || info.Size() > 64<<20 {
+		return errors.New("receipt must be a bounded regular file")
+	}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return errors.New("read receipt")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	decoder.DisallowUnknownFields()
+	var value report
+	if err := decoder.Decode(&value); err != nil {
+		return errors.New("decode receipt")
+	}
+	if err := ensureJSONEOF(decoder); err != nil {
+		return err
+	}
+	return validateReceipt(value)
+}
+
+func ensureJSONEOF(decoder *json.Decoder) error {
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return errors.New("receipt contains trailing JSON")
+		}
+		return errors.New("receipt contains invalid trailing data")
+	}
+	return nil
+}
+
+func validateReceipt(value report) error {
+	if value.Kind != "contact_customer_list_s_tier_hard_gate" || value.EvidenceClass != "authorized_test_server_synthetic" ||
+		!value.Passed || value.ThresholdMS != latencyLimit.Milliseconds() || value.CombinationCount != 4096 ||
+		len(value.Cases) != 4096 || value.SampleCount < 4096*requiredSamples || value.GlobalP50MS < 0 ||
+		value.GlobalP50MS > value.GlobalP95MS || value.GlobalP95MS >= float64(latencyLimit)/float64(time.Millisecond) ||
+		value.GlobalP95MS > value.GlobalMaxMS || value.SlowestCase == "" {
+		return errors.New("receipt summary is invalid")
+	}
+	if _, err := time.Parse(time.RFC3339Nano, value.GeneratedAt); err != nil {
+		return errors.New("receipt timestamp is invalid")
+	}
+	environment := value.Environment
+	if !isExactSHA(environment.SourceSHA) || environment.BinaryVCSRevision != environment.SourceSHA || environment.BinaryVCSModified ||
+		environment.Database != requiredDatabase || environment.PostgreSQLVersion != "160014" || environment.CPUs != 2 ||
+		environment.MemoryKiB < 3_500_000 || environment.MemoryKiB > 4_800_000 || environment.SwapKiB < 4_000_000 ||
+		environment.GoMemoryLimitBytes != 768*1024*1024 || environment.SharedBuffers != "1GB" ||
+		environment.EffectiveCacheSize != "2GB" || environment.WorkMem != "8MB" || environment.MaxConnections != "40" {
+		return errors.New("receipt environment is invalid")
+	}
+	dataset := value.Dataset
+	if dataset.Customers != requiredCustomers || dataset.CustomerTags != requiredTags || dataset.Staff != 64 ||
+		dataset.Stages != 8 || dataset.Channels != 12 || dataset.Tags != 50 || dataset.Deleted != requiredCustomers/20 ||
+		dataset.HotActive < 500 || dataset.HotDeleted < 500 {
+		return errors.New("receipt dataset is invalid")
+	}
+	expected := make(map[string]scenario, 4096)
+	for _, item := range scenarios() {
+		expected[scenarioID(item)] = item
+	}
+	seen := make(map[string]bool, 4096)
+	samples := 0
+	for _, item := range value.Cases {
+		scenarioValue, exists := expected[item.ID]
+		if !exists || seen[item.ID] || item.SelectorMask != scenarioValue.selectorMask || item.Deleted != scenarioValue.deleted ||
+			item.AddedMode != scenarioValue.addedMode.String() || item.InteractMode != scenarioValue.interactMode.String() ||
+			item.Page != pageName(scenarioValue.nextPage) || item.Limit != scenarioValue.limit || item.Samples < requiredSamples ||
+			item.P50MS < 0 || item.P50MS > item.P95MS || item.P95MS >= float64(latencyLimit)/float64(time.Millisecond) ||
+			item.P95MS > item.MaxMS || item.Matched != int(item.Limit) || !item.HasMore || len(item.Plans) != 2 {
+			return errors.New("receipt case matrix is invalid")
+		}
+		seen[item.ID] = true
+		samples += item.Samples
+		planNames := map[string]bool{}
+		for _, plan := range item.Plans {
+			if (plan.Query != "ListCustomerIDsBounded" && plan.Query != "ListCustomers") || planNames[plan.Query] ||
+				plan.ExecutionMS < 0 || plan.PlanningMS < 0 || len(plan.NodeTypes) == 0 || len(plan.ForbiddenScans) != 0 {
+				return errors.New("receipt query plan is invalid")
+			}
+			planNames[plan.Query] = true
+		}
+	}
+	if len(seen) != 4096 || samples != value.SampleCount || !seen[value.SlowestCase] {
+		return errors.New("receipt coverage is invalid")
+	}
+	return nil
 }
 
 func validateDatabaseURL(raw string) error {
@@ -512,8 +619,7 @@ func executeCase(
 	opts options,
 ) (caseEvidence, []time.Duration, error) {
 	query := queryForScenario(item)
-	id := fmt.Sprintf("selectors-%02d-deleted-%t-added-%s-interact-%s-page-%s-limit-%d",
-		item.selectorMask, item.deleted, item.addedMode, item.interactMode, pageName(item.nextPage), item.limit)
+	id := scenarioID(item)
 	var anchor contactapp.CustomerListStoreResult
 	if item.nextPage {
 		var err error
@@ -575,6 +681,11 @@ func pageName(next bool) string {
 		return "next"
 	}
 	return "first"
+}
+
+func scenarioID(item scenario) string {
+	return fmt.Sprintf("selectors-%02d-deleted-%t-added-%s-interact-%s-page-%s-limit-%d",
+		item.selectorMask, item.deleted, item.addedMode, item.interactMode, pageName(item.nextPage), item.limit)
 }
 
 func callRepository(ctx context.Context, uow *platformstore.UnitOfWork, repository *contactstore.CustomerQueryRepository, query contactapp.CustomerListQuery) (contactapp.CustomerListStoreResult, error) {

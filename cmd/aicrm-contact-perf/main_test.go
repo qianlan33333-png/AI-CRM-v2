@@ -41,6 +41,22 @@ func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 	}
 }
 
+func TestParseOptionsAcceptsOnlyExclusiveReceiptVerificationMode(t *testing.T) {
+	opts, err := parseOptions([]string{"--verify-receipt=/tmp/p3-c06.json"})
+	if err != nil || opts.receiptPath != "/tmp/p3-c06.json" {
+		t.Fatalf("parse receipt mode = %#v, %v", opts, err)
+	}
+	for _, arguments := range [][]string{
+		{"--verify-receipt=/tmp/p3-c06.json", "--samples=21"},
+		{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
+		{"--verify-receipt=/tmp/p3-c06.json", "--database-url=postgres://u:p@postgres/aicrm_perf?sslmode=disable"},
+	} {
+		if _, parseErr := parseOptions(arguments); parseErr == nil {
+			t.Fatalf("mixed receipt arguments %q were accepted", arguments)
+		}
+	}
+}
+
 func TestQueryMatrixCoversEveryFilterTimePageAndLimitCombination(t *testing.T) {
 	seen := map[string]bool{}
 	for _, item := range scenarios() {
@@ -96,6 +112,66 @@ func TestWalkPlanRejectsOnlyTargetSequentialScansAndCollectsEvidence(t *testing.
 	}
 }
 
+func TestValidateReceiptRequiresEveryFastPlanSafeScenario(t *testing.T) {
+	valid := validReceipt()
+	if err := validateReceipt(valid); err != nil {
+		t.Fatalf("validateReceipt(valid) error = %v", err)
+	}
+
+	mutations := []struct {
+		name   string
+		mutate func(*report)
+	}{
+		{name: "missing case", mutate: func(value *report) { value.Cases = value.Cases[:len(value.Cases)-1] }},
+		{name: "slow p95", mutate: func(value *report) { value.Cases[0].P95MS = 200 }},
+		{name: "sequential scan", mutate: func(value *report) { value.Cases[0].Plans[0].ForbiddenScans = []string{"customers"} }},
+		{name: "missing samples", mutate: func(value *report) { value.Cases[0].Samples = 19 }},
+		{name: "wrong source", mutate: func(value *report) { value.Environment.BinaryVCSRevision = strings.Repeat("a", 40) }},
+		{name: "fake environment", mutate: func(value *report) { value.EvidenceClass = "local" }},
+	}
+	for _, test := range mutations {
+		t.Run(test.name, func(t *testing.T) {
+			candidate := validReceipt()
+			test.mutate(&candidate)
+			if err := validateReceipt(candidate); err == nil {
+				t.Fatal("invalid receipt was accepted")
+			}
+		})
+	}
+}
+
+func TestVerifyReceiptFileIsStrictAndRejectsSymlink(t *testing.T) {
+	receipt := validReceipt()
+	encoded, err := json.Marshal(receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	path := root + "/receipt.json"
+	if err := osWriteFile(path, encoded); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyReceiptFile(path); err != nil {
+		t.Fatalf("verifyReceiptFile(valid) error = %v", err)
+	}
+	if err := osWriteFile(path, append(encoded, []byte(` {}`)...)); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyReceiptFile(path); err == nil {
+		t.Fatal("trailing JSON was accepted")
+	}
+	if err := osWriteFile(path, encoded); err != nil {
+		t.Fatal(err)
+	}
+	link := root + "/receipt-link.json"
+	if err := os.Symlink(path, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyReceiptFile(link); err == nil {
+		t.Fatal("symlink receipt was accepted")
+	}
+}
+
 func TestLinuxMemoryEvidenceRequiresMemoryAndActiveSwap(t *testing.T) {
 	path := t.TempDir() + "/meminfo"
 	if err := osWriteFile(path, []byte("MemTotal:       4023000 kB\nSwapTotal:      4194304 kB\n")); err != nil {
@@ -128,4 +204,37 @@ func sortEvidence(evidence *planEvidence) {
 
 func osWriteFile(path string, contents []byte) error {
 	return os.WriteFile(path, contents, 0o600)
+}
+
+func validReceipt() report {
+	const sha = "33f6e19792a6d44686642236fb99d6a4e76c3369"
+	result := report{
+		Kind: "contact_customer_list_s_tier_hard_gate", EvidenceClass: "authorized_test_server_synthetic",
+		GeneratedAt: "2026-08-12T00:00:00Z", ThresholdMS: 200, Passed: true,
+		Environment: environmentEvidence{
+			SourceSHA: sha, BinaryVCSRevision: sha, Database: requiredDatabase, PostgreSQLVersion: "160014",
+			CPUs: 2, MemoryKiB: 4_000_000, SwapKiB: 4_194_304, GoMemoryLimitBytes: 768 * 1024 * 1024,
+			SharedBuffers: "1GB", EffectiveCacheSize: "2GB", WorkMem: "8MB", MaxConnections: "40",
+		},
+		Dataset: datasetEvidence{
+			Customers: requiredCustomers, CustomerTags: requiredTags, Staff: 64, Stages: 8, Channels: 12,
+			Tags: 50, Deleted: requiredCustomers / 20, HotActive: 500, HotDeleted: 500,
+		},
+		CombinationCount: 4096, SampleCount: 4096 * requiredSamples,
+		GlobalP50MS: 3, GlobalP95MS: 4, GlobalMaxMS: 5,
+	}
+	for _, item := range scenarios() {
+		result.Cases = append(result.Cases, caseEvidence{
+			ID: scenarioID(item), SelectorMask: item.selectorMask, Deleted: item.deleted,
+			AddedMode: item.addedMode.String(), InteractMode: item.interactMode.String(), Page: pageName(item.nextPage),
+			Limit: item.limit, Samples: requiredSamples, P50MS: 3, P95MS: 4, MaxMS: 5,
+			Matched: int(item.limit), HasMore: true,
+			Plans: []planEvidence{
+				{Query: "ListCustomerIDsBounded", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Only Scan"}, ForbiddenScans: []string{}},
+				{Query: "ListCustomers", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Scan"}, ForbiddenScans: []string{}},
+			},
+		})
+	}
+	result.SlowestCase = result.Cases[0].ID
+	return result
 }
