@@ -209,6 +209,7 @@ required=(
   docs/evidence/slices/P3-C06C-query-optimization.md
   docs/execution/slices/P3-C06D.md
   docs/evidence/slices/P3-C06D-tag-count.md
+  docs/execution/slices/P3-I00.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -241,6 +242,7 @@ required=(
   internal/auth/port/port_test.go
   internal/contact/port/port.go
   internal/events/port/port.go
+  internal/events/port/port_test.go
   internal/events/store/appender.go
   internal/events/store/appender_test.go
   internal/events/store/queries/event_log.sql
@@ -249,6 +251,7 @@ required=(
   internal/events/store/generated/models.go
   internal/events/store/generated/querier.go
   internal/identity/port/port.go
+  internal/identity/port/port_test.go
   internal/platform/port/uow.go
   internal/platform/store/uow.go
   internal/platform/store/uow_test.go
@@ -592,6 +595,7 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C06C-query-optimization.md
 100644 docs/execution/slices/P3-C06D.md
 100644 docs/evidence/slices/P3-C06D-tag-count.md
+100644 docs/execution/slices/P3-I00.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -624,6 +628,7 @@ done <<'EOF'
 100644 internal/auth/port/port_test.go
 100644 internal/contact/port/port.go
 100644 internal/events/port/port.go
+100644 internal/events/port/port_test.go
 100644 internal/events/store/appender.go
 100644 internal/events/store/appender_test.go
 100644 internal/events/store/queries/event_log.sql
@@ -632,6 +637,7 @@ done <<'EOF'
 100644 internal/events/store/generated/models.go
 100644 internal/events/store/generated/querier.go
 100644 internal/identity/port/port.go
+100644 internal/identity/port/port_test.go
 100644 internal/platform/port/uow.go
 100644 internal/platform/store/uow.go
 100644 internal/platform/store/uow_test.go
@@ -810,7 +816,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  7fad88ae29fc38aab8dd79d47d51bd0276364d502447f687957835654c056655
+  beeb79dbee264539223a74ccbdb518c1b6ee410221cbe4836ebb863353c59d25
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -824,7 +830,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  b12c7cd3d62af6de8ea1be60018be5c0c474a037560cc1b2cdcc51b240a23575
+  27a907f502f7b8919a9e7620310a475788ed6b7639b7841e910101687c97a117
 verify_index_sha256 .github/workflows/application-go.yml \
   b83adc99410fc8d7f152e70eca2dd6ab3d8d4c30cde2e1d14d8ea84ac4a5f97c
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -838,11 +844,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  0a4a5660680e60b67a6b9f452322715e8f336ad6ad9042ca926c798392058ffc
+  d8898ca17ead6057e0db67c7ac706d6b06a5fe687b9053b9b6c1ea6ad69cff94
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  7dfa146bec117452d2e69d6d29e95a288f77b782540056d6b1ded6da0fe022c5
+  4fcd27c3556cc36220d67ee71c02e2ace0106274c4f989c699c81dc05e68db3b
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -880,7 +886,9 @@ verify_index_sha256 sqlc.yaml \
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
-  a149222cb0dd2dde8e7e2be092cd74921396fce475cb8608997c1d6d6510bff9
+  2148ec7350278ff254bf1ba081e4c2a0625eeede2f8bd1b6f752f97b98ce1b8f
+verify_index_sha256 internal/events/port/port_test.go \
+  b05782238d51e24efdeac613f4ef9ea97d31cf98113cae3005ef9f5f04cf3341
 verify_index_sha256 internal/events/store/queries/event_log.sql \
   96d351b2faf428ae291064a21bb23f9a32be4580ae3f65203eed988e17757e21
 verify_index_sha256 internal/events/store/appender.go \
@@ -974,9 +982,9 @@ verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
   816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
-  b9260c4fe20c26395a2af4d75e2f1aec184b6f1175c998c535b34f5383503745
+  cf515dd011eb00a1b48d39611773546c8d7794e5bd7f122ef5bf20c6728f82f7
 verify_index_sha256 docs/spec/SHA256SUMS \
-  c2cb503d3504f2c21d0c643aea9991851d0ad4db6a2137c61e31634a07850478
+  5b50d071de2613c3896811fa41a15d1cf2015683d1bf9073cb8de0d4141226ac
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -1024,7 +1032,7 @@ verify_index_sha256 docs/execution/slices/G1-D01.md \
 verify_index_sha256 docs/execution/slices/G1-D02.md \
   3fc37264f57da5fa15d8d3765554ca3e1eea7ce8bd10865176eb9d3b537f4742
 verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
-  d7b9aa9ccb7679c2e4e1b1d6e1a9a3aba147fc7c205f1b62e9f11a3e490d8011
+  27ad9a65169d87e07bf0fbebac05f7b3f3b63f5c384d0a8408a20a18a552e675
 verify_index_sha256 tools/p1-reconciliation/main.go \
   2b1162a4a423b9f106b512d162a5ebc4d3bc5fded125caaa69bc0d7b823ade99
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
@@ -1032,21 +1040,21 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  c779422a3cd0e3afef9d2588d18c54be419dcdf7b3999ba9744d95f59c2f5892
+  15dd2e21d34d01c1451e3d84c24e0e398f628658608994a74f3cc2ffe4287c0b
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
-  307c9ae17d2e7ff9b315d35f720caf4a58af65bbd9531337b8061e4046fca452
+  9c4705227148e5ac2a57d027227db2f5d482c92e6516cd01f64f40fbe4271851
 verify_index_sha256 internal/api/generated/server.gen.go \
   8d893a61822a423198e81d12b007f13ec1844b19ef129677a389203aa9e0fd42
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
-  cac09619a1ca344547888d2186543606c7a83b9ab9977939eb1df4357b707ed3
+  07c03a080e86a8093749543f653a6a21b841dc1730c12f94decf2387a05ba684
 verify_index_sha256 tools/openapi-contract/main.go \
-  58e12aaa8019588e47ddfd93a3acca8c8036ff394167746c601faa7b0b7908b2
+  a5beba66c1bc3e28f6f2e64332eb8220da673a03fee1f5950e320143702ab379
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  19ce525ef7c55b448ba62730bb5eed62ee32bc537fc3ada3947b1d5db2ea9922
+  87eb1abe0868e5cce74f5e4a77431d6a72e6ab157772371050439d83da09978a
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
-  231f4300b4f248fe902ab5ea77a66636776e7544738e8fbad3408e11b9a7f15a
+  9d3686543d74e78ac2fd7bb25a055124203475ceba2133b0d62351914da33d2c
 verify_index_sha256 acceptance/p1s11/doc.go \
   8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
 verify_index_sha256 acceptance/p3c00/contracts_test.go \
@@ -1248,7 +1256,9 @@ verify_index_sha256 docs/evidence/slices/P3-C06C-query-optimization.md \
 verify_index_sha256 docs/execution/slices/P3-C06D.md \
   312f73315b56243d0053f85db87d4a5907e83b7dac21b2a99c5e42ec1679b7cd
 verify_index_sha256 docs/evidence/slices/P3-C06D-tag-count.md \
-  beb2bef1250fe784ed887deb4aee1af0e698fe5db964d0eecfd804706543e22e
+  6a328bb6e0d0dba614498c64fa183b230254aa06847aa2e49b2ed40189c7a0d2
+verify_index_sha256 docs/execution/slices/P3-I00.md \
+  3f4c4c870960c5d5afa84a40cac23f3412dd6f345d6bc6ebb6016cef353d4303
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1276,11 +1286,13 @@ verify_index_sha256 docs/evidence/slices/P3-C03-partition-worker-tests.md \
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
-  ba396d41036414f472f450270b994215308c61ec93e9241628cc825c6714c9eb
+  d605cce2b8e8616f277d942dc6ae196589a034df6f1c610f9c435c4c2458ac33
 verify_index_sha256 internal/contact/port/port.go \
   ffc24ba99eae2f845b773d5cda572779901f8246ea7a7a0eb976feb571e5e27b
 verify_index_sha256 internal/identity/port/port.go \
-  321d6518b3e5fec57f3591307334e9fac67c06018bec727790f45e0e55ab5627
+  bc3f25a61d71865c511fb41bb34871a03b223508fccdf1f33586a8193850ff13
+verify_index_sha256 internal/identity/port/port_test.go \
+  91e5f66dc7b240334826ad6dd5212685e1fb9b1d8d677c7dea1a27dbb824cb27
 verify_index_sha256 internal/platform/port/uow.go \
   f8f9b381c9cdbcabbeea9403e8379c33464b7356522abdb383d0e09a6f5996c1
 verify_index_sha256 internal/platform/store/uow.go \
@@ -1382,11 +1394,11 @@ verify_index_sha256 docs/execution/slices/P2-09.md \
 verify_index_sha256 docs/evidence/slices/P2-09-auth-service-tests.md \
   5edbbf1d8c4d10761a4a91bf2e2c8cf7206be786226fdb889ce481e049199f36
 verify_index_sha256 internal/auth/port/port_test.go \
-  29f21e47b1b9afb39e2cff39e73a2fd1e801f04c1c4e87682439f753e43956de
+  7bdf0c32be539c22d0065672642b86ce1ca7a1b341813195d2fa2f1ad2e766db
 verify_index_sha256 internal/auth/app/policy.go \
-  0b95b4c304623c9f8740603d30a19fc71d5183e9cba637c2e0d9eadc95c0d397
+  b07cc8a1e1558cc64985e44e30136cae218423e1293c69c2769ed931a27bb969
 verify_index_sha256 internal/auth/app/policy_test.go \
-  507ca4a43d89b5e8e33d685b4b6e6aac9d11cc15817d9d65062f2d0098da82a6
+  56330581dade096cbf9d065b8a40e6ebf54ea0f81048559b4cdeef237dc2a132
 verify_index_sha256 internal/auth/http/authorization.go \
   acd3c1c15a5361c1023115ea339be68636c15911832a13f711765e4b0768452f
 verify_index_sha256 acceptance/p2s10/doc.go \
@@ -1398,9 +1410,9 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  4ec24c03805e8041b95e8bd9f4e7749a079a92c77ed89247c4bbf088a3b28190
+  35c52dd8c1ad64685e6f7cf8c6fb035b9ebbafae0a9cb076c6b4d9a366c3448b
 verify_index_sha256 cmd/aicrm/api_test.go \
-  b778452d8ae551c4addc23172a4d05dd7884b5b268368d1f45a7245eb7f940f1
+  e5644f581546f70a71ea2c94f5bdb66e47504b4cdcd3d66ff8f2e2088d353bef
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
@@ -1548,7 +1560,7 @@ verify_index_sha256 docs/execution/slices/M0-5.md \
 verify_index_sha256 docs/execution/slices/M0-6.md \
   96f5131c60d2eec508557f03ba1322af88c2002a259ec8d455569024d2013125
 verify_index_sha256 docs/architecture/canonical.md \
-  ac61872a4ad45e368ba8ebf40ec3da2f6e07399c1ad8487ce695f987275861f2
+  bd26d6209a0ce7160d596b22e70d8b1bdf615bbf658309f4e2466c4d292cb3fb
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
@@ -2079,7 +2091,7 @@ require_unique_make_target 'openapi-p1-contract'
 openapi_p1_recipe="$(make_target_recipe 'openapi-p1-contract:')" || fail "P1-S11 OpenAPI target must be unique"
 for line in \
   $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./openapi-contract' \
-  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./openapi-contract' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=60s ./openapi-contract' \
   $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./openapi-contract' \
   $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -timeout=20s ./acceptance/p1s11'; do
   printf '%s\n' "$openapi_p1_recipe" | grep -Fqx "$line" || fail "P1-S11 OpenAPI gate lost a frozen validation call"

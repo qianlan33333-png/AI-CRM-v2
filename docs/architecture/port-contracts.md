@@ -21,7 +21,7 @@
 ## identity/port
 
 ```go
-type IDKind string       // wecom_external_userid|unionid|mp_openid|oa_openid|alipay_user_id|phone|ext:<namespace>
+type IDKind string       // wecom_external_userid|unionid|mp_openid|oa_openid|alipay_user_id|phone|ext
 type Assurance string    // verified|declared
 
 type IDRef struct {
@@ -36,7 +36,12 @@ type ResolveStatus string // found|not_found|conflict
 type ResolveResult struct { Status ResolveStatus; CustomerID CustomerID }
 
 type BindStatus string // bound|already_bound|merged|manual_review|rejected
-type BindCommand struct { CustomerID CustomerID; Ref IDRef; Actor Actor }
+type BindCommand struct {
+    CustomerID CustomerID
+    Ref IDRef
+    Actor Actor
+    IdempotencyKey string
+}
 type BindResult struct {
     Status BindStatus
     CustomerID CustomerID
@@ -61,10 +66,44 @@ type IngestResult struct {
     PendingEventID PendingEventID
 }
 
+type MergeReviewStatus string // pending|approved|rejected
+type MergeReview struct {
+    ReviewID int64
+    Status MergeReviewStatus
+    Kind IDKind
+    Scope string
+    IdentityFingerprint string
+    CustomerIDs []CustomerID
+    Version int64
+    CreatedAt time.Time
+    ResolvedAt *time.Time
+}
+type MergeReviewPage struct { Items []MergeReview; NextCursor string }
+type ApproveMergeReviewCommand struct {
+    ReviewID int64
+    ExpectedVersion int64
+    PrimaryCustomerID CustomerID
+    Reason string
+    Actor Actor
+    IdempotencyKey string
+}
+type RejectMergeReviewCommand struct {
+    ReviewID int64
+    ExpectedVersion int64
+    Reason string
+    Actor Actor
+    IdempotencyKey string
+}
+
 type Service interface {
     Resolve(context.Context, IDRef) (ResolveResult, error)
     Bind(context.Context, BindCommand) (BindResult, error)
     Ingest(context.Context, IngestCommand) (IngestResult, error)
+}
+type ReviewService interface {
+    ListMergeReviews(context.Context, string, int32) (MergeReviewPage, error)
+    ApproveMergeReview(context.Context, ApproveMergeReviewCommand) (MergeReview, error)
+    RejectMergeReview(context.Context, RejectMergeReviewCommand) (MergeReview, error)
 }
 ```
 
@@ -72,7 +111,8 @@ type Service interface {
   完成，调用者不得 lower-case、拼接或自建映射。Scope 对所有 Kind 必填：
   unionid 使用 `wechat-open-platform:<account-id>`，openid 使用
   `wechat-app:<appid>`，企微 external userid 使用 `wecom-corp:<corp-id>`，
-  phone 使用 `phone:e164`，支付宝和 `ext:*` 使用登记的 provider namespace。
+  phone 使用 `phone:e164`，支付宝使用登记的 app namespace，自定义 Kind 固定为
+  `ext` 且 scope 使用 `ext:<namespace>`。
 - `found` 只允许返回一个非删除客户；零个为 `not_found`，多个/矛盾可信边为
   `conflict`，不得挑一个猜测。冲突不向 Extension 泄露候选 ID。
 - `bound` 是新绑定，`already_bound` 是同一客户幂等重放，`merged` 仅允许 verified
@@ -81,6 +121,21 @@ type Service interface {
   ReviewID 指向 identity 在 `pending_events` 中持久化的 `merge_review` 项。
 - `attributed` 必须已写客户时间线和 event_log；`pending` 必须已持久化待回放事件；
   `conflict` 必须持久化冲突而不得落到任意客户。IdempotencyKey 必填。
+- HTTP/admin adapter 只能构造 `declared/admin` 的 IDRef；verified 证据只能来自已完成
+  provider 验真的内部 adapter。identity 必须再次校验 Kind/Scope/Source 组合。
+- verified unionid 自动合并采用 `verified_unionid_unique_wecom_v1`：恰好一个
+  effective root 具有 verified wecom external identity 才能成为 primary；无唯一
+  primary 时返回 `manual_review`。锁 ID 顺序不得被当作业务 tie-break。
+- ReviewService 的 CustomerIDs 必须稳定排序且恰好两个 current roots；三项以上保持
+  conflict 并进入独立人工调查，不允许一次 approve 隐式 N-way merge。IdentityFingerprint 是不
+  可离线枚举的 `hmac-sha256-v<version>:<128-bit-base64url>` 展示值，key 来自 typed
+  secret store；不得返回 raw/normalized external identity 或无密钥 hash。approve
+  在同一 UoW/锁内重验 pending/version/current roots/evidence，primary 必须属于当前
+  candidate roots，漂移统一 409 且零副作用。approve/reject 使用幂等键，merge review
+  不参与自动 pending replay。
+- `BindResult.customer_id` 是同一 UoW 锁定并重验后、执行本次 merge 前的请求
+  CustomerID effective root；merged 时 `primary_customer_id` 是归并提交后的最终
+  root，二者可相同也可不同。
 
 ## contact/port
 
@@ -120,6 +175,14 @@ type MergePort interface {
 - AppendExternalEvent 按 IdempotencyKey 幂等追加，不覆盖历史事件。
 
 ## events/port
+
+`customer.merged` 的公共 payload 固定为
+`{primary_customer_id, merged_customer_id, merge_audit_id, mode, policy_version}`；
+所有 ID 为正数，mode 仅 `auto|manual`，policy_version 必须为持久化审计版本。
+payload 禁止外部 identity、PII 或 raw match key；生产类型为
+`events/port.CustomerMergedPayload`。event idempotency key 固定为
+`customer.merged:<merge_audit_id>`；audit、payload 与 event 在同一 UoW，重放不得
+产生第二条事实。
 
 ```go
 type Event struct {

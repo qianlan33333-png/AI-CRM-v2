@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: AI-CRM v2 API
-  version: 0.4.0-p3-contact
-  description: Canonical HTTP contract. Generated code must not be edited. P3-C00 freezes the channel-neutral contact API before contact implementation begins.
+  version: 0.5.0-p3-identity-contract
+  description: Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics before identity implementation begins.
 security:
   - AdminSession: []
 paths:
@@ -307,6 +307,7 @@ paths:
       x-legacy-mapping-ids: [LEGACY-API-0355, LEGACY-API-0680]
       x-aicrm-capability: identity.resolve
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-p3-decision-evidence: P3-I00-2026-08-12
       requestBody:
         required: true
         content:
@@ -323,6 +324,8 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/identity/bind:
     post:
       tags: [p1-core-candidate]
@@ -333,6 +336,10 @@ paths:
       x-legacy-mapping-ids: [LEGACY-API-0709]
       x-aicrm-capability: identity.bind
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -350,6 +357,8 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/identity/ingest:
     post:
       tags: [p1-core-candidate]
@@ -360,6 +369,10 @@ paths:
       x-legacy-mapping-ids: [LEGACY-API-0780]
       x-aicrm-capability: identity.ingest
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -376,6 +389,95 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/merge-reviews:
+    get:
+      tags: [p3-identity]
+      operationId: listIdentityMergeReviews
+      summary: List pending identity merge reviews without exposing raw identities
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-capability: identity.review.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Pending merge review page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityMergeReviewPage"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/merge-reviews/{review_id}/approve:
+    post:
+      tags: [p3-identity]
+      operationId: approveIdentityMergeReview
+      summary: Approve one versioned merge review with an explicit primary customer
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-capability: identity.review.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/MergeReviewID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveIdentityMergeReviewRequest"
+      responses:
+        "200":
+          description: Approved review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityMergeReview"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/merge-reviews/{review_id}/reject:
+    post:
+      tags: [p3-identity]
+      operationId: rejectIdentityMergeReview
+      summary: Reject one versioned merge review without changing bindings
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-capability: identity.review.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/MergeReviewID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectIdentityMergeReviewRequest"
+      responses:
+        "200":
+          description: Rejected review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityMergeReview"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/auth/session:
     get:
       tags: [p1-core-candidate]
@@ -446,6 +548,17 @@ components:
         minLength: 43
         maxLength: 43
         pattern: '^[A-Za-z0-9_-]{43}$'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable caller key; reusing it with a different normalized command is a conflict.
+      schema: { type: string, minLength: 16, maxLength: 128 }
+    MergeReviewID:
+      name: review_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
     CustomerID:
       name: customer_id
       in: path
@@ -687,27 +800,47 @@ components:
     IdentityRef:
       type: object
       additionalProperties: false
-      required: [type, scope, value, assurance, source]
+      description: Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+      required: [type, scope, value]
       properties:
         type:
           type: string
           enum: [wecom_external_userid, unionid, mp_openid, oa_openid, alipay_user_id, phone, ext]
         scope: { type: string, minLength: 1 }
         value: { type: string, minLength: 1 }
-        assurance: { type: string, enum: [verified, declared] }
-        source: { type: string, minLength: 1 }
     ResolveIdentityRequest:
       type: object
       additionalProperties: false
       required: [ref]
       properties: { ref: { $ref: "#/components/schemas/IdentityRef" } }
     ResolveIdentityResponse:
+      oneOf:
+        - $ref: "#/components/schemas/ResolveIdentityFound"
+        - $ref: "#/components/schemas/ResolveIdentityNotFound"
+        - $ref: "#/components/schemas/ResolveIdentityConflict"
+      discriminator:
+        propertyName: status
+        mapping:
+          found: "#/components/schemas/ResolveIdentityFound"
+          not_found: "#/components/schemas/ResolveIdentityNotFound"
+          conflict: "#/components/schemas/ResolveIdentityConflict"
+    ResolveIdentityFound:
+      type: object
+      additionalProperties: false
+      required: [status, customer_id]
+      properties:
+        status: { type: string, enum: [found] }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+    ResolveIdentityNotFound:
       type: object
       additionalProperties: false
       required: [status]
-      properties:
-        status: { type: string, enum: [found, not_found, conflict] }
-        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+      properties: { status: { type: string, enum: [not_found] } }
+    ResolveIdentityConflict:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties: { status: { type: string, enum: [conflict] } }
     BindIdentityRequest:
       type: object
       additionalProperties: false
@@ -716,35 +849,145 @@ components:
         customer_id: { type: integer, format: int64, minimum: 1 }
         ref: { $ref: "#/components/schemas/IdentityRef" }
     BindIdentityResponse:
+      oneOf:
+        - $ref: "#/components/schemas/BindIdentityBound"
+        - $ref: "#/components/schemas/BindIdentityAlreadyBound"
+        - $ref: "#/components/schemas/BindIdentityMerged"
+        - $ref: "#/components/schemas/BindIdentityManualReview"
+        - $ref: "#/components/schemas/BindIdentityRejected"
+      discriminator:
+        propertyName: status
+        mapping:
+          bound: "#/components/schemas/BindIdentityBound"
+          already_bound: "#/components/schemas/BindIdentityAlreadyBound"
+          merged: "#/components/schemas/BindIdentityMerged"
+          manual_review: "#/components/schemas/BindIdentityManualReview"
+          rejected: "#/components/schemas/BindIdentityRejected"
+    BindIdentityBound:
       type: object
       additionalProperties: false
       required: [status, customer_id]
       properties:
-        status: { type: string, enum: [bound, already_bound, merged, manual_review, rejected] }
+        status: { type: string, enum: [bound] }
         customer_id: { type: integer, format: int64, minimum: 1 }
-        primary_customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
-        merge_audit_id: { type: integer, format: int64, minimum: 1, nullable: true }
-        review_id: { type: integer, format: int64, minimum: 1, nullable: true }
+    BindIdentityAlreadyBound:
+      type: object
+      additionalProperties: false
+      required: [status, customer_id]
+      properties:
+        status: { type: string, enum: [already_bound] }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+    BindIdentityMerged:
+      type: object
+      additionalProperties: false
+      required: [status, customer_id, primary_customer_id, merge_audit_id]
+      properties:
+        status: { type: string, enum: [merged] }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        primary_customer_id: { type: integer, format: int64, minimum: 1 }
+        merge_audit_id: { type: integer, format: int64, minimum: 1 }
+    BindIdentityManualReview:
+      type: object
+      additionalProperties: false
+      required: [status, review_id]
+      properties:
+        status: { type: string, enum: [manual_review] }
+        review_id: { type: integer, format: int64, minimum: 1 }
+    BindIdentityRejected:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties: { status: { type: string, enum: [rejected] } }
     IngestIdentityEventRequest:
       type: object
       additionalProperties: false
-      required: [refs, event_type, payload, source, occurred_at, idempotency_key]
+      required: [refs, event_type, payload, occurred_at]
       properties:
         refs: { type: array, minItems: 1, items: { $ref: "#/components/schemas/IdentityRef" } }
         event_type: { type: string, minLength: 1 }
         payload: { type: object, additionalProperties: true }
-        source: { type: string, minLength: 1 }
         occurred_at: { type: string, format: date-time }
-        idempotency_key: { type: string, minLength: 1 }
     IngestIdentityEventResponse:
+      oneOf:
+        - $ref: "#/components/schemas/IngestIdentityEventAttributed"
+        - $ref: "#/components/schemas/IngestIdentityEventPending"
+        - $ref: "#/components/schemas/IngestIdentityEventConflict"
+      discriminator:
+        propertyName: status
+        mapping:
+          attributed: "#/components/schemas/IngestIdentityEventAttributed"
+          pending: "#/components/schemas/IngestIdentityEventPending"
+          conflict: "#/components/schemas/IngestIdentityEventConflict"
+    IngestIdentityEventAttributed:
       type: object
       additionalProperties: false
-      required: [status]
+      required: [status, customer_id, event_id]
       properties:
-        status: { type: string, enum: [attributed, pending, conflict] }
-        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
-        event_id: { type: integer, format: int64, minimum: 1, nullable: true }
-        pending_event_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        status: { type: string, enum: [attributed] }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        event_id: { type: integer, format: int64, minimum: 1 }
+    IngestIdentityEventPending:
+      type: object
+      additionalProperties: false
+      required: [status, pending_event_id]
+      properties:
+        status: { type: string, enum: [pending] }
+        pending_event_id: { type: integer, format: int64, minimum: 1 }
+    IngestIdentityEventConflict:
+      type: object
+      additionalProperties: false
+      required: [status, pending_event_id]
+      properties:
+        status: { type: string, enum: [conflict] }
+        pending_event_id: { type: integer, format: int64, minimum: 1 }
+    IdentityMergeReview:
+      type: object
+      additionalProperties: false
+      required: [review_id, status, type, scope, identity_fingerprint, customer_ids, version, created_at, resolved_at]
+      properties:
+        review_id: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [pending, approved, rejected] }
+        type: { type: string, enum: [unionid, phone] }
+        scope: { type: string, minLength: 1 }
+        identity_fingerprint:
+          type: string
+          description: Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
+          pattern: '^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$'
+        customer_ids:
+          type: array
+          minItems: 2
+          maxItems: 2
+          uniqueItems: true
+          items: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Explicitly null while pending; non-null after approval or rejection.
+    IdentityMergeReviewPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/IdentityMergeReview" } }
+        next_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+    ApproveIdentityMergeReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, primary_customer_id, reason]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+        primary_customer_id: { type: integer, format: int64, minimum: 1 }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    RejectIdentityMergeReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, reason]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+        reason: { type: string, minLength: 1, maxLength: 500 }
     AuthSessionResponse:
       type: object
       additionalProperties: false

@@ -2641,11 +2641,19 @@ slices:
   - slice_id: P3-C06D
     title: contact-tag-driven-bounded-count-performance-optimization
     owner: Codex-Sol
-    status: local_gates_pass_independent_review_pass
+    status: merged_main_ci_and_2C4G_4096_performance_hard_gate_pass
     base_sha: 5d5b2a4ef00f10f19b42b184d6cbb2a24c1825d2
     dependency: P3-C06C
     branch: slice/p3-c06d-tag-count-optimization
     decision_anchor: P3_C06C_S_TIER_RERUN_2026_08_12
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/140
+    pr_head_sha: 1446e649924eca2e790afa8fd5de59cf7e587758
+    merge_sha: 2021056bb0c88685c3c39a3996a1a2e5a48680b1
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31590947581
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31590947612
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31590947575
     scope:
       - mutually_exclusive_tag_null_and_tag_driven_bounded_count_branches
       - tag_index_to_customer_primary_key_lateral_plan
@@ -2675,12 +2683,13 @@ slices:
       - web_ci_Node24_npm11_186_tests_build_audit_PASS
       - repo_contract_full_negatives_and_secret_scan_PASS
       - independent_final_review_PASS
-      - new_main_2C4G_4096_matrix_NOT_EXECUTED
+      - new_main_2C4G_4096_matrix_PASS_authorized_test_server_isolated_database
+      - offline_receipt_verifier_PASS_exact_merge_SHA_and_application_main_CI
     handwritten_scope: 2_runtime_files_137_physical_changed_lines_SQL_and_test_server_runner_tests_generated_governance_excluded
     slice_induced_correction_count: 2
-    infra_induced_correction_count: 3
+    infra_induced_correction_count: 4
     scope_induced_correction_count: 3
-    verification_induced_correction_count: 9
+    verification_induced_correction_count: 11
     correction_notes:
       - governance:user_authorized_continuation_through_P4_defers_threshold_report_without_weakening_gates
       - slice:Terra_first_mutual_exclusion_assertion_was_too_broad_then_was_narrowed_to_the_exact_tagged_branch_NULL_forbidden_shape_before_Sol_adoption
@@ -2688,6 +2697,7 @@ slices:
       - infra:Terra_local_55432_PostgreSQL_instance_exited_during_seed_then_an_independent_55435_instance_was_used
       - infra:Terra_found_55434_owned_by_another_isolated_acceptance_instance_then_used_55435_without_touching_either_instance
       - infra:first_Sol_real_PG_rerun_shared_the_55434_schema_with_a_still_running_focused_process_then_only_that_local_test_process_and_idle_backend_were_terminated_before_an_isolated_rerun
+      - infra:first_gh_pr_merge_cleanup_used_the_local_repository_where_main_was_attached_to_another_worktree_then_the_remote_PR_state_was_verified_as_already_squash_merged_without_replaying_the_merge
       - scope:P3_C06C_rerun_proved_the_remaining_failure_was_exclusively_tag_and_tag_keyword_bounded_count_and_required_a_new_targeted_slice
       - scope:initial_C06D_card_did_not_require_EXPLAIN_to_use_the_same_CacheDescribe_mode_as_the_production_repository_then_the_runner_and_customer_tags_Seq_Scan_negative_were_aligned
       - scope:initial_C06D_card_did_not_require_permanent_central_negatives_for_tag_driven_and_EXPLAIN_mode_regressions_then_both_repo_contract_cases_were_added
@@ -2700,8 +2710,90 @@ slices:
       - verification:first_final_ledger_checker_invocation_ran_before_staging_the_counter_fix_then_the_change_was_staged_before_the_same_fail_closed_checker_was_rerun
       - verification:first_final_counter_patch_matched_historical_P2_fields_instead_of_the_P3_C06D_block_then_the_historical_values_were_restored_and_the_exact_slice_context_was_used
       - verification:final_base_diff_audit_found_the_preexisting_C06D_candidate_had_also_drifted_P2_00_from_the_merged_main_value_5_to_6_then_restored_the_exact_merged_main_value
+      - verification:first_exact_merge_binary_build_used_a_linked_worktree_where_Go_omitted_VCS_settings_then_a_clean_standalone_clone_produced_vcs_revision_equal_to_merge_SHA_and_vcs_modified_false
+      - verification:first_background_launcher_exit_marker_used_an_unquoted_backslash_format_and_persisted_literal_0n_then_the_original_bytes_were_preserved_and_a_canonical_zero_LF_marker_was_written_after_process_exit_and_offline_verifier_both_passed
     external_gates:
-      - NEW_MAIN_2C4G_4096_MATRIX_REQUIRES_THIS_SLICE_MERGE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-I00
+    title: identity-irreversible-semantics-and-central-contract-freeze
+    owner: Codex-Sol
+    status: local_gates_and_independent_review_pass_ready_for_pr
+    base_sha: 2021056bb0c88685c3c39a3996a1a2e5a48680b1
+    dependency: P3_C06D_MERGED_MAIN_CI_AND_CONTACT_4096_HARD_GATE_PASS
+    branch: slice/p3-i00-identity-contract
+    decision_anchor: P3-I00-2026-08-12
+    scope:
+      - verified_unionid_unique_wecom_primary_policy_and_fail_closed_manual_review
+      - trusted_provider_evidence_and_admin_declared_only_boundary
+      - strict_resolve_bind_ingest_status_field_unions
+      - versioned_merge_review_public_port_and_admin_ops_rbac
+      - csrf_and_idempotency_contract_for_identity_writes
+      - customer_merged_event_name_and_historical_design_supersession
+    delegated_tasks:
+      - task_id: p3_i00_contract_tests
+        executor: Terra-Max
+        status: SOL_REVIEW_INTEGRATED
+        frozen_parent: 5d5b2a4ef00f10f19b42b184d6cbb2a24c1825d2
+        delegated_head: 48a1ec9de4b5f968f634fdf5cdc177cb6e2ec99f
+        manifest_sha256: 65388ecf3016b03f46067d3f9ed634e080c1884b9ef752656e8b392626b2febd
+        binary_diff_sha256: 05e49debdcef1926d25f0c8431d6dece38f293538deb514e35f72fefb582e747
+    tests:
+      - openapi_p1_contract_and_strict_identity_negative_matrix_PASS
+      - identity_auth_events_public_port_race_PASS
+      - final_router_identity_csrf_and_auth_policy_focused_race_PASS
+      - generated_sources_twice_no_diff_PASS
+      - repo_contract_static_PASS
+      - full_ci_go_real_PG_serial_PASS
+      - web_ci_Node24_npm11_186_tests_build_audit_PASS
+      - repo_contract_permanent_negatives_and_secret_scan_PASS
+      - independent_final_review_PASS
+      - dependency_contact_2C4G_4096_global_P95_80_841787ms_PASS
+    handwritten_scope: 5_runtime_files_119_physical_changed_lines_cmd_api_auth_policy_auth_port_identity_port_events_port_tests_generated_contracts_governance_excluded
+    slice_induced_correction_count: 11
+    infra_induced_correction_count: 3
+    scope_induced_correction_count: 5
+    verification_induced_correction_count: 16
+    correction_notes:
+      - slice:Terra_contract_test_compound_literal_syntax_was_corrected_before_integration
+      - slice:first_strict_status_oneOf_discriminators_omitted_explicit_wire_value_to_schema_mappings_then_all_mappings_and_missing_or_wrong_mapping_negatives_were_frozen
+      - slice:first_MergeReview_port_omitted_created_and_resolved_audit_timestamps_required_by_the_OpenAPI_response_then_the_public_port_and_tests_were_aligned
+      - slice:first_review_fingerprint_contract_allowed_an_offline_enumerable_unkeyed_digest_then_a_typed_secret_backed_versioned_HMAC_shape_was_frozen
+      - slice:first_identity_merge_review_page_did_not_require_next_cursor_then_the_canonical_list_shape_was_restored
+      - slice:first_identity_contract_validator_only_rejected_assurance_and_source_names_then_exact_closed_fields_and_seven_kinds_were_frozen
+      - slice:first_identity_operations_omitted_ADR_006_semantic_validation_422_responses_then_the_declared_response_contract_was_aligned
+      - slice:Terra_identity_port_test_used_noncanonical_wecom_scope_then_Sol_replaced_it_with_the_frozen_wechat_open_platform_scope_before_adoption
+      - slice:first_semantic_validator_checked_identity_status_branch_fields_but_not_additionalProperties_false_and_did_not_close_the_merge_review_page_then_both_closed_shapes_and_permanent_mutations_were_added
+      - slice:first_identity_fingerprint_pattern_accepted_noncanonical_base64url_tail_bits_then_the_128_bit_unpadded_encoding_was_narrowed_to_the_four_valid_final_characters
+      - slice:first_identity_contract_validator_did_not_pin_operation_request_response_or_review_page_child_refs_then_exact_local_refs_and_cursor_shape_negatives_were_added
+      - governance:user_authorized_continuation_through_P4_defers_threshold_report_without_weakening_gates
+      - scope:initial_card_did_not_define_same_UoW_review_revalidation_primary_membership_or_drift_409_then_the_fail_closed_rule_was_added
+      - scope:initial_card_only_named_customer_merged_without_a_typed_channel_neutral_payload_or_stable_event_idempotency_key_then_both_were_frozen
+      - scope:initial_card_did_not_limit_merge_review_to_the_pairwise_merge_model_then_exactly_two_current_roots_was_frozen
+      - scope:initial_card_did_not_define_pre_merge_request_root_versus_post_merge_primary_response_semantics_then_both_timepoints_were_frozen
+      - scope:initial_card_did_not_cover_extension_and_alipay_historical_document_drift_then_the_trusted_source_and_canonical_scope_text_was_synchronized
+      - verification:first_make_target_name_was_not_present_then_the_frozen_openapi_p1_contract_target_was_used
+      - verification:first_tools_test_was_invoked_from_the_root_module_then_it_was_rerun_with_go_C_tools
+      - verification:first_Orval_npm_script_name_was_incorrect_then_the_pinned_orval_generate_script_was_used
+      - verification:candidate_oapi_codegen_config_initially_omitted_the_p3_identity_tag_then_P1_acceptance_rejected_the_missing_operations_and_the_tag_was_added
+      - verification:Terra_first_focused_tools_test_used_the_root_module_then_reran_from_the_tools_module
+      - verification:Terra_first_manifest_preimage_used_filesystem_mode_644_then_was_recomputed_with_Git_tree_mode_100644
+      - infra:the_reused_local_55432_listener_was_an_old_SSH_forward_to_a_missing_remote_port_then_it_was_not_stopped_or_repurposed
+      - infra:the_first_fresh_local_acceptance_cluster_was_PostgreSQL_16_13_and_the_exact_16_14_gate_correctly_rejected_it
+      - infra:local_55435_was_already_owned_by_another_isolated_test_instance_then_a_new_loopback_55436_forward_to_the_dedicated_test_server_PG16_14_was_used
+      - verification:first_full_ci_invocation_omitted_the_fail_closed_P0S03_PG_INTEGRATION_switch_then_it_was_added
+      - verification:second_full_ci_invocation_omitted_P0S03_TEST_DATABASE_URL_then_the_same_safe_literal_loopback_DSN_was_bound_to_all_acceptance_inputs
+      - verification:first_remote_PG_full_package_run_used_default_package_parallelism_and_hit_acceptance_schema_lock_timeouts_then_it_was_rerun_with_GOFLAGS_p_1_without_weakening_any_test
+      - verification:first_clean_full_ci_omitted_QUERY_PLAN_TEST_DATABASE_URL_then_the_gate_failed_closed_and_all_real_PG_and_exact_base_head_inputs_were_bound_for_the_final_rerun
+      - verification:first_rebase_resolution_preserved_all_infra_and_verification_notes_but_reverted_their_counters_then_the_exact_P3_I00_block_was_recounted_from_the_notes
+      - verification:first_rebase_closeout_text_treated_the_C06D_merge_as_contact_wave_closeout_before_the_new_main_4096_matrix_completed_then_dependency_and_status_were_restored_to_pending_hard_gate
+      - verification:first_rebased_card_evidence_update_left_the_repo_contract_content_pin_at_the_pre_rebase_blob_then_the_exact_new_card_SHA256_was_synchronized_before_rerunning_the_gate
+      - verification:independent_base_diff_review_found_the_rebased_candidate_had_unrelated_G1_TRIAGE_and_P2_14_counter_drift_then_both_historical_values_were_restored_to_exact_main
+      - verification:first_PR_Go_job_showed_the_expanded_identity_OpenAPI_mutation_matrix_exceeded_the_pre_identity_20_second_race_timeout_on_the_hosted_runner_then_only_the_test_timeout_was_raised_to_60_seconds_without_removing_or_weakening_any_case
+      - verification:the_bundled_CI_inspector_was_first_invoked_with_an_unavailable_python_binary_then_python3_detected_an_inactive_legacy_account_and_the_same_failed_GitHub_Actions_job_was_inspected_through_the_authenticated_gh_log_fallback
+    external_gates:
+      - IDENTITY_DDL_AND_IMPLEMENTATION_NOT_STARTED
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

@@ -24,6 +24,8 @@ func TestAuthorizeFrozenCapabilityMatrix(t *testing.T) {
 		{authport.CapabilityIdentityResolve, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 		{authport.CapabilityIdentityBind, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 		{authport.CapabilityIdentityIngest, authport.ScopeGlobal, authport.ScopeGlobal, ""},
+		{authport.CapabilityIdentityReviewRead, authport.ScopeGlobal, authport.ScopeGlobal, ""},
+		{authport.CapabilityIdentityReviewWrite, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 		{authport.CapabilityConfigOverviewRead, authport.ScopeGlobal, "", ""},
 		{authport.CapabilityStagesRead, authport.ScopeGlobal, authport.ScopeGlobal, authport.ScopeGlobal},
 		{authport.CapabilityStagesWrite, authport.ScopeGlobal, authport.ScopeGlobal, ""},
