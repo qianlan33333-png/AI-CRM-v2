@@ -2812,6 +2812,28 @@ if (cd "$p3s00_missing_csrf" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P3-S00 CSRF boundary weakening was accepted"
 fi
 
+for file_path in \
+  internal/segment/dsl/ast.go \
+  internal/segment/dsl/parser.go \
+  internal/segment/dsl/parser_test.go \
+  docs/execution/slices/P3-S01.md; do
+  missing_p3s01_contract="$(make_fixture "missing-p3-s01-${file_path//\//-}")"
+  rm -f "$missing_p3s01_contract/$file_path"
+  git -C "$missing_p3s01_contract" add -u "$file_path"
+  if (cd "$missing_p3s01_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-S01 parser contract was accepted: $file_path"
+  fi
+done
+
+p3s01_duplicate_key_weakening="$(make_fixture p3-s01-duplicate-key-weakening)"
+sed -i.bak 's/return nil, fieldError(keyPointer, ReasonDuplicateKey)/return nil, fieldError(keyPointer, ReasonInvalidShape)/' \
+  "$p3s01_duplicate_key_weakening/internal/segment/dsl/parser.go"
+rm -f "$p3s01_duplicate_key_weakening/internal/segment/dsl/parser.go.bak"
+restage_p2s18_receipt "$p3s01_duplicate_key_weakening" internal/segment/dsl/parser.go
+if (cd "$p3s01_duplicate_key_weakening" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S01 duplicate-key fail-closed boundary weakening was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

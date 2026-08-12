@@ -47,6 +47,9 @@ required=(
   migrations/00008_segment_contract.sql
   internal/segment/port/port.go
   internal/segment/port/port_test.go
+  internal/segment/dsl/ast.go
+  internal/segment/dsl/parser.go
+  internal/segment/dsl/parser_test.go
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -421,6 +424,7 @@ required=(
   docs/execution/slices/P0-S03.md
   docs/execution/slices/P0-S04.md
   docs/execution/slices/P3-S00.md
+  docs/execution/slices/P3-S01.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -792,7 +796,11 @@ done <<'EOF'
 100644 migrations/00008_segment_contract.sql
 100644 internal/segment/port/port.go
 100644 internal/segment/port/port_test.go
+100644 internal/segment/dsl/ast.go
+100644 internal/segment/dsl/parser.go
+100644 internal/segment/dsl/parser_test.go
 100644 docs/execution/slices/P3-S00.md
+100644 docs/execution/slices/P3-S01.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -1323,6 +1331,14 @@ verify_index_sha256 internal/segment/port/port_test.go \
   01d17e1ae55a71279f0a566469ff98ac49fc2ca69df6ab9b40629a972bfc333f
 verify_index_sha256 docs/execution/slices/P3-S00.md \
   dd140edd10811d17d3919fe912c859540d0f7cebd26201ae9423f639b43300c8
+verify_index_sha256 internal/segment/dsl/ast.go \
+  55d49468d801192c331c25c54844376b23a5732bf517bb2f5c4bef84cd9ee131
+verify_index_sha256 internal/segment/dsl/parser.go \
+  1b719d9ccf5b7837f62335f850bd6709219ba794f22f57ee922cbcc02c65b79f
+verify_index_sha256 internal/segment/dsl/parser_test.go \
+  4133ea5ccf7337b35dd350597e6a358a18be3741fe0755414dc07e762ef85e4a
+verify_index_sha256 docs/execution/slices/P3-S01.md \
+  37eb186e07e5a66f21950de1beb32651a1efbb2afd92b3db84d179ec1de99f77
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1604,7 +1620,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  53f9691a0f14b4d102ed8d2198675d4e0778ad0c36fdfa3b342b708548d6aa5f
+  ce8abf063208c011be495dcb992c38e0bf20bbc809db13893701c04c1403fbe1
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3049,6 +3065,59 @@ for anchor in \
   '          enum: [stage_id, owner_staff_id, channel_id, tag_id, added_at, last_interact_at, is_deleted]'; do
   grep -Fq "$anchor" <<<"$p3s00_openapi" ||
     fail "P3-S00 closed DSL OpenAPI receipt drifted: $anchor"
+done
+
+p3s01_ast="$(git show :internal/segment/dsl/ast.go)"
+for anchor in \
+  'MaxDefinitionBytes = 64 << 10' \
+  'MaxDepth           = 8' \
+  'MaxNodes           = 128' \
+  'MaxGroupChildren   = 64' \
+  'MaxListValues      = 1000' \
+  'ReasonDuplicateKey' \
+  'ReasonUnsupportedOperator' \
+  'type AST struct' \
+  'type Node interface' \
+  'type Value interface' \
+  'func (ast AST) CanonicalJSON()'; do
+  grep -Fq "$anchor" <<<"$p3s01_ast" ||
+    fail "P3-S01 typed AST receipt drifted: $anchor"
+done
+
+p3s01_parser="$(git show :internal/segment/dsl/parser.go)"
+for anchor in \
+  'func Parse(input []byte) (AST, error)' \
+  'decoder.UseNumber()' \
+  'return nil, fieldError(keyPointer, ReasonDuplicateKey)' \
+  'if depth > MaxDepth' \
+  'if budget.nodes > MaxNodes' \
+  'if len(array) > MaxListValues || budget.listValues+len(array) > MaxListValues' \
+  'sort.Slice(values' \
+  'func appendPointer(pointer, token string) string'; do
+  grep -Fq "$anchor" <<<"$p3s01_parser" ||
+    fail "P3-S01 parser safety receipt drifted: $anchor"
+done
+! grep -Eq 'pgx[.]|Query\(|Exec\(|Prepare\(|database/sql|internal/(contact|identity|platform|outbound)/' <<<"$p3s01_parser" ||
+  fail "P3-S01 parser must not absorb SQL, execution, or another domain"
+
+p3s01_card="$(git show :docs/execution/slices/P3-S01.md)"
+for anchor in \
+  'P3-S01：Segment DSL typed AST 与 fail-closed parser' \
+  '重复 key 在进入 map 前拒绝' \
+  'S02 SQL compiler' \
+  'PENDING_EXTERNAL_GATE'; do
+  grep -Fq "$anchor" <<<"$p3s01_card" ||
+    fail "P3-S01 scope receipt drifted: $anchor"
+done
+
+p3s01_tests="$(git show :internal/segment/dsl/parser_test.go)"
+for anchor in \
+  'TestParseCanonicalAST' \
+  'TestParseRejectsClosedDSLViolations' \
+  'TestParseLimits' \
+  'FuzzParseNeverPanicsAndCanonicalRoundTrips'; do
+  grep -Fq "$anchor" <<<"$p3s01_tests" ||
+    fail "P3-S01 parser test corpus receipt drifted: $anchor"
 done
 
 scripts/scan_sensitive_paths.sh
