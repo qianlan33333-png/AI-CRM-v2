@@ -47,6 +47,16 @@ func TestParseQueryFile(t *testing.T) {
 	}
 }
 
+func TestPartitionSegmentQueries(t *testing.T) {
+	regular, segment := partitionSegmentQueries([]query{
+		{File: "internal/contact/store/queries/customers.sql", Name: "Contact"},
+		{File: "internal/segment/store/queries/audience.sql", Name: "Segment"},
+	})
+	if len(regular) != 1 || regular[0].Name != "Contact" || len(segment) != 1 || segment[0].Name != "Segment" {
+		t.Fatalf("partition = regular %#v, segment %#v", regular, segment)
+	}
+}
+
 func TestTemporaryDatabaseURL(t *testing.T) {
 	const databaseURL = "postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable"
 	got, err := temporaryDatabaseURL(databaseURL, "aicrm_query_plan_abcdef")

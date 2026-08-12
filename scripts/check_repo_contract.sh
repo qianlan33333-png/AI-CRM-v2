@@ -45,6 +45,7 @@ required=(
   migrations/00006_customer_events.sql
   migrations/00007_contact_merge_lineage.sql
   migrations/00008_segment_contract.sql
+  migrations/00009_segment_query_indexes.sql
   internal/segment/port/port.go
   internal/segment/port/port_test.go
   internal/segment/dsl/ast.go
@@ -52,6 +53,12 @@ required=(
   internal/segment/dsl/parser_test.go
   internal/segment/compiler/compiler.go
   internal/segment/compiler/compiler_test.go
+  internal/segment/compiler/executor.go
+  internal/segment/compiler/executor_test.go
+  internal/segment/store/queries/audience.sql
+  internal/segment/store/query_set.go
+  acceptance/segment/query_set_integration_test.go
+  acceptance/segment/doc.go
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -432,6 +439,7 @@ required=(
   docs/execution/slices/P3-S00.md
   docs/execution/slices/P3-S01.md
   docs/execution/slices/P3-S02.md
+  docs/execution/slices/P3-S03.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -805,6 +813,7 @@ done <<'EOF'
 100644 migrations/00006_customer_events.sql
 100644 migrations/00007_contact_merge_lineage.sql
 100644 migrations/00008_segment_contract.sql
+100644 migrations/00009_segment_query_indexes.sql
 100644 internal/segment/port/port.go
 100644 internal/segment/port/port_test.go
 100644 internal/segment/dsl/ast.go
@@ -812,9 +821,16 @@ done <<'EOF'
 100644 internal/segment/dsl/parser_test.go
 100644 internal/segment/compiler/compiler.go
 100644 internal/segment/compiler/compiler_test.go
+100644 internal/segment/compiler/executor.go
+100644 internal/segment/compiler/executor_test.go
+100644 internal/segment/store/queries/audience.sql
+100644 internal/segment/store/query_set.go
+100644 acceptance/segment/query_set_integration_test.go
+100644 acceptance/segment/doc.go
 100644 docs/execution/slices/P3-S00.md
 100644 docs/execution/slices/P3-S01.md
 100644 docs/execution/slices/P3-S02.md
+100644 docs/execution/slices/P3-S03.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -886,11 +902,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  d91a8568f29ab891eccd5bc74004af8a3765c499ad54be4df2dbb4648808818b
+  4babe081b3c16fe8ed00ebdf732794a92f38eeecedba44db23bb8e49acead9cd
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  94b64117090a50f9d0738cac211727b42f49815e5acc748ba709954bd0d1adb7
+  b32cf58d803b0bde0c5428f1bfa4e156514f8b694871070a694af54cfa6ac175
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -924,7 +940,7 @@ verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  ad7a93fc7c0ad095e90b7817f6268eb3a60971d577a95c6859fbfc1108f52f44
+  4e8dcc75e7dac421af658a9da94b9ec365f60c13e89ac4af7b3e13b68c7b5dc7
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
@@ -1012,9 +1028,9 @@ verify_index_sha256 tools/go.mod \
 verify_index_sha256 tools/go.sum \
   2515f9dd3dbc17c77f98550be06a8cdf072538e6d8eb296077b6ad91120d2753
 verify_index_sha256 tools/query-plan-gate/main.go \
-  f36e5be67a56a4d969206d870fe4a0104c9387a6caeacf6ac96ac7eeb1686b15
+  c00181ab7f1c28148b4b0582041d41a07da5913cd502c74eeb1f9ced9d5494e5
 verify_index_sha256 tools/query-plan-gate/main_test.go \
-  c61d43bc6e10ec992ab68385c0f0280559f4c44cb8a0ad7d05d9516b511e9798
+  681913a250217a89836e83877fdcec5dd942b9f946fdd1dc6347f2312220f7a6
 verify_index_sha256 scripts/test_query_plan_gate.sh \
   61a1ce22acc6358b697c50e191c02a6d2e8a0fe20b9d00c2070cececdc8bb497
 verify_index_sha256 docs/execution/slices/M0-3.md \
@@ -1367,10 +1383,26 @@ verify_index_sha256 internal/segment/compiler/compiler_test.go \
   5e936728f73f7a5be2f755ec0f2e4158dd40ee5b35754301ab6502e07a73a889
 verify_index_sha256 docs/execution/slices/P3-S02.md \
   f9b5f078beedfbdb30c703bca22672bf80ccd45abf121270e700b48040dbf1f7
+verify_index_sha256 migrations/00009_segment_query_indexes.sql \
+  31de3210612f7b895fd9feed6da2f168b68f50c2e7c6a825bb40644f9370293b
+verify_index_sha256 internal/segment/compiler/executor.go \
+  d3af0156b74bca647d97f144b01b6e6e6fe97d38bb9f51f847a2eaf8e1b93c6c
+verify_index_sha256 internal/segment/compiler/executor_test.go \
+  7980d7da1203eb89c870c89959085428bfff0a07c2dd78a840c8509950061e4a
+verify_index_sha256 internal/segment/store/queries/audience.sql \
+  863560b8c36362d3e5b5b7dfd2a0fd034e050c7c94b20a612b49f096ab926aad
+verify_index_sha256 internal/segment/store/query_set.go \
+  35badea18e3f1fa46ed2784d83234e1166331cc80d85a3b7dc0dd2e03c33536f
+verify_index_sha256 acceptance/segment/query_set_integration_test.go \
+  748e9ebe2a11b87c2ce14f2f7844b13aa2bf3ded0bd18dfe3c7124d79d72c931
+verify_index_sha256 acceptance/segment/doc.go \
+  89fb7cae27317abcd01789dd4cff4cbeddd74b34db7564bfa427aa35987b2421
+verify_index_sha256 docs/execution/slices/P3-S03.md \
+  8f2934cc4664b91566a92bc0b267c96c6c507f7592a29441f27a021a935716c7
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  9923744f8bf85469a99abedde8728f8547e0d280db0fd874ae85804967ffdb5d
+  4c17a52dd50061f4c37a8634ec49f5fe2e148cd082901797a8ff2555f7c8165d
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1652,7 +1684,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  3278c7f232487cf897adb7767e953416cd7d04f866b0cc3ba0cc28cb8d63fe7f
+  45ab02c22912d0be8e47481da9999194b0af83418184fd2d22b2588e9d63aff7
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3322,6 +3354,108 @@ for anchor in \
   'assertNoSQLText'; do
   grep -Fq "$anchor" <<<"$p3s02_tests" ||
     fail "P3-S02 compiler test corpus receipt drifted: $anchor"
+done
+
+p3s03_migration="$(git show :migrations/00009_segment_query_indexes.sql)"
+for anchor in \
+  'CREATE INDEX idx_customers_segment_stage' \
+  'ON customers (stage_id, id);' \
+  'CREATE INDEX idx_customers_segment_owner' \
+  'ON customers (owner_staff_id, id);' \
+  'CREATE INDEX idx_customers_segment_channel' \
+  'ON customers (channel_id, id);' \
+  'CREATE INDEX idx_customers_segment_added' \
+  'ON customers (added_at, id);' \
+  'CREATE INDEX idx_customers_segment_interact' \
+  'ON customers (last_interact_at, id);' \
+  'CREATE INDEX idx_customers_segment_deleted' \
+  'ON customers (is_deleted, id);' \
+  'DROP INDEX idx_customers_segment_deleted;' \
+  'DROP INDEX idx_customers_segment_stage;'; do
+  grep -Fq "$anchor" <<<"$p3s03_migration" ||
+    fail "P3-S03 index contract drifted: $anchor"
+done
+[[ "$(grep -Ec '^CREATE INDEX idx_customers_segment_' <<<"$p3s03_migration")" -eq 6 &&
+   "$(grep -Ec '^DROP INDEX idx_customers_segment_' <<<"$p3s03_migration")" -eq 6 ]] ||
+  fail "P3-S03 migration must create and drop exactly six Segment customer indexes"
+! grep -Eiq 'CREATE[[:space:]]+TABLE|INSERT[[:space:]]+INTO|UPDATE[[:space:]]|DELETE[[:space:]]+FROM|identit|customer_events' <<<"$p3s03_migration" ||
+  fail "P3-S03 migration must remain index-only and outside Identity/timeline semantics"
+
+p3s03_queries="$(git show :internal/segment/store/queries/audience.sql)"
+for query_name in \
+  SelectSegmentUniverse SelectSegmentStageEqual SelectSegmentStageAny \
+  SelectSegmentOwnerEqual SelectSegmentOwnerAny SelectSegmentChannelEqual \
+  SelectSegmentChannelAny SelectSegmentTagAny SelectSegmentAddedBefore \
+  SelectSegmentAddedAfter SelectSegmentLastInteractBefore \
+  SelectSegmentLastInteractAfter SelectSegmentDeletedEqual; do
+  grep -Fq -- "-- name: $query_name :many" <<<"$p3s03_queries" ||
+    fail "P3-S03 fixed sqlc query missing: $query_name"
+done
+[[ "$(grep -Ec '^-- name: SelectSegment[A-Za-z]+ :many$' <<<"$p3s03_queries")" -eq 13 ]] ||
+  fail "P3-S03 query family must contain exactly universe plus twelve leaf queries"
+! grep -Eiq 'customer_events|(^|[^A-Za-z0-9_])segments([^A-Za-z0-9_]|$)|segment_members|SELECT[[:space:]]+[*]|;.*[^[:space:]]' <<<"$p3s03_queries" ||
+  fail "P3-S03 query family exceeded the read-only customer/tag boundary"
+
+p3s03_executor="$(git show :internal/segment/compiler/executor.go)"
+for anchor in \
+  'type QuerySet interface {' \
+  'func Execute(ctx context.Context, program Program, queries QuerySet) ([]int64, error)' \
+  'return intersectIDs(universe, selected), nil' \
+  'case complement:' \
+  'return differenceIDs(run.universe, ids), nil' \
+  'func normalizeIDs(ids []int64) ([]int64, error)'; do
+  grep -Fq "$anchor" <<<"$p3s03_executor" ||
+    fail "P3-S03 executor receipt drifted: $anchor"
+done
+! grep -Eq 'database/sql|pgx[.]|SELECT |FROM |WHERE |Query\(|Exec\(|Prepare\(' <<<"$p3s03_executor" ||
+  fail "P3-S03 executor must not contain a second SQL or database implementation"
+
+p3s03_store="$(git show :internal/segment/store/query_set.go)"
+for anchor in \
+  'type QuerySet struct{ queries *segmentdb.Queries }' \
+  'func NewQuerySet(db segmentdb.DBTX) *QuerySet' \
+  'SelectSegmentUniverse' \
+  'SelectSegmentStageEqual' \
+  'SelectSegmentTagAny' \
+  'SelectSegmentDeletedEqual'; do
+  grep -Fq "$anchor" <<<"$p3s03_store" ||
+    fail "P3-S03 sqlc adapter receipt drifted: $anchor"
+done
+! grep -Eq 'Query\(|QueryRow\(|Exec\(|Prepare\(|database/sql|squirrel|gorm' <<<"$p3s03_store" ||
+  fail "P3-S03 store must call generated sqlc methods only"
+
+p3s03_plan_gate="$(git show :tools/query-plan-gate/main.go)"
+for anchor in \
+  'partitionSegmentQueries' \
+  'seedSegmentPlanFixture' \
+  'generate_series(1, 200000)' \
+  'VACUUM (ANALYZE)' \
+  'SET plan_cache_mode = force_generic_plan'; do
+  grep -Fq "$anchor" <<<"$p3s03_plan_gate" ||
+    fail "P3-S03 meaningful generic-plan fixture drifted: $anchor"
+done
+! grep -Fq 'enable_seqscan' <<<"$p3s03_plan_gate" ||
+  fail "P3-S03 query-plan gate must not fake plans by disabling Seq Scan"
+
+p3s03_tests="$(git show :internal/segment/compiler/executor_test.go)"
+for anchor in \
+  'TestExecuteLeafAndCombinationSemanticMatrix' \
+  'if len(cases) != 61' \
+  'TestExecuteUniverseComplementOrderAndFailClosed' \
+  'TestExecutePropagatesContextAndStoreErrorsWithoutQueryText'; do
+  grep -Fq "$anchor" <<<"$p3s03_tests" ||
+    fail "P3-S03 executor test corpus receipt drifted: $anchor"
+done
+
+p3s03_card="$(git show :docs/execution/slices/P3-S03.md)"
+for anchor in \
+  '全仓唯一 QueryProgram→数据库客户集合实现' \
+  'is_deleted=true' \
+  '20 万 customers / 40 万' \
+  'PENDING_EXTERNAL_GATE' \
+  '不实现 segments/segment_members 刷新写入'; do
+  grep -Fq "$anchor" <<<"$p3s03_card" ||
+    fail "P3-S03 scope receipt drifted: $anchor"
 done
 
 scripts/scan_sensitive_paths.sh

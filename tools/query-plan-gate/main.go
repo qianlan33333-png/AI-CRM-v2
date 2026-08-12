@@ -92,11 +92,31 @@ func run(ctx context.Context, root, base, head, databaseURL string) error {
 		return err
 	}
 	defer cleanup()
-	if err := inspectPlans(ctx, tempURL, queries); err != nil {
+	regular, segment := partitionSegmentQueries(queries)
+	if err := inspectPlans(ctx, tempURL, regular); err != nil {
 		return err
+	}
+	if len(segment) > 0 {
+		if err := seedSegmentPlanFixture(ctx, tempURL); err != nil {
+			return err
+		}
+		if err := inspectPlans(ctx, tempURL, segment); err != nil {
+			return err
+		}
 	}
 	fmt.Printf("query-plan-gate: PASS (checked=%d)\n", len(queries))
 	return nil
+}
+
+func partitionSegmentQueries(queries []query) (regular, segment []query) {
+	for _, item := range queries {
+		if strings.HasPrefix(item.File, "internal/segment/store/queries/") {
+			segment = append(segment, item)
+		} else {
+			regular = append(regular, item)
+		}
+	}
+	return regular, segment
 }
 
 func validateAcceptanceDatabaseURL(databaseURL string) error {
@@ -310,6 +330,57 @@ func inspectPlans(ctx context.Context, databaseURL string, queries []query) erro
 		}
 		if bad != "" {
 			return fmt.Errorf("Seq Scan on %s: %s/%s", bad, item.File, item.Name)
+		}
+	}
+	return nil
+}
+
+// seedSegmentPlanFixture gives PostgreSQL the real cardinality and visibility
+// statistics needed to judge the S03 covering indexes. Empty-table EXPLAIN can
+// prefer a Seq Scan even when the 200k-customer generic plan is index-only.
+func seedSegmentPlanFixture(ctx context.Context, databaseURL string) error {
+	db, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin Segment plan fixture: %w", err)
+	}
+	rollback := true
+	defer func() {
+		if rollback {
+			_ = tx.Rollback()
+		}
+	}()
+	statements := []string{
+		`INSERT INTO staff (wecom_userid, name) SELECT 'segment-plan-staff-' || n, 'staff-' || n FROM generate_series(1, 64) AS n`,
+		`INSERT INTO channels (name, code) SELECT 'channel-' || n, 'segment-plan-channel-' || n FROM generate_series(1, 64) AS n`,
+		`INSERT INTO stages (name, sort_order) SELECT 'segment-plan-stage-' || n, n FROM generate_series(1, 64) AS n`,
+		`INSERT INTO tag_groups (name) VALUES ('segment-plan-tags')`,
+		`INSERT INTO tags (group_id, name) SELECT 1, 'segment-plan-tag-' || n FROM generate_series(1, 64) AS n`,
+		`INSERT INTO customers (name, stage_id, owner_staff_id, channel_id, added_at, last_interact_at, is_deleted)
+		 SELECT 'segment-plan-customer-' || n, (n % 64) + 1, ((n * 3) % 64) + 1, ((n * 5) % 64) + 1,
+		        timestamptz '2024-01-01 00:00:00+00' + (n % 730) * interval '1 day',
+		        timestamptz '2025-01-01 00:00:00+00' + (n % 365) * interval '1 day', (n % 5) = 0
+		 FROM generate_series(1, 200000) AS n`,
+		`INSERT INTO customer_tags (customer_id, tag_id)
+		 SELECT customers.id, ((customers.id + offsets.n) % 64) + 1
+		 FROM customers CROSS JOIN generate_series(0, 1) AS offsets(n)`,
+	}
+	for _, statement := range statements {
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("load Segment plan fixture: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit Segment plan fixture: %w", err)
+	}
+	rollback = false
+	for _, table := range []string{"customers", "customer_tags"} {
+		if _, err := db.ExecContext(ctx, "VACUUM (ANALYZE) "+table); err != nil {
+			return fmt.Errorf("analyze Segment plan fixture %s: %w", table, err)
 		}
 	}
 	return nil

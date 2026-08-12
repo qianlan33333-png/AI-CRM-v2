@@ -1064,7 +1064,7 @@ slices:
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -3044,6 +3044,47 @@ slices:
       - scope:owner_DECISION_B_split_AST_to_SQL_contract_after_PG16_generic_plan_proved_current_partial_indexes_cannot_preserve_is_deleted_true_semantics_without_Seq_Scan
       - infra:fresh_S02_worktree_lacked_the_repository_pinned_Orval_binary_then_make_bootstrap_tools_restored_the_declared_toolchain_before_double_generation_reran
       - verification:PR_repo_contract_negative_fixture_retargeted_from_superseded_S00_SQL_phrase_to_DECISION_B_S03_exclusive_execution_anchor
+    external_gates:
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: P3-S03
+    title: segment-fixed-query-family-and-query-program-executor
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: 862be6a28db5003e81628e4db2d06d7f2681ddaf
+    dependency: P3_S02_AND_INFRA_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-s03-segment-query-executor
+    decision_anchor: P3-S03-2026-08-13-DECISION_B
+    scope:
+      - provisional_00009_full_semantics_segment_customer_indexes
+      - fixed_sqlc_universe_and_twelve_leaf_query_family
+      - unique_query_program_set_algebra_executor
+      - PG16_14_generic_plan_200k_replayable_fixture
+      - no_refresh_materialization_scheduler_handler_ui_or_second_filter_implementation
+    tests:
+      - LOCAL_PG16_14_MIGRATION_00001_TO_00009_UP_DOWN_UP_PASS
+      - LOCAL_PG16_14_FIXED_QUERY_FAMILY_AND_THREE_SYNTHETIC_AUDIENCES_PASS
+      - LOCAL_EXECUTOR_61_CASE_RACE_PASS
+      - LOCAL_QUERY_PLAN_GENERIC_200K_CUSTOMERS_400K_TAGS_CHECKED_24_NO_SEQ_SCAN_PASS
+      - LOCAL_GENERATE_TWICE_NO_DIFF_PASS
+      - LOCAL_REPO_CONTRACT_POSITIVE_AND_NEGATIVE_CORPUS_PASS
+      - LOCAL_MAKE_CI_GO_PASS
+    handwritten_scope: 10_files_688_changed_lines_including_governance_and_query_plan_gate__4_business_files_378_lines
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 5
+    correction_notes:
+      - slice:first_PG_integration_test_lived_under_internal_segment_and_read_its_isolated_test_DSN_directly_then_was_moved_to_acceptance_segment_to_preserve_the_no_environment_read_domain_rule
+      - slice:first_acceptance_segment_package_had_only_a_test_file_so_the_repository_build_gate_rejected_it_then_a_non_test_package_anchor_was_added
+      - verification:first_PG_fixture_owner_any_expected_set_omitted_the_deleted_customer_with_owner_2_while_the_fixed_query_correctly_preserved_full_DSL_semantics
+      - verification:first_repo_contract_table_boundary_regex_mistook_the_SelectSegmentStage_sqlc_name_for_the_plural_segments_table_then_was_narrowed_to_a_table_token
+      - verification:first_full_gate_invocation_omitted_the_workflow_required_P0S03_PG_INTEGRATION_flag_then_was_rerun_with_the_required_literal
+      - verification:second_full_gate_invocation_assumed_activate_exported_a_segment_DSN_variable_then_was_rerun_with_the_authorized_literal_loopback_55433_DSN
+      - infra:post_C07B1_replay_worktree_lacked_the_repository_pinned_Orval_binary_then_make_bootstrap_tools_restored_the_declared_toolchain_before_double_generation_passed
+      - verification:first_infra_count_receipt_patch_matched_an_earlier_historical_zero_then_the_unrelated_line_was_restored_and_the_update_was_anchored_to_P3_S03
     external_gates:
       - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED
