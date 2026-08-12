@@ -3155,6 +3155,43 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C07B2
+    title: contact-lineage-timeline-generic-plan-proof
+    owner: Codex-Sol
+    status: clean_local_candidate_ready_shared_queue_released_first_ready_api_recheck_required
+    base_sha: 5651878273299ccfdae91f84c5d61476c8ab04e1
+    dependency: P3_C07B1_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-c07b2-lineage-query-plan
+    decision_anchor: P3-C07B2-2026-08-13
+    scope:
+      - actual_generated_ListCustomerEvents_generic_prepared_plan
+      - sufficient_distributed_customer_lineage_and_partition_event_facts
+      - explicit_ANALYZE_and_generic_only_counter_proof
+      - customers_lineage_and_partition_timeline_index_assertions
+      - no_target_relation_Seq_Scan_permanent_gate
+    excluded_scope:
+      - DDL_migration_or_index_changes
+      - C07B1_behavior_query_repository_service_or_handler_changes
+      - C07A_merge_semantics_and_C07C_external_event_registry
+      - Identity_Segment_UI_OpenAPI_and_external_effects
+    tests:
+      - LOCAL_POSTGRESQL_16_14_55432_GENERIC_PLAN_BASELINE_PASS_20001_CUSTOMERS_10025_LINEAGE_204600_EVENTS
+      - LOCAL_POSTGRESQL_16_14_55432_FOCUSED_PLAN_ACCEPTANCE_PASS
+      - LOCAL_REPO_CONTRACT_POSITIVE_AND_COMPLETE_NEGATIVE_CORPUS_PASS
+      - LOCAL_CONTACT_FOCUSED_AND_FULL_RACE_PASS
+      - LOCAL_SQLC_DOUBLE_GENERATION_NO_DIFF_PASS
+      - LOCAL_FULL_CI_GO_CLEAN_EXACT_CANDIDATE_PASS
+    handwritten_scope: acceptance_gate_card_ledger_and_contract_guards_only_no_production_or_DDL_files
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    external_gates:
+      - IDENTITY_PR_149_CLOSED_NOT_MERGED_SHARED_QUEUE_RELEASED_FIRST_READY_API_RECHECK_REQUIRED
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

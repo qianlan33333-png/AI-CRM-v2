@@ -232,11 +232,13 @@ required=(
   docs/evidence/slices/P3-C03-partition-worker-tests.md
   acceptance/contact/merge_lineage_integration_test.go
   acceptance/contact/lineage_timeline_integration_test.go
+  acceptance/contact/lineage_timeline_plan_integration_test.go
   internal/contact/store/merge_port_repository.go
   internal/contact/store/merge_port_repository_test.go
   docs/execution/slices/P3-C07.md
   docs/execution/slices/P3-C07A.md
   docs/execution/slices/P3-C07B1.md
+  docs/execution/slices/P3-C07B2.md
   acceptance/fixtures/postgres.go
   acceptance/fixtures/postgres_test.go
   docs/execution/slices/P2-00.md
@@ -628,11 +630,13 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C03-partition-worker-tests.md
 100644 acceptance/contact/merge_lineage_integration_test.go
 100644 acceptance/contact/lineage_timeline_integration_test.go
+100644 acceptance/contact/lineage_timeline_plan_integration_test.go
 100644 internal/contact/store/merge_port_repository.go
 100644 internal/contact/store/merge_port_repository_test.go
 100644 docs/execution/slices/P3-C07.md
 100644 docs/execution/slices/P3-C07A.md
 100644 docs/execution/slices/P3-C07B1.md
+100644 docs/execution/slices/P3-C07B2.md
 100644 acceptance/fixtures/postgres.go
 100644 acceptance/fixtures/postgres_test.go
 100644 docs/execution/slices/P2-00.md
@@ -854,7 +858,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  552fab7dd1372b035f11044f5bef865955c350b5b32949c96eaaf356c9f11677
+  466f4893885cff9571b5c9c1c19f74318a04f5f7050e4e122ff55d89ade598f5
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -870,7 +874,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  2a899ec1ae66389d5713c8961f1b3b8c88d938f171b837fdad070b37515c30f3
+  6253acdde12878bdcf434b0f4d9a27c4b21447de909129acbdfa5a33d15d6955
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -1337,6 +1341,10 @@ verify_index_sha256 acceptance/contact/lineage_timeline_integration_test.go \
   d53de174f0ac26c20671c2123933a92b324d8fa6fd884d4152233db816e5c6ff
 verify_index_sha256 docs/execution/slices/P3-C07B1.md \
   cac2f64aedab170cb4d890a3e2a54fd972728fd20d04ba1e085483e99392edd5
+verify_index_sha256 acceptance/contact/lineage_timeline_plan_integration_test.go \
+  b99e932026ae26956d066953ba5f0a10108cd084155fbf2a2b4babac5906ba80
+verify_index_sha256 docs/execution/slices/P3-C07B2.md \
+  87f7d7da97a0e66f24cdb190358adc6337700f1e48207468626ed02fca55ce2b
 verify_index_sha256 migrations/00008_segment_contract.sql \
   7c0e007360a6045b3eff5abe5b772928a5ad990950e508a50c8918007c0ea569
 verify_index_sha256 internal/segment/port/port.go \
@@ -1362,7 +1370,7 @@ verify_index_sha256 docs/execution/slices/P3-S02.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  4a95b00fddbbb402398fa8a03bb21fc8f4d9d107f228c7167baa10bb08b0c36f
+  9923744f8bf85469a99abedde8728f8547e0d280db0fd874ae85804967ffdb5d
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1644,7 +1652,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  b2ec19ca532c0b3c3a73ce5ea015479ad38e0e59c6049dd413d66fa2c5d6015b
+  3278c7f232487cf897adb7767e953416cd7d04f866b0cc3ba0cc28cb8d63fe7f
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3041,6 +3049,69 @@ for governance_anchor in \
   '      - C07B2_EXPLAIN_AND_PERFORMANCE_NOT_EXECUTED'; do
   grep -Fq "$governance_anchor" <<<"$p3c07_ledger" ||
     fail "P3-C07B1 rescope ledger receipt drifted: $governance_anchor"
+done
+
+p3c07b2_acceptance="$(git show :acceptance/contact/lineage_timeline_plan_integration_test.go)"
+for anchor in \
+  'TestLineageTimelineGenericPlanUsesExistingIndexes' \
+  'lineagePlanTargetCustomers     = 51' \
+  'lineagePlanDistractorCustomers = 19_950' \
+  'lineagePlanEventsPerTarget     = 100' \
+  'lineagePlanEventsPerDistractor = 10' \
+  'SET plan_cache_mode = force_generic_plan' \
+  'PREPARE ` + statementName + `(timestamptz,bigint,integer,bigint,bigint) AS ` + query' \
+  'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) EXECUTE' \
+  'pg_prepared_statements' \
+  'genericPlans < 1 || customPlans != 0' \
+  'generatedLineageTimelineQuery(t)' \
+  'internal", "contact", "store", "generated", "customer_events.sql.go"' \
+  'ANALYZE `+relation' \
+  'idx_customer_merge_lineage_primary' \
+  '_customer_id_occurred_at_id_idx' \
+  'node.NodeType == "Seq Scan" && isLineageTimelinePlanTarget(node.RelationName)' \
+  'strings.HasPrefix(relation, "customer_events_")'; do
+  grep -Fq "$anchor" <<<"$p3c07b2_acceptance" ||
+    fail "P3-C07B2 generic plan acceptance drifted: $anchor"
+done
+! grep -Fq 'enable_seqscan' <<<"$p3c07b2_acceptance" ||
+  fail "P3-C07B2 must use the natural PostgreSQL planner"
+
+require_unique_make_target 'p3-c07b2-acceptance'
+p3c07b2_recipe="$(make_target_recipe 'p3-c07b2-acceptance:')" ||
+  fail "P3-C07B2 acceptance target must be unique"
+for line in \
+  $'\t@test -n "$${P3C07B2_TEST_DATABASE_URL:-}" || { echo "P3C07B2_TEST_DATABASE_URL is required" >&2; exit 2; }' \
+  $'\t@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s -run \'^TestLineageTimelineGenericPlanUsesExistingIndexes$$\' ./acceptance/contact -args -database-url "$$P3C07B2_TEST_DATABASE_URL"'; do
+  printf '%s\n' "$p3c07b2_recipe" | grep -Fqx "$line" ||
+    fail "P3-C07B2 acceptance target lost its exact real PostgreSQL plan invocation"
+done
+p3c07b2_workflow="$(git show :.github/workflows/application-go.yml)"
+grep -Fq 'P3C07B2_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07b2-acceptance' <<<"$p3c07b2_workflow" ||
+  fail "P3-C07B2 acceptance is disconnected from application CI"
+
+p3c07b2_card="$(git show :docs/execution/slices/P3-C07B2.md)"
+for anchor in \
+  'Base SHA：`5651878273299ccfdae91f84c5d61476c8ab04e1`' \
+  '20,001 customers、10,025 lineage edges、204,600' \
+  '`idx_customer_merge_lineage_primary`' \
+  '`customer_events_*`' \
+  '无 DDL、migration 或索引修改' \
+  '禁止 `enable_seqscan=off`' \
+  'PRODUCTION_DATABASE_NOT_EXECUTED'; do
+  grep -Fq "$anchor" <<<"$p3c07b2_card" ||
+    fail "P3-C07B2 card boundary drifted: $anchor"
+done
+for governance_anchor in \
+  '  - slice_id: P3-C07B2' \
+  '    dependency: P3_C07B1_MERGED_EXACT_MAIN_CI_SUCCESS' \
+  '      - DDL_migration_or_index_changes' \
+  '    slice_induced_correction_count: 0' \
+  '    infra_induced_correction_count: 0' \
+  '    scope_induced_correction_count: 0' \
+  '    verification_induced_correction_count: 3' \
+  '      - IDENTITY_PR_149_CLOSED_NOT_MERGED_SHARED_QUEUE_RELEASED_FIRST_READY_API_RECHECK_REQUIRED'; do
+  grep -Fq "$governance_anchor" <<<"$p3c07_ledger" ||
+    fail "P3-C07B2 ledger receipt drifted: $governance_anchor"
 done
 
 p3s00_migration="$(git show :migrations/00008_segment_contract.sql)"

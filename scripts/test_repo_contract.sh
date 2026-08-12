@@ -2806,6 +2806,99 @@ if (cd "$p3c07b1_explain_scope" && scripts/check_repo_contract.sh >/dev/null 2>&
 fi
 
 for file_path in \
+  acceptance/contact/lineage_timeline_plan_integration_test.go \
+  docs/execution/slices/P3-C07B2.md; do
+  p3c07b2_receipt_fixture="$(make_fixture "p3-c07b2-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C07B2 receipt drift' >>"$p3c07b2_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C07B2 receipt drift' >>"$p3c07b2_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c07b2_receipt_fixture" add "$file_path"
+  if (cd "$p3c07b2_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C07B2 receipt drift was accepted: $file_path"
+  fi
+done
+
+p3c07b2_custom_plan="$(make_fixture p3-c07b2-custom-plan)"
+sed -i.bak 's/SET plan_cache_mode = force_generic_plan/SET plan_cache_mode = auto/' \
+  "$p3c07b2_custom_plan/acceptance/contact/lineage_timeline_plan_integration_test.go"
+rm -f "$p3c07b2_custom_plan/acceptance/contact/lineage_timeline_plan_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b2_custom_plan" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_custom_plan" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 custom-plan substitution was accepted"
+fi
+
+p3c07b2_small_fixture="$(make_fixture p3-c07b2-small-fixture)"
+sed -i.bak 's/lineagePlanDistractorCustomers = 19_950/lineagePlanDistractorCustomers = 19/' \
+  "$p3c07b2_small_fixture/acceptance/contact/lineage_timeline_plan_integration_test.go"
+rm -f "$p3c07b2_small_fixture/acceptance/contact/lineage_timeline_plan_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b2_small_fixture" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_small_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 small-table plan proof was accepted"
+fi
+
+p3c07b2_manual_query="$(make_fixture p3-c07b2-manual-query)"
+sed -i.bak 's/query := generatedLineageTimelineQuery(t)/query := `SELECT 1`/' \
+  "$p3c07b2_manual_query/acceptance/contact/lineage_timeline_plan_integration_test.go"
+rm -f "$p3c07b2_manual_query/acceptance/contact/lineage_timeline_plan_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b2_manual_query" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_manual_query" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 manual substitute SQL was accepted"
+fi
+
+p3c07b2_without_analyze="$(make_fixture p3-c07b2-without-analyze)"
+sed -i.bak 's/`ANALYZE `/`VACUUM `/' \
+  "$p3c07b2_without_analyze/acceptance/contact/lineage_timeline_plan_integration_test.go"
+rm -f "$p3c07b2_without_analyze/acceptance/contact/lineage_timeline_plan_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b2_without_analyze" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_without_analyze" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 plan proof without ANALYZE was accepted"
+fi
+
+p3c07b2_without_lineage_index="$(make_fixture p3-c07b2-without-lineage-index)"
+sed -i.bak 's/idx_customer_merge_lineage_primary/customer_merge_lineage_pkey/' \
+  "$p3c07b2_without_lineage_index/acceptance/contact/lineage_timeline_plan_integration_test.go"
+rm -f "$p3c07b2_without_lineage_index/acceptance/contact/lineage_timeline_plan_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b2_without_lineage_index" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_without_lineage_index" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 lineage primary-index proof removal was accepted"
+fi
+
+p3c07b2_without_seq_scan_guard="$(make_fixture p3-c07b2-without-seq-scan-guard)"
+sed -i.bak 's/node.NodeType == "Seq Scan"/node.NodeType == "Never"/' \
+  "$p3c07b2_without_seq_scan_guard/acceptance/contact/lineage_timeline_plan_integration_test.go"
+rm -f "$p3c07b2_without_seq_scan_guard/acceptance/contact/lineage_timeline_plan_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07b2_without_seq_scan_guard" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_without_seq_scan_guard" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 target Seq Scan escape was accepted"
+fi
+
+p3c07b2_disabled_seqscan="$(make_fixture p3-c07b2-disabled-seqscan)"
+printf '%s\n' '// enable_seqscan=off' \
+  >>"$p3c07b2_disabled_seqscan/acceptance/contact/lineage_timeline_plan_integration_test.go"
+restage_p2s18_receipt "$p3c07b2_disabled_seqscan" acceptance/contact/lineage_timeline_plan_integration_test.go
+if (cd "$p3c07b2_disabled_seqscan" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 disabled sequential scans were accepted"
+fi
+
+hollow_p3c07b2_target="$(make_fixture hollow-p3-c07b2-target)"
+sed -i.bak '/^p3-c07b2-acceptance:$/ { n; s/.*/\t@true/; }' "$hollow_p3c07b2_target/Makefile"
+rm -f "$hollow_p3c07b2_target/Makefile.bak"
+restage_make_receipt "$hollow_p3c07b2_target"
+if (cd "$hollow_p3c07b2_target" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P3-C07B2 acceptance target was accepted"
+fi
+
+disconnected_p3c07b2_workflow="$(make_fixture disconnected-p3-c07b2-workflow)"
+sed -i.bak '/P3C07B2_TEST_DATABASE_URL=.*p3-c07b2-acceptance/d' \
+  "$disconnected_p3c07b2_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c07b2_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c07b2_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c07b2_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07B2 real PostgreSQL plan acceptance disconnected from application CI was accepted"
+fi
+
+for file_path in \
   migrations/00008_segment_contract.sql \
   internal/segment/port/port.go \
   internal/segment/port/port_test.go \
