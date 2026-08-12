@@ -207,6 +207,8 @@ required=(
   docs/evidence/slices/P3-C06A2-runner.md
   docs/execution/slices/P3-C06C.md
   docs/evidence/slices/P3-C06C-query-optimization.md
+  docs/execution/slices/P3-C06D.md
+  docs/evidence/slices/P3-C06D-tag-count.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -588,6 +590,8 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C06A2-runner.md
 100644 docs/execution/slices/P3-C06C.md
 100644 docs/evidence/slices/P3-C06C-query-optimization.md
+100644 docs/execution/slices/P3-C06D.md
+100644 docs/evidence/slices/P3-C06D-tag-count.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -834,11 +838,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  70bc1b9142d49369d45f7a24a73dd434eee1100732d7568c48f04bdcf3e289c6
+  0a4a5660680e60b67a6b9f452322715e8f336ad6ad9042ca926c798392058ffc
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  47c8c0ed66f223f9629ff880dd27104faa52badcfda912747d3f08f7891a302a
+  7dfa146bec117452d2e69d6d29e95a288f77b782540056d6b1ded6da0fe022c5
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1222,25 +1226,29 @@ verify_index_sha256 docs/execution/slices/P3-C06.md \
 verify_index_sha256 docs/evidence/slices/P3-C06-synthetic-data.md \
   4ab11a23ee9b7336b05eddbbd35a2d5d0516341f3aa11610a873b06cace83a96
 verify_index_sha256 cmd/aicrm-contact-perf/main.go \
-  47a6d1682d7e5eb478dcb49006a2e8965d52fccc0fd2fa9ae81737637300ef49
+  64fd38df8c9b3c84f5e4f8bec712a94a2f9092cf24d83e012b9485e19270942e
 verify_index_sha256 cmd/aicrm-contact-perf/main_test.go \
-  4535260f0cf8d10f3ba0e3cccb2d07ce88519e6bd8b853a10a7baa8063f878d7
+  4c605278f05cd20fb35b404d5af4b802d064bbc63bdf44bd15f383b4f6132cc1
 verify_index_sha256 docs/execution/slices/P3-C06A2.md \
   8fc11d267b9b208a3ff686ede72dcb627de3ec9dd0a6a1101b02d6055d08ccce
 verify_index_sha256 docs/evidence/slices/P3-C06A2-runner.md \
   ca9b0a202e317be81857d423e8701e7c0208553f8771500d7a62f7b1d9a777b5
 verify_index_sha256 internal/contact/store/queries/customers.sql \
-  2392165ec566028c003ef34341c3714bac562a170f56a5f4f43c2fe9597bcb52
+  6a9971d742002aeda3719b56422c45bb809fefbaf96f7bf2dc107357f1fe6a16
 verify_index_sha256 internal/contact/store/customer_query_repository.go \
   8593fa77406f052374d26d6a63725a705b27d4eb8844970291120dfa0217760a
 verify_index_sha256 internal/contact/store/customer_query_repository_test.go \
-  4957034a33d0153bd3824b1ad7afb12697d580e629eaa5c2d20caac261f1e70f
+  cfed0d8514c92913c093bb9e9c705b92fda81accfbe26cbfb09bfc9e03d501b3
 verify_index_sha256 acceptance/p3c01b/customer_list_integration_test.go \
-  b9809fb3a217968aa4fa6106ae5e4388d12c880db6e4c64bae6fe5f467ecea25
+  5df32159ae8a9b7575f53a2d8db57ad52b8d0a2437df0df5d744d3514e857809
 verify_index_sha256 docs/execution/slices/P3-C06C.md \
   4f68229a69f337c4b67c7a100f4c9874d5b9c0e2256e7c2ea711836c9144ccff
 verify_index_sha256 docs/evidence/slices/P3-C06C-query-optimization.md \
   23534fbaf7a8ee100b6dd8c23e704073018eabd877f52030ba5fdc3fa1a21429
+verify_index_sha256 docs/execution/slices/P3-C06D.md \
+  312f73315b56243d0053f85db87d4a5907e83b7dac21b2a99c5e42ec1679b7cd
+verify_index_sha256 docs/evidence/slices/P3-C06D-tag-count.md \
+  beb2bef1250fe784ed887deb4aee1af0e698fe5db964d0eecfd804706543e22e
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1496,7 +1504,7 @@ verify_index_sha256 internal/contact/store/queries/stages.sql \
 verify_index_sha256 internal/contact/store/generated/db.go \
   e3ef23479f44c12b0c868db745a22448a5d14cc7e4311ef4b2d2652bd1aca0a0
 verify_index_sha256 internal/contact/store/generated/customers.sql.go \
-  df636656578da035c1b750ebda22db71e9d8f671ae4e080b49ad0b50d12c35cf
+  48d489f58b6517e531eaa0c16f0d1b40f6462a8566b52b0e9429ccc62da73793
 verify_index_sha256 internal/contact/store/generated/models.go \
   9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
@@ -1544,7 +1552,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  c8709ed739042c25af6dfdd9d1c5901562c124ffcd107ba0d3c2430a5887f8d5
+  ff58d42869b3260b6dd4a0e5be67aedcf1061dbae0f1e9045d4e7967b2193431
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2681,6 +2689,13 @@ for anchor in \
   'SELECT count(*)::bigint' \
   'FROM (' \
   'SELECT c.id' \
+  'UNION ALL' \
+  'sqlc.narg(tag_id)::bigint IS NULL' \
+  'sqlc.narg(tag_id)::bigint IS NOT NULL' \
+  'FROM customer_tags AS ct' \
+  'CROSS JOIN LATERAL (' \
+  'c.id = ct.customer_id' \
+  'ct.tag_id = sqlc.narg(tag_id)::bigint' \
   'ORDER BY c.updated_at DESC, c.id DESC' \
   'LIMIT sqlc.arg(total_limit)::integer' \
   ') AS bounded_customer_ids'; do
@@ -2731,7 +2746,8 @@ done
 for anchor in \
   'CountCustomerIDsBounded' \
   'queries[0].Name != "CountCustomerIDsBounded"' \
-  'plan.Query != "CountCustomerIDsBounded"'; do
+  'plan.Query != "CountCustomerIDsBounded"' \
+  'explainArgs := append([]any{pgx.QueryExecModeCacheDescribe}, statement.Args...)'; do
   grep -Fq "$anchor" <<<"$p3c06_runner" ||
     fail "P3-C06C runner exact-query receipt drifted: $anchor"
 done
