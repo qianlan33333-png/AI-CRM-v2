@@ -14,63 +14,105 @@ import (
 const countCustomerIDsBounded = `-- name: CountCustomerIDsBounded :one
 SELECT count(*)::bigint
 FROM (
-SELECT c.id
-FROM customers AS c
-WHERE c.updated_at <= $1::timestamptz
-  AND (
-    $2::text IS NULL
-    OR lower(c.name) % lower($2::text)
+  (
+    SELECT c.id
+    FROM customers AS c
+    WHERE $1::bigint IS NULL
+      AND c.updated_at <= $2::timestamptz
+      AND (
+        $3::text IS NULL
+        OR lower(c.name) % lower($3::text)
+      )
+      AND (
+        $4::bigint IS NULL
+        OR c.owner_staff_id = $4::bigint
+      )
+      AND (
+        $5::bigint IS NULL
+        OR c.stage_id = $5::bigint
+      )
+      AND (
+        $6::bigint IS NULL
+        OR c.channel_id = $6::bigint
+      )
+      AND c.is_deleted = $7
+      AND (
+        $8::timestamptz IS NULL
+        OR c.added_at >= $8::timestamptz
+      )
+      AND (
+        $9::timestamptz IS NULL
+        OR c.added_at <= $9::timestamptz
+      )
+      AND (
+        $10::timestamptz IS NULL
+        OR c.last_interact_at >= $10::timestamptz
+      )
+      AND (
+        $11::timestamptz IS NULL
+        OR c.last_interact_at <= $11::timestamptz
+      )
+    ORDER BY c.updated_at DESC, c.id DESC
+    LIMIT $12::integer
   )
-  AND (
-    $3::bigint IS NULL
-    OR c.owner_staff_id = $3::bigint
+  UNION ALL
+  (
+    SELECT tagged_customer.id
+    FROM customer_tags AS ct
+    CROSS JOIN LATERAL (
+      SELECT c.id
+      FROM customers AS c
+      WHERE c.id = ct.customer_id
+        AND c.updated_at <= $2::timestamptz
+        AND (
+          $3::text IS NULL
+          OR lower(c.name) % lower($3::text)
+        )
+        AND (
+          $4::bigint IS NULL
+          OR c.owner_staff_id = $4::bigint
+        )
+        AND (
+          $5::bigint IS NULL
+          OR c.stage_id = $5::bigint
+        )
+        AND (
+          $6::bigint IS NULL
+          OR c.channel_id = $6::bigint
+        )
+        AND c.is_deleted = $7
+        AND (
+          $8::timestamptz IS NULL
+          OR c.added_at >= $8::timestamptz
+        )
+        AND (
+          $9::timestamptz IS NULL
+          OR c.added_at <= $9::timestamptz
+        )
+        AND (
+          $10::timestamptz IS NULL
+          OR c.last_interact_at >= $10::timestamptz
+        )
+        AND (
+          $11::timestamptz IS NULL
+          OR c.last_interact_at <= $11::timestamptz
+        )
+      LIMIT 1
+    ) AS tagged_customer
+    WHERE $1::bigint IS NOT NULL
+      AND ct.tag_id = $1::bigint
+    LIMIT $12::integer
   )
-  AND (
-    $4::bigint IS NULL
-    OR c.stage_id = $4::bigint
-  )
-  AND (
-    $5::bigint IS NULL
-    OR c.channel_id = $5::bigint
-  )
-  AND (
-    $6::bigint IS NULL
-    OR EXISTS (
-      SELECT 1
-      FROM customer_tags AS ct
-      WHERE ct.tag_id = $6::bigint
-        AND ct.customer_id = c.id
-    )
-  )
-  AND c.is_deleted = $7
-  AND (
-    $8::timestamptz IS NULL
-    OR c.added_at >= $8::timestamptz
-  )
-  AND (
-    $9::timestamptz IS NULL
-    OR c.added_at <= $9::timestamptz
-  )
-  AND (
-    $10::timestamptz IS NULL
-    OR c.last_interact_at >= $10::timestamptz
-  )
-  AND (
-    $11::timestamptz IS NULL
-    OR c.last_interact_at <= $11::timestamptz
-  )
-ORDER BY c.updated_at DESC, c.id DESC
-LIMIT $12::integer
 ) AS bounded_customer_ids
 `
 
 type CountCustomerIDsBoundedParams struct {
+	TagID              pgtype.Int8        `json:"tag_id"`
 	Watermark          pgtype.Timestamptz `json:"watermark"`
 	Keyword            pgtype.Text        `json:"keyword"`
 	OwnerStaffID       pgtype.Int8        `json:"owner_staff_id"`
 	StageID            pgtype.Int8        `json:"stage_id"`
 	ChannelID          pgtype.Int8        `json:"channel_id"`
-	TagID              pgtype.Int8        `json:"tag_id"`
 	IsDeleted          bool               `json:"is_deleted"`
 	AddedAfter         pgtype.Timestamptz `json:"added_after"`
 	AddedBefore        pgtype.Timestamptz `json:"added_before"`
@@ -81,12 +123,12 @@ type CountCustomerIDsBoundedParams struct {
 
 func (q *Queries) CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countCustomerIDsBounded,
+		arg.TagID,
 		arg.Watermark,
 		arg.Keyword,
 		arg.OwnerStaffID,
 		arg.StageID,
 		arg.ChannelID,
-		arg.TagID,
 		arg.IsDeleted,
 		arg.AddedAfter,
 		arg.AddedBefore,

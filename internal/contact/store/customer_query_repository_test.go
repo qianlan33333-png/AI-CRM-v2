@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,65 @@ import (
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+func TestBoundedCustomerCountUsesMutuallyExclusiveTagDrivenBranch(t *testing.T) {
+	contents, err := os.ReadFile("queries/customers.sql")
+	if err != nil {
+		t.Fatalf("read customer queries: %v", err)
+	}
+	boundedStart := strings.Index(string(contents), "-- name: CountCustomerIDsBounded :one")
+	if boundedStart < 0 {
+		t.Fatal("bounded count query is missing")
+	}
+	boundedSQL := string(contents)[boundedStart:]
+	branches := strings.Split(boundedSQL, "UNION ALL")
+	if len(branches) != 2 {
+		t.Fatalf("bounded count UNION ALL branches = %d, want 2", len(branches))
+	}
+	untagged, tagged := branches[0], branches[1]
+	for _, anchor := range []string{
+		"sqlc.narg(tag_id)::bigint IS NULL",
+		"FROM customers AS c",
+		"ORDER BY c.updated_at DESC, c.id DESC",
+		"LIMIT sqlc.arg(total_limit)::integer",
+	} {
+		if !strings.Contains(untagged, anchor) {
+			t.Fatalf("untagged bounded-count branch missing %q", anchor)
+		}
+	}
+	for _, anchor := range []string{
+		"FROM customer_tags AS ct",
+		"CROSS JOIN LATERAL (",
+		"WHERE c.id = ct.customer_id",
+		"LIMIT 1",
+		"sqlc.narg(tag_id)::bigint IS NOT NULL",
+		"ct.tag_id = sqlc.narg(tag_id)::bigint",
+		"LIMIT sqlc.arg(total_limit)::integer",
+	} {
+		if !strings.Contains(tagged, anchor) {
+			t.Fatalf("tag-driven bounded-count branch missing %q", anchor)
+		}
+	}
+	for _, filter := range []string{
+		"c.updated_at <= sqlc.arg(watermark)::timestamptz",
+		"lower(c.name) % lower(sqlc.narg(keyword)::text)",
+		"c.owner_staff_id = sqlc.narg(owner_staff_id)::bigint",
+		"c.stage_id = sqlc.narg(stage_id)::bigint",
+		"c.channel_id = sqlc.narg(channel_id)::bigint",
+		"c.is_deleted = sqlc.arg(is_deleted)",
+		"c.added_at >= sqlc.narg(added_after)::timestamptz",
+		"c.added_at <= sqlc.narg(added_before)::timestamptz",
+		"c.last_interact_at >= sqlc.narg(last_interact_after)::timestamptz",
+		"c.last_interact_at <= sqlc.narg(last_interact_before)::timestamptz",
+	} {
+		if !strings.Contains(untagged, filter) || !strings.Contains(tagged, filter) {
+			t.Fatalf("bounded-count branches do not preserve filter %q", filter)
+		}
+	}
+	if strings.Contains(untagged, "FROM customer_tags AS ct") || strings.Contains(tagged, "sqlc.narg(tag_id)::bigint IS NULL") {
+		t.Fatal("bounded-count tag branches are not mutually exclusive")
+	}
+}
 
 func TestCustomerQueryRepositoryRejectsInvalidQueriesBeforeDatabaseAccess(t *testing.T) {
 	watermark := time.Date(2026, time.August, 12, 10, 0, 0, 0, time.UTC)
