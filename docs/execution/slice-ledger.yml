@@ -679,7 +679,7 @@ slices:
     pr_head_sha: 5bb30e18ab3994dff8172604cb6f90fc6df0f8ff
     merge_sha: 14ce03c27d2ab799d0a955c872e873682e61f473
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 1
   - slice_id: M0-7
     title: repair-gitleaks-openapi-version-false-positive
@@ -753,8 +753,9 @@ slices:
       - LOCAL_repo_contract_and_negative_cases_PASS
       - LOCAL_gitleaks_history_and_sensitive_paths_PASS
     handwritten_scope: 7_files_152_changed_lines_tests_and_go_sum_excluded
-    slice_induced_correction_count: 0
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
+    correction_notes: [slice:initial_fixture_placement_required_an_exact_ownership_lint_mapping_and_compile_only_identity_import_proof, slice:identity_acceptance_import_proof_required_a_non_test_package_declaration_for_go_build]
     external_gates:
       - PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED
   - slice_id: P2-00
@@ -3249,6 +3250,18 @@ slices:
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
     correction_notes: [slice:first_ADR_guard_phrase_wrapped_the_pending_receipt_prohibition_and_was_rewritten_as_one_exact_protected_sentence, slice:second_gate_found_the_receipt_algorithm_anchor_wrapped_so_all_remaining_ADR_guard_anchors_were_prechecked_as_exact_single_line_text, verification:first_Web_gate_invocation_used_nonexistent_make_ci_web_target_then_repository_defined_npm_run_ci_was_used, infra:fresh_R3A_worktree_lacked_pinned_Orval_then_make_bootstrap_tools_restored_lockfile_exact_tooling]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-R4A
+    title: contact-acceptance-fk-parent-fixture
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: 05bdd4f24a33cb9e1c8021441f0a20f3a537da72
+    dependency: P3_R3A_CLOSED_AND_PR_153_CLOSED_NOT_MERGED
+    branch: slice/p3-r4a-contact-fixture
+    scope: [contact_owned_acceptance_fixture, transaction_bound_pgx_tx, identity_acceptance_import_proof]
+    excluded_scope: [migrations_identity_DDL_ownership_canonical_OpenAPI_ports_keyring_runtime_R3C_R3D]
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:

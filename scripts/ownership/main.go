@@ -193,6 +193,9 @@ func walkSQLTree(root, tree string, p *policy) error {
 }
 func sourceModule(rel string) string {
 	parts := strings.Split(rel, "/")
+	if len(parts) == 3 && parts[0] == "acceptance" && parts[1] == "contactfixture" {
+		return "contact"
+	}
 	if len(parts) >= 2 {
 		return parts[1]
 	}
