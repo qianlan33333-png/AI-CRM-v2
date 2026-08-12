@@ -2996,6 +2996,58 @@ if (cd "$p3s02_compiler_execution" && scripts/check_repo_contract.sh >/dev/null 
   fail "P3-S02 direct execution overreach was accepted"
 fi
 
+for file_path in \
+  migrations/00009_segment_query_indexes.sql \
+  internal/segment/compiler/executor.go \
+  internal/segment/compiler/executor_test.go \
+  internal/segment/store/queries/audience.sql \
+  internal/segment/store/query_set.go \
+  acceptance/segment/query_set_integration_test.go \
+  acceptance/segment/doc.go \
+  docs/execution/slices/P3-S03.md; do
+  missing_p3s03_contract="$(make_fixture "missing-p3-s03-${file_path//\//-}")"
+  rm -f "$missing_p3s03_contract/$file_path"
+  git -C "$missing_p3s03_contract" add -u "$file_path"
+  if (cd "$missing_p3s03_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-S03 execution contract was accepted: $file_path"
+  fi
+done
+
+p3s03_partial_index="$(make_fixture p3-s03-active-only-index-weakening)"
+sed -i.bak 's/ON customers (stage_id, id);/ON customers (stage_id, id) WHERE NOT is_deleted;/' \
+  "$p3s03_partial_index/migrations/00009_segment_query_indexes.sql"
+rm -f "$p3s03_partial_index/migrations/00009_segment_query_indexes.sql.bak"
+restage_p2s18_receipt "$p3s03_partial_index" migrations/00009_segment_query_indexes.sql
+if (cd "$p3s03_partial_index" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S03 active-only index semantic weakening was accepted"
+fi
+
+p3s03_dynamic_sql="$(make_fixture p3-s03-dynamic-sql-escape-hatch)"
+printf '%s\n' 'func unsafeQuery(sql string) { _, _ = sql, "SELECT * FROM customers" }' \
+  >>"$p3s03_dynamic_sql/internal/segment/store/query_set.go"
+restage_p2s18_receipt "$p3s03_dynamic_sql" internal/segment/store/query_set.go
+if (cd "$p3s03_dynamic_sql" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S03 dynamic SQL escape hatch was accepted"
+fi
+
+p3s03_small_plan_fixture="$(make_fixture p3-s03-meaningless-plan-fixture)"
+sed -i.bak 's/generate_series(1, 200000)/generate_series(1, 20)/' \
+  "$p3s03_small_plan_fixture/tools/query-plan-gate/main.go"
+rm -f "$p3s03_small_plan_fixture/tools/query-plan-gate/main.go.bak"
+restage_p2s18_receipt "$p3s03_small_plan_fixture" tools/query-plan-gate/main.go
+if (cd "$p3s03_small_plan_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S03 non-representative EXPLAIN fixture was accepted"
+fi
+
+p3s03_external_gate="$(make_fixture p3-s03-fake-real-audience-closure)"
+sed -i.bak 's/PENDING_EXTERNAL_GATE/CLOSED_WITH_SYNTHETIC_FIXTURE/' \
+  "$p3s03_external_gate/docs/execution/slices/P3-S03.md"
+rm -f "$p3s03_external_gate/docs/execution/slices/P3-S03.md.bak"
+restage_p2s18_receipt "$p3s03_external_gate" docs/execution/slices/P3-S03.md
+if (cd "$p3s03_external_gate" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S03 synthetic evidence was allowed to close the real audience gate"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc
