@@ -3139,6 +3139,40 @@ slices:
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED
       - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: P3-S04B
+    title: segment-strict-cron-validation
+    owner: Codex-Sol
+    status: replayed_local_candidate_in_progress
+    base_sha: 2992d7005c804eb769741d62fce7038d2e217262
+    dependency: P3_S04A_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-s04b-segment-cron-validation
+    decision_anchor: P3-S04B-2026-08-13
+    scope:
+      - closed_five_field_numeric_cron_validation_and_canonicalization
+      - manual_requires_nil_cron_and_scheduled_requires_valid_cron
+      - no_scheduler_registration_job_receipt_or_refresh_execution
+      - no_DDL_River_SQL_HTTP_OpenAPI_UI_or_cross_domain_write
+    tests:
+      - LOCAL_segment_cron_table_driven_race_PASS
+      - LOCAL_segment_cron_fuzz_round_trip_PASS
+      - LOCAL_repo_contract_positive_and_complete_negative_corpus_PASS
+      - LOCAL_generated_sources_double_generation_PASS
+      - LOCAL_full_ci_go_PASS
+    handwritten_scope: 1_business_file_cron_validator_plus_tests_card_ledger_and_permanent_contract_guards
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes:
+      - slice:first_cron_canonicalizer_compared_against_all_field_ranges_and_could_widen_a_minute_0_6_range_to_wildcard_then_term_rendering_was_bound_to_its_own_field_range
+    external_gates:
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - DURABLE_REFRESH_COMMAND_RECEIPT_NOT_IN_S04B
+      - RIVER_WORKER_AND_SCHEDULER_NOT_IN_S04B
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
   - slice_id: INFRA-SEC-01
     title: secret-scan-bundle-fixture-cleanup-lifecycle
     owner: Codex-Sol
