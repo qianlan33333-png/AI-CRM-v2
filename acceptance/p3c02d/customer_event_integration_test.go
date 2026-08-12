@@ -116,7 +116,8 @@ func createTables(t *testing.T, ctx context.Context, fixture *acceptancefixtures
 CREATE TABLE acceptance_fixtures.customers (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   owner_staff_id BIGINT,
-  is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE acceptance_fixtures.customer_events (
   id BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -183,10 +184,27 @@ func assertIndexPlan(
 INSERT INTO acceptance_fixtures.customer_events
   (customer_id, event_type, payload, actor, occurred_at)
 SELECT $1, 'note', '{}', 'system', '2026-08-01'::timestamptz + (number || ' seconds')::interval
-FROM generate_series(1, 5000) AS number;
-ANALYZE acceptance_fixtures.customers;
-ANALYZE acceptance_fixtures.customer_events;`, customerID); err != nil {
+FROM generate_series(1, 5000) AS number`, customerID); err != nil {
 		t.Fatalf("seed plan rows: %v", err)
+	}
+	if _, err := fixture.Pool().Exec(ctx, `
+INSERT INTO acceptance_fixtures.customers (owner_staff_id)
+SELECT 8 FROM generate_series(1, 1000);
+WITH distractor AS (
+  INSERT INTO acceptance_fixtures.customers (owner_staff_id) VALUES (8) RETURNING id
+)
+INSERT INTO acceptance_fixtures.customer_events
+  (customer_id, event_type, payload, actor, occurred_at)
+SELECT distractor.id, 'note', '{}', 'system',
+  '2026-08-01'::timestamptz + (number || ' seconds')::interval
+FROM distractor CROSS JOIN generate_series(1, 5000) AS number`); err != nil {
+		t.Fatalf("seed distractor rows: %v", err)
+	}
+	if _, err := fixture.Pool().Exec(ctx, `ANALYZE acceptance_fixtures.customers`); err != nil {
+		t.Fatalf("analyze customers: %v", err)
+	}
+	if _, err := fixture.Pool().Exec(ctx, `ANALYZE acceptance_fixtures.customer_events`); err != nil {
+		t.Fatalf("analyze customer events: %v", err)
 	}
 	rows, err := fixture.Pool().Query(ctx, `
 EXPLAIN (COSTS OFF)
