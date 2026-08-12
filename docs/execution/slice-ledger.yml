@@ -2251,11 +2251,19 @@ slices:
   - slice_id: P3-C02D
     title: contact-customer-events-read
     owner: Codex-Sol
-    status: local_gates_pass_independent_review_pending
+    status: merged
     base_sha: 24fc524f3564311d7150dcec10660580523adf93
     dependency: P3-C02C
     branch: slice/p3-c02d-customer-events-read
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/134
+    pr_head_sha: 55b0edf5ff178646fc3541371dc7889d7940f825
+    merge_sha: 44ea8922f2a6ce2e9b6c80b48411f4251bc94fb9
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31556969047
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31556969027
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31556968996
     scope:
       - listCustomerEvents
       - keyset_occurred_at_desc_id_desc
@@ -2304,6 +2312,80 @@ slices:
       - verification:explain_fixture_added_realistic_distractor_distribution_to_assert_composite_timeline_index
       - verification:web_ci_preflight_created_node_modules_link_under_web_instead_of_repository_root_then_reran_with_fixed_node24_toolchain
       - verification:real_pg_explain_replaced_simplified_join_with_generated_production_lateral_query
+    external_gates:
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C02E
+    title: contact-local-tag-catalog-read
+    owner: Codex-Sol
+    status: local_gates_pass_independent_review_pass
+    base_sha: 44ea8922f2a6ce2e9b6c80b48411f4251bc94fb9
+    dependency: P3-C02D
+    branch: slice/p3-c02e-tag-catalog-read
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    scope:
+      - listTags
+      - global_tag_catalog_order
+      - channel_neutral_response_without_wecom_tag_id
+      - runtime_tags_read_route
+    delegated_tasks:
+      - task_id: /root/p3_c02e_sqlc_store
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 84c331d2f40a6ce4d18b2f7553b2efe202219d71
+        replay_parent_sha: 9009969644ae344f05c2d63d685d4531c8c34920
+        delegated_head_sha: acd4cfeab393097e33805e045380b3d94551ed64
+        manifest_sha256: 5004497f96fbc3ec30ad0394d0c8d58fb1895bb02820849709759e9ff279d9f3
+        binary_diff_sha256: 522e8339e6fb05e8138b9c67a926a3257c1e4f56d9054a300d979124e92e33e1
+      - task_id: /root/p3_c02e_service_tests
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 9009969644ae344f05c2d63d685d4531c8c34920
+        delegated_head_sha: 940a4a2400996fa0b48a35e4f724aa94c76fbfc4
+        manifest_sha256: ea1edab0e7a5ceaff5eb64af0eec5068bd319b61e083301e9dc5cd7037500447
+        binary_diff_sha256: 6ad4e8ab19b2c4470b9a55eebf1d1becd5badc902092f8810d9dd29427392d2f
+      - task_id: /root/p3_c02e_handler_tests
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 9009969644ae344f05c2d63d685d4531c8c34920
+        delegated_head_sha: 44c09069f9b5817f7f38d4de873b09ecc7634070
+        manifest_sha256: 2e8a4ceebde11479b1535a0d95e09262b286c4fdd05cc602284b801ee2dabdc1
+        binary_diff_sha256: 8132c80b4fd98d25ff912c5192ccd0c2c9a10d2ed3f1a4a3d1aede80971105be
+      - task_id: /root/p3_c02e_independent_review
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_PASS_NO_FILE_MUTATION
+        reviewed_head_sha: 9ed1bbaab998c1f664e62d9f69ad5e8cff5c30da
+        reviewed_tree_sha: 46187370accc8fd681dfbffc6d1c5b2ff60d150f
+        final_manifest_sha256: c1d6aa9cf8a8c0f102567e64a93c1188377034b2f60580e81949934dd9b5b3e1
+        final_binary_diff_sha256: d59acba98c4c8bdfddba37d12f5aa16e40aeeda7811110407cbaa36f4d92edbc
+        review_report_sha256: 7a44642d2e2096c5eec50f8f176c9897cd8fd92fafa9f74d5a94db1d57d12bc4
+    tests:
+      - FOCUSED_RACE_PASS
+      - POSTGRESQL_16_TAG_ORDER_AND_COLUMN_PRIVILEGE_PASS
+      - SQLC_TWICE_NO_DIFF_PASS
+      - FULL_CI_GO_EXACT_CANDIDATE_SHA_PASS
+      - MIGRATION_UP_DOWN_UP_AND_P3_ACCEPTANCE_MATRIX_PASS
+      - WEB_NODE24_NPM11_ORVAL_DOUBLE_GENERATION_130_TESTS_PASS
+      - REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
+      - LIST_TAGS_REAL_HANDLER_SNAPSHOTS_SUCCESS_EMPTY_UNAVAILABLE_PASS
+      - INDEPENDENT_FINAL_REVIEW_PASS
+      - GITLEAKS_AND_SENSITIVE_PATHS_PASS
+      - P0S04_OFFICIAL_RIVER_MIGRATION_PASS_AFTER_ISOLATED_DATABASE_CLEANUP
+    handwritten_scope: 11_files_534_changed_lines_under_P3_cap_tests_generated_manifests_acceptance_and_governance_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 2
+    verification_induced_correction_count: 6
+    correction_notes:
+      - slice:http_response_rejects_grouped_record_without_group_sort_order
+      - scope:underdefined_card_aligned_listTags_403_503_and_sales_owner_staff_with_ADR_006_openapi_truth
+      - scope:underdefined_card_added_ADR_011_required_real_handler_snapshots_for_success_empty_and_unavailable
+      - verification:portable_repo_contract_negative_replaced_bsd_incompatible_sed_append_with_posix_awk
+      - verification:full_go_parallel_real_pg_shared_schema_lock_timeout_then_p2s09_isolated_recheck_passed
+      - verification:acceptance_failure_text_renamed_to_avoid_ownership_sql_literal_false_positive_without_weakening_lint
+      - verification:query_plan_full_gate_rerun_with_exact_candidate_sha_instead_of_symbolic_HEAD
+      - verification:p0s04_rerun_after_explicit_cleanup_of_prior_river_objects_in_isolated_55432_acceptance_database
+      - verification:restored_P2_02_and_P2_04_counts_after_ambiguous_ledger_patch_and_aligned_C02E_count_with_six_notes
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

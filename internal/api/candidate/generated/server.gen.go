@@ -2522,6 +2522,24 @@ func (response ListTags401JSONResponse) VisitListTagsResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListTags403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListTags403JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTags503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListTags503JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List non-secret configuration readiness

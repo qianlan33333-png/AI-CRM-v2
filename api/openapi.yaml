@@ -209,7 +209,7 @@ paths:
       x-legacy-mapping-ids: [LEGACY-API-0551, LEGACY-API-0555]
       x-p3-decision-evidence: P3-C00-2026-08-12
       x-aicrm-capability: customers.read
-      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       responses:
         "200":
           description: Tag catalog.
@@ -218,6 +218,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/TagListResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/stages:
     get:
       tags: [p2-stages]

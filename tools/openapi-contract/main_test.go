@@ -118,6 +118,18 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/tags").Get.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-9999"}
 			reject(t, doc, ids)
 		},
+		"sales tag scope widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/tags").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{
+				"admin": "global", "ops": "global", "sales": "global",
+			}
+			reject(t, doc, ids)
+		},
+		"tag dependency response removed": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/tags").Get.Responses.Delete("503")
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"

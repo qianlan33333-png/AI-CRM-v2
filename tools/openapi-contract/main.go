@@ -55,7 +55,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listStages":             {"stages.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
 	"createStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
 	"renameStage":            {"stages.write", map[string]string{"admin": "global", "ops": "global"}},
-	"listTags":               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "global"}},
+	"listTags":               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"setCustomerStage":       {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"addCustomerTag":         {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"removeCustomerTag":      {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
@@ -191,6 +191,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 			if len(contract.scopes) < 3 && op.Responses.Value("403") == nil {
 				return fmt.Errorf("%s denies a role but lacks 403", op.OperationID)
+			}
+			if op.OperationID == "listTags" && op.Responses.Value("503") == nil {
+				return fmt.Errorf("listTags lacks dependency unavailable response")
 			}
 		}
 	}

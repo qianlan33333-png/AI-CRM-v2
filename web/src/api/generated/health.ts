@@ -1068,10 +1068,22 @@ export type listTagsResponse401 = {
   status: 401;
 };
 
+export type listTagsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listTagsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
 export type listTagsResponseSuccess = listTagsResponse200 & {
   headers: Headers;
 };
-export type listTagsResponseError = listTagsResponse401 & {
+export type listTagsResponseError = (
+  listTagsResponse401 | listTagsResponse403 | listTagsResponse503
+) & {
   headers: Headers;
 };
 
