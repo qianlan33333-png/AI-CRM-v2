@@ -2331,6 +2331,69 @@ if (cd "$simplified_explain_p3c02d" && scripts/check_repo_contract.sh >/dev/null
 fi
 
 for file_path in \
+  acceptance/p3c02e/doc.go \
+  acceptance/p3c02e/tag_catalog_integration_test.go \
+  internal/contact/app/tag_catalog_service.go \
+  internal/contact/app/tag_catalog_service_test.go \
+  internal/contact/http/tag_catalog_handler.go \
+  internal/contact/http/tag_catalog_handler_test.go \
+  internal/contact/store/tag_catalog_repository.go \
+  internal/contact/store/tag_catalog_repository_test.go \
+  internal/contact/store/queries/tags.sql \
+  internal/contact/store/generated/tags.sql.go \
+  docs/execution/slices/P3-C02E.md \
+  docs/evidence/slices/P3-C02E-sqlc-store.md \
+  docs/evidence/slices/P3-C02E-service-tests.md \
+  docs/evidence/slices/P3-C02E-handler-tests.md; do
+  p3c02e_receipt_fixture="$(make_fixture "p3-c02e-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C02E receipt drift' >>"$p3c02e_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P3-C02E receipt drift' >>"$p3c02e_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C02E receipt drift' >>"$p3c02e_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c02e_receipt_fixture" add "$file_path"
+  if (cd "$p3c02e_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C02E tag-catalog receipt drift was accepted: $file_path"
+  fi
+done
+
+wecom_tag_p3c02e="$(make_fixture p3-c02e-wecom-tag-column)"
+wecom_query_file="$wecom_tag_p3c02e/internal/contact/store/queries/tags.sql"
+awk '{ print } /t[.]sort_order/ { print "  t.wecom_tag_id," }' "$wecom_query_file" >"${wecom_query_file}.tmp"
+mv "${wecom_query_file}.tmp" "$wecom_query_file"
+restage_p2s18_receipt "$wecom_tag_p3c02e" internal/contact/store/queries/tags.sql
+if (cd "$wecom_tag_p3c02e" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02E WeCom tag identifier exposure was accepted"
+fi
+
+ungrouped_first_p3c02e="$(make_fixture p3-c02e-ungrouped-first)"
+sed -i.bak 's/(t[.]group_id IS NULL)/(t.group_id IS NOT NULL)/' \
+  "$ungrouped_first_p3c02e/internal/contact/store/queries/tags.sql"
+rm -f "$ungrouped_first_p3c02e/internal/contact/store/queries/tags.sql.bak"
+restage_p2s18_receipt "$ungrouped_first_p3c02e" internal/contact/store/queries/tags.sql
+if (cd "$ungrouped_first_p3c02e" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02E ungrouped-first ordering was accepted"
+fi
+
+disconnected_p3c02e_workflow="$(make_fixture disconnected-p3-c02e-workflow)"
+sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02e-acceptance/d' \
+  "$disconnected_p3c02e_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c02e_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c02e_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c02e_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02E real PostgreSQL acceptance disconnected from CI was accepted"
+fi
+
+incomplete_group_p3c02e="$(make_fixture p3-c02e-incomplete-group-response)"
+sed -i.bak 's/record[.]GroupSortOrder == nil || //' \
+  "$incomplete_group_p3c02e/internal/contact/http/tag_catalog_handler.go"
+rm -f "$incomplete_group_p3c02e/internal/contact/http/tag_catalog_handler.go.bak"
+restage_p2s18_receipt "$incomplete_group_p3c02e" internal/contact/http/tag_catalog_handler.go
+if (cd "$incomplete_group_p3c02e" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02E incomplete group identity and sort triple was accepted"
+fi
+
+for file_path in \
   migrations/00006_customer_events.sql \
   acceptance/fixtures/cmd/validate-database-url/main.go \
   acceptance/contact/doc.go \

@@ -255,6 +255,7 @@ func TestTagCatalogHandlerRejectsInvalidApplicationRecordsWithoutLeak(t *testing
 	const secret = "tag-catalog-record-secret"
 	groupID := int64(31)
 	groupName := "Lifecycle"
+	groupSort := int32(1)
 	for _, testCase := range []struct {
 		name   string
 		record contactapp.TagCatalogRecord
@@ -263,6 +264,8 @@ func TestTagCatalogHandlerRejectsInvalidApplicationRecordsWithoutLeak(t *testing
 		{name: "empty tag name", record: contactapp.TagCatalogRecord{ID: 81, Name: ""}},
 		{name: "group identifier without name", record: contactapp.TagCatalogRecord{ID: 81, GroupID: &groupID, Name: secret}},
 		{name: "group name without identifier", record: contactapp.TagCatalogRecord{ID: 81, GroupName: &groupName, Name: secret}},
+		{name: "group without sort order", record: contactapp.TagCatalogRecord{ID: 81, GroupID: &groupID, GroupName: &groupName, Name: secret}},
+		{name: "sort order without group", record: contactapp.TagCatalogRecord{ID: 81, GroupSortOrder: &groupSort, Name: secret}},
 	} {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
@@ -381,8 +384,9 @@ func assertTagCatalogResponseDoesNotContain(t *testing.T, response *httptest.Res
 func tagCatalogValidRecords() []contactapp.TagCatalogRecord {
 	groupID := int64(31)
 	groupName := "Lifecycle"
+	groupSort := int32(1)
 	return []contactapp.TagCatalogRecord{
-		{ID: 81, GroupID: &groupID, GroupName: &groupName, Name: "Priority", SortOrder: 6},
+		{ID: 81, GroupID: &groupID, GroupName: &groupName, GroupSortOrder: &groupSort, Name: "Priority", SortOrder: 6},
 		{ID: 82, Name: "Ungrouped", SortOrder: 7},
 	}
 }

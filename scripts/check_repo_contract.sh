@@ -175,6 +175,20 @@ required=(
   docs/evidence/slices/P3-C02D-sqlc-store.md
   docs/evidence/slices/P3-C02D-service-tests.md
   docs/evidence/slices/P3-C02D-handler-tests.md
+  acceptance/p3c02e/doc.go
+  acceptance/p3c02e/tag_catalog_integration_test.go
+  internal/contact/app/tag_catalog_service.go
+  internal/contact/app/tag_catalog_service_test.go
+  internal/contact/http/tag_catalog_handler.go
+  internal/contact/http/tag_catalog_handler_test.go
+  internal/contact/store/tag_catalog_repository.go
+  internal/contact/store/tag_catalog_repository_test.go
+  internal/contact/store/queries/tags.sql
+  internal/contact/store/generated/tags.sql.go
+  docs/execution/slices/P3-C02E.md
+  docs/evidence/slices/P3-C02E-sqlc-store.md
+  docs/evidence/slices/P3-C02E-service-tests.md
+  docs/evidence/slices/P3-C02E-handler-tests.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -524,6 +538,20 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C02D-sqlc-store.md
 100644 docs/evidence/slices/P3-C02D-service-tests.md
 100644 docs/evidence/slices/P3-C02D-handler-tests.md
+100644 acceptance/p3c02e/doc.go
+100644 acceptance/p3c02e/tag_catalog_integration_test.go
+100644 internal/contact/app/tag_catalog_service.go
+100644 internal/contact/app/tag_catalog_service_test.go
+100644 internal/contact/http/tag_catalog_handler.go
+100644 internal/contact/http/tag_catalog_handler_test.go
+100644 internal/contact/store/tag_catalog_repository.go
+100644 internal/contact/store/tag_catalog_repository_test.go
+100644 internal/contact/store/queries/tags.sql
+100644 internal/contact/store/generated/tags.sql.go
+100644 docs/execution/slices/P3-C02E.md
+100644 docs/evidence/slices/P3-C02E-sqlc-store.md
+100644 docs/evidence/slices/P3-C02E-service-tests.md
+100644 docs/evidence/slices/P3-C02E-handler-tests.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -742,7 +770,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  5e7da1298bf27101440ef368936698ee4faf5f6b37819600ae01b25f31148195
+  0c1ecd149546f6b306ed0033f149b43950b85987c21796c5ace0fccb88df4111
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -758,7 +786,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   e5b1e51c092e94ebf98b8b16454c486ea458602d7ac58d19e89ec6b6d9c8a5c6
 verify_index_sha256 .github/workflows/application-go.yml \
-  7c82f4c199d681015cade3d9894ba9db3add023daec379b84872d0933cdfbf77
+  b83adc99410fc8d7f152e70eca2dd6ab3d8d4c30cde2e1d14d8ea84ac4a5f97c
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -770,11 +798,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  a4719a15473f2f8813de1e699d474e7032a2b404ff5fa9745e35961a38fbff70
+  eca21afcbf8c3dfefcc2cddf41a2d15763308895076890d5e87947d50803a130
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  df788bebdf9c3588fabf901f6ee2176f16c78d37417fe1eaf711dfc2d7a8aec4
+  496a74e4366c381ad56597ece652efbba62f464e473af6bf97a36615c5421f78
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1105,6 +1133,34 @@ verify_index_sha256 docs/evidence/slices/P3-C02D-service-tests.md \
   05aed67971f965e145441874d8f6f46f7198dd39c84b118d2b143ef1aa0482eb
 verify_index_sha256 docs/evidence/slices/P3-C02D-handler-tests.md \
   3e2c3f8099cea96179c45640f62032bf6a7fcd71d3f381bf0b3bc22f459b7e58
+verify_index_sha256 acceptance/p3c02e/doc.go \
+  1c788e51d1792aabf8ef7c4285025aa67fe2ded7b37b6baaf2516836ba58268f
+verify_index_sha256 acceptance/p3c02e/tag_catalog_integration_test.go \
+  addc6bc129a31f12c7866a6bea6acdc90e3379e93e7eef4ca29a0459e0122c9c
+verify_index_sha256 internal/contact/app/tag_catalog_service.go \
+  70dd86af59d936d87a858a3cea0b81d3d0f9d4857ef322c7756a34b30e3b094b
+verify_index_sha256 internal/contact/app/tag_catalog_service_test.go \
+  4f6633c52ad64a06b250c20b4ec798928125662a20f88571e35048cec5587baa
+verify_index_sha256 internal/contact/http/tag_catalog_handler.go \
+  39bcafad977bb23fdbc6e7f1afeb8afa4a3d12ef35a5c7a94f63902b1548c9d6
+verify_index_sha256 internal/contact/http/tag_catalog_handler_test.go \
+  386a2b1913dac8924fff749430bac4f6e23b625ff175f84fec85a8b171539c07
+verify_index_sha256 internal/contact/store/tag_catalog_repository.go \
+  9b06834333ecb52dbe3ef0794fee95e97035e4e5b6ae412e102c03f25c8ee0dc
+verify_index_sha256 internal/contact/store/tag_catalog_repository_test.go \
+  d33f78ea5103f964c1c5f2eb44f4767985d24ade305fa5b587daa722963c92e3
+verify_index_sha256 internal/contact/store/queries/tags.sql \
+  2384702c19dd452f1612bd2eef5fc5d3ea003e7cbed88a973abb8d1e9401936d
+verify_index_sha256 internal/contact/store/generated/tags.sql.go \
+  e72f95ac8737ecb83ca11055a9e1384efb70855a0daa6056672f58602e9425bf
+verify_index_sha256 docs/execution/slices/P3-C02E.md \
+  289534e34288dae21fb8d97e86a9c4956e5f7d5ade672802ae2a39702a282c91
+verify_index_sha256 docs/evidence/slices/P3-C02E-sqlc-store.md \
+  d6c0e1ddb934ccf5a20eb9c14b55fbe1155bb6f0d11ee62baf87d610d1271d7e
+verify_index_sha256 docs/evidence/slices/P3-C02E-service-tests.md \
+  12c3191c1402359653f6b8e6736a3b10ff3f8958395339b317288fa6d69c0a9b
+verify_index_sha256 docs/evidence/slices/P3-C02E-handler-tests.md \
+  ecb86db382d51896cbcff6698ea0791734bfa099a69a8d1b327b06cf0acd90ca
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1254,9 +1310,9 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  d4da34e7d2d7cf53f71982e33c765853bb287f0b7ea8c11d43ac26561a403b55
+  dc21a0fd2461a89ea1a62c6417abd01d8b04b89985daaff5dad3b82adb6b983e
 verify_index_sha256 cmd/aicrm/api_test.go \
-  443fb64bba510cbc3fbb87eebcee50fdc8601032d8341d021584662fe681836b
+  b778452d8ae551c4addc23172a4d05dd7884b5b268368d1f45a7245eb7f940f1
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
@@ -1364,7 +1420,7 @@ verify_index_sha256 internal/contact/store/generated/customers.sql.go \
 verify_index_sha256 internal/contact/store/generated/models.go \
   9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
-  dd3d28f2d350f5b38af43467d858f1a299382962c5c626a6aec54b683329c1f5
+  a45fbd3b0f29bee0c4ae5a09ec0de959c25cda7b3ebae339fdfeea57a02c6b05
 verify_index_sha256 internal/contact/store/generated/stages.sql.go \
   24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
 verify_index_sha256 internal/contact/store/repository.go \
@@ -1408,7 +1464,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  f0e189f1f22b7f0577a3a7da9d29e06ff75db68c5400529f2101af9fe9f34408
+  8b8906ac48eb71d80c3a009e96cfae2c7bf693b077ac23dfdc02b2623f512526
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2366,6 +2422,52 @@ grep -Fq 'productionQuery := generatedCustomerEventQuery(t)' <<<"$p3c02d_accepta
   fail "P3-C02D EXPLAIN must execute the generated production query"
 grep -Fq '"EXPLAIN (COSTS OFF)\n"+productionQuery' <<<"$p3c02d_acceptance" ||
   fail "P3-C02D generated production query is not connected to EXPLAIN"
+
+p3c02e_make="$(git show :Makefile)"
+[[ "$(grep -Ec '^p3-c02e-acceptance:$' <<<"$p3c02e_make")" -eq 1 ]] ||
+  fail "P3-C02E acceptance target must be declared exactly once"
+grep -Fq '$(GO) test -race -count=1 -timeout=90s ./acceptance/p3c02e' <<<"$p3c02e_make" ||
+  fail "P3-C02E target must run real PostgreSQL tag-catalog acceptance"
+
+p3c02e_workflow="$(git show :.github/workflows/application-go.yml)"
+grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02e-acceptance' <<<"$p3c02e_workflow" ||
+  fail "application workflow must run P3-C02E against the migration database"
+
+p3c02e_query="$(git show :internal/contact/store/queries/tags.sql)"
+grep -Fq 'LEFT JOIN tag_groups AS g ON g.id = t.group_id' <<<"$p3c02e_query" ||
+  fail "P3-C02E tag catalog lost local group join"
+grep -Fq '(t.group_id IS NULL)' <<<"$p3c02e_query" ||
+  fail "P3-C02E ungrouped tags must remain last"
+grep -Fq $'g.sort_order,\n  g.id,\n  t.sort_order,\n  t.id' <<<"$p3c02e_query" ||
+  fail "P3-C02E deterministic tag catalog order drifted"
+! grep -Fqi 'wecom_tag_id' <<<"$p3c02e_query" ||
+  fail "P3-C02E tag catalog must not read wecom_tag_id"
+
+p3c02e_service="$(git show :internal/contact/app/tag_catalog_service.go)"
+grep -Fq 'return nil, errors.Join(ErrTagCatalogUnavailable, err)' <<<"$p3c02e_service" ||
+  fail "P3-C02E tag catalog lost fail-closed error mapping"
+grep -Fq 'return leftGrouped' <<<"$p3c02e_service" ||
+  fail "P3-C02E grouped tags must remain before ungrouped tags"
+
+p3c02e_handler="$(git show :internal/contact/http/tag_catalog_handler.go)"
+grep -Fq 'record.GroupSortOrder == nil' <<<"$p3c02e_handler" ||
+  fail "P3-C02E handler must reject an incomplete group identity and sort triple"
+grep -Fq 'validTagCatalogResponseText(*record.GroupName)' <<<"$p3c02e_handler" ||
+  fail "P3-C02E handler must validate provider-neutral group names before serialization"
+
+p3c02e_api="$(git show :cmd/aicrm/api.go)"
+grep -Fq 'tags           *contacthttp.TagCatalogHandler' <<<"$p3c02e_api" ||
+  fail "P3-C02E runtime lost tag catalog handler wiring"
+grep -Fq 'contactstore.NewTagCatalogRepository()' <<<"$p3c02e_api" ||
+  fail "P3-C02E runtime lost tag catalog repository wiring"
+grep -Fq '{http.MethodGet, "/api/v1/tags", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListTags)}' <<<"$p3c02e_api" ||
+  fail "P3-C02E runtime route lost customers.read authorization"
+
+p3c02e_acceptance="$(git show :acceptance/p3c02e/tag_catalog_integration_test.go)"
+grep -Fq 'GRANT SELECT (id, group_id, name, sort_order) ON acceptance_fixtures.tags' <<<"$p3c02e_acceptance" ||
+  fail "P3-C02E acceptance must deny the WeCom tag identifier column"
+grep -Fq 'databaseError.Code != "42501"' <<<"$p3c02e_acceptance" ||
+  fail "P3-C02E column privilege negative is missing"
 
 p3c03_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||

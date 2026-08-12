@@ -2328,13 +2328,40 @@ slices:
       - global_tag_catalog_order
       - channel_neutral_response_without_wecom_tag_id
       - runtime_tags_read_route
-    delegated_tasks: []
+    delegated_tasks:
+      - task_id: /root/p3_c02e_sqlc_store
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 84c331d2f40a6ce4d18b2f7553b2efe202219d71
+        replay_parent_sha: 9009969644ae344f05c2d63d685d4531c8c34920
+        delegated_head_sha: acd4cfeab393097e33805e045380b3d94551ed64
+        manifest_sha256: 5004497f96fbc3ec30ad0394d0c8d58fb1895bb02820849709759e9ff279d9f3
+        binary_diff_sha256: 522e8339e6fb05e8138b9c67a926a3257c1e4f56d9054a300d979124e92e33e1
+      - task_id: /root/p3_c02e_service_tests
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 9009969644ae344f05c2d63d685d4531c8c34920
+        delegated_head_sha: 940a4a2400996fa0b48a35e4f724aa94c76fbfc4
+        manifest_sha256: ea1edab0e7a5ceaff5eb64af0eec5068bd319b61e083301e9dc5cd7037500447
+        binary_diff_sha256: 6ad4e8ab19b2c4470b9a55eebf1d1becd5badc902092f8810d9dd29427392d2f
+      - task_id: /root/p3_c02e_handler_tests
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 9009969644ae344f05c2d63d685d4531c8c34920
+        delegated_head_sha: 44c09069f9b5817f7f38d4de873b09ecc7634070
+        manifest_sha256: 2e8a4ceebde11479b1535a0d95e09262b286c4fdd05cc602284b801ee2dabdc1
+        binary_diff_sha256: 8132c80b4fd98d25ff912c5192ccd0c2c9a10d2ed3f1a4a3d1aede80971105be
     tests:
-      - CONTRACT_FROZEN_IMPLEMENTATION_PENDING
-    slice_induced_correction_count: 0
+      - FOCUSED_RACE_PASS
+      - POSTGRESQL_16_TAG_ORDER_AND_COLUMN_PRIVILEGE_PASS
+      - SQLC_TWICE_NO_DIFF_PASS
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes:
+      - slice:http_response_rejects_grouped_record_without_group_sort_order
+      - verification:portable_repo_contract_negative_replaced_bsd_incompatible_sed_append_with_posix_awk
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

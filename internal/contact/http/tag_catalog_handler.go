@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"unicode/utf8"
 
 	generated "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -46,7 +47,10 @@ func (handler *TagCatalogHandler) ListTags(writer http.ResponseWriter, request *
 	}
 	items := make([]generated.Tag, 0, len(records))
 	for _, record := range records {
-		if record.ID <= 0 || record.Name == "" || (record.GroupID == nil) != (record.GroupName == nil) {
+		grouped := record.GroupID != nil || record.GroupName != nil || record.GroupSortOrder != nil
+		if record.ID <= 0 || !validTagCatalogResponseText(record.Name) ||
+			(grouped && (record.GroupID == nil || *record.GroupID <= 0 || record.GroupName == nil ||
+				record.GroupSortOrder == nil || !validTagCatalogResponseText(*record.GroupName))) {
 			writeTagCatalogError(writer, request, contactapp.ErrTagCatalogUnavailable)
 			return
 		}
@@ -56,6 +60,10 @@ func (handler *TagCatalogHandler) ListTags(writer http.ResponseWriter, request *
 		})
 	}
 	writeCustomerListJSON(writer, http.StatusOK, generated.TagListResponse{Items: items})
+}
+
+func validTagCatalogResponseText(value string) bool {
+	return value != "" && utf8.ValidString(value) && utf8.RuneCountInString(value) <= 200
 }
 
 func authorizeTagCatalog(ctx context.Context) error {

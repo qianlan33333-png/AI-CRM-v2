@@ -40,6 +40,7 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPut, "/api/v1/customers/1/tags/2", authport.CapabilityCustomersWrite},
 		{http.MethodDelete, "/api/v1/customers/1/tags/2", authport.CapabilityCustomersWrite},
 		{http.MethodGet, "/api/v1/customers/1/events", authport.CapabilityCustomerEventsRead},
+		{http.MethodGet, "/api/v1/tags", authport.CapabilityCustomersRead},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve},
