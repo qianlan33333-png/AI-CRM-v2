@@ -45,11 +45,12 @@ var (
 )
 
 type options struct {
-	databaseURL string
-	sourceSHA   string
-	receiptPath string
-	samples     int
-	warmups     int
+	databaseURL     string
+	databaseURLFile string
+	sourceSHA       string
+	receiptPath     string
+	samples         int
+	warmups         int
 }
 
 type datasetEvidence struct {
@@ -234,6 +235,7 @@ func parseOptions(arguments []string) (options, error) {
 	set.SetOutput(new(strings.Builder))
 	var result options
 	set.StringVar(&result.databaseURL, "database-url", "", "isolated performance database URL")
+	set.StringVar(&result.databaseURLFile, "database-url-file", "", "root-only isolated performance database URL file")
 	set.StringVar(&result.sourceSHA, "source-sha", "", "exact main source SHA")
 	set.StringVar(&result.receiptPath, "verify-receipt", "", "verify a saved S-tier receipt")
 	set.IntVar(&result.samples, "samples", requiredSamples, "measured calls per combination")
@@ -242,16 +244,45 @@ func parseOptions(arguments []string) (options, error) {
 		return options{}, errors.New("invalid arguments")
 	}
 	if result.receiptPath != "" {
-		if result.databaseURL != "" || result.sourceSHA != "" || result.samples != requiredSamples || result.warmups != requiredWarmups {
+		if result.databaseURL != "" || result.databaseURLFile != "" || result.sourceSHA != "" || result.samples != requiredSamples || result.warmups != requiredWarmups {
 			return options{}, errors.New("invalid arguments")
 		}
 		return result, nil
+	}
+	if (result.databaseURL == "") == (result.databaseURLFile == "") {
+		return options{}, errors.New("invalid arguments")
+	}
+	if result.databaseURLFile != "" {
+		var err error
+		result.databaseURL, err = databaseURLFromFile(result.databaseURLFile)
+		if err != nil {
+			return options{}, errors.New("invalid arguments")
+		}
 	}
 	if err := validateDatabaseURL(result.databaseURL); err != nil || !isExactSHA(result.sourceSHA) ||
 		result.samples < requiredSamples || result.warmups < requiredWarmups {
 		return options{}, errors.New("invalid arguments")
 	}
 	return result, nil
+}
+
+func databaseURLFromFile(path string) (string, error) {
+	if !strings.HasPrefix(path, "/") {
+		return "", errors.New("database URL file must be absolute")
+	}
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm()&0o077 != 0 || info.Size() < 1 || info.Size() > 4096 {
+		return "", errors.New("database URL file must be a private bounded regular file")
+	}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return "", errors.New("read database URL file")
+	}
+	value := strings.TrimSpace(string(contents))
+	if value == "" || strings.ContainsAny(value, "\r\n") {
+		return "", errors.New("database URL file must contain one URL")
+	}
+	return value, nil
 }
 
 func verifyReceiptFile(path string) error {

@@ -57,6 +57,58 @@ func TestParseOptionsAcceptsOnlyExclusiveReceiptVerificationMode(t *testing.T) {
 	}
 }
 
+func TestDatabaseURLFileMustBeAbsolutePrivateRegularAndSingleLine(t *testing.T) {
+	root := t.TempDir()
+	valid := root + "/database-url"
+	value := "postgres://postgres:secret@postgres:5432/aicrm_perf?sslmode=disable"
+	if err := os.WriteFile(valid, []byte(value+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := databaseURLFromFile(valid); err != nil || got != value {
+		t.Fatalf("databaseURLFromFile(valid) = %q, %v", got, err)
+	}
+	link := root + "/link"
+	if err := os.Symlink(valid, link); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"relative", link} {
+		if _, err := databaseURLFromFile(path); err == nil {
+			t.Fatalf("unsafe path %q was accepted", path)
+		}
+	}
+	world := root + "/world"
+	if err := os.WriteFile(world, []byte(value), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := databaseURLFromFile(world); err == nil {
+		t.Fatal("world-readable database URL file was accepted")
+	}
+	multiline := root + "/multiline"
+	if err := os.WriteFile(multiline, []byte(value+"\n"+value), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := databaseURLFromFile(multiline); err == nil {
+		t.Fatal("multi-line database URL file was accepted")
+	}
+}
+
+func TestParseOptionsAllowsExactlyOneDatabaseURLSource(t *testing.T) {
+	root := t.TempDir()
+	path := root + "/database-url"
+	value := "postgres://postgres:secret@postgres:5432/aicrm_perf?sslmode=disable"
+	if err := os.WriteFile(path, []byte(value), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sha := "33f6e19792a6d44686642236fb99d6a4e76c3369"
+	opts, err := parseOptions([]string{"--database-url-file=" + path, "--source-sha=" + sha})
+	if err != nil || opts.databaseURL != value {
+		t.Fatalf("parse file URL mode = %#v, %v", opts, err)
+	}
+	if _, err := parseOptions([]string{"--database-url=" + value, "--database-url-file=" + path, "--source-sha=" + sha}); err == nil {
+		t.Fatal("two database URL sources were accepted")
+	}
+}
+
 func TestQueryMatrixCoversEveryFilterTimePageAndLimitCombination(t *testing.T) {
 	seen := map[string]bool{}
 	for _, item := range scenarios() {
