@@ -171,6 +171,9 @@ func customerResponse(item contactapp.CustomerRecord) (generated.Customer, error
 }
 
 func decodeJSONObject(raw json.RawMessage) (map[string]interface{}, error) {
+	if !contactapp.IsChannelNeutralCustomerExtra(raw) {
+		return nil, errors.New("customer extra is not channel neutral")
+	}
 	trimmed := bytes.TrimSpace(raw)
 	if len(trimmed) < 2 || trimmed[0] != '{' || trimmed[len(trimmed)-1] != '}' {
 		return nil, errors.New("customer extra is not an object")

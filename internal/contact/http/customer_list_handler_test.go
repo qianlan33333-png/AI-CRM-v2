@@ -522,6 +522,14 @@ func TestCustomerListHandlerRejectsInvalidApplicationResponses(t *testing.T) {
 			},
 		},
 		{
+			name: "extra contains external identity",
+			result: func() contactapp.CustomerListResult {
+				result := customerListResultWithOneCustomer()
+				result.Items[0].Extra = json.RawMessage(`{"nested":{"wecomTagId":"identity-secret"}}`)
+				return result
+			},
+		},
+		{
 			name: "invalid avatar URL",
 			result: func() contactapp.CustomerListResult {
 				result := customerListResultWithOneCustomer()

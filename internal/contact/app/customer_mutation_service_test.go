@@ -356,6 +356,11 @@ func TestCustomerMutationRejectsAllInvalidCommandsBeforeTransaction(t *testing.T
 			command.Extra = rawPtr("null")
 			return service.Update(context.Background(), command)
 		}},
+		{name: "profile nested external identity", run: func(service *CustomerMutationService) (CustomerRecord, error) {
+			command := validUpdate()
+			command.Extra = rawPtr(`{"profile":{"unionid":"identity-secret"}}`)
+			return service.Update(context.Background(), command)
+		}},
 		{name: "stage zero customer", run: func(service *CustomerMutationService) (CustomerRecord, error) {
 			command := validStage()
 			command.ID = 0
@@ -504,6 +509,28 @@ func TestCustomerMutationUpdateNoopWritesNoEventsAndDoesNotConsumeKey(t *testing
 	}
 	if !reflect.DeepEqual(sequence, []string{"store.update"}) || store.customerEventCalls != 0 || events.calls != 0 || keyCalls != 0 {
 		t.Fatalf("profile no-op must write/consume nothing after store: sequence=%v customer_events=%d event_log=%d key_calls=%d", sequence, store.customerEventCalls, events.calls, keyCalls)
+	}
+}
+
+func TestCustomerMutationFailsClosedForExternalIdentityReturnedByStore(t *testing.T) {
+	polluted := mutationCustomer()
+	polluted.Extra = json.RawMessage(`{"nested":{"wecomTagId":"identity-secret"}}`)
+	for _, operation := range mutationOperations()[:2] {
+		t.Run(operation.name, func(t *testing.T) {
+			store := &fakeMutationStore{}
+			operation.configure(store)
+			store.updateResult.Customer = polluted
+			store.stageResult.Customer = polluted
+			events := &fakeMutationAppender{}
+			customer, err := operation.run(newTestMutationService(&fakeMutationUoW{}, store, events))
+			if !errors.Is(err, ErrCustomerMutationFailed) {
+				t.Fatalf("mutation error = %v, want fail-closed", err)
+			}
+			assertZeroCustomer(t, customer)
+			if store.customerEventCalls != 0 || events.calls != 0 {
+				t.Fatalf("polluted result emitted events: customer=%d domain=%d", store.customerEventCalls, events.calls)
+			}
+		})
 	}
 }
 

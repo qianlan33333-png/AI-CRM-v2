@@ -116,6 +116,9 @@ func (service *CustomerMutationService) Update(
 			return err
 		}
 		customer = mutation.Customer
+		if !IsChannelNeutralCustomerExtra(customer.Extra) {
+			return errors.New("customer mutation store returned external identity data")
+		}
 		if !mutation.StateChange {
 			return nil
 		}
@@ -154,6 +157,9 @@ func (service *CustomerMutationService) SetStage(
 			return storeErr
 		}
 		customer = mutation.Customer
+		if !IsChannelNeutralCustomerExtra(customer.Extra) {
+			return errors.New("customer mutation store returned external identity data")
+		}
 		if !mutation.StateChange {
 			return nil
 		}
@@ -291,7 +297,7 @@ func validateCustomerUpdate(command CustomerUpdateCommand) error {
 			return ErrInvalidCustomerMutation
 		}
 	}
-	if command.Extra != nil && !validJSONObject(*command.Extra) {
+	if command.Extra != nil && !IsChannelNeutralCustomerExtra(*command.Extra) {
 		return ErrInvalidCustomerMutation
 	}
 	return nil

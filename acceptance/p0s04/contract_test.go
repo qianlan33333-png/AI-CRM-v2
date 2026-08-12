@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	fixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	queueriver "github.com/riverqueue/river"
@@ -20,8 +21,8 @@ import (
 )
 
 const (
-	allowEnv = "ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST"
-	fixedDSN = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
+	allowEnv       = "ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST"
+	databaseURLEnv = "MIGRATION_TEST_DATABASE_URL"
 )
 
 var tables = []string{"river_client", "river_client_queue", "river_job", "river_leader", "river_migration", "river_queue"}
@@ -242,7 +243,11 @@ func TestOfficialMigrationUpDownUp(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	pool, err := pgxpool.New(ctx, fixedDSN)
+	databaseURL := os.Getenv(databaseURLEnv)
+	if err := fixtures.ValidateDatabaseURL(databaseURL); err != nil {
+		t.Fatalf("%s failed safe acceptance validation", databaseURLEnv)
+	}
+	pool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {
 		t.Fatal(err)
 	}

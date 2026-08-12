@@ -1716,6 +1716,22 @@ assert_p0s04_pending() {
     fail "canonical empty P0-S04 $gate gate did not report PENDING"
 }
 
+p0s04_hardcoded_dsn_fixture="$(make_fixture p0s04-hardcoded-dsn)"
+sed -i.bak \
+  's/databaseURL := os.Getenv(databaseURLEnv)/databaseURL := "postgres:\/\/postgres:postgres@127.0.0.1:5432\/aicrm_test?sslmode=disable"/' \
+  "$p0s04_hardcoded_dsn_fixture/acceptance/p0s04/contract_test.go"
+rm -f "$p0s04_hardcoded_dsn_fixture/acceptance/p0s04/contract_test.go.bak"
+git -C "$p0s04_hardcoded_dsn_fixture" add acceptance/p0s04/contract_test.go
+p0s04_hardcoded_digest="$(git -C "$p0s04_hardcoded_dsn_fixture" show :acceptance/p0s04/contract_test.go | sha256sum | awk '{print $1}')"
+sed -i.bak -E \
+  "/^verify_index_sha256 acceptance\/p0s04\/contract_test.go/{n;s/[0-9a-f]{64}/$p0s04_hardcoded_digest/;}" \
+  "$p0s04_hardcoded_dsn_fixture/scripts/check_repo_contract.sh"
+rm -f "$p0s04_hardcoded_dsn_fixture/scripts/check_repo_contract.sh.bak"
+git -C "$p0s04_hardcoded_dsn_fixture" add scripts/check_repo_contract.sh
+if (cd "$p0s04_hardcoded_dsn_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P0-S04 hard-coded CI PostgreSQL port was accepted"
+fi
+
 p0s04_empty_fixture="$(make_gitless_fixture p0s04-canonical-empty)"
 for file in runtime.go migrate.go runtime_test.go; do
   candidate="$p0s04_empty_fixture/internal/platform/river/$file"
@@ -2069,6 +2085,101 @@ rm -f "$unknown_p3c02a_event/internal/events/port/port.go.bak"
 restage_p2s18_receipt "$unknown_p3c02a_event" internal/events/port/port.go
 if (cd "$unknown_p3c02a_event" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C02A ungoverned customer update event was accepted"
+fi
+
+for file_path in \
+  acceptance/p3c02b/doc.go \
+  acceptance/p3c02b/customer_detail_integration_test.go \
+  internal/contact/app/customer_detail_service.go \
+  internal/contact/app/customer_detail_service_test.go \
+  internal/contact/http/customer_detail_handler.go \
+  internal/contact/http/customer_detail_handler_test.go \
+  internal/contact/store/customer_detail_repository.go \
+  internal/contact/store/customer_detail_repository_test.go \
+  internal/contact/store/queries/customer_detail.sql \
+  internal/contact/store/generated/customer_detail.sql.go \
+  docs/execution/slices/P3-C02B.md \
+  docs/evidence/slices/P3-C02B-sqlc-store.md \
+  docs/evidence/slices/P3-C02B-service-tests.md \
+  docs/evidence/slices/P3-C02B-handler-tests.md; do
+  p3c02b_receipt_fixture="$(make_fixture "p3-c02b-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C02B receipt drift' >>"$p3c02b_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P3-C02B receipt drift' >>"$p3c02b_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C02B receipt drift' >>"$p3c02b_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c02b_receipt_fixture" add "$file_path"
+  if (cd "$p3c02b_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C02B customer detail receipt drift was accepted: $file_path"
+  fi
+done
+
+for file_path in internal/contact/store/customer_detail_repository.go internal/contact/http/customer_detail_handler.go; do
+  missing_p3c02b_file="$(make_fixture "missing-p3-c02b-${file_path//\//-}")"
+  rm -f "$missing_p3c02b_file/$file_path"
+  git -C "$missing_p3c02b_file" add -u "$file_path"
+  if (cd "$missing_p3c02b_file" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-C02B runtime boundary was accepted: $file_path"
+  fi
+done
+
+disconnected_p3c02b_workflow="$(make_fixture disconnected-p3-c02b-workflow)"
+sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02b-acceptance/d' \
+  "$disconnected_p3c02b_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c02b_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c02b_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c02b_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02B real PostgreSQL acceptance disconnected from application CI was accepted"
+fi
+
+hollow_p3c02b_target="$(make_fixture hollow-p3-c02b-target)"
+sed -i.bak '/[.]\/acceptance\/p3c02b/ s/.*/\t@true/' "$hollow_p3c02b_target/Makefile"
+rm -f "$hollow_p3c02b_target/Makefile.bak"
+restage_make_receipt "$hollow_p3c02b_target"
+if (cd "$hollow_p3c02b_target" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P3-C02B acceptance target was accepted"
+fi
+
+split_p3c02b_snapshot="$(make_fixture p3-c02b-split-snapshot)"
+printf '%s\n' '-- name: ListCustomerDetailTags :many' 'SELECT 1;' \
+  >>"$split_p3c02b_snapshot/internal/contact/store/queries/customer_detail.sql"
+restage_p2s18_receipt "$split_p3c02b_snapshot" internal/contact/store/queries/customer_detail.sql
+if (cd "$split_p3c02b_snapshot" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02B split statement snapshots were accepted"
+fi
+
+owner_escape_p3c02b="$(make_fixture p3-c02b-owner-escape)"
+sed -i.bak '/c[.]owner_staff_id = sqlc[.]narg(owner_staff_id)::bigint/d' \
+  "$owner_escape_p3c02b/internal/contact/store/queries/customer_detail.sql"
+rm -f "$owner_escape_p3c02b/internal/contact/store/queries/customer_detail.sql.bak"
+restage_p2s18_receipt "$owner_escape_p3c02b" internal/contact/store/queries/customer_detail.sql
+if (cd "$owner_escape_p3c02b" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02B owner scope escape was accepted"
+fi
+
+external_identity_p3c02b="$(make_fixture p3-c02b-external-identity)"
+printf '%s\n' '-- wecom_tag_id must never be selected' \
+  >>"$external_identity_p3c02b/internal/contact/store/queries/customer_detail.sql"
+restage_p2s18_receipt "$external_identity_p3c02b" internal/contact/store/queries/customer_detail.sql
+if (cd "$external_identity_p3c02b" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02B external identity selection was accepted"
+fi
+
+weakened_extra_guard_p3c02b="$(make_fixture p3-c02b-weakened-extra-guard)"
+sed -i.bak 's/, "wecomtagid"//' "$weakened_extra_guard_p3c02b/internal/contact/app/customer_list_service.go"
+rm -f "$weakened_extra_guard_p3c02b/internal/contact/app/customer_list_service.go.bak"
+restage_p2s18_receipt "$weakened_extra_guard_p3c02b" internal/contact/app/customer_list_service.go
+if (cd "$weakened_extra_guard_p3c02b" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02B weakened channel-neutral extra guard was accepted"
+fi
+
+collision_extra_guard_p3c02b="$(make_fixture p3-c02b-collision-extra-guard)"
+sed -i.bak 's/isString && isExternalIdentityKind(kind)/isString \&\& false/' \
+  "$collision_extra_guard_p3c02b/internal/contact/app/customer_list_service.go"
+rm -f "$collision_extra_guard_p3c02b/internal/contact/app/customer_list_service.go.bak"
+restage_p2s18_receipt "$collision_extra_guard_p3c02b" internal/contact/app/customer_list_service.go
+if (cd "$collision_extra_guard_p3c02b" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02B canonical identity kind collision bypass was accepted"
 fi
 
 for file_path in \

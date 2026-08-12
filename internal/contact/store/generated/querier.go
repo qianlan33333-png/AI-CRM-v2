@@ -12,6 +12,7 @@ type Querier interface {
 	AddCustomerTag(ctx context.Context, arg AddCustomerTagParams) (int64, error)
 	AppendCustomerEvent(ctx context.Context, arg AppendCustomerEventParams) (int64, error)
 	EnsureCustomerEventPartitions(ctx context.Context, arg EnsureCustomerEventPartitionsParams) error
+	GetCustomerDetailSnapshot(ctx context.Context, arg GetCustomerDetailSnapshotParams) ([]GetCustomerDetailSnapshotRow, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
 	ListCustomerIDsBounded(ctx context.Context, arg ListCustomerIDsBoundedParams) ([]int64, error)
