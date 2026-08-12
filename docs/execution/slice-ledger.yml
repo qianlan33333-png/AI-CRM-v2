@@ -2457,6 +2457,57 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C06A1
+    title: contact-200k-isolated-dataset-generator
+    owner: Codex-Sol
+    status: local_gates_pass_independent_review_pending
+    base_sha: 33f6e19792a6d44686642236fb99d6a4e76c3369
+    dependency: P3-C05
+    branch: slice/p3-c06-contact-performance
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    scope:
+      - deterministic_200k_channel_neutral_synthetic_dataset
+      - transactional_reset_copy_and_post_commit_analyze
+      - exact_database_reset_token_seed_and_private_url_file_boundary
+      - database_fact_distribution_validation
+    delegated_tasks:
+      - task_id: p3_c06_synthetic_generator_r2
+        executor: Terra-Max
+        frozen_parent: 9acea083c2b96ee7ab7e11fcdf181bcb56a47c55
+        delegated_head: b0b7bce57e3dd63edb554fbacb6d0638d162b783
+        manifest_sha256: edaa4d0af8358622fd51096d7cdd17c9ddbc6457ce57c0d9935b24e16c7e8a6f
+        binary_diff_sha256: f048fa007f5543f231d39b05b80cd5ec9574fe360f502dcfd592b00333fa12e8
+        status: SOL_HASH_RECEIPT_VERIFIED
+    tests:
+      - go_test_race_contact_perf_data_PASS
+      - go_vet_contact_perf_data_PASS
+      - source_policy_lint_and_permanent_negatives_PASS
+      - repo_contract_and_full_permanent_negatives_PASS
+      - generated_sources_twice_no_diff_PASS
+      - full_ci_go_serial_real_pg_55432_PASS
+      - web_ci_node24_npm11_186_tests_audit_PASS
+      - sensitive_path_scan_PASS
+    handwritten_scope: 4_files_755_changed_lines_tests_generated_governance_and_receipts_excluded
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 4
+    verification_induced_correction_count: 4
+    correction_notes:
+      - slice:independent_review_found_remote_single_label_DNS_hosts_were_accepted_for_the_destructive_generator_then_DSN_validation_was_restricted_to_literal_loopback
+      - slice:independent_review_found_direct_DSN_arguments_exposed_credentials_in_process_lists_then_the_generator_was_restricted_to_private_absolute_database_url_files
+      - verification:initial_worktree_creation_followup_git_inspection_ran_in_stale_root_then_exact_new_worktree_was_revalidated_without_mutation
+      - verification:test_server_swapon_output_flag_was_not_supported_by_ubuntu_util_linux_then_read_only_evidence_was_recollected_with_plain_swapon_show
+      - verification:full_go_parallel_acceptance_packages_contended_for_the_shared_55432_fixture_schema_then_the_existing_serial_database_gate_strategy_was_used_without_weakening_assertions
+      - verification:post_hardening_rg_probe_put_the_dash_prefixed_pattern_before_the_end_of_options_marker_then_the_read_only_evidence_command_was_reissued_correctly
+      - scope:readonly_audit_found_presence_only_matrix_omitted_time_bound_modes_real_keyset_page_and_limit_variants
+      - scope:exact_main_binary_requirement_forbids_claiming_real_s_tier_result_inside_the_same_unmerged_mechanism_PR_rescoped_real_run_to_P3_C06B
+      - scope:combined_generator_and_runner_exceeded_the_single_slice_default_limit_so_the_two_independently_observable_tools_were_split_into_A1_and_A2
+      - scope:frozen_source_policy_rejected_the_dedicated_destructive_acceptance_command_so_the_exception_was_narrowed_to_one_exact_command_path_with_a_copy_path_negative
+    external_gates:
+      - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
