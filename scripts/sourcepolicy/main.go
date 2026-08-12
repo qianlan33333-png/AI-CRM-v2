@@ -148,7 +148,7 @@ func checkGo(path, rel string) error {
 }
 
 func performanceAcceptanceCommand(rel string) bool {
-	return rel == "cmd/aicrm-contact-perf-data/main.go"
+	return rel == "cmd/aicrm-contact-perf-data/main.go" || rel == "cmd/aicrm-contact-perf/main.go"
 }
 
 func sourceModule(rel string) string {

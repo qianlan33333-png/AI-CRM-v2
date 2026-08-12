@@ -201,6 +201,10 @@ required=(
   cmd/aicrm-contact-perf-data/main_test.go
   docs/execution/slices/P3-C06.md
   docs/evidence/slices/P3-C06-synthetic-data.md
+  cmd/aicrm-contact-perf/main.go
+  cmd/aicrm-contact-perf/main_test.go
+  docs/execution/slices/P3-C06A2.md
+  docs/evidence/slices/P3-C06A2-runner.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -576,6 +580,10 @@ done <<'EOF'
 100644 cmd/aicrm-contact-perf-data/main_test.go
 100644 docs/execution/slices/P3-C06.md
 100644 docs/evidence/slices/P3-C06-synthetic-data.md
+100644 cmd/aicrm-contact-perf/main.go
+100644 cmd/aicrm-contact-perf/main_test.go
+100644 docs/execution/slices/P3-C06A2.md
+100644 docs/evidence/slices/P3-C06A2-runner.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -794,7 +802,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  1a9e0671a4cacff18f5a4f64a002c604d059dc5e85b394d10e2b56b43ed727bf
+  7fad88ae29fc38aab8dd79d47d51bd0276364d502447f687957835654c056655
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -914,9 +922,9 @@ verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
-  6d06c304c397fd7966ffa7a52d70a888323465e511a7c9db63521b35e0881224
+  d256748dc6bec9a60773872d7c59444f12ae43ba0e9285a4bd8a476e305e5392
 verify_index_sha256 scripts/test_arch_imports.sh \
-  2905b7e910816cecb685f0b5e34476c67100a62a21ea1b6e015a6e58a884aa74
+  7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
   94d56f1479ee25eb13643ed97565a73fd5e774178510b118d172d7fd1dbac22e
 verify_index_sha256 scripts/test_ownership.sh \
@@ -928,9 +936,9 @@ verify_index_sha256 acceptance/fixtures/postgres_test.go \
 verify_index_sha256 docs/execution/slices/P2-00.md \
   7f625dc6dd0017266faaf779a79ca093bf600bb4b51adc61660751be86b16022
 verify_index_sha256 scripts/sourcepolicy/main.go \
-  148d33d26f87fd98a40c8698c217537f9a6eb1cb2d078d81f6ee71ca30c1ef09
+  8092eba969dc8b1f3e707b0bddfda648b77470433564ddec028f8942c91a55e9
 verify_index_sha256 scripts/test_source_policy.sh \
-  dfd571de9e8d6d7aee60b60c8d1397d1fa8bdacf56302bd757e93aa795d7eb72
+  7237265a1e3abea9ea5ae5b90373cb5bb498c8e481dc9fda86f02fea70cfc1dd
 verify_index_sha256 AGENTS.md \
   6d7bbe6739e98fd878d9fa7550726841f616f0190778b03587025a0cc025173f
 verify_index_sha256 scripts/check_slice_inputs.sh \
@@ -1209,6 +1217,14 @@ verify_index_sha256 docs/execution/slices/P3-C06.md \
   e9e1da290473a886092595cfe3ff8bba6e17f48762161fceed2abff913c74c53
 verify_index_sha256 docs/evidence/slices/P3-C06-synthetic-data.md \
   4ab11a23ee9b7336b05eddbbd35a2d5d0516341f3aa11610a873b06cace83a96
+verify_index_sha256 cmd/aicrm-contact-perf/main.go \
+  55506b1a20f8797925414863fd197d3cea17b75888f5f14260beaf4660cff260
+verify_index_sha256 cmd/aicrm-contact-perf/main_test.go \
+  7c04131ab98913d3f1305e10f12b243ee90d5e82c67644df6764d2a8f618b8fd
+verify_index_sha256 docs/execution/slices/P3-C06A2.md \
+  8fc11d267b9b208a3ff686ede72dcb627de3ec9dd0a6a1101b02d6055d08ccce
+verify_index_sha256 docs/evidence/slices/P3-C06A2-runner.md \
+  9be6ab90bd98152b390974a1f7992f4b8de6177c1401517576906c46d7fec284
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1512,7 +1528,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  29ce76f399feae24aaa9849b383b2bc773fcc3407d45ff41db370aef51e71e17
+  3d515b0f8035bc484c5ca80177a672eddd3d649e7c3337497d2392a93888de89
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2595,16 +2611,53 @@ done
   fail "P3-C06A1 database credentials must not be accepted in process arguments"
 grep -Fq 'strings.HasPrefix(argument, "--database-url-file=")' <<<"$p3c06_data" ||
   fail "P3-C06A1 private database URL file is required"
-grep -Fq 'return rel == "cmd/aicrm-contact-perf-data/main.go"' <<<"$(git show :scripts/sourcepolicy/main.go)" ||
-  fail "P3-C06A1 source-policy exception must remain one exact command path"
+grep -Fq 'return rel == "cmd/aicrm-contact-perf-data/main.go" || rel == "cmd/aicrm-contact-perf/main.go"' <<<"$(git show :scripts/sourcepolicy/main.go)" ||
+  fail "P3-C06 performance source-policy exceptions must remain two exact command paths"
 grep -Fq 'performance-command-copy' <<<"$(git show :scripts/test_source_policy.sh)" ||
   fail "P3-C06A1 source-policy exception copy-path negative is missing"
+grep -Fq 'performance-runner-copy' <<<"$(git show :scripts/test_source_policy.sh)" ||
+  fail "P3-C06A2 source-policy exception copy-path negative is missing"
 
 p3c06_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c06a1-contract:$' <<<"$p3c06_make")" -eq 1 ]] ||
   fail "P3-C06A1 contract target must be declared exactly once"
 grep -Eq '^ci-go:.* p3-c06a1-contract( |$)' <<<"$p3c06_make" ||
   fail "P3-C06A1 contract target is not connected to ci-go"
+
+p3c06_runner="$(git show :cmd/aicrm-contact-perf/main.go)"
+for anchor in \
+  'requiredCustomers = 200_000' \
+  'result := make([]scenario, 0, 4096)' \
+  'for selectorMask := 0; selectorMask < 1<<selectorGroups; selectorMask++' \
+  'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)' \
+  'contactstore.NewCustomerQueryRepository()' \
+  'platformstore.NewUnitOfWork(pool)' \
+  'validateReceipt(*result, opts.sourceSHA, opts.mainCIURL)' \
+  'environment.SourceSHA != expectedSHA' \
+  'environment.MainCIURL != expectedMainCIURL' \
+  'set.StringVar(&result.mainCIURL, "main-ci-url"' \
+  'Explain        json.RawMessage' \
+  'decodePlanEvidence(plan.Query, plan.Explain)' \
+  'result.GlobalP95MS < float64(latencyLimit)' \
+  'host == "127.0.0.1" || host == "::1"' \
+  'readBoundedRegularFile(path, 4096, true)'; do
+  grep -Fq "$anchor" <<<"$p3c06_runner" ||
+    fail "P3-C06A2 performance runner contract drifted: $anchor"
+done
+! grep -Fq '"database-url"' <<<"$p3c06_runner" ||
+  fail "P3-C06A2 database credentials must not be accepted in process arguments"
+grep -Fq 'set.StringVar(&databaseURLFile, "database-url-file"' <<<"$p3c06_runner" ||
+  fail "P3-C06A2 private database URL file is required"
+grep -Fq 'set.StringVar(&result.sourceSHA, "source-sha"' <<<"$p3c06_runner" ||
+  fail "P3-C06A2 trusted source SHA input is required"
+grep -Fq '"aicrm-contact-perf":' <<<"$(git show :scripts/check_arch_imports.go)" ||
+  fail "P3-C06A2 exact architecture composition root is missing"
+grep -Fq 'performance-composition-copy' <<<"$(git show :scripts/test_arch_imports.sh)" ||
+  fail "P3-C06A2 architecture composition copy-path negative is missing"
+[[ "$(grep -Ec '^p3-c06a2-contract:$' <<<"$p3c06_make")" -eq 1 ]] ||
+  fail "P3-C06A2 contract target must be declared exactly once"
+grep -Eq '^ci-go:.* p3-c06a2-contract( |$)' <<<"$p3c06_make" ||
+  fail "P3-C06A2 contract target is not connected to ci-go"
 
 p3c03_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||
