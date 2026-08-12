@@ -2392,7 +2392,7 @@ slices:
   - slice_id: P3-C05
     title: contact-customer-detail-and-actions-ui
     owner: Codex-Sol
-    status: in_progress
+    status: local_gates_pending_independent_review
     base_sha: ca96a7a6a76cd40eb00f9b04fdfb73f9519f6dab
     dependency: P3-C02E
     branch: slice/p3-c05-customer-detail-ui
@@ -2403,12 +2403,32 @@ slices:
       - profile_stage_tag_mutations_with_csrf
       - customer_timeline_read
       - post_success_server_refetch
-    delegated_tasks: []
-    handwritten_scope: pending_default_cap_exception_below_P3_hard_cap_complete_ui_flow
-    slice_induced_correction_count: 0
+    delegated_tasks:
+      - task_id: /root/p3_c05_ui_replay
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED_WITH_CORRECTIONS
+        frozen_base_sha: ca96a7a6a76cd40eb00f9b04fdfb73f9519f6dab
+        delegated_head_sha: fd2ea218e6d17b671bebd62691b1e19c59452790
+        manifest_sha256: 6fd3ddb742bf63b1bc1be215c25219f4d97b96bc2e950b1763fdface3073e52c
+        binary_diff_sha256: 5e0cbf3c00e9af4e73e5be4f64d82a18f80657c304f1668f6025f8d6628e3852
+      - task_id: /root/p3_c05_route_tests_r2
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: eeb841ad0b969efe43170abefe83c5965f581fed
+        delegated_head_sha: a75852f716868235eb22d568f33c62ce02e415c7
+        manifest_sha256: 2441fff7b305cccd4bc6e8a8f4115acb1694255011d19a45a4d76f769825abf2
+        binary_diff_sha256: 4a9cabbeb14d9a728d0556ca8e94f128382dde5ee8d1fdf84bd9cca247bab153
+    handwritten_scope: 5_production_files_1499_physical_changed_lines_default_cap_exception_under_15_1500_hard_top_tests_verification_fixtures_receipts_and_governance_excluded
+    slice_induced_correction_count: 3
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes:
+      - slice:terra_contract_review_tightened_gender_smallint_and_RFC3339_timestamps
+      - slice:strict_tag_parser_rejects_incomplete_group_pair_blank_name_and_int32_overflow
+      - slice:successful_mutation_refetch_failure_keeps_prior_server_fact_and_displays_unconfirmed_warning
+      - governance:user_authorized_continuation_through_P4_defers_threshold_report_without_weakening_gates
+      - verification:independent_review_required_interaction_level_double_submit_refetch_unconfirmed_and_empty_state_tests
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

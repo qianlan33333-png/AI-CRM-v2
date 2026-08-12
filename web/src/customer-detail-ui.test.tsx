@@ -1,8 +1,15 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { CustomerDetailPage, parseProfileDraft } from "./customer-detail-ui";
-import type { CustomerDetailSnapshot, CustomerDetailTransport } from "./customer-detail";
+import {
+  CustomerDetailPage,
+  parseProfileDraft,
+  startCustomerMutation,
+} from "./customer-detail-ui";
+import type {
+  CustomerDetailSnapshot,
+  CustomerDetailTransport,
+} from "./customer-detail";
 
 const snapshot: CustomerDetailSnapshot = {
   customer: {
@@ -106,5 +113,86 @@ describe("CustomerDetailPage", () => {
         channelID: "5",
       }),
     ).toBeUndefined();
+  });
+
+  it("renders empty tags and timeline as explicit server-backed states", () => {
+    const html = renderToStaticMarkup(
+      <CustomerDetailPage
+        customerID={7}
+        initialSnapshot={{
+          ...snapshot,
+          tags: [],
+          events: [],
+          eventsHaveMore: false,
+        }}
+        transport={transport()}
+      />,
+    );
+    expect(html).toContain("暂无标签。");
+    expect(html).toContain("暂无时间线记录。");
+    expect(html).not.toContain("更多记录待后续加载");
+  });
+});
+
+describe("customer mutation orchestration", () => {
+  it("locks synchronously, rejects a duplicate, then refetches after success", async () => {
+    const lock = { current: false };
+    let release: () => void = () => {};
+    const execute = vi.fn(
+      () =>
+        new Promise<{ status: "succeeded" }>((resolve) => {
+          release = () => resolve({ status: "succeeded" });
+        }),
+    );
+    const refetch = vi.fn(
+      async () => ({ status: "loaded", snapshot }) as const,
+    );
+
+    const first = startCustomerMutation(lock, execute, refetch);
+    expect(first).toBeInstanceOf(Promise);
+    expect(lock.current).toBe(true);
+    expect(startCustomerMutation(lock, execute, refetch)).toBeUndefined();
+    expect(execute).toHaveBeenCalledOnce();
+
+    release();
+    await expect(first).resolves.toEqual({ status: "confirmed", snapshot });
+    expect(refetch).toHaveBeenCalledOnce();
+    expect(lock.current).toBe(false);
+  });
+
+  it("does not refetch a rejected write and keeps failed refetch distinct", async () => {
+    const failedRefetch = vi.fn(
+      async () => ({ status: "unavailable" }) as const,
+    );
+    await expect(
+      startCustomerMutation(
+        { current: false },
+        async () => ({ status: "forbidden" }),
+        failedRefetch,
+      ),
+    ).resolves.toEqual({ status: "mutation_failed", failure: "forbidden" });
+    expect(failedRefetch).not.toHaveBeenCalled();
+
+    await expect(
+      startCustomerMutation(
+        { current: false },
+        async () => ({ status: "succeeded" }),
+        failedRefetch,
+      ),
+    ).resolves.toEqual({ status: "unconfirmed", failure: "unavailable" });
+  });
+
+  it("releases the lock and fails closed when an operation throws", async () => {
+    const lock = { current: false };
+    await expect(
+      startCustomerMutation(
+        lock,
+        async () => {
+          throw new Error("sensitive transport detail");
+        },
+        vi.fn(),
+      ),
+    ).resolves.toEqual({ status: "mutation_failed", failure: "unavailable" });
+    expect(lock.current).toBe(false);
   });
 });

@@ -136,6 +136,42 @@ function applyLoadResult(
   setPage({ kind: result.status });
 }
 
+export type CustomerMutationFlowResult =
+  | { readonly status: "confirmed"; readonly snapshot: CustomerDetailSnapshot }
+  | {
+      readonly status: "mutation_failed";
+      readonly failure: CustomerMutationFailure;
+    }
+  | {
+      readonly status: "unconfirmed";
+      readonly failure: Exclude<CustomerDetailLoadResult["status"], "loaded">;
+    };
+
+export function startCustomerMutation(
+  lock: { current: boolean },
+  execute: () => Promise<CustomerMutationResult>,
+  refetch: () => Promise<CustomerDetailLoadResult>,
+): Promise<CustomerMutationFlowResult> | undefined {
+  if (lock.current) return undefined;
+  lock.current = true;
+  return (async () => {
+    try {
+      const result = await execute();
+      if (result.status !== "succeeded") {
+        return { status: "mutation_failed", failure: result.status };
+      }
+      const refreshed = await refetch();
+      return refreshed.status === "loaded"
+        ? { status: "confirmed", snapshot: refreshed.snapshot }
+        : { status: "unconfirmed", failure: refreshed.status };
+    } catch {
+      return { status: "mutation_failed", failure: "unavailable" };
+    } finally {
+      lock.current = false;
+    }
+  })();
+}
+
 export function CustomerDetailPage({
   customerID,
   transport = generatedCustomerDetailTransport,
@@ -209,33 +245,27 @@ export function CustomerDetailPage({
     execute: () => Promise<CustomerMutationResult>,
     successMessage: string,
   ) => {
-    if (mutationInFlight.current) return;
-    mutationInFlight.current = true;
+    const operation = startCustomerMutation(mutationInFlight, execute, () =>
+      loadCustomerDetail(transport, customerID),
+    );
+    if (!operation) return;
     loadSequence.current += 1;
     setMutationPending(true);
     setNotice(undefined);
     try {
-      const result = await execute();
-      if (result.status !== "succeeded") {
-        handleMutationFailure(result.status);
+      const result = await operation;
+      if (result.status === "mutation_failed") {
+        handleMutationFailure(result.failure);
         return;
       }
-
-      const sequence = loadSequence.current + 1;
-      loadSequence.current = sequence;
-      const refreshed = await loadCustomerDetail(transport, customerID);
-      if (sequence !== loadSequence.current) return;
-      if (refreshed.status !== "loaded") {
-        if (refreshed.status === "unauthenticated") onUnauthenticated?.();
+      if (result.status === "unconfirmed") {
+        if (result.failure === "unauthenticated") onUnauthenticated?.();
         setNotice("操作已提交，但未能重新读取服务端事实。请稍后刷新确认。");
         return;
       }
-      setPage({ kind: "ready", snapshot: refreshed.snapshot });
+      setPage({ kind: "ready", snapshot: result.snapshot });
       setNotice(successMessage);
-    } catch {
-      setNotice("客户服务暂时不可用，操作未确认，请稍后重试。");
     } finally {
-      mutationInFlight.current = false;
       setMutationPending(false);
     }
   };

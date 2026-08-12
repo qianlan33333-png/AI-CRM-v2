@@ -189,6 +189,14 @@ required=(
   docs/evidence/slices/P3-C02E-sqlc-store.md
   docs/evidence/slices/P3-C02E-service-tests.md
   docs/evidence/slices/P3-C02E-handler-tests.md
+  web/src/customer-detail.ts
+  web/src/customer-detail.test.ts
+  web/src/customer-detail-ui.tsx
+  web/src/customer-detail-ui.test.tsx
+  web/src/customer-detail.css
+  docs/execution/slices/P3-C05.md
+  docs/evidence/slices/P3-C05-ui.md
+  docs/evidence/slices/P3-C05-route-tests.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -552,6 +560,14 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C02E-sqlc-store.md
 100644 docs/evidence/slices/P3-C02E-service-tests.md
 100644 docs/evidence/slices/P3-C02E-handler-tests.md
+100644 web/src/customer-detail.ts
+100644 web/src/customer-detail.test.ts
+100644 web/src/customer-detail-ui.tsx
+100644 web/src/customer-detail-ui.test.tsx
+100644 web/src/customer-detail.css
+100644 docs/execution/slices/P3-C05.md
+100644 docs/evidence/slices/P3-C05-ui.md
+100644 docs/evidence/slices/P3-C05-route-tests.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -1161,6 +1177,22 @@ verify_index_sha256 docs/evidence/slices/P3-C02E-service-tests.md \
   12c3191c1402359653f6b8e6736a3b10ff3f8958395339b317288fa6d69c0a9b
 verify_index_sha256 docs/evidence/slices/P3-C02E-handler-tests.md \
   ecb86db382d51896cbcff6698ea0791734bfa099a69a8d1b327b06cf0acd90ca
+verify_index_sha256 web/src/customer-detail.ts \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 web/src/customer-detail.test.ts \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 web/src/customer-detail-ui.tsx \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 web/src/customer-detail-ui.test.tsx \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 web/src/customer-detail.css \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 docs/execution/slices/P3-C05.md \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 docs/evidence/slices/P3-C05-ui.md \
+  0000000000000000000000000000000000000000000000000000000000000000
+verify_index_sha256 docs/evidence/slices/P3-C05-route-tests.md \
+  0000000000000000000000000000000000000000000000000000000000000000
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -2487,6 +2519,42 @@ grep -Fq 'GRANT SELECT (id, group_id, name, sort_order) ON acceptance_fixtures.t
   fail "P3-C02E acceptance must deny the WeCom tag identifier column"
 grep -Fq 'databaseError.Code != "42501"' <<<"$p3c02e_acceptance" ||
   fail "P3-C02E column privilege negative is missing"
+
+p3c05_domain="$(git show :web/src/customer-detail.ts)"
+for operation in getCustomer updateCustomer setCustomerStage addCustomerTag removeCustomerTag listCustomerEvents listTags; do
+  grep -Eq "(^|[[:space:]])${operation},?$" <<<"$p3c05_domain" ||
+    fail "P3-C05 must use generated client operation: $operation"
+done
+grep -Fq 'const SAME_ORIGIN: RequestInit = { credentials: "same-origin" };' <<<"$p3c05_domain" ||
+  fail "P3-C05 reads lost same-origin credentials"
+grep -Fq 'headers: { "X-CSRF-Token": csrfToken }' <<<"$p3c05_domain" ||
+  fail "P3-C05 writes lost the server-bound CSRF header"
+grep -Fq 'function exactObject(' <<<"$p3c05_domain" ||
+  fail "P3-C05 response parsing must remain fail-closed"
+! grep -Eqi 'external_?user|unionid|openid|wecom_tag_id' <<<"$p3c05_domain" ||
+  fail "P3-C05 channel-neutral UI exposed an external identity"
+
+p3c05_ui="$(git show :web/src/customer-detail-ui.tsx)"
+grep -Fq 'if (mutationInFlight.current) return;' <<<"$p3c05_ui" ||
+  fail "P3-C05 lost synchronous double-submit protection"
+grep -Fq 'const refreshed = await loadCustomerDetail(transport, customerID);' <<<"$p3c05_ui" ||
+  fail "P3-C05 mutation success must refetch server facts"
+grep -Fq '操作已提交，但未能重新读取服务端事实。请稍后刷新确认。' <<<"$p3c05_ui" ||
+  fail "P3-C05 lost the successful-write/unconfirmed-read warning"
+
+p3c05_main="$(git show :web/src/main.tsx)"
+grep -Fq 'const match = /^\/customers\/([1-9]\d*)$/.exec(pathname);' <<<"$p3c05_main" ||
+  fail "P3-C05 dynamic route must accept only an exact positive OneID"
+grep -Fq 'Number.isSafeInteger(customerID)' <<<"$p3c05_main" ||
+  fail "P3-C05 dynamic route lost the safe-integer boundary"
+grep -Fq '<CustomerDetailPage' <<<"$p3c05_main" ||
+  fail "P3-C05 customer detail page is not mounted"
+
+p3c05_list="$(git show :web/src/customers-ui.tsx)"
+grep -Fq 'href={`/customers/${customer.id}`}' <<<"$p3c05_list" ||
+  fail "P3-C05 customer rows lost their native detail links"
+grep -Fq 'onClick={onCustomerNavigate}' <<<"$p3c05_list" ||
+  fail "P3-C05 customer links lost History API integration"
 
 p3c03_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||

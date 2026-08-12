@@ -1,31 +1,16 @@
 .customer-detail-page { display: grid; gap: 1.5rem; max-width: 72rem; }
 
-.customer-detail-page__heading {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 1rem;
+.customer-detail-page__heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+
+.customer-detail-page__heading h1, .customer-detail-page__heading p { margin-top: 0; }
+
+.customer-detail-page__state, .customer-detail-page__notice,
+.customer-detail-page__card, .customer-detail-page__facts {
+  border: 1px solid #c9bca8; background: #fffaf1;
 }
 
-.customer-detail-page__heading h1,
-.customer-detail-page__heading p {
-  margin-top: 0;
-}
-
-.customer-detail-page__state,
-.customer-detail-page__notice,
-.customer-detail-page__card,
-.customer-detail-page__facts {
-  border: 1px solid #c9bca8;
-  background: #fffaf1;
-}
-
-.customer-detail-page__state,
-.customer-detail-page__notice,
-.customer-detail-page__card {
-  margin: 0;
-  padding: 1rem;
-}
+.customer-detail-page__state, .customer-detail-page__notice,
+.customer-detail-page__card { margin: 0; padding: 1rem; }
 
 .customer-detail-page__notice { border-left: 4px solid #b83a2d; }
 .customer-detail-page__grid {
@@ -81,16 +66,9 @@
   cursor: pointer;
 }
 
-.customer-detail-page button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
+.customer-detail-page button:disabled { cursor: not-allowed; opacity: 0.6; }
 
-.customer-detail-page__meta {
-  color: #62584d;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
+.customer-detail-page__meta { color: #62584d; font-size: 0.9rem; line-height: 1.5; }
 
 .customer-detail-page__tag-list,
 .customer-detail-page__timeline {
@@ -114,11 +92,7 @@
   color: #8e2d24;
 }
 
-.customer-detail-page__timeline li {
-  display: grid;
-  gap: 0.2rem;
-  color: #62584d;
-}
+.customer-detail-page__timeline li { display: grid; gap: 0.2rem; color: #62584d; }
 
 .customer-detail-page__timeline strong { color: #211d1a; }
 .customer-detail-page__facts {
@@ -134,10 +108,7 @@
   background: #fffaf1;
 }
 
-.customer-detail-page__facts dt {
-  color: #796c5b;
-  font-size: 0.75rem;
-}
+.customer-detail-page__facts dt { color: #796c5b; font-size: 0.75rem; }
 
 .customer-detail-page__facts dd { margin: 0.35rem 0 0; overflow-wrap: anywhere; }
 
