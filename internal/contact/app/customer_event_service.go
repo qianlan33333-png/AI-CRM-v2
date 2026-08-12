@@ -176,10 +176,8 @@ func applyCustomerEventCursor(query *CustomerEventQuery, raw, expectedFilterHash
 	if err != nil || base64.RawURLEncoding.EncodeToString(decoded) != raw {
 		return errors.New("customer event cursor encoding is invalid")
 	}
-	decoder := json.NewDecoder(bytes.NewReader(decoded))
-	decoder.DisallowUnknownFields()
 	var cursor customerEventCursor
-	if decoder.Decode(&cursor) != nil || ensureJSONEOF(decoder) != nil ||
+	if decodeCustomerEventCursor(decoded, &cursor) != nil ||
 		cursor.Version != customerEventCursorVersion || cursor.Operation != customerEventCursorOperation ||
 		cursor.Sort != customerEventCursorSort || cursor.FilterHash != expectedFilterHash || cursor.ID <= 0 {
 		return errors.New("customer event cursor contract does not match")
@@ -191,6 +189,52 @@ func applyCustomerEventCursor(query *CustomerEventQuery, raw, expectedFilterHash
 	query.AfterOccurredAt = &occurredAt
 	id := cursor.ID
 	query.AfterID = &id
+	return nil
+}
+
+func decodeCustomerEventCursor(encoded []byte, target *customerEventCursor) error {
+	if target == nil {
+		return errors.New("customer event cursor target is required")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	token, err := decoder.Token()
+	if err != nil || token != json.Delim('{') {
+		return errors.New("customer event cursor payload is invalid")
+	}
+	fields := make(map[string]json.RawMessage, 6)
+	for decoder.More() {
+		keyToken, keyErr := decoder.Token()
+		key, ok := keyToken.(string)
+		if keyErr != nil || !ok {
+			return errors.New("customer event cursor key is invalid")
+		}
+		if _, duplicate := fields[key]; duplicate {
+			return errors.New("customer event cursor key is duplicated")
+		}
+		var raw json.RawMessage
+		if decoder.Decode(&raw) != nil {
+			return errors.New("customer event cursor value is invalid")
+		}
+		fields[key] = raw
+	}
+	if token, err = decoder.Token(); err != nil || token != json.Delim('}') || ensureJSONEOF(decoder) != nil || len(fields) != 6 {
+		return errors.New("customer event cursor object is invalid")
+	}
+	for key := range fields {
+		switch key {
+		case "v", "operation", "sort", "filter", "occurred_at", "id":
+		default:
+			return errors.New("customer event cursor field is unknown")
+		}
+	}
+	if json.Unmarshal(fields["v"], &target.Version) != nil ||
+		json.Unmarshal(fields["operation"], &target.Operation) != nil ||
+		json.Unmarshal(fields["sort"], &target.Sort) != nil ||
+		json.Unmarshal(fields["filter"], &target.FilterHash) != nil ||
+		json.Unmarshal(fields["occurred_at"], &target.OccurredAt) != nil ||
+		json.Unmarshal(fields["id"], &target.ID) != nil {
+		return errors.New("customer event cursor field type is invalid")
+	}
 	return nil
 }
 

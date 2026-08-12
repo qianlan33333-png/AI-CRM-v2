@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"reflect"
 
@@ -145,7 +146,8 @@ func decodeCustomerEventPayload(raw json.RawMessage) (map[string]interface{}, er
 	if err := decoder.Decode(&payload); err != nil || payload == nil {
 		return nil, errors.New("customer event payload is invalid")
 	}
-	if decoder.Decode(&struct{}{}) == nil {
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
 		return nil, errors.New("customer event payload has trailing data")
 	}
 	return payload, nil
