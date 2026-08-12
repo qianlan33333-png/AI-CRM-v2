@@ -3417,6 +3417,21 @@ slices:
     verification_induced_correction_count: 1
     correction_notes: [slice:first_correction_receipt_update_initially_matched_historical_P3_C07C_R3A_then_was_reverted_before_commit_and_zero_drift_rechecked, slice:second_correction_infra_count_update_initially_matched_historical_M0_6_then_was_reverted_before_commit_and_zero_drift_rechecked, infra:local_full_race_exposed_existing_p2s11_concurrent_bytes_buffer_while_exact_base_isolated_probe_passed, infra:host_node_v25_9_0_rejected_by_pinned_web_gate_then_exact_node_v24_18_0_runtime_was_used, infra:contact_R3B_priority_advanced_exact_main_and_required_clean_replay_after_its_main_CI_closed, verification:first_exact_base_probe_command_ran_from_repository_root_instead_of_new_detached_worktree_then_reran_in_correct_worktree]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-R6-B
+    title: portable-sql-ddl-parser-foundation-only
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: b2375c36f6d77df50336c2bdb939fb826bb358f2
+    dependency: P3_R6_A_AND_P3_S04B_CLOSED_EXACT_MAIN_THREE_REQUIRED_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-r6-b-sql-ddl-parser
+    scope: [portable_SQL_lexer, top_level_table_DDL_ordered_application, final_effective_table_constraint_canonical_model, multiline_constraint_and_later_drop_unit_negative_cases]
+    excluded_scope: [receipt_pending_policy_and_domain_names, DDL_ADR_OpenAPI_ports_API_runtime_Make_dependencies_CI_workflow_repo_contract_wiring, old_R5_C2_WIP_reuse, production_database_live_migration_real_wecom_external_send]
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [slice:self_review_added_E_string_backslash_escape_and_all_recognized_statement_parenthesis_balance_after_negative_tests_exposed_initial_gaps, slice:first_ledger_correction_update_matched_two_historical_entries_then_both_were_reverted_and_zero_drift_rechecked, infra:segment_S04B_priority_advanced_exact_main_and_required_clean_replay_after_its_main_CI_closed]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:
   P2:
