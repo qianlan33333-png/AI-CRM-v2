@@ -1448,7 +1448,7 @@ verify_index_sha256 docs/execution/slices/P3-S04A.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  60b3fe21cf5c15f8c3073ac3dbebe64f1583fd124ab3bc81fe7bc45cce00a319
+  7bc4eccbc8a0d31c0f1d079d0d229e31d2caba2b00249623b0bdb545c519a42d
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
