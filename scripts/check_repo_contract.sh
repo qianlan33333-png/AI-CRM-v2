@@ -141,6 +141,12 @@ required=(
   docs/execution/slices/P3-C02A.md
   docs/evidence/slices/P3-C02A-sqlc-store.md
   docs/evidence/slices/P3-C02A-service-tests.md
+  internal/contact/http/customer_mutation_handler.go
+  internal/contact/http/customer_mutation_handler_test.go
+  docs/execution/slices/P3-C02C.md
+  docs/evidence/slices/P3-C02C-handler-tests.md
+  docs/evidence/slices/P3-C02C-service-tests.md
+  docs/evidence/slices/P3-C02C-store-tests.md
   acceptance/p3c02b/doc.go
   acceptance/p3c02b/customer_detail_integration_test.go
   internal/contact/app/customer_detail_service.go
@@ -470,6 +476,12 @@ done <<'EOF'
 100644 docs/execution/slices/P3-C02A.md
 100644 docs/evidence/slices/P3-C02A-sqlc-store.md
 100644 docs/evidence/slices/P3-C02A-service-tests.md
+100644 internal/contact/http/customer_mutation_handler.go
+100644 internal/contact/http/customer_mutation_handler_test.go
+100644 docs/execution/slices/P3-C02C.md
+100644 docs/evidence/slices/P3-C02C-handler-tests.md
+100644 docs/evidence/slices/P3-C02C-service-tests.md
+100644 docs/evidence/slices/P3-C02C-store-tests.md
 100644 acceptance/p3c02b/doc.go
 100644 acceptance/p3c02b/customer_detail_integration_test.go
 100644 internal/contact/app/customer_detail_service.go
@@ -730,11 +742,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  55cbbdda786de010cb368b8c051722b0d35c98bd5ccb1b1523719c9c9aaf2845
+  d621fcd9207d6148133e1c083c4a1316fb01481f44889ca75d4bc7ad0f82dbcf
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  03cd5a243c11500cca1f82dfb4311718613661606ebe31b59012622b6fa5febe
+  fecc0d296eb9b3749a63fa758c2fa03747509ac00f9fc6046732681ede68cc06
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -978,25 +990,37 @@ verify_index_sha256 docs/evidence/slices/P3-C04-customer-list-ui.md \
 verify_index_sha256 acceptance/p3c02a/doc.go \
   100b1b52b8089d9bd3f23e9f5e3fef03dd9cf980f578ac9d1450bee21d8c9aab
 verify_index_sha256 acceptance/p3c02a/customer_mutation_integration_test.go \
-  f85a6e80cfc625dc4ce623355f3affc12ec142759f1e8f2a80368b3035f8842a
+  bb2d7c8a514bdf5c95c7ebb23f704635d1b2f62d0d448e6cc6c175f9fc3c9453
 verify_index_sha256 internal/contact/app/customer_mutation_service.go \
-  9fb40827ccd27b7c04e90520b9f37be14185418141c4c0899e7ec209b7302145
+  ba1cf4daa6e91177064fbe9d0084b64fcbc1478db03282f95ae6ef667a903664
 verify_index_sha256 internal/contact/app/customer_mutation_service_test.go \
-  9a87c22c5d14b6b534dc9557a97de692d513f609a0ac2632d1e4ec4fb87543d7
+  e2fb1370e6f348a155e667c4f30ce27ae5b5d98d32622e9a92cc265c5e8a59b1
 verify_index_sha256 internal/contact/store/customer_mutation_repository.go \
-  6b01429855647b49b55e6226744d1f3215637a96aff3ef5ba34ecb252a8ea1c8
+  46e1a3ae1ed655463ede371755c8f23a0387d78c15817284ca1fdf33a88b0acf
 verify_index_sha256 internal/contact/store/customer_mutation_repository_test.go \
-  c37d595160fd6b5c5d0b06ae277c9e5e633963a99526335a4a74c6be020379f2
+  6736dc9263dc0db994037e537be007e4684fc993b8a151ab5e3c5dd2aeaf119c
 verify_index_sha256 internal/contact/store/queries/customer_mutations.sql \
-  2c6d972ac26cc4adddf24a9f2419dcee18a2bbf8cc1885c9cd89c5b113902f39
+  bcd897719ed1fa94fc14e748ec5ccbb975fea0bfc756748308487dc31065bedf
 verify_index_sha256 internal/contact/store/generated/customer_mutations.sql.go \
-  bdb9d819b1704a54459ffb2f33169eb2c2cfa492e9e77fd3bf8404d0e9141096
+  7ab708e777f7db9f5e6bea850d5a684381dffcd3226d238dda37b67ec1854c47
 verify_index_sha256 docs/execution/slices/P3-C02A.md \
   3b7fa0edce011243ee5983f39bb3e461ad3da84688b4139846fe682b7a03412a
 verify_index_sha256 docs/evidence/slices/P3-C02A-sqlc-store.md \
   1c4c82565b6531e35bd7b657c583fa1fab4591b871550af145ecab4d966db40b
 verify_index_sha256 docs/evidence/slices/P3-C02A-service-tests.md \
   019b694aa844264ea8cbe6f686060df33dc430248ddcc567dd7f02181bd21c1d
+verify_index_sha256 internal/contact/http/customer_mutation_handler.go \
+  8a3c6c5c31970f2c747ebff7e770cdf2e6940f9a6c20b0deae6a09a94a9a0935
+verify_index_sha256 internal/contact/http/customer_mutation_handler_test.go \
+  2b2c6e729bb1d5c840aabb5251cc5a013a245afb003148f22b154a3e87569266
+verify_index_sha256 docs/execution/slices/P3-C02C.md \
+  997680d558d59c01466a10ad48c3f2f7e8f3c261248c5665883e110cf8a845c4
+verify_index_sha256 docs/evidence/slices/P3-C02C-handler-tests.md \
+  c0dc2924b0880d0716275384d6f090c73572aa503eba6d4284ecf3a077d6c9a3
+verify_index_sha256 docs/evidence/slices/P3-C02C-service-tests.md \
+  f4f68b915cdd82cda4fe329fb4085aa26f05b2dda8628fb736092e1a8ee0b172
+verify_index_sha256 docs/evidence/slices/P3-C02C-store-tests.md \
+  819806fcc4183a390f4e0d00887a9588fc6c44a8488675d515f67d1542dc16a6
 verify_index_sha256 acceptance/p3c02b/doc.go \
   ed42e420f6b6ce272206a24fdf97d6749db09d9785225d446e15ef4d7de58a83
 verify_index_sha256 acceptance/p3c02b/customer_detail_integration_test.go \
@@ -1174,9 +1198,9 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  09c70a1ba3949f2c840ab9c93a5896ea5a4796f6c1ab3c797630551cbb7c5d8b
+  94915f0a4c1197ce89c07b0cf48c7cd611cb43cd9c70116c36f7b2024a0b4c68
 verify_index_sha256 cmd/aicrm/api_test.go \
-  1f17dd26ddc2bbd314dc97ee90d3aa16de5c17342dbe244cb71e6852903e34c8
+  443fb64bba510cbc3fbb87eebcee50fdc8601032d8341d021584662fe681836b
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
@@ -1284,7 +1308,7 @@ verify_index_sha256 internal/contact/store/generated/customers.sql.go \
 verify_index_sha256 internal/contact/store/generated/models.go \
   9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
-  5aaae9fbb9097fd31a7daecd54a7f1c91e93618452b75a5f249cba6bda63b39f
+  fa4af82b77062b6e0dac9a0336f701f37e25486505ceb2fa95978c4897304d2f
 verify_index_sha256 internal/contact/store/generated/stages.sql.go \
   24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
 verify_index_sha256 internal/contact/store/repository.go \
@@ -1328,7 +1352,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  2e00cba007521e2fd876e11e11bbc2eef8d07a64b1ac46157c8a6cc4e85db5ee
+  06a0eb4331ff86e259485f76edd78d4f5e8c9f86537dcc28b4c3db42ef65f09a
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2166,6 +2190,30 @@ grep -Fq 'EvCustomerUpdated = "customer.updated"' <<<"$p3c02a_events" ||
 p3c02a_openapi="$(git show :api/openapi.yaml)"
 [[ "$(grep -Fc 'gender: { type: integer, format: int32, minimum: -32768, maximum: 32767, nullable: true }' <<<"$p3c02a_openapi")" -eq 2 ]] ||
   fail "P3-C02A gender bounds must remain aligned with PostgreSQL SMALLINT"
+
+p3c02c_api="$(git show :cmd/aicrm/api.go)"
+for route in \
+  '{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)}' \
+  '{http.MethodPut, "/api/v1/customers/{customer_id}/stage", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)}' \
+  '{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)}' \
+  '{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)}'; do
+  grep -Fq "$route" <<<"$p3c02c_api" ||
+    fail "P3-C02C mutation route lost CustomersWrite or CSRF protection: $route"
+done
+
+p3c02c_query="$(git show :internal/contact/store/queries/customer_mutations.sql)"
+grep -Fq 'sqlc.narg(scope_owner_staff_id)::bigint IS NULL' <<<"$p3c02c_query" ||
+  fail "P3-C02C global mutation scope predicate drifted"
+grep -Fq 'c.owner_staff_id = sqlc.narg(scope_owner_staff_id)::bigint' <<<"$p3c02c_query" ||
+  fail "P3-C02C owner mutation scope must remain inside the locking SQL predicate"
+
+p3c02c_handler="$(git show :internal/contact/http/customer_mutation_handler.go)"
+grep -Fq 'const maxCustomerMutationBodyBytes = 1 << 20' <<<"$p3c02c_handler" ||
+  fail "P3-C02C mutation body limit drifted"
+grep -Fq 'if _, duplicate := object[key]; duplicate {' <<<"$p3c02c_handler" ||
+  fail "P3-C02C top-level duplicate JSON key rejection drifted"
+grep -Fq 'ScopeOwnerStaffID: scopeOwnerStaffID' <<<"$p3c02c_handler" ||
+  fail "P3-C02C handler stopped passing owner scope into the transaction-bound command"
 
 p3c02b_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c02b-acceptance:$' <<<"$p3c02b_make")" -eq 1 ]] ||

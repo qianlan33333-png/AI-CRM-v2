@@ -167,12 +167,15 @@ func rawPtr(value string) *json.RawMessage {
 }
 
 type mutationOperation struct {
-	name       string
-	run        func(*CustomerMutationService) (CustomerRecord, error)
-	configure  func(*fakeMutationStore)
-	storeCalls func(*fakeMutationStore) int
-	writeStep  string
-	eventType  string
+	name              string
+	run               func(*CustomerMutationService) (CustomerRecord, error)
+	runWithScope      func(*CustomerMutationService, *int64) (CustomerRecord, error)
+	configure         func(*fakeMutationStore)
+	storeCalls        func(*fakeMutationStore) int
+	scopeOwnerStaffID func(*fakeMutationStore) []*int64
+	setStoreError     func(*fakeMutationStore, error)
+	writeStep         string
+	eventType         string
 }
 
 func mutationOperations() []mutationOperation {
@@ -182,40 +185,92 @@ func mutationOperations() []mutationOperation {
 			run: func(service *CustomerMutationService) (CustomerRecord, error) {
 				return service.Update(context.Background(), validUpdate())
 			},
+			runWithScope: func(service *CustomerMutationService, scopeOwnerStaffID *int64) (CustomerRecord, error) {
+				command := validUpdate()
+				command.ScopeOwnerStaffID = scopeOwnerStaffID
+				return service.Update(context.Background(), command)
+			},
 			configure: func(store *fakeMutationStore) {
 				store.updateResult = CustomerProfileMutation{Customer: mutationCustomer(), StateChange: true}
 			},
 			storeCalls: func(store *fakeMutationStore) int { return store.updateCalls },
-			writeStep:  "store.update", eventType: eventport.EvCustomerUpdated,
+			scopeOwnerStaffID: func(store *fakeMutationStore) []*int64 {
+				values := make([]*int64, len(store.updates))
+				for index, command := range store.updates {
+					values[index] = command.ScopeOwnerStaffID
+				}
+				return values
+			},
+			setStoreError: func(store *fakeMutationStore, err error) { store.updateErr = err },
+			writeStep:     "store.update", eventType: eventport.EvCustomerUpdated,
 		},
 		{
 			name: "set stage",
 			run: func(service *CustomerMutationService) (CustomerRecord, error) {
 				return service.SetStage(context.Background(), validStage())
 			},
+			runWithScope: func(service *CustomerMutationService, scopeOwnerStaffID *int64) (CustomerRecord, error) {
+				command := validStage()
+				command.ScopeOwnerStaffID = scopeOwnerStaffID
+				return service.SetStage(context.Background(), command)
+			},
 			configure: func(store *fakeMutationStore) {
 				store.stageResult = CustomerStageMutation{Customer: mutationCustomer(), StateChange: true}
 			},
 			storeCalls: func(store *fakeMutationStore) int { return store.stageCalls },
-			writeStep:  "store.stage", eventType: eventport.EvStageChanged,
+			scopeOwnerStaffID: func(store *fakeMutationStore) []*int64 {
+				values := make([]*int64, len(store.stages))
+				for index, command := range store.stages {
+					values[index] = command.ScopeOwnerStaffID
+				}
+				return values
+			},
+			setStoreError: func(store *fakeMutationStore, err error) { store.stageErr = err },
+			writeStep:     "store.stage", eventType: eventport.EvStageChanged,
 		},
 		{
 			name: "add tag",
 			run: func(service *CustomerMutationService) (CustomerRecord, error) {
 				return CustomerRecord{}, service.AddTag(context.Background(), validTag())
 			},
+			runWithScope: func(service *CustomerMutationService, scopeOwnerStaffID *int64) (CustomerRecord, error) {
+				command := validTag()
+				command.ScopeOwnerStaffID = scopeOwnerStaffID
+				return CustomerRecord{}, service.AddTag(context.Background(), command)
+			},
 			configure:  func(store *fakeMutationStore) { store.addChanged = true },
 			storeCalls: func(store *fakeMutationStore) int { return store.addCalls },
-			writeStep:  "store.tag.add", eventType: eventport.EvTagApplied,
+			scopeOwnerStaffID: func(store *fakeMutationStore) []*int64 {
+				values := make([]*int64, len(store.addTags))
+				for index, command := range store.addTags {
+					values[index] = command.ScopeOwnerStaffID
+				}
+				return values
+			},
+			setStoreError: func(store *fakeMutationStore, err error) { store.addErr = err },
+			writeStep:     "store.tag.add", eventType: eventport.EvTagApplied,
 		},
 		{
 			name: "remove tag",
 			run: func(service *CustomerMutationService) (CustomerRecord, error) {
 				return CustomerRecord{}, service.RemoveTag(context.Background(), validTag())
 			},
+			runWithScope: func(service *CustomerMutationService, scopeOwnerStaffID *int64) (CustomerRecord, error) {
+				command := validTag()
+				command.ScopeOwnerStaffID = scopeOwnerStaffID
+				return CustomerRecord{}, service.RemoveTag(context.Background(), command)
+			},
 			configure:  func(store *fakeMutationStore) { store.removeChanged = true },
 			storeCalls: func(store *fakeMutationStore) int { return store.removeCalls },
-			writeStep:  "store.tag.remove", eventType: eventport.EvTagRemoved,
+			scopeOwnerStaffID: func(store *fakeMutationStore) []*int64 {
+				values := make([]*int64, len(store.removeTags))
+				for index, command := range store.removeTags {
+					values[index] = command.ScopeOwnerStaffID
+				}
+				return values
+			},
+			setStoreError: func(store *fakeMutationStore, err error) { store.removeErr = err },
+			writeStep:     "store.tag.remove", eventType: eventport.EvTagRemoved,
 		},
 	}
 }
@@ -418,6 +473,118 @@ func TestCustomerMutationRejectsAllInvalidCommandsBeforeTransaction(t *testing.T
 			assertZeroCustomer(t, customer)
 			if uow.calls != 0 || store.calls() != 0 || events.calls != 0 {
 				t.Fatalf("invalid input reached collaborators: uow=%d store=%d event_log=%d", uow.calls, store.calls(), events.calls)
+			}
+		})
+	}
+}
+
+func TestCustomerMutationPassesGlobalAndOwnerScopeToStore(t *testing.T) {
+	ownerStaffID := int64(71)
+	scopes := []struct {
+		name  string
+		value *int64
+	}{
+		{name: "global", value: nil},
+		{name: "owner", value: &ownerStaffID},
+	}
+
+	for _, operation := range mutationOperations() {
+		operation := operation
+		for _, scope := range scopes {
+			scope := scope
+			t.Run(operation.name+"/"+scope.name, func(t *testing.T) {
+				uow, store, events := &fakeMutationUoW{}, &fakeMutationStore{}, &fakeMutationAppender{}
+				operation.configure(store)
+
+				_, err := operation.runWithScope(newTestMutationService(uow, store, events), scope.value)
+				if err != nil {
+					t.Fatalf("mutation error = %v", err)
+				}
+				if uow.calls != 1 || uow.callbacks != 1 || operation.storeCalls(store) != 1 {
+					t.Fatalf("mutation calls = uow:%d callbacks:%d store:%d, want 1/1/1", uow.calls, uow.callbacks, operation.storeCalls(store))
+				}
+				assertScopeOwnerStaffIDs(t, operation.scopeOwnerStaffID(store), scope.value, 1)
+			})
+		}
+	}
+}
+
+func TestCustomerMutationRejectsNonPositiveScopeBeforeUnitOfWork(t *testing.T) {
+	zero, negative := int64(0), int64(-71)
+	for _, operation := range mutationOperations() {
+		operation := operation
+		for _, scope := range []struct {
+			name  string
+			value *int64
+		}{
+			{name: "zero", value: &zero},
+			{name: "negative", value: &negative},
+		} {
+			scope := scope
+			t.Run(operation.name+"/"+scope.name, func(t *testing.T) {
+				uow, store, events := &fakeMutationUoW{}, &fakeMutationStore{}, &fakeMutationAppender{}
+				operation.configure(store)
+
+				customer, err := operation.runWithScope(newTestMutationService(uow, store, events), scope.value)
+				if !errors.Is(err, ErrInvalidCustomerMutation) {
+					t.Fatalf("error = %v, want ErrInvalidCustomerMutation", err)
+				}
+				assertZeroCustomer(t, customer)
+				if uow.calls != 0 || uow.callbacks != 0 || store.calls() != 0 || events.calls != 0 {
+					t.Fatalf("invalid scope reached collaborators: uow=%d callbacks=%d store=%d event_log=%d", uow.calls, uow.callbacks, store.calls(), events.calls)
+				}
+			})
+		}
+	}
+}
+
+func TestCustomerMutationKeepsOwnerScopeAcrossUnitOfWorkRetries(t *testing.T) {
+	ownerStaffID := int64(71)
+	for _, operation := range mutationOperations() {
+		operation := operation
+		t.Run(operation.name, func(t *testing.T) {
+			uow := &fakeMutationUoW{attempts: 3}
+			store, events := &fakeMutationStore{}, &fakeMutationAppender{}
+			operation.configure(store)
+
+			_, err := operation.runWithScope(newTestMutationService(uow, store, events), &ownerStaffID)
+			if err != nil {
+				t.Fatalf("mutation error = %v", err)
+			}
+			if uow.calls != 1 || uow.callbacks != 3 || operation.storeCalls(store) != 3 {
+				t.Fatalf("retry calls = uow:%d callbacks:%d store:%d, want 1/3/3", uow.calls, uow.callbacks, operation.storeCalls(store))
+			}
+			assertScopeOwnerStaffIDs(t, operation.scopeOwnerStaffID(store), &ownerStaffID, 3)
+		})
+	}
+}
+
+func TestCustomerMutationWrapsCrossOwnerNotFoundWithoutEvents(t *testing.T) {
+	ownerStaffID := int64(71)
+	for _, operation := range mutationOperations() {
+		operation := operation
+		t.Run(operation.name, func(t *testing.T) {
+			uow, store, events := &fakeMutationUoW{}, &fakeMutationStore{}, &fakeMutationAppender{}
+			operation.configure(store)
+			operation.setStoreError(store, ErrCustomerNotFound)
+			service := newTestMutationService(uow, store, events)
+			keyCalls := 0
+			service.newEventKey = func() (string, error) {
+				keyCalls++
+				return "must-not-be-used", nil
+			}
+
+			customer, err := operation.runWithScope(service, &ownerStaffID)
+			if !errors.Is(err, ErrCustomerMutationFailed) || !errors.Is(err, ErrCustomerNotFound) {
+				t.Fatalf("error = %v, want wrapped ErrCustomerMutationFailed and ErrCustomerNotFound", err)
+			}
+			assertZeroCustomer(t, customer)
+			if uow.calls != 1 || uow.callbacks != 1 || operation.storeCalls(store) != 1 {
+				t.Fatalf("not-found calls = uow:%d callbacks:%d store:%d, want 1/1/1", uow.calls, uow.callbacks, operation.storeCalls(store))
+			}
+			assertScopeOwnerStaffIDs(t, operation.scopeOwnerStaffID(store), &ownerStaffID, 1)
+			if store.customerEventCalls != 0 || events.calls != 0 || keyCalls != 0 {
+				t.Fatalf("cross-owner not found wrote or prepared events: customer_events=%d event_log=%d key_calls=%d", store.customerEventCalls, events.calls, keyCalls)
 			}
 		})
 	}
@@ -789,6 +956,24 @@ func assertZeroCustomer(t *testing.T, customer CustomerRecord) {
 	t.Helper()
 	if !reflect.DeepEqual(customer, CustomerRecord{}) {
 		t.Fatalf("customer = %#v, want zero value", customer)
+	}
+}
+
+func assertScopeOwnerStaffIDs(t *testing.T, actual []*int64, expected *int64, count int) {
+	t.Helper()
+	if len(actual) != count {
+		t.Fatalf("scope values = %v, want %d values", actual, count)
+	}
+	for index, value := range actual {
+		if expected == nil {
+			if value != nil {
+				t.Fatalf("scope value[%d] = %d, want nil global scope", index, *value)
+			}
+			continue
+		}
+		if value == nil || *value != *expected {
+			t.Fatalf("scope value[%d] = %v, want owner %d", index, value, *expected)
+		}
 	}
 }
 

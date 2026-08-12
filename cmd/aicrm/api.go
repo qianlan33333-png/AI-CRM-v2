@@ -40,6 +40,7 @@ type candidateHandler struct {
 	*authhttp.Handler
 	customers      *contacthttp.CustomerListHandler
 	customerDetail *contacthttp.CustomerDetailHandler
+	mutations      *contacthttp.CustomerMutationHandler
 	stages         *contacthttp.Handler
 }
 
@@ -51,6 +52,22 @@ func (handler *candidateHandler) ListCustomers(writer http.ResponseWriter, reque
 
 func (handler *candidateHandler) GetCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID) {
 	handler.customerDetail.GetCustomer(writer, request, customerID)
+}
+
+func (handler *candidateHandler) UpdateCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.UpdateCustomerParams) {
+	handler.mutations.UpdateCustomer(writer, request, customerID, params)
+}
+
+func (handler *candidateHandler) SetCustomerStage(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.SetCustomerStageParams) {
+	handler.mutations.SetCustomerStage(writer, request, customerID, params)
+}
+
+func (handler *candidateHandler) AddCustomerTag(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, tagID api.TagID, params api.AddCustomerTagParams) {
+	handler.mutations.AddCustomerTag(writer, request, customerID, tagID, params)
+}
+
+func (handler *candidateHandler) RemoveCustomerTag(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, tagID api.TagID, params api.RemoveCustomerTagParams) {
+	handler.mutations.RemoveCustomerTag(writer, request, customerID, tagID, params)
 }
 
 func (handler *candidateHandler) ListStages(writer http.ResponseWriter, request *http.Request) {
@@ -107,9 +124,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	mutationHandler, err := contacthttp.NewCustomerMutationHandler(contactapp.NewCustomerMutationService(
+		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
-		customerDetail: customerDetailHandler, stages: stageHandler,
+		customerDetail: customerDetailHandler, mutations: mutationHandler, stages: stageHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	handler, err := newAPIHandler(logger, authHandler, candidate)
@@ -195,6 +219,9 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
 		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},
+		{http.MethodPut, "/api/v1/customers/{customer_id}/stage", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)},
+		{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)},
+		{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, false, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, false, http.HandlerFunc(wrapper.IngestIdentityEvent)},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},

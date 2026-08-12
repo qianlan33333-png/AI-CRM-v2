@@ -39,7 +39,7 @@ execution_policy:
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P3
-current_phase_status: P3_CONTACT_TIMELINE_PARTITIONS_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
+current_phase_status: P3_CONTACT_CUSTOMER_MUTATION_HTTP_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -2101,15 +2101,19 @@ slices:
   - slice_id: P3-C02B
     title: contact-get-customer-detail
     owner: Codex-Sol
-    status: in_progress
+    status: accepted
     base_sha: 96f93f17662c00987be0edf3d4f8059ae61bd477
     dependency: P3-C02A
     branch: slice/p3-c02b-customer-detail-read
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/132
+    pr_head_sha: dcd03a7ac73e964a036108f2e001ed752e8ceb8b
+    merge_sha: db896f6ed24489e024b3243bd838fdd7e306ca1e
+    main_ci_status: PASS_EXACT_MERGE_SHA
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31549801547
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31549801553
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31549801546
     scale_adjustment: rollback_one_scale_after_P3_C02A_slice_induced_reached_3
     delegated_tasks:
       - task_id: /root/p3_c02b_sqlc_store
@@ -2142,18 +2146,98 @@ slices:
         executor_model: gpt-5.6-terra
         kind: independent_customer_detail_read_review
         status: SOL_REVIEWED_PASS_NO_FILE_MUTATION
+        final_reviewed_sha: dcd03a7ac73e964a036108f2e001ed752e8ceb8b
+        final_tree_sha: 1d6b9d029fcc5df77b1f1290883b7086f4c9d100
+        final_binary_diff_sha256: c0708b52d2f5a92b5bd347d470b8ac3674bb7cdb63be0da8072d7e9b7bee7aa6
+        final_manifest_sha256: 6527dc85cf737ddeaeab6bef974f2e4dba1cf12b7e3b0b71fd57890d4040e601
+        final_report_sha256: 51131ec1c81bfaddc77e537ae597413f4e21a92b8015a088a89a5230b900a759
     tests:
       - CUSTOMER_DETAIL_FOCUSED_RACE_PASS
       - POSTGRESQL_16_OWNER_SCOPE_AND_TAG_ORDER_ACCEPTANCE_PASS
       - POSTGRESQL_16_POLLUTED_EXTRA_MUTATION_ROLLBACK_PASS
       - GENERATORS_TWICE_NO_DIFF_PASS
       - REPO_CONTRACT_PERMANENT_NEGATIVES_PASS
-      - FULL_GO_WEB_SECRET_GATES_PENDING
+      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
+      - PR_AND_MAIN_CI_PASS_EXACT_MERGE_SHA
     handwritten_scope: 13_files_811_touched_lines_default_file_cap_exception_below_15_hard_cap_for_shared_channel_neutral_security_guard_and_complete_operation
     slice_induced_correction_count: 9
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
     verification_induced_correction_count: 7
+    external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C02C
+    title: contact-customer-mutation-http
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: db896f6ed24489e024b3243bd838fdd7e306ca1e
+    dependency: P3-C02B
+    branch: slice/p3-c02c-customer-mutation-http
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    pr_url: PENDING_FORWARD_RECEIPT
+    pr_head_sha: PENDING_FORWARD_RECEIPT
+    merge_sha: PENDING_FORWARD_RECEIPT
+    main_ci_status: PENDING_FORWARD_RECEIPT
+    scope:
+      - updateCustomer
+      - setCustomerStage
+      - addCustomerTag
+      - removeCustomerTag
+      - owner_scope_inside_transaction_lock
+      - strict_presence_aware_request_body
+      - runtime_routes_and_csrf
+    delegated_tasks:
+      - task_id: /root/p3_c02c_handler_tests
+        executor_model: gpt-5.6-terra
+        kind: test_corpus_after_handler_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: abc3896bff3a9dd6def7b22ad586841bb47a718e
+        delegated_head_sha: 26c58c4af9c3548976b41bcfa146198231fd7bc7
+        manifest_sha256: 560f6f1400288bdb0ece30233f71bc67e698f4550ca7ae39de97a1bbba7c1317
+        binary_diff_sha256: ec9ee9825025cec99563e72206633667bb65bb3e3da8561a4a8242104ed00d69
+      - task_id: /root/p3_c02c_service_scope_tests
+        executor_model: gpt-5.6-terra
+        kind: service_scope_test_corpus_after_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: abc3896bff3a9dd6def7b22ad586841bb47a718e
+        delegated_head_sha: 3e2a86d36a4a01ca1a89cc7fb0e3eae874df0560
+        manifest_sha256: 28b61504fd99db1e3e0633f03d66b2c82757b8ef9b87aac33c0e103698e08b15
+        binary_diff_sha256: ff729c4e1cebe710c9936dced17e67cd61bcd8cf776f792a36a88451b09fcfa6
+      - task_id: /root/p3_c02c_store_scope_tests
+        executor_model: gpt-5.6-terra
+        kind: store_scope_test_corpus_after_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: abc3896bff3a9dd6def7b22ad586841bb47a718e
+        delegated_head_sha: ad7ce39e88429479223958edc6dadb5dba309fd8
+        manifest_sha256: cdf3b82eadc99449175445353e54498a335706ac68f5f63103e681bfdcce492e
+        binary_diff_sha256: a8459ccd7dfa7eacb855004f26dcf658c9c26073de30879f6f2b69f31df75abc
+    tests:
+      - CUSTOMER_MUTATION_FOCUSED_RACE_PASS
+      - POSTGRESQL_16_OWNER_SCOPE_LOCK_ACCEPTANCE_PASS
+      - TERRA_TEST_CORPUS_SOL_REVIEWED_AND_INTEGRATED
+      - GENERATORS_TWICE_NO_DIFF_PASS
+      - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PASS
+      - POSTGRESQL_16_MIGRATION_AND_FOCUSED_ACCEPTANCE_PASS
+    handwritten_scope: 9_files_802_changed_lines_under_P3_cap_tests_generated_manifests_and_evidence_excluded
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 9
+    correction_notes:
+      - slice:terra_handler_test_cross_domain_auth_http_import_removed_while_cmd_router_csrf_blackbox_retained
+      - verification:first_real_pg_probe_reused_actor_specific_parity_helper_with_admin_actor_then_aligned_fixture_actor_to_staff_7
+      - verification:terra_handler_receipt_shell_renamed_zsh_special_path_variable_to_file_path
+      - verification:generated_source_manifest_updated_after_sqlc_owner_scope_signature_change
+      - verification:generated_checker_frozen_manifest_digest_updated_with_manifest
+      - verification:full_ci_go_rerun_with_required_real_pg_environment_flags_on_isolated_55432
+      - verification:terra_test_assertion_text_renamed_to_avoid_source_policy_sql_literal_false_positive
+      - verification:web_ci_rerun_with_frozen_node_24_18_and_npm_11_12_path_order
+      - verification:p0s04_official_river_migration_acceptance_started_from_clean_river_objects_after_application_migrations
+      - verification:p0s04_partial_first_probe_river_type_and_metadata_cleanup_before_clean_rerun
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

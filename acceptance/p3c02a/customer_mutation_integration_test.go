@@ -110,6 +110,80 @@ func TestCustomerMutationsCommitTimelineAndDomainEventsAtomically(t *testing.T) 
 	assertCounts(t, ctx, fixture, 4, 0)
 }
 
+func TestCustomerMutationsEnforceOwnerScopeInsideTransactionLock(t *testing.T) {
+	fixture, ctx := openFixture(t)
+	createTables(t, ctx, fixture)
+	ownerStaffID, ownedCustomerID, otherCustomerID, stageID, tagID := seedOwnerScopeFacts(t, ctx, fixture)
+	service := contactapp.NewCustomerMutationService(
+		fixtureUoW{delegate: platformstore.NewUnitOfWork(fixture.Pool())},
+		contactstore.NewCustomerMutationRepository(),
+		eventstore.NewAppender(),
+	)
+
+	updatedName := "仅本人可写"
+	if _, err := service.Update(ctx, contactapp.CustomerUpdateCommand{
+		ID: ownedCustomerID, ScopeOwnerStaffID: &ownerStaffID,
+		Name: &updatedName, Actor: "staff:7",
+	}); err != nil {
+		t.Fatalf("owner-scoped Update() error = %v", err)
+	}
+	assertCustomerName(t, ctx, fixture, ownedCustomerID, updatedName)
+	assertEventParity(t, ctx, fixture, 1, "customer.updated", ownedCustomerID)
+
+	for _, test := range []struct {
+		name string
+		run  func() error
+	}{
+		{
+			name: "profile",
+			run: func() error {
+				_, err := service.Update(ctx, contactapp.CustomerUpdateCommand{
+					ID: otherCustomerID, ScopeOwnerStaffID: &ownerStaffID,
+					Name: &updatedName, Actor: "staff:7",
+				})
+				return err
+			},
+		},
+		{
+			name: "stage",
+			run: func() error {
+				_, err := service.SetStage(ctx, contactapp.CustomerStageCommand{
+					ID: otherCustomerID, ScopeOwnerStaffID: &ownerStaffID,
+					StageID: &stageID, Actor: "staff:7",
+				})
+				return err
+			},
+		},
+		{
+			name: "add tag",
+			run: func() error {
+				return service.AddTag(ctx, contactapp.CustomerTagCommand{
+					ID: otherCustomerID, ScopeOwnerStaffID: &ownerStaffID,
+					TagID: tagID, Actor: "staff:7",
+				})
+			},
+		},
+		{
+			name: "remove tag",
+			run: func() error {
+				return service.RemoveTag(ctx, contactapp.CustomerTagCommand{
+					ID: otherCustomerID, ScopeOwnerStaffID: &ownerStaffID,
+					TagID: tagID, Actor: "staff:7",
+				})
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := test.run(); !errors.Is(err, contactapp.ErrCustomerNotFound) {
+				t.Fatalf("cross-owner mutation error = %v, want hidden not-found", err)
+			}
+		})
+	}
+
+	assertCustomerName(t, ctx, fixture, otherCustomerID, "他人客户")
+	assertCounts(t, ctx, fixture, 1, 0)
+}
+
 type fixtureUoW struct{ delegate platformport.UnitOfWork }
 
 func (uow fixtureUoW) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -249,6 +323,47 @@ SELECT
 		t.Fatalf("seed acceptance facts: %v", err)
 	}
 	return stageOne, stageTwo, contactport.CustomerID(customerID), tagID
+}
+
+func seedOwnerScopeFacts(
+	t *testing.T,
+	ctx context.Context,
+	fixture *acceptancefixtures.PostgreSQL,
+) (int64, contactport.CustomerID, contactport.CustomerID, int64, int64) {
+	t.Helper()
+	var ownerStaffID, ownedCustomerID, otherCustomerID, stageID, tagID int64
+	err := fixture.Pool().QueryRow(ctx, `
+WITH inserted_staff AS (
+  INSERT INTO acceptance_fixtures.staff (name)
+  VALUES ('本人'), ('他人')
+  RETURNING id, name
+), inserted_stage AS (
+  INSERT INTO acceptance_fixtures.stages (name, sort_order)
+  VALUES ('已联系', 10)
+  RETURNING id
+), inserted_tag AS (
+  INSERT INTO acceptance_fixtures.tags (name, sort_order)
+  VALUES ('重点', 10)
+  RETURNING id
+), inserted_customers AS (
+  INSERT INTO acceptance_fixtures.customers (name, owner_staff_id)
+  SELECT '本人客户', id FROM inserted_staff WHERE name = '本人'
+  UNION ALL
+  SELECT '他人客户', id FROM inserted_staff WHERE name = '他人'
+  RETURNING id, name
+)
+SELECT
+  (SELECT id FROM inserted_staff WHERE name = '本人'),
+  (SELECT id FROM inserted_customers WHERE name = '本人客户'),
+  (SELECT id FROM inserted_customers WHERE name = '他人客户'),
+  (SELECT id FROM inserted_stage),
+  (SELECT id FROM inserted_tag)
+`).Scan(&ownerStaffID, &ownedCustomerID, &otherCustomerID, &stageID, &tagID)
+	if err != nil {
+		t.Fatalf("seed owner-scope facts: %v", err)
+	}
+	return ownerStaffID, contactport.CustomerID(ownedCustomerID),
+		contactport.CustomerID(otherCustomerID), stageID, tagID
 }
 
 func assertEventParity(

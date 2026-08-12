@@ -60,6 +60,10 @@ SELECT
   c.updated_at
 FROM customers AS c
 WHERE c.id = sqlc.arg(customer_id)::bigint
+  AND (
+    sqlc.narg(scope_owner_staff_id)::bigint IS NULL
+    OR c.owner_staff_id = sqlc.narg(scope_owner_staff_id)::bigint
+  )
   AND NOT c.is_deleted
 FOR UPDATE;
 

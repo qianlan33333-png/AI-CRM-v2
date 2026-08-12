@@ -2088,6 +2088,58 @@ if (cd "$unknown_p3c02a_event" && scripts/check_repo_contract.sh >/dev/null 2>&1
 fi
 
 for file_path in \
+  internal/contact/http/customer_mutation_handler.go \
+  internal/contact/http/customer_mutation_handler_test.go \
+  docs/execution/slices/P3-C02C.md \
+  docs/evidence/slices/P3-C02C-handler-tests.md \
+  docs/evidence/slices/P3-C02C-service-tests.md \
+  docs/evidence/slices/P3-C02C-store-tests.md; do
+  p3c02c_receipt_fixture="$(make_fixture "p3-c02c-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C02C receipt drift' >>"$p3c02c_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C02C receipt drift' >>"$p3c02c_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c02c_receipt_fixture" add "$file_path"
+  if (cd "$p3c02c_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C02C mutation HTTP receipt drift was accepted: $file_path"
+  fi
+done
+
+missing_p3c02c_handler="$(make_fixture missing-p3-c02c-handler)"
+rm -f "$missing_p3c02c_handler/internal/contact/http/customer_mutation_handler.go"
+git -C "$missing_p3c02c_handler" add -u internal/contact/http/customer_mutation_handler.go
+if (cd "$missing_p3c02c_handler" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "missing P3-C02C mutation handler was accepted"
+fi
+
+unscoped_p3c02c_lock="$(make_fixture p3-c02c-owner-scope-removed)"
+sed -i.bak '/c[.]owner_staff_id = sqlc[.]narg(scope_owner_staff_id)::bigint/d' \
+  "$unscoped_p3c02c_lock/internal/contact/store/queries/customer_mutations.sql"
+rm -f "$unscoped_p3c02c_lock/internal/contact/store/queries/customer_mutations.sql.bak"
+restage_p2s18_receipt "$unscoped_p3c02c_lock" internal/contact/store/queries/customer_mutations.sql
+if (cd "$unscoped_p3c02c_lock" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02C mutation lock without owner scope was accepted"
+fi
+
+csrf_disabled_p3c02c="$(make_fixture p3-c02c-csrf-disabled)"
+sed -i.bak 's#CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)#CapabilityCustomersWrite, false, http.HandlerFunc(wrapper.SetCustomerStage)#' \
+  "$csrf_disabled_p3c02c/cmd/aicrm/api.go"
+rm -f "$csrf_disabled_p3c02c/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$csrf_disabled_p3c02c" cmd/aicrm/api.go
+if (cd "$csrf_disabled_p3c02c" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02C mutation route without CSRF protection was accepted"
+fi
+
+duplicate_json_p3c02c="$(make_fixture p3-c02c-duplicate-json-accepted)"
+sed -i.bak 's/if _, duplicate := object\[key\]; duplicate {/if false {/' \
+  "$duplicate_json_p3c02c/internal/contact/http/customer_mutation_handler.go"
+rm -f "$duplicate_json_p3c02c/internal/contact/http/customer_mutation_handler.go.bak"
+restage_p2s18_receipt "$duplicate_json_p3c02c" internal/contact/http/customer_mutation_handler.go
+if (cd "$duplicate_json_p3c02c" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02C duplicate JSON keys were accepted"
+fi
+
+for file_path in \
   acceptance/p3c02b/doc.go \
   acceptance/p3c02b/customer_detail_integration_test.go \
   internal/contact/app/customer_detail_service.go \
