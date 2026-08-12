@@ -1049,7 +1049,31 @@ slices:
       application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31403987427
       repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31403987421
       secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31403987471
-    delegated_tasks: []
+    delegated_tasks:
+      - task_id: /root/p3_c02c_handler_tests
+        executor_model: gpt-5.6-terra
+        kind: test_corpus_after_handler_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: abc3896bff3a9dd6def7b22ad586841bb47a718e
+        delegated_head_sha: 26c58c4af9c3548976b41bcfa146198231fd7bc7
+        manifest_sha256: 560f6f1400288bdb0ece30233f71bc67e698f4550ca7ae39de97a1bbba7c1317
+        binary_diff_sha256: ec9ee9825025cec99563e72206633667bb65bb3e3da8561a4a8242104ed00d69
+      - task_id: /root/p3_c02c_service_scope_tests
+        executor_model: gpt-5.6-terra
+        kind: service_scope_test_corpus_after_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: abc3896bff3a9dd6def7b22ad586841bb47a718e
+        delegated_head_sha: 3e2a86d36a4a01ca1a89cc7fb0e3eae874df0560
+        manifest_sha256: 28b61504fd99db1e3e0633f03d66b2c82757b8ef9b87aac33c0e103698e08b15
+        binary_diff_sha256: ff729c4e1cebe710c9936dced17e67cd61bcd8cf776f792a36a88451b09fcfa6
+      - task_id: /root/p3_c02c_store_scope_tests
+        executor_model: gpt-5.6-terra
+        kind: store_scope_test_corpus_after_contract_freeze
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: abc3896bff3a9dd6def7b22ad586841bb47a718e
+        delegated_head_sha: ad7ce39e88429479223958edc6dadb5dba309fd8
+        manifest_sha256: cdf3b82eadc99449175445353e54498a335706ac68f5f63103e681bfdcce492e
+        binary_diff_sha256: a8459ccd7dfa7eacb855004f26dcf658c9c26073de30879f6f2b69f31df75abc
     tests:
       - LOCAL_scheduler_jobqueue_cmd_focused_race_PASS
       - LOCAL_arch_default_constant_test_fixture_verification_correction_1
@@ -2194,15 +2218,16 @@ slices:
     tests:
       - CUSTOMER_MUTATION_FOCUSED_RACE_PASS
       - POSTGRESQL_16_OWNER_SCOPE_LOCK_ACCEPTANCE_PASS
-      - TERRA_TEST_CORPUS_PENDING
+      - TERRA_TEST_CORPUS_SOL_REVIEWED_AND_INTEGRATED
       - GENERATORS_TWICE_NO_DIFF_PENDING
       - FULL_GO_WEB_REPO_CONTRACT_SECRET_GATES_PENDING
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 1
+    verification_induced_correction_count: 2
     correction_notes:
       - verification:first_real_pg_probe_reused_actor_specific_parity_helper_with_admin_actor_then_aligned_fixture_actor_to_staff_7
+      - verification:terra_handler_receipt_shell_renamed_zsh_special_path_variable_to_file_path
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

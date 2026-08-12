@@ -142,7 +142,11 @@ required=(
   docs/evidence/slices/P3-C02A-sqlc-store.md
   docs/evidence/slices/P3-C02A-service-tests.md
   internal/contact/http/customer_mutation_handler.go
+  internal/contact/http/customer_mutation_handler_test.go
   docs/execution/slices/P3-C02C.md
+  docs/evidence/slices/P3-C02C-handler-tests.md
+  docs/evidence/slices/P3-C02C-service-tests.md
+  docs/evidence/slices/P3-C02C-store-tests.md
   acceptance/p3c02b/doc.go
   acceptance/p3c02b/customer_detail_integration_test.go
   internal/contact/app/customer_detail_service.go
@@ -473,7 +477,11 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C02A-sqlc-store.md
 100644 docs/evidence/slices/P3-C02A-service-tests.md
 100644 internal/contact/http/customer_mutation_handler.go
+100644 internal/contact/http/customer_mutation_handler_test.go
 100644 docs/execution/slices/P3-C02C.md
+100644 docs/evidence/slices/P3-C02C-handler-tests.md
+100644 docs/evidence/slices/P3-C02C-service-tests.md
+100644 docs/evidence/slices/P3-C02C-store-tests.md
 100644 acceptance/p3c02b/doc.go
 100644 acceptance/p3c02b/customer_detail_integration_test.go
 100644 internal/contact/app/customer_detail_service.go
@@ -986,11 +994,11 @@ verify_index_sha256 acceptance/p3c02a/customer_mutation_integration_test.go \
 verify_index_sha256 internal/contact/app/customer_mutation_service.go \
   ba1cf4daa6e91177064fbe9d0084b64fcbc1478db03282f95ae6ef667a903664
 verify_index_sha256 internal/contact/app/customer_mutation_service_test.go \
-  9a87c22c5d14b6b534dc9557a97de692d513f609a0ac2632d1e4ec4fb87543d7
+  e2fb1370e6f348a155e667c4f30ce27ae5b5d98d32622e9a92cc265c5e8a59b1
 verify_index_sha256 internal/contact/store/customer_mutation_repository.go \
   46e1a3ae1ed655463ede371755c8f23a0387d78c15817284ca1fdf33a88b0acf
 verify_index_sha256 internal/contact/store/customer_mutation_repository_test.go \
-  c37d595160fd6b5c5d0b06ae277c9e5e633963a99526335a4a74c6be020379f2
+  6736dc9263dc0db994037e537be007e4684fc993b8a151ab5e3c5dd2aeaf119c
 verify_index_sha256 internal/contact/store/queries/customer_mutations.sql \
   bcd897719ed1fa94fc14e748ec5ccbb975fea0bfc756748308487dc31065bedf
 verify_index_sha256 internal/contact/store/generated/customer_mutations.sql.go \
@@ -1003,8 +1011,16 @@ verify_index_sha256 docs/evidence/slices/P3-C02A-service-tests.md \
   019b694aa844264ea8cbe6f686060df33dc430248ddcc567dd7f02181bd21c1d
 verify_index_sha256 internal/contact/http/customer_mutation_handler.go \
   8a3c6c5c31970f2c747ebff7e770cdf2e6940f9a6c20b0deae6a09a94a9a0935
+verify_index_sha256 internal/contact/http/customer_mutation_handler_test.go \
+  83bf5bcbc6def5a43b201f347c8e9ff961f4c53c8c28173bb8409bb9185b3b80
 verify_index_sha256 docs/execution/slices/P3-C02C.md \
   997680d558d59c01466a10ad48c3f2f7e8f3c261248c5665883e110cf8a845c4
+verify_index_sha256 docs/evidence/slices/P3-C02C-handler-tests.md \
+  4202c1d46737d97c5d4befe54e9efb2135e2068208ec12f7b4376025e7486480
+verify_index_sha256 docs/evidence/slices/P3-C02C-service-tests.md \
+  f4f68b915cdd82cda4fe329fb4085aa26f05b2dda8628fb736092e1a8ee0b172
+verify_index_sha256 docs/evidence/slices/P3-C02C-store-tests.md \
+  819806fcc4183a390f4e0d00887a9588fc6c44a8488675d515f67d1542dc16a6
 verify_index_sha256 acceptance/p3c02b/doc.go \
   ed42e420f6b6ce272206a24fdf97d6749db09d9785225d446e15ef4d7de58a83
 verify_index_sha256 acceptance/p3c02b/customer_detail_integration_test.go \
@@ -1336,7 +1352,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  02d36778b69fd4fd1a14e62870e020344b2cfcffd98063631ab328a137039889
+  06a0eb4331ff86e259485f76edd78d4f5e8c9f86537dcc28b4c3db42ef65f09a
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \

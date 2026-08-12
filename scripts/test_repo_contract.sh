@@ -2089,7 +2089,11 @@ fi
 
 for file_path in \
   internal/contact/http/customer_mutation_handler.go \
-  docs/execution/slices/P3-C02C.md; do
+  internal/contact/http/customer_mutation_handler_test.go \
+  docs/execution/slices/P3-C02C.md \
+  docs/evidence/slices/P3-C02C-handler-tests.md \
+  docs/evidence/slices/P3-C02C-service-tests.md \
+  docs/evidence/slices/P3-C02C-store-tests.md; do
   p3c02c_receipt_fixture="$(make_fixture "p3-c02c-receipt-${file_path//\//-}")"
   case "$file_path" in
     *.go) printf '%s\n' '// P3-C02C receipt drift' >>"$p3c02c_receipt_fixture/$file_path" ;;
