@@ -15,6 +15,7 @@ type Querier interface {
 	GetCustomerDetailSnapshot(ctx context.Context, arg GetCustomerDetailSnapshotParams) ([]GetCustomerDetailSnapshotRow, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
+	ListCustomerEvents(ctx context.Context, arg ListCustomerEventsParams) ([]ListCustomerEventsRow, error)
 	ListCustomerIDsBounded(ctx context.Context, arg ListCustomerIDsBoundedParams) ([]int64, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListStages(ctx context.Context) ([]Stage, error)

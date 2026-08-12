@@ -40,6 +40,7 @@ type candidateHandler struct {
 	*authhttp.Handler
 	customers      *contacthttp.CustomerListHandler
 	customerDetail *contacthttp.CustomerDetailHandler
+	customerEvents *contacthttp.CustomerEventHandler
 	mutations      *contacthttp.CustomerMutationHandler
 	stages         *contacthttp.Handler
 }
@@ -52,6 +53,10 @@ func (handler *candidateHandler) ListCustomers(writer http.ResponseWriter, reque
 
 func (handler *candidateHandler) GetCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID) {
 	handler.customerDetail.GetCustomer(writer, request, customerID)
+}
+
+func (handler *candidateHandler) ListCustomerEvents(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.ListCustomerEventsParams) {
+	handler.customerEvents.ListCustomerEvents(writer, request, customerID, params)
 }
 
 func (handler *candidateHandler) UpdateCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.UpdateCustomerParams) {
@@ -131,9 +136,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	customerEventHandler, err := contacthttp.NewCustomerEventHandler(contactapp.NewCustomerEventService(
+		uow, contactstore.NewCustomerEventRepository(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
-		customerDetail: customerDetailHandler, mutations: mutationHandler, stages: stageHandler,
+		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
+		mutations: mutationHandler, stages: stageHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	handler, err := newAPIHandler(logger, authHandler, candidate)

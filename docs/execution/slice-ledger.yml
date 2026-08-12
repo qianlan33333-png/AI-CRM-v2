@@ -2173,15 +2173,19 @@ slices:
   - slice_id: P3-C02C
     title: contact-customer-mutation-http
     owner: Codex-Sol
-    status: in_progress
+    status: merged
     base_sha: db896f6ed24489e024b3243bd838fdd7e306ca1e
     dependency: P3-C02B
     branch: slice/p3-c02c-customer-mutation-http
     decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
-    pr_url: PENDING_FORWARD_RECEIPT
-    pr_head_sha: PENDING_FORWARD_RECEIPT
-    merge_sha: PENDING_FORWARD_RECEIPT
-    main_ci_status: PENDING_FORWARD_RECEIPT
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/133
+    pr_head_sha: 2e6ac08bea85417ae159d1380303304433e8109b
+    merge_sha: 24fc524f3564311d7150dcec10660580523adf93
+    main_ci_status: SUCCESS
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31553485313
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31553485299
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31553485289
     scope:
       - updateCustomer
       - setCustomerStage
@@ -2242,6 +2246,65 @@ slices:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
       - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C02D
+    title: contact-customer-events-read
+    owner: Codex-Sol
+    status: local_gates_pass_independent_review_pending
+    base_sha: 24fc524f3564311d7150dcec10660580523adf93
+    dependency: P3-C02C
+    branch: slice/p3-c02d-customer-events-read
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    scope:
+      - listCustomerEvents
+      - keyset_occurred_at_desc_id_desc
+      - owner_scope_in_single_sql
+      - runtime_customer_events_read_route
+    delegated_tasks:
+      - task_id: /root/p3_c02d_sqlc_store
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 527d833fa4a93f04e699bd583e293f335f0691bd
+        delegated_head_sha: 639ef075c1c0da0a4e1fac11c458a7088fd0780c
+        manifest_sha256: fe3408e36839ba43de50779ca1022028276f430df5ea71d8eb4b83474dbc71b2
+        binary_diff_sha256: 3574819985137bc4b2359857db88ae719ec33950cdfa97a8a603a967affca80a
+      - task_id: /root/p3_c02d_service_tests
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 527d833fa4a93f04e699bd583e293f335f0691bd
+        delegated_head_sha: ec61090e7318fb094e84d22383f85e016ce8973f
+        manifest_sha256: 7f70eff7683f8620790c4487f886dd27a5c413cfc9a41b609f9f2a52e9cd9908
+        binary_diff_sha256: 715eecf3441905d97d22c09d010d667146be4624de693f47dd43e48b7cc56071
+      - task_id: /root/p3_c02d_handler_tests
+        executor_model: gpt-5.6-terra
+        status: SOL_REVIEWED_AND_INTEGRATED
+        frozen_base_sha: 527d833fa4a93f04e699bd583e293f335f0691bd
+        delegated_head_sha: 9d23c9863a0e7fd15f242e151d3ea78df343da7a
+        manifest_sha256: b2b14d790ad9dc0d43a921f9140bf4289e3a9b46e921c9e46744278c6a8af223
+        binary_diff_sha256: 75ce89c76b99f736fd285e53db4266dc86549159cf644eb40981ce668e275b8d
+    tests:
+      - FOCUSED_RACE_PASS
+      - POSTGRESQL_16_KEYSET_OWNER_EXPLAIN_PASS
+      - FULL_GO_GATES_PASS
+      - WEB_NODE24_NPM11_ORVAL_DOUBLE_GENERATION_PASS
+      - MIGRATION_MATRIX_PASS
+      - REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
+      - GITLEAKS_AND_SENSITIVE_PATHS_PASS
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 5
+    correction_notes:
+      - slice:strict_cursor_decoder_rejects_duplicate_json_fields
+      - slice:http_response_rejects_cross_customer_application_item
+      - slice:http_handler_rejects_explicit_empty_cursor_instead_of_returning_first_page
+      - verification:real_pg_fixture_added_customers_created_at_required_by_single_sql_empty_event_sentinel
+      - verification:real_pg_seed_split_multiple_prepared_statements
+      - verification:explain_fixture_added_realistic_distractor_distribution_to_assert_composite_timeline_index
+      - verification:web_ci_preflight_created_node_modules_link_under_web_instead_of_repository_root_then_reran_with_fixed_node24_toolchain
+      - verification:real_pg_explain_replaced_simplified_join_with_generated_production_lateral_query
+    external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:

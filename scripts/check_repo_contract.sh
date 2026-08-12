@@ -161,6 +161,20 @@ required=(
   docs/evidence/slices/P3-C02B-sqlc-store.md
   docs/evidence/slices/P3-C02B-service-tests.md
   docs/evidence/slices/P3-C02B-handler-tests.md
+  acceptance/p3c02d/doc.go
+  acceptance/p3c02d/customer_event_integration_test.go
+  internal/contact/app/customer_event_service.go
+  internal/contact/app/customer_event_service_test.go
+  internal/contact/http/customer_event_handler.go
+  internal/contact/http/customer_event_handler_test.go
+  internal/contact/store/customer_event_repository.go
+  internal/contact/store/customer_event_repository_test.go
+  internal/contact/store/queries/customer_events.sql
+  internal/contact/store/generated/customer_events.sql.go
+  docs/execution/slices/P3-C02D.md
+  docs/evidence/slices/P3-C02D-sqlc-store.md
+  docs/evidence/slices/P3-C02D-service-tests.md
+  docs/evidence/slices/P3-C02D-handler-tests.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -496,6 +510,20 @@ done <<'EOF'
 100644 docs/evidence/slices/P3-C02B-sqlc-store.md
 100644 docs/evidence/slices/P3-C02B-service-tests.md
 100644 docs/evidence/slices/P3-C02B-handler-tests.md
+100644 acceptance/p3c02d/doc.go
+100644 acceptance/p3c02d/customer_event_integration_test.go
+100644 internal/contact/app/customer_event_service.go
+100644 internal/contact/app/customer_event_service_test.go
+100644 internal/contact/http/customer_event_handler.go
+100644 internal/contact/http/customer_event_handler_test.go
+100644 internal/contact/store/customer_event_repository.go
+100644 internal/contact/store/customer_event_repository_test.go
+100644 internal/contact/store/queries/customer_events.sql
+100644 internal/contact/store/generated/customer_events.sql.go
+100644 docs/execution/slices/P3-C02D.md
+100644 docs/evidence/slices/P3-C02D-sqlc-store.md
+100644 docs/evidence/slices/P3-C02D-service-tests.md
+100644 docs/evidence/slices/P3-C02D-handler-tests.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -714,7 +742,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  93d3f582a11f0a9061a8e306d85b80181553bba7e8ce89b59e988fd2bacdb346
+  5e7da1298bf27101440ef368936698ee4faf5f6b37819600ae01b25f31148195
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -730,7 +758,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   e5b1e51c092e94ebf98b8b16454c486ea458602d7ac58d19e89ec6b6d9c8a5c6
 verify_index_sha256 .github/workflows/application-go.yml \
-  19ba3f25709f1d0f534fe75d3bbd5d0710e605b3ea959ba3c58f74c67f064dd2
+  7c82f4c199d681015cade3d9894ba9db3add023daec379b84872d0933cdfbf77
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -742,11 +770,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  d621fcd9207d6148133e1c083c4a1316fb01481f44889ca75d4bc7ad0f82dbcf
+  a4719a15473f2f8813de1e699d474e7032a2b404ff5fa9745e35961a38fbff70
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  fecc0d296eb9b3749a63fa758c2fa03747509ac00f9fc6046732681ede68cc06
+  df788bebdf9c3588fabf901f6ee2176f16c78d37417fe1eaf711dfc2d7a8aec4
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1049,6 +1077,34 @@ verify_index_sha256 docs/evidence/slices/P3-C02B-service-tests.md \
   0dee3dfd2f7ba8e2ff019896dcf5cb5eeb816cbc5bdf79edd7e08d7a693b26c2
 verify_index_sha256 docs/evidence/slices/P3-C02B-handler-tests.md \
   1322b436468700af2afca4a068dffe969e346a3f66fdb54d4f4b0f6232e04847
+verify_index_sha256 acceptance/p3c02d/doc.go \
+  0f9904b5bcbbc94986169fe7a93f51637cc731f85c07b9e7713d7ad4fe6216a7
+verify_index_sha256 acceptance/p3c02d/customer_event_integration_test.go \
+  7731f6f231a9a4418c805149e852b1a2b998c9703201c7136deb3511f26fea33
+verify_index_sha256 internal/contact/app/customer_event_service.go \
+  aca56952728b7d738d2c392621b734c61d7fc88c8e6617f5168372c40c86ae5a
+verify_index_sha256 internal/contact/app/customer_event_service_test.go \
+  e6bbadc300f404124a4470f42544ac2ad33b779c51126b6e6ca882cb8cb1b0f9
+verify_index_sha256 internal/contact/http/customer_event_handler.go \
+  76c34d5ce040a1e023ebc9602e57737b357cded318ac46c467189ac08fb07360
+verify_index_sha256 internal/contact/http/customer_event_handler_test.go \
+  1b4e4e191531d955d1f1db53fd7205c6f5ddb3bef933db27c9c0d1bc128babdf
+verify_index_sha256 internal/contact/store/customer_event_repository.go \
+  bc59738a92bf7df2ff36fe338c1665dc33224f2725b502febf2c412ac02bd107
+verify_index_sha256 internal/contact/store/customer_event_repository_test.go \
+  418532145251936b4d6693f77945f0fb28af3b132d8c2313702d0d9e2d7b0851
+verify_index_sha256 internal/contact/store/queries/customer_events.sql \
+  752d19f93601cfe79e1c101da0e156148b020a9b6622cfc9332cbb430cded2b1
+verify_index_sha256 internal/contact/store/generated/customer_events.sql.go \
+  57e41ba88cfea061d5964fe0425318e1101300a8a065c56ba641d46051a72dfc
+verify_index_sha256 docs/execution/slices/P3-C02D.md \
+  d8dffa82e7fb1a5b9a30ac8cf78a41fb1cc6e78e1744d8661092f69fff353eaf
+verify_index_sha256 docs/evidence/slices/P3-C02D-sqlc-store.md \
+  83a0a580784596785573793e8bdbd638ed7e6ed4dccf1d0679000ca044572ee3
+verify_index_sha256 docs/evidence/slices/P3-C02D-service-tests.md \
+  05aed67971f965e145441874d8f6f46f7198dd39c84b118d2b143ef1aa0482eb
+verify_index_sha256 docs/evidence/slices/P3-C02D-handler-tests.md \
+  3e2c3f8099cea96179c45640f62032bf6a7fcd71d3f381bf0b3bc22f459b7e58
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1198,7 +1254,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  94915f0a4c1197ce89c07b0cf48c7cd611cb43cd9c70116c36f7b2024a0b4c68
+  d4da34e7d2d7cf53f71982e33c765853bb287f0b7ea8c11d43ac26561a403b55
 verify_index_sha256 cmd/aicrm/api_test.go \
   443fb64bba510cbc3fbb87eebcee50fdc8601032d8341d021584662fe681836b
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -1308,7 +1364,7 @@ verify_index_sha256 internal/contact/store/generated/customers.sql.go \
 verify_index_sha256 internal/contact/store/generated/models.go \
   9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
-  fa4af82b77062b6e0dac9a0336f701f37e25486505ceb2fa95978c4897304d2f
+  dd3d28f2d350f5b38af43467d858f1a299382962c5c626a6aec54b683329c1f5
 verify_index_sha256 internal/contact/store/generated/stages.sql.go \
   24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
 verify_index_sha256 internal/contact/store/repository.go \
@@ -1352,7 +1408,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  06a0eb4331ff86e259485f76edd78d4f5e8c9f86537dcc28b4c3db42ef65f09a
+  f0e189f1f22b7f0577a3a7da9d29e06ff75db68c5400529f2101af9fe9f34408
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2258,6 +2314,58 @@ grep -Fq 'handler.customerDetail.GetCustomer(writer, request, customerID)' <<<"$
 p3c02b_handler="$(git show :internal/contact/http/customer_detail_handler.go)"
 grep -Fq $'case errors.Is(err, contactapp.ErrInvalidCustomerDetailQuery):\n\t\tcode = platformhttp.CodeNotFound' <<<"$p3c02b_handler" ||
   fail "P3-C02B invalid path identifiers must remain hidden as 404"
+
+p3c02d_make="$(git show :Makefile)"
+[[ "$(grep -Ec '^p3-c02d-acceptance:$' <<<"$p3c02d_make")" -eq 1 ]] ||
+  fail "P3-C02D acceptance target must be declared exactly once"
+grep -Fq '$(GO) test -race -count=1 -timeout=90s ./acceptance/p3c02d' <<<"$p3c02d_make" ||
+  fail "P3-C02D target must run real PostgreSQL customer-event acceptance"
+
+p3c02d_workflow="$(git show :.github/workflows/application-go.yml)"
+grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02d-acceptance' <<<"$p3c02d_workflow" ||
+  fail "application workflow must run P3-C02D against the migration database"
+
+p3c02d_query="$(git show :internal/contact/store/queries/customer_events.sql)"
+grep -Fq 'ce.customer_id = c.id' <<<"$p3c02d_query" ||
+  fail "P3-C02D timeline query lost customer scope"
+grep -Fq 'c.owner_staff_id = sqlc.narg(owner_staff_id)::bigint' <<<"$p3c02d_query" ||
+  fail "P3-C02D owner scope must remain a SQL predicate"
+grep -Fq 'AND (ce.occurred_at, ce.id) < (' <<<"$p3c02d_query" ||
+  fail "P3-C02D timeline keyset tuple drifted"
+grep -Fq 'ORDER BY ce.occurred_at DESC, ce.id DESC' <<<"$p3c02d_query" ||
+  fail "P3-C02D timeline ordering drifted"
+! grep -Eiq '(^|[^[:alpha:]])(offset|count[[:space:]]*[(])' <<<"$p3c02d_query" ||
+  fail "P3-C02D timeline query must not use OFFSET or COUNT"
+
+p3c02d_service="$(git show :internal/contact/app/customer_event_service.go)"
+grep -Fq 'if _, duplicate := fields[key]; duplicate {' <<<"$p3c02d_service" ||
+  fail "P3-C02D cursor must reject duplicate JSON fields"
+grep -Fq 'cursor.Operation != customerEventCursorOperation' <<<"$p3c02d_service" ||
+  fail "P3-C02D cursor lost operation binding"
+grep -Fq 'cursor.FilterHash != expectedFilterHash' <<<"$p3c02d_service" ||
+  fail "P3-C02D cursor lost customer and owner scope binding"
+
+p3c02d_handler="$(git show :internal/contact/http/customer_event_handler.go)"
+grep -Fq 'if *params.Cursor == "" {' <<<"$p3c02d_handler" ||
+  fail "P3-C02D handler must reject an explicitly empty cursor"
+grep -Fq 'item.CustomerID != expectedCustomerID' <<<"$p3c02d_handler" ||
+  fail "P3-C02D handler must reject cross-customer application results"
+grep -Fq 'authorization.Capability != authport.CapabilityCustomerEventsRead' <<<"$p3c02d_handler" ||
+  fail "P3-C02D handler lost customer.events.read authorization"
+
+p3c02d_api="$(git show :cmd/aicrm/api.go)"
+grep -Fq 'customerEvents *contacthttp.CustomerEventHandler' <<<"$p3c02d_api" ||
+  fail "P3-C02D candidate handler lost timeline wiring"
+grep -Fq 'contactstore.NewCustomerEventRepository()' <<<"$p3c02d_api" ||
+  fail "P3-C02D runtime lost timeline repository wiring"
+grep -Fq 'handler.customerEvents.ListCustomerEvents(writer, request, customerID, params)' <<<"$p3c02d_api" ||
+  fail "P3-C02D generated operation is not delegated to the timeline handler"
+
+p3c02d_acceptance="$(git show :acceptance/p3c02d/customer_event_integration_test.go)"
+grep -Fq 'productionQuery := generatedCustomerEventQuery(t)' <<<"$p3c02d_acceptance" ||
+  fail "P3-C02D EXPLAIN must execute the generated production query"
+grep -Fq '"EXPLAIN (COSTS OFF)\n"+productionQuery' <<<"$p3c02d_acceptance" ||
+  fail "P3-C02D generated production query is not connected to EXPLAIN"
 
 p3c03_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||
