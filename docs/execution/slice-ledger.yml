@@ -2389,6 +2389,32 @@ slices:
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C05
+    title: contact-customer-detail-and-actions-ui
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: ca96a7a6a76cd40eb00f9b04fdfb73f9519f6dab
+    dependency: P3-C02E
+    branch: slice/p3-c05-customer-detail-ui
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    scope:
+      - customer_detail_dynamic_route
+      - strict_generated_read_transport
+      - profile_stage_tag_mutations_with_csrf
+      - customer_timeline_read
+      - post_success_server_refetch
+    delegated_tasks: []
+    handwritten_scope: pending_default_cap_exception_below_P3_hard_cap_complete_ui_flow
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    external_gates:
+      - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
+      - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
