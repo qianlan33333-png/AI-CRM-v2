@@ -42,6 +42,7 @@ type candidateHandler struct {
 	customerDetail *contacthttp.CustomerDetailHandler
 	customerEvents *contacthttp.CustomerEventHandler
 	mutations      *contacthttp.CustomerMutationHandler
+	tags           *contacthttp.TagCatalogHandler
 	stages         *contacthttp.Handler
 }
 
@@ -57,6 +58,10 @@ func (handler *candidateHandler) GetCustomer(writer http.ResponseWriter, request
 
 func (handler *candidateHandler) ListCustomerEvents(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.ListCustomerEventsParams) {
 	handler.customerEvents.ListCustomerEvents(writer, request, customerID, params)
+}
+
+func (handler *candidateHandler) ListTags(writer http.ResponseWriter, request *http.Request) {
+	handler.tags.ListTags(writer, request)
 }
 
 func (handler *candidateHandler) UpdateCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.UpdateCustomerParams) {
@@ -143,10 +148,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	tagCatalogHandler, err := contacthttp.NewTagCatalogHandler(contactapp.NewTagCatalogService(
+		uow, contactstore.NewTagCatalogRepository(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
-		mutations: mutationHandler, stages: stageHandler,
+		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	handler, err := newAPIHandler(logger, authHandler, candidate)
@@ -235,6 +247,7 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		{http.MethodPut, "/api/v1/customers/{customer_id}/stage", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)},
 		{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)},
+		{http.MethodGet, "/api/v1/tags", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListTags)},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, false, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, false, http.HandlerFunc(wrapper.IngestIdentityEvent)},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},
