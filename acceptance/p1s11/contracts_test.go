@@ -14,6 +14,7 @@ import (
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 )
 
 func TestGeneratedIdentityStatusUnionsUseWireDiscriminators(t *testing.T) {
@@ -162,6 +163,9 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 		"identity.ReviewService": {(*identityport.ReviewService)(nil), []string{
 			"ApproveMergeReview", "ListMergeReviews", "RejectMergeReview",
 		}},
+		"segment.Service": {(*segmentport.Service)(nil), []string{
+			"Create", "Get", "List", "ListMembers", "RequestRefresh", "Update",
+		}},
 		"auth.Service":        {(*authport.Service)(nil), []string{"Authenticate", "Authorize", "Invalidate", "ValidateCSRF"}},
 		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), []string{"Within"}},
 	}
@@ -183,10 +187,10 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
-		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
-		"GetCustomer", "IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
-		"ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
-		"RemoveCustomerTag", "RenameStage", "ResolveIdentity", "SetCustomerStage", "UpdateCustomer",
+		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateSegment", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
+		"GetCustomer", "GetSegment", "IngestIdentityEvent", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
+		"ListSegmentMembers", "ListSegments", "ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
+		"RemoveCustomerTag", "RenameStage", "RequestSegmentRefresh", "ResolveIdentity", "SetCustomerStage", "UpdateCustomer", "UpdateSegment",
 	})
 }
 

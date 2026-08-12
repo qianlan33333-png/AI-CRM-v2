@@ -137,6 +137,24 @@ func (e BindIdentityRejectedStatus) Valid() bool {
 	}
 }
 
+// Defines values for CreateSegmentRequestRefreshMode.
+const (
+	CreateSegmentRequestRefreshModeManual    CreateSegmentRequestRefreshMode = "manual"
+	CreateSegmentRequestRefreshModeScheduled CreateSegmentRequestRefreshMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the CreateSegmentRequestRefreshMode enum.
+func (e CreateSegmentRequestRefreshMode) Valid() bool {
+	switch e {
+	case CreateSegmentRequestRefreshModeManual:
+		return true
+	case CreateSegmentRequestRefreshModeScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityMergeReviewStatus.
 const (
 	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
@@ -299,6 +317,138 @@ func (e ResolveIdentityNotFoundStatus) Valid() bool {
 	}
 }
 
+// Defines values for SegmentRefreshMode.
+const (
+	SegmentRefreshModeManual    SegmentRefreshMode = "manual"
+	SegmentRefreshModeScheduled SegmentRefreshMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the SegmentRefreshMode enum.
+func (e SegmentRefreshMode) Valid() bool {
+	switch e {
+	case SegmentRefreshModeManual:
+		return true
+	case SegmentRefreshModeScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentRefreshStatus.
+const (
+	Failed  SegmentRefreshStatus = "failed"
+	Idle    SegmentRefreshStatus = "idle"
+	Running SegmentRefreshStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the SegmentRefreshStatus enum.
+func (e SegmentRefreshStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Idle:
+		return true
+	case Running:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentDefinitionPredicateField.
+const (
+	AddedAt        SegmentDefinitionPredicateField = "added_at"
+	ChannelId      SegmentDefinitionPredicateField = "channel_id"
+	IsDeleted      SegmentDefinitionPredicateField = "is_deleted"
+	LastInteractAt SegmentDefinitionPredicateField = "last_interact_at"
+	OwnerStaffId   SegmentDefinitionPredicateField = "owner_staff_id"
+	StageId        SegmentDefinitionPredicateField = "stage_id"
+	TagId          SegmentDefinitionPredicateField = "tag_id"
+)
+
+// Valid indicates whether the value is a known member of the SegmentDefinitionPredicateField enum.
+func (e SegmentDefinitionPredicateField) Valid() bool {
+	switch e {
+	case AddedAt:
+		return true
+	case ChannelId:
+		return true
+	case IsDeleted:
+		return true
+	case LastInteractAt:
+		return true
+	case OwnerStaffId:
+		return true
+	case StageId:
+		return true
+	case TagId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentDefinitionPredicateOp.
+const (
+	After  SegmentDefinitionPredicateOp = "after"
+	Before SegmentDefinitionPredicateOp = "before"
+	Eq     SegmentDefinitionPredicateOp = "eq"
+	HasAny SegmentDefinitionPredicateOp = "has_any"
+	In     SegmentDefinitionPredicateOp = "in"
+)
+
+// Valid indicates whether the value is a known member of the SegmentDefinitionPredicateOp enum.
+func (e SegmentDefinitionPredicateOp) Valid() bool {
+	switch e {
+	case After:
+		return true
+	case Before:
+		return true
+	case Eq:
+		return true
+	case HasAny:
+		return true
+	case In:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentRefreshAcceptedStatus.
+const (
+	Accepted SegmentRefreshAcceptedStatus = "accepted"
+)
+
+// Valid indicates whether the value is a known member of the SegmentRefreshAcceptedStatus enum.
+func (e SegmentRefreshAcceptedStatus) Valid() bool {
+	switch e {
+	case Accepted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateSegmentRequestRefreshMode.
+const (
+	Manual    UpdateSegmentRequestRefreshMode = "manual"
+	Scheduled UpdateSegmentRequestRefreshMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the UpdateSegmentRequestRefreshMode enum.
+func (e UpdateSegmentRequestRefreshMode) Valid() bool {
+	switch e {
+	case Manual:
+		return true
+	case Scheduled:
+		return true
+	default:
+		return false
+	}
+}
+
 // AdminConfigEntry defines model for AdminConfigEntry.
 type AdminConfigEntry struct {
 	Configured   bool                         `json:"configured"`
@@ -389,6 +539,17 @@ type BindIdentityRequest struct {
 type BindIdentityResponse struct {
 	union json.RawMessage
 }
+
+// CreateSegmentRequest defines model for CreateSegmentRequest.
+type CreateSegmentRequest struct {
+	Definition  SegmentDefinition               `json:"definition"`
+	Name        string                          `json:"name"`
+	RefreshCron *string                         `json:"refresh_cron,omitempty"`
+	RefreshMode CreateSegmentRequestRefreshMode `json:"refresh_mode"`
+}
+
+// CreateSegmentRequestRefreshMode defines model for CreateSegmentRequest.RefreshMode.
+type CreateSegmentRequestRefreshMode string
 
 // CreateStageRequest defines model for CreateStageRequest.
 type CreateStageRequest struct {
@@ -596,6 +757,75 @@ type ResolveIdentityResponse struct {
 	union json.RawMessage
 }
 
+// Segment defines model for Segment.
+type Segment struct {
+	CreatedAt     time.Time            `json:"created_at"`
+	Definition    SegmentDefinition    `json:"definition"`
+	Id            int64                `json:"id"`
+	MemberCount   int64                `json:"member_count"`
+	Name          string               `json:"name"`
+	RefreshCron   *string              `json:"refresh_cron"`
+	RefreshMode   SegmentRefreshMode   `json:"refresh_mode"`
+	RefreshStatus SegmentRefreshStatus `json:"refresh_status"`
+	RefreshedAt   *time.Time           `json:"refreshed_at"`
+	UpdatedAt     time.Time            `json:"updated_at"`
+}
+
+// SegmentRefreshMode defines model for Segment.RefreshMode.
+type SegmentRefreshMode string
+
+// SegmentRefreshStatus defines model for Segment.RefreshStatus.
+type SegmentRefreshStatus string
+
+// SegmentDefinition defines model for SegmentDefinition.
+type SegmentDefinition struct {
+	union json.RawMessage
+}
+
+// SegmentDefinitionAnd defines model for SegmentDefinitionAnd.
+type SegmentDefinitionAnd struct {
+	And []SegmentDefinition `json:"and"`
+}
+
+// SegmentDefinitionOr defines model for SegmentDefinitionOr.
+type SegmentDefinitionOr struct {
+	Or []SegmentDefinition `json:"or"`
+}
+
+// SegmentDefinitionPredicate defines model for SegmentDefinitionPredicate.
+type SegmentDefinitionPredicate struct {
+	Field SegmentDefinitionPredicateField `json:"field"`
+	Op    SegmentDefinitionPredicateOp    `json:"op"`
+	Value interface{}                     `json:"value"`
+}
+
+// SegmentDefinitionPredicateField defines model for SegmentDefinitionPredicate.Field.
+type SegmentDefinitionPredicateField string
+
+// SegmentDefinitionPredicateOp defines model for SegmentDefinitionPredicate.Op.
+type SegmentDefinitionPredicateOp string
+
+// SegmentMemberPage defines model for SegmentMemberPage.
+type SegmentMemberPage struct {
+	Items      []Customer `json:"items"`
+	NextCursor *string    `json:"next_cursor"`
+}
+
+// SegmentPage defines model for SegmentPage.
+type SegmentPage struct {
+	Items      []Segment `json:"items"`
+	NextCursor *string   `json:"next_cursor"`
+}
+
+// SegmentRefreshAccepted defines model for SegmentRefreshAccepted.
+type SegmentRefreshAccepted struct {
+	SegmentId int64                        `json:"segment_id"`
+	Status    SegmentRefreshAcceptedStatus `json:"status"`
+}
+
+// SegmentRefreshAcceptedStatus defines model for SegmentRefreshAccepted.Status.
+type SegmentRefreshAcceptedStatus string
+
 // SetCustomerStageRequest defines model for SetCustomerStageRequest.
 type SetCustomerStageRequest struct {
 	StageId *int64 `json:"stage_id"`
@@ -627,6 +857,17 @@ type Tag struct {
 type TagListResponse struct {
 	Items []Tag `json:"items"`
 }
+
+// UpdateSegmentRequest defines model for UpdateSegmentRequest.
+type UpdateSegmentRequest struct {
+	Definition  *SegmentDefinition               `json:"definition,omitempty"`
+	Name        *string                          `json:"name,omitempty"`
+	RefreshCron *string                          `json:"refresh_cron,omitempty"`
+	RefreshMode *UpdateSegmentRequestRefreshMode `json:"refresh_mode,omitempty"`
+}
+
+// UpdateSegmentRequestRefreshMode defines model for UpdateSegmentRequest.RefreshMode.
+type UpdateSegmentRequestRefreshMode string
 
 // AddedAfterFilter defines model for AddedAfterFilter.
 type AddedAfterFilter = time.Time
@@ -669,6 +910,9 @@ type MergeReviewID = int64
 
 // OwnerStaffIDFilter defines model for OwnerStaffIDFilter.
 type OwnerStaffIDFilter = int64
+
+// SegmentID defines model for SegmentID.
+type SegmentID = int64
 
 // StageID defines model for StageID.
 type StageID = int64
@@ -800,6 +1044,47 @@ type RejectIdentityMergeReviewParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListSegmentsParams defines parameters for ListSegments.
+type ListSegmentsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateSegmentParams defines parameters for CreateSegment.
+type CreateSegmentParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateSegmentParams defines parameters for UpdateSegment.
+type UpdateSegmentParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListSegmentMembersParams defines parameters for ListSegmentMembers.
+type ListSegmentMembersParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// RequestSegmentRefreshParams defines parameters for RequestSegmentRefresh.
+type RequestSegmentRefreshParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // CreateStageParams defines parameters for CreateStage.
 type CreateStageParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -832,6 +1117,12 @@ type RejectIdentityMergeReviewJSONRequestBody = RejectIdentityMergeReviewRequest
 
 // ResolveIdentityJSONRequestBody defines body for ResolveIdentity for application/json ContentType.
 type ResolveIdentityJSONRequestBody = ResolveIdentityRequest
+
+// CreateSegmentJSONRequestBody defines body for CreateSegment for application/json ContentType.
+type CreateSegmentJSONRequestBody = CreateSegmentRequest
+
+// UpdateSegmentJSONRequestBody defines body for UpdateSegment for application/json ContentType.
+type UpdateSegmentJSONRequestBody = UpdateSegmentRequest
 
 // CreateStageJSONRequestBody defines body for CreateStage for application/json ContentType.
 type CreateStageJSONRequestBody = CreateStageRequest
@@ -1256,6 +1547,94 @@ func (t *ResolveIdentityResponse) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsSegmentDefinitionAnd returns the union data inside the SegmentDefinition as a SegmentDefinitionAnd
+func (t SegmentDefinition) AsSegmentDefinitionAnd() (SegmentDefinitionAnd, error) {
+	var body SegmentDefinitionAnd
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionAnd overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionAnd
+func (t *SegmentDefinition) FromSegmentDefinitionAnd(v SegmentDefinitionAnd) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionAnd performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionAnd
+func (t *SegmentDefinition) MergeSegmentDefinitionAnd(v SegmentDefinitionAnd) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSegmentDefinitionOr returns the union data inside the SegmentDefinition as a SegmentDefinitionOr
+func (t SegmentDefinition) AsSegmentDefinitionOr() (SegmentDefinitionOr, error) {
+	var body SegmentDefinitionOr
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionOr overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionOr
+func (t *SegmentDefinition) FromSegmentDefinitionOr(v SegmentDefinitionOr) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionOr performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionOr
+func (t *SegmentDefinition) MergeSegmentDefinitionOr(v SegmentDefinitionOr) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSegmentDefinitionPredicate returns the union data inside the SegmentDefinition as a SegmentDefinitionPredicate
+func (t SegmentDefinition) AsSegmentDefinitionPredicate() (SegmentDefinitionPredicate, error) {
+	var body SegmentDefinitionPredicate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionPredicate overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionPredicate
+func (t *SegmentDefinition) FromSegmentDefinitionPredicate(v SegmentDefinitionPredicate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionPredicate performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionPredicate
+func (t *SegmentDefinition) MergeSegmentDefinitionPredicate(v SegmentDefinitionPredicate) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SegmentDefinition) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SegmentDefinition) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// List non-secret configuration readiness
@@ -1306,6 +1685,24 @@ type ServerInterface interface {
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(w http.ResponseWriter, r *http.Request)
+	// List materialized audience definitions with a keyset cursor
+	// (GET /api/v1/segments)
+	ListSegments(w http.ResponseWriter, r *http.Request, params ListSegmentsParams)
+	// Create one declarative audience definition
+	// (POST /api/v1/segments)
+	CreateSegment(w http.ResponseWriter, r *http.Request, params CreateSegmentParams)
+	// Get one declarative audience definition
+	// (GET /api/v1/segments/{segment_id})
+	GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID)
+	// Update one declarative audience definition
+	// (PATCH /api/v1/segments/{segment_id})
+	UpdateSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params UpdateSegmentParams)
+	// Preview the current materialized members using a keyset cursor
+	// (GET /api/v1/segments/{segment_id}/members)
+	ListSegmentMembers(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ListSegmentMembersParams)
+	// Durably request one materialized audience refresh
+	// (POST /api/v1/segments/{segment_id}/refresh)
+	RequestSegmentRefresh(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params RequestSegmentRefreshParams)
 	// List global customer stages in deterministic order
 	// (GET /api/v1/stages)
 	ListStages(w http.ResponseWriter, r *http.Request)
@@ -1417,6 +1814,42 @@ func (_ Unimplemented) RejectIdentityMergeReview(w http.ResponseWriter, r *http.
 // Resolve one scoped identity without implicit creation
 // (POST /api/v1/identity/resolve)
 func (_ Unimplemented) ResolveIdentity(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List materialized audience definitions with a keyset cursor
+// (GET /api/v1/segments)
+func (_ Unimplemented) ListSegments(w http.ResponseWriter, r *http.Request, params ListSegmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one declarative audience definition
+// (POST /api/v1/segments)
+func (_ Unimplemented) CreateSegment(w http.ResponseWriter, r *http.Request, params CreateSegmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one declarative audience definition
+// (GET /api/v1/segments/{segment_id})
+func (_ Unimplemented) GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update one declarative audience definition
+// (PATCH /api/v1/segments/{segment_id})
+func (_ Unimplemented) UpdateSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params UpdateSegmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Preview the current materialized members using a keyset cursor
+// (GET /api/v1/segments/{segment_id}/members)
+func (_ Unimplemented) ListSegmentMembers(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ListSegmentMembersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Durably request one materialized audience refresh
+// (POST /api/v1/segments/{segment_id}/refresh)
+func (_ Unimplemented) RequestSegmentRefresh(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params RequestSegmentRefreshParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2370,6 +2803,365 @@ func (siw *ServerInterfaceWrapper) ResolveIdentity(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListSegments operation middleware
+func (siw *ServerInterfaceWrapper) ListSegments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSegmentsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSegments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSegment operation middleware
+func (siw *ServerInterfaceWrapper) CreateSegment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateSegmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSegment(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSegment operation middleware
+func (siw *ServerInterfaceWrapper) GetSegment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "segment_id" -------------
+	var segmentId SegmentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "segment_id", chi.URLParam(r, "segment_id"), &segmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSegment(w, r, segmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSegment operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSegment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "segment_id" -------------
+	var segmentId SegmentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "segment_id", chi.URLParam(r, "segment_id"), &segmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateSegmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSegment(w, r, segmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSegmentMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListSegmentMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "segment_id" -------------
+	var segmentId SegmentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "segment_id", chi.URLParam(r, "segment_id"), &segmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSegmentMembersParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSegmentMembers(w, r, segmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestSegmentRefresh operation middleware
+func (siw *ServerInterfaceWrapper) RequestSegmentRefresh(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "segment_id" -------------
+	var segmentId SegmentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "segment_id", chi.URLParam(r, "segment_id"), &segmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RequestSegmentRefreshParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestSegmentRefresh(w, r, segmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListStages operation middleware
 func (siw *ServerInterfaceWrapper) ListStages(w http.ResponseWriter, r *http.Request) {
 
@@ -2679,6 +3471,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/identity/resolve", wrapper.ResolveIdentity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/segments", wrapper.ListSegments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/segments", wrapper.CreateSegment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/segments/{segment_id}", wrapper.GetSegment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/segments/{segment_id}", wrapper.UpdateSegment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/segments/{segment_id}/members", wrapper.ListSegmentMembers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/segments/{segment_id}/refresh", wrapper.RequestSegmentRefresh)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/stages", wrapper.ListStages)
@@ -3654,6 +4464,405 @@ func (response ResolveIdentity503JSONResponse) VisitResolveIdentityResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListSegmentsRequestObject struct {
+	Params ListSegmentsParams
+}
+
+type ListSegmentsResponseObject interface {
+	VisitListSegmentsResponse(w http.ResponseWriter) error
+}
+
+type ListSegments200JSONResponse SegmentPage
+
+func (response ListSegments200JSONResponse) VisitListSegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegments400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSegments400JSONResponse) VisitListSegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegments401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSegments401JSONResponse) VisitListSegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegments403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSegments403JSONResponse) VisitListSegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegments503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSegments503JSONResponse) VisitListSegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegmentRequestObject struct {
+	Params CreateSegmentParams
+	Body   *CreateSegmentJSONRequestBody
+}
+
+type CreateSegmentResponseObject interface {
+	VisitCreateSegmentResponse(w http.ResponseWriter) error
+}
+
+type CreateSegment201JSONResponse Segment
+
+func (response CreateSegment201JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateSegment400JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateSegment401JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateSegment403JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegment409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateSegment409JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegment422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CreateSegment422JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateSegment503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateSegment503JSONResponse) VisitCreateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSegmentRequestObject struct {
+	SegmentId SegmentID `json:"segment_id"`
+}
+
+type GetSegmentResponseObject interface {
+	VisitGetSegmentResponse(w http.ResponseWriter) error
+}
+
+type GetSegment200JSONResponse Segment
+
+func (response GetSegment200JSONResponse) VisitGetSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSegment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSegment401JSONResponse) VisitGetSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSegment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSegment403JSONResponse) VisitGetSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSegment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetSegment404JSONResponse) VisitGetSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSegment503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSegment503JSONResponse) VisitGetSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegmentRequestObject struct {
+	SegmentId SegmentID `json:"segment_id"`
+	Params    UpdateSegmentParams
+	Body      *UpdateSegmentJSONRequestBody
+}
+
+type UpdateSegmentResponseObject interface {
+	VisitUpdateSegmentResponse(w http.ResponseWriter) error
+}
+
+type UpdateSegment200JSONResponse Segment
+
+func (response UpdateSegment200JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateSegment400JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateSegment401JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateSegment403JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateSegment404JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateSegment409JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateSegment422JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateSegment503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateSegment503JSONResponse) VisitUpdateSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegmentMembersRequestObject struct {
+	SegmentId SegmentID `json:"segment_id"`
+	Params    ListSegmentMembersParams
+}
+
+type ListSegmentMembersResponseObject interface {
+	VisitListSegmentMembersResponse(w http.ResponseWriter) error
+}
+
+type ListSegmentMembers200JSONResponse SegmentMemberPage
+
+func (response ListSegmentMembers200JSONResponse) VisitListSegmentMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegmentMembers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSegmentMembers400JSONResponse) VisitListSegmentMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegmentMembers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSegmentMembers401JSONResponse) VisitListSegmentMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegmentMembers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSegmentMembers403JSONResponse) VisitListSegmentMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegmentMembers404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListSegmentMembers404JSONResponse) VisitListSegmentMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSegmentMembers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSegmentMembers503JSONResponse) VisitListSegmentMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefreshRequestObject struct {
+	SegmentId SegmentID `json:"segment_id"`
+	Params    RequestSegmentRefreshParams
+}
+
+type RequestSegmentRefreshResponseObject interface {
+	VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error
+}
+
+type RequestSegmentRefresh202JSONResponse SegmentRefreshAccepted
+
+func (response RequestSegmentRefresh202JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefresh400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RequestSegmentRefresh400JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefresh401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestSegmentRefresh401JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefresh403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestSegmentRefresh403JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefresh404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestSegmentRefresh404JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefresh409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RequestSegmentRefresh409JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestSegmentRefresh503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RequestSegmentRefresh503JSONResponse) VisitRequestSegmentRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListStagesRequestObject struct {
 }
 
@@ -3939,6 +5148,24 @@ type StrictServerInterface interface {
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(ctx context.Context, request ResolveIdentityRequestObject) (ResolveIdentityResponseObject, error)
+	// List materialized audience definitions with a keyset cursor
+	// (GET /api/v1/segments)
+	ListSegments(ctx context.Context, request ListSegmentsRequestObject) (ListSegmentsResponseObject, error)
+	// Create one declarative audience definition
+	// (POST /api/v1/segments)
+	CreateSegment(ctx context.Context, request CreateSegmentRequestObject) (CreateSegmentResponseObject, error)
+	// Get one declarative audience definition
+	// (GET /api/v1/segments/{segment_id})
+	GetSegment(ctx context.Context, request GetSegmentRequestObject) (GetSegmentResponseObject, error)
+	// Update one declarative audience definition
+	// (PATCH /api/v1/segments/{segment_id})
+	UpdateSegment(ctx context.Context, request UpdateSegmentRequestObject) (UpdateSegmentResponseObject, error)
+	// Preview the current materialized members using a keyset cursor
+	// (GET /api/v1/segments/{segment_id}/members)
+	ListSegmentMembers(ctx context.Context, request ListSegmentMembersRequestObject) (ListSegmentMembersResponseObject, error)
+	// Durably request one materialized audience refresh
+	// (POST /api/v1/segments/{segment_id}/refresh)
+	RequestSegmentRefresh(ctx context.Context, request RequestSegmentRefreshRequestObject) (RequestSegmentRefreshResponseObject, error)
 	// List global customer stages in deterministic order
 	// (GET /api/v1/stages)
 	ListStages(ctx context.Context, request ListStagesRequestObject) (ListStagesResponseObject, error)
@@ -4443,6 +5670,179 @@ func (sh *strictHandler) ResolveIdentity(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ResolveIdentityResponseObject); ok {
 		if err := validResponse.VisitResolveIdentityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSegments operation middleware
+func (sh *strictHandler) ListSegments(w http.ResponseWriter, r *http.Request, params ListSegmentsParams) {
+	var request ListSegmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSegments(ctx, request.(ListSegmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSegments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSegmentsResponseObject); ok {
+		if err := validResponse.VisitListSegmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSegment operation middleware
+func (sh *strictHandler) CreateSegment(w http.ResponseWriter, r *http.Request, params CreateSegmentParams) {
+	var request CreateSegmentRequestObject
+
+	request.Params = params
+
+	var body CreateSegmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSegment(ctx, request.(CreateSegmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSegment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSegmentResponseObject); ok {
+		if err := validResponse.VisitCreateSegmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSegment operation middleware
+func (sh *strictHandler) GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID) {
+	var request GetSegmentRequestObject
+
+	request.SegmentId = segmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSegment(ctx, request.(GetSegmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSegment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSegmentResponseObject); ok {
+		if err := validResponse.VisitGetSegmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSegment operation middleware
+func (sh *strictHandler) UpdateSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params UpdateSegmentParams) {
+	var request UpdateSegmentRequestObject
+
+	request.SegmentId = segmentId
+	request.Params = params
+
+	var body UpdateSegmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSegment(ctx, request.(UpdateSegmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSegment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSegmentResponseObject); ok {
+		if err := validResponse.VisitUpdateSegmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSegmentMembers operation middleware
+func (sh *strictHandler) ListSegmentMembers(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ListSegmentMembersParams) {
+	var request ListSegmentMembersRequestObject
+
+	request.SegmentId = segmentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSegmentMembers(ctx, request.(ListSegmentMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSegmentMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSegmentMembersResponseObject); ok {
+		if err := validResponse.VisitListSegmentMembersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestSegmentRefresh operation middleware
+func (sh *strictHandler) RequestSegmentRefresh(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params RequestSegmentRefreshParams) {
+	var request RequestSegmentRefreshRequestObject
+
+	request.SegmentId = segmentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestSegmentRefresh(ctx, request.(RequestSegmentRefreshRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestSegmentRefresh")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestSegmentRefreshResponseObject); ok {
+		if err := validResponse.VisitRequestSegmentRefreshResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

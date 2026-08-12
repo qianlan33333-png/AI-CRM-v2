@@ -44,6 +44,9 @@ required=(
   migrations/00005_contact_core.sql
   migrations/00006_customer_events.sql
   migrations/00007_contact_merge_lineage.sql
+  migrations/00008_segment_contract.sql
+  internal/segment/port/port.go
+  internal/segment/port/port_test.go
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -417,6 +420,7 @@ required=(
   docs/execution/slices/P0-S02.md
   docs/execution/slices/P0-S03.md
   docs/execution/slices/P0-S04.md
+  docs/execution/slices/P3-S00.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -785,6 +789,10 @@ done <<'EOF'
 100644 migrations/00005_contact_core.sql
 100644 migrations/00006_customer_events.sql
 100644 migrations/00007_contact_merge_lineage.sql
+100644 migrations/00008_segment_contract.sql
+100644 internal/segment/port/port.go
+100644 internal/segment/port/port_test.go
+100644 docs/execution/slices/P3-S00.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -842,7 +850,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  27a907f502f7b8919a9e7620310a475788ed6b7639b7841e910101687c97a117
+  da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
   2a899ec1ae66389d5713c8961f1b3b8c88d938f171b837fdad070b37515c30f3
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -856,11 +864,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  28f114134b8e63f7a05faed054b1826284cf8b95c590c5087220dc11ca7f0944
+  f89227dfccc3c36f47b470e5d74827176374c76b88a6238adc9393f1a0e06b2f
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  f5c288694b8e6e385405846ada64fb9706f27d2a2fdbde86c2509151b7345f90
+  bdbf546121aa15f4a236a3f08cc62a6b20672f4109077ca3c7ac860c553a00ad
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1052,21 +1060,21 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  15dd2e21d34d01c1451e3d84c24e0e398f628658608994a74f3cc2ffe4287c0b
+  4170fa3739b23720f66e2d00d95e6b79be8ef5f975d5b6d5611408dcc2e3cc60
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
-  9c4705227148e5ac2a57d027227db2f5d482c92e6516cd01f64f40fbe4271851
+  06a24d2623803e33a2a6dc05959399316c0e8162fe3308977f85517a9509bda6
 verify_index_sha256 internal/api/generated/server.gen.go \
-  8d893a61822a423198e81d12b007f13ec1844b19ef129677a389203aa9e0fd42
+  f1e66b50f9ba6722b663967ec1da44cf6bda718246d66a82aef9179c670f2e38
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
-  07c03a080e86a8093749543f653a6a21b841dc1730c12f94decf2387a05ba684
+  082045f31bef73aa4d970b2f97396c9eda4e66bc2fef28c97f19036c65fcfec9
 verify_index_sha256 tools/openapi-contract/main.go \
-  a5beba66c1bc3e28f6f2e64332eb8220da673a03fee1f5950e320143702ab379
+  3ab60ef983670fc847c91d7c8ad51baba53a476f7e152f162e1e59efbbc9c721
 verify_index_sha256 tools/openapi-contract/main_test.go \
   87eb1abe0868e5cce74f5e4a77431d6a72e6ab157772371050439d83da09978a
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
-  9d3686543d74e78ac2fd7bb25a055124203475ceba2133b0d62351914da33d2c
+  d8172034f4778096198dda8593b7b7d93322b2b54949faa7648dea08b26826b6
 verify_index_sha256 acceptance/p1s11/doc.go \
   8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
 verify_index_sha256 acceptance/p3c00/contracts_test.go \
@@ -1307,10 +1315,18 @@ verify_index_sha256 docs/execution/slices/P3-C07.md \
   88e142d8f5416d1267889376d200836eefa408bbcad9475debc1421b81531a62
 verify_index_sha256 docs/execution/slices/P3-C07A.md \
   0285ff8d1cf0e5f7fb6d6529053ca4a88a3d8c9103afd2bc284e27f79420ba1d
+verify_index_sha256 migrations/00008_segment_contract.sql \
+  7c0e007360a6045b3eff5abe5b772928a5ad990950e508a50c8918007c0ea569
+verify_index_sha256 internal/segment/port/port.go \
+  d3ae9e5403d5b9063534ae2b8b26128c543d3cf0bb36a11d466f8883bf91380f
+verify_index_sha256 internal/segment/port/port_test.go \
+  01d17e1ae55a71279f0a566469ff98ac49fc2ca69df6ab9b40629a972bfc333f
+verify_index_sha256 docs/execution/slices/P3-S00.md \
+  dd140edd10811d17d3919fe912c859540d0f7cebd26201ae9423f639b43300c8
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
-  d605cce2b8e8616f277d942dc6ae196589a034df6f1c610f9c435c4c2458ac33
+  4f506c362f42329c0c906a81756307128e87af58ffdb5e7076ad1fc3f5c322f3
 verify_index_sha256 internal/contact/port/port.go \
   6dcfb247f751beaf0b1e2c286f4b201bb5d5589055bfd0e967961a13d38d7463
 verify_index_sha256 internal/identity/port/port.go \
@@ -1418,11 +1434,11 @@ verify_index_sha256 docs/execution/slices/P2-09.md \
 verify_index_sha256 docs/evidence/slices/P2-09-auth-service-tests.md \
   5edbbf1d8c4d10761a4a91bf2e2c8cf7206be786226fdb889ce481e049199f36
 verify_index_sha256 internal/auth/port/port_test.go \
-  7bdf0c32be539c22d0065672642b86ce1ca7a1b341813195d2fa2f1ad2e766db
+  b959779d34a7707fdd5ca9c4485dd563b1ac569bc8756d5389afbfbcc63c1d0b
 verify_index_sha256 internal/auth/app/policy.go \
-  b07cc8a1e1558cc64985e44e30136cae218423e1293c69c2769ed931a27bb969
+  f907c858159900a8ef15eab8905b31f204a28bead139659547e77f2286c2e0e2
 verify_index_sha256 internal/auth/app/policy_test.go \
-  56330581dade096cbf9d065b8a40e6ebf54ea0f81048559b4cdeef237dc2a132
+  d0302c9bbf67b65013e7305f73795841f4423d058986ab883fe7a7da6be424ba
 verify_index_sha256 internal/auth/http/authorization.go \
   acd3c1c15a5361c1023115ea339be68636c15911832a13f711765e4b0768452f
 verify_index_sha256 acceptance/p2s10/doc.go \
@@ -1588,7 +1604,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  14dcb332ef9e5783c94f892a9c9f64e223bcbd2f7af4972c0dce580a8cba5feb
+  d0e711e7031b6ff3c81fa0a2f0ca02959591965430b37b5402d8d4d676935e79
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2902,6 +2918,120 @@ for governance_anchor in \
   '    supersedes: P3-C07'; do
   grep -Fq "$governance_anchor" <<<"$p3c07_ledger" ||
     fail "P3-C07 rescope ledger receipt drifted: $governance_anchor"
+done
+
+p3s00_migration="$(git show :migrations/00008_segment_contract.sql)"
+for anchor in \
+  '-- +goose Up' \
+  'CREATE TABLE segments (' \
+  'definition     JSONB NOT NULL,' \
+  'created_by     BIGINT REFERENCES admin_users(id),' \
+  "CONSTRAINT segments_definition_object CHECK (jsonb_typeof(definition) = 'object')" \
+  "CONSTRAINT segments_refresh_mode CHECK (refresh_mode IN ('manual', 'scheduled'))" \
+  "CONSTRAINT segments_refresh_status CHECK (refresh_status IN ('idle', 'running', 'failed'))" \
+  'CREATE INDEX idx_segments_refresh_due' \
+  'CREATE TABLE segment_members (' \
+  'segment_id  BIGINT NOT NULL REFERENCES segments(id) ON DELETE CASCADE,' \
+  'customer_id BIGINT NOT NULL REFERENCES customers(id),' \
+  'CREATE INDEX idx_segment_members_customer ON segment_members (customer_id, segment_id);' \
+  '-- +goose Down' \
+  'DROP TABLE segment_members;' \
+  'DROP TABLE segments;'; do
+  grep -Fq -- "$anchor" <<<"$p3s00_migration" ||
+    fail "P3-S00 segment migration receipt drifted: $anchor"
+done
+[[ "$(grep -Ec '^CREATE TABLE ' <<<"$p3s00_migration")" -eq 2 ]] ||
+  fail "P3-S00 migration must create exactly segments and segment_members"
+! grep -Eq 'CREATE TABLE (customers|identities|customer_events|event_log|river_)' <<<"$p3s00_migration" ||
+  fail "P3-S00 migration must not absorb Contact, Identity, event, or River ownership"
+
+p3s00_ownership="$(git show :docs/architecture/table-ownership.yml)"
+for anchor in \
+  '  segment:' \
+  '    package: internal/segment' \
+  '    tables: [segments, segment_members]' \
+  '  segment:' \
+  '    tables: [customers, customer_tags, tags]' \
+  '    reason: indexed_audience_compilation'; do
+  grep -Fq "$anchor" <<<"$p3s00_ownership" ||
+    fail "P3-S00 Segment ownership/read boundary drifted: $anchor"
+done
+
+p3s00_port="$(git show :internal/segment/port/port.go)"
+for anchor in \
+  'type Definition json.RawMessage' \
+  'type RefreshMode string' \
+  'type RefreshStatus string' \
+  'RefreshModeManual    RefreshMode = "manual"' \
+  'RefreshModeScheduled RefreshMode = "scheduled"' \
+  'RefreshStatusIdle    RefreshStatus = "idle"' \
+  'RefreshStatusRunning RefreshStatus = "running"' \
+  'RefreshStatusFailed  RefreshStatus = "failed"' \
+  'IdempotencyKey string' \
+  'List(context.Context, string, int32) (Page, error)' \
+  'Get(context.Context, SegmentID) (Segment, error)' \
+  'Create(context.Context, CreateCommand) (Segment, error)' \
+  'Update(context.Context, UpdateCommand) (Segment, error)' \
+  'ListMembers(context.Context, SegmentID, string, int32) (MemberPage, error)' \
+  'RequestRefresh(context.Context, RefreshCommand) (Segment, error)'; do
+  grep -Fq "$anchor" <<<"$p3s00_port" ||
+    fail "P3-S00 Segment port receipt drifted: $anchor"
+done
+! grep -Eq 'pgx[.]|Query\(|Exec\(|Prepare\(' <<<"$p3s00_port" ||
+  fail "P3-S00 port must not add direct SQL execution"
+
+p3s00_port_contract="$(git show :docs/architecture/port-contracts.md)"
+for anchor in \
+  '## segment/port' \
+  'type Definition json.RawMessage' \
+  'RequestRefresh(context.Context, RefreshCommand) (Segment, error)' \
+  'DSL 语法、错误码与固定 sqlc query-family 要求见 `P3-S00.md`。' \
+  'Create、Update、RequestRefresh 的 IdempotencyKey 必填。' \
+  '不能借 Segment definition 自行筛选。'; do
+  grep -Fq "$anchor" <<<"$p3s00_port_contract" ||
+    fail "P3-S00 Segment port-contract receipt drifted: $anchor"
+done
+
+p3s00_card="$(git show :docs/execution/slices/P3-S00.md)"
+for anchor in \
+  '不实现 parser/compiler/store/worker/handler/UI' \
+  'Segment 独占写 `segments`、`segment_members`。它只读 contact 的' \
+  'identity、event_log 或 River 表。' \
+  'S01/S02 只能返回下列稳定 reason code' \
+  '固定 sqlc 查询族' \
+  '运行时不得发射、拼接、format 或执行 SQL 文本' \
+  '不能使用 ORM、动态 SQL builder' \
+  '或直接 pgx `Query/Exec/Prepare`。' \
+  'PENDING_EXTERNAL_GATE'; do
+  grep -Fq "$anchor" <<<"$p3s00_card" ||
+    fail "P3-S00 frozen scope or SQL-safety receipt drifted: $anchor"
+done
+
+p3s00_openapi="$(git show :api/openapi.yaml)"
+p3s00_openapi_paths="$(sed -n '/^  \/api\/v1\/segments:/,/^  \/api\/v1\/stages:/p' <<<"$p3s00_openapi")"
+for anchor in \
+  'operationId: createSegment' \
+  'operationId: updateSegment' \
+  'operationId: requestSegmentRefresh' \
+  'x-aicrm-capability: segments.write' \
+  'x-aicrm-capability: segments.read' \
+  '$ref: "#/components/parameters/CSRFToken"' \
+  '$ref: "#/components/parameters/IdempotencyKey"'; do
+  grep -Fq "$anchor" <<<"$p3s00_openapi_paths" ||
+    fail "P3-S00 OpenAPI security receipt drifted: $anchor"
+done
+[[ "$(grep -Fc '$ref: "#/components/parameters/CSRFToken"' <<<"$p3s00_openapi_paths")" -eq 3 ]] ||
+  fail "P3-S00 write operations must retain CSRF protection"
+[[ "$(grep -Fc '$ref: "#/components/parameters/IdempotencyKey"' <<<"$p3s00_openapi_paths")" -eq 3 ]] ||
+  fail "P3-S00 write operations must retain idempotency protection"
+for anchor in \
+  '    SegmentDefinition:' \
+  '        - $ref: "#/components/schemas/SegmentDefinitionAnd"' \
+  '        - $ref: "#/components/schemas/SegmentDefinitionOr"' \
+  '        - $ref: "#/components/schemas/SegmentDefinitionPredicate"' \
+  '          enum: [stage_id, owner_staff_id, channel_id, tag_id, added_at, last_interact_at, is_deleted]'; do
+  grep -Fq "$anchor" <<<"$p3s00_openapi" ||
+    fail "P3-S00 closed DSL OpenAPI receipt drifted: $anchor"
 done
 
 scripts/scan_sensitive_paths.sh

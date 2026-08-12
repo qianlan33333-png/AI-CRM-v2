@@ -2916,6 +2916,43 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-S00
+    title: segment-dsl-and-materialized-audience-central-contract-freeze
+    owner: Codex-Terra
+    status: pr_guard_repair_validated_pending_gate_rebind
+    base_sha: eeba99508076a69735fd5af971b73d5b4a36c0bc
+    dependency: P3_C07A_MERGED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_CONTRACT_SLOT_OPEN
+    branch: slice/p3-s00-segment-contract
+    decision_anchor: P3-S00-2026-08-12
+    scope:
+      - segments_and_segment_members_ddl_and_ownership_boundary
+      - closed_dsl_v1_ast_white_list_and_structured_error_codes
+      - static_sqlc_query_family_and_typed_bind_plan_safety_boundary
+      - segment_http_rbac_csrf_idempotency_and_cross_domain_port_contract
+      - no_worker_handler_ui_or_real_audience_execution
+    tests:
+      - PRE_REBASE_STAGED_TREE_3df8baaa4199df34e1ae8672c04cafde5394a734_RECEIPTED
+      - LOCAL_PREVIOUS_CLEAN_INDEX_MAKE_CI_GO_AND_NPM_CI_PASS_SUPERSEDED_BY_EEBA995_REBASE
+      - LOCAL_generate_twice_no_diff_PASS_node_24_18_0_npm_11_12_1
+      - LOCAL_segment_slot_55433_postgresql_16_14_migration_up_down_up_PASS_00001_through_00008
+      - LOCAL_clean_candidate_make_ci_go_PASS_query_plan_checked_12
+      - LOCAL_clean_candidate_npm_run_ci_PASS_186_tests
+    handwritten_scope: 12_files_approximately_720_added_lines_excluding_tests_and_generated_sources_with_no_runtime_implementation
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 2
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 5
+    correction_notes:
+      - slice:OpenAPI_froze_segments_read_write_but_auth_Capability_Known_and_global_scope_contract_initially_omitted_them_then_was_completed_with_focused_tests
+      - infra:worktree_PATH_exposed_Node_25_9_0_while_repository_requires_24_18_0_then_an_isolated_temporary_Node_24_18_0_runtime_was_bootstrapped_without_changing_repository_or_global_toolchain
+      - verification:rebase_receipt_was_preserved_as_stash_57f6450e31201410230b43d59bff8928e3b816e7_and_binary_patch_before_replay_to_eeba995
+      - verification:independent_gate_proved_repo_contract_allowed_S00_contract_deletion_then_required_mode_hash_and_semantic_negative_fixtures_were_added_without_changing_migration_or_business_contract
+    external_gates:
+      - SEGMENT_PARSER_COMPILER_REFRESH_HANDLER_AND_UI_NOT_STARTED
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

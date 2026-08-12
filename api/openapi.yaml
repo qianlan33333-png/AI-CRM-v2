@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: AI-CRM v2 API
-  version: 0.5.0-p3-identity-contract
-  description: Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics before identity implementation begins.
+  version: 0.6.0-p3-segment-contract
+  description: Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
 security:
   - AdminSession: []
 paths:
@@ -219,6 +219,151 @@ paths:
                 $ref: "#/components/schemas/TagListResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments:
+    get:
+      tags: [p3-segment]
+      operationId: listSegments
+      summary: List materialized audience definitions with a keyset cursor
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Segment page.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SegmentPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p3-segment]
+      operationId: createSegment
+      summary: Create one declarative audience definition
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSegmentRequest" }
+      responses:
+        "201":
+          description: Created segment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Segment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments/{segment_id}:
+    parameters:
+      - $ref: "#/components/parameters/SegmentID"
+    get:
+      tags: [p3-segment]
+      operationId: getSegment
+      summary: Get one declarative audience definition
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200":
+          description: Segment definition and refresh projection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Segment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p3-segment]
+      operationId: updateSegment
+      summary: Update one declarative audience definition
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateSegmentRequest" }
+      responses:
+        "200":
+          description: Updated segment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Segment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments/{segment_id}/members:
+    parameters:
+      - $ref: "#/components/parameters/SegmentID"
+    get:
+      tags: [p3-segment]
+      operationId: listSegmentMembers
+      summary: Preview the current materialized members using a keyset cursor
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Current materialized member page.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SegmentMemberPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments/{segment_id}/refresh:
+    parameters:
+      - $ref: "#/components/parameters/SegmentID"
+    post:
+      tags: [p3-segment]
+      operationId: requestSegmentRefresh
+      summary: Durably request one materialized audience refresh
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Refresh command accepted; it does not prove members changed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SegmentRefreshAccepted" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/stages:
     get:
@@ -559,6 +704,11 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64, minimum: 1 }
+    SegmentID:
+      name: segment_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
     CustomerID:
       name: customer_id
       in: path
@@ -768,6 +918,97 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/Tag" } }
+    SegmentDefinition:
+      oneOf:
+        - $ref: "#/components/schemas/SegmentDefinitionAnd"
+        - $ref: "#/components/schemas/SegmentDefinitionOr"
+        - $ref: "#/components/schemas/SegmentDefinitionPredicate"
+    SegmentDefinitionAnd:
+      type: object
+      additionalProperties: false
+      required: [and]
+      properties:
+        and:
+          type: array
+          minItems: 1
+          maxItems: 64
+          items: { $ref: "#/components/schemas/SegmentDefinition" }
+    SegmentDefinitionOr:
+      type: object
+      additionalProperties: false
+      required: [or]
+      properties:
+        or:
+          type: array
+          minItems: 1
+          maxItems: 64
+          items: { $ref: "#/components/schemas/SegmentDefinition" }
+    SegmentDefinitionPredicate:
+      type: object
+      additionalProperties: false
+      required: [field, op, value]
+      properties:
+        field:
+          type: string
+          enum: [stage_id, owner_staff_id, channel_id, tag_id, added_at, last_interact_at, is_deleted]
+        op:
+          type: string
+          enum: [eq, in, has_any, before, after]
+        value: {}
+    Segment:
+      type: object
+      additionalProperties: false
+      required: [id, name, definition, refresh_mode, refresh_cron, member_count, refreshed_at, refresh_status, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        definition: { $ref: "#/components/schemas/SegmentDefinition" }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, minLength: 1, maxLength: 200, nullable: true }
+        member_count: { type: integer, format: int64, minimum: 0 }
+        refreshed_at: { type: string, format: date-time, nullable: true }
+        refresh_status: { type: string, enum: [idle, running, failed] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SegmentPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Segment" } }
+        next_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+    SegmentMemberPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Customer" } }
+        next_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+    CreateSegmentRequest:
+      type: object
+      additionalProperties: false
+      required: [name, definition, refresh_mode]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        definition: { $ref: "#/components/schemas/SegmentDefinition" }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, minLength: 1, maxLength: 200, nullable: true }
+    UpdateSegmentRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        definition: { $ref: "#/components/schemas/SegmentDefinition" }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, minLength: 1, maxLength: 200, nullable: true }
+    SegmentRefreshAccepted:
+      type: object
+      additionalProperties: false
+      required: [status, segment_id]
+      properties:
+        status: { type: string, enum: [accepted] }
+        segment_id: { type: integer, format: int64, minimum: 1 }
     Stage:
       type: object
       additionalProperties: false
