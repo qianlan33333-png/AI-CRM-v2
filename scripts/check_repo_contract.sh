@@ -1178,21 +1178,21 @@ verify_index_sha256 docs/evidence/slices/P3-C02E-service-tests.md \
 verify_index_sha256 docs/evidence/slices/P3-C02E-handler-tests.md \
   ecb86db382d51896cbcff6698ea0791734bfa099a69a8d1b327b06cf0acd90ca
 verify_index_sha256 web/src/customer-detail.ts \
-  0000000000000000000000000000000000000000000000000000000000000000
+  b0cb258ae7846a6547ef479527006f2c3fe5daf69dc4a7689ee9399bc8328381
 verify_index_sha256 web/src/customer-detail.test.ts \
-  0000000000000000000000000000000000000000000000000000000000000000
+  84b474ab8690db8d6ec5513bd20866430061bbb80018d6a043ce00cdd9fa8c44
 verify_index_sha256 web/src/customer-detail-ui.tsx \
-  0000000000000000000000000000000000000000000000000000000000000000
+  85b0c1c24303c3157a1fef7b1d42b267240135bde781c1a73ad9cec85aace1c6
 verify_index_sha256 web/src/customer-detail-ui.test.tsx \
-  0000000000000000000000000000000000000000000000000000000000000000
+  6d4bd7e07ae2b7c267729a5350e1d1ddf48885ea9eceecd2449aa6aca2c4ab94
 verify_index_sha256 web/src/customer-detail.css \
-  0000000000000000000000000000000000000000000000000000000000000000
+  089c403ddcfb01a2fe12f68e5586b3ee881042c887f6ec19898a5ae5eaf62987
 verify_index_sha256 docs/execution/slices/P3-C05.md \
-  0000000000000000000000000000000000000000000000000000000000000000
+  6eb8f163c49220c4ef9a20f7a41e0fd5f00b2b97395ebfd1c5afa1301e7c8edf
 verify_index_sha256 docs/evidence/slices/P3-C05-ui.md \
-  0000000000000000000000000000000000000000000000000000000000000000
+  7707db512250c6ac4e27ed288481159e964d84f21680f5571c31d4187e90f6a9
 verify_index_sha256 docs/evidence/slices/P3-C05-route-tests.md \
-  0000000000000000000000000000000000000000000000000000000000000000
+  04c5e6ec1fb6751234bd58c5bc2f0e0d8235ad9fcfaa51cb95ea7fcf4608e11a
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1354,17 +1354,17 @@ verify_index_sha256 docs/execution/slices/P2-11.md \
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 web/src/main.tsx \
-  799e39ea92a77fa4687fc16fe18e572ee6724768a53bd05b09de18c207624b6c
+  17fbe2714149c39e94aedbba4eec9b98ad53d9f1db75422a804f5860829e3e30
 verify_index_sha256 web/src/main.test.tsx \
-  d26ca2f058a911e48950e83f7ca6dd39b616e82bfad3aa84b325506a4e788bd9
+  3baa9de2891313ade6452dd77fba1d834852a3dc755edce131897064b36ae656
 verify_index_sha256 web/src/customers.ts \
   a4dddd6400879040c8269b2e69620db20401d42890050464ab815d4e139772a0
 verify_index_sha256 web/src/customers.test.ts \
   5a5d6e31f3b6c2097a614bb06177ccdc23a76114faef2dda64fede1261879103
 verify_index_sha256 web/src/customers-ui.tsx \
-  a9b6d658a5c15b32fae61aa51f0ec9d7f6d72a2fb2330bc7fc7e7481b8ef25e0
+  213af068067f7931ba7a78ce78fea71a1ecee47fb40d140cd4856bc45fb28c37
 verify_index_sha256 web/src/customers-ui.test.tsx \
-  87c3b414351ff52237fbee09403a6d311157fcd36a9d90944d4f25723f3e4650
+  3a5e7c600e5771d769545cb084ef6da0c79f987531d1adcd8972c9fca57c950a
 verify_index_sha256 web/src/customers-list.css \
   e2e9522f30b1cd44606667f4372bb5fb76b143111a36bac36bf625ed3e6a8b3e
 verify_index_sha256 web/src/shell.css \
@@ -1496,7 +1496,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  da9878b0abd3a3b31ed2a9270b9990636e2fa4b08dbf2ce062654109c86a1f27
+  93c84913550aafaba556907b9379db1ef7191c20a9e644b3c0079e9cd4a7a709
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2535,9 +2535,9 @@ grep -Fq 'function exactObject(' <<<"$p3c05_domain" ||
   fail "P3-C05 channel-neutral UI exposed an external identity"
 
 p3c05_ui="$(git show :web/src/customer-detail-ui.tsx)"
-grep -Fq 'if (mutationInFlight.current) return;' <<<"$p3c05_ui" ||
+grep -Fq 'if (lock.current) return undefined;' <<<"$p3c05_ui" ||
   fail "P3-C05 lost synchronous double-submit protection"
-grep -Fq 'const refreshed = await loadCustomerDetail(transport, customerID);' <<<"$p3c05_ui" ||
+grep -Fq 'loadCustomerDetail(transport, customerID),' <<<"$p3c05_ui" ||
   fail "P3-C05 mutation success must refetch server facts"
 grep -Fq '操作已提交，但未能重新读取服务端事实。请稍后刷新确认。' <<<"$p3c05_ui" ||
   fail "P3-C05 lost the successful-write/unconfirmed-read warning"

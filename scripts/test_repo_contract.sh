@@ -2448,7 +2448,7 @@ if (cd "$leading_zero_p3c05" && scripts/check_repo_contract.sh >/dev/null 2>&1);
 fi
 
 double_submit_p3c05="$(make_fixture p3-c05-double-submit)"
-sed -i.bak '/if (mutationInFlight[.]current) return;/d' \
+sed -i.bak '/if (lock[.]current) return undefined;/d' \
   "$double_submit_p3c05/web/src/customer-detail-ui.tsx"
 rm -f "$double_submit_p3c05/web/src/customer-detail-ui.tsx.bak"
 restage_p2s18_receipt "$double_submit_p3c05" web/src/customer-detail-ui.tsx
