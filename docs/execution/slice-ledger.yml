@@ -2984,6 +2984,37 @@ slices:
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-S01
+    title: segment-typed-ast-and-fail-closed-dsl-parser
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: 1ffeaba45c72a0e53a8763788cda1992ff253d24
+    dependency: P3_S00_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-s01-segment-parser
+    decision_anchor: P3-S01-2026-08-13
+    scope:
+      - closed_typed_ast_and_duplicate_key_safe_json_parser
+      - S00_whitelist_validation_limits_canonicalization_and_structured_errors
+      - no_sql_compiler_store_execution_materialization_scheduler_http_or_ui
+    tests:
+      - LOCAL_DSL_TABLE_DRIVEN_RACE_PASS
+      - LOCAL_DSL_FUZZ_2_SECONDS_127052_EXECUTIONS_NO_PANIC_PASS
+      - LOCAL_repo_contract_positive_and_complete_negative_corpus_PASS
+      - LOCAL_generate_twice_no_diff_PASS_node_24_18_0_npm_11_12_1
+      - LOCAL_make_ci_go_PASS
+      - LOCAL_npm_run_ci_PASS_186_tests
+    handwritten_scope: 2_business_files_505_added_lines_tests_cards_and_governance_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes:
+      - infra:fresh_S01_worktree_lacked_the_repository_pinned_Orval_binary_then_make_bootstrap_tools_restored_the_declared_Node_24_18_0_toolchain_before_double_generation_reran_without_diff
+    external_gates:
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
