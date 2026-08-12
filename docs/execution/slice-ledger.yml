@@ -2457,6 +2457,35 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C06
+    title: contact-200k-s-tier-performance-hard-gate
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 33f6e19792a6d44686642236fb99d6a4e76c3369
+    dependency: P3-C05
+    branch: slice/p3-c06-contact-performance
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    scope:
+      - deterministic_200k_channel_neutral_synthetic_dataset
+      - exhaustive_256_supported_filter_presence_combinations
+      - real_repository_transaction_bound_p95_under_200ms
+      - exact_production_sql_explain_analyze_buffers_no_unexpected_seq_scan
+      - authorized_2c4g_s_tier_test_server_evidence
+    delegated_tasks: []
+    tests:
+      - NOT_RUN
+    handwritten_scope: pending
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes:
+      - verification:initial_worktree_creation_followup_git_inspection_ran_in_stale_root_then_exact_new_worktree_was_revalidated_without_mutation
+    external_gates:
+      - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
