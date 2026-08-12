@@ -59,6 +59,12 @@ required=(
   internal/segment/store/query_set.go
   acceptance/segment/query_set_integration_test.go
   acceptance/segment/doc.go
+  internal/segment/app/refresh.go
+  internal/segment/app/refresh_test.go
+  internal/segment/store/queries/refresh.sql
+  internal/segment/store/refresh_repository.go
+  internal/segment/store/refresh_repository_test.go
+  acceptance/segment/refresh_integration_test.go
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -445,6 +451,7 @@ required=(
   docs/execution/slices/P3-S01.md
   docs/execution/slices/P3-S02.md
   docs/execution/slices/P3-S03.md
+  docs/execution/slices/P3-S04A.md
   docs/execution/slices/P3-R3A.md
   docs/execution/slices/P3-R4A.md
   docs/execution/slices/P3-R4B.md
@@ -837,10 +844,17 @@ done <<'EOF'
 100644 internal/segment/store/query_set.go
 100644 acceptance/segment/query_set_integration_test.go
 100644 acceptance/segment/doc.go
+100644 internal/segment/app/refresh.go
+100644 internal/segment/app/refresh_test.go
+100644 internal/segment/store/queries/refresh.sql
+100644 internal/segment/store/refresh_repository.go
+100644 internal/segment/store/refresh_repository_test.go
+100644 acceptance/segment/refresh_integration_test.go
 100644 docs/execution/slices/P3-S00.md
 100644 docs/execution/slices/P3-S01.md
 100644 docs/execution/slices/P3-S02.md
 100644 docs/execution/slices/P3-S03.md
+100644 docs/execution/slices/P3-S04A.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -913,11 +927,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  4babe081b3c16fe8ed00ebdf732794a92f38eeecedba44db23bb8e49acead9cd
+  87877688d66f43b2add7f0eb5201914ee22c256f8bd2ae3894fb960453e318a8
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  b32cf58d803b0bde0c5428f1bfa4e156514f8b694871070a694af54cfa6ac175
+  2c875b27d4ef5b0a04be7d131a0a882bf90d282749db7d26b997921fdb007dca
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1410,10 +1424,24 @@ verify_index_sha256 acceptance/segment/doc.go \
   89fb7cae27317abcd01789dd4cff4cbeddd74b34db7564bfa427aa35987b2421
 verify_index_sha256 docs/execution/slices/P3-S03.md \
   8f2934cc4664b91566a92bc0b267c96c6c507f7592a29441f27a021a935716c7
+verify_index_sha256 internal/segment/app/refresh.go \
+  c4584b4be60ddf1366c450f4357635b145a57ba4e6a5fabde892bfdfbd2fdef7
+verify_index_sha256 internal/segment/app/refresh_test.go \
+  8d9036916b25a07cbba2c2ff828d22c003ece84028c962cd7207db12139de6d3
+verify_index_sha256 internal/segment/store/queries/refresh.sql \
+  e5cacabce048f85816e1d626b4c01a2069bef69f3357173a6c3004385f9f96d0
+verify_index_sha256 internal/segment/store/refresh_repository.go \
+  33e464d6cf73ab14f440103dbe6301192a4eefa0bc2053dc334b6c715965cf70
+verify_index_sha256 internal/segment/store/refresh_repository_test.go \
+  1c75c707d310ffdc6bad192fbdfe92b40f273208f3e0ef3d75fa7aec46925952
+verify_index_sha256 acceptance/segment/refresh_integration_test.go \
+  b6e79e1564497ae1b8c91434ba6fc250a3982a39016695298e9e754a13d92f63
+verify_index_sha256 docs/execution/slices/P3-S04A.md \
+  63cf6550d1d374e05f85965f8a559ec9a4a3a1f634701c3ee5d4c78ba8a01b7b
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  e7cb0eec810810f539383a6c077760fdc39d4bec35605373ccc6d132e9d846d3
+  8e590152fae1e55f6283a31b710b1a607bd6c595826433bd01a18e263c441f88
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1715,7 +1743,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   eac06bc5b78137cd11461a7895408c70bd65e945c64b35390486d95c5dc26660
 verify_index_sha256 scripts/test_repo_contract.sh \
-  1f12c787da66565015f112f75938c1ad9bd4b85f31e88e1948270649c95304b9
+  6c6378dd91a34dbeda6f29b0683b1fae118a84625cf56b7c025d8df7d0ed4271
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3551,6 +3579,82 @@ r4b_acceptance_recipe="$(make_target_recipe 'p3-r4b-identity-storage-acceptance:
 grep -Fq 'P3R4B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-r4b-identity-storage-acceptance' \
   <(git show :.github/workflows/application-go.yml) ||
   fail "P3-R4B acceptance is disconnected from application migration CI"
+
+p3s04a_app="$(git show :internal/segment/app/refresh.go)"
+for anchor in \
+  'service.uow.Within(ctx' \
+  'service.store.LockDefinition(txCtx, segmentID)' \
+  'dsl.Parse(definition)' \
+  'compiler.Compile(ast, reference)' \
+  'compiler.Execute(txCtx, program, queries)' \
+  'service.store.ReplaceMembers(txCtx, segmentID, customerIDs, reference)' \
+  'service.events.Append(txCtx, eventport.Event{' \
+  'Type:           "segment.refreshed"' \
+  'IdempotencyKey: "segment.refresh:"'; do
+  grep -Fq "$anchor" <<<"$p3s04a_app" ||
+    fail "P3-S04A transaction or pipeline receipt drifted: $anchor"
+done
+if grep -Eq '(^|[^[:alnum:]_])(Query|Exec|Prepare)\(' <<<"$p3s04a_app"; then
+  fail "P3-S04A app must not add direct SQL execution"
+fi
+
+p3s04a_queries="$(git show :internal/segment/store/queries/refresh.sql)"
+for anchor in \
+  '-- name: LockSegmentDefinitionForRefresh :one' \
+  'FOR UPDATE;' \
+  '-- name: DeleteSegmentMembersForRefresh :exec' \
+  '-- name: InsertSegmentMembersForRefresh :exec' \
+  'FROM unnest(sqlc.arg(customer_ids)::bigint[]) AS customer_id;' \
+  '-- name: CompleteSegmentRefresh :one' \
+  "refresh_status = 'idle'"; do
+  grep -Fq -- "$anchor" <<<"$p3s04a_queries" ||
+    fail "P3-S04A fixed replacement query receipt drifted: $anchor"
+done
+[[ "$(grep -c '^-- name:' <<<"$p3s04a_queries")" -eq 4 ]] ||
+  fail "P3-S04A replacement query family must contain exactly four fixed sqlc queries"
+if grep -Eiq '\b(customers|customer_tags|identities|customer_merges|river_job|event_log)\b' <<<"$p3s04a_queries"; then
+  fail "P3-S04A replacement SQL exceeded Segment-owned tables"
+fi
+
+p3s04a_store="$(git show :internal/segment/store/refresh_repository.go)"
+for anchor in \
+  'platformstore.TxFromContext(ctx)' \
+  'segmentdb.New(tx)' \
+  'return NewQuerySet(tx), nil' \
+  'queries.DeleteSegmentMembersForRefresh' \
+  'queries.InsertSegmentMembersForRefresh' \
+  'queries.CompleteSegmentRefresh'; do
+  grep -Fq "$anchor" <<<"$p3s04a_store" ||
+    fail "P3-S04A transaction-bound store receipt drifted: $anchor"
+done
+if grep -Eq '\.(Query|QueryRow|Exec|Prepare)\(' <<<"$p3s04a_store"; then
+  fail "P3-S04A store must call generated sqlc methods only"
+fi
+
+p3s04a_acceptance="$(git show :acceptance/segment/refresh_integration_test.go)"
+for anchor in \
+  'TestRefreshOncePG16ReplacesMembersAtomically' \
+  'TestRefreshOncePG16RollsBackPartialReplacementAndRejectsInjection' \
+  'TestRefreshOncePG16SerializesConcurrentSameSegmentCalls' \
+  'SEGMENT_TEST_DATABASE_URL' \
+  'version != "160014"' \
+  'reject_refresh_event'; do
+  grep -Fq "$anchor" <<<"$p3s04a_acceptance" ||
+    fail "P3-S04A PG16 acceptance receipt drifted: $anchor"
+done
+
+p3s04a_card="$(git show :docs/execution/slices/P3-S04A.md)"
+for anchor in \
+  'P3-S04A：Segment 单次事务成员替换核心' \
+  'S03 固定 query family' \
+  '任一解析、查询、写入或 event append 失败时' \
+  'S04B：cron 严格语法/规范化校验' \
+  'S04C：Create/Update/RequestRefresh durable idempotency receipt' \
+  'PENDING_EXTERNAL_GATE' \
+  '不接 River'; do
+  grep -Fq "$anchor" <<<"$p3s04a_card" ||
+    fail "P3-S04A scope or dependency receipt drifted: $anchor"
+done
 
 scripts/scan_sensitive_paths.sh
 

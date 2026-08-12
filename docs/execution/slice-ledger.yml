@@ -3091,6 +3091,54 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: P3-S04A
+    title: segment-transaction-bound-member-replacement-core
+    owner: Codex-Sol
+    status: replayed_to_37b428d_local_gates_pass_pr_ready
+    base_sha: 37b428d87c13af360d392aa2e1ccfd17075a8a4d
+    dependency: P3_S03_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-s04a-segment-refresh-core-replay
+    decision_anchor: P3-S04A-2026-08-13
+    scope:
+      - one_transaction_definition_lock_parse_compile_execute_and_member_replacement
+      - segment_owned_members_summary_and_same_transaction_event_fact
+      - same_segment_row_lock_serialization_and_full_rollback
+      - fixed_sqlc_mutations_and_reuse_of_S03_unique_executor
+      - no_DDL_River_receipt_scheduler_HTTP_OpenAPI_UI_or_other_domain_write
+    tests:
+      - RED_internal_segment_app_missing_refresh_core_compile_failure_recorded
+      - LOCAL_internal_segment_focused_PASS
+      - LOCAL_PG16_14_55433_success_empty_concurrency_injection_and_transaction_rollback_PASS
+      - LOCAL_generated_sources_double_generation_PASS
+      - LOCAL_repo_contract_positive_and_complete_negative_corpus_PASS
+      - LOCAL_full_ci_go_exact_single_commit_PASS
+    handwritten_scope: 3_business_files_272_added_lines_plus_tests_generated_card_ledger_and_permanent_contract_guards
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 10
+    correction_notes:
+      - slice:first_generated_refresh_binding_used_time_Time_where_sqlc_required_pgtype_Timestamptz_then_reused_the_existing_typed_timestamp_adapter
+      - slice:first_refresh_transaction_replaced_business_projection_without_the_AGENTS_required_same_transaction_event_then_the_existing_events_port_appender_was_added_and_PG_rollback_proved
+      - infra:fresh_S04A_worktree_lacked_repository_pinned_Orval_then_make_bootstrap_tools_restored_declared_toolchain_without_lockfile_change
+      - verification:first_PG_command_assumed_activate_exported_SEGMENT_TEST_DATABASE_URL_then_rerun_bound_the_authorized_literal_55433_aicrm_test_DSN
+      - verification:first_PG_assertion_compared_time_Time_struct_location_instead_of_instant_then_used_Time_Equal_without_changing_stored_semantics
+      - verification:first_repo_contract_positive_run_found_the_updated_test_repo_contract_content_pin_then_the_exact_hash_was_synchronized
+      - verification:second_repo_contract_positive_run_expected_a_wrapped_card_phrase_then_the_semantic_anchor_was_bound_to_an_existing_exact_line
+      - verification:first_full_ci_go_correctly_rejected_the_staged_uncommitted_index_at_build_release_binary_then_the_single_commit_candidate_was_created_for_exact_HEAD_rerun
+      - verification:first_post_commit_full_gate_wrapper_compared_HEAD_to_a_manually_mistyped_suffix_then_the_rerun_bound_directly_to_git_rev_parse_HEAD
+      - verification:first_replay_cherry_pick_wrapper_assigned_the_zsh_read_only_status_parameter_after_the_expected_checker_conflict_then_resolution_continued_from_the_preserved_replay_index
+      - verification:replay_diff_audit_found_a_prior_verification_count_patch_had_changed_an_unrelated_historical_ledger_entry_then_restored_the_exact_37b428d_value
+      - verification:first_replay_byte_comparison_loop_shadowed_the_zsh_PATH_special_parameter_then_the_invalid_empty_hash_comparison_was_discarded_and_rerun_with_a_safe_variable
+      - verification:first_targeted_replay_count_patch_still_matched_an_earlier_historical_value_then_the_diff_audit_restored_it_and_the_final_patch_was_anchored_to_P3_S04A
+    external_gates:
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - DURABLE_REFRESH_COMMAND_RECEIPT_NOT_IN_S04A
+      - RIVER_WORKER_AND_SCHEDULER_NOT_IN_S04A
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
   - slice_id: INFRA-SEC-01
     title: secret-scan-bundle-fixture-cleanup-lifecycle
     owner: Codex-Sol

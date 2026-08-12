@@ -3048,6 +3048,56 @@ if (cd "$p3s03_external_gate" && scripts/check_repo_contract.sh >/dev/null 2>&1)
   fail "P3-S03 synthetic evidence was allowed to close the real audience gate"
 fi
 
+for file_path in \
+  internal/segment/app/refresh.go \
+  internal/segment/app/refresh_test.go \
+  internal/segment/store/queries/refresh.sql \
+  internal/segment/store/refresh_repository.go \
+  internal/segment/store/refresh_repository_test.go \
+  acceptance/segment/refresh_integration_test.go \
+  docs/execution/slices/P3-S04A.md; do
+  missing_p3s04a_contract="$(make_fixture "missing-p3-s04a-${file_path//\//-}")"
+  rm -f "$missing_p3s04a_contract/$file_path"
+  git -C "$missing_p3s04a_contract" add -u "$file_path"
+  if (cd "$missing_p3s04a_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-S04A refresh contract was accepted: $file_path"
+  fi
+done
+
+p3s04a_unlocked_definition="$(make_fixture p3-s04a-unlocked-definition)"
+sed -i.bak '/FOR UPDATE;/d' "$p3s04a_unlocked_definition/internal/segment/store/queries/refresh.sql"
+rm -f "$p3s04a_unlocked_definition/internal/segment/store/queries/refresh.sql.bak"
+restage_p2s18_receipt "$p3s04a_unlocked_definition" internal/segment/store/queries/refresh.sql
+if (cd "$p3s04a_unlocked_definition" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04A concurrent refresh without row lock was accepted"
+fi
+
+p3s04a_missing_event="$(make_fixture p3-s04a-missing-same-transaction-event)"
+sed -i.bak 's/service\.events\.Append(txCtx/disabledEventsAppend(txCtx/' \
+  "$p3s04a_missing_event/internal/segment/app/refresh.go"
+rm -f "$p3s04a_missing_event/internal/segment/app/refresh.go.bak"
+restage_p2s18_receipt "$p3s04a_missing_event" internal/segment/app/refresh.go
+if (cd "$p3s04a_missing_event" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04A state change without same-transaction event was accepted"
+fi
+
+p3s04a_dynamic_sql="$(make_fixture p3-s04a-dynamic-sql-escape-hatch)"
+printf '%s\n' 'func unsafeRefresh(ctx context.Context, tx interface { Exec(context.Context, string, ...any) }) { _, _ = tx.Exec(ctx, "DELETE FROM segment_members") }' \
+  >>"$p3s04a_dynamic_sql/internal/segment/store/refresh_repository.go"
+restage_p2s18_receipt "$p3s04a_dynamic_sql" internal/segment/store/refresh_repository.go
+if (cd "$p3s04a_dynamic_sql" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04A dynamic SQL escape hatch was accepted"
+fi
+
+p3s04a_fake_external_gate="$(make_fixture p3-s04a-fake-real-audience-closure)"
+sed -i.bak 's/PENDING_EXTERNAL_GATE/CLOSED_WITH_SYNTHETIC_FIXTURE/' \
+  "$p3s04a_fake_external_gate/docs/execution/slices/P3-S04A.md"
+rm -f "$p3s04a_fake_external_gate/docs/execution/slices/P3-S04A.md.bak"
+restage_p2s18_receipt "$p3s04a_fake_external_gate" docs/execution/slices/P3-S04A.md
+if (cd "$p3s04a_fake_external_gate" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04A synthetic evidence was allowed to close the real audience gate"
+fi
+
 for mutation in missing-adr pending-receipt receipt-algorithm privacy-boundary no-ttl-river-gin merge-detail; do
   r3a_adr_fixture="$(make_fixture "p3-r3a-${mutation}")"
   case "$mutation" in
