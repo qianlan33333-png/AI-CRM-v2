@@ -1188,7 +1188,7 @@ verify_index_sha256 web/src/customer-detail-ui.test.tsx \
 verify_index_sha256 web/src/customer-detail.css \
   089c403ddcfb01a2fe12f68e5586b3ee881042c887f6ec19898a5ae5eaf62987
 verify_index_sha256 docs/execution/slices/P3-C05.md \
-  6eb8f163c49220c4ef9a20f7a41e0fd5f00b2b97395ebfd1c5afa1301e7c8edf
+  0616bda65c1f34a98514aadfd01d5640af1440e84e46f11f6f88be42121cfaab
 verify_index_sha256 docs/evidence/slices/P3-C05-ui.md \
   7707db512250c6ac4e27ed288481159e964d84f21680f5571c31d4187e90f6a9
 verify_index_sha256 docs/evidence/slices/P3-C05-route-tests.md \
