@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	generated "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
-	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -173,88 +172,6 @@ func TestCustomerMutationGeneratedRoutesRequireExactlyOneCSRFHeader(t *testing.T
 			assertCustomerMutationNoCalls(t, application)
 		})
 	}
-}
-
-func TestCustomerMutationRoutesRequireSessionAndServerBoundCSRF(t *testing.T) {
-	operations := []struct {
-		name   string
-		method string
-		path   string
-		body   string
-		tag    bool
-	}{
-		{name: "update", method: http.MethodPatch, path: "/api/v1/customers/41", body: "{\"name\":\"Ada\"}"},
-		{name: "set stage", method: http.MethodPut, path: "/api/v1/customers/41/stage", body: "{\"stage_id\":17}"},
-		{name: "add tag", method: http.MethodPut, path: "/api/v1/customers/41/tags/13", tag: true},
-		{name: "remove tag", method: http.MethodDelete, path: "/api/v1/customers/41/tags/13", tag: true},
-	}
-
-	for _, operation := range operations {
-		operation := operation
-		t.Run(operation.name+"/missing server csrf", func(t *testing.T) {
-			application := &customerMutationApplicationStub{}
-			auth := customerMutationAuthStubForAdmin()
-			response := serveCustomerMutation(t, mutationProtectedRouter(t, application, auth), mutationProtectedRequest(
-				operation.method, operation.path, operation.body, true, false,
-			))
-			assertCustomerMutationError(t, response, http.StatusForbidden, platformhttp.CodeUnauthorized)
-			assertCustomerMutationNoCalls(t, application)
-			if auth.authenticateCalls != 1 || auth.validateCSRFFalls != 0 || auth.authorizeCalls != 0 {
-				t.Fatalf("authenticate/csrf/authorize calls = %d/%d/%d, want 1/0/0",
-					auth.authenticateCalls, auth.validateCSRFFalls, auth.authorizeCalls)
-			}
-		})
-
-		t.Run(operation.name+"/valid session and csrf", func(t *testing.T) {
-			application := &customerMutationApplicationStub{}
-			auth := customerMutationAuthStubForAdmin()
-			response := serveCustomerMutation(t, mutationProtectedRouter(t, application, auth), mutationProtectedRequest(
-				operation.method, operation.path, operation.body, true, true,
-			))
-			if operation.tag {
-				assertCustomerMutationNoContent(t, response)
-			} else {
-				assertCustomerMutationSuccess(t, response)
-			}
-			if application.totalCalls() != 1 {
-				t.Fatalf("application calls = %d, want 1", application.totalCalls())
-			}
-			if auth.authenticateCalls != 1 || auth.validateCSRFFalls != 1 || auth.authorizeCalls != 1 ||
-				len(auth.authorizedCapabilities) != 1 || auth.authorizedCapabilities[0] != authport.CapabilityCustomersWrite {
-				t.Fatalf("authenticate/csrf/authorize/capabilities = %d/%d/%d/%#v, want 1/1/1/customers.write",
-					auth.authenticateCalls, auth.validateCSRFFalls, auth.authorizeCalls, auth.authorizedCapabilities)
-			}
-		})
-	}
-
-	t.Run("missing session is unauthenticated before csrf and application", func(t *testing.T) {
-		application := &customerMutationApplicationStub{}
-		auth := customerMutationAuthStubForAdmin()
-		response := serveCustomerMutation(t, mutationProtectedRouter(t, application, auth), mutationProtectedRequest(
-			http.MethodPatch, "/api/v1/customers/41", "{\"name\":\"Ada\"}", false, true,
-		))
-		assertCustomerMutationError(t, response, http.StatusUnauthorized, platformhttp.CodeUnauthenticated)
-		assertCustomerMutationNoCalls(t, application)
-		if auth.authenticateCalls != 0 || auth.validateCSRFFalls != 0 || auth.authorizeCalls != 0 {
-			t.Fatalf("authenticate/csrf/authorize calls = %d/%d/%d, want all zero",
-				auth.authenticateCalls, auth.validateCSRFFalls, auth.authorizeCalls)
-		}
-	})
-
-	t.Run("rejected server csrf stops authorization and application", func(t *testing.T) {
-		application := &customerMutationApplicationStub{}
-		auth := customerMutationAuthStubForAdmin()
-		auth.validateCSRFErr = authport.ErrCSRFInvalid
-		response := serveCustomerMutation(t, mutationProtectedRouter(t, application, auth), mutationProtectedRequest(
-			http.MethodPatch, "/api/v1/customers/41", "{\"name\":\"Ada\"}", true, true,
-		))
-		assertCustomerMutationError(t, response, http.StatusForbidden, platformhttp.CodeUnauthorized)
-		assertCustomerMutationNoCalls(t, application)
-		if auth.authenticateCalls != 1 || auth.validateCSRFFalls != 1 || auth.authorizeCalls != 0 {
-			t.Fatalf("authenticate/csrf/authorize calls = %d/%d/%d, want 1/1/0",
-				auth.authenticateCalls, auth.validateCSRFFalls, auth.authorizeCalls)
-		}
-	})
 }
 
 func TestCustomerMutationHandlerFailsClosedBeforeApplication(t *testing.T) {
@@ -840,66 +757,6 @@ type customerMutationApplicationStub struct {
 
 var _ customerMutationApplication = (*customerMutationApplicationStub)(nil)
 
-type customerMutationAuthServiceStub struct {
-	principal       authport.Principal
-	authorization   authport.Authorization
-	authenticateErr error
-	authorizeErr    error
-	validateCSRFErr error
-
-	authenticateCalls      int
-	validateCSRFFalls      int
-	authorizeCalls         int
-	authorizedCapabilities []authport.Capability
-}
-
-var _ authport.Service = (*customerMutationAuthServiceStub)(nil)
-
-func customerMutationAuthStubForAdmin() *customerMutationAuthServiceStub {
-	return &customerMutationAuthServiceStub{
-		principal: authport.Principal{AdminUserID: 211, Role: authport.RoleAdmin},
-		authorization: authport.Authorization{
-			Capability: authport.CapabilityCustomersWrite,
-			Scope:      authport.ScopeGlobal,
-		},
-	}
-}
-
-func (stub *customerMutationAuthServiceStub) Authenticate(
-	context.Context,
-	authport.SessionRef,
-) (authport.Principal, error) {
-	stub.authenticateCalls++
-	return stub.principal, stub.authenticateErr
-}
-
-func (stub *customerMutationAuthServiceStub) Authorize(
-	_ context.Context,
-	_ authport.Principal,
-	capability authport.Capability,
-) (authport.Authorization, error) {
-	stub.authorizeCalls++
-	stub.authorizedCapabilities = append(stub.authorizedCapabilities, capability)
-	return stub.authorization, stub.authorizeErr
-}
-
-func (stub *customerMutationAuthServiceStub) ValidateCSRF(
-	context.Context,
-	authport.SessionRef,
-	authport.CSRFToken,
-) error {
-	stub.validateCSRFFalls++
-	return stub.validateCSRFErr
-}
-
-func (*customerMutationAuthServiceStub) Invalidate(
-	context.Context,
-	authport.SessionRef,
-	authport.CSRFToken,
-) error {
-	return nil
-}
-
 func (stub *customerMutationApplicationStub) Update(
 	ctx context.Context,
 	command contactapp.CustomerUpdateCommand,
@@ -999,28 +856,6 @@ func mutationRouter(t *testing.T, application customerMutationApplication) http.
 	})
 }
 
-func mutationProtectedRouter(
-	t *testing.T,
-	application customerMutationApplication,
-	auth authport.Service,
-) http.Handler {
-	t.Helper()
-	authHandler, err := authhttp.NewHandler(auth)
-	if err != nil {
-		t.Fatalf("authhttp.NewHandler() error = %v", err)
-	}
-	var route http.Handler = mutationRouter(t, application)
-	route, err = authHandler.Authorize(authport.CapabilityCustomersWrite, route)
-	if err != nil {
-		t.Fatalf("Authorize() error = %v", err)
-	}
-	route, err = authHandler.RequireCSRF(route)
-	if err != nil {
-		t.Fatalf("RequireCSRF() error = %v", err)
-	}
-	return authHandler.Authenticate(route)
-}
-
 func mutationRequest(
 	t *testing.T,
 	method string,
@@ -1047,23 +882,6 @@ func mutationRequest(
 		}
 	}
 	return request.WithContext(ctx)
-}
-
-func mutationProtectedRequest(
-	method string,
-	path string,
-	body string,
-	withSession bool,
-	withCSRF bool,
-) *http.Request {
-	request := httptest.NewRequest(method, path, strings.NewReader(body))
-	if withSession {
-		request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: "customer-mutation-server-session"})
-	}
-	if withCSRF {
-		request.Header.Set("X-CSRF-Token", "customer-mutation-csrf-token")
-	}
-	return request
 }
 
 func serveCustomerMutation(t *testing.T, handler http.Handler, request *http.Request) *httptest.ResponseRecorder {

@@ -17,3 +17,6 @@
 Sol 在集成前独立复算 parent、单文件 manifest 与 binary diff，结果逐项匹配；
 集成后运行 contact HTTP focused race test。Terra 未改生产代码，未 push、未建 PR、
 未 merge。唯一 verification 修正为收据脚本避开 zsh 特殊变量 `path`，未影响载荷。
+全量架构 lint 随后识别出原载荷中复验 auth middleware 的跨域测试 import；Sol 删除该
+重复语料，保留 `cmd/aicrm` 的四路由真实 CSRF 黑盒断言。以上 hash 只绑定 Terra 原始
+载荷，最终集成文件另由 repo-contract 内容摘要冻结。
