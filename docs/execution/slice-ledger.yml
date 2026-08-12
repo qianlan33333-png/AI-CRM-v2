@@ -2318,7 +2318,7 @@ slices:
   - slice_id: P3-C02E
     title: contact-local-tag-catalog-read
     owner: Codex-Sol
-    status: contract_frozen
+    status: local_gates_pass_independent_review_pending
     base_sha: 44ea8922f2a6ce2e9b6c80b48411f4251bc94fb9
     dependency: P3-C02D
     branch: slice/p3-c02e-tag-catalog-read
@@ -2355,6 +2355,13 @@ slices:
       - FOCUSED_RACE_PASS
       - POSTGRESQL_16_TAG_ORDER_AND_COLUMN_PRIVILEGE_PASS
       - SQLC_TWICE_NO_DIFF_PASS
+      - FULL_CI_GO_EXACT_CANDIDATE_SHA_PASS
+      - MIGRATION_UP_DOWN_UP_AND_P3_ACCEPTANCE_MATRIX_PASS
+      - WEB_NODE24_NPM11_ORVAL_DOUBLE_GENERATION_130_TESTS_PASS
+      - REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
+      - GITLEAKS_AND_SENSITIVE_PATHS_PASS
+      - P0S04_OFFICIAL_RIVER_MIGRATION_PASS_AFTER_ISOLATED_DATABASE_CLEANUP
+    handwritten_scope: 9_files_488_changed_lines_under_P3_cap_tests_generated_manifests_acceptance_and_governance_excluded
     slice_induced_correction_count: 1
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
