@@ -64,7 +64,7 @@ func (handler *CustomerEventHandler) ListCustomerEvents(
 		writeCustomerEventError(writer, request, err, cursorSupplied)
 		return
 	}
-	response, err := customerEventResponse(result)
+	response, err := customerEventResponse(contactport.CustomerID(customerID), result)
 	if err != nil {
 		writeCustomerEventError(writer, request, contactapp.ErrCustomerEventsUnavailable, cursorSupplied)
 		return
@@ -117,14 +117,15 @@ func customerEventInput(
 	return input, params.Cursor != nil, nil
 }
 
-func customerEventResponse(result contactapp.CustomerEventResult) (generated.CustomerEventListResponse, error) {
+func customerEventResponse(expectedCustomerID contactport.CustomerID, result contactapp.CustomerEventResult) (generated.CustomerEventListResponse, error) {
 	if result.Items == nil || (result.NextCursor != nil && (*result.NextCursor == "" || len(result.Items) == 0)) {
 		return generated.CustomerEventListResponse{}, errors.New("customer event application returned an invalid result")
 	}
 	items := make([]generated.CustomerEvent, 0, len(result.Items))
 	for _, item := range result.Items {
 		payload, err := decodeCustomerEventPayload(item.Payload)
-		if err != nil || item.ID <= 0 || item.CustomerID <= 0 || item.EventType == "" || item.Actor == "" || item.OccurredAt.IsZero() {
+		if err != nil || expectedCustomerID <= 0 || item.ID <= 0 || item.CustomerID != expectedCustomerID ||
+			item.EventType == "" || item.Actor == "" || item.OccurredAt.IsZero() {
 			return generated.CustomerEventListResponse{}, errors.New("customer event application returned an invalid item")
 		}
 		items = append(items, generated.CustomerEvent{
