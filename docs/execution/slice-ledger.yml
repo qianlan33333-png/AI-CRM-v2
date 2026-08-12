@@ -3367,6 +3367,22 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: [slice:blank_key_negative_initially_used_an_unregistered_event_tuple_and_hit_the_event_FK_before_the_key_constraint_then_a_second_valid_tuple_isolated_SQLSTATE_23514]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+  - slice_id: P3-R6-A
+    title: receipt-safety-gate-governance-only
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: f8bb43739f31b22a08fa8a533c67852de20dad21
+    dependency: P3_R5_C1_AND_CONTACT_R3B_CLOSED_EXACT_MAIN_THREE_REQUIRED_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-r6-a-receipt-governance
+    scope: [R6_A_B_C_D_boundary_and_strict_order_freeze, append_only_P3_R6_A_ledger_entry, all_historical_slice_zero_drift_proof, old_R5_C2_HARD_STOP_read_only_superseded_mapping]
+    excluded_scope: [parser_checker_logic_tests_policy_DDL_ADR_OpenAPI_ports_API_runtime_Make_dependencies_CI_workflow, old_R5_C2_continue_fix_cleanup_cherry_pick_publish_or_history_reset, production_database_live_migration_real_wecom_external_send]
+    supersedes: P3_R5_C2_LOCAL_HARD_STOP_WIP_WITHOUT_REUSING_OR_REWRITING_IT
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 3
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [slice:first_correction_receipt_update_initially_matched_historical_P3_C07C_R3A_then_was_reverted_before_commit_and_zero_drift_rechecked, slice:second_correction_infra_count_update_initially_matched_historical_M0_6_then_was_reverted_before_commit_and_zero_drift_rechecked, infra:local_full_race_exposed_existing_p2s11_concurrent_bytes_buffer_while_exact_base_isolated_probe_passed, infra:host_node_v25_9_0_rejected_by_pinned_web_gate_then_exact_node_v24_18_0_runtime_was_used, infra:contact_R3B_priority_advanced_exact_main_and_required_clean_replay_after_its_main_CI_closed, verification:first_exact_base_probe_command_ran_from_repository_root_instead_of_new_detached_worktree_then_reran_in_correct_worktree]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:
   P2:
