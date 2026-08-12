@@ -447,6 +447,7 @@ required=(
   docs/execution/slices/P3-S03.md
   docs/execution/slices/P3-R3A.md
   docs/execution/slices/P3-R4A.md
+  docs/execution/slices/P3-R4B.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -457,6 +458,8 @@ required=(
   docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
   docs/spec/AI-CRM-v2-重构详细设计.md
   docs/spec/SHA256SUMS
+  migrations/00010_identity_storage.sql
+  acceptance/identity/storage_integration_test.go
 )
 
 for file_path in "${required[@]}"; do
@@ -882,7 +885,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  466f4893885cff9571b5c9c1c19f74318a04f5f7050e4e122ff55d89ade598f5
+  a31caa05fee3a47afc769a87964e070401f4f0499c4d325a82765eab32d49b83
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -898,7 +901,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  6253acdde12878bdcf434b0f4d9a27c4b21447de909129acbdfa5a33d15d6955
+  e6c28377888f4852384d632ac09135b00afb0499faa35ba7547a421a6a54e774
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -1008,7 +1011,7 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
-  cd364640690227382187500ce2e051e49c26b8887ae07496c1852de528f17250
+  68142d65a31c3d34ad4bdeff4f0d456c2db6b13e62419b08626fda328eda24ff
 verify_index_sha256 scripts/test_ownership.sh \
   c69b41e09d4c61d0dd2ed2774c1407e4ff432916686d1cdd56e14dea1a96ab6d
 verify_index_sha256 acceptance/fixtures/postgres.go \
@@ -1410,7 +1413,7 @@ verify_index_sha256 docs/execution/slices/P3-S03.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  47d27ee0c038e38a5d17f994f24270992951adee921c6d960d234355dc6d865a
+  e7cb0eec810810f539383a6c077760fdc39d4bec35605373ccc6d132e9d846d3
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1689,6 +1692,12 @@ verify_index_sha256 docs/execution/slices/P3-R3A.md \
   cac248d380f467833560cbd3992a86100c9f56594380bc0fd013be241c6614db
 verify_index_sha256 docs/execution/slices/P3-R4A.md \
   8b0cf9837e00532321228d45e7ab872501f97f23109335e776e4b33ae300246a
+verify_index_sha256 docs/execution/slices/P3-R4B.md \
+  3ee411d7d57ba4001dadffdf7fe617c1bc91400341286c44173db6d82ad0297a
+verify_index_sha256 migrations/00010_identity_storage.sql \
+  bc72451450a9efff3435c17fd17d2f457ef909a7c7390e7468fddc7befe68aab
+verify_index_sha256 acceptance/identity/storage_integration_test.go \
+  0677b7b5d5e96677b8c4de69ad5dee4c20ef2abee3aaf1376d61cda51e28fe38
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   64e11787b6469d62d0ea503bf6aaf88e88a9f029ab65fdc3de1ee6472fbdc580
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
@@ -1702,11 +1711,11 @@ verify_index_sha256 docs/execution/slices/M0-5.md \
 verify_index_sha256 docs/execution/slices/M0-6.md \
   96f5131c60d2eec508557f03ba1322af88c2002a259ec8d455569024d2013125
 verify_index_sha256 docs/architecture/canonical.md \
-  bd26d6209a0ce7160d596b22e70d8b1bdf615bbf658309f4e2466c4d292cb3fb
+  fcf8050c23c5ef76d31229392b2ed8a8114f7a2f48b73f47b77646110eb2ea18
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
+  eac06bc5b78137cd11461a7895408c70bd65e945c64b35390486d95c5dc26660
 verify_index_sha256 scripts/test_repo_contract.sh \
-  115eb28f042a2518be7a2975ceebd4ccb6c88cd471b8f1de1c91f0b6ff587046
+  1f12c787da66565015f112f75938c1ad9bd4b85f31e88e1948270649c95304b9
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3495,6 +3504,53 @@ for anchor in \
   grep -Fq "$anchor" <<<"$p3s03_card" ||
     fail "P3-S03 scope receipt drifted: $anchor"
 done
+
+r4b_migration="$(git show :migrations/00010_identity_storage.sql)"
+for anchor in \
+  'CREATE TABLE identities (' \
+  'CREATE TABLE customer_merges (' \
+  'CREATE TABLE pending_events (' \
+  'CREATE TABLE identity_operation_receipts (' \
+  'CREATE CONSTRAINT TRIGGER identity_operation_receipts_complete_before_commit' \
+  'CREATE TRIGGER customer_merges_append_only' \
+  'DROP TABLE identity_operation_receipts;' \
+  'DROP TABLE identities;'; do
+  grep -Fq "$anchor" <<<"$r4b_migration" ||
+    fail "P3-R4B storage migration lost required contract: $anchor"
+done
+[[ "$(grep -Ec '^CREATE TABLE ' <<<"$r4b_migration")" -eq 4 &&
+   "$(grep -Ec '^DROP TABLE ' <<<"$r4b_migration")" -eq 4 ]] ||
+  fail "P3-R4B migration must own exactly four tables"
+! grep -Eiq 'jsonb_path|keyvalue[(]|CREATE[[:space:]]+INDEX|TTL|river' <<<"$r4b_migration" ||
+  fail "P3-R4B migration restored a prohibited JSONPath, keyvalue, index, TTL, or River contract"
+
+r4b_ownership="$(git show :docs/architecture/table-ownership.yml)"
+grep -Fq '      - identity_operation_receipts' <<<"$r4b_ownership" ||
+  fail "P3-R4B receipt table lost Identity ownership"
+grep -Fq 'unknown_table: deny' <<<"$r4b_ownership" ||
+  fail "P3-R4B ownership policy lost unknown-table deny"
+r4b_ownership_checker="$(git show :scripts/ownership/main.go)"
+grep -Fq '"identity_operation_receipts": "identity"' <<<"$r4b_ownership_checker" ||
+  fail "P3-R4B ownership checker lost receipt critical owner"
+
+r4b_card="$(git show :docs/execution/slices/P3-R4B.md)"
+for anchor in \
+  'Identity storage-only 00010' \
+  '不修改 ADR、OpenAPI、public/internal ports、auth、keyring、runtime' \
+  'Contact-owned acceptance' \
+  '不执行 live migration'; do
+  grep -Fq "$anchor" <<<"$r4b_card" ||
+    fail "P3-R4B card boundary drifted: $anchor"
+done
+
+r4b_acceptance_recipe="$(make_target_recipe 'p3-r4b-identity-storage-acceptance:')" ||
+  fail "P3-R4B acceptance target must be unique"
+[[ "$r4b_acceptance_recipe" = *'P3R4B_TEST_DATABASE_URL is required'* &&
+   "$r4b_acceptance_recipe" = *'./acceptance/identity -args -database-url "$$P3R4B_TEST_DATABASE_URL"'* ]] ||
+  fail "P3-R4B acceptance target lost its explicit database contract"
+grep -Fq 'P3R4B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-r4b-identity-storage-acceptance' \
+  <(git show :.github/workflows/application-go.yml) ||
+  fail "P3-R4B acceptance is disconnected from application migration CI"
 
 scripts/scan_sensitive_paths.sh
 

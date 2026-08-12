@@ -96,7 +96,7 @@ port 提供有界运维视图及已授权的 River 重试/取消操作，不得�
 | 所有者 | 独占写入对象 | 其他模块的合法方式 |
 |---|---|---|
 | contact | `customers`、`customer_tags`、`customer_events` 以及客户域表 | 调 contact port；合并时使用 transaction-bound `MergePort` |
-| identity | `identities`、`customer_merges`、`pending_events` | 调 identity `Resolve/Bind/Ingest` |
+| identity | `identities`、`customer_merges`、`pending_events`、`identity_operation_receipts` | 调 identity `Resolve/Bind/Ingest` |
 | outbound | outbound 表与所有企微写 API | 调 `EnqueueOne/EnqueueBatch` |
 | wecom | 企微读取、回调验签解密与同步游标 | 读取企微后把外部标识交给 identity；客户写入调 contact |
 | events | `event_log` 与 dispatcher | 在业务事务中调 events `Append` |

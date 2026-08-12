@@ -3065,6 +3065,30 @@ for mutation in missing-adr pending-receipt receipt-algorithm privacy-boundary n
   fi
 done
 
+r4b_missing_migration="$(make_fixture p3-r4b-missing-migration)"
+rm -f "$r4b_missing_migration/migrations/00010_identity_storage.sql"
+git -C "$r4b_missing_migration" add -u migrations/00010_identity_storage.sql
+if (cd "$r4b_missing_migration" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-R4B missing migration was accepted"
+fi
+
+r4b_extra_table="$(make_fixture p3-r4b-extra-table)"
+printf '%s\n' 'CREATE TABLE identity_storage_escape_hatch (id BIGINT PRIMARY KEY);' \
+  >>"$r4b_extra_table/migrations/00010_identity_storage.sql"
+restage_p2s18_receipt "$r4b_extra_table" migrations/00010_identity_storage.sql
+if (cd "$r4b_extra_table" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-R4B fifth table was accepted"
+fi
+
+r4b_receipt_owner="$(make_fixture p3-r4b-receipt-owner)"
+sed -i.bak 's/      - identity_operation_receipts/      - identity_receipts/' \
+  "$r4b_receipt_owner/docs/architecture/table-ownership.yml"
+rm -f "$r4b_receipt_owner/docs/architecture/table-ownership.yml.bak"
+restage_p2s18_receipt "$r4b_receipt_owner" docs/architecture/table-ownership.yml
+if (cd "$r4b_receipt_owner" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-R4B receipt ownership drift was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc
