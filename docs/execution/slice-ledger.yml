@@ -3339,6 +3339,19 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: []
     external_gates: [EXACT_MAIN_REPO_CONTRACT_CI_PENDING, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+  - slice_id: P3-R5-C1
+    title: identity-value-boundary-only
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: dae7f7dd814f33ef1f09082dc7eed32019eb6cb2
+    dependency: P3_R4A_AND_P3_R4B_CLOSED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-r5-c1-identity-value-boundary
+    scope: [raw_identity_forbidden_in_production_storage_contexts, normalized_value_identity_owned_storage_and_exact_lookup_only, fingerprint_not_Resolve_key_or_lookup_surrogate, portable_context_aware_fixture]
+    excluded_scope: [DDL_ADR_OpenAPI_ports_keyring_runtime_Make_focused_checker_repo_contract_wiring, receipt_pending_TTL_River_GIN_in_progress_rules_R5_C2, production_database_live_migration_real_wecom_external_send]
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 1
+    correction_notes: [slice:initial_card_excluded_mandatory_repo_contract_ledger_hash_maintenance, infra:initial_local_ci_go_omitted_existing_safe_test_DSNs_and_exact_query_plan_SHA]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:
   P2:
