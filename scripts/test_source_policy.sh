@@ -12,6 +12,8 @@ seed() {
     "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
     "$root/internal/api/candidate/generated"
   echo 'package main' >"$root/cmd/aicrm/main.go"
+  mkdir -p "$root/cmd/aicrm-contact-perf-data"
+  echo 'package main; const reset = "TRUNCATE TABLE customers"; func run(){ db.Exec(reset); db.CopyFrom() }' >"$root/cmd/aicrm-contact-perf-data/main.go"
   printf '%s\n' 'package runtime' 'import "time"' 'func bounded(){ _ = time.NewTimer(time.Second) }' >"$root/internal/platform/runtime/timer.go"
   printf '%s\n' 'package source' 'import "os"' 'func load(){ _, _ = os.LookupEnv("KEY") }' >"$root/internal/config/source/env.go"
   echo 'SELECT 1;' >"$root/internal/contact/store/queries/list.sql"
@@ -39,6 +41,7 @@ mutate() {
     sql-literal) echo 'package app; const q = "UPDATE customers SET name=$1"' >"$root/internal/contact/app/app.go" ;;
     sql-split) echo 'package app; const q = "SEL"+("ECT 1")' >"$root/internal/contact/app/app.go" ;;
     db-call) echo 'package app; func f(){ db.Query("SELECT * FROM customers") }' >"$root/internal/contact/app/app.go" ;;
+    performance-command-copy) mkdir -p "$root/cmd/aicrm-contact-perf-data-copy"; echo 'package main; const q = "TRUNCATE TABLE customers"; func f(){ db.Exec(q) }' >"$root/cmd/aicrm-contact-perf-data-copy/main.go" ;;
     candidate-manual) mkdir -p "$root/internal/api/candidate"; echo 'package candidate; func f(){ db.Query("SELECT * FROM customers") }' >"$root/internal/api/candidate/manual.go" ;;
     orm) echo 'package app; import _ "gorm.io/gorm"' >"$root/internal/contact/app/app.go" ;;
     ticker) echo 'package app; import clock "time"; func f(){ _ = clock.NewTicker(clock.Second) }' >"$root/internal/contact/app/app.go" ;;
@@ -50,6 +53,7 @@ mutate() {
 reject env 'environment read forbidden'; reject env-loader 'environment loader forbidden'
 reject sql-path 'SQL source outside'; reject sql-literal 'handwritten SQL forbidden'; reject sql-split 'constructed SQL forbidden'
 reject db-call 'direct database call forbidden'; reject candidate-manual 'direct database call forbidden'; reject orm 'dynamic SQL library forbidden'
+reject performance-command-copy 'handwritten SQL forbidden'
 reject ticker 'business timer forbidden'; reject after-func 'business timer forbidden'
 reject cron 'third-party cron forbidden'; reject fifo 'symlink or special path forbidden'
 echo "source-policy-tests: PASS"

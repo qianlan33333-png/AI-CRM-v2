@@ -2439,6 +2439,34 @@ for file_path in \
   fi
 done
 
+for file_path in \
+  cmd/aicrm-contact-perf-data/main.go \
+  cmd/aicrm-contact-perf-data/main_test.go \
+  docs/execution/slices/P3-C06.md \
+  docs/evidence/slices/P3-C06-synthetic-data.md; do
+  p3c06a1_receipt_fixture="$(make_fixture "p3-c06a1-receipt-${file_path//\//-}")"
+  printf '%s\n' '/* P3-C06A1 receipt drift */' >>"$p3c06a1_receipt_fixture/$file_path"
+  git -C "$p3c06a1_receipt_fixture" add "$file_path"
+  if (cd "$p3c06a1_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C06A1 receipt drift was accepted: $file_path"
+  fi
+done
+
+p3c06a1_database_fixture="$(make_fixture p3-c06a1-database-name)"
+sed -i.bak 's/performanceDatabase       = "aicrm_perf"/performanceDatabase       = "aicrm"/' \
+  "$p3c06a1_database_fixture/cmd/aicrm-contact-perf-data/main.go"
+git -C "$p3c06a1_database_fixture" add cmd/aicrm-contact-perf-data/main.go
+if (cd "$p3c06a1_database_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A1 non-isolated database target was accepted"
+fi
+
+p3c06a1_ci_fixture="$(make_fixture p3-c06a1-ci-disconnect)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p3-c06a1-contract([[:space:]]|$)/\1/' "$p3c06a1_ci_fixture/Makefile"
+git -C "$p3c06a1_ci_fixture" add Makefile
+if (cd "$p3c06a1_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A1 contract target disconnected from ci-go was accepted"
+fi
+
 leading_zero_p3c05="$(make_fixture p3-c05-leading-zero-route)"
 sed -i.bak 's/\[1-9\]\\d\*/\\d+/' "$leading_zero_p3c05/web/src/main.tsx"
 rm -f "$leading_zero_p3c05/web/src/main.tsx.bak"

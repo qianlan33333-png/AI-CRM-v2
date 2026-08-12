@@ -164,12 +164,9 @@ func parseArguments(args []string) (commandConfig, error) {
 	}
 
 	var databaseURL, databaseURLFile, suppliedToken, suppliedSeed string
-	var databaseURLSet, databaseURLFileSet bool
+	var databaseURLFileSet bool
 	for _, argument := range args {
 		switch {
-		case strings.HasPrefix(argument, "--database-url=") && !databaseURLSet:
-			databaseURLSet = true
-			databaseURL = strings.TrimPrefix(argument, "--database-url=")
 		case strings.HasPrefix(argument, "--database-url-file=") && !databaseURLFileSet:
 			databaseURLFileSet = true
 			databaseURLFile = strings.TrimPrefix(argument, "--database-url-file=")
@@ -181,15 +178,13 @@ func parseArguments(args []string) (commandConfig, error) {
 			return commandConfig{}, errInvalidArguments
 		}
 	}
-	if databaseURLSet == databaseURLFileSet || suppliedToken != resetToken || suppliedSeed != seedText {
+	if !databaseURLFileSet || suppliedToken != resetToken || suppliedSeed != seedText {
 		return commandConfig{}, errInvalidArguments
 	}
-	if databaseURLFileSet {
-		var err error
-		databaseURL, err = readDatabaseURLFile(databaseURLFile)
-		if err != nil {
-			return commandConfig{}, errInvalidArguments
-		}
+	var err error
+	databaseURL, err = readDatabaseURLFile(databaseURLFile)
+	if err != nil {
+		return commandConfig{}, errInvalidArguments
 	}
 	if databaseURL == "" {
 		return commandConfig{}, errInvalidArguments
@@ -250,23 +245,8 @@ func validateDatabaseURL(databaseURL string) (*pgxpool.Config, error) {
 }
 
 func safeDatabaseHost(host string) bool {
-	if host == "localhost" {
-		return true
-	}
-	if parsedIP := net.ParseIP(host); parsedIP != nil {
-		return parsedIP.IsLoopback()
-	}
-	if host == "" || len(host) > 63 || strings.Contains(host, ".") {
-		return false
-	}
-	for _, character := range host {
-		if (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') ||
-			(character >= '0' && character <= '9') || character == '-' || character == '_' {
-			continue
-		}
-		return false
-	}
-	return true
+	parsedIP := net.ParseIP(host)
+	return parsedIP != nil && parsedIP.IsLoopback() && (host == "127.0.0.1" || host == "::1")
 }
 
 func safePort(port string) bool {

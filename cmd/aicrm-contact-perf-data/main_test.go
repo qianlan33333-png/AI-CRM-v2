@@ -14,9 +14,10 @@ import (
 const testPerformanceURL = "postgres://synthetic:private-password@127.0.0.1:5432/aicrm_perf?sslmode=disable"
 
 func TestParseArgumentsAcceptsOnlyFrozenContract(t *testing.T) {
+	path := writeDatabaseURLFile(t, testPerformanceURL, 0o600)
 	config, err := parseArguments([]string{
 		"--seed=" + seedText,
-		"--database-url=" + testPerformanceURL,
+		"--database-url-file=" + path,
 		"--reset-token=" + resetToken,
 	})
 	if err != nil {
@@ -28,11 +29,12 @@ func TestParseArgumentsAcceptsOnlyFrozenContract(t *testing.T) {
 
 	for _, args := range [][]string{
 		nil,
-		{"--database-url=" + testPerformanceURL, "--reset-token=" + resetToken},
-		{"--database-url=" + testPerformanceURL, "--reset-token=wrong", "--seed=" + seedText},
-		{"--database-url=" + testPerformanceURL, "--reset-token=" + resetToken, "--seed=1"},
-		{"--database-url=" + testPerformanceURL, "--reset-token=" + resetToken, "--seed=" + seedText, "--count=1"},
-		{"--database-url=" + testPerformanceURL, "--reset-token=" + resetToken, "--seed=" + seedText, "--overwrite=true"},
+		{"--database-url=" + testPerformanceURL, "--reset-token=" + resetToken, "--seed=" + seedText},
+		{"--database-url-file=" + path, "--reset-token=" + resetToken},
+		{"--database-url-file=" + path, "--reset-token=wrong", "--seed=" + seedText},
+		{"--database-url-file=" + path, "--reset-token=" + resetToken, "--seed=1"},
+		{"--database-url-file=" + path, "--reset-token=" + resetToken, "--seed=" + seedText, "--count=1"},
+		{"--database-url-file=" + path, "--reset-token=" + resetToken, "--seed=" + seedText, "--overwrite=true"},
 	} {
 		if _, err := parseArguments(args); !errorsIsInvalidArguments(err) {
 			t.Fatalf("parseArguments(%q) error = %v, want invalid arguments", args, err)
@@ -101,9 +103,8 @@ func TestParseArgumentsRejectsUnsafeDatabaseURLFileInputs(t *testing.T) {
 
 func TestValidateDatabaseURLRejectsAnythingButIsolatedPerfDatabase(t *testing.T) {
 	for _, databaseURL := range []string{
-		"postgres://synthetic@localhost/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@127.0.0.1/aicrm_perf?sslmode=disable",
 		"postgresql://synthetic@[::1]:5432/aicrm_perf?sslmode=disable",
-		"postgres://synthetic@postgres-service:5432/aicrm_perf?sslmode=disable",
 	} {
 		if _, err := validateDatabaseURL(databaseURL); err != nil {
 			t.Fatalf("validateDatabaseURL(%q) error = %v", databaseURL, err)
@@ -116,6 +117,9 @@ func TestValidateDatabaseURLRejectsAnythingButIsolatedPerfDatabase(t *testing.T)
 		"postgres://synthetic@127.0.0.1/aicrm_perf?application_name=perf&sslmode=disable",
 		"postgres://synthetic@127.0.0.1/aicrm_perf?sslmode=disable#fragment",
 		"postgres://synthetic@150.158.82.186/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@localhost/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@prod:5432/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@staging:5432/aicrm_perf?sslmode=disable",
 		"mysql://synthetic@127.0.0.1/aicrm_perf?sslmode=disable",
 		"postgres:///aicrm_perf?sslmode=disable",
 	} {
@@ -165,8 +169,9 @@ func TestRunDoesNotExposeDatabaseURLOrFilePath(t *testing.T) {
 func TestRunPrintsOnlySecretFreeJSONSummary(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	seenURL := ""
+	path := writeDatabaseURLFile(t, testPerformanceURL, 0o600)
 	exitCode := run([]string{
-		"--database-url=" + testPerformanceURL,
+		"--database-url-file=" + path,
 		"--reset-token=" + resetToken,
 		"--seed=" + seedText,
 	}, &stdout, &stderr, func(_ context.Context, databaseURL string, seed int64) (seedSummary, error) {

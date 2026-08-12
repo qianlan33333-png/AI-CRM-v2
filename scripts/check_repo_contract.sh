@@ -197,6 +197,10 @@ required=(
   docs/execution/slices/P3-C05.md
   docs/evidence/slices/P3-C05-ui.md
   docs/evidence/slices/P3-C05-route-tests.md
+  cmd/aicrm-contact-perf-data/main.go
+  cmd/aicrm-contact-perf-data/main_test.go
+  docs/execution/slices/P3-C06.md
+  docs/evidence/slices/P3-C06-synthetic-data.md
   acceptance/fixtures/cmd/validate-database-url/main.go
   acceptance/contact/doc.go
   acceptance/contact/partition_integration_test.go
@@ -568,6 +572,10 @@ done <<'EOF'
 100644 docs/execution/slices/P3-C05.md
 100644 docs/evidence/slices/P3-C05-ui.md
 100644 docs/evidence/slices/P3-C05-route-tests.md
+100644 cmd/aicrm-contact-perf-data/main.go
+100644 cmd/aicrm-contact-perf-data/main_test.go
+100644 docs/execution/slices/P3-C06.md
+100644 docs/evidence/slices/P3-C06-synthetic-data.md
 100644 acceptance/fixtures/cmd/validate-database-url/main.go
 100644 acceptance/contact/doc.go
 100644 acceptance/contact/partition_integration_test.go
@@ -786,7 +794,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  0c1ecd149546f6b306ed0033f149b43950b85987c21796c5ace0fccb88df4111
+  1a9e0671a4cacff18f5a4f64a002c604d059dc5e85b394d10e2b56b43ed727bf
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -920,9 +928,9 @@ verify_index_sha256 acceptance/fixtures/postgres_test.go \
 verify_index_sha256 docs/execution/slices/P2-00.md \
   7f625dc6dd0017266faaf779a79ca093bf600bb4b51adc61660751be86b16022
 verify_index_sha256 scripts/sourcepolicy/main.go \
-  350924119f5f190d1e399d2e84f8f163d5c5ea7b0dbfc2a0652ba9b7a3c077c0
+  148d33d26f87fd98a40c8698c217537f9a6eb1cb2d078d81f6ee71ca30c1ef09
 verify_index_sha256 scripts/test_source_policy.sh \
-  ea5b70241c85adeed28bd6b4f0ad1f887630615b882aac209af4e42e15cc184e
+  dfd571de9e8d6d7aee60b60c8d1397d1fa8bdacf56302bd757e93aa795d7eb72
 verify_index_sha256 AGENTS.md \
   6d7bbe6739e98fd878d9fa7550726841f616f0190778b03587025a0cc025173f
 verify_index_sha256 scripts/check_slice_inputs.sh \
@@ -1193,6 +1201,14 @@ verify_index_sha256 docs/evidence/slices/P3-C05-ui.md \
   7707db512250c6ac4e27ed288481159e964d84f21680f5571c31d4187e90f6a9
 verify_index_sha256 docs/evidence/slices/P3-C05-route-tests.md \
   04c5e6ec1fb6751234bd58c5bc2f0e0d8235ad9fcfaa51cb95ea7fcf4608e11a
+verify_index_sha256 cmd/aicrm-contact-perf-data/main.go \
+  85ede9f7188fbc3508282fd1b6f9be820caab42dc38beecb5b071b98e9cc33c6
+verify_index_sha256 cmd/aicrm-contact-perf-data/main_test.go \
+  a66d57b33aafb173979a4b8c3c8e395b496970faaf30f0220a28bc2b7b2f1da2
+verify_index_sha256 docs/execution/slices/P3-C06.md \
+  e9e1da290473a886092595cfe3ff8bba6e17f48762161fceed2abff913c74c53
+verify_index_sha256 docs/evidence/slices/P3-C06-synthetic-data.md \
+  4ab11a23ee9b7336b05eddbbd35a2d5d0516341f3aa11610a873b06cace83a96
 verify_index_sha256 migrations/00006_customer_events.sql \
   c95eefb3e1f6b00b663f7cd1ce39f9f2898e6ec33cc539a8a6eea36e48982445
 verify_index_sha256 acceptance/fixtures/cmd/validate-database-url/main.go \
@@ -1496,7 +1512,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  93c84913550aafaba556907b9379db1ef7191c20a9e644b3c0079e9cd4a7a709
+  29ce76f399feae24aaa9849b383b2bc773fcc3407d45ff41db370aef51e71e17
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2555,6 +2571,40 @@ grep -Fq 'href={`/customers/${customer.id}`}' <<<"$p3c05_list" ||
   fail "P3-C05 customer rows lost their native detail links"
 grep -Fq 'onClick={onCustomerNavigate}' <<<"$p3c05_list" ||
   fail "P3-C05 customer links lost History API integration"
+
+p3c06_data="$(git show :cmd/aicrm-contact-perf-data/main.go)"
+for anchor in \
+  'performanceDatabase       = "aicrm_perf"' \
+  'resetToken                = "AICRM_PERF_RESET_V1"' \
+  'customerCount     = 200000' \
+  'tagsPerCustomer   = 3' \
+  'config.MaxConns = 1' \
+  'TRUNCATE TABLE public.customer_tags, public.customer_events' \
+  'tx.CopyFrom(' \
+  'ANALYZE public.stages' \
+  'info.Mode().Perm()&0o077 != 0' \
+  'host == "127.0.0.1" || host == "::1"'; do
+  grep -Fq "$anchor" <<<"$p3c06_data" ||
+    fail "P3-C06A1 data generator contract drifted: $anchor"
+done
+for forbidden_identity in external_userid unionid openid phone_number; do
+  grep -Fq "\"$forbidden_identity\"" <<<"$p3c06_data" ||
+    fail "P3-C06A1 customer identity-column guard drifted: $forbidden_identity"
+done
+! grep -Fq 'strings.HasPrefix(argument, "--database-url=")' <<<"$p3c06_data" ||
+  fail "P3-C06A1 database credentials must not be accepted in process arguments"
+grep -Fq 'strings.HasPrefix(argument, "--database-url-file=")' <<<"$p3c06_data" ||
+  fail "P3-C06A1 private database URL file is required"
+grep -Fq 'return rel == "cmd/aicrm-contact-perf-data/main.go"' <<<"$(git show :scripts/sourcepolicy/main.go)" ||
+  fail "P3-C06A1 source-policy exception must remain one exact command path"
+grep -Fq 'performance-command-copy' <<<"$(git show :scripts/test_source_policy.sh)" ||
+  fail "P3-C06A1 source-policy exception copy-path negative is missing"
+
+p3c06_make="$(git show :Makefile)"
+[[ "$(grep -Ec '^p3-c06a1-contract:$' <<<"$p3c06_make")" -eq 1 ]] ||
+  fail "P3-C06A1 contract target must be declared exactly once"
+grep -Eq '^ci-go:.* p3-c06a1-contract( |$)' <<<"$p3c06_make" ||
+  fail "P3-C06A1 contract target is not connected to ci-go"
 
 p3c03_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||

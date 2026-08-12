@@ -97,6 +97,7 @@ func checkGo(path, rel string) error {
 		return fmt.Errorf("parse %s: %w", rel, err)
 	}
 	module := sourceModule(rel)
+	allowDirectDatabase := performanceAcceptanceCommand(rel)
 	aliases := map[string]string{}
 	for _, spec := range file.Imports {
 		value, err := strconv.Unquote(spec.Path.Value)
@@ -130,20 +131,24 @@ func checkGo(path, rel string) error {
 		switch item := node.(type) {
 		case *ast.BasicLit:
 			if item.Kind == token.STRING {
-				if value, err := strconv.Unquote(item.Value); err == nil && sqlPattern.MatchString(value) {
+				if value, err := strconv.Unquote(item.Value); err == nil && sqlPattern.MatchString(value) && !allowDirectDatabase {
 					result = fmt.Errorf("handwritten SQL forbidden in %s", rel)
 				}
 			}
 		case *ast.BinaryExpr:
-			if value, ok := constantString(item); ok && sqlPattern.MatchString(value) {
+			if value, ok := constantString(item); ok && sqlPattern.MatchString(value) && !allowDirectDatabase {
 				result = fmt.Errorf("constructed SQL forbidden in %s", rel)
 			}
 		case *ast.SelectorExpr:
-			result = checkSelector(item, aliases, module, rel)
+			result = checkSelector(item, aliases, module, rel, allowDirectDatabase)
 		}
 		return result == nil
 	})
 	return result
+}
+
+func performanceAcceptanceCommand(rel string) bool {
+	return rel == "cmd/aicrm-contact-perf-data/main.go"
 }
 
 func sourceModule(rel string) string {
@@ -175,7 +180,7 @@ func constantString(expr ast.Expr) (string, bool) {
 	return "", false
 }
 
-func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module, rel string) error {
+func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module, rel string, allowDirectDatabase bool) error {
 	if receiver, ok := selector.X.(*ast.Ident); ok {
 		path := aliases[receiver.Name]
 		if (path == "os" || path == "syscall") && map[string]bool{"Getenv": true, "LookupEnv": true, "Environ": true, "ExpandEnv": true}[selector.Sel.Name] && module != "config" {
@@ -189,6 +194,9 @@ func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module
 		return nil
 	}
 	if map[string]bool{"Exec": true, "ExecContext": true, "Query": true, "QueryContext": true, "QueryRow": true, "QueryRowContext": true, "Prepare": true, "PrepareContext": true, "CopyFrom": true, "SendBatch": true}[selector.Sel.Name] {
+		if allowDirectDatabase {
+			return nil
+		}
 		return fmt.Errorf("direct database call forbidden in %s: %s", rel, selector.Sel.Name)
 	}
 	return nil
