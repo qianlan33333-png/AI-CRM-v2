@@ -2088,9 +2088,9 @@ slices:
       - INDEPENDENT_FINAL_REVIEW_PASS
       - PR_AND_MAIN_CI_PASS
     handwritten_scope: 1059_added_lines_12_files_default_cap_exception_below_1500_hard_cap_complete_transactional_behavior
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 3
     infra_induced_correction_count: 0
-    scope_induced_correction_count: 2
+    scope_induced_correction_count: 0
     verification_induced_correction_count: 4
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
@@ -2363,9 +2363,9 @@ slices:
       - GITLEAKS_AND_SENSITIVE_PATHS_PASS
       - P0S04_OFFICIAL_RIVER_MIGRATION_PASS_AFTER_ISOLATED_DATABASE_CLEANUP
     handwritten_scope: 11_files_534_changed_lines_under_P3_cap_tests_generated_manifests_acceptance_and_governance_excluded
-    slice_induced_correction_count: 3
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
-    scope_induced_correction_count: 0
+    scope_induced_correction_count: 2
     verification_induced_correction_count: 6
     correction_notes:
       - slice:http_response_rejects_grouped_record_without_group_sort_order
