@@ -8,7 +8,7 @@ cd "$repo_root"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
 expected_manifest="scripts/generated-sources.sha256"
-expected_manifest_sha256="4fcd27c3556cc36220d67ee71c02e2ace0106274c4f989c699c81dc05e68db3b"
+expected_manifest_sha256="f5c288694b8e6e385405846ada64fb9706f27d2a2fdbde86c2509151b7345f90"
 
 fail() {
   echo "generated-check: $*" >&2

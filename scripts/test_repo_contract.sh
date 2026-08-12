@@ -2667,6 +2667,77 @@ if (cd "$default_p3c03_partition" && scripts/check_repo_contract.sh >/dev/null 2
   fail "unbounded P3-C03 default partition was accepted"
 fi
 
+for file_path in \
+  migrations/00007_contact_merge_lineage.sql \
+  internal/contact/store/merge_port_repository.go \
+  internal/contact/store/merge_port_repository_test.go \
+  acceptance/contact/merge_lineage_integration_test.go \
+  docs/execution/slices/P3-C07.md \
+  docs/execution/slices/P3-C07A.md; do
+  p3c07a_receipt_fixture="$(make_fixture "p3-c07a-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C07A receipt drift' >>"$p3c07a_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P3-C07A receipt drift' >>"$p3c07a_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C07A receipt drift' >>"$p3c07a_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c07a_receipt_fixture" add "$file_path"
+  if (cd "$p3c07a_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C07A receipt drift was accepted: $file_path"
+  fi
+done
+
+p3c07a_event_scope="$(make_fixture p3-c07a-event-registry-scope)"
+printf '%s\n' 'CREATE TABLE customer_event_idempotency (id bigint);' \
+  >>"$p3c07a_event_scope/migrations/00007_contact_merge_lineage.sql"
+restage_p2s18_receipt "$p3c07a_event_scope" migrations/00007_contact_merge_lineage.sql
+if (cd "$p3c07a_event_scope" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07A migration absorbing the P3-C07C event registry was accepted"
+fi
+
+p3c07a_nested_uow="$(make_fixture p3-c07a-nested-uow)"
+printf '%s\n' '// NewUnitOfWork must never be called here.' \
+  >>"$p3c07a_nested_uow/internal/contact/store/merge_port_repository.go"
+restage_p2s18_receipt "$p3c07a_nested_uow" internal/contact/store/merge_port_repository.go
+if (cd "$p3c07a_nested_uow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07A nested UnitOfWork marker was accepted"
+fi
+
+p3c07a_retry_cause="$(make_fixture p3-c07a-retry-cause)"
+sed -i.bak 's/case "40001", "40P01":/case "XX000":/' \
+  "$p3c07a_retry_cause/internal/contact/store/merge_port_repository.go"
+rm -f "$p3c07a_retry_cause/internal/contact/store/merge_port_repository.go.bak"
+restage_p2s18_receipt "$p3c07a_retry_cause" internal/contact/store/merge_port_repository.go
+if (cd "$p3c07a_retry_cause" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07A repository without retryable PostgreSQL causes was accepted"
+fi
+
+p3c07a_lock_order="$(make_fixture p3-c07a-lock-order)"
+sed -i.bak 's/ORDER BY c[.]id$/ORDER BY c.id DESC/' \
+  "$p3c07a_lock_order/internal/contact/store/queries/customer_mutations.sql"
+rm -f "$p3c07a_lock_order/internal/contact/store/queries/customer_mutations.sql.bak"
+restage_p2s18_receipt "$p3c07a_lock_order" internal/contact/store/queries/customer_mutations.sql
+if (cd "$p3c07a_lock_order" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07A descending customer lock order was accepted"
+fi
+
+p3c07a_replay="$(make_fixture p3-c07a-effective-root-replay)"
+sed -i.bak 's/TestSameDirectionMergeReplaySurvivesLaterLineageMerge/TestReplayCoverageRemoved/' \
+  "$p3c07a_replay/acceptance/contact/merge_lineage_integration_test.go"
+rm -f "$p3c07a_replay/acceptance/contact/merge_lineage_integration_test.go.bak"
+restage_p2s18_receipt "$p3c07a_replay" acceptance/contact/merge_lineage_integration_test.go
+if (cd "$p3c07a_replay" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07A without effective-root replay acceptance was accepted"
+fi
+
+disconnected_p3c07a_workflow="$(make_fixture disconnected-p3-c07a-workflow)"
+sed -i.bak '/P3C07A_TEST_DATABASE_URL=.*p3-c07a-acceptance/d' \
+  "$disconnected_p3c07a_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c07a_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c07a_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c07a_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07A migration acceptance disconnected from application CI was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

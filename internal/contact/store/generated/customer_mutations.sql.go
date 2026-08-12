@@ -76,6 +76,75 @@ func (q *Queries) AppendCustomerEvent(ctx context.Context, arg AppendCustomerEve
 	return id, err
 }
 
+const copyCustomerTagsForMerge = `-- name: CopyCustomerTagsForMerge :execrows
+INSERT INTO customer_tags (
+  customer_id,
+  tag_id,
+  tagged_at,
+  tagged_by
+)
+SELECT
+  $1::bigint,
+  source.tag_id,
+  source.tagged_at,
+  source.tagged_by
+FROM customer_tags AS source
+WHERE source.customer_id = $2::bigint
+ON CONFLICT (customer_id, tag_id) DO NOTHING
+`
+
+type CopyCustomerTagsForMergeParams struct {
+	PrimaryCustomerID int64 `json:"primary_customer_id"`
+	MergedCustomerID  int64 `json:"merged_customer_id"`
+}
+
+func (q *Queries) CopyCustomerTagsForMerge(ctx context.Context, arg CopyCustomerTagsForMergeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, copyCustomerTagsForMerge, arg.PrimaryCustomerID, arg.MergedCustomerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const createCustomerForIdentity = `-- name: CreateCustomerForIdentity :one
+INSERT INTO customers (
+  name,
+  owner_staff_id,
+  channel_id
+) VALUES (
+  $1::text,
+  $2::bigint,
+  $3::bigint
+)
+RETURNING id
+`
+
+type CreateCustomerForIdentityParams struct {
+	Name         string      `json:"name"`
+	OwnerStaffID pgtype.Int8 `json:"owner_staff_id"`
+	ChannelID    pgtype.Int8 `json:"channel_id"`
+}
+
+func (q *Queries) CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createCustomerForIdentity, arg.Name, arg.OwnerStaffID, arg.ChannelID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getCustomerMergeLineage = `-- name: GetCustomerMergeLineage :one
+SELECT lineage.primary_customer_id
+FROM customer_merge_lineage AS lineage
+WHERE lineage.merged_customer_id = $1::bigint
+`
+
+func (q *Queries) GetCustomerMergeLineage(ctx context.Context, mergedCustomerID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, getCustomerMergeLineage, mergedCustomerID)
+	var primary_customer_id int64
+	err := row.Scan(&primary_customer_id)
+	return primary_customer_id, err
+}
+
 const getCustomerTag = `-- name: GetCustomerTag :one
 SELECT id
 FROM tags
@@ -87,6 +156,41 @@ func (q *Queries) GetCustomerTag(ctx context.Context, tagID int64) (int64, error
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const insertCustomerMergeLineage = `-- name: InsertCustomerMergeLineage :execrows
+INSERT INTO customer_merge_lineage (
+  merged_customer_id,
+  primary_customer_id,
+  actor,
+  reason
+) VALUES (
+  $1::bigint,
+  $2::bigint,
+  $3::text,
+  $4::text
+)
+ON CONFLICT (merged_customer_id) DO NOTHING
+`
+
+type InsertCustomerMergeLineageParams struct {
+	MergedCustomerID  int64  `json:"merged_customer_id"`
+	PrimaryCustomerID int64  `json:"primary_customer_id"`
+	Actor             string `json:"actor"`
+	Reason            string `json:"reason"`
+}
+
+func (q *Queries) InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertCustomerMergeLineage,
+		arg.MergedCustomerID,
+		arg.PrimaryCustomerID,
+		arg.Actor,
+		arg.Reason,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const lockActiveCustomerForMutation = `-- name: LockActiveCustomerForMutation :one
@@ -140,6 +244,54 @@ func (q *Queries) LockActiveCustomerForMutation(ctx context.Context, arg LockAct
 	return i, err
 }
 
+const lockCustomersForMerge = `-- name: LockCustomersForMerge :many
+SELECT c.id, c.is_deleted
+FROM customers AS c
+WHERE c.id = ANY($1::bigint[])
+ORDER BY c.id
+FOR UPDATE
+`
+
+type LockCustomersForMergeRow struct {
+	ID        int64 `json:"id"`
+	IsDeleted bool  `json:"is_deleted"`
+}
+
+func (q *Queries) LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error) {
+	rows, err := q.db.Query(ctx, lockCustomersForMerge, customerIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LockCustomersForMergeRow{}
+	for rows.Next() {
+		var i LockCustomersForMergeRow
+		if err := rows.Scan(&i.ID, &i.IsDeleted); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markCustomerMerged = `-- name: MarkCustomerMerged :execrows
+UPDATE customers
+SET is_deleted = TRUE, updated_at = now()
+WHERE id = $1::bigint
+  AND NOT is_deleted
+`
+
+func (q *Queries) MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error) {
+	result, err := q.db.Exec(ctx, markCustomerMerged, mergedCustomerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const removeCustomerTag = `-- name: RemoveCustomerTag :execrows
 DELETE FROM customer_tags
 WHERE customer_id = $1::bigint
@@ -157,6 +309,36 @@ func (q *Queries) RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagPa
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const resolveEffectiveCustomerRoot = `-- name: ResolveEffectiveCustomerRoot :one
+WITH RECURSIVE roots AS (
+  SELECT c.id, c.is_deleted, ARRAY[c.id]::bigint[] AS path
+  FROM customers AS c
+  WHERE c.id = $1::bigint
+
+  UNION ALL
+
+  SELECT parent.id, parent.is_deleted, roots.path || parent.id
+  FROM roots
+  JOIN customer_merge_lineage AS lineage
+    ON lineage.merged_customer_id = roots.id
+  JOIN customers AS parent
+    ON parent.id = lineage.primary_customer_id
+  WHERE NOT parent.id = ANY(roots.path)
+)
+SELECT id
+FROM roots
+WHERE NOT is_deleted
+ORDER BY cardinality(path) DESC
+LIMIT 1
+`
+
+func (q *Queries) ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, resolveEffectiveCustomerRoot, customerID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const setCustomerStage = `-- name: SetCustomerStage :one

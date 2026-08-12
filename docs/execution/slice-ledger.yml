@@ -2797,6 +2797,125 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C07
+    title: contact-merge-port-lineage-and-external-event-idempotency
+    owner: Codex-Sol
+    status: SUPERSEDED_BY_RESCOPE
+    base_sha: 42e2070422daef03d979de110278ffa49939e2c0
+    dependency: P3_I00_MERGED_EXACT_MAIN_CI_PASS
+    branch: slice/p3-c07-contact-merge-lineage
+    candidate_head_sha: a39d783a429395177b29987d8f14a649d1a2eff9
+    candidate_disposition: READ_ONLY_FOR_REFERENCE_NOT_FOR_PUSH_PR_OR_MERGE
+    candidate_worktree_state: CLEAN_AHEAD_1
+    decision_anchor: P3-I00-2026-08-12
+    superseded_by:
+      - P3-C07A
+      - P3-C07B
+      - P3-C07C
+    supersede_reason: slice_induced_correction_count_reached_4_requires_serial_rescope
+    continuation_exception_status: INVALIDATED_BY_RESCOPE_HARD_STOP
+    scope:
+      - transaction_bound_create_for_identity
+      - contact_owned_pairwise_merge_and_lineage
+      - lineage_aware_customer_timeline
+      - external_event_exactly_once_registry
+    delegated_tasks: []
+    pr_url: NOT_CREATED
+    pr_head_sha: NOT_CREATED
+    merge_sha: NOT_CREATED
+    main_ci_status: NOT_APPLICABLE_SUPERSEDED_LOCAL_CANDIDATE
+    tests:
+      - POSTGRESQL_16_14_UP_DOWN_UP_PASS_LOCAL_ISOLATED_55436
+      - REAL_UOW_MERGE_ROLLBACK_LINEAGE_TIMELINE_PASS
+      - REAL_UOW_TEN_WAY_EXTERNAL_EVENT_IDEMPOTENCY_PASS
+      - REAL_POSTGRESQL_GENERATED_LINEAGE_TIMELINE_EXPLAIN_INDEXED_PASS
+      - FOCUSED_RACE_PASS
+      - FULL_CI_GO_WITH_REAL_PG_AND_EXACT_QUERY_PLAN_PASS
+      - WEB_CI_NODE_24_18_0_NPM_11_12_1_186_TESTS_PASS
+      - REPO_CONTRACT_PERMANENT_NEGATIVES_PASS
+      - GITLEAKS_SENSITIVE_PATH_AND_BUNDLE_SECURITY_PASS
+    handwritten_scope: 7_runtime_files_544_physical_changed_lines_including_migration_make_workflow_tests_generated_governance_excluded
+    slice_induced_correction_count: 4
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 19
+    correction_notes:
+      - governance:user_authorized_continuation_through_P4_defers_threshold_report_without_weakening_gates
+      - slice:initial_same_direction_merge_replay_only_handled_the_immediate_parent_state_then_it_was_made_idempotent_after_a_later_lineage_merge_by_revalidating_both_effective_roots
+      - slice:initial_lineage_timeline_used_an_IN_CTE_hash_join_that_scanned_the_partition_primary_key_then_the_query_was_rewritten_as_per_lineage_customer_LATERAL_timeline_index_reads_with_the_same_global_keyset_and_limit_semantics
+      - slice:first_LATERAL_rewrite_used_CROSS_JOIN_LATERAL_with_an_invalid_ON_TRUE_clause_then_sqlc_parse_failed_closed_and_the_clause_was_removed_before_generation
+      - slice:retryable_40001_and_40P01_database_errors_were_initially_collapsed_to_a_non_retryable_store_sentinel_then_the_stable_redacted_wrapper_was_made_to_preserve_the_pg_error_for_whole_callback_UoW_retries
+      - verification:first_real_PG_merge_helper_only_inherited_the_package_flag_guard_then_each_helper_was_made_to_validate_the_literal_loopback_aicrm_test_DSN_before_opening_a_pool
+      - verification:initial_real_PG_acceptance_proved_lineage_results_but_not_the_actual_generated_SQL_plan_then_EXPLAIN_index_and_no_target_Seq_Scan_evidence_plus_a_permanent_negative_were_added
+      - verification:first_full_Go_gate_found_the_pre_C07_P3_C02D_isolated_schema_did_not_create_or_rewrite_the_new_lineage_relation_then_the_legacy_black_box_fixture_was_forward_migrated_without_weakening_its_plan_assertion
+      - verification:first_forward_migrated_P3_C02D_EXPLAIN_kept_the_pre_lineage_generated_parameter_order_then_it_was_aligned_to_the_actual_C07_sqlc_order_before_revalidation
+      - verification:independent_review_found_the_downstream_UoW_failure_probe_only_covered_merge_lineage_then_external_event_timeline_and_registry_rollback_was_added_to_the_real_PG_suite
+      - verification:first_generated_check_pass_was_followed_by_the_pre_lineage_P3_C02D_customer_scope_anchor_rejecting_the_new_per_lineage_index_shape_then_the_anchor_was_narrowly_forward_migrated_to_the_equivalent_customer_equality
+      - verification:context_free_counter_patches_drifted_eight_historical_slice_fields_then_the_base_diff_audit_restored_each_merged_value_and_updates_were_anchored_to_the_exact_P3_C07_block
+      - verification:first_runtime_scope_receipt_was_calculated_before_the_indexed_lineage_query_rewrite_then_the_exact_base_diff_was_recomputed_from_481_to_530_physical_lines
+      - verification:first_final_make_ci_go_invocation_omitted_the_fail_closed_P0S03_switch_and_dedicated_DSN_then_the_complete_real_PG_and_exact_query_plan_environment_was_bound_for_the_rerun
+      - verification:independent_review_found_the_forward_migrated_P3_C02D_plan_probe_disabled_sequential_scans_and_weakened_its_natural_planner_evidence_then_natural_planning_was_restored_while_the_no_scan_assertion_was_precisely_scoped_to_the_target_customer_events_relation
+      - verification:the_first_real_PG_retry_probe_assumed_the_acceptance_fixtures_schema_already_existed_after_a_public_migration_reset_then_the_probe_created_the_dedicated_fixture_schema_before_its_sequence_and_function
+      - verification:a_full_Go_gate_started_on_the_previous_clean_candidate_then_corrective_review_edits_made_the_shared_worktree_dirty_before_the_release_binary_step_and_the_gate_was_discarded_for_an_exact_clean_candidate_rerun
+      - verification:independent_review_found_the_forward_migrated_P3_C02D_generated_EXPLAIN_only_schema_qualified_the_first_customers_reference_then_the_outer_root_join_was_bound_to_the_same_acceptance_fixtures_schema_and_both_schema_and_natural_planner_guards_were_permanently_negative_tested
+      - verification:context_free_retry_and_plan_counter_edits_landed_in_three_historical_slice_blocks_then_the_base_diff_audit_restored_them_and_all_new_counts_were_reapplied_inside_the_exact_P3_C07_block
+      - verification:the_runtime_scope_receipt_was_recomputed_after_the_final_retry_and_plan_hardening_from_530_to_544_physical_changed_lines_and_recorded_against_the_exact_base_diff
+      - verification:rebasing_onto_the_I00_contract_merge_required_a_semantic_union_of_generated_and_repo_contract_manifests_then_both_I00_and_C07_pins_were_recomputed_and_the_static_gates_passed
+      - verification:independent_review_found_the_real_PG_lineage_timeline_only_proved_an_unpaged_two_event_case_then_a_root_plus_two_descendants_three_page_keyset_case_with_interleaved_timestamps_and_equal_time_ID_tiebreaks_was_permanently_gated
+      - verification:independent_review_found_invalid_command_stable_database_error_mapping_and_JSONB_equivalent_replay_were_implemented_but_not_permanently_covered_then_table_driven_unit_contracts_and_real_PG_key_order_numeric_equivalence_replay_were_added
+      - verification:independent_review_found_the_post_merge_idempotency_replay_only_reused_the_original_merged_customer_ID_then_the_same_key_and_fact_were_replayed_through_the_distinct_final_root_ID_to_prove_effective_root_equivalence
+    external_gates:
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+  - slice_id: P3-C07A
+    title: contact-transaction-bound-create-and-pairwise-merge-lineage
+    owner: Codex-Sol
+    status: candidate_pr_ready_pending_independent_review_and_merge
+    base_sha: 42e2070422daef03d979de110278ffa49939e2c0
+    dependency: P3_I00_MERGED_EXACT_MAIN_CI_PASS
+    branch: slice/p3-c07a-contact-merge-lineage
+    decision_anchor: P3-C07-RESCOPE-2026-08-12
+    supersedes: P3-C07
+    superseded_original_head_sha: a39d783a429395177b29987d8f14a649d1a2eff9
+    scope:
+      - transaction_bound_create_for_identity
+      - contact_owned_pairwise_merge_and_lineage
+      - tag_union_and_soft_delete
+      - same_direction_replay_across_later_lineage
+      - retryable_database_cause_and_whole_UoW_rollback
+    excluded_scope:
+      - lineage_aware_timeline_read_P3_C07B
+      - external_event_idempotency_registry_P3_C07C
+      - identity_segment_or_external_effects
+    delegated_tasks: []
+    pr_url: PENDING_BUILDER_PUSH
+    merge_sha: NOT_CREATED_BUILDER_FORBIDDEN_TO_MERGE
+    tests:
+      - FOCUSED_CONTACT_STORE_AND_DB_SKIPPED_ACCEPTANCE_RACE_PASS
+      - GENERATED_SOURCES_DOUBLE_PASS_AND_MANIFEST_PASS
+      - REPO_CONTRACT_BASELINE_AND_ALL_PERMANENT_NEGATIVES_PASS
+      - POSTGRESQL_16_14_CLEAN_00001_TO_00007_UP_00007_DOWN_UP_PASS
+      - REAL_UOW_CREATE_MERGE_ROLLBACK_RETRY_AND_EFFECTIVE_ROOT_REPLAY_PASS
+      - EVENT_IDEMPOTENCY_REGISTRY_ABSENT_AFTER_CLEAN_MIGRATION_PASS
+      - WEB_CI_NODE_24_18_0_NPM_11_12_1_186_TESTS_PASS
+      - GITLEAKS_CONFIG_AND_SENSITIVE_PATH_PASS
+      - FULL_CI_GO_REAL_PG_AND_EXACT_CANDIDATE_QUERY_PLAN_PENDING_POST_COMMIT
+    handwritten_scope: 13_files_691_changed_lines_soft_limit_exceeded_only_for_required_rescope_governance_and_central_contract_hard_limit_pass
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    correction_notes:
+      - verification:new_repo_contract_SQL_anchor_started_with_double_dash_and_required_grep_end_of_options_before_the_permanent_gate_could_run
+      - verification:first_lock_order_negative_used_a_multiline_grep_pattern_that_was_split_into_independent_patterns_then_the_contract_was_changed_to_require_the_exact_ascending_order_line
+      - verification:precommit_full_ci_go_correctly_rejected_the_staged_uncommitted_index_at_the_release_binary_clean_index_gate_then_the_unique_candidate_commit_was_created_before_the_exact_HEAD_rerun
+      - infra:dedicated_test_database_retained_the_old_superseded_00007_event_registry_object_then_the_explicit_loopback_aicrm_test_database_was_dropped_recreated_and_cleanly_migrated_from_00001_before_acceptance_rerun
+    external_gates:
+      - INDEPENDENT_MIGRATION_REVIEW_PENDING_ROOT_GATE
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

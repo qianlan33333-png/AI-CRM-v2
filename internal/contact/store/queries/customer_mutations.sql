@@ -126,3 +126,85 @@ INSERT INTO customer_events (
   sqlc.arg(occurred_at)::timestamptz
 )
 RETURNING id;
+
+-- name: CreateCustomerForIdentity :one
+INSERT INTO customers (
+  name,
+  owner_staff_id,
+  channel_id
+) VALUES (
+  sqlc.arg(name)::text,
+  sqlc.narg(owner_staff_id)::bigint,
+  sqlc.narg(channel_id)::bigint
+)
+RETURNING id;
+
+-- name: LockCustomersForMerge :many
+SELECT c.id, c.is_deleted
+FROM customers AS c
+WHERE c.id = ANY(sqlc.arg(customer_ids)::bigint[])
+ORDER BY c.id
+FOR UPDATE;
+
+-- name: GetCustomerMergeLineage :one
+SELECT lineage.primary_customer_id
+FROM customer_merge_lineage AS lineage
+WHERE lineage.merged_customer_id = sqlc.arg(merged_customer_id)::bigint;
+
+-- name: CopyCustomerTagsForMerge :execrows
+INSERT INTO customer_tags (
+  customer_id,
+  tag_id,
+  tagged_at,
+  tagged_by
+)
+SELECT
+  sqlc.arg(primary_customer_id)::bigint,
+  source.tag_id,
+  source.tagged_at,
+  source.tagged_by
+FROM customer_tags AS source
+WHERE source.customer_id = sqlc.arg(merged_customer_id)::bigint
+ON CONFLICT (customer_id, tag_id) DO NOTHING;
+
+-- name: MarkCustomerMerged :execrows
+UPDATE customers
+SET is_deleted = TRUE, updated_at = now()
+WHERE id = sqlc.arg(merged_customer_id)::bigint
+  AND NOT is_deleted;
+
+-- name: InsertCustomerMergeLineage :execrows
+INSERT INTO customer_merge_lineage (
+  merged_customer_id,
+  primary_customer_id,
+  actor,
+  reason
+) VALUES (
+  sqlc.arg(merged_customer_id)::bigint,
+  sqlc.arg(primary_customer_id)::bigint,
+  sqlc.arg(actor)::text,
+  sqlc.arg(reason)::text
+)
+ON CONFLICT (merged_customer_id) DO NOTHING;
+
+-- name: ResolveEffectiveCustomerRoot :one
+WITH RECURSIVE roots AS (
+  SELECT c.id, c.is_deleted, ARRAY[c.id]::bigint[] AS path
+  FROM customers AS c
+  WHERE c.id = sqlc.arg(customer_id)::bigint
+
+  UNION ALL
+
+  SELECT parent.id, parent.is_deleted, roots.path || parent.id
+  FROM roots
+  JOIN customer_merge_lineage AS lineage
+    ON lineage.merged_customer_id = roots.id
+  JOIN customers AS parent
+    ON parent.id = lineage.primary_customer_id
+  WHERE NOT parent.id = ANY(roots.path)
+)
+SELECT id
+FROM roots
+WHERE NOT is_deleted
+ORDER BY cardinality(path) DESC
+LIMIT 1;
