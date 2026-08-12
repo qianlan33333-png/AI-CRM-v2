@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${AICRM_BUNDLE_TEST_STRESS_CHILD:-}" != "1" ]]; then
+  for run in {1..12}; do
+    AICRM_BUNDLE_TEST_STRESS_CHILD=1 "$0"
+  done
+  echo "bundle-tests: PASS (stress_runs=12)"
+  exit 0
+fi
+
 repo_root="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
 tree_sha="$(git -C "$repo_root" write-tree)"
 base_sha="$(
@@ -13,7 +21,41 @@ base_sha="$(
     git -C "$repo_root" commit-tree "$tree_sha" -m bundle-test-fixture
 )"
 test_root="$(mktemp -d -t aicrm-v2-bundle-test.XXXXXX)"
-trap 'rm -rf "$test_root"' EXIT
+test_root_parent="$(cd "$(dirname "$test_root")" && pwd -P)"
+test_root_name="$(basename "$test_root")"
+test_root="$test_root_parent/$test_root_name"
+
+cleanup_target_is_safe() {
+  local target="$1"
+  [[ "$target" = "$test_root" ]] || return 1
+  [[ "$test_root_name" == aicrm-v2-bundle-test.* ]] || return 1
+  [[ -d "$target" && ! -L "$target" ]] || return 1
+}
+
+cleanup_test_root() {
+  local attempt
+  cleanup_target_is_safe "$test_root" || {
+    echo "bundle-tests: refusing unsafe cleanup target: $test_root" >&2
+    return 1
+  }
+  for attempt in {1..5}; do
+    if rm -rf -- "$test_root" && [[ ! -e "$test_root" ]]; then
+      return 0
+    fi
+    [[ ! -e "$test_root" ]] && return 0
+    sleep 0.1
+  done
+  echo "bundle-tests: bounded cleanup failed: $test_root" >&2
+  return 1
+}
+
+cleanup_on_exit() {
+  local status=$?
+  trap - EXIT
+  cleanup_test_root || exit 1
+  exit "$status"
+}
+trap cleanup_on_exit EXIT
 
 fail() {
   echo "bundle-tests: $*" >&2
@@ -38,9 +80,14 @@ git -C "$repo_root" archive --format=tar "$base_sha" | tar -xf - -C "$fixture_re
 proof_file="$test_root/outside-data-proof.txt"
 printf '%s\n' outside-data-proof >"$proof_file"
 ln -s "$proof_file" "$fixture_repo/leak-link.txt"
-git -C "$fixture_repo" init -q
-git -C "$fixture_repo" add -A
-git -C "$fixture_repo" -c user.name=Bundle-Test \
+cleanup_target_is_safe "$fixture_repo/leak-link.txt" &&
+  fail "cleanup accepted a nested symlink target"
+cleanup_target_is_safe "$proof_file" &&
+  fail "cleanup accepted an out-of-root target"
+git -C "$fixture_repo" -c gc.auto=0 -c maintenance.auto=false init -q
+git -C "$fixture_repo" -c gc.auto=0 -c maintenance.auto=false add -A
+git -C "$fixture_repo" -c gc.auto=0 -c maintenance.auto=false \
+  -c user.name=Bundle-Test \
   -c user.email=bundle-test.invalid commit -qm fixture
 fixture_sha="$(git -C "$fixture_repo" rev-parse HEAD)"
 symlink_paths="$test_root/symlink-paths.txt"

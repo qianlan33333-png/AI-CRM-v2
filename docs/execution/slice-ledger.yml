@@ -3049,6 +3049,31 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: INFRA-SEC-01
+    title: secret-scan-bundle-fixture-cleanup-lifecycle
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: a57647af483140f8a659067557df04002834f596
+    branch: infra/secret-scan-bundle-cleanup
+    scope:
+      - bounded_cleanup_only_for_the_resolved_mktemp_bundle_test_root
+      - disable_automatic_git_maintenance_only_in_the_symlink_fixture
+      - repeat_complete_bundle_security_assertions_without_weakened_fail_closed_behavior
+    tests:
+      - BASELINE_CI_secret_scan_EXIT_trap_ENOTEMPTY_historical_infra_failure
+      - LOCAL_original_bundle_test_30_runs_PASS_without_local_timing_reproduction
+      - LOCAL_bundle_security_stress_12_complete_runs_PASS
+      - LOCAL_repo_contract_positive_and_negative_PASS
+      - LOCAL_gitleaks_config_and_sensitive_path_gates_PASS
+      - LOCAL_make_ci_go_with_isolated_PG16_14_gate_slot_PASS
+    handwritten_scope: scripts_test_harness_and_ledger_only
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes:
+      - infra:CI_cleanup_race_after_fixture_git_metadata_writes_must_not_change_bundle_or_symlink_security_assertions
+    external_gates: []
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
