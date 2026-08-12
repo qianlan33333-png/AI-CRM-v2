@@ -9,11 +9,21 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 )
 
+const testSourceSHA = "33f6e19792a6d44686642236fb99d6a4e76c3369"
+
 func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
+	root := t.TempDir()
+	path := root + "/database-url"
+	value := "postgres://postgres:secret@127.0.0.1:5432/aicrm_perf?sslmode=disable"
+	if err := os.WriteFile(path, []byte(value), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	valid := []string{
-		"--database-url=postgres://postgres:secret@postgres:5432/aicrm_perf?sslmode=disable",
+		"--database-url-file=" + path,
 		"--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369",
 	}
 	opts, err := parseOptions(valid)
@@ -23,6 +33,7 @@ func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 	secret := "must-not-leak"
 	invalid := [][]string{
 		{},
+		{"--database-url=" + value, "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
 		{"--database-url=postgres://postgres:" + secret + "@postgres:5432/aicrm?sslmode=disable", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
 		{"--database-url=postgres://postgres:" + secret + "@postgres:5432/aicrm_perf?sslmode=require", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
 		{"--database-url=postgres://postgres:" + secret + "@postgres:5432/aicrm_perf?sslmode=disable&application_name=x", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
@@ -42,13 +53,13 @@ func TestParseOptionsRequiresSafeIsolatedDatabaseAndHardMinimums(t *testing.T) {
 }
 
 func TestParseOptionsAcceptsOnlyExclusiveReceiptVerificationMode(t *testing.T) {
-	opts, err := parseOptions([]string{"--verify-receipt=/tmp/p3-c06.json"})
+	opts, err := parseOptions([]string{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA})
 	if err != nil || opts.receiptPath != "/tmp/p3-c06.json" {
 		t.Fatalf("parse receipt mode = %#v, %v", opts, err)
 	}
 	for _, arguments := range [][]string{
-		{"--verify-receipt=/tmp/p3-c06.json", "--samples=21"},
-		{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=33f6e19792a6d44686642236fb99d6a4e76c3369"},
+		{"--verify-receipt=/tmp/p3-c06.json"},
+		{"--verify-receipt=/tmp/p3-c06.json", "--source-sha=" + testSourceSHA, "--samples=21"},
 		{"--verify-receipt=/tmp/p3-c06.json", "--database-url=postgres://u:p@postgres/aicrm_perf?sslmode=disable"},
 	} {
 		if _, parseErr := parseOptions(arguments); parseErr == nil {
@@ -60,7 +71,7 @@ func TestParseOptionsAcceptsOnlyExclusiveReceiptVerificationMode(t *testing.T) {
 func TestDatabaseURLFileMustBeAbsolutePrivateRegularAndSingleLine(t *testing.T) {
 	root := t.TempDir()
 	valid := root + "/database-url"
-	value := "postgres://postgres:secret@postgres:5432/aicrm_perf?sslmode=disable"
+	value := "postgres://postgres:secret@127.0.0.1:5432/aicrm_perf?sslmode=disable"
 	if err := os.WriteFile(valid, []byte(value+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -92,10 +103,10 @@ func TestDatabaseURLFileMustBeAbsolutePrivateRegularAndSingleLine(t *testing.T) 
 	}
 }
 
-func TestParseOptionsAllowsExactlyOneDatabaseURLSource(t *testing.T) {
+func TestParseOptionsRequiresDatabaseURLFileOnly(t *testing.T) {
 	root := t.TempDir()
 	path := root + "/database-url"
-	value := "postgres://postgres:secret@postgres:5432/aicrm_perf?sslmode=disable"
+	value := "postgres://postgres:secret@127.0.0.1:5432/aicrm_perf?sslmode=disable"
 	if err := os.WriteFile(path, []byte(value), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -104,8 +115,30 @@ func TestParseOptionsAllowsExactlyOneDatabaseURLSource(t *testing.T) {
 	if err != nil || opts.databaseURL != value {
 		t.Fatalf("parse file URL mode = %#v, %v", opts, err)
 	}
-	if _, err := parseOptions([]string{"--database-url=" + value, "--database-url-file=" + path, "--source-sha=" + sha}); err == nil {
-		t.Fatal("two database URL sources were accepted")
+	if _, err := parseOptions([]string{"--database-url=" + value, "--source-sha=" + sha}); err == nil {
+		t.Fatal("database URL in process arguments was accepted")
+	}
+}
+
+func TestValidateDatabaseURLMatchesGeneratorLoopbackContract(t *testing.T) {
+	for _, value := range []string{
+		"postgres://synthetic@127.0.0.1/aicrm_perf?sslmode=disable",
+		"postgresql://synthetic@[::1]:5432/aicrm_perf?sslmode=disable",
+	} {
+		if err := validateDatabaseURL(value); err != nil {
+			t.Fatalf("validateDatabaseURL(%q) = %v", value, err)
+		}
+	}
+	for _, value := range []string{
+		"postgres://synthetic@localhost/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@prod:5432/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@150.158.82.186/aicrm_perf?sslmode=disable",
+		"postgres://synthetic@127.0.0.1/aicrm?sslmode=disable",
+		"postgres://synthetic@127.0.0.1/aicrm_perf?sslmode=require",
+	} {
+		if err := validateDatabaseURL(value); err == nil {
+			t.Fatalf("validateDatabaseURL(%q) succeeded", value)
+		}
 	}
 }
 
@@ -122,6 +155,11 @@ func TestQueryMatrixCoversEveryFilterTimePageAndLimitCombination(t *testing.T) {
 		}
 		seen[key] = true
 		if query.Watermark != benchmarkWatermark || query.Limit != item.limit || query.IsDeleted != item.deleted ||
+			(query.Keyword == "kw017") != (item.selectorMask&1 != 0) ||
+			(query.OwnerStaffID != nil) != (item.selectorMask&2 != 0) ||
+			(query.StageID != nil) != (item.selectorMask&4 != 0) ||
+			(query.ChannelID != nil) != (item.selectorMask&8 != 0) ||
+			(query.TagID != nil) != (item.selectorMask&16 != 0) ||
 			(query.AddedAfter == nil && (item.addedMode == timeAfter || item.addedMode == timeClosed)) ||
 			(query.AddedBefore == nil && (item.addedMode == timeBefore || item.addedMode == timeClosed)) ||
 			(query.LastInteractAfter == nil && (item.interactMode == timeAfter || item.interactMode == timeClosed)) ||
@@ -131,6 +169,28 @@ func TestQueryMatrixCoversEveryFilterTimePageAndLimitCombination(t *testing.T) {
 	}
 	if len(seen) != 4096 {
 		t.Fatalf("matrix size = %d, want 4096", len(seen))
+	}
+}
+
+func TestValidateScenarioPageRequiresFullContinuationWithoutOverlap(t *testing.T) {
+	item := scenario{nextPage: true, limit: 2}
+	anchor := contactapp.CustomerListStoreResult{
+		Items: []contactapp.CustomerRecord{{ID: 4}, {ID: 3}}, HasMore: true,
+	}
+	valid := contactapp.CustomerListStoreResult{
+		Items: []contactapp.CustomerRecord{{ID: 2}, {ID: 1}}, HasMore: true,
+	}
+	if err := validateScenarioPage(item, anchor, valid); err != nil {
+		t.Fatalf("validateScenarioPage(valid) = %v", err)
+	}
+	for _, invalid := range []contactapp.CustomerListStoreResult{
+		{Items: []contactapp.CustomerRecord{{ID: 2}}, HasMore: true},
+		{Items: []contactapp.CustomerRecord{{ID: 2}, {ID: 1}}, HasMore: false},
+		{Items: []contactapp.CustomerRecord{{ID: 3}, {ID: 2}}, HasMore: true},
+	} {
+		if err := validateScenarioPage(item, anchor, invalid); err == nil {
+			t.Fatalf("validateScenarioPage(%#v) succeeded", invalid)
+		}
 	}
 }
 
@@ -166,7 +226,7 @@ func TestWalkPlanRejectsOnlyTargetSequentialScansAndCollectsEvidence(t *testing.
 
 func TestValidateReceiptRequiresEveryFastPlanSafeScenario(t *testing.T) {
 	valid := validReceipt()
-	if err := validateReceipt(valid); err != nil {
+	if err := validateReceipt(valid, testSourceSHA); err != nil {
 		t.Fatalf("validateReceipt(valid) error = %v", err)
 	}
 
@@ -179,13 +239,19 @@ func TestValidateReceiptRequiresEveryFastPlanSafeScenario(t *testing.T) {
 		{name: "sequential scan", mutate: func(value *report) { value.Cases[0].Plans[0].ForbiddenScans = []string{"customers"} }},
 		{name: "missing samples", mutate: func(value *report) { value.Cases[0].Samples = 19 }},
 		{name: "wrong source", mutate: func(value *report) { value.Environment.BinaryVCSRevision = strings.Repeat("a", 40) }},
+		{name: "unexpected source", mutate: func(value *report) {
+			value.Environment.SourceSHA = strings.Repeat("a", 40)
+			value.Environment.BinaryVCSRevision = strings.Repeat("a", 40)
+		}},
+		{name: "missing time distribution", mutate: func(value *report) { value.Dataset.AddedBefore = 0 }},
+		{name: "negative buffers", mutate: func(value *report) { value.Cases[0].Plans[0].SharedRead = -1 }},
 		{name: "fake environment", mutate: func(value *report) { value.EvidenceClass = "local" }},
 	}
 	for _, test := range mutations {
 		t.Run(test.name, func(t *testing.T) {
 			candidate := validReceipt()
 			test.mutate(&candidate)
-			if err := validateReceipt(candidate); err == nil {
+			if err := validateReceipt(candidate, testSourceSHA); err == nil {
 				t.Fatal("invalid receipt was accepted")
 			}
 		})
@@ -203,13 +269,13 @@ func TestVerifyReceiptFileIsStrictAndRejectsSymlink(t *testing.T) {
 	if err := osWriteFile(path, encoded); err != nil {
 		t.Fatal(err)
 	}
-	if err := verifyReceiptFile(path); err != nil {
+	if err := verifyReceiptFile(path, testSourceSHA); err != nil {
 		t.Fatalf("verifyReceiptFile(valid) error = %v", err)
 	}
 	if err := osWriteFile(path, append(encoded, []byte(` {}`)...)); err != nil {
 		t.Fatal(err)
 	}
-	if err := verifyReceiptFile(path); err == nil {
+	if err := verifyReceiptFile(path, testSourceSHA); err == nil {
 		t.Fatal("trailing JSON was accepted")
 	}
 	if err := osWriteFile(path, encoded); err != nil {
@@ -219,7 +285,7 @@ func TestVerifyReceiptFileIsStrictAndRejectsSymlink(t *testing.T) {
 	if err := os.Symlink(path, link); err != nil {
 		t.Fatal(err)
 	}
-	if err := verifyReceiptFile(link); err == nil {
+	if err := verifyReceiptFile(link, testSourceSHA); err == nil {
 		t.Fatal("symlink receipt was accepted")
 	}
 }
@@ -259,7 +325,7 @@ func osWriteFile(path string, contents []byte) error {
 }
 
 func validReceipt() report {
-	const sha = "33f6e19792a6d44686642236fb99d6a4e76c3369"
+	const sha = testSourceSHA
 	result := report{
 		Kind: "contact_customer_list_s_tier_hard_gate", EvidenceClass: "authorized_test_server_synthetic",
 		GeneratedAt: "2026-08-12T00:00:00Z", ThresholdMS: 200, Passed: true,
@@ -271,6 +337,8 @@ func validReceipt() report {
 		Dataset: datasetEvidence{
 			Customers: requiredCustomers, CustomerTags: requiredTags, Staff: 64, Stages: 8, Channels: 12,
 			Tags: 50, Deleted: requiredCustomers / 20, HotActive: 500, HotDeleted: 500,
+			AddedBefore: 50_000, AddedWithin: 100_000, AddedAfter: 50_000,
+			InteractBefore: 50_000, InteractWithin: 100_000, InteractAfter: 50_000,
 		},
 		CombinationCount: 4096, SampleCount: 4096 * requiredSamples,
 		GlobalP50MS: 3, GlobalP95MS: 4, GlobalMaxMS: 5,

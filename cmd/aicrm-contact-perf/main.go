@@ -8,8 +8,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"sort"
@@ -45,24 +47,29 @@ var (
 )
 
 type options struct {
-	databaseURL     string
-	databaseURLFile string
-	sourceSHA       string
-	receiptPath     string
-	samples         int
-	warmups         int
+	databaseURL string
+	sourceSHA   string
+	receiptPath string
+	samples     int
+	warmups     int
 }
 
 type datasetEvidence struct {
-	Customers    int64 `json:"customers"`
-	CustomerTags int64 `json:"customer_tags"`
-	Staff        int64 `json:"staff"`
-	Stages       int64 `json:"stages"`
-	Channels     int64 `json:"channels"`
-	Tags         int64 `json:"tags"`
-	Deleted      int64 `json:"deleted_customers"`
-	HotActive    int64 `json:"hot_cohort_active"`
-	HotDeleted   int64 `json:"hot_cohort_deleted"`
+	Customers      int64 `json:"customers"`
+	CustomerTags   int64 `json:"customer_tags"`
+	Staff          int64 `json:"staff"`
+	Stages         int64 `json:"stages"`
+	Channels       int64 `json:"channels"`
+	Tags           int64 `json:"tags"`
+	Deleted        int64 `json:"deleted_customers"`
+	HotActive      int64 `json:"hot_cohort_active"`
+	HotDeleted     int64 `json:"hot_cohort_deleted"`
+	AddedBefore    int64 `json:"added_before_window"`
+	AddedWithin    int64 `json:"added_within_window"`
+	AddedAfter     int64 `json:"added_after_window"`
+	InteractBefore int64 `json:"interact_before_window"`
+	InteractWithin int64 `json:"interact_within_window"`
+	InteractAfter  int64 `json:"interact_after_window"`
 }
 
 type environmentEvidence struct {
@@ -206,7 +213,7 @@ func main() {
 		os.Exit(2)
 	}
 	if opts.receiptPath != "" {
-		if err := verifyReceiptFile(opts.receiptPath); err != nil {
+		if err := verifyReceiptFile(opts.receiptPath, opts.sourceSHA); err != nil {
 			fmt.Fprintln(os.Stderr, "contact-perf-receipt: invalid")
 			os.Exit(1)
 		}
@@ -234,8 +241,8 @@ func parseOptions(arguments []string) (options, error) {
 	set := flag.NewFlagSet("aicrm-contact-perf", flag.ContinueOnError)
 	set.SetOutput(new(strings.Builder))
 	var result options
-	set.StringVar(&result.databaseURL, "database-url", "", "isolated performance database URL")
-	set.StringVar(&result.databaseURLFile, "database-url-file", "", "root-only isolated performance database URL file")
+	var databaseURLFile string
+	set.StringVar(&databaseURLFile, "database-url-file", "", "private isolated performance database URL file")
 	set.StringVar(&result.sourceSHA, "source-sha", "", "exact main source SHA")
 	set.StringVar(&result.receiptPath, "verify-receipt", "", "verify a saved S-tier receipt")
 	set.IntVar(&result.samples, "samples", requiredSamples, "measured calls per combination")
@@ -244,20 +251,18 @@ func parseOptions(arguments []string) (options, error) {
 		return options{}, errors.New("invalid arguments")
 	}
 	if result.receiptPath != "" {
-		if result.databaseURL != "" || result.databaseURLFile != "" || result.sourceSHA != "" || result.samples != requiredSamples || result.warmups != requiredWarmups {
+		if databaseURLFile != "" || !isExactSHA(result.sourceSHA) || result.samples != requiredSamples || result.warmups != requiredWarmups {
 			return options{}, errors.New("invalid arguments")
 		}
 		return result, nil
 	}
-	if (result.databaseURL == "") == (result.databaseURLFile == "") {
+	if databaseURLFile == "" {
 		return options{}, errors.New("invalid arguments")
 	}
-	if result.databaseURLFile != "" {
-		var err error
-		result.databaseURL, err = databaseURLFromFile(result.databaseURLFile)
-		if err != nil {
-			return options{}, errors.New("invalid arguments")
-		}
+	var err error
+	result.databaseURL, err = databaseURLFromFile(databaseURLFile)
+	if err != nil {
+		return options{}, errors.New("invalid arguments")
 	}
 	if err := validateDatabaseURL(result.databaseURL); err != nil || !isExactSHA(result.sourceSHA) ||
 		result.samples < requiredSamples || result.warmups < requiredWarmups {
@@ -267,14 +272,10 @@ func parseOptions(arguments []string) (options, error) {
 }
 
 func databaseURLFromFile(path string) (string, error) {
-	if !strings.HasPrefix(path, "/") {
+	if !filepath.IsAbs(path) {
 		return "", errors.New("database URL file must be absolute")
 	}
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm()&0o077 != 0 || info.Size() < 1 || info.Size() > 4096 {
-		return "", errors.New("database URL file must be a private bounded regular file")
-	}
-	contents, err := os.ReadFile(path)
+	contents, err := readBoundedRegularFile(path, 4096, true)
 	if err != nil {
 		return "", errors.New("read database URL file")
 	}
@@ -285,12 +286,29 @@ func databaseURLFromFile(path string) (string, error) {
 	return value, nil
 }
 
-func verifyReceiptFile(path string) error {
+func readBoundedRegularFile(path string, maximum int64, private bool) ([]byte, error) {
 	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() < 2 || info.Size() > 64<<20 {
-		return errors.New("receipt must be a bounded regular file")
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() < 1 || info.Size() > maximum || (private && info.Mode().Perm()&0o077 != 0) {
+		return nil, errors.New("unsafe bounded regular file")
 	}
-	contents, err := os.ReadFile(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, errors.New("open bounded regular file")
+	}
+	defer file.Close()
+	openedInfo, err := file.Stat()
+	if err != nil || !openedInfo.Mode().IsRegular() || !os.SameFile(info, openedInfo) || (private && openedInfo.Mode().Perm()&0o077 != 0) {
+		return nil, errors.New("bounded regular file changed during validation")
+	}
+	contents, err := io.ReadAll(io.LimitReader(file, maximum+1))
+	if err != nil || int64(len(contents)) > maximum {
+		return nil, errors.New("read bounded regular file")
+	}
+	return contents, nil
+}
+
+func verifyReceiptFile(path, expectedSHA string) error {
+	contents, err := readBoundedRegularFile(path, 64<<20, false)
 	if err != nil {
 		return errors.New("read receipt")
 	}
@@ -303,7 +321,7 @@ func verifyReceiptFile(path string) error {
 	if err := ensureJSONEOF(decoder); err != nil {
 		return err
 	}
-	return validateReceipt(value)
+	return validateReceipt(value, expectedSHA)
 }
 
 func ensureJSONEOF(decoder *json.Decoder) error {
@@ -317,7 +335,7 @@ func ensureJSONEOF(decoder *json.Decoder) error {
 	return nil
 }
 
-func validateReceipt(value report) error {
+func validateReceipt(value report, expectedSHA string) error {
 	if value.Kind != "contact_customer_list_s_tier_hard_gate" || value.EvidenceClass != "authorized_test_server_synthetic" ||
 		!value.Passed || value.ThresholdMS != latencyLimit.Milliseconds() || value.CombinationCount != 4096 ||
 		len(value.Cases) != 4096 || value.SampleCount < 4096*requiredSamples || value.GlobalP50MS < 0 ||
@@ -329,7 +347,7 @@ func validateReceipt(value report) error {
 		return errors.New("receipt timestamp is invalid")
 	}
 	environment := value.Environment
-	if !isExactSHA(environment.SourceSHA) || environment.BinaryVCSRevision != environment.SourceSHA || environment.BinaryVCSModified ||
+	if !isExactSHA(expectedSHA) || environment.SourceSHA != expectedSHA || environment.BinaryVCSRevision != expectedSHA || environment.BinaryVCSModified ||
 		environment.Database != requiredDatabase || environment.PostgreSQLVersion != "160014" || environment.CPUs != 2 ||
 		environment.MemoryKiB < 3_500_000 || environment.MemoryKiB > 4_800_000 || environment.SwapKiB < 4_000_000 ||
 		environment.GoMemoryLimitBytes != 768*1024*1024 || environment.SharedBuffers != "1GB" ||
@@ -339,7 +357,10 @@ func validateReceipt(value report) error {
 	dataset := value.Dataset
 	if dataset.Customers != requiredCustomers || dataset.CustomerTags != requiredTags || dataset.Staff != 64 ||
 		dataset.Stages != 8 || dataset.Channels != 12 || dataset.Tags != 50 || dataset.Deleted != requiredCustomers/20 ||
-		dataset.HotActive < 500 || dataset.HotDeleted < 500 {
+		dataset.HotActive < 500 || dataset.HotDeleted < 500 || dataset.AddedBefore <= 0 || dataset.AddedWithin <= 0 ||
+		dataset.AddedAfter <= 0 || dataset.AddedBefore+dataset.AddedWithin+dataset.AddedAfter != requiredCustomers ||
+		dataset.InteractBefore <= 0 || dataset.InteractWithin <= 0 || dataset.InteractAfter <= 0 ||
+		dataset.InteractBefore+dataset.InteractWithin+dataset.InteractAfter != requiredCustomers {
 		return errors.New("receipt dataset is invalid")
 	}
 	expected := make(map[string]scenario, 4096)
@@ -362,7 +383,8 @@ func validateReceipt(value report) error {
 		planNames := map[string]bool{}
 		for _, plan := range item.Plans {
 			if (plan.Query != "ListCustomerIDsBounded" && plan.Query != "ListCustomers") || planNames[plan.Query] ||
-				plan.ExecutionMS < 0 || plan.PlanningMS < 0 || len(plan.NodeTypes) == 0 || len(plan.ForbiddenScans) != 0 {
+				plan.ExecutionMS < 0 || plan.PlanningMS < 0 || plan.SharedHit < 0 || plan.SharedRead < 0 ||
+				len(plan.NodeTypes) == 0 || len(plan.ForbiddenScans) != 0 {
 				return errors.New("receipt query plan is invalid")
 			}
 			planNames[plan.Query] = true
@@ -375,16 +397,31 @@ func validateReceipt(value report) error {
 }
 
 func validateDatabaseURL(raw string) error {
-	parsed, err := url.Parse(raw)
-	if err != nil || parsed.Scheme != "postgres" || parsed.Path != "/"+requiredDatabase ||
-		parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" || parsed.User == nil ||
-		parsed.User.Username() == "" || parsed.Hostname() == "" {
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed == nil || (parsed.Scheme != "postgres" && parsed.Scheme != "postgresql") ||
+		parsed.Opaque != "" || parsed.Path != "/"+requiredDatabase || parsed.RawPath != "" ||
+		parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" || parsed.RawFragment != "" ||
+		parsed.ForceQuery || !safeDatabaseHost(parsed.Hostname()) || !safePort(parsed.Port()) {
 		return errors.New("database URL must target the isolated performance database")
 	}
-	if password, ok := parsed.User.Password(); !ok || password == "" {
+	config, err := pgxpool.ParseConfig(raw)
+	if err != nil || config.ConnConfig.Database != requiredDatabase {
 		return errors.New("database URL must target the isolated performance database")
 	}
 	return nil
+}
+
+func safeDatabaseHost(host string) bool {
+	parsedIP := net.ParseIP(host)
+	return parsedIP != nil && parsedIP.IsLoopback() && (host == "127.0.0.1" || host == "::1")
+}
+
+func safePort(port string) bool {
+	if port == "" {
+		return true
+	}
+	value, err := strconv.Atoi(port)
+	return err == nil && value > 0 && value <= 65535
 }
 
 func isExactSHA(value string) bool {
@@ -465,6 +502,9 @@ func execute(ctx context.Context, opts options) (*report, error) {
 	}
 	if !result.Passed {
 		return result, errors.New("performance threshold or plan contract failed")
+	}
+	if err := validateReceipt(*result, opts.sourceSHA); err != nil {
+		return result, errors.New("generated performance receipt failed its own frozen contract")
 	}
 	return result, nil
 }
@@ -554,14 +594,27 @@ SELECT
   (SELECT count(*) FROM tags),
   (SELECT count(*) FROM customers WHERE is_deleted),
   (SELECT count(*) FROM customers AS c WHERE NOT c.is_deleted AND lower(c.name) % lower('kw017') AND c.owner_staff_id = 7 AND c.stage_id = 3 AND c.channel_id = 5 AND c.added_at BETWEEN '2026-04-01T00:00:00Z' AND '2026-07-31T23:59:59Z' AND c.last_interact_at BETWEEN '2026-05-01T00:00:00Z' AND '2026-08-11T23:59:59Z' AND EXISTS (SELECT 1 FROM customer_tags AS ct WHERE ct.customer_id = c.id AND ct.tag_id = 11)),
-  (SELECT count(*) FROM customers AS c WHERE c.is_deleted AND lower(c.name) % lower('kw017') AND c.owner_staff_id = 7 AND c.stage_id = 3 AND c.channel_id = 5 AND c.added_at BETWEEN '2026-04-01T00:00:00Z' AND '2026-07-31T23:59:59Z' AND c.last_interact_at BETWEEN '2026-05-01T00:00:00Z' AND '2026-08-11T23:59:59Z' AND EXISTS (SELECT 1 FROM customer_tags AS ct WHERE ct.customer_id = c.id AND ct.tag_id = 11))
-`).Scan(&result.Customers, &result.CustomerTags, &result.Staff, &result.Stages, &result.Channels, &result.Tags, &result.Deleted, &result.HotActive, &result.HotDeleted)
+  (SELECT count(*) FROM customers AS c WHERE c.is_deleted AND lower(c.name) % lower('kw017') AND c.owner_staff_id = 7 AND c.stage_id = 3 AND c.channel_id = 5 AND c.added_at BETWEEN '2026-04-01T00:00:00Z' AND '2026-07-31T23:59:59Z' AND c.last_interact_at BETWEEN '2026-05-01T00:00:00Z' AND '2026-08-11T23:59:59Z' AND EXISTS (SELECT 1 FROM customer_tags AS ct WHERE ct.customer_id = c.id AND ct.tag_id = 11)),
+  (SELECT count(*) FROM customers WHERE added_at < '2026-04-01T00:00:00Z'),
+  (SELECT count(*) FROM customers WHERE added_at BETWEEN '2026-04-01T00:00:00Z' AND '2026-07-31T23:59:59Z'),
+  (SELECT count(*) FROM customers WHERE added_at > '2026-07-31T23:59:59Z'),
+  (SELECT count(*) FROM customers WHERE last_interact_at < '2026-05-01T00:00:00Z'),
+  (SELECT count(*) FROM customers WHERE last_interact_at BETWEEN '2026-05-01T00:00:00Z' AND '2026-08-11T23:59:59Z'),
+  (SELECT count(*) FROM customers WHERE last_interact_at > '2026-08-11T23:59:59Z')
+`).Scan(
+		&result.Customers, &result.CustomerTags, &result.Staff, &result.Stages, &result.Channels, &result.Tags,
+		&result.Deleted, &result.HotActive, &result.HotDeleted, &result.AddedBefore, &result.AddedWithin,
+		&result.AddedAfter, &result.InteractBefore, &result.InteractWithin, &result.InteractAfter,
+	)
 	if err != nil {
 		return datasetEvidence{}, errors.New("inspect performance dataset")
 	}
 	if result.Customers != requiredCustomers || result.CustomerTags != requiredTags || result.Staff != 64 ||
 		result.Stages != 8 || result.Channels != 12 || result.Tags != 50 || result.Deleted != requiredCustomers/20 ||
-		result.HotActive < 500 || result.HotDeleted < 500 {
+		result.HotActive < 500 || result.HotDeleted < 500 || result.AddedBefore <= 0 || result.AddedWithin <= 0 ||
+		result.AddedAfter <= 0 || result.AddedBefore+result.AddedWithin+result.AddedAfter != requiredCustomers ||
+		result.InteractBefore <= 0 || result.InteractWithin <= 0 || result.InteractAfter <= 0 ||
+		result.InteractBefore+result.InteractWithin+result.InteractAfter != requiredCustomers {
 		return datasetEvidence{}, errors.New("performance dataset does not match the frozen deterministic distribution")
 	}
 	return result, nil
@@ -664,7 +717,11 @@ func executeCase(
 		}
 	}
 	for range opts.warmups {
-		if _, err := callRepository(ctx, uow, repository, query); err != nil {
+		page, err := callRepository(ctx, uow, repository, query)
+		if err != nil {
+			return caseEvidence{}, nil, fmt.Errorf("warm up %s: %w", id, err)
+		}
+		if err := validateScenarioPage(item, anchor, page); err != nil {
 			return caseEvidence{}, nil, fmt.Errorf("warm up %s: %w", id, err)
 		}
 	}
@@ -672,6 +729,9 @@ func executeCase(
 	first, err := callRepository(ctx, uow, repository, query)
 	if err != nil {
 		return caseEvidence{}, nil, fmt.Errorf("capture %s: %w", id, err)
+	}
+	if err := validateScenarioPage(item, anchor, first); err != nil {
+		return caseEvidence{}, nil, fmt.Errorf("captured page %s: %w", id, err)
 	}
 	captured, err := capture.finish()
 	if err != nil {
@@ -694,8 +754,8 @@ func executeCase(
 		if callErr != nil {
 			return caseEvidence{}, nil, fmt.Errorf("measure %s: %w", id, callErr)
 		}
-		if item.nextPage && overlaps(anchor, page) {
-			return caseEvidence{}, nil, fmt.Errorf("keyset continuation %s overlaps first page", id)
+		if err := validateScenarioPage(item, anchor, page); err != nil {
+			return caseEvidence{}, nil, fmt.Errorf("measured page %s: %w", id, err)
 		}
 	}
 	return caseEvidence{
@@ -705,6 +765,16 @@ func executeCase(
 		P95MS: durationMS(percentile95(durations)), MaxMS: durationMS(maxDuration(durations)),
 		Matched: len(first.Items), HasMore: first.HasMore, Plans: plans,
 	}, durations, nil
+}
+
+func validateScenarioPage(item scenario, anchor, page contactapp.CustomerListStoreResult) error {
+	if len(page.Items) != int(item.limit) || !page.HasMore {
+		return errors.New("page did not preserve a full continuation")
+	}
+	if item.nextPage && overlaps(anchor, page) {
+		return errors.New("keyset continuation overlaps first page")
+	}
+	return nil
 }
 
 func pageName(next bool) string {

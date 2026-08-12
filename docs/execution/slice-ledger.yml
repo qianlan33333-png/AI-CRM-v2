@@ -2460,7 +2460,7 @@ slices:
   - slice_id: P3-C06A1
     title: contact-200k-isolated-dataset-generator
     owner: Codex-Sol
-    status: local_gates_pass_independent_review_pending
+    status: merged_main_ci_pass
     base_sha: 33f6e19792a6d44686642236fb99d6a4e76c3369
     dependency: P3-C05
     branch: slice/p3-c06-contact-performance
@@ -2505,6 +2505,57 @@ slices:
       - scope:frozen_source_policy_rejected_the_dedicated_destructive_acceptance_command_so_the_exception_was_narrowed_to_one_exact_command_path_with_a_copy_path_negative
     external_gates:
       - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+    independent_review:
+      task_id: p3_c06a1_independent_review
+      candidate_sha: f68d3fc6b8c2dae6e404a4526f512585b28f0424
+      tree_sha: c9bad750f74cc2c4416268400f0611877b67e984
+      report_sha256: 876085a8f624296c37b6ac57622a60cb05e53c3f42ab4bcd59e83167960e5061
+      verdict: PASS
+    pull_request: https://github.com/qianlan33333-png/AI-CRM-v2/pull/137
+    merge_sha: 47fbaebce120ef9f4f128f94588d396abb128da3
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31569336280
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31569336204
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31569336251
+  - slice_id: P3-C06A2
+    title: contact-s-tier-performance-runner-and-receipt
+    owner: Codex-Sol
+    status: in_progress
+    base_sha: 47fbaebce120ef9f4f128f94588d396abb128da3
+    dependency: P3-C06A1
+    branch: slice/p3-c06a2-performance-runner
+    decision_anchor: USER_CONTINUE_THROUGH_P4_2026_08_12
+    scope:
+      - exact_4096_customer_list_query_matrix
+      - real_repository_uow_latency_and_keyset_measurement
+      - exact_captured_sql_explain_analyze_buffers
+      - strict_s_tier_receipt_and_trusted_main_sha_binding
+      - literal_loopback_private_database_url_file_boundary
+    delegated_tasks:
+      - task_id: p3_c06a2_runner_draft_review
+        executor: Terra-Max
+        status: SOL_REVIEW_FINDINGS_INTEGRATED
+    tests:
+      - focused_race_and_vet_PASS
+      - source_policy_lint_and_copy_path_negatives_PASS
+      - repo_contract_and_full_permanent_negatives_PASS
+      - real_test_server_PERFORMANCE_NOT_EXECUTED
+    handwritten_scope: 4_files_979_changed_lines_tests_and_governance_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 4
+    verification_induced_correction_count: 1
+    correction_notes:
+      - scope:draft_DSN_contract_was_aligned_to_A1_literal_loopback_file_only_and_safe_open_stat_read
+      - scope:draft_live_execution_was_aligned_to_the_strict_receipt_contract_for_full_non_overlapping_continuation_pages
+      - scope:receipt_verification_now_requires_a_caller_supplied_trusted_main_SHA_instead_of_internal_SHA_self_consistency
+      - scope:runner_specific_clean_VCS_metadata_build_was_separated_from_the_buildvcs_false_release_builder
+      - verification:local_draft_cherry_pick_sequence_reissued_one_already_applied_commit_then_skipped_it_without_tree_drift
+    external_gates:
+      - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED_FOR_P3_C06B
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

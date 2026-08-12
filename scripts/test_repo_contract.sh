@@ -2452,6 +2452,51 @@ for file_path in \
   fi
 done
 
+for file_path in \
+  cmd/aicrm-contact-perf/main.go \
+  cmd/aicrm-contact-perf/main_test.go \
+  docs/execution/slices/P3-C06A2.md \
+  docs/evidence/slices/P3-C06A2-runner.md; do
+  p3c06a2_receipt_fixture="$(make_fixture "p3-c06a2-receipt-${file_path//\//-}")"
+  printf '%s\n' '/* P3-C06A2 receipt drift */' >>"$p3c06a2_receipt_fixture/$file_path"
+  git -C "$p3c06a2_receipt_fixture" add "$file_path"
+  if (cd "$p3c06a2_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C06A2 receipt drift was accepted: $file_path"
+  fi
+done
+
+p3c06a2_direct_dsn_fixture="$(make_fixture p3-c06a2-direct-dsn)"
+sed -i.bak '/set.StringVar(&databaseURLFile/a\
+\tset.StringVar(&result.databaseURL, "database-url", "", "unsafe")' \
+  "$p3c06a2_direct_dsn_fixture/cmd/aicrm-contact-perf/main.go"
+git -C "$p3c06a2_direct_dsn_fixture" add cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06a2_direct_dsn_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A2 direct database URL argument was accepted"
+fi
+
+p3c06a2_matrix_fixture="$(make_fixture p3-c06a2-matrix)"
+sed -i.bak 's/make(\[\]scenario, 0, 4096)/make([]scenario, 0, 4095)/' \
+  "$p3c06a2_matrix_fixture/cmd/aicrm-contact-perf/main.go"
+git -C "$p3c06a2_matrix_fixture" add cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06a2_matrix_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A2 incomplete matrix was accepted"
+fi
+
+p3c06a2_self_validation_fixture="$(make_fixture p3-c06a2-self-validation)"
+sed -i.bak '/validateReceipt(\*result, opts.sourceSHA)/d' \
+  "$p3c06a2_self_validation_fixture/cmd/aicrm-contact-perf/main.go"
+git -C "$p3c06a2_self_validation_fixture" add cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06a2_self_validation_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A2 live receipt self-validation removal was accepted"
+fi
+
+p3c06a2_ci_fixture="$(make_fixture p3-c06a2-ci-disconnect)"
+sed -i.bak -E '/^ci-go:/ s/[[:space:]]p3-c06a2-contract([[:space:]]|$)/\1/' "$p3c06a2_ci_fixture/Makefile"
+git -C "$p3c06a2_ci_fixture" add Makefile
+if (cd "$p3c06a2_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06A2 contract target disconnected from ci-go was accepted"
+fi
+
 p3c06a1_database_fixture="$(make_fixture p3-c06a1-database-name)"
 sed -i.bak 's/performanceDatabase       = "aicrm_perf"/performanceDatabase       = "aicrm"/' \
   "$p3c06a1_database_fixture/cmd/aicrm-contact-perf-data/main.go"
