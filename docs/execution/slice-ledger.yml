@@ -1980,7 +1980,7 @@ slices:
       - REPO_CONTRACT_AND_SECRET_GATES_PASS
       - PR_AND_MAIN_CI_PASS
     handwritten_scope: default_cap_exception_under_P3_hard_cap_complete_ui_route_and_gate
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 3
     infra_induced_correction_count: 1
     scope_induced_correction_count: 1
     verification_induced_correction_count: 1
@@ -2029,7 +2029,7 @@ slices:
     handwritten_scope: under_P3_cap_tests_docs_generated_excluded
     slice_induced_correction_count: 4
     infra_induced_correction_count: 1
-    scope_induced_correction_count: 2
+    scope_induced_correction_count: 0
     verification_induced_correction_count: 4
     external_gates:
       - HISTORICAL_PARTITION_RANGE_FROM_PRODUCTION_PREFLIGHT_PENDING_EXTERNAL_GATE
@@ -2298,7 +2298,6 @@ slices:
       - WEB_NODE24_NPM11_ORVAL_DOUBLE_GENERATION_PASS
       - MIGRATION_MATRIX_PASS
       - REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
-      - LIST_TAGS_REAL_HANDLER_SNAPSHOTS_SUCCESS_EMPTY_UNAVAILABLE_PASS
       - GITLEAKS_AND_SENSITIVE_PATHS_PASS
     slice_induced_correction_count: 3
     infra_induced_correction_count: 0
@@ -2360,6 +2359,7 @@ slices:
       - MIGRATION_UP_DOWN_UP_AND_P3_ACCEPTANCE_MATRIX_PASS
       - WEB_NODE24_NPM11_ORVAL_DOUBLE_GENERATION_130_TESTS_PASS
       - REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
+      - LIST_TAGS_REAL_HANDLER_SNAPSHOTS_SUCCESS_EMPTY_UNAVAILABLE_PASS
       - GITLEAKS_AND_SENSITIVE_PATHS_PASS
       - P0S04_OFFICIAL_RIVER_MIGRATION_PASS_AFTER_ISOLATED_DATABASE_CLEANUP
     handwritten_scope: 11_files_534_changed_lines_under_P3_cap_tests_generated_manifests_acceptance_and_governance_excluded
