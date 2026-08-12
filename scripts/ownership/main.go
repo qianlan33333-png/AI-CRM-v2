@@ -128,7 +128,7 @@ func loadPolicy(path string) (*policy, error) {
 			return nil, fmt.Errorf("owner package missing: %s", domain)
 		}
 	}
-	for table, want := range map[string]string{"customers": "contact", "identities": "identity", "identity_operation_receipts": "identity", "outbound_tasks": "outbound", "event_log": "events", "river_job": "external/river", "goose_db_version": "external/goose"} {
+	for table, want := range map[string]string{"customers": "contact", "customer_event_idempotency": "contact", "identities": "identity", "identity_operation_receipts": "identity", "outbound_tasks": "outbound", "event_log": "events", "river_job": "external/river", "goose_db_version": "external/goose"} {
 		if p.tables[table] != want {
 			return nil, fmt.Errorf("critical ownership missing: %s", table)
 		}
