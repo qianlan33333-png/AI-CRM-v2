@@ -746,7 +746,7 @@ verify_index_sha256 scripts/check_generated_sources.sh \
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  03cd5a243c11500cca1f82dfb4311718613661606ebe31b59012622b6fa5febe
+  fecc0d296eb9b3749a63fa758c2fa03747509ac00f9fc6046732681ede68cc06
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
