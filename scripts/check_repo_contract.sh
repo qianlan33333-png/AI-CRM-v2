@@ -50,6 +50,8 @@ required=(
   internal/segment/dsl/ast.go
   internal/segment/dsl/parser.go
   internal/segment/dsl/parser_test.go
+  internal/segment/compiler/compiler.go
+  internal/segment/compiler/compiler_test.go
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -425,6 +427,7 @@ required=(
   docs/execution/slices/P0-S04.md
   docs/execution/slices/P3-S00.md
   docs/execution/slices/P3-S01.md
+  docs/execution/slices/P3-S02.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -799,8 +802,11 @@ done <<'EOF'
 100644 internal/segment/dsl/ast.go
 100644 internal/segment/dsl/parser.go
 100644 internal/segment/dsl/parser_test.go
+100644 internal/segment/compiler/compiler.go
+100644 internal/segment/compiler/compiler_test.go
 100644 docs/execution/slices/P3-S00.md
 100644 docs/execution/slices/P3-S01.md
+100644 docs/execution/slices/P3-S02.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -1330,7 +1336,7 @@ verify_index_sha256 internal/segment/port/port.go \
 verify_index_sha256 internal/segment/port/port_test.go \
   01d17e1ae55a71279f0a566469ff98ac49fc2ca69df6ab9b40629a972bfc333f
 verify_index_sha256 docs/execution/slices/P3-S00.md \
-  dd140edd10811d17d3919fe912c859540d0f7cebd26201ae9423f639b43300c8
+  ad56a1fd94bf63c184278602f834aea499c7fec41764f061b59e765e11b94d7a
 verify_index_sha256 internal/segment/dsl/ast.go \
   55d49468d801192c331c25c54844376b23a5732bf517bb2f5c4bef84cd9ee131
 verify_index_sha256 internal/segment/dsl/parser.go \
@@ -1339,6 +1345,16 @@ verify_index_sha256 internal/segment/dsl/parser_test.go \
   4133ea5ccf7337b35dd350597e6a358a18be3741fe0755414dc07e762ef85e4a
 verify_index_sha256 docs/execution/slices/P3-S01.md \
   37eb186e07e5a66f21950de1beb32651a1efbb2afd92b3db84d179ec1de99f77
+verify_index_sha256 internal/segment/compiler/compiler.go \
+  516b4ef6d0131f4c4a2d186b05caddba02d3ab60e0804ac99206895625a9e40e
+verify_index_sha256 internal/segment/compiler/compiler_test.go \
+  5e936728f73f7a5be2f755ec0f2e4158dd40ee5b35754301ab6502e07a73a889
+verify_index_sha256 docs/execution/slices/P3-S02.md \
+  f9b5f078beedfbdb30c703bca22672bf80ccd45abf121270e700b48040dbf1f7
+verify_index_sha256 docs/architecture/port-contracts.md \
+  4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
+verify_index_sha256 docs/execution/slice-ledger.yml \
+  e2ecd028a109811bc2bb266f3d093b9499ed58de257b8180b5ab9aea9df2ce44
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1620,7 +1636,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  ce8abf063208c011be495dcb992c38e0bf20bbc809db13893701c04c1403fbe1
+  e06740a30c4607fe453a8990b03183861705e249582192d088f5eec69111bdc1
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3018,7 +3034,7 @@ for anchor in \
   '## segment/port' \
   'type Definition json.RawMessage' \
   'RequestRefresh(context.Context, RefreshCommand) (Segment, error)' \
-  'DSL 语法、错误码与固定 sqlc query-family 要求见 `P3-S00.md`。' \
+  'DSL 语法、错误码与 S02 QueryProgram / S03 固定 sqlc query-family 分层' \
   'Create、Update、RequestRefresh 的 IdempotencyKey 必填。' \
   '不能借 Segment definition 自行筛选。'; do
   grep -Fq "$anchor" <<<"$p3s00_port_contract" ||
@@ -3031,10 +3047,15 @@ for anchor in \
   'Segment 独占写 `segments`、`segment_members`。它只读 contact 的' \
   'identity、event_log 或 River 表。' \
   'S01/S02 只能返回下列稳定 reason code' \
-  '固定 sqlc 查询族' \
-  '运行时不得发射、拼接、format 或执行 SQL 文本' \
+  'Decision B 将 compiler 分层' \
+  'S02 只能把已验证 AST 映射为唯一、' \
+  '闭合的 typed QueryProgram IR；S03 才将该 IR 映射为固定 sqlc 查询族并执行集合代数。' \
+  'S02 的 QueryProgram 不含 SQL、identifier、查询模板或 escape hatch' \
+  'S03 是唯一可执行 SQL 片' \
+  '运行时不得发射、' \
+  '拼接、format 或执行 SQL 文本' \
   '不能使用 ORM、动态 SQL builder' \
-  '或直接 pgx `Query/Exec/Prepare`。' \
+  '`Query/Exec/Prepare`。' \
   'PENDING_EXTERNAL_GATE'; do
   grep -Fq "$anchor" <<<"$p3s00_card" ||
     fail "P3-S00 frozen scope or SQL-safety receipt drifted: $anchor"
@@ -3118,6 +3139,44 @@ for anchor in \
   'FuzzParseNeverPanicsAndCanonicalRoundTrips'; do
   grep -Fq "$anchor" <<<"$p3s01_tests" ||
     fail "P3-S01 parser test corpus receipt drifted: $anchor"
+done
+
+p3s02_compiler="$(git show :internal/segment/compiler/compiler.go)"
+for anchor in \
+  'Package compiler turns the closed Segment AST into a safe query program.' \
+  'type Opcode string' \
+  'type Program struct{ root node }' \
+  '"universe": "all"' \
+  'func Compile(ast dsl.AST, reference time.Time) (Program, error)' \
+  'func compilePredicate(predicate dsl.Predicate, reference time.Time)' \
+  'ReasonCompileUnrepresentable' \
+  'ReasonCompileUnsafe'; do
+  grep -Fq "$anchor" <<<"$p3s02_compiler" ||
+    fail "P3-S02 QueryProgram compiler receipt drifted: $anchor"
+done
+! grep -Eq 'database/sql|pgx[.]|Query\(|Exec\(|Prepare\(|internal/(contact|identity|platform|outbound)/' <<<"$p3s02_compiler" ||
+  fail "P3-S02 compiler must not absorb SQL, execution, or another domain"
+
+p3s02_card="$(git show :docs/execution/slices/P3-S02.md)"
+for anchor in \
+  'P3-S02：Segment QueryProgram compiler' \
+  '总指挥 2026-08-13 Decision B' \
+  'S03 独占 index contract、固定 sqlc 查询与 executor。' \
+  '不新增 DDL、customers 查询、sqlc 生成物、PG EXPLAIN、executor' \
+  'PENDING_EXTERNAL_GATE'; do
+  grep -Fq "$anchor" <<<"$p3s02_card" ||
+    fail "P3-S02 scope receipt drifted: $anchor"
+done
+
+p3s02_tests="$(git show :internal/segment/compiler/compiler_test.go)"
+for anchor in \
+  'TestCompileLeafFamiliesAndStableProgram' \
+  'TestCompileTableDrivenSafetyMatrix' \
+  'FuzzCompileCanonicalASTIsDeterministicAndSQLFree' \
+  'if len(cases) != 50' \
+  'assertNoSQLText'; do
+  grep -Fq "$anchor" <<<"$p3s02_tests" ||
+    fail "P3-S02 compiler test corpus receipt drifted: $anchor"
 done
 
 scripts/scan_sensitive_paths.sh

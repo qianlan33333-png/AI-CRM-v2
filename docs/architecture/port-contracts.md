@@ -244,7 +244,8 @@ type Service interface {
 
 - `Definition` 是闭合 DSL v1 JSON；Segment 是其唯一 parser/compiler 和 `segments` /
   `segment_members` 写入方。调用者不能传 SQL、字段名、运算符或查询模板之外的任意
-  可执行输入。DSL 语法、错误码与固定 sqlc query-family 要求见 `P3-S00.md`。
+  可执行输入。DSL 语法、错误码与 S02 QueryProgram / S03 固定 sqlc query-family 分层
+  要求见 `P3-S00.md`。
 - `MemberPage` 只暴露 channel-neutral OneID；需要 Customer 展示数据的 HTTP adapter
   在 Segment 自己的读路径投影，其他域不得直接读 Segment store/generated。
 - Create、Update、RequestRefresh 的 IdempotencyKey 必填。同 key 同规范化命令返回
