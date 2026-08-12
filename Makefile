@@ -11,6 +11,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p2-s04-acceptance
+.PHONY: p3-c07c-r3b-storage-acceptance
 .PHONY: p2-s05-acceptance
 .PHONY: p2-s07-acceptance
 .PHONY: p2-s08-acceptance
@@ -387,6 +388,10 @@ p3-c01a-migration-acceptance:
 p3-r4b-identity-storage-acceptance:
 	@test -n "$${P3R4B_TEST_DATABASE_URL:-}" || { echo "P3R4B_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=45s ./acceptance/identity -args -database-url "$$P3R4B_TEST_DATABASE_URL"
+
+p3-c07c-r3b-storage-acceptance:
+	@test -n "$${P3C07C_R3B_TEST_DATABASE_URL:-}" || { echo "P3C07C_R3B_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=45s ./acceptance/contact -args -external-event-storage-database-url "$$P3C07C_R3B_TEST_DATABASE_URL"
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -3339,6 +3339,21 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: []
     external_gates: [EXACT_MAIN_REPO_CONTRACT_CI_PENDING, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+  - slice_id: P3-C07C-R3B
+    title: contact-external-event-registry-storage-only
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: dae7f7dd814f33ef1f09082dc7eed32019eb6cb2
+    dependency: P3_C07C_R3A_CLOSED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-c07c-r3b-storage
+    scope: [migration_00011_contact_owned_customer_event_idempotency_down, ownership_canonical, postgres_16_14_catalog_constraint_rollback_acceptance, minimal_migration_hash_owner_gate]
+    excluded_scope: [AppendExternalEvent_port_store_sqlc_generated_runtime, advisory_lock_replay_conflict_concurrency_merge_behavior, identity_segment_api_ui_openapi_event_log_and_external_effects]
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [slice:blank_key_negative_initially_used_an_unregistered_event_tuple_and_hit_the_event_FK_before_the_key_constraint_then_a_second_valid_tuple_isolated_SQLSTATE_23514]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
 
 phase_closeouts:
   P2:
