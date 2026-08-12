@@ -680,7 +680,7 @@ slices:
     merge_sha: 14ce03c27d2ab799d0a955c872e873682e61f473
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     slice_induced_correction_count: 1
-    infra_induced_correction_count: 0
+    infra_induced_correction_count: 1
   - slice_id: M0-7
     title: repair-gitleaks-openapi-version-false-positive
     owner: Codex-Sol
@@ -2977,7 +2977,7 @@ slices:
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 0
+    verification_induced_correction_count: 1
     correction_notes:
       - infra:pre_C07A_C02D_isolated_fixture_schema_omitted_the_C07A_lineage_relation
       - infra:lineage_CTE_setup_scan_must_not_weaken_the_customer_events_index_plan_gate
@@ -3010,6 +3010,40 @@ slices:
     verification_induced_correction_count: 0
     correction_notes:
       - infra:fresh_S01_worktree_lacked_the_repository_pinned_Orval_binary_then_make_bootstrap_tools_restored_the_declared_Node_24_18_0_toolchain_before_double_generation_reran_without_diff
+    external_gates:
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: P3-S02
+    title: segment-query-program-compiler
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: 861447ec652ce565edb8e79b274fb098ba23e81a
+    dependency: P3_S01_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-s02-segment-sql-compiler
+    decision_anchor: P3-S02-2026-08-13-DECISION_B
+    scope:
+      - canonical_typed_ast_to_closed_query_program_ir
+      - stable_typed_bind_slots_and_all_customers_universe
+      - no_sql_sqlc_store_pg_query_executor_or_ddl
+      - S03_exclusively_owns_indexes_fixed_sqlc_query_family_and_execution
+    tests:
+      - LOCAL_query_program_table_driven_race_PASS
+      - LOCAL_query_program_fuzz_3_SECONDS_121967_EXECUTIONS_NO_PANIC_PASS
+      - LOCAL_repo_contract_positive_and_complete_negative_corpus_PASS
+      - LOCAL_generate_twice_no_diff_PASS_node_24_18_0_npm_11_12_1
+      - LOCAL_make_ci_go_PASS
+      - LOCAL_npm_run_ci_PASS_186_tests
+    handwritten_scope: 2_business_files_compiler_and_tests_with_cards_ledger_and_governance_excluded
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 1
+    verification_induced_correction_count: 0
+    correction_notes:
+      - scope:owner_DECISION_B_split_AST_to_SQL_contract_after_PG16_generic_plan_proved_current_partial_indexes_cannot_preserve_is_deleted_true_semantics_without_Seq_Scan
+      - infra:fresh_S02_worktree_lacked_the_repository_pinned_Orval_binary_then_make_bootstrap_tools_restored_the_declared_toolchain_before_double_generation_reran
+      - verification:PR_repo_contract_negative_fixture_retargeted_from_superseded_S00_SQL_phrase_to_DECISION_B_S03_exclusive_execution_anchor
     external_gates:
       - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
       - PRODUCTION_DATABASE_NOT_EXECUTED

@@ -2796,7 +2796,7 @@ if (cd "$p3s00_overreach_migration" && scripts/check_repo_contract.sh >/dev/null
 fi
 
 p3s00_unsafe_dsl="$(make_fixture p3-s00-unsafe-dsl-boundary)"
-sed -i.bak 's/运行时不得发射、拼接、format 或执行 SQL 文本/运行时可执行 SQL 文本/' \
+sed -i.bak 's/S03 是唯一可执行 SQL 片/S03 不再独占可执行 SQL/' \
   "$p3s00_unsafe_dsl/docs/execution/slices/P3-S00.md"
 rm -f "$p3s00_unsafe_dsl/docs/execution/slices/P3-S00.md.bak"
 restage_p2s18_receipt "$p3s00_unsafe_dsl" docs/execution/slices/P3-S00.md
@@ -2832,6 +2832,35 @@ rm -f "$p3s01_duplicate_key_weakening/internal/segment/dsl/parser.go.bak"
 restage_p2s18_receipt "$p3s01_duplicate_key_weakening" internal/segment/dsl/parser.go
 if (cd "$p3s01_duplicate_key_weakening" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-S01 duplicate-key fail-closed boundary weakening was accepted"
+fi
+
+for file_path in \
+  internal/segment/compiler/compiler.go \
+  internal/segment/compiler/compiler_test.go \
+  docs/execution/slices/P3-S02.md; do
+  missing_p3s02_contract="$(make_fixture "missing-p3-s02-${file_path//\//-}")"
+  rm -f "$missing_p3s02_contract/$file_path"
+  git -C "$missing_p3s02_contract" add -u "$file_path"
+  if (cd "$missing_p3s02_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-S02 QueryProgram contract was accepted: $file_path"
+  fi
+done
+
+p3s02_sql_weakening="$(make_fixture p3-s02-sql-boundary-weakening)"
+sed -i.bak 's/S03 独占 index contract、固定 sqlc 查询与 executor。/S02 可直接执行 SQL。/' \
+  "$p3s02_sql_weakening/docs/execution/slices/P3-S02.md"
+rm -f "$p3s02_sql_weakening/docs/execution/slices/P3-S02.md.bak"
+restage_p2s18_receipt "$p3s02_sql_weakening" docs/execution/slices/P3-S02.md
+if (cd "$p3s02_sql_weakening" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S02 SQL ownership weakening was accepted"
+fi
+
+p3s02_compiler_execution="$(make_fixture p3-s02-compiler-execution-overreach)"
+printf '%s\n' '// database/sql Query() must not enter S02' \
+  >>"$p3s02_compiler_execution/internal/segment/compiler/compiler.go"
+restage_p2s18_receipt "$p3s02_compiler_execution" internal/segment/compiler/compiler.go
+if (cd "$p3s02_compiler_execution" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S02 direct execution overreach was accepted"
 fi
 
 envrc_fixture="$(make_fixture envrc-file_path)"
