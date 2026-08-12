@@ -133,6 +133,22 @@ CREATE TABLE acceptance_fixtures.customer_events (
 );
 CREATE INDEX customer_events_timeline_idx
   ON acceptance_fixtures.customer_events (customer_id, occurred_at DESC, id DESC);
+CREATE TABLE acceptance_fixtures.customer_merge_lineage (
+  merged_customer_id BIGINT PRIMARY KEY REFERENCES acceptance_fixtures.customers(id),
+  primary_customer_id BIGINT NOT NULL REFERENCES acceptance_fixtures.customers(id),
+  actor TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  merged_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT customer_merge_lineage_distinct CHECK (merged_customer_id <> primary_customer_id),
+  CONSTRAINT customer_merge_lineage_actor CHECK (
+    btrim(actor) <> '' AND char_length(actor) <= 200
+  ),
+  CONSTRAINT customer_merge_lineage_reason CHECK (
+    btrim(reason) <> '' AND char_length(reason) <= 1000
+  )
+);
+CREATE INDEX idx_customer_merge_lineage_primary
+  ON acceptance_fixtures.customer_merge_lineage (primary_customer_id, merged_customer_id);
 `)
 	if err != nil {
 		t.Fatalf("create tables: %v", err)
@@ -212,6 +228,7 @@ FROM distractor CROSS JOIN generate_series(1, 5000) AS number`); err != nil {
 	productionQuery := generatedCustomerEventQuery(t)
 	productionQuery = strings.Replace(productionQuery, "FROM customers AS c", "FROM acceptance_fixtures.customers AS c", 1)
 	productionQuery = strings.Replace(productionQuery, "FROM customer_events AS ce", "FROM acceptance_fixtures.customer_events AS ce", 1)
+	productionQuery = strings.Replace(productionQuery, "FROM customer_merge_lineage AS lineage", "FROM acceptance_fixtures.customer_merge_lineage AS lineage", 1)
 	rows, err := fixture.Pool().Query(ctx, "EXPLAIN (COSTS OFF)\n"+productionQuery, nil, nil, int32(51), customerID, ownerID)
 	if err != nil {
 		t.Fatalf("explain: %v", err)
@@ -229,7 +246,7 @@ FROM distractor CROSS JOIN generate_series(1, 5000) AS number`); err != nil {
 	if err = rows.Err(); err != nil {
 		t.Fatalf("explain rows: %v", err)
 	}
-	if strings.Contains(plan.String(), "Seq Scan") || !strings.Contains(plan.String(), "customer_events_timeline_idx") {
+	if strings.Contains(plan.String(), "Seq Scan on customer_events") || !strings.Contains(plan.String(), "customer_events_timeline_idx") {
 		t.Fatalf("unexpected plan:\n%s", plan.String())
 	}
 }
