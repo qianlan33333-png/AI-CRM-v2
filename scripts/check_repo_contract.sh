@@ -428,6 +428,7 @@ required=(
   docs/adr/ADR-001.md
   docs/adr/ADR-010.md
   docs/adr/ADR-011.md
+  docs/adr/ADR-012.md
   docs/architecture/port-contracts.md
   docs/architecture/table-ownership.yml
   docs/governance/limitations.md
@@ -440,6 +441,7 @@ required=(
   docs/execution/slices/P3-S01.md
   docs/execution/slices/P3-S02.md
   docs/execution/slices/P3-S03.md
+  docs/execution/slices/P3-R3A.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -859,6 +861,7 @@ done <<'EOF'
 100644 docs/adr/ADR-001.md
 100644 docs/adr/ADR-010.md
 100644 docs/adr/ADR-011.md
+100644 docs/adr/ADR-012.md
 100644 docs/spec/AI-CRM-v2-执行方案.md
 100644 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
 100644 docs/spec/AI-CRM-v2-重构详细设计.md
@@ -1402,7 +1405,7 @@ verify_index_sha256 docs/execution/slices/P3-S03.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  4c17a52dd50061f4c37a8634ec49f5fe2e148cd082901797a8ff2555f7c8165d
+  762527a6bd38904e4f28c9205e6e411d96474e0f42746c94ad647335c369a96c
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1675,6 +1678,10 @@ verify_index_sha256 docs/adr/ADR-010.md \
   5fdbd62214938e6485322a84858c488a8bac812e00f312318186a5b3ec9b72dc
 verify_index_sha256 docs/adr/ADR-011.md \
   3fb1954942b0de9da1989276d535af090c0dcd22841437dbb7d6e49e54b7f92d
+verify_index_sha256 docs/adr/ADR-012.md \
+  a4943e7a665309a388ce4ffad7d4a7610f2038191b9d5d9483b2370d5df0dd4b
+verify_index_sha256 docs/execution/slices/P3-R3A.md \
+  cac248d380f467833560cbd3992a86100c9f56594380bc0fd013be241c6614db
 verify_index_sha256 docs/execution/slices/M0-5.md \
   c5a4f1991b8f3ecbb1a3a024c6131aea5fc3d6813ddeb34b323faf2948229609
 verify_index_sha256 docs/execution/slices/M0-6.md \
@@ -1684,7 +1691,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   9a34ae9ed535ea9ec51670df3f80df8d6e26ece035d924ea6a7bff7f5dfed543
 verify_index_sha256 scripts/test_repo_contract.sh \
-  45ab02c22912d0be8e47481da9999194b0af83418184fd2d22b2588e9d63aff7
+  115eb28f042a2518be7a2975ceebd4ccb6c88cd471b8f1de1c91f0b6ff587046
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2322,6 +2329,22 @@ fi
 grep -Fq 'ADR-011' <<<"$(git show ':docs/adr/ADR-001.md')" || fail "ADR-001 lost its ADR-011 supersession marker"
 grep -Fq 'ADR-011' <<<"$(git show ':docs/adr/ADR-010.md')" || fail "ADR-010 lost its ADR-011 supersession marker"
 grep -Fq '不能证明新旧系统行为一致' <<<"$(git show ':docs/adr/ADR-011.md')" || fail "ADR-011 lost the snapshot capability boundary"
+identity_adr="$(git show ':docs/adr/ADR-012.md')"
+for required_identity_adr_text in \
+  'identities`、`customer_merges`、`pending_events`' \
+  'identity_operation_receipts' \
+  '不得复用为 operation receipt' \
+  'ON CONFLICT DO NOTHING RETURNING' \
+  'raw identity 不进入持久化' \
+  'normalized identity 只可存在于 identity-owned `identities` storage' \
+  '既不是 Resolve 键' \
+  '不设 TTL' \
+  '不得被 River/periodic worker 扫描' \
+  '不得建立 GIN 或仅按 state 的索引' \
+  '闭集、脱敏的审计对象'; do
+  grep -Fq "$required_identity_adr_text" <<<"$identity_adr" ||
+    fail "ADR-012 lost required Identity storage decision: $required_identity_adr_text"
+done
 
 (cd docs/spec && sha256sum -c SHA256SUMS)
 
