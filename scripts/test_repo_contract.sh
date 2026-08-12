@@ -2312,6 +2312,24 @@ if (cd "$cross_customer_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&
   fail "P3-C02D cross-customer response was accepted"
 fi
 
+empty_cursor_p3c02d="$(make_fixture p3-c02d-empty-cursor)"
+sed -i.bak 's/if [*]params[.]Cursor == "" {/if false {/' \
+  "$empty_cursor_p3c02d/internal/contact/http/customer_event_handler.go"
+rm -f "$empty_cursor_p3c02d/internal/contact/http/customer_event_handler.go.bak"
+restage_p2s18_receipt "$empty_cursor_p3c02d" internal/contact/http/customer_event_handler.go
+if (cd "$empty_cursor_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D explicit empty cursor bypass was accepted"
+fi
+
+simplified_explain_p3c02d="$(make_fixture p3-c02d-simplified-explain)"
+sed -i.bak 's/productionQuery := generatedCustomerEventQuery(t)/productionQuery := "SELECT 1"/' \
+  "$simplified_explain_p3c02d/acceptance/p3c02d/customer_event_integration_test.go"
+rm -f "$simplified_explain_p3c02d/acceptance/p3c02d/customer_event_integration_test.go.bak"
+restage_p2s18_receipt "$simplified_explain_p3c02d" acceptance/p3c02d/customer_event_integration_test.go
+if (cd "$simplified_explain_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D simplified EXPLAIN substitute was accepted"
+fi
+
 for file_path in \
   migrations/00006_customer_events.sql \
   acceptance/fixtures/cmd/validate-database-url/main.go \

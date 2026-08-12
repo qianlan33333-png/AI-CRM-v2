@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -206,14 +209,10 @@ FROM distractor CROSS JOIN generate_series(1, 5000) AS number`); err != nil {
 	if _, err := fixture.Pool().Exec(ctx, `ANALYZE acceptance_fixtures.customer_events`); err != nil {
 		t.Fatalf("analyze customer events: %v", err)
 	}
-	rows, err := fixture.Pool().Query(ctx, `
-EXPLAIN (COSTS OFF)
-SELECT e.id, e.customer_id, e.event_type, e.payload, e.actor, e.occurred_at
-FROM acceptance_fixtures.customer_events AS e
-JOIN acceptance_fixtures.customers AS c ON c.id = e.customer_id
-WHERE c.id = $1 AND NOT c.is_deleted AND c.owner_staff_id = $2
-ORDER BY e.occurred_at DESC, e.id DESC
-LIMIT 51`, customerID, ownerID)
+	productionQuery := generatedCustomerEventQuery(t)
+	productionQuery = strings.Replace(productionQuery, "FROM customers AS c", "FROM acceptance_fixtures.customers AS c", 1)
+	productionQuery = strings.Replace(productionQuery, "FROM customer_events AS ce", "FROM acceptance_fixtures.customer_events AS ce", 1)
+	rows, err := fixture.Pool().Query(ctx, "EXPLAIN (COSTS OFF)\n"+productionQuery, nil, nil, int32(51), customerID, ownerID)
 	if err != nil {
 		t.Fatalf("explain: %v", err)
 	}
@@ -233,4 +232,22 @@ LIMIT 51`, customerID, ownerID)
 	if strings.Contains(plan.String(), "Seq Scan") || !strings.Contains(plan.String(), "customer_events_timeline_idx") {
 		t.Fatalf("unexpected plan:\n%s", plan.String())
 	}
+}
+
+func generatedCustomerEventQuery(t *testing.T) string {
+	t.Helper()
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("locate acceptance source")
+	}
+	generatedPath := filepath.Join(filepath.Dir(currentFile), "..", "..", "internal", "contact", "store", "generated", "customer_events.sql.go")
+	source, err := os.ReadFile(generatedPath)
+	if err != nil {
+		t.Fatalf("read generated customer event query: %v", err)
+	}
+	match := regexp.MustCompile("(?s)const listCustomerEvents = `([^`]*)`").FindSubmatch(source)
+	if len(match) != 2 {
+		t.Fatal("generated ListCustomerEvents query is unavailable")
+	}
+	return string(match[1])
 }

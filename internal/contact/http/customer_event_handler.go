@@ -106,6 +106,9 @@ func customerEventInput(
 ) (contactapp.CustomerEventInput, bool, error) {
 	input := contactapp.CustomerEventInput{CustomerID: contactport.CustomerID(customerID), OwnerStaffID: ownerStaffID}
 	if params.Cursor != nil {
+		if *params.Cursor == "" {
+			return contactapp.CustomerEventInput{}, true, contactapp.ErrInvalidCustomerEventQuery
+		}
 		input.Cursor = string(*params.Cursor)
 	}
 	if params.Limit != nil {

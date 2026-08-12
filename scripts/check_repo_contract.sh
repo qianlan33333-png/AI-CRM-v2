@@ -1080,15 +1080,15 @@ verify_index_sha256 docs/evidence/slices/P3-C02B-handler-tests.md \
 verify_index_sha256 acceptance/p3c02d/doc.go \
   0f9904b5bcbbc94986169fe7a93f51637cc731f85c07b9e7713d7ad4fe6216a7
 verify_index_sha256 acceptance/p3c02d/customer_event_integration_test.go \
-  54f28dc5a1ef6eb926356d56e5963e2dfc0c0a0d022ef9649586325b40b5cf03
+  7731f6f231a9a4418c805149e852b1a2b998c9703201c7136deb3511f26fea33
 verify_index_sha256 internal/contact/app/customer_event_service.go \
   aca56952728b7d738d2c392621b734c61d7fc88c8e6617f5168372c40c86ae5a
 verify_index_sha256 internal/contact/app/customer_event_service_test.go \
   e6bbadc300f404124a4470f42544ac2ad33b779c51126b6e6ca882cb8cb1b0f9
 verify_index_sha256 internal/contact/http/customer_event_handler.go \
-  7c70d7dd3bbbefafaee11899e893471957462be61ed7b01e4c58ab71cc47d749
+  76c34d5ce040a1e023ebc9602e57737b357cded318ac46c467189ac08fb07360
 verify_index_sha256 internal/contact/http/customer_event_handler_test.go \
-  a5ef048099ff79b04b26a06f86fa462f0c033beaa3d1ccbad4997c386e3e5a95
+  1b4e4e191531d955d1f1db53fd7205c6f5ddb3bef933db27c9c0d1bc128babdf
 verify_index_sha256 internal/contact/store/customer_event_repository.go \
   bc59738a92bf7df2ff36fe338c1665dc33224f2725b502febf2c412ac02bd107
 verify_index_sha256 internal/contact/store/customer_event_repository_test.go \
@@ -1408,7 +1408,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  3dab82caf0f6c9f53e3d34127c169e8e37e3e796bd5c47dd202602cca04b285c
+  f0e189f1f22b7f0577a3a7da9d29e06ff75db68c5400529f2101af9fe9f34408
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2346,6 +2346,8 @@ grep -Fq 'cursor.FilterHash != expectedFilterHash' <<<"$p3c02d_service" ||
   fail "P3-C02D cursor lost customer and owner scope binding"
 
 p3c02d_handler="$(git show :internal/contact/http/customer_event_handler.go)"
+grep -Fq 'if *params.Cursor == "" {' <<<"$p3c02d_handler" ||
+  fail "P3-C02D handler must reject an explicitly empty cursor"
 grep -Fq 'item.CustomerID != expectedCustomerID' <<<"$p3c02d_handler" ||
   fail "P3-C02D handler must reject cross-customer application results"
 grep -Fq 'authorization.Capability != authport.CapabilityCustomerEventsRead' <<<"$p3c02d_handler" ||
@@ -2358,6 +2360,12 @@ grep -Fq 'contactstore.NewCustomerEventRepository()' <<<"$p3c02d_api" ||
   fail "P3-C02D runtime lost timeline repository wiring"
 grep -Fq 'handler.customerEvents.ListCustomerEvents(writer, request, customerID, params)' <<<"$p3c02d_api" ||
   fail "P3-C02D generated operation is not delegated to the timeline handler"
+
+p3c02d_acceptance="$(git show :acceptance/p3c02d/customer_event_integration_test.go)"
+grep -Fq 'productionQuery := generatedCustomerEventQuery(t)' <<<"$p3c02d_acceptance" ||
+  fail "P3-C02D EXPLAIN must execute the generated production query"
+grep -Fq '"EXPLAIN (COSTS OFF)\n"+productionQuery' <<<"$p3c02d_acceptance" ||
+  fail "P3-C02D generated production query is not connected to EXPLAIN"
 
 p3c03_make="$(git show :Makefile)"
 [[ "$(grep -Ec '^p3-c03-migration-acceptance:$' <<<"$p3c03_make")" -eq 1 ]] ||

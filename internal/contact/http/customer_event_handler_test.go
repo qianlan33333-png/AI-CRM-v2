@@ -200,6 +200,7 @@ func TestCustomerEventHandlerRejectsInvalidPathLimitAndCursor(t *testing.T) {
 	principal := authport.Principal{AdminUserID: 401, Role: authport.RoleAdmin}
 	authorization := authport.Authorization{Capability: authport.CapabilityCustomerEventsRead, Scope: authport.ScopeGlobal}
 	invalidCursor := generated.Cursor("not-a-valid-cursor")
+	emptyCursor := generated.Cursor("")
 	zeroLimit := generated.Limit(0)
 	tooLargeLimit := generated.Limit(int(contactapp.CustomerListMaximumLimit) + 1)
 	tests := []struct {
@@ -238,6 +239,13 @@ func TestCustomerEventHandlerRejectsInvalidPathLimitAndCursor(t *testing.T) {
 			wantCode:   platformhttp.CodeMalformedRequest,
 		},
 		{
+			name:       "explicit empty cursor",
+			customerID: 41,
+			params:     generated.ListCustomerEventsParams{Cursor: &emptyCursor},
+			wantStatus: http.StatusBadRequest,
+			wantCode:   platformhttp.CodeCursorInvalid,
+		},
+		{
 			name:       "invalid opaque cursor from application",
 			customerID: 41,
 			params:     generated.ListCustomerEventsParams{Cursor: &invalidCursor},
@@ -258,7 +266,8 @@ func TestCustomerEventHandlerRejectsInvalidPathLimitAndCursor(t *testing.T) {
 				testCase.params,
 			)
 			assertCustomerEventError(t, response, testCase.wantStatus, testCase.wantCode)
-			if testCase.customerID <= 0 || testCase.params.Limit != nil {
+			if testCase.customerID <= 0 || testCase.params.Limit != nil ||
+				(testCase.params.Cursor != nil && *testCase.params.Cursor == "") {
 				assertCustomerEventNoCalls(t, application)
 				return
 			}
