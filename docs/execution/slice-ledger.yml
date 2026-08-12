@@ -2457,8 +2457,8 @@ slices:
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
-  - slice_id: P3-C06
-    title: contact-200k-s-tier-performance-hard-gate
+  - slice_id: P3-C06A
+    title: contact-200k-performance-acceptance-mechanism
     owner: Codex-Sol
     status: in_progress
     base_sha: 33f6e19792a6d44686642236fb99d6a4e76c3369
@@ -2470,19 +2470,20 @@ slices:
       - exhaustive_4096_supported_filter_time_page_and_limit_combinations
       - real_repository_transaction_bound_p95_under_200ms
       - exact_production_sql_explain_analyze_buffers_no_unexpected_seq_scan
-      - authorized_2c4g_s_tier_test_server_evidence
+      - strict_authorized_2c4g_s_tier_receipt_verifier
     delegated_tasks: []
     tests:
       - NOT_RUN
     handwritten_scope: pending
     slice_induced_correction_count: 0
     infra_induced_correction_count: 0
-    scope_induced_correction_count: 1
+    scope_induced_correction_count: 2
     verification_induced_correction_count: 2
     correction_notes:
       - verification:initial_worktree_creation_followup_git_inspection_ran_in_stale_root_then_exact_new_worktree_was_revalidated_without_mutation
       - verification:test_server_swapon_output_flag_was_not_supported_by_ubuntu_util_linux_then_read_only_evidence_was_recollected_with_plain_swapon_show
       - scope:readonly_audit_found_presence_only_matrix_omitted_time_bound_modes_real_keyset_page_and_limit_variants
+      - scope:exact_main_binary_requirement_forbids_claiming_real_s_tier_result_inside_the_same_unmerged_mechanism_PR_rescoped_real_run_to_P3_C06B
     external_gates:
       - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED
       - REAL_WECOM_NOT_EXECUTED
