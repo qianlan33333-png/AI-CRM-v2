@@ -801,7 +801,7 @@ slices:
     slice_induced_correction_count: 1
     infra_induced_correction_count: 4
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 5
+    verification_induced_correction_count: 6
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - DEPLOYMENT_NOT_EXECUTED
@@ -2232,6 +2232,7 @@ slices:
       - verification:generated_source_manifest_updated_after_sqlc_owner_scope_signature_change
       - verification:generated_checker_frozen_manifest_digest_updated_with_manifest
       - verification:full_ci_go_rerun_with_required_real_pg_environment_flags_on_isolated_55432
+      - verification:terra_test_assertion_text_renamed_to_avoid_source_policy_sql_literal_false_positive
     external_gates:
       - G2_PUBLIC_HTTPS_443_PENDING_EXTERNAL_GATE
       - G2_BROWSER_AND_MANUAL_SIGNOFF_PENDING_EXTERNAL_GATE

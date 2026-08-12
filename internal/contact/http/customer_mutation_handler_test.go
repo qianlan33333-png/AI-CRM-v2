@@ -97,7 +97,7 @@ func TestCustomerMutationGeneratedRoutesPassGlobalAndOwnerScopesExactly(t *testi
 					assertCustomerMutationScope(t, command.ID, command.ScopeOwnerStaffID, command.Actor, caller.principal, caller.wantOwner)
 					if command.Name == nil || *command.Name != "Ada" || command.AvatarURL.Set || command.Gender.Set ||
 						command.OwnerStaffID.Set || command.ChannelID.Set || command.Extra != nil {
-						t.Fatalf("update command = %#v, want exact one-field name patch", command)
+						t.Fatalf("profile command = %#v, want exact one-field name patch", command)
 					}
 				case "set stage":
 					assertCustomerMutationSuccess(t, response)

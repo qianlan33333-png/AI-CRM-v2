@@ -1012,7 +1012,7 @@ verify_index_sha256 docs/evidence/slices/P3-C02A-service-tests.md \
 verify_index_sha256 internal/contact/http/customer_mutation_handler.go \
   8a3c6c5c31970f2c747ebff7e770cdf2e6940f9a6c20b0deae6a09a94a9a0935
 verify_index_sha256 internal/contact/http/customer_mutation_handler_test.go \
-  b968795111b3582232df764def981ca25229697164b16b43652720ef2021e315
+  2b2c6e729bb1d5c840aabb5251cc5a013a245afb003148f22b154a3e87569266
 verify_index_sha256 docs/execution/slices/P3-C02C.md \
   997680d558d59c01466a10ad48c3f2f7e8f3c261248c5665883e110cf8a845c4
 verify_index_sha256 docs/evidence/slices/P3-C02C-handler-tests.md \
