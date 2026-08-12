@@ -20,9 +20,11 @@ owners:
       - tags
       - customer_tags
       - customer_events
+      - customer_merge_lineage
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
+      customer_merge_lineage: contact_owned_effective_customer_projection
 
   identity:
     package: internal/identity

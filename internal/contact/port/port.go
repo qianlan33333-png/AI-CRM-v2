@@ -15,8 +15,12 @@ type Actor string
 type StageID int64
 
 var (
-	ErrInvalidStage  = errors.New("invalid stage")
-	ErrStageNotFound = errors.New("stage not found")
+	ErrInvalidStage          = errors.New("invalid stage")
+	ErrStageNotFound         = errors.New("stage not found")
+	ErrInvalidMergeCommand   = errors.New("invalid contact merge command")
+	ErrMergeCustomerNotFound = errors.New("contact merge customer not found")
+	ErrMergeConflict         = errors.New("contact merge conflict")
+	ErrMergeStoreFailed      = errors.New("contact merge store failed")
 )
 
 type Stage struct {
