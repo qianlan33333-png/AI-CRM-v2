@@ -2235,6 +2235,84 @@ if (cd "$collision_extra_guard_p3c02b" && scripts/check_repo_contract.sh >/dev/n
 fi
 
 for file_path in \
+  acceptance/p3c02d/doc.go \
+  acceptance/p3c02d/customer_event_integration_test.go \
+  internal/contact/app/customer_event_service.go \
+  internal/contact/app/customer_event_service_test.go \
+  internal/contact/http/customer_event_handler.go \
+  internal/contact/http/customer_event_handler_test.go \
+  internal/contact/store/customer_event_repository.go \
+  internal/contact/store/customer_event_repository_test.go \
+  internal/contact/store/queries/customer_events.sql \
+  internal/contact/store/generated/customer_events.sql.go \
+  docs/execution/slices/P3-C02D.md \
+  docs/evidence/slices/P3-C02D-sqlc-store.md \
+  docs/evidence/slices/P3-C02D-service-tests.md \
+  docs/evidence/slices/P3-C02D-handler-tests.md; do
+  p3c02d_receipt_fixture="$(make_fixture "p3-c02d-receipt-${file_path//\//-}")"
+  case "$file_path" in
+    *.go) printf '%s\n' '// P3-C02D receipt drift' >>"$p3c02d_receipt_fixture/$file_path" ;;
+    *.sql) printf '%s\n' '-- P3-C02D receipt drift' >>"$p3c02d_receipt_fixture/$file_path" ;;
+    *) printf '%s\n' '# P3-C02D receipt drift' >>"$p3c02d_receipt_fixture/$file_path" ;;
+  esac
+  git -C "$p3c02d_receipt_fixture" add "$file_path"
+  if (cd "$p3c02d_receipt_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C02D customer-event receipt drift was accepted: $file_path"
+  fi
+done
+
+disconnected_p3c02d_workflow="$(make_fixture disconnected-p3-c02d-workflow)"
+sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02d-acceptance/d' \
+  "$disconnected_p3c02d_workflow/.github/workflows/application-go.yml"
+rm -f "$disconnected_p3c02d_workflow/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$disconnected_p3c02d_workflow" .github/workflows/application-go.yml
+if (cd "$disconnected_p3c02d_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D real PostgreSQL acceptance disconnected from application CI was accepted"
+fi
+
+hollow_p3c02d_target="$(make_fixture hollow-p3-c02d-target)"
+sed -i.bak '/[.]\/acceptance\/p3c02d/ s/.*/\t@true/' "$hollow_p3c02d_target/Makefile"
+rm -f "$hollow_p3c02d_target/Makefile.bak"
+restage_make_receipt "$hollow_p3c02d_target"
+if (cd "$hollow_p3c02d_target" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "hollow P3-C02D acceptance target was accepted"
+fi
+
+owner_escape_p3c02d="$(make_fixture p3-c02d-owner-escape)"
+sed -i.bak '/c[.]owner_staff_id = sqlc[.]narg(owner_staff_id)::bigint/d' \
+  "$owner_escape_p3c02d/internal/contact/store/queries/customer_events.sql"
+rm -f "$owner_escape_p3c02d/internal/contact/store/queries/customer_events.sql.bak"
+restage_p2s18_receipt "$owner_escape_p3c02d" internal/contact/store/queries/customer_events.sql
+if (cd "$owner_escape_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D owner scope escape was accepted"
+fi
+
+offset_p3c02d="$(make_fixture p3-c02d-offset)"
+printf '%s\n' 'OFFSET 1' >>"$offset_p3c02d/internal/contact/store/queries/customer_events.sql"
+restage_p2s18_receipt "$offset_p3c02d" internal/contact/store/queries/customer_events.sql
+if (cd "$offset_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D OFFSET timeline query was accepted"
+fi
+
+duplicate_cursor_p3c02d="$(make_fixture p3-c02d-duplicate-cursor)"
+sed -i.bak 's/if _, duplicate := fields\[key\]; duplicate {/if false {/' \
+  "$duplicate_cursor_p3c02d/internal/contact/app/customer_event_service.go"
+rm -f "$duplicate_cursor_p3c02d/internal/contact/app/customer_event_service.go.bak"
+restage_p2s18_receipt "$duplicate_cursor_p3c02d" internal/contact/app/customer_event_service.go
+if (cd "$duplicate_cursor_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D duplicate cursor key bypass was accepted"
+fi
+
+cross_customer_p3c02d="$(make_fixture p3-c02d-cross-customer)"
+sed -i.bak 's/item[.]CustomerID != expectedCustomerID/item.CustomerID <= 0/' \
+  "$cross_customer_p3c02d/internal/contact/http/customer_event_handler.go"
+rm -f "$cross_customer_p3c02d/internal/contact/http/customer_event_handler.go.bak"
+restage_p2s18_receipt "$cross_customer_p3c02d" internal/contact/http/customer_event_handler.go
+if (cd "$cross_customer_p3c02d" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02D cross-customer response was accepted"
+fi
+
+for file_path in \
   migrations/00006_customer_events.sql \
   acceptance/fixtures/cmd/validate-database-url/main.go \
   acceptance/contact/doc.go \
