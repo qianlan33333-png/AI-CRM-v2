@@ -39,7 +39,7 @@ execution_policy:
   pr_language: zh-CN
   external_effects_default: forbidden
 current_phase: P3
-current_phase_status: P3_CONTACT_CUSTOMER_MUTATION_HTTP_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
+current_phase_status: P3_CONTACT_S_TIER_QUERY_OPTIMIZATION_IN_PROGRESS_G2_EXTERNAL_GATES_RETAINED
 ledger_semantics:
   historical_slice_records: point_in_time_receipts
   current_phase_status_source: phase_closeouts
@@ -1153,7 +1153,7 @@ slices:
     slice_induced_correction_count: 0
     infra_induced_correction_count: 1
     scope_induced_correction_count: 0
-    verification_induced_correction_count: 3
+    verification_induced_correction_count: 4
     external_gates:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
@@ -2523,7 +2523,7 @@ slices:
   - slice_id: P3-C06A2
     title: contact-s-tier-performance-runner-and-receipt
     owner: Codex-Sol
-    status: in_progress
+    status: merged_main_ci_pass
     base_sha: 47fbaebce120ef9f4f128f94588d396abb128da3
     dependency: P3-C06A1
     branch: slice/p3-c06a2-performance-runner
@@ -2566,6 +2566,75 @@ slices:
       - verification:local_gh_version_did_not_support_pr_create_json_output_then_PR_creation_was_reissued_without_that_reporting_flag
     external_gates:
       - TEST_SERVER_PERFORMANCE_RUN_AUTHORIZED_FOR_P3_C06B
+      - REAL_WECOM_NOT_EXECUTED
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+    independent_review:
+      task_id: p3_c06a2_independent_review
+      candidate_sha: a9ee219c739f8ddd4b01a60bb216c65a6e814489
+      tree_sha: 0a9d76166522d21c58f216621e0d71a5c7b79f4f
+      manifest_sha256: f8c84abb7fe890a67777dded61c72e62cd7a7a17f341c6f3fa92be83a808a8d0
+      binary_diff_sha256: 533b0e04c0910b08e82a7acbb3a7653f1938e5f0137b091c27a196caec555180
+      report_sha256: 0ef6d1ab895db4410dd421f9136b852279b57f8c5e6d7621741f3eb22ac528eb
+      verdict: PASS
+    pull_request: https://github.com/qianlan33333-png/AI-CRM-v2/pull/138
+    merge_sha: ea6e9771dfa02db06ec793a1aebdad89826eabcc
+    main_ci:
+      application: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31572854039
+      repo_contract: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31572853990
+      secret_scan: https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/31572853988
+  - slice_id: P3-C06C
+    title: contact-bounded-total-and-query-plan-performance-optimization
+    owner: Codex-Sol
+    status: local_gates_pass_independent_review_pending
+    base_sha: ea6e9771dfa02db06ec793a1aebdad89826eabcc
+    dependency: P3-C06A2
+    branch: slice/p3-c06c-bounded-total-query
+    decision_anchor: P3_C06B_S_TIER_OBSERVATION_2026_08_12
+    scope:
+      - capped_count_one_row_preserves_exact_10k_plus_semantics
+      - contact_local_cache_describe_prevents_generic_plan_partial_index_loss
+      - startup_and_pool_construction_require_description_cache_capacity_at_least_one
+      - runner_exact_two_query_capture_and_receipt_contract_update
+      - exact_source_policy_exception_with_copy_and_exec_negatives
+    delegated_tasks:
+      - task_id: p3_c06_query_optimization_review
+        executor: Terra-Max
+        status: SOL_REVIEW_FINDINGS_INTEGRATED
+        review_manifest_sha256: e40443a5d07e44370eb396e74356e9db034a81540a5afe102e28d65f9c1b392e
+    tests:
+      - focused_store_and_runner_race_PASS
+      - focused_store_and_runner_vet_PASS
+      - real_pg16_55432_p3c01b_acceptance_PASS
+      - sqlc_twice_no_diff_PASS
+      - generated_sources_and_gitless_generation_PASS
+      - source_policy_and_arch_import_permanent_negatives_PASS
+      - full_ci_go_PASS_including_clean_release_image_and_exact_query_plan_gate
+      - migration_up_down_up_and_all_P3_contact_acceptances_real_PG16_55432_PASS
+      - web_ci_Node24_npm11_186_tests_build_audit_PASS
+      - repo_contract_full_negatives_and_secret_scan_PASS
+      - real_2C4G_4096_matrix_requires_new_main_SHA_NOT_EXECUTED
+    handwritten_scope: 6_runtime_files_69_physical_changed_lines_query_repository_runner_startup_schema_and_API_worker_guards_tests_generated_governance_and_gate_implementation_excluded
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 2
+    verification_induced_correction_count: 7
+    correction_notes:
+      - slice:first_capped_count_draft_removed_keyset_order_then_review_restored_it_to_preserve_the_no_target_seq_scan_hard_gate
+      - slice:source_policy_exception_initially_matched_the_file_and_db_Tx_call_shape_but_not_the_exact_customerQueryDBTX_receiver_object_then_method_receiver_object_identity_wrong_receiver_and_shadow_receiver_negatives_were_added
+      - slice:cache_describe_execution_initially_accepted_a_zero_description_cache_capacity_DSN_then_strong_startup_validation_and_API_worker_pool_construction_were_made_fail_closed
+      - governance:user_authorized_continuation_through_P4_defers_threshold_report_without_weakening_gates
+      - scope:initial_optimization_card_covered_transport_amplification_but_omitted_the_parameter_sensitive_generic_plan_drift_then_contact_local_cache_describe_was_added
+      - scope:existing_source_policy_had_no_exact_boundary_for_the_contact_local_query_mode_wrapper_then_a_two_method_path_and_receiver_scoped_exception_with_permanent_negatives_was_added
+      - verification:first_ledger_counter_patch_matched_the_historical_M0_6_counter_instead_of_P3_C06C_then_the_historical_value_was_restored_and_the_current_slice_counter_was_updated_by_slice_id_context
+      - verification:first_handwritten_scope_summary_used_an_unreproducible_8_file_approximation_then_it_was_replaced_with_an_exact_runtime_file_and_physical_changed_line_metric_and_updated_after_fail_closed_hardening
+      - verification:description_cache_validation_first_used_parsed_Query_which_the_existing_source_policy_correctly_rejected_then_it_was_rewritten_as_url_ParseQuery_of_RawQuery_without_weakening_the_gate
+      - verification:first_bounded_total_tests_covered_small_zero_and_cap_plus_one_but_not_exact_10000_then_unit_and_real_PG_exact_cap_before_cap_plus_one_assertions_were_added
+      - verification:first_clean_full_ci_invocation_passed_a_short_HEAD_to_query_plan_gate_then_the_gate_correctly_rejected_it_and_the_command_was_rerun_with_the_exact_40_character_candidate_SHA
+      - verification:first_chained_migration_command_scoped_MIGRATION_TEST_DATABASE_URL_only_to_the_first_make_process_then_p0_s04_correctly_failed_closed_and_was_rerun_with_the_DSN_scoped_to_its_own_process
+      - verification:the_reused_local_55432_database_retained_River_objects_from_an_older_acceptance_run_then_only_those_local_test_objects_were_removed_and_the_official_up_down_up_gate_passed_without_touching_5432_or_any_external_database
+    external_gates:
+      - TEST_SERVER_PERFORMANCE_RERUN_REQUIRES_P3_C06C_MERGE_SHA
       - REAL_WECOM_NOT_EXECUTED
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED

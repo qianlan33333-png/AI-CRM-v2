@@ -169,8 +169,8 @@ type queryCapture struct {
 func (capture *queryCapture) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	name := ""
 	switch {
-	case strings.HasPrefix(data.SQL, "-- name: ListCustomerIDsBounded :many"):
-		name = "ListCustomerIDsBounded"
+	case strings.HasPrefix(data.SQL, "-- name: CountCustomerIDsBounded :one"):
+		name = "CountCustomerIDsBounded"
 	case strings.HasPrefix(data.SQL, "-- name: ListCustomers :many"):
 		name = "ListCustomers"
 	}
@@ -204,7 +204,7 @@ func (capture *queryCapture) finish() ([]capturedQuery, error) {
 	capture.active = false
 	queries := append([]capturedQuery(nil), capture.queries...)
 	capture.queries = nil
-	if len(queries) != 2 || queries[0].Name != "ListCustomerIDsBounded" || queries[1].Name != "ListCustomers" {
+	if len(queries) != 2 || queries[0].Name != "CountCustomerIDsBounded" || queries[1].Name != "ListCustomers" {
 		return nil, errors.New("production customer repository did not execute the two frozen queries exactly once")
 	}
 	return queries, nil
@@ -389,7 +389,7 @@ func validateReceipt(value report, expectedSHA, expectedMainCIURL string) error 
 		samples += item.Samples
 		planNames := map[string]bool{}
 		for _, plan := range item.Plans {
-			if (plan.Query != "ListCustomerIDsBounded" && plan.Query != "ListCustomers") || planNames[plan.Query] ||
+			if (plan.Query != "CountCustomerIDsBounded" && plan.Query != "ListCustomers") || planNames[plan.Query] ||
 				plan.ExecutionMS < 0 || plan.PlanningMS < 0 || plan.SharedHit < 0 || plan.SharedRead < 0 ||
 				len(plan.NodeTypes) == 0 || len(plan.ForbiddenScans) != 0 {
 				return errors.New("receipt query plan is invalid")

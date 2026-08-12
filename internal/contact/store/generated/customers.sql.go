@@ -11,7 +11,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const listCustomerIDsBounded = `-- name: ListCustomerIDsBounded :many
+const countCustomerIDsBounded = `-- name: CountCustomerIDsBounded :one
+SELECT count(*)::bigint
+FROM (
 SELECT c.id
 FROM customers AS c
 WHERE c.updated_at <= $1::timestamptz
@@ -59,9 +61,10 @@ WHERE c.updated_at <= $1::timestamptz
   )
 ORDER BY c.updated_at DESC, c.id DESC
 LIMIT $12::integer
+) AS bounded_customer_ids
 `
 
-type ListCustomerIDsBoundedParams struct {
+type CountCustomerIDsBoundedParams struct {
 	Watermark          pgtype.Timestamptz `json:"watermark"`
 	Keyword            pgtype.Text        `json:"keyword"`
 	OwnerStaffID       pgtype.Int8        `json:"owner_staff_id"`
@@ -76,8 +79,8 @@ type ListCustomerIDsBoundedParams struct {
 	TotalLimit         int32              `json:"total_limit"`
 }
 
-func (q *Queries) ListCustomerIDsBounded(ctx context.Context, arg ListCustomerIDsBoundedParams) ([]int64, error) {
-	rows, err := q.db.Query(ctx, listCustomerIDsBounded,
+func (q *Queries) CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countCustomerIDsBounded,
 		arg.Watermark,
 		arg.Keyword,
 		arg.OwnerStaffID,
@@ -91,22 +94,9 @@ func (q *Queries) ListCustomerIDsBounded(ctx context.Context, arg ListCustomerID
 		arg.LastInteractBefore,
 		arg.TotalLimit,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []int64{}
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const listCustomers = `-- name: ListCustomers :many

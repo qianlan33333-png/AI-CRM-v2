@@ -2513,6 +2513,42 @@ if (cd "$p3c06a2_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P3-C06A2 contract target disconnected from ci-go was accepted"
 fi
 
+p3c06c_uncapped_fixture="$(make_fixture p3-c06c-uncapped-count)"
+sed -i.bak 's/SELECT count(\*)::bigint/SELECT c.id/' \
+  "$p3c06c_uncapped_fixture/internal/contact/store/queries/customers.sql"
+rm -f "$p3c06c_uncapped_fixture/internal/contact/store/queries/customers.sql.bak"
+restage_p2s18_receipt "$p3c06c_uncapped_fixture" internal/contact/store/queries/customers.sql
+if (cd "$p3c06c_uncapped_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06C capped bounded-total aggregation removal was accepted"
+fi
+
+p3c06c_generic_plan_fixture="$(make_fixture p3-c06c-generic-plan)"
+sed -i.bak 's/pgx.QueryExecModeCacheDescribe/pgx.QueryExecModeCacheStatement/g' \
+  "$p3c06c_generic_plan_fixture/internal/contact/store/customer_query_repository.go"
+rm -f "$p3c06c_generic_plan_fixture/internal/contact/store/customer_query_repository.go.bak"
+restage_p2s18_receipt "$p3c06c_generic_plan_fixture" internal/contact/store/customer_query_repository.go
+if (cd "$p3c06c_generic_plan_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06C generic prepared-plan regression was accepted"
+fi
+
+p3c06c_runner_query_fixture="$(make_fixture p3-c06c-runner-query-name)"
+sed -i.bak 's/CountCustomerIDsBounded/ListCustomerIDsBounded/g' \
+  "$p3c06c_runner_query_fixture/cmd/aicrm-contact-perf/main.go"
+rm -f "$p3c06c_runner_query_fixture/cmd/aicrm-contact-perf/main.go.bak"
+restage_p2s18_receipt "$p3c06c_runner_query_fixture" cmd/aicrm-contact-perf/main.go
+if (cd "$p3c06c_runner_query_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06C exact count-query runner binding removal was accepted"
+fi
+
+p3c06c_description_cache_fixture="$(make_fixture p3-c06c-description-cache-zero)"
+sed -i.bak 's/capacity < 1/capacity < 0/' \
+  "$p3c06c_description_cache_fixture/internal/config/schema.go"
+rm -f "$p3c06c_description_cache_fixture/internal/config/schema.go.bak"
+restage_p2s18_receipt "$p3c06c_description_cache_fixture" internal/config/schema.go
+if (cd "$p3c06c_description_cache_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C06C disabled description cache was accepted"
+fi
+
 p3c06a1_database_fixture="$(make_fixture p3-c06a1-database-name)"
 sed -i.bak 's/performanceDatabase       = "aicrm_perf"/performanceDatabase       = "aicrm"/' \
   "$p3c06a1_database_fixture/cmd/aicrm-contact-perf-data/main.go"

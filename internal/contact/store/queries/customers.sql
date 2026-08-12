@@ -74,7 +74,9 @@ WHERE c.updated_at <= sqlc.arg(watermark)::timestamptz
 ORDER BY c.updated_at DESC, c.id DESC
 LIMIT sqlc.arg(row_limit)::integer;
 
--- name: ListCustomerIDsBounded :many
+-- name: CountCustomerIDsBounded :one
+SELECT count(*)::bigint
+FROM (
 SELECT c.id
 FROM customers AS c
 WHERE c.updated_at <= sqlc.arg(watermark)::timestamptz
@@ -121,4 +123,5 @@ WHERE c.updated_at <= sqlc.arg(watermark)::timestamptz
     OR c.last_interact_at <= sqlc.narg(last_interact_before)::timestamptz
   )
 ORDER BY c.updated_at DESC, c.id DESC
-LIMIT sqlc.arg(total_limit)::integer;
+LIMIT sqlc.arg(total_limit)::integer
+) AS bounded_customer_ids;

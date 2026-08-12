@@ -51,7 +51,7 @@ func buildComponents(role appruntime.Role, config appconfig.Root, builders compo
 
 func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
-	if err != nil {
+	if err != nil || poolConfig.ConnConfig.DescriptionCacheCapacity < 1 {
 		return nil, errInvalidWorkerDatabaseConfig
 	}
 	poolConfig.MaxConns = config.Worker.PoolMaxConns
