@@ -10,6 +10,7 @@ import (
 
 	generated "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 )
@@ -41,11 +42,15 @@ type snapshotResponse struct {
 // The returned actual document is ephemeral and is intended only for stdin comparison.
 func GenerateStageSnapshot() ([]byte, error) {
 	service := &snapshotStageService{}
-	handler, err := contacthttp.NewHandler(service)
+	stageHandler, err := contacthttp.NewHandler(service)
 	if err != nil {
 		return nil, err
 	}
-	router := generated.Handler(handler)
+	groupID, groupName, groupSort := int64(31), "Lifecycle", int32(1)
+	tagRecords := []contactapp.TagCatalogRecord{
+		{ID: 81, GroupID: &groupID, GroupName: &groupName, GroupSortOrder: &groupSort, Name: "Priority", SortOrder: 6},
+		{ID: 82, Name: "Ungrouped", SortOrder: 7},
+	}
 	cases := []struct {
 		operationID string
 		caseID      string
@@ -53,13 +58,23 @@ func GenerateStageSnapshot() ([]byte, error) {
 		path        string
 		body        string
 		capability  authport.Capability
+		tags        snapshotTagApplication
 	}{
 		{operationID: "createStage", caseID: "success", method: http.MethodPost, path: "/api/v1/stages", body: `{"name":"Qualified","sort_order":2,"config":{"color":"blue"}}`, capability: authport.CapabilityStagesWrite},
 		{operationID: "listStages", caseID: "success", method: http.MethodGet, path: "/api/v1/stages", body: `null`, capability: authport.CapabilityStagesRead},
+		{operationID: "listTags", caseID: "empty", method: http.MethodGet, path: "/api/v1/tags", body: `null`, capability: authport.CapabilityCustomersRead, tags: snapshotTagApplication{records: []contactapp.TagCatalogRecord{}}},
+		{operationID: "listTags", caseID: "success", method: http.MethodGet, path: "/api/v1/tags", body: `null`, capability: authport.CapabilityCustomersRead, tags: snapshotTagApplication{records: tagRecords}},
+		{operationID: "listTags", caseID: "unavailable", method: http.MethodGet, path: "/api/v1/tags", body: `null`, capability: authport.CapabilityCustomersRead, tags: snapshotTagApplication{err: contactapp.ErrTagCatalogUnavailable}},
 		{operationID: "renameStage", caseID: "success", method: http.MethodPatch, path: "/api/v1/stages/101", body: `{"name":"Customer"}`, capability: authport.CapabilityStagesWrite},
 	}
 	document := snapshotDocument{Version: 1, Cases: make([]snapshotCase, 0, len(cases))}
 	for _, item := range cases {
+		tagHandler, tagErr := contacthttp.NewTagCatalogHandler(item.tags)
+		if tagErr != nil {
+			return nil, tagErr
+		}
+		handler := &snapshotContactHandler{Handler: stageHandler, tags: tagHandler}
+		router := generated.Handler(handler)
 		requestBody := bytes.NewBuffer(nil)
 		if item.body != "null" {
 			requestBody.WriteString(item.body)
@@ -88,6 +103,24 @@ func GenerateStageSnapshot() ([]byte, error) {
 		})
 	}
 	return json.Marshal(document)
+}
+
+type snapshotContactHandler struct {
+	*contacthttp.Handler
+	tags *contacthttp.TagCatalogHandler
+}
+
+func (handler *snapshotContactHandler) ListTags(writer http.ResponseWriter, request *http.Request) {
+	handler.tags.ListTags(writer, request)
+}
+
+type snapshotTagApplication struct {
+	records []contactapp.TagCatalogRecord
+	err     error
+}
+
+func (application snapshotTagApplication) List(context.Context) ([]contactapp.TagCatalogRecord, error) {
+	return application.records, application.err
 }
 
 type snapshotStageService struct{ stage contactport.Stage }

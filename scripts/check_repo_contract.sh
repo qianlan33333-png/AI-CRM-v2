@@ -784,7 +784,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  e5b1e51c092e94ebf98b8b16454c486ea458602d7ac58d19e89ec6b6d9c8a5c6
+  b12c7cd3d62af6de8ea1be60018be5c0c474a037560cc1b2cdcc51b240a23575
 verify_index_sha256 .github/workflows/application-go.yml \
   b83adc99410fc8d7f152e70eca2dd6ab3d8d4c30cde2e1d14d8ea84ac4a5f97c
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -798,11 +798,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  eca21afcbf8c3dfefcc2cddf41a2d15763308895076890d5e87947d50803a130
+  fc34916f76de0e05e413a043e05916685e5c2202070fb609693d2a56054e4c72
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  496a74e4366c381ad56597ece652efbba62f464e473af6bf97a36615c5421f78
+  a2349cdc5a0a7de9b45dc99d723bc0200323350b189ee8aebb2446c8e720e69c
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -942,7 +942,7 @@ verify_index_sha256 tools/snapshot-gate/main.go \
 verify_index_sha256 tools/snapshot-gate/main_test.go \
   77771f548652fc2ffe556b8f8fd31a8f394cc0e90d3e57cb7014711894a29d9b
 verify_index_sha256 acceptance/snapshots/catalog.v1.json \
-  e6fe9ca10b662c11804d7715ccd847a0b2826652b22237768d5d292e5bba6d62
+  b15b07867fb2f242cc02943b736e3a41d1f1f910dae8db864ec927ca8120e267
 verify_index_sha256 tools/legacy-route-export/main.go \
   a7734a3207ec6e7a58c83a397dc6300fe262e5430b03c12b488262dbc126954e
 verify_index_sha256 tools/legacy-route-export/main_test.go \
@@ -992,7 +992,7 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  be1077aca278d582babce70b4f12cc4b2e78e363efb55c6b2bdd6040f4b073b8
+  c779422a3cd0e3afef9d2588d18c54be419dcdf7b3999ba9744d95f59c2f5892
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
@@ -1000,11 +1000,11 @@ verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
 verify_index_sha256 internal/api/generated/server.gen.go \
   8d893a61822a423198e81d12b007f13ec1844b19ef129677a389203aa9e0fd42
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
-  95f8fd7ad3331a6fa7433c334b170f0cb111e433ffc6755a49149bebda88fd7b
+  cac09619a1ca344547888d2186543606c7a83b9ab9977939eb1df4357b707ed3
 verify_index_sha256 tools/openapi-contract/main.go \
-  bd3e6cdae992ded3e2119bc3e9b532c804b6273845a2f97313c2a1dcaaccbd16
+  58e12aaa8019588e47ddfd93a3acca8c8036ff394167746c601faa7b0b7908b2
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  1f9bb4a30bdf02bfbaf48573b31f596e1287c6f6a287c28649583ac2751ac0bd
+  19ce525ef7c55b448ba62730bb5eed62ee32bc537fc3ada3947b1d5db2ea9922
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
   231f4300b4f248fe902ab5ea77a66636776e7544738e8fbad3408e11b9a7f15a
 verify_index_sha256 acceptance/p1s11/doc.go \
@@ -1154,7 +1154,7 @@ verify_index_sha256 internal/contact/store/queries/tags.sql \
 verify_index_sha256 internal/contact/store/generated/tags.sql.go \
   e72f95ac8737ecb83ca11055a9e1384efb70855a0daa6056672f58602e9425bf
 verify_index_sha256 docs/execution/slices/P3-C02E.md \
-  289534e34288dae21fb8d97e86a9c4956e5f7d5ade672802ae2a39702a282c91
+  c12efe4184fa1bd31f614057a0b8caed2c41f5c8d4f04514f64dc513a39486ad
 verify_index_sha256 docs/evidence/slices/P3-C02E-sqlc-store.md \
   d6c0e1ddb934ccf5a20eb9c14b55fbe1155bb6f0d11ee62baf87d610d1271d7e
 verify_index_sha256 docs/evidence/slices/P3-C02E-service-tests.md \
@@ -1398,9 +1398,9 @@ verify_index_sha256 acceptance/p2s16/doc.go \
 verify_index_sha256 acceptance/p2s16/csrf_integration_test.go \
   3091eb04593e0277076ca5aaa74f44023d2b0cbe591e0ceba9e4b2067f046bba
 verify_index_sha256 acceptance/p2s16/snapshot.go \
-  f2ca9b322bc23e4738891fc8e8a7bb840b362852d2d7f8deb381236744b6d852
+  4269cb5cf53237180cd6db8241b2a389b12e0a094349a5300372189ee56e1291
 verify_index_sha256 acceptance/p2s16/snapshot_test.go \
-  0e6cdd93bd1c110b2e53fb932c3ce6afe089fbb507aa054902c2d0f0ccd918f6
+  8fa2a8feda9ebda657e0e72ba7e0cc1bfaec56b8a6348d7f5751d5e59d28659a
 verify_index_sha256 acceptance/p2s16/snapshotgen/main.go \
   701d151613f783b461d801ccb1a34824b84fb6f701e1b7d190c00bed56707fe5
 verify_index_sha256 internal/contact/app/stage_service.go \
@@ -1448,7 +1448,7 @@ verify_index_sha256 acceptance/p2s01r/uow_integration_test.go \
 verify_index_sha256 scripts/check_feature_matrix_contract.sh \
   6aeeed7538c430b1d18861fade94ba0428fac5b3c2c2f6493e51bea08e3d178e
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
-  8b709c1b9aa3e511ada07889889a34f9c8be0a932dcea36e3e96490d371bc6f0
+  955d136c6cb6bf873127e78dcd4d137ecd19e11972fffb30af85260150ac7e3b
 verify_index_sha256 docs/adr/ADR-001.md \
   e4da265cf5ffd9962d1f77f2410538e09e8b41d1cb37c1584c3d57265480e28d
 verify_index_sha256 docs/adr/ADR-010.md \
@@ -1464,7 +1464,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   10b7cfa37bcf19371284ded7841a2a9cd5dbd25cdbd9689c81f4cfc815dc206a
 verify_index_sha256 scripts/test_repo_contract.sh \
-  8b8906ac48eb71d80c3a009e96cfae2c7bf693b077ac23dfdc02b2623f512526
+  da9878b0abd3a3b31ed2a9270b9990636e2fa4b08dbf2ce062654109c86a1f27
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -2462,6 +2462,25 @@ grep -Fq 'contactstore.NewTagCatalogRepository()' <<<"$p3c02e_api" ||
   fail "P3-C02E runtime lost tag catalog repository wiring"
 grep -Fq '{http.MethodGet, "/api/v1/tags", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListTags)}' <<<"$p3c02e_api" ||
   fail "P3-C02E runtime route lost customers.read authorization"
+
+p3c02e_snapshot="$(git show :acceptance/snapshots/catalog.v1.json)"
+[[ "$(grep -Fc '"operation_id": "listTags"' <<<"$p3c02e_snapshot")" -eq 3 ]] ||
+  fail "P3-C02E listTags must have normal, boundary, and error handler snapshots"
+grep -Fq '"path": "/api/v1/tags"' <<<"$p3c02e_snapshot" ||
+  fail "P3-C02E listTags snapshot lost its generated route"
+p3c02e_snapshot_generator="$(git show :acceptance/p2s16/snapshot.go)"
+grep -Fq 'contacthttp.NewTagCatalogHandler(item.tags)' <<<"$p3c02e_snapshot_generator" ||
+  fail "P3-C02E snapshot must execute the real tag catalog handler"
+grep -Fq 'operationID: "listTags"' <<<"$p3c02e_snapshot_generator" ||
+  fail "P3-C02E snapshot generator lost the listTags operation"
+
+p3c02e_openapi="$(git show :api/openapi.yaml)"
+grep -Fq 'x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }' <<<"$(sed -n '/operationId: listTags/,/\/api\/v1\/stages:/p' <<<"$p3c02e_openapi")" ||
+  fail "P3-C02E listTags OpenAPI must preserve the existing sales owner_staff authorization model"
+for response in '"403": { $ref: "#/components/responses/Forbidden" }' '"503": { $ref: "#/components/responses/ServiceUnavailable" }'; do
+  grep -Fq "$response" <<<"$(sed -n '/operationId: listTags/,/\/api\/v1\/stages:/p' <<<"$p3c02e_openapi")" ||
+    fail "P3-C02E listTags OpenAPI lost required response: $response"
+done
 
 p3c02e_acceptance="$(git show :acceptance/p3c02e/tag_catalog_integration_test.go)"
 grep -Fq 'GRANT SELECT (id, group_id, name, sort_order) ON acceptance_fixtures.tags' <<<"$p3c02e_acceptance" ||

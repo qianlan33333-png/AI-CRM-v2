@@ -2393,6 +2393,35 @@ if (cd "$incomplete_group_p3c02e" && scripts/check_repo_contract.sh >/dev/null 2
   fail "P3-C02E incomplete group identity and sort triple was accepted"
 fi
 
+for mutation in sales-global missing-403 missing-503; do
+  p3c02e_openapi_fixture="$(make_fixture "p3-c02e-openapi-${mutation}")"
+  case "$mutation" in
+    sales-global)
+      sed -i.bak '/operationId: listTags/,/\/api\/v1\/stages:/ s/sales: owner_staff/sales: global/' \
+        "$p3c02e_openapi_fixture/api/openapi.yaml"
+      ;;
+    missing-403|missing-503)
+      response_code="${mutation#missing-}"
+      sed -i.bak "/operationId: listTags/,/\\/api\\/v1\\/stages:/ {/\"${response_code}\":/d;}" \
+        "$p3c02e_openapi_fixture/api/openapi.yaml"
+      ;;
+  esac
+  rm -f "$p3c02e_openapi_fixture/api/openapi.yaml.bak"
+  restage_p2s18_receipt "$p3c02e_openapi_fixture" api/openapi.yaml
+  if (cd "$p3c02e_openapi_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-C02E OpenAPI contract regression was accepted: $mutation"
+  fi
+done
+
+missing_p3c02e_snapshot="$(make_fixture p3-c02e-missing-list-tags-snapshot)"
+sed -i.bak 's/"operation_id": "listTags"/"operation_id": "missingTags"/' \
+  "$missing_p3c02e_snapshot/acceptance/snapshots/catalog.v1.json"
+rm -f "$missing_p3c02e_snapshot/acceptance/snapshots/catalog.v1.json.bak"
+git -C "$missing_p3c02e_snapshot" add acceptance/snapshots/catalog.v1.json
+if (cd "$missing_p3c02e_snapshot" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C02E runtime route without a listTags snapshot was accepted"
+fi
+
 for file_path in \
   migrations/00006_customer_events.sql \
   acceptance/fixtures/cmd/validate-database-url/main.go \

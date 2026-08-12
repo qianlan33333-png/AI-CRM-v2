@@ -1,6 +1,8 @@
 {
   "version": 1,
-  "ignore_paths": [],
+  "ignore_paths": [
+    "/cases/listTags/unavailable/response/body/request_id"
+  ],
   "cases": [
     {
       "operation_id": "createStage",
@@ -49,6 +51,66 @@
               }
             }
           ]
+        }
+      }
+    },
+    {
+      "operation_id": "listTags",
+      "case_id": "empty",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/tags",
+        "body": null
+      },
+      "expected_response": {
+        "status": 200,
+        "body": {
+          "items": []
+        }
+      }
+    },
+    {
+      "operation_id": "listTags",
+      "case_id": "success",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/tags",
+        "body": null
+      },
+      "expected_response": {
+        "status": 200,
+        "body": {
+          "items": [
+            {
+              "group_id": 31,
+              "group_name": "Lifecycle",
+              "id": 81,
+              "name": "Priority",
+              "sort_order": 6
+            },
+            {
+              "id": 82,
+              "name": "Ungrouped",
+              "sort_order": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "operation_id": "listTags",
+      "case_id": "unavailable",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/tags",
+        "body": null
+      },
+      "expected_response": {
+        "status": 503,
+        "body": {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "message": "A required dependency is unavailable.",
+          "request_id": "8e3275a6c7292009ec354771d201fe4e"
         }
       }
     },
