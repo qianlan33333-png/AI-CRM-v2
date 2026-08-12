@@ -347,7 +347,8 @@ function parseTag(value: unknown): CustomerTag | undefined {
   const hasGroupName = typeof value.group_name === "string";
   if (
     hasGroupID !== hasGroupName ||
-    (hasGroupName && value.group_name.trim().length === 0)
+    (typeof value.group_name === "string" &&
+      value.group_name.trim().length === 0)
   ) {
     return undefined;
   }

@@ -69,7 +69,7 @@ function totalLabel(page: CustomerListPage): string {
     : `共 ${page.total.toLocaleString("en-US")} 名客户`;
 }
 
-function CustomerRows({
+export function CustomerRows({
   items,
   onCustomerNavigate,
 }: {

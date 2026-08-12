@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   CustomerListContent,
   CustomerListPage,
+  CustomerRows,
   type CustomerListScreen,
 } from "./customers-ui";
 import type { CustomerTransport } from "./customers";
@@ -109,12 +110,9 @@ describe("CustomerListContent states", () => {
   it("links every OneID to its exact detail route with one accessible click callback", () => {
     const onCustomerNavigate: React.MouseEventHandler<HTMLAnchorElement> =
       vi.fn();
-    const content = CustomerListContent({
-      role: "sales",
-      screen: { kind: "ready", loadingMore: false, page },
+    const content = CustomerRows({
+      items: page.items,
       onCustomerNavigate,
-      onLoadMore: vi.fn(),
-      onRetry: vi.fn(),
     });
     const html = renderToStaticMarkup(content);
     const link = findAnchor(content, "/customers/7");
