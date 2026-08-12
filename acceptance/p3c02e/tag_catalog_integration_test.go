@@ -46,7 +46,7 @@ func TestTagCatalogUsesStableOrderWithoutWeComTagColumn(t *testing.T) {
 	assertWeComTagColumnForbidden(t, ctx, fixture)
 
 	if _, err = fixture.Pool().Exec(ctx, `TRUNCATE acceptance_fixtures.tags, acceptance_fixtures.tag_groups RESTART IDENTITY CASCADE`); err != nil {
-		t.Fatalf("truncate tags: %v", err)
+		t.Fatalf("clear tag fixtures: %v", err)
 	}
 	empty, err := service.List(ctx)
 	if err != nil || empty == nil || len(empty) != 0 {

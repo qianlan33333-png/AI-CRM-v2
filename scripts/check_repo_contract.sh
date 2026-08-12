@@ -1136,7 +1136,7 @@ verify_index_sha256 docs/evidence/slices/P3-C02D-handler-tests.md \
 verify_index_sha256 acceptance/p3c02e/doc.go \
   1c788e51d1792aabf8ef7c4285025aa67fe2ded7b37b6baaf2516836ba58268f
 verify_index_sha256 acceptance/p3c02e/tag_catalog_integration_test.go \
-  addc6bc129a31f12c7866a6bea6acdc90e3379e93e7eef4ca29a0459e0122c9c
+  2440a19758261292c593edf3f8b733129b749b0ab0cfc035545762882fb83dce
 verify_index_sha256 internal/contact/app/tag_catalog_service.go \
   70dd86af59d936d87a858a3cea0b81d3d0f9d4857ef322c7756a34b30e3b094b
 verify_index_sha256 internal/contact/app/tag_catalog_service_test.go \
