@@ -11,6 +11,10 @@ import (
 )
 
 type Querier interface {
+	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
+	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
+	InsertSegmentMembersForRefresh(ctx context.Context, arg InsertSegmentMembersForRefreshParams) error
+	LockSegmentDefinitionForRefresh(ctx context.Context, segmentID int64) ([]byte, error)
 	SelectSegmentAddedAfter(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentAddedBefore(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentChannelAny(ctx context.Context, channelIds []int64) ([]int64, error)
