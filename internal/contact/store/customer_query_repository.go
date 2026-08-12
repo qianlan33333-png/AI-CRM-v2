@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -13,7 +14,10 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
-var errInvalidCustomerListQuery = errors.New("invalid customer list query")
+var (
+	errInvalidCustomerListQuery    = errors.New("invalid customer list query")
+	errInvalidCustomerBoundedTotal = errors.New("invalid customer bounded total")
+)
 
 // CustomerQueryRepository serves contact-owned customer list reads through the
 // transaction-bound unit-of-work context.
@@ -34,11 +38,14 @@ func (*CustomerQueryRepository) ListCustomers(ctx context.Context, query contact
 	if err != nil {
 		return contactapp.CustomerListStoreResult{}, err
 	}
-	queries := contactdb.New(tx)
+	queries := contactdb.New(customerQueryDBTX{Tx: tx})
 
-	boundedIDs, err := queries.ListCustomerIDsBounded(ctx, listCustomerIDsBoundedParams(query))
+	boundedTotal, err := queries.CountCustomerIDsBounded(ctx, countCustomerIDsBoundedParams(query))
 	if err != nil {
 		return contactapp.CustomerListStoreResult{}, err
+	}
+	if boundedTotal < 0 || boundedTotal > contactapp.CustomerListExactTotalCap+1 {
+		return contactapp.CustomerListStoreResult{}, errInvalidCustomerBoundedTotal
 	}
 	rows, err := queries.ListCustomers(ctx, listCustomersParams(query))
 	if err != nil {
@@ -55,9 +62,22 @@ func (*CustomerQueryRepository) ListCustomers(ctx context.Context, query contact
 	}
 	return contactapp.CustomerListStoreResult{
 		Items:        items,
-		BoundedTotal: int64(len(boundedIDs)),
+		BoundedTotal: boundedTotal,
 		HasMore:      hasMore,
 	}, nil
+}
+
+// customerQueryDBTX keeps these parameter-sensitive optional-filter queries
+// on custom plans. A generic plan cannot prove the active-only predicates that
+// make the contact partial indexes usable.
+type customerQueryDBTX struct{ pgx.Tx }
+
+func (db customerQueryDBTX) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	return db.Tx.Query(ctx, sql, append([]any{pgx.QueryExecModeCacheDescribe}, args...)...)
+}
+
+func (db customerQueryDBTX) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	return db.Tx.QueryRow(ctx, sql, append([]any{pgx.QueryExecModeCacheDescribe}, args...)...)
 }
 
 func validateCustomerListQuery(query contactapp.CustomerListQuery) error {
@@ -104,8 +124,8 @@ func listCustomersParams(query contactapp.CustomerListQuery) contactdb.ListCusto
 	}
 }
 
-func listCustomerIDsBoundedParams(query contactapp.CustomerListQuery) contactdb.ListCustomerIDsBoundedParams {
-	return contactdb.ListCustomerIDsBoundedParams{
+func countCustomerIDsBoundedParams(query contactapp.CustomerListQuery) contactdb.CountCustomerIDsBoundedParams {
+	return contactdb.CountCustomerIDsBoundedParams{
 		Watermark:          nullableTimestamp(&query.Watermark),
 		Keyword:            nullableKeyword(query.Keyword),
 		OwnerStaffID:       nullableInt64(query.OwnerStaffID),

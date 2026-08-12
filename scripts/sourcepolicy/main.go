@@ -98,6 +98,7 @@ func checkGo(path, rel string) error {
 	}
 	module := sourceModule(rel)
 	allowDirectDatabase := performanceAcceptanceCommand(rel)
+	allowedCustomerQuerySelectors := customerQueryPlanSelectors(file, rel)
 	aliases := map[string]string{}
 	for _, spec := range file.Imports {
 		value, err := strconv.Unquote(spec.Path.Value)
@@ -140,7 +141,7 @@ func checkGo(path, rel string) error {
 				result = fmt.Errorf("constructed SQL forbidden in %s", rel)
 			}
 		case *ast.SelectorExpr:
-			result = checkSelector(item, aliases, module, rel, allowDirectDatabase)
+			result = checkSelector(item, aliases, module, rel, allowDirectDatabase, allowedCustomerQuerySelectors[item.Pos()])
 		}
 		return result == nil
 	})
@@ -180,7 +181,7 @@ func constantString(expr ast.Expr) (string, bool) {
 	return "", false
 }
 
-func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module, rel string, allowDirectDatabase bool) error {
+func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module, rel string, allowDirectDatabase, allowCustomerQueryPlan bool) error {
 	if receiver, ok := selector.X.(*ast.Ident); ok {
 		path := aliases[receiver.Name]
 		if (path == "os" || path == "syscall") && map[string]bool{"Getenv": true, "LookupEnv": true, "Environ": true, "ExpandEnv": true}[selector.Sel.Name] && module != "config" {
@@ -194,10 +195,45 @@ func checkSelector(selector *ast.SelectorExpr, aliases map[string]string, module
 		return nil
 	}
 	if map[string]bool{"Exec": true, "ExecContext": true, "Query": true, "QueryContext": true, "QueryRow": true, "QueryRowContext": true, "Prepare": true, "PrepareContext": true, "CopyFrom": true, "SendBatch": true}[selector.Sel.Name] {
-		if allowDirectDatabase {
+		if allowDirectDatabase || allowCustomerQueryPlan {
 			return nil
 		}
 		return fmt.Errorf("direct database call forbidden in %s: %s", rel, selector.Sel.Name)
 	}
 	return nil
+}
+
+func customerQueryPlanSelectors(file *ast.File, rel string) map[token.Pos]bool {
+	result := map[token.Pos]bool{}
+	if rel != "internal/contact/store/customer_query_repository.go" {
+		return result
+	}
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*ast.FuncDecl)
+		if !ok || function.Recv == nil || len(function.Recv.List) != 1 || function.Name == nil ||
+			(function.Name.Name != "Query" && function.Name.Name != "QueryRow") {
+			continue
+		}
+		receiver := function.Recv.List[0]
+		receiverType, ok := receiver.Type.(*ast.Ident)
+		if !ok || receiverType.Name != "customerQueryDBTX" || len(receiver.Names) != 1 || receiver.Names[0].Name != "db" {
+			continue
+		}
+		ast.Inspect(function.Body, func(node ast.Node) bool {
+			selector, ok := node.(*ast.SelectorExpr)
+			if !ok || selector.Sel.Name != function.Name.Name {
+				return true
+			}
+			embedded, ok := selector.X.(*ast.SelectorExpr)
+			if !ok || embedded.Sel.Name != "Tx" {
+				return true
+			}
+			identifier, ok := embedded.X.(*ast.Ident)
+			if ok && identifier.Obj != nil && identifier.Obj == receiver.Names[0].Obj {
+				result[selector.Pos()] = true
+			}
+			return true
+		})
+	}
+	return result
 }

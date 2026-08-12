@@ -158,7 +158,23 @@ func validDatabaseURL(value string) bool {
 	if err != nil || (parsed.Scheme != "postgres" && parsed.Scheme != "postgresql") {
 		return false
 	}
-	return parsed.Hostname() != "" && parsed.Path != "" && parsed.Path != "/" && parsed.Fragment == "" && parsed.Opaque == ""
+	if parsed.Hostname() == "" || parsed.Path == "" || parsed.Path == "/" || parsed.Fragment != "" || parsed.Opaque != "" {
+		return false
+	}
+	query, err := url.ParseQuery(parsed.RawQuery)
+	if err != nil {
+		return false
+	}
+	if capacities, present := query["description_cache_capacity"]; present {
+		if len(capacities) != 1 {
+			return false
+		}
+		capacity, err := strconv.Atoi(capacities[0])
+		if err != nil || capacity < 1 {
+			return false
+		}
+	}
+	return true
 }
 
 func validListenAddress(value string) bool {

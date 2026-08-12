@@ -15,25 +15,24 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
-func TestCustomerQuerySQLUsesBoundedIDsWithoutCount(t *testing.T) {
+func TestCustomerQuerySQLCountsOnlyTheCappedBoundedIDs(t *testing.T) {
 	contents, err := os.ReadFile("../../internal/contact/store/queries/customers.sql")
 	if err != nil {
 		t.Fatalf("read customer queries: %v", err)
 	}
 	querySQL := string(contents)
-	if strings.Contains(strings.ToUpper(querySQL), "COUNT") {
-		t.Fatal("customer query SQL must not use COUNT")
-	}
-	boundedStart := strings.Index(querySQL, "-- name: ListCustomerIDsBounded :many")
+	boundedStart := strings.Index(querySQL, "-- name: CountCustomerIDsBounded :one")
 	if boundedStart < 0 {
 		t.Fatal("bounded customer-id query is missing")
 	}
 	boundedSQL := querySQL[boundedStart:]
 	for _, required := range []string{
-		"SELECT c.id",
+		"SELECT count(*)::bigint",
+		"FROM (\nSELECT c.id",
 		"c.updated_at <= sqlc.arg(watermark)::timestamptz",
 		"ORDER BY c.updated_at DESC, c.id DESC",
 		"LIMIT sqlc.arg(total_limit)::integer",
+		") AS bounded_customer_ids",
 	} {
 		if !strings.Contains(boundedSQL, required) {
 			t.Fatalf("bounded customer-id query missing %q", required)
@@ -124,11 +123,23 @@ INSERT INTO acceptance_fixtures.customer_tags (customer_id, tag_id) VALUES (1, 4
 		_, txErr = tx.Exec(txCtx, `
 INSERT INTO acceptance_fixtures.customers (id, name, is_deleted, extra, created_at, updated_at)
 SELECT id, 'bulk-' || id, false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z'
-FROM generate_series(100, 10101) AS id`)
+FROM generate_series(100, 10096) AS id`)
 		if txErr != nil {
 			return txErr
 		}
 		bounded, listErr := repository.ListCustomers(txCtx, validQuery())
+		if listErr != nil || bounded.BoundedTotal != contactapp.CustomerListExactTotalCap {
+			t.Fatalf("bounded total = %d, %v, want exact cap", bounded.BoundedTotal, listErr)
+		}
+		_, txErr = tx.Exec(txCtx, `
+INSERT INTO acceptance_fixtures.customers (id, name, is_deleted, extra, created_at, updated_at)
+VALUES
+  (10097, 'over-cap-10097', false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z'),
+  (10098, 'over-cap-10098', false, '{}', '2026-01-01T00:00:00Z', '2026-08-11T00:00:00Z')`)
+		if txErr != nil {
+			return txErr
+		}
+		bounded, listErr = repository.ListCustomers(txCtx, validQuery())
 		if listErr != nil || bounded.BoundedTotal != contactapp.CustomerListExactTotalCap+1 {
 			t.Fatalf("bounded total = %d, %v, want cap+1", bounded.BoundedTotal, listErr)
 		}

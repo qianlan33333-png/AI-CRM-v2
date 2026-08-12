@@ -375,7 +375,7 @@ func validReceipt() report {
 			Limit: item.limit, Samples: requiredSamples, P50MS: 3, P95MS: 4, MaxMS: 5,
 			Matched: int(item.limit), HasMore: true,
 			Plans: []planEvidence{
-				{Query: "ListCustomerIDsBounded", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Only Scan"}, ForbiddenScans: []string{}, Explain: rawPlan("Index Only Scan")},
+				{Query: "CountCustomerIDsBounded", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Only Scan"}, ForbiddenScans: []string{}, Explain: rawPlan("Index Only Scan")},
 				{Query: "ListCustomers", ExecutionMS: 1, PlanningMS: 0.1, NodeTypes: []string{"Index Scan"}, ForbiddenScans: []string{}, Explain: rawPlan("Index Scan")},
 			},
 		})

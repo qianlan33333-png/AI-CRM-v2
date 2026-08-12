@@ -69,7 +69,7 @@ func TestCustomerListParamsUseNullForEmptyKeywordAndBoundedLimits(t *testing.T) 
 		t.Fatal("empty keyset must keep both SQL parameters NULL")
 	}
 
-	boundedParams := listCustomerIDsBoundedParams(query)
+	boundedParams := countCustomerIDsBoundedParams(query)
 	if boundedParams.Keyword.Valid || boundedParams.TotalLimit != int32(contactapp.CustomerListExactTotalCap+1) {
 		t.Fatalf("bounded params = %#v, want NULL keyword and cap+1", boundedParams)
 	}
@@ -109,7 +109,7 @@ func TestCustomerRecordFromRowCopiesExtra(t *testing.T) {
 func TestCustomerQueryRepositoryTrimsLimitPlusOneAndUsesBoundedTotal(t *testing.T) {
 	at := time.Date(2026, time.August, 12, 10, 0, 0, 0, time.UTC)
 	tx := &customerQueryTx{
-		boundedIDs: make([]int64, int(contactapp.CustomerListExactTotalCap+1)),
+		boundedTotal: contactapp.CustomerListExactTotalCap + 1,
 		rows: []contactdb.Customer{
 			customerRow(3, at, `{"position":1}`),
 			customerRow(2, at.Add(-time.Minute), `{"position":2}`),
@@ -138,6 +138,9 @@ func TestCustomerQueryRepositoryTrimsLimitPlusOneAndUsesBoundedTotal(t *testing.
 	if tx.commits != 1 || tx.rollbacks != 0 {
 		t.Fatalf("transaction calls = commit:%d rollback:%d, want 1/0", tx.commits, tx.rollbacks)
 	}
+	if tx.customPlanQueries != 2 {
+		t.Fatalf("custom-plan query calls = %d, want bounded total and page query", tx.customPlanQueries)
+	}
 	if got := tx.listArgs[13].(int32); got != query.Limit+1 {
 		t.Fatalf("list row limit = %d, want %d", got, query.Limit+1)
 	}
@@ -150,6 +153,34 @@ func TestCustomerQueryRepositoryTrimsLimitPlusOneAndUsesBoundedTotal(t *testing.
 	tx.rows[0].Extra[2] = 'X'
 	if string(result.Items[0].Extra) != `{"position":1}` {
 		t.Fatalf("item Extra = %s, want an independent JSON copy", result.Items[0].Extra)
+	}
+}
+
+func TestCustomerQueryRepositoryRejectsInvalidBoundedTotalShape(t *testing.T) {
+	for _, boundedTotal := range []int64{-1, contactapp.CustomerListExactTotalCap + 2} {
+		tx := &customerQueryTx{boundedTotal: boundedTotal, rows: []contactdb.Customer{}}
+		uow := platformstore.NewUnitOfWork(&customerQueryBeginner{tx: tx})
+		err := uow.Within(context.Background(), func(txCtx context.Context) error {
+			_, listErr := NewCustomerQueryRepository().ListCustomers(txCtx, validCustomerListQuery())
+			return listErr
+		})
+		if !errors.Is(err, errInvalidCustomerBoundedTotal) {
+			t.Fatalf("bounded total %d error = %v, want fail-closed bounded-total error", boundedTotal, err)
+		}
+	}
+}
+
+func TestCustomerQueryRepositoryPreservesExactTenThousandTotal(t *testing.T) {
+	tx := &customerQueryTx{boundedTotal: contactapp.CustomerListExactTotalCap, rows: []contactdb.Customer{}}
+	uow := platformstore.NewUnitOfWork(&customerQueryBeginner{tx: tx})
+	var result contactapp.CustomerListStoreResult
+	err := uow.Within(context.Background(), func(txCtx context.Context) error {
+		var listErr error
+		result, listErr = NewCustomerQueryRepository().ListCustomers(txCtx, validCustomerListQuery())
+		return listErr
+	})
+	if err != nil || result.BoundedTotal != contactapp.CustomerListExactTotalCap {
+		t.Fatalf("bounded total = %d, error = %v, want exact cap", result.BoundedTotal, err)
 	}
 }
 
@@ -179,12 +210,13 @@ func (beginner *customerQueryBeginner) BeginTx(context.Context, pgx.TxOptions) (
 }
 
 type customerQueryTx struct {
-	boundedIDs  []int64
-	rows        []contactdb.Customer
-	boundedArgs []any
-	listArgs    []any
-	commits     int
-	rollbacks   int
+	boundedTotal      int64
+	rows              []contactdb.Customer
+	boundedArgs       []any
+	listArgs          []any
+	commits           int
+	rollbacks         int
+	customPlanQueries int
 }
 
 func (*customerQueryTx) Begin(context.Context) (pgx.Tx, error) {
@@ -210,10 +242,11 @@ func (*customerQueryTx) Exec(context.Context, string, ...any) (pgconn.CommandTag
 	return pgconn.CommandTag{}, errors.New("not implemented")
 }
 func (tx *customerQueryTx) Query(_ context.Context, statement string, args ...any) (pgx.Rows, error) {
+	args, err := tx.requireCustomPlan(args)
+	if err != nil {
+		return nil, err
+	}
 	switch {
-	case strings.Contains(statement, "-- name: ListCustomerIDsBounded :many"):
-		tx.boundedArgs = append([]any(nil), args...)
-		return &customerIDRows{ids: tx.boundedIDs}, nil
 	case strings.Contains(statement, "-- name: ListCustomers :many"):
 		tx.listArgs = append([]any(nil), args...)
 		return &customerQueryRows{rows: tx.rows}, nil
@@ -221,43 +254,46 @@ func (tx *customerQueryTx) Query(_ context.Context, statement string, args ...an
 		return nil, errors.New("unexpected query")
 	}
 }
-func (*customerQueryTx) QueryRow(context.Context, string, ...any) pgx.Row { return nil }
-func (*customerQueryTx) Conn() *pgx.Conn                                  { return nil }
-
-type customerIDRows struct {
-	ids     []int64
-	index   int
-	current int64
-}
-
-func (*customerIDRows) Close()                        {}
-func (*customerIDRows) Err() error                    { return nil }
-func (*customerIDRows) CommandTag() pgconn.CommandTag { return pgconn.CommandTag{} }
-func (*customerIDRows) FieldDescriptions() []pgconn.FieldDescription {
-	return nil
-}
-func (rows *customerIDRows) Next() bool {
-	if rows.index >= len(rows.ids) {
-		return false
+func (tx *customerQueryTx) QueryRow(_ context.Context, statement string, args ...any) pgx.Row {
+	args, err := tx.requireCustomPlan(args)
+	if err != nil {
+		return customerBoundedTotalRow{err: err}
 	}
-	rows.current = rows.ids[rows.index]
-	rows.index++
-	return true
+	if !strings.Contains(statement, "-- name: CountCustomerIDsBounded :one") {
+		return customerBoundedTotalRow{err: errors.New("unexpected query row")}
+	}
+	tx.boundedArgs = append([]any(nil), args...)
+	return customerBoundedTotalRow{total: tx.boundedTotal}
 }
-func (rows *customerIDRows) Scan(dest ...any) error {
+
+func (tx *customerQueryTx) requireCustomPlan(args []any) ([]any, error) {
+	if len(args) == 0 || args[0] != pgx.QueryExecModeCacheDescribe {
+		return nil, errors.New("customer query did not require custom planning")
+	}
+	tx.customPlanQueries++
+	return args[1:], nil
+}
+func (*customerQueryTx) Conn() *pgx.Conn { return nil }
+
+type customerBoundedTotalRow struct {
+	total int64
+	err   error
+}
+
+func (row customerBoundedTotalRow) Scan(dest ...any) error {
+	if row.err != nil {
+		return row.err
+	}
 	if len(dest) != 1 {
-		return errors.New("unexpected customer id scan destination count")
+		return errors.New("unexpected bounded total scan destination count")
 	}
 	target, ok := dest[0].(*int64)
 	if !ok {
-		return errors.New("unexpected customer id scan type")
+		return errors.New("unexpected bounded total scan type")
 	}
-	*target = rows.current
+	*target = row.total
 	return nil
 }
-func (*customerIDRows) Values() ([]any, error) { return nil, errors.New("not implemented") }
-func (*customerIDRows) RawValues() [][]byte    { return nil }
-func (*customerIDRows) Conn() *pgx.Conn        { return nil }
 
 type customerQueryRows struct {
 	rows    []contactdb.Customer

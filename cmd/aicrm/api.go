@@ -94,7 +94,7 @@ func (handler *candidateHandler) RenameStage(writer http.ResponseWriter, request
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
-	if err != nil || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
+	if err != nil || poolConfig.ConnConfig.DescriptionCacheCapacity < 1 || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
 		return nil, errInvalidAPIComponent
 	}
 	poolConfig.MaxConns = config.API.PoolMaxConns

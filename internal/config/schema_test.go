@@ -114,12 +114,12 @@ func TestWorkerQueueBudgetIsFailClosed(t *testing.T) {
 }
 
 func TestStartupFieldValidationBoundaries(t *testing.T) {
-	for _, databaseURL := range []string{"postgres://db/aicrm", "postgresql://user:pass@[::1]:5432/aicrm?sslmode=disable"} {
+	for _, databaseURL := range []string{"postgres://db/aicrm", "postgresql://user:pass@[::1]:5432/aicrm?sslmode=disable", "postgres://db/aicrm?description_cache_capacity=1"} {
 		if !validDatabaseURL(databaseURL) {
 			t.Fatalf("validDatabaseURL(%q) = false", databaseURL)
 		}
 	}
-	for _, databaseURL := range []string{"", "http://db/aicrm", "postgres:///aicrm", "postgres://db/", " postgres://db/aicrm", "postgres://db/aicrm#fragment"} {
+	for _, databaseURL := range []string{"", "http://db/aicrm", "postgres:///aicrm", "postgres://db/", " postgres://db/aicrm", "postgres://db/aicrm#fragment", "postgres://db/aicrm?description_cache_capacity=0", "postgres://db/aicrm?description_cache_capacity=-1", "postgres://db/aicrm?description_cache_capacity=1&description_cache_capacity=2"} {
 		if validDatabaseURL(databaseURL) {
 			t.Fatalf("validDatabaseURL(%q) = true", databaseURL)
 		}
