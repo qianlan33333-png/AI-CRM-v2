@@ -2362,7 +2362,7 @@ slices:
       - REPO_CONTRACT_AND_PERMANENT_NEGATIVES_PASS
       - GITLEAKS_AND_SENSITIVE_PATHS_PASS
       - P0S04_OFFICIAL_RIVER_MIGRATION_PASS_AFTER_ISOLATED_DATABASE_CLEANUP
-    handwritten_scope: 9_files_488_changed_lines_under_P3_cap_tests_generated_manifests_acceptance_and_governance_excluded
+    handwritten_scope: 11_files_534_changed_lines_under_P3_cap_tests_generated_manifests_acceptance_and_governance_excluded
     slice_induced_correction_count: 3
     infra_induced_correction_count: 0
     scope_induced_correction_count: 0
