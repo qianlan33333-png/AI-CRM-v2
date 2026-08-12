@@ -76,6 +76,21 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+ledger_history_fixture="$(make_fixture slice-ledger-history)"
+ruby -e '
+  path = ARGV.fetch(0)
+  source = File.read(path)
+  block = source[/^  - slice_id: M0-7$.*?(?=^  - slice_id: |\z)/m]
+  abort "missing M0-7 ledger block" unless block
+  replacement = block.sub("slice_induced_correction_count: 1", "slice_induced_correction_count: 2")
+  abort "missing M0-7 correction count" if replacement == block
+  File.write(path, source.sub(block, replacement))
+' "$ledger_history_fixture/docs/execution/slice-ledger.yml"
+git -C "$ledger_history_fixture" add docs/execution/slice-ledger.yml
+if (cd "$ledger_history_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "historical slice ledger drift was accepted"
+fi
+
 receipt_verifier_drift="$(make_fixture receipt-verifier-drift)"
 printf '%s\n' '# receipt verifier drift' >>"$receipt_verifier_drift/scripts/verify_repo_receipts.pl"
 git -C "$receipt_verifier_drift" add scripts/verify_repo_receipts.pl

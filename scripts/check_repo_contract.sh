@@ -420,6 +420,7 @@ required=(
   scripts/ownership/main.go scripts/test_ownership.sh
   scripts/sourcepolicy/main.go scripts/test_source_policy.sh
   scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh
+  scripts/check_slice_ledger_history.rb
   scripts/check_generated_sources.sh
   scripts/check_repo_contract.sh
   scripts/verify_repo_receipts.pl
@@ -511,6 +512,7 @@ done <<'EOF'
 100755 scripts/test_package_release_archive.sh
 100755 scripts/check_slice_inputs.sh
 100755 scripts/test_slice_inputs.sh
+100755 scripts/check_slice_ledger_history.rb
 100644 tools/snapshot-gate/main.go
 100644 tools/snapshot-gate/main_test.go
 100644 acceptance/snapshots/catalog.v1.json
@@ -855,6 +857,7 @@ done <<'EOF'
 100644 docs/execution/slices/P3-S02.md
 100644 docs/execution/slices/P3-S03.md
 100644 docs/execution/slices/P3-S04A.md
+100644 docs/execution/slices/P3-C07C-R3A.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -1441,7 +1444,7 @@ verify_index_sha256 docs/execution/slices/P3-S04A.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  8e590152fae1e55f6283a31b710b1a607bd6c595826433bd01a18e263c441f88
+  433a5c26f8caa0677bfeead24820fbe06d52240acc40a11bef87973814145b9f
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1722,6 +1725,10 @@ verify_index_sha256 docs/execution/slices/P3-R4A.md \
   8b0cf9837e00532321228d45e7ab872501f97f23109335e776e4b33ae300246a
 verify_index_sha256 docs/execution/slices/P3-R4B.md \
   3ee411d7d57ba4001dadffdf7fe617c1bc91400341286c44173db6d82ad0297a
+verify_index_sha256 docs/execution/slices/P3-C07C-R3A.md \
+  2f802992b78426238bfd41d3946daae550923279a93f67f89a91ec1d6a9eeb0c
+verify_index_sha256 scripts/check_slice_ledger_history.rb \
+  1fe3b93ce6b021a9e760956324bed957bd3635662fb686cecba59851a6ecc582
 verify_index_sha256 migrations/00010_identity_storage.sql \
   bc72451450a9efff3435c17fd17d2f457ef909a7c7390e7468fddc7befe68aab
 verify_index_sha256 acceptance/identity/storage_integration_test.go \
@@ -1743,7 +1750,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   eac06bc5b78137cd11461a7895408c70bd65e945c64b35390486d95c5dc26660
 verify_index_sha256 scripts/test_repo_contract.sh \
-  6c6378dd91a34dbeda6f29b0683b1fae118a84625cf56b7c025d8df7d0ed4271
+  0e537abc19205b9c6aef7151d76c7b30fb4f1702dc70a3821c31a65f2685d36f
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -1776,6 +1783,16 @@ verify_index_sha256 scripts/verify_repo_receipts.pl \
   d28a528cfc1aa8d8a5c6fa62b652699059bb632e8640fbd868ba0e3967881e27
 
 scripts/verify_repo_receipts.pl receipts "${receipt_arguments[@]}"
+
+ledger_base_ref="HEAD"
+if [[ -n "${GITHUB_BASE_REF:-}" ]] && git rev-parse --verify --quiet "origin/${GITHUB_BASE_REF}" >/dev/null; then
+  ledger_base_ref="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
+elif git diff --cached --quiet -- docs/execution/slice-ledger.yml && git rev-parse --verify --quiet HEAD^ >/dev/null; then
+  ledger_base_ref="HEAD^"
+fi
+ruby scripts/check_slice_ledger_history.rb \
+  --base "${ledger_base_ref}:docs/execution/slice-ledger.yml" \
+  --candidate :docs/execution/slice-ledger.yml
 
 makefile="$(git show ':Makefile')"; alternate="$(find . -maxdepth 1 \( -name GNUmakefile -o -name makefile \) -print -quit)"; [[ -z "$alternate" ]] || fail "alternate Make entrypoint is forbidden: ${alternate#./}"
 ! grep -Eq '^[[:space:]]*(-?include|sinclude)([[:space:]]|$)' <<<"$makefile" && ! awk 'index($0,"$") && substr($0,1,1) != "\t" && $0 !~ /^[[:space:]]*#/ { bad=1 } END { exit bad ? 0 : 1 }' <<<"$makefile" ||
