@@ -3048,6 +3048,23 @@ if (cd "$p3s03_external_gate" && scripts/check_repo_contract.sh >/dev/null 2>&1)
   fail "P3-S03 synthetic evidence was allowed to close the real audience gate"
 fi
 
+for mutation in missing-adr pending-receipt receipt-algorithm privacy-boundary no-ttl-river-gin merge-detail; do
+  r3a_adr_fixture="$(make_fixture "p3-r3a-${mutation}")"
+  case "$mutation" in
+    missing-adr) rm -f "$r3a_adr_fixture/docs/adr/ADR-012.md"; git -C "$r3a_adr_fixture" add -u docs/adr/ADR-012.md ;;
+    pending-receipt) sed -i.bak 's/不得复用为 operation receipt/可复用为 operation receipt/' "$r3a_adr_fixture/docs/adr/ADR-012.md" ;;
+    receipt-algorithm) sed -i.bak 's/ON CONFLICT DO NOTHING RETURNING/SELECT-before-INSERT/' "$r3a_adr_fixture/docs/adr/ADR-012.md" ;;
+    privacy-boundary) sed -i.bak 's/raw identity 不进入持久化/raw identity 可进入持久化/' "$r3a_adr_fixture/docs/adr/ADR-012.md" ;;
+    no-ttl-river-gin) sed -i.bak 's/不设 TTL/可设 TTL/' "$r3a_adr_fixture/docs/adr/ADR-012.md" ;;
+    merge-detail) sed -i.bak 's/闭集、脱敏的审计对象/开放审计对象/' "$r3a_adr_fixture/docs/adr/ADR-012.md" ;;
+  esac
+  rm -f "$r3a_adr_fixture/docs/adr/ADR-012.md.bak"
+  git -C "$r3a_adr_fixture" add -A
+  if (cd "$r3a_adr_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "P3-R3A ADR mutation was accepted: $mutation"
+  fi
+done
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

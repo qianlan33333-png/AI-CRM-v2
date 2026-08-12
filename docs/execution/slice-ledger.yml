@@ -669,7 +669,7 @@ slices:
     pr_head_sha: d75730180fb3c0bbcd54ef637dc50f1fdefdb92b
     merge_sha: 0abf07ebd3ea8f3ac795468df0cd7bbacd21ed9c
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 1
+    slice_induced_correction_count: 2
     infra_induced_correction_count: 1
   - slice_id: G1-TRIAGE
     title: produce-production-route-triage-candidates
@@ -689,7 +689,7 @@ slices:
     pr_head_sha: c88f69f0a2a9300f9a68045d6726b1e8e7d1d7e0
     merge_sha: c60f4d01a432bbbfeb25db713b358768e20ae309
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
-    slice_induced_correction_count: 0
+    slice_induced_correction_count: 1
     infra_induced_correction_count: 0
   - slice_id: G1-D02
     title: solidify-rule-signoff-and-release-p2
@@ -3233,6 +3233,24 @@ slices:
       - PRODUCTION_DATABASE_NOT_EXECUTED
       - LIVE_MIGRATION_NOT_EXECUTED
       - OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED
+  - slice_id: P3-R3A
+    title: identity-adr-only-persistence-decisions
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: e655ff473a99a3052476bacd1ff29e9c6d1cad7d
+    dependency: P3_S03_MERGED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-r3a-identity-adr
+    scope: [accepted_ADR_012_only, r3a_card_and_ledger, minimal_permanent_ADR_protection]
+    excluded_scope: [migrations_DDL_ownership_OpenAPI_ports_keyring_runtime, normalizer_receipt_repository_UoW, production_or_external_effects]
+    tests: [LOCAL_repo_contract_positive_and_R3A_ADR_negative_corpus_PASS, LOCAL_generate_twice_no_diff_PASS, LOCAL_make_ci_go_PASS, LOCAL_npm_run_ci_PASS_NO_WEB_DIFF]
+    handwritten_scope: 5_files_ADR_card_ledger_and_contract_protection_only
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [slice:first_ADR_guard_phrase_wrapped_the_pending_receipt_prohibition_and_was_rewritten_as_one_exact_protected_sentence, slice:second_gate_found_the_receipt_algorithm_anchor_wrapped_so_all_remaining_ADR_guard_anchors_were_prechecked_as_exact_single_line_text, verification:first_Web_gate_invocation_used_nonexistent_make_ci_web_target_then_repository_defined_npm_run_ci_was_used, infra:fresh_R3A_worktree_lacked_pinned_Orval_then_make_bootstrap_tools_restored_lockfile_exact_tooling]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
