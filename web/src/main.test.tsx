@@ -6,6 +6,7 @@ import {
   App,
   LOGIN_PATH,
   ROUTE_CHANGE_EVENT,
+  customerIDForPathname,
   handleNavigationClick,
   navigateTo,
   navigationLinks,
@@ -17,6 +18,7 @@ import {
   type BrowserNavigator,
   type NavigationClick,
 } from "./main";
+import type { CustomerDetailTransport } from "./customer-detail";
 
 const adminSession = {
   status: "authenticated",
@@ -66,7 +68,65 @@ function browser(): {
   };
 }
 
+function customerDetailTransport(): CustomerDetailTransport {
+  const response = async () => ({ status: 503, data: undefined });
+  return {
+    get: vi.fn(response),
+    update: vi.fn(response),
+    setStage: vi.fn(response),
+    addTag: vi.fn(response),
+    removeTag: vi.fn(response),
+    listEvents: vi.fn(response),
+    listTags: vi.fn(response),
+  };
+}
+
 describe("Web shell routes", () => {
+  it("accepts only an exact positive safe OneID customer-detail pathname", () => {
+    expect(customerIDForPathname("/customers/1")).toBe(1);
+    expect(customerIDForPathname("/customers/42")).toBe(42);
+    expect(customerIDForPathname("/customers/9007199254740991")).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+
+    for (const pathname of [
+      "/customers/0",
+      "/customers/-1",
+      "/customers/01",
+      "/customers/1.0",
+      "/customers/9007199254740992",
+      "/customers/1/",
+      "/customers/1/timeline",
+      "/customers/1?tab=timeline",
+      "/customer/1",
+    ]) {
+      expect(customerIDForPathname(pathname), pathname).toBeUndefined();
+    }
+  });
+
+  it("renders the injected customer-detail route and keeps Customers navigation active", () => {
+    vi.stubGlobal("window", { location: { pathname: "/customers/42" } });
+    const detailTransport = customerDetailTransport();
+    const readCookie = vi.fn(() => "aicrm_csrf=test-token");
+
+    const html = renderToStaticMarkup(
+      <App
+        customerDetailTransport={detailTransport}
+        cookieHeader={readCookie}
+        initialSession={adminSession}
+      />,
+    );
+
+    expect(html).toContain('<h1 id="app-title">\u5ba2\u6237\u8be6\u60c5</h1>');
+    expect(html).toContain(
+      "\u6b63\u5728\u8bfb\u53d6\u5ba2\u6237\u8d44\u6599\u3001\u6807\u7b7e\u548c\u65f6\u95f4\u7ebf",
+    );
+    expect(html).toMatch(
+      /<a aria-current="page" href="\/customers">\u5ba2\u6237<\/a>/,
+    );
+    expect(html).not.toContain("\u672a\u627e\u5230\u9875\u9762");
+  });
+
   it("matches only the six frozen pathname routes and renders a 404 for all others", () => {
     expect(routes).toHaveLength(6);
 

@@ -31,7 +31,12 @@ const page = {
 } as const;
 
 function transport(): CustomerTransport {
-  return { list: vi.fn(async () => ({ status: 200, data: { ...page, next_cursor: null } })) };
+  return {
+    list: vi.fn(async () => ({
+      status: 200,
+      data: { ...page, next_cursor: null },
+    })),
+  };
 }
 
 function findButton(
@@ -43,6 +48,20 @@ function findButton(
   const children = React.Children.toArray(node.props.children);
   for (const child of children) {
     const found = findButton(child, text);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function findAnchor(
+  node: React.ReactNode,
+  href: string,
+): React.ReactElement | undefined {
+  if (!React.isValidElement(node)) return undefined;
+  if (node.type === "a" && node.props.href === href) return node;
+  const children = React.Children.toArray(node.props.children);
+  for (const child of children) {
+    const found = findAnchor(child, href);
     if (found) return found;
   }
   return undefined;
@@ -87,6 +106,33 @@ describe("CustomerListPage shell", () => {
 });
 
 describe("CustomerListContent states", () => {
+  it("links every OneID to its exact detail route with one accessible click callback", () => {
+    const onCustomerNavigate: React.MouseEventHandler<HTMLAnchorElement> =
+      vi.fn();
+    const content = CustomerListContent({
+      role: "sales",
+      screen: { kind: "ready", loadingMore: false, page },
+      onCustomerNavigate,
+      onLoadMore: vi.fn(),
+      onRetry: vi.fn(),
+    });
+    const html = renderToStaticMarkup(content);
+    const link = findAnchor(content, "/customers/7");
+
+    expect(html).toContain('href="/customers/7"');
+    expect(link?.props.children).toContain("\u9648\u6668");
+    expect(link?.props.onClick).toBe(onCustomerNavigate);
+
+    const click = {
+      currentTarget: { href: "https://crm.example/customers/7" },
+    };
+    (link?.props.onClick as React.MouseEventHandler<HTMLAnchorElement>)(
+      click as React.MouseEvent<HTMLAnchorElement>,
+    );
+    expect(onCustomerNavigate).toHaveBeenCalledOnce();
+    expect(onCustomerNavigate).toHaveBeenCalledWith(click);
+  });
+
   it("renders a semantic result table with watermark, 10k+ marker, and opaque next page action", () => {
     const screen: CustomerListScreen = {
       kind: "ready",
@@ -130,7 +176,13 @@ describe("CustomerListContent states", () => {
         screen={{
           kind: "ready",
           loadingMore: false,
-          page: { ...page, items: [], nextCursor: undefined, total: 0, totalIsEstimate: false },
+          page: {
+            ...page,
+            items: [],
+            nextCursor: undefined,
+            total: 0,
+            totalIsEstimate: false,
+          },
         }}
         onLoadMore={onLoadMore}
         onRetry={retry}
@@ -159,12 +211,16 @@ describe("CustomerListContent states", () => {
     expect(loading).toContain('role="status"');
     expect(empty).toContain("没有符合当前筛选条件的客户。");
     expect(renderToStaticMarkup(failed)).toContain('role="alert"');
-    expect(renderToStaticMarkup(failed)).toContain("当前账号没有读取客户列表的权限。");
+    expect(renderToStaticMarkup(failed)).toContain(
+      "当前账号没有读取客户列表的权限。",
+    );
     const retryButton = findButton(failed, "重试");
     expect(retryButton?.props.onClick).toBeTypeOf("function");
     (retryButton?.props.onClick as (() => void) | undefined)?.();
     expect(retry).toHaveBeenCalledOnce();
-    expect(paginationFailed).toContain("继续加载失败：客户列表暂时不可用，请稍后重试。");
+    expect(paginationFailed).toContain(
+      "继续加载失败：客户列表暂时不可用，请稍后重试。",
+    );
     expect(paginationFailed).toContain("重试加载更多");
   });
 
@@ -180,6 +236,8 @@ describe("CustomerListContent states", () => {
 
     expect(html).toContain("正在加载更多客户…");
     expect(html).toContain("陈晨");
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>正在加载更多…<\/button>/);
+    expect(html).toMatch(
+      /<button[^>]*disabled=""[^>]*>正在加载更多…<\/button>/,
+    );
   });
 });
