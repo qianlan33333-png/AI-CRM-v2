@@ -403,6 +403,10 @@ required=(
   internal/contact/store/repository.go
   acceptance/p2s14/doc.go
   acceptance/p2s14/stages_store_integration_test.go
+  acceptance/contactfixture/contactfixture.go
+  acceptance/contactfixture/contactfixture_test.go
+  acceptance/identity/doc.go
+  acceptance/identity/contactfixture_import_test.go
   tools/query-plan-gate/main.go
   tools/query-plan-gate/main_test.go
   scripts/build_slice_bundle.sh
@@ -442,6 +446,7 @@ required=(
   docs/execution/slices/P3-S02.md
   docs/execution/slices/P3-S03.md
   docs/execution/slices/P3-R3A.md
+  docs/execution/slices/P3-R4A.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -1003,9 +1008,9 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
-  94d56f1479ee25eb13643ed97565a73fd5e774178510b118d172d7fd1dbac22e
+  cd364640690227382187500ce2e051e49c26b8887ae07496c1852de528f17250
 verify_index_sha256 scripts/test_ownership.sh \
-  5a887619857112b7ab55c72bc417c6d51f7804722dfed33c9b56b8d93787ebeb
+  c69b41e09d4c61d0dd2ed2774c1407e4ff432916686d1cdd56e14dea1a96ab6d
 verify_index_sha256 acceptance/fixtures/postgres.go \
   e9e04301d41b57d59eb49f74d75767803a2847c41ee5fab8c383adb586de670b
 verify_index_sha256 acceptance/fixtures/postgres_test.go \
@@ -1405,7 +1410,7 @@ verify_index_sha256 docs/execution/slices/P3-S03.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  762527a6bd38904e4f28c9205e6e411d96474e0f42746c94ad647335c369a96c
+  47d27ee0c038e38a5d17f994f24270992951adee921c6d960d234355dc6d865a
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1682,6 +1687,16 @@ verify_index_sha256 docs/adr/ADR-012.md \
   a4943e7a665309a388ce4ffad7d4a7610f2038191b9d5d9483b2370d5df0dd4b
 verify_index_sha256 docs/execution/slices/P3-R3A.md \
   cac248d380f467833560cbd3992a86100c9f56594380bc0fd013be241c6614db
+verify_index_sha256 docs/execution/slices/P3-R4A.md \
+  8b0cf9837e00532321228d45e7ab872501f97f23109335e776e4b33ae300246a
+verify_index_sha256 acceptance/contactfixture/contactfixture.go \
+  64e11787b6469d62d0ea503bf6aaf88e88a9f029ab65fdc3de1ee6472fbdc580
+verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
+  f121eed847e880234fd10d5e928ceaca2915830109c3047e989dfca4a78c7b5f
+verify_index_sha256 acceptance/identity/doc.go \
+  efc1a6ec165ac8844b0af5446db2da87a46e9506761aec24827ae8efd700b3bf
+verify_index_sha256 acceptance/identity/contactfixture_import_test.go \
+  e550f00216351ab1dc162484d69c65b58c9945d05a42313a1153bfceb326a91f
 verify_index_sha256 docs/execution/slices/M0-5.md \
   c5a4f1991b8f3ecbb1a3a024c6131aea5fc3d6813ddeb34b323faf2948229609
 verify_index_sha256 docs/execution/slices/M0-6.md \

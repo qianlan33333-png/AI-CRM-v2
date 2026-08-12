@@ -13,7 +13,7 @@ seed() {
     "$root/internal/segment/store/queries" "$root/internal/outbound/worker" \
     "$root/internal/wecom/store" "$root/internal/platform/store" \
     "$root/internal/events/store/queries" \
-    "$root/acceptance/fixtures"
+    "$root/acceptance/fixtures" "$root/acceptance/contactfixture"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
   printf '%s\n' "SELECT 'UPDATE identities'; -- DELETE FROM tags" 'SELECT * FROM customers;' >"$root/internal/segment/store/queries/read.sql"
@@ -23,6 +23,9 @@ seed() {
     'const ddl = "CREATE TABLE acceptance_fixtures.fixture_probe (id bigint PRIMARY KEY)"' \
     'const dml = "INSERT INTO acceptance_fixtures.fixture_probe (id) VALUES (1)"' \
     >"$root/acceptance/fixtures/probe.go"
+  printf '%s\n' 'package contactfixture' \
+    'const dml = "INSERT INTO customers (name) VALUES ($1)"' \
+    >"$root/acceptance/contactfixture/customer.go"
   printf '%s\n' \
     'INSERT INTO event_log (event_type) VALUES ($1)' \
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
@@ -58,6 +61,7 @@ mutate() {
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
     update-unknown-table) echo 'UPDATE mystery_table AS target SET id = 2;' >"$root/internal/contact/store/queries/write.sql" ;;
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
+    acceptance-unowned-customer-write) mkdir -p "$root/acceptance/identity"; printf '%s\n' 'package identity' 'const dml = "INSERT INTO customers (name) VALUES ($1)"' >"$root/acceptance/identity/customer.go" ;;
     outbound-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/outbound/worker/client.go" ;;
     wecom-write) echo 'package store; const endpoint = "/cgi-bin/message/send"' >"$root/internal/wecom/store/client.go" ;;
     contact-endpoint) mkdir -p "$root/internal/contact/app"; echo 'package app; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/contact/app/client.go" ;;
@@ -72,6 +76,7 @@ reject contact-auth-session 'table write ownership violation'
 reject unknown-table 'write to unknown table'
 reject update-unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'
+reject acceptance-unowned-customer-write 'table write ownership violation'
 reject outbound-read 'WeCom operation ownership violation'; reject wecom-write 'WeCom operation ownership violation'
 reject contact-endpoint 'WeCom operation ownership violation'; reject contact-sdk 'external WeCom client import forbidden'
 reject unknown-operation 'unknown WeCom operation'
