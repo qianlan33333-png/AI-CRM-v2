@@ -670,7 +670,7 @@ slices:
     merge_sha: 0abf07ebd3ea8f3ac795468df0cd7bbacd21ed9c
     main_ci_status: PASS_application_go_web_repo_contract_secret_scan
     slice_induced_correction_count: 2
-    infra_induced_correction_count: 1
+    infra_induced_correction_count: 2
   - slice_id: G1-TRIAGE
     title: produce-production-route-triage-candidates
     owner: Codex-Sol
@@ -3249,6 +3249,23 @@ slices:
     scope_induced_correction_count: 0
     verification_induced_correction_count: 1
     correction_notes: [slice:first_ADR_guard_phrase_wrapped_the_pending_receipt_prohibition_and_was_rewritten_as_one_exact_protected_sentence, slice:second_gate_found_the_receipt_algorithm_anchor_wrapped_so_all_remaining_ADR_guard_anchors_were_prechecked_as_exact_single_line_text, verification:first_Web_gate_invocation_used_nonexistent_make_ci_web_target_then_repository_defined_npm_run_ci_was_used, infra:fresh_R3A_worktree_lacked_pinned_Orval_then_make_bootstrap_tools_restored_lockfile_exact_tooling]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-R3B
+    title: identity-storage-only-00010
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: 05bdd4f24a33cb9e1c8021441f0a20f3a537da72
+    dependency: P3_R3A_MERGED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-r3b-identity-storage
+    scope: [migration_00010_four_identity_owned_tables_down, ownership_canonical_unknown_table_deny, postgres_16_14_catalog_and_constraint_acceptance]
+    excluded_scope: [ADR_OpenAPI_ports_auth_keyring_runtime, raw_normalized_receipt_security_special_gates, contact_C07C_00011, normalizer_fingerprint_repository_UoW_Resolve_Bind_Ingest_UI]
+    tests: [LOCAL_PG16_14_JSON_closed_detail_probe_PASS, LOCAL_PG16_14_MIGRATION_00001_TO_00010_DOWN_UP_PASS, LOCAL_PG16_14_catalog_and_constraint_acceptance_PASS, LOCAL_ownership_lint_positive_negative_PASS, LOCAL_repo_contract_positive_and_R3B_negative_corpus_PASS, LOCAL_make_ci_go_PASS, LOCAL_generate_twice_no_diff_PASS, LOCAL_npm_run_ci_PASS_NO_WEB_DIFF]
+    handwritten_scope: 13_files_within_15_file_hard_cap_due_to_required_identity_acceptance_package_doc_go_storage_ownership_and_acceptance_only
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [slice:first_storage_acceptance_continued_after_an_expected_check_violation_in_the_same_aborted_transaction_then_rebuilt_that_negative_case_behind_a_savepoint, slice:second_application_go_build_rejected_the_new_identity_acceptance_directory_because_it_had_only_a_test_file_then_added_the_required_package_doc_go_without_business_behavior, infra:55437_aicrm_test_contained_untracked_old_candidate_identity_tables_while_Goose_remained_at_00009_so_only_those_exact_test_objects_and_orphaned_functions_were_removed_before_fresh_00010_validation, infra:fresh_R3B_worktree_lacked_the_repository_pinned_Orval_then_make_bootstrap_tools_restored_lockfile_exact_tooling_before_double_generation_reran]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:

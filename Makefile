@@ -21,7 +21,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p2-s15-acceptance
 .PHONY: p2-s16-acceptance
 .PHONY: p2-s18-acceptance
-.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c02a-acceptance p3-c02b-acceptance p3-c02d-acceptance p3-c02e-acceptance p3-c03-migration-acceptance p3-c07a-acceptance p3-c07b2-acceptance
+.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c02a-acceptance p3-c02b-acceptance p3-c02d-acceptance p3-c02e-acceptance p3-c03-migration-acceptance p3-c07a-acceptance p3-c07b2-acceptance p3-r3b-identity-storage-acceptance
 .PHONY: g2-runtime-image-acceptance
 .PHONY: g2-release-archive-contract
 .PHONY: g2-web-edge-contract
@@ -383,6 +383,10 @@ p3-c01a-contract:
 p3-c01a-migration-acceptance:
 	@test -n "$${P3C01A_TEST_DATABASE_URL:-}" || { echo "P3C01A_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=30s ./acceptance/p3c01a -args -database-url "$$P3C01A_TEST_DATABASE_URL"
+
+p3-r3b-identity-storage-acceptance:
+	@test -n "$${P3R3B_TEST_DATABASE_URL:-}" || { echo "P3R3B_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=45s ./acceptance/identity -args -database-url "$$P3R3B_TEST_DATABASE_URL"
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }
