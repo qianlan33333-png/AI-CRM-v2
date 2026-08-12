@@ -61,6 +61,8 @@ required=(
   acceptance/segment/doc.go
   internal/segment/app/refresh.go
   internal/segment/app/refresh_test.go
+  internal/segment/app/cron.go
+  internal/segment/app/cron_test.go
   internal/segment/store/queries/refresh.sql
   internal/segment/store/refresh_repository.go
   internal/segment/store/refresh_repository_test.go
@@ -453,6 +455,7 @@ required=(
   docs/execution/slices/P3-S02.md
   docs/execution/slices/P3-S03.md
   docs/execution/slices/P3-S04A.md
+  docs/execution/slices/P3-S04B.md
   docs/execution/slices/P3-R3A.md
   docs/execution/slices/P3-R4A.md
   docs/execution/slices/P3-R4B.md
@@ -851,6 +854,8 @@ done <<'EOF'
 100644 acceptance/segment/doc.go
 100644 internal/segment/app/refresh.go
 100644 internal/segment/app/refresh_test.go
+100644 internal/segment/app/cron.go
+100644 internal/segment/app/cron_test.go
 100644 internal/segment/store/queries/refresh.sql
 100644 internal/segment/store/refresh_repository.go
 100644 internal/segment/store/refresh_repository_test.go
@@ -861,6 +866,7 @@ done <<'EOF'
 100644 docs/execution/slices/P3-S03.md
 100644 docs/execution/slices/P3-S04A.md
 100644 docs/execution/slices/P3-C07C-R3B.md
+100644 docs/execution/slices/P3-S04B.md
 100644 docs/execution/slices/P3-C07C-R3A.md
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
@@ -1445,10 +1451,16 @@ verify_index_sha256 acceptance/segment/refresh_integration_test.go \
   b6e79e1564497ae1b8c91434ba6fc250a3982a39016695298e9e754a13d92f63
 verify_index_sha256 docs/execution/slices/P3-S04A.md \
   63cf6550d1d374e05f85965f8a559ec9a4a3a1f634701c3ee5d4c78ba8a01b7b
+verify_index_sha256 internal/segment/app/cron.go \
+  cb18a115c288304a1be0773ed8e746a62cb3b5e2f55bdf598ded4e5317e4134d
+verify_index_sha256 internal/segment/app/cron_test.go \
+  8b628737f31b402a47d09a89ad512242f9066d76c0a9337346b65f47c9831b2c
+verify_index_sha256 docs/execution/slices/P3-S04B.md \
+  9525e0caf7fc1d3244537e39f7d703dfe95426aa375737d0989bcec6a6f0e61a
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  7bc4eccbc8a0d31c0f1d079d0d229e31d2caba2b00249623b0bdb545c519a42d
+  a44e3cbcd3248b6941fff22b5f55d04e0a2333af95f1fe3a56883e3a4fbc9815
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1760,7 +1772,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   565f2a9037e89cb4cb0e422adf48834b7c84fc53fa0511a13f595c375e275a14
 verify_index_sha256 scripts/test_repo_contract.sh \
-  64090f5e523bfa2c4880961cef844518ba3d3046d2241872e58d8aee37acd16a
+  4a606bee84bf14000c48f25674ef88cd790ced5ef0ca4dd1782173b4618e4266
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3711,6 +3723,53 @@ for anchor in \
   '不接 River'; do
   grep -Fq "$anchor" <<<"$p3s04a_card" ||
     fail "P3-S04A scope or dependency receipt drifted: $anchor"
+done
+
+p3s04b_cron="$(git show :internal/segment/app/cron.go)"
+for anchor in \
+  'func CanonicalRefreshCron(mode segmentport.RefreshMode, refreshCron *string)' \
+  'case segmentport.RefreshModeManual:' \
+  'case segmentport.RefreshModeScheduled:' \
+  'if refreshCron != nil {' \
+  'if refreshCron == nil {' \
+  'if len(fields) != 5 {' \
+  'ranges := [][2]int{{0, 59}, {0, 23}, {1, 31}, {1, 12}, {0, 6}}' \
+  'if canonical[2] != "*" && canonical[4] != "*" {' \
+  'return strings.Join(canonical, " "), nil' \
+  'if seen[position] {' \
+  'if character < '\''0'\'' || character > '\''9'\'' {'; do
+  grep -Fq "$anchor" <<<"$p3s04b_cron" ||
+    fail "P3-S04B cron validation receipt drifted: $anchor"
+done
+if grep -Eq 'time\.(Ticker|AfterFunc)|go[[:space:]]+func|\.(Query|QueryRow|Exec|Prepare)\(' <<<"$p3s04b_cron" ||
+   grep -Fq '"time"' <<<"$p3s04b_cron" ||
+   grep -Fq 'github.com/riverqueue' <<<"$p3s04b_cron" ||
+   grep -Fq 'internal/platform/scheduler' <<<"$p3s04b_cron"; then
+  fail "P3-S04B must remain a pure validation slice without timers River or SQL"
+fi
+
+p3s04b_tests="$(git show :internal/segment/app/cron_test.go)"
+for anchor in \
+  'TestCanonicalRefreshCron' \
+  'manual cron rejected' \
+  'ambiguous day fields rejected' \
+  'FuzzCanonicalRefreshCron' \
+  'canonical cron did not round-trip'; do
+  grep -Fq "$anchor" <<<"$p3s04b_tests" ||
+    fail "P3-S04B validation test receipt drifted: $anchor"
+done
+
+p3s04b_card="$(git show :docs/execution/slices/P3-S04B.md)"
+for anchor in \
+  'P3-S04B：Segment cron 严格校验' \
+  'manual` 只接受 `refresh_cron=nil`' \
+  '五字段数字 cron' \
+  'day-of-month 与 day-of-week 同时受限' \
+  '不引入第三方 cron 库、`time.Ticker`、`time.AfterFunc`' \
+  'S04E 才把已验证的 scheduled 定义注册到唯一' \
+  'PENDING_EXTERNAL_GATE'; do
+  grep -Fq "$anchor" <<<"$p3s04b_card" ||
+    fail "P3-S04B card boundary drifted: $anchor"
 done
 
 scripts/scan_sensitive_paths.sh

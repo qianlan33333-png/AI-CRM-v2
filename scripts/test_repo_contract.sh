@@ -3113,6 +3113,42 @@ if (cd "$p3s04a_fake_external_gate" && scripts/check_repo_contract.sh >/dev/null
   fail "P3-S04A synthetic evidence was allowed to close the real audience gate"
 fi
 
+for file_path in \
+  internal/segment/app/cron.go \
+  internal/segment/app/cron_test.go \
+  docs/execution/slices/P3-S04B.md; do
+  missing_p3s04b_contract="$(make_fixture "missing-p3-s04b-${file_path//\//-}")"
+  rm -f "$missing_p3s04b_contract/$file_path"
+  git -C "$missing_p3s04b_contract" add -u "$file_path"
+  if (cd "$missing_p3s04b_contract" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+    fail "missing P3-S04B cron contract was accepted: $file_path"
+  fi
+done
+
+p3s04b_relaxed_field_count="$(make_fixture p3-s04b-relaxed-field-count)"
+sed -i.bak 's/len(fields) != 5/len(fields) < 1/' "$p3s04b_relaxed_field_count/internal/segment/app/cron.go"
+rm -f "$p3s04b_relaxed_field_count/internal/segment/app/cron.go.bak"
+restage_p2s18_receipt "$p3s04b_relaxed_field_count" internal/segment/app/cron.go
+if (cd "$p3s04b_relaxed_field_count" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04B accepted a relaxed cron field count"
+fi
+
+p3s04b_timer_escape="$(make_fixture p3-s04b-timer-escape-hatch)"
+printf '%s\n' 'var _ = time.Ticker{}' >>"$p3s04b_timer_escape/internal/segment/app/cron.go"
+restage_p2s18_receipt "$p3s04b_timer_escape" internal/segment/app/cron.go
+if (cd "$p3s04b_timer_escape" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04B timer escape hatch was accepted"
+fi
+
+p3s04b_fake_external_gate="$(make_fixture p3-s04b-fake-real-audience-closure)"
+sed -i.bak 's/PENDING_EXTERNAL_GATE/CLOSED_WITH_SYNTHETIC_FIXTURE/' \
+  "$p3s04b_fake_external_gate/docs/execution/slices/P3-S04B.md"
+rm -f "$p3s04b_fake_external_gate/docs/execution/slices/P3-S04B.md.bak"
+restage_p2s18_receipt "$p3s04b_fake_external_gate" docs/execution/slices/P3-S04B.md
+if (cd "$p3s04b_fake_external_gate" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S04B synthetic evidence was allowed to close the real audience gate"
+fi
+
 for mutation in missing-adr pending-receipt receipt-algorithm privacy-boundary no-ttl-river-gin merge-detail; do
   r3a_adr_fixture="$(make_fixture "p3-r3a-${mutation}")"
   case "$mutation" in
