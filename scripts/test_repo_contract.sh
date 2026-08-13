@@ -3214,6 +3214,23 @@ if (cd "$r3b_owner_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); th
   fail "P3-C07C-R3B owner drift was accepted"
 fi
 
+r3c_lock_drift="$(make_fixture p3-c07c-r3c-lock-drift)"
+sed -i.bak 's/pg_advisory_xact_lock/pg_advisory_lock/' \
+  "$r3c_lock_drift/internal/contact/store/queries/external_events.sql"
+rm -f "$r3c_lock_drift/internal/contact/store/queries/external_events.sql.bak"
+restage_p2s18_receipt "$r3c_lock_drift" internal/contact/store/queries/external_events.sql
+if (cd "$r3c_lock_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07C-R3C non-transaction advisory lock was accepted"
+fi
+
+r3c_nested_uow="$(make_fixture p3-c07c-r3c-nested-uow)"
+printf '%s\n' '// NewUnitOfWork is forbidden inside AppendExternalEvent.' \
+  >>"$r3c_nested_uow/internal/contact/store/merge_port_repository.go"
+restage_p2s18_receipt "$r3c_nested_uow" internal/contact/store/merge_port_repository.go
+if (cd "$r3c_nested_uow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-C07C-R3C nested UoW marker was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

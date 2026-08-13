@@ -250,6 +250,9 @@ required=(
   acceptance/contact/lineage_timeline_plan_integration_test.go
   internal/contact/store/merge_port_repository.go
   internal/contact/store/merge_port_repository_test.go
+  internal/contact/store/external_event_repository_test.go
+  internal/contact/store/queries/external_events.sql
+  internal/contact/store/generated/external_events.sql.go
   docs/execution/slices/P3-C07.md
   docs/execution/slices/P3-C07A.md
   docs/execution/slices/P3-C07B1.md
@@ -460,6 +463,7 @@ required=(
   docs/execution/slices/P3-R4A.md
   docs/execution/slices/P3-R4B.md
   docs/execution/slices/P3-C07C-R3B.md
+  docs/execution/slices/P3-C07C-R3C.md
   docs/execution/slices/M0-1.md
   docs/execution/slices/M0-2.md
   docs/execution/slices/M0-3.md
@@ -474,6 +478,7 @@ required=(
   migrations/00011_contact_external_event_idempotency.sql
   acceptance/identity/storage_integration_test.go
   acceptance/contact/external_event_storage_integration_test.go
+  acceptance/contact/external_event_behavior_integration_test.go
 )
 
 for file_path in "${required[@]}"; do
@@ -666,6 +671,9 @@ done <<'EOF'
 100644 acceptance/contact/lineage_timeline_plan_integration_test.go
 100644 internal/contact/store/merge_port_repository.go
 100644 internal/contact/store/merge_port_repository_test.go
+100644 internal/contact/store/external_event_repository_test.go
+100644 internal/contact/store/queries/external_events.sql
+100644 internal/contact/store/generated/external_events.sql.go
 100644 docs/execution/slices/P3-C07.md
 100644 docs/execution/slices/P3-C07A.md
 100644 docs/execution/slices/P3-C07B1.md
@@ -867,7 +875,9 @@ done <<'EOF'
 100644 docs/execution/slices/P3-S04A.md
 100644 docs/execution/slices/P3-C07C-R3B.md
 100644 docs/execution/slices/P3-S04B.md
+100644 docs/execution/slices/P3-C07C-R3C.md
 100644 docs/execution/slices/P3-C07C-R3A.md
+100644 acceptance/contact/external_event_behavior_integration_test.go
 100644 tools/query-plan-gate/main.go
 100644 tools/query-plan-gate/main_test.go
 100755 acceptance/p0s10/test_snapshot_gate.sh
@@ -912,7 +922,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  2a4f5c1075c71ba2a283893b4df9c774011827c8f221bf05fe46b6739c0bd58e
+  58cd5113bcd4ecfcdb32bb6d05d32c1e549e6efc5ca65121c375d1fca063c71b
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -928,7 +938,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  eec2ac35386340300b629ba54ea0db5126270d3348973ac3fffb9990382644ba
+  a67726dc66d82b07309e24651b3813119ae16b7ddb004bdc56ea8889baa5f404
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -940,11 +950,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  87877688d66f43b2add7f0eb5201914ee22c256f8bd2ae3894fb960453e318a8
+  4cfe3b80221d4f4085b9d50d44c669a12092ce57eb370f996611a36ecccc258a
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  2c875b27d4ef5b0a04be7d131a0a882bf90d282749db7d26b997921fdb007dca
+  f03266d464632c2929db97e8fc07dcf69be4fbc2707346e3a437b0272366ebd9
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1384,9 +1394,15 @@ verify_index_sha256 migrations/00007_contact_merge_lineage.sql \
 verify_index_sha256 acceptance/contact/merge_lineage_integration_test.go \
   915827562dca143619a686320c769ce02743313e1cbbef505d575e8a09230ca0
 verify_index_sha256 internal/contact/store/merge_port_repository.go \
-  1e67cdd4ee9664912c6d948127e43fdeb9756f46e4005f0fb5f4a77cbd1972d1
+  1e37a639d2672a6921c040bba57608da07b66d6635a161edcdd7f0f51eb54521
 verify_index_sha256 internal/contact/store/merge_port_repository_test.go \
   dc22c499ed4b125c40c044d0be335651ab885120c963ea4b5d84c405c7da69a3
+verify_index_sha256 internal/contact/store/external_event_repository_test.go \
+  f89c3f316ffaaea4f61f4f89b62aaecbe20b5dba51a365654cb889421b68b00b
+verify_index_sha256 internal/contact/store/queries/external_events.sql \
+  6db32d9fa67c1355f7d37a96e98a58b2d945ebd3cfabd6987aca047ba561ebb1
+verify_index_sha256 internal/contact/store/generated/external_events.sql.go \
+  644bd13fe3660efa2b810a62deb19a6a47dc34db7167f88413ce88fc2033bfaa
 verify_index_sha256 docs/execution/slices/P3-C07.md \
   88e142d8f5416d1267889376d200836eefa408bbcad9475debc1421b81531a62
 verify_index_sha256 docs/execution/slices/P3-C07A.md \
@@ -1460,13 +1476,13 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  d408f610755d51a662341c45ae2c7ab11a96ecdc91b872d54e5deb614ccd495f
+  5d56d8ac53e0f481fa000e7db26f58126c38c54fee189439ed6701563eb496ff
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
   4f506c362f42329c0c906a81756307128e87af58ffdb5e7076ad1fc3f5c322f3
 verify_index_sha256 internal/contact/port/port.go \
-  6dcfb247f751beaf0b1e2c286f4b201bb5d5589055bfd0e967961a13d38d7463
+  32d4b5301f9565c536a038dffcbac7be11dcdf980caf3ffb3c9c06f395fe7169
 verify_index_sha256 internal/identity/port/port.go \
   bc3f25a61d71865c511fb41bb34871a03b223508fccdf1f33586a8193850ff13
 verify_index_sha256 internal/identity/port/port_test.go \
@@ -1698,7 +1714,7 @@ verify_index_sha256 internal/contact/store/generated/customers.sql.go \
 verify_index_sha256 internal/contact/store/generated/models.go \
   9459ba27d0397425970580f71f26f1871214fcd1cbb0b1eb48bb1143a97ec956
 verify_index_sha256 internal/contact/store/generated/querier.go \
-  043cafc9cbd58be1a326d199c8d9999ed921fa43d1c46c25beca06b3baa410cf
+  010156a23e2f1e46fa1f44f7a06266772122b606538a3a339ee4f76060611942
 verify_index_sha256 internal/contact/store/generated/stages.sql.go \
   24abe8b30311c9a7134c8daab59b487caae03f72a6d1ab50d587c536eb5046f5
 verify_index_sha256 internal/contact/store/repository.go \
@@ -1747,6 +1763,10 @@ verify_index_sha256 migrations/00011_contact_external_event_idempotency.sql \
   eb9212ffabda2e1537809c5db0b2ff61721d6a970a5f24aa913302d45478ec77
 verify_index_sha256 acceptance/contact/external_event_storage_integration_test.go \
   85f80070808498213d0f6dd07dd7a8039693c56d6e348ac9dee33ac30c712216
+verify_index_sha256 docs/execution/slices/P3-C07C-R3C.md \
+  fe3ceda4239f18f3007a26e1f499284a01c5be5793fb999159e14a3927e0189c
+verify_index_sha256 acceptance/contact/external_event_behavior_integration_test.go \
+  bc3761383b4d3614c1aa5d9c44b01597fa578b4bd0b5abc2e556661eef3e6c13
 verify_index_sha256 docs/execution/slices/P3-C07C-R3A.md \
   2f802992b78426238bfd41d3946daae550923279a93f67f89a91ec1d6a9eeb0c
 verify_index_sha256 scripts/check_slice_ledger_history.rb \
@@ -1772,7 +1792,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   565f2a9037e89cb4cb0e422adf48834b7c84fc53fa0511a13f595c375e275a14
 verify_index_sha256 scripts/test_repo_contract.sh \
-  4a606bee84bf14000c48f25674ef88cd790ced5ef0ca4dd1782173b4618e4266
+  0541c7b526a424f8ef6d6009bd35ca899f33746e7e700d3bed530388c29523fa
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3086,8 +3106,6 @@ for anchor in \
 done
 ! grep -Fq 'NewUnitOfWork' <<<"$p3c07a_repository" ||
   fail "P3-C07A repository opened a nested UnitOfWork"
-! grep -Eq '^func .*AppendExternalEvent' <<<"$p3c07a_repository" ||
-  fail "P3-C07A repository implemented the P3-C07C external-event method"
 
 p3c07a_acceptance="$(git show :acceptance/contact/merge_lineage_integration_test.go)"
 for anchor in \
@@ -3648,6 +3666,60 @@ r3b_acceptance_recipe="$(make_target_recipe 'p3-c07c-r3b-storage-acceptance:')" 
   fail "P3-C07C-R3B acceptance target lost its explicit database contract"
 grep -Fq 'P3C07C_R3B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3b-storage-acceptance' <(git show :.github/workflows/application-go.yml) ||
   fail "P3-C07C-R3B acceptance is disconnected from application migration CI"
+
+r3c_port="$(git show :internal/contact/port/port.go)"
+grep -Fq 'ErrExternalEventConflict = errors.New("external customer event conflict")' <<<"$r3c_port" ||
+  fail "P3-C07C-R3C public conflict error drifted"
+
+r3c_queries="$(git show :internal/contact/store/queries/external_events.sql)"
+for anchor in \
+  '-- name: LockExternalEventIdempotencyKey :exec' \
+  'SELECT pg_advisory_xact_lock(' \
+  "hashtextextended(sqlc.arg(idempotency_key)::text, 0)" \
+  '-- name: GetExternalEventIdempotency :one' \
+  '-- name: InsertExternalEventIdempotency :execrows' \
+  'ON CONFLICT (idempotency_key) DO NOTHING;'; do
+  grep -Fq -- "$anchor" <<<"$r3c_queries" || fail "P3-C07C-R3C SQL behavior drifted: $anchor"
+done
+
+r3c_repository="$(git show :internal/contact/store/merge_port_repository.go)"
+for anchor in \
+  'func (repository *MergePortRepository) AppendExternalEvent(' \
+  'queries.LockExternalEventIdempotencyKey(ctx, command.IdempotencyKey)' \
+  'effectiveID, err := resolveEffectiveCustomerRoot(ctx, queries, command.CustomerID)' \
+  'return replayExternalEvent(ctx, queries, effectiveID, command, existing)' \
+  'queries.AppendCustomerEvent(ctx' \
+  'queries.InsertExternalEventIdempotency(ctx' \
+  '!sameJSONObject(existing.Payload, command.Payload)' \
+  'return 0, contactport.ErrExternalEventConflict'; do
+  grep -Fq "$anchor" <<<"$r3c_repository" || fail "P3-C07C-R3C runtime receipt drifted: $anchor"
+done
+! grep -Eq 'BeginTx\(|NewUnitOfWork\(' <<<"$r3c_repository" ||
+  fail "P3-C07C-R3C repository must remain transaction-bound"
+
+r3c_acceptance="$(git show :acceptance/contact/external_event_behavior_integration_test.go)"
+for anchor in \
+  'const attempts = 10' \
+  'errors.Is(err, platformport.ErrTransactionRequired)' \
+  'errors.Is(err, contactport.ErrExternalEventConflict)' \
+  'for _, replayCustomerID := range []contactport.CustomerID{mergedID, finalRootID}' \
+  'return rollbackMarker' \
+  'wantRegistryCount, wantEventCount int'; do
+  grep -Fq "$anchor" <<<"$r3c_acceptance" || fail "P3-C07C-R3C acceptance drifted: $anchor"
+done
+
+r3c_card="$(git show :docs/execution/slices/P3-C07C-R3C.md)"
+for anchor in 'behavior-only' '不修改 migration、ownership、canonical' '10-way concurrency' '不执行 live migration/cutover'; do
+  grep -Fq "$anchor" <<<"$r3c_card" || fail "P3-C07C-R3C card boundary drifted: $anchor"
+done
+r3c_acceptance_recipe="$(make_target_recipe 'p3-c07c-r3c-behavior-acceptance:')" ||
+  fail "P3-C07C-R3C acceptance target must be unique"
+[[ "$r3c_acceptance_recipe" = *'P3C07C_R3C_TEST_DATABASE_URL is required'* &&
+   "$r3c_acceptance_recipe" = *"-run '^TestExternalEvent'"* &&
+   "$r3c_acceptance_recipe" = *'-args -database-url "$$P3C07C_R3C_TEST_DATABASE_URL"'* ]] ||
+  fail "P3-C07C-R3C acceptance target lost its explicit database contract"
+grep -Fq 'P3C07C_R3C_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3c-behavior-acceptance' <(git show :.github/workflows/application-go.yml) ||
+  fail "P3-C07C-R3C acceptance is disconnected from application migration CI"
 
 p3s04a_app="$(git show :internal/segment/app/refresh.go)"
 for anchor in \

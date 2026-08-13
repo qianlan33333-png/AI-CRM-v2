@@ -18,7 +18,9 @@ type Querier interface {
 	GetCustomerDetailSnapshot(ctx context.Context, arg GetCustomerDetailSnapshotParams) ([]GetCustomerDetailSnapshotRow, error)
 	GetCustomerMergeLineage(ctx context.Context, mergedCustomerID int64) (int64, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
+	GetExternalEventIdempotency(ctx context.Context, idempotencyKey string) (GetExternalEventIdempotencyRow, error)
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)
+	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
 	ListCustomerEvents(ctx context.Context, arg ListCustomerEventsParams) ([]ListCustomerEventsRow, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
@@ -26,6 +28,7 @@ type Querier interface {
 	ListTags(ctx context.Context) ([]ListTagsRow, error)
 	LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error)
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
+	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error)
