@@ -3489,6 +3489,38 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: []
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+  - slice_id: P3-I1
+    title: identity-seven-kind-normalization-and-transaction-upsert
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: 0c0e58b80d67586255cbd10df5d206f977e2595f
+    dependency: P3_I00_AND_R4B_FROZEN_ON_EXACT_MAIN
+    branch: slice/p3-i1-identity-normalize-upsert-main
+    scope: [seven_kind_scope_value_normalization, phone_e164_normalization, normalizer_version_1, transaction_bound_sqlc_postgresql_upsert, concurrent_same_value_same_identity_id, identity_created_event_only_on_new_row, event_failure_full_rollback]
+    excluded_scope: [Resolve_Bind_Ingest_merge_review_replay_HTTP_API_OpenAPI_public_ports_migration_keyring_root_dependencies_production_database_live_migration_real_wecom]
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [infra:local_web_gate_initially_used_host_node_v25_9_0_and_was_rejected_by_the_frozen_v24_18_0_npm_11_12_1_contract_then_reran_with_the_pinned_nonproduction_toolchain]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-I1R
+    title: identity-upsert-event-ownership-fixture-correction
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: 0c0e58b80d67586255cbd10df5d206f977e2595f
+    dependency: P3_I1_INITIAL_CANDIDATE_PR_169
+    branch: slice/p3-i1-identity-normalize-upsert-main
+    original_slice: P3-I1
+    original_slice_disposition: CORRECTION_CONTINUATION_SAME_BUSINESS_SLICE
+    scope: [P3_I1_acceptance_event_observation_via_events_port_recorder]
+    excluded_scope: [Resolve_Bind_Ingest_merge_review_replay_HTTP_API_OpenAPI_public_ports_migration_keyring_root_dependencies_production_database_live_migration_real_wecom]
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [slice:remote_ownership_lint_rejected_direct_event_log_access_in_the_identity_acceptance_test_then_event_observation_was_moved_to_the_events_port_recorder]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
 
 phase_closeouts:
   P2:
