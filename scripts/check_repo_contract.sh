@@ -85,6 +85,12 @@ required=(
   web/src/auth-ui.test.tsx
   web/src/main.tsx
   web/src/main.test.tsx
+  web/src/segments.ts
+  web/src/segments.test.ts
+  web/src/segments-ui.tsx
+  web/src/segments-ui.test.tsx
+  web/src/segments.css
+  web/scripts/segments-browser-smoke.mjs
   web/src/customers.ts
   web/src/customers.test.ts
   web/src/customers-ui.tsx
@@ -457,6 +463,7 @@ required=(
   docs/governance/limitations.md
   docs/execution/slice-card-template.md
   docs/execution/slice-ledger.yml
+  docs/execution/slices/P3-S06.md
   docs/execution/slices/P0-S02.md
   docs/execution/slices/P0-S03.md
   docs/execution/slices/P0-S04.md
@@ -520,6 +527,12 @@ done <<'EOF'
 100644 web/index.html
 100644 web/src/main.tsx
 100644 web/src/main.test.tsx
+100644 web/src/segments.ts
+100644 web/src/segments.test.ts
+100644 web/src/segments-ui.tsx
+100644 web/src/segments-ui.test.tsx
+100644 web/src/segments.css
+100644 web/scripts/segments-browser-smoke.mjs
 100644 web/src/customers.ts
 100644 web/src/customers.test.ts
 100644 web/src/customers-ui.tsx
@@ -1501,7 +1514,21 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  0cb89c504dce55187bf3cf1d79a9106a3037bc24375998aee078026971d588e9
+  512c779474b635d6e4edeb5c32816e6db937bb90bdd6cf50e4cb85b704bd585b
+verify_index_sha256 docs/execution/slices/P3-S06.md \
+  9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
+verify_index_sha256 web/src/segments.ts \
+  d44e630fc6045ce4ee0adb01f285d0f2fbdf43904339987035d20139834dbef6
+verify_index_sha256 web/src/segments.test.ts \
+  fae3b571c659d7dda6415bd7433e8127498450f9333e00ea636a108008872985
+verify_index_sha256 web/src/segments-ui.tsx \
+  24fb00c24c30bc66da5025d831b6dcb23d576078cc5ef3b85fd84b24632ab0c8
+verify_index_sha256 web/src/segments-ui.test.tsx \
+  1f14826d392cc1644577a029cb2b5cc5070d6044bd560f3653f0777985c0603f
+verify_index_sha256 web/src/segments.css \
+  98c8e5e7b499df9fab0b0c762e2da1f75303a6fa7f1096d8c77f15d998f88fed
+verify_index_sha256 web/scripts/segments-browser-smoke.mjs \
+  88c47fa84d4b120588f8c698964c65af2ae43f155da9df31c0858ce3ebf6d3ea
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1641,9 +1668,9 @@ verify_index_sha256 docs/execution/slices/P2-11.md \
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
   db10c68cc987690f3a812ce5966c499597fc90aaafef9b4b04cdd0dd6eba1be6
 verify_index_sha256 web/src/main.tsx \
-  17fbe2714149c39e94aedbba4eec9b98ad53d9f1db75422a804f5860829e3e30
+  9cd00b836949b746827a2c23dd4595e026e234e39a519f58e950250d9b271f35
 verify_index_sha256 web/src/main.test.tsx \
-  3baa9de2891313ade6452dd77fba1d834852a3dc755edce131897064b36ae656
+  f60c010cf7bae0e4f377ac2567e62786472bdf378575bb74a5a879a31050b1a3
 verify_index_sha256 web/src/customers.ts \
   d5171da808f93014f46f4bc374b8960a3879ebf2f44ece604fa3b95907726c23
 verify_index_sha256 web/src/customers.test.ts \
@@ -1749,9 +1776,9 @@ verify_index_sha256 acceptance/p2s14/doc.go \
 verify_index_sha256 acceptance/p2s14/stages_store_integration_test.go \
   c9768333556d987e7e01c522d2229362438114900af5191420415ca8b9d40143
 verify_index_sha256 web/src/auth.ts \
-  dddcd144109e5e86b3df79ce4cc76ed09cdede90ce879e0c458b71f6f404c14f
+  fe291dd535ab75a2c2d47fe729bf621369e22ff1804696c946502c05cf2faff9
 verify_index_sha256 web/src/auth.test.ts \
-  1c53880d61fd71f8ee0e0737db2f376998a105cb745d350257680d7790fe3598
+  16d193ec88af2cf2c402602a739d984900131892450e14421a09df315cb583f2
 verify_index_sha256 web/src/auth-ui.tsx \
   cd44efe0eb1216921df18f4f508088a12004a97eb4f148698e46b776f9b6cde6
 verify_index_sha256 web/src/auth-ui.test.tsx \
