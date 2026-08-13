@@ -46,6 +46,7 @@ required=(
   migrations/00007_contact_merge_lineage.sql
   migrations/00008_segment_contract.sql
   migrations/00009_segment_query_indexes.sql
+  migrations/00018_segment_crud_receipts.sql
   internal/segment/port/port.go
   internal/segment/port/port_test.go
   internal/segment/dsl/ast.go
@@ -67,6 +68,12 @@ required=(
   internal/segment/store/refresh_repository.go
   internal/segment/store/refresh_repository_test.go
   acceptance/segment/refresh_integration_test.go
+  internal/segment/app/crud.go
+  internal/segment/http/crud_handler.go
+  internal/segment/store/crud_repository.go
+  internal/segment/store/queries/crud.sql
+  acceptance/segment/crud_integration_test.go
+  docs/execution/slices/P3-S05B-R2.md
   internal/platform/http/contract.go
   internal/platform/runtime/contract.go
   internal/platform/store/contract.go
@@ -858,6 +865,7 @@ done <<'EOF'
 100644 migrations/00007_contact_merge_lineage.sql
 100644 migrations/00008_segment_contract.sql
 100644 migrations/00009_segment_query_indexes.sql
+100644 migrations/00018_segment_crud_receipts.sql
 100644 internal/segment/port/port.go
 100644 internal/segment/port/port_test.go
 100644 internal/segment/dsl/ast.go
@@ -879,6 +887,12 @@ done <<'EOF'
 100644 internal/segment/store/refresh_repository.go
 100644 internal/segment/store/refresh_repository_test.go
 100644 acceptance/segment/refresh_integration_test.go
+100644 internal/segment/app/crud.go
+100644 internal/segment/http/crud_handler.go
+100644 internal/segment/store/crud_repository.go
+100644 internal/segment/store/queries/crud.sql
+100644 acceptance/segment/crud_integration_test.go
+100644 docs/execution/slices/P3-S05B-R2.md
 100644 docs/execution/slices/P3-S00.md
 100644 docs/execution/slices/P3-S01.md
 100644 docs/execution/slices/P3-S02.md
@@ -933,7 +947,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  dfd33c654fdae5d73fe2501264e8e2d52534604132686baa58fdbd67487fcd99
+  83ca5e9ad602f9d2743ab900ea4bf2cc488a4dc0a07ed821823876e1ec4b8007
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -949,7 +963,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  39d02f8e1ab544c6de57d9e369336aa4b13c9076b602ba3f40122368f58e62cc
+  93ed98eaed4ab00221c78c41434407c8226dbae2715421584bd9bb20004da6e4
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -961,11 +975,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  c43f8ee168d418044a5a41ba9da7babe9545caf7136beef9fdbfee7c970b9ab9
+  2bf43d1034687be0b377a7029b6280a02c7bb0d5f004190a8d06010318c8eeb6
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  5e7d342c829cc2dc2ab63f1d6233048c1adeec68a772187870406b2a7fd6231e
+  e33796df1ad0dca76d3d4002a72a482ce6ea4cef1faaacca90afad2cd4489e1b
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1487,7 +1501,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  64091bc0c6cd4c4dd1ea0e0f029cc5c28270366258dd07ed9b69588119bbd8c0
+  b42259ef12085f2f32ba5c8f62b5c49fc4fff4aa88a888ab6c6e08a887114344
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1615,7 +1629,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  426c4379d25e4c8f7c11024b29d1e9cbee7af4eb9e094ef999c503714da8a953
+  cd48f78ef89e077fc793d66deff754f51583efb49f1cc30b2fda26d3e5aa68e0
 verify_index_sha256 cmd/aicrm/api_test.go \
   34e65cf995c027c92b286a022c1a86016416ac24bf5320c3f562ff0da245a11f
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -1833,9 +1847,23 @@ verify_index_sha256 docs/execution/slices/M0-6.md \
 verify_index_sha256 docs/architecture/canonical.md \
   0a3de6e1707271bc0390da23be9fc12e313b05363cb88325e8d050811cf31845
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  8bbebd9abf24d8f4de02947a8cc18f0431a8f88637b645258ef63e42c7ab141f
+  bf51e97b7f43069232b47b8d89d4b863847e92fd082e38238e5664b90b910b6e
 verify_index_sha256 scripts/test_repo_contract.sh \
-  0541c7b526a424f8ef6d6009bd35ca899f33746e7e700d3bed530388c29523fa
+  0645abda831931f4703ce1d61a0b28715bca41d72e815a988837d5e9923d2cda
+verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
+  da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
+verify_index_sha256 internal/segment/app/crud.go \
+  32c71c027868e01b003366e7a30e2e52ff0ba5e0c059cac8074947917adca395
+verify_index_sha256 internal/segment/http/crud_handler.go \
+  ac2a8fedf6390c31baa7b79f7e51cc9beaa9508b9f02128b0158faf865c11415
+verify_index_sha256 internal/segment/store/crud_repository.go \
+  d1270756aca4f67930f476480f5a921ad7384354ed3df83f1a3e9fcd001f9d64
+verify_index_sha256 internal/segment/store/queries/crud.sql \
+  6444d97a56c3a3813d3f18ca1fd27b90283ee87a0c06334f98c39827173b26cd
+verify_index_sha256 acceptance/segment/crud_integration_test.go \
+  3817464e34cad386bf841793529b5a9c8e17f2d6835857f1d8312bae4f6068d4
+verify_index_sha256 docs/execution/slices/P3-S05B-R2.md \
+  1637cd5a6490c64f30734c42988921655e093c40f4633c181082d2728f6c7e73
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
   8acee6eaa7950a0d8c315f7eebf4b4d17f09adf7f75f883514cebefdb99b38a6
 verify_index_sha256 acceptance/p0s02/test_static_contract.sh \
@@ -3350,7 +3378,7 @@ p3s00_ownership="$(git show :docs/architecture/table-ownership.yml)"
 for anchor in \
   '  segment:' \
   '    package: internal/segment' \
-  '    tables: [segments, segment_members, segment_refresh_receipts]' \
+  '    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts]' \
   '  segment:' \
   '    tables: [customers, customer_tags, tags]' \
   '    reason: indexed_audience_compilation'; do
@@ -4003,6 +4031,71 @@ done
 w5_acceptance_recipe="$(make_target_recipe 'p3-w5-acceptance:')" || fail "P3-W5 acceptance target must be unique"
 [[ "$w5_acceptance_recipe" = *'$(GO) test -race -count=1 -timeout=30s ./internal/wecom/app'* ]] ||
   fail "P3-W5 acceptance target lost the Identity ingest adapter tests"
+
+p3s05b_migration="$(git show :migrations/00018_segment_crud_receipts.sql)"
+for anchor in \
+  'CREATE TABLE public.segment_operation_receipts (' \
+  "CHECK (operation IN ('create', 'update'))" \
+  'UNIQUE (operation, actor_scope, key_digest)' \
+  'octet_length(key_digest) = 32' \
+  'octet_length(payload_digest) = 32' \
+  'DEFERRABLE INITIALLY DEFERRED' \
+  'SET search_path = pg_catalog' \
+  'FROM public.segment_operation_receipts' \
+  'completed segment operation receipts are immutable' \
+  'DROP TABLE public.segment_operation_receipts;'; do
+  grep -Fq -- "$anchor" <<<"$p3s05b_migration" || fail "P3-S05B-R2 receipt migration drifted: $anchor"
+done
+[[ "$(grep -Ec '^CREATE TABLE ' <<<"$p3s05b_migration")" -eq 1 ]] || fail "P3-S05B-R2 migration must create exactly one Segment receipt table"
+! grep -Eiq 'CREATE[[:space:]]+TABLE[[:space:]]+(customers|identities|pending_events|customer_events|event_log|river_)' <<<"$p3s05b_migration" ||
+  fail "P3-S05B-R2 migration exceeded Segment ownership"
+
+p3s05b_ownership="$(git show :docs/architecture/table-ownership.yml)"
+grep -Fq '    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts]' <<<"$p3s05b_ownership" ||
+  fail "P3-S05B-R2 operation receipt lost Segment ownership"
+grep -Fq '      segment_operation_receipts: transaction_scoped_crud_idempotency_receipts' <<<"$p3s05b_ownership" ||
+  fail "P3-S05B-R2 receipt ownership constraint drifted"
+
+p3s05b_queries="$(git show :internal/segment/store/queries/crud.sql)"
+for anchor in \
+  '-- name: ReserveSegmentOperationReceipt :one' \
+  'ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING' \
+  '-- name: CompleteSegmentOperationReceipt :one' \
+  '-- name: ListSegments :many' \
+  '-- name: ListSegmentMemberRecords :many'; do
+  grep -Fq -- "$anchor" <<<"$p3s05b_queries" || fail "P3-S05B-R2 fixed sqlc query receipt drifted: $anchor"
+done
+! grep -Eiq '(EXECUTE[[:space:]]|format\(|information_schema|pg_catalog)' <<<"$p3s05b_queries" || fail "P3-S05B-R2 query family gained a SQL escape hatch"
+
+p3s05b_app="$(git show :internal/segment/app/crud.go)"
+for anchor in \
+  'service.uow.Within(ctx' \
+  'sha256.Sum256([]byte(key))' \
+  'subtle.ConstantTimeCompare' \
+  'Type: "segment." + string(operation) + "d"' \
+  'service.store.CompleteReceipt'; do
+  grep -Fq -- "$anchor" <<<"$p3s05b_app" || fail "P3-S05B-R2 same-UoW CRUD boundary drifted: $anchor"
+done
+! grep -Eq 'internal/(contact|identity|outbound)/(app|store|http|worker)|time[.](Ticker|AfterFunc)' <<<"$p3s05b_app" || fail "P3-S05B-R2 app crossed its frozen domain/runtime boundary"
+
+p3s05b_runtime="$(git show :cmd/aicrm/api.go)"
+for anchor in \
+  '{http.MethodGet, "/api/v1/segments", authport.CapabilitySegmentsRead' \
+  '{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true' \
+  '{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true' \
+  '{http.MethodGet, "/api/v1/segments/{segment_id}/members", authport.CapabilitySegmentsRead'; do
+  grep -Fq -- "$anchor" <<<"$p3s05b_runtime" || fail "P3-S05B-R2 runtime route drifted: $anchor"
+done
+
+p3s05b_card="$(git show :docs/execution/slices/P3-S05B-R2.md)"
+for anchor in '00018' '同一 PostgreSQL UoW' '不改 OpenAPI、public port、DSL/compiler、River、UI' 'PENDING_EXTERNAL_GATE'; do
+  grep -Fq -- "$anchor" <<<"$p3s05b_card" || fail "P3-S05B-R2 card boundary drifted: $anchor"
+done
+p3s05b_acceptance_recipe="$(make_target_recipe 'p3-s05b-acceptance:')" || fail "P3-S05B-R2 acceptance target must be unique"
+[[ "$p3s05b_acceptance_recipe" = *'SEGMENT_CRUD_TEST_DATABASE_URL is required'* && "$p3s05b_acceptance_recipe" = *'TestSegmentCRUDReceiptAndRuntimeFlow'* ]] ||
+  fail "P3-S05B-R2 acceptance target lost its PostgreSQL contract"
+grep -Fq 'SEGMENT_CRUD_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-s05b-acceptance' <(git show :.github/workflows/application-go.yml) ||
+  fail "P3-S05B-R2 PG behavior acceptance is disconnected from application CI"
 
 scripts/scan_sensitive_paths.sh
 

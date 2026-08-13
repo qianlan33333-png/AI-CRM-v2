@@ -43,7 +43,9 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members, segment_refresh_receipts]
+    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts]
+    constraints:
+      segment_operation_receipts: transaction_scoped_crud_idempotency_receipts
 
   automation:
     package: internal/automation

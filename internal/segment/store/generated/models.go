@@ -3,3 +3,23 @@
 //   sqlc v1.28.0
 
 package segmentdb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type Customer struct {
+	ID             int64              `json:"id"`
+	Name           string             `json:"name"`
+	AvatarUrl      pgtype.Text        `json:"avatar_url"`
+	Gender         pgtype.Int2        `json:"gender"`
+	StageID        pgtype.Int8        `json:"stage_id"`
+	OwnerStaffID   pgtype.Int8        `json:"owner_staff_id"`
+	ChannelID      pgtype.Int8        `json:"channel_id"`
+	AddedAt        pgtype.Timestamptz `json:"added_at"`
+	LastInteractAt pgtype.Timestamptz `json:"last_interact_at"`
+	IsDeleted      bool               `json:"is_deleted"`
+	Extra          []byte             `json:"extra"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}

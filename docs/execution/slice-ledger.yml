@@ -3587,6 +3587,36 @@ slices:
     correction_notes: [slice:initial_conformance_assertion_overclaimed_the_partial_RequestRefresh_service_as_the_full_frozen_Segment_Service_then_the_invalid_assertion_was_removed_without_widening_the_public_port, slice:full_architecture_gate_rejected_a_raw_River_driver_in_Segment_store_then_minimized_the_fix_to_the_platform_insert_only_adapter_without_registering_or_running_a_worker, verification:first_full_gate_detected_the_expected_sqlc_generated_hash_manifest_sync_then_the_generated_manifest_and_frozen_hash_anchor_were_updated]
     external_gates: [REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_OUTBOUND_NOT_EXECUTED]
 
+  - slice_id: P3-S05B-R1
+    title: segment-crud-runtime-candidate-historical-hard-stop
+    owner: Codex-Sol
+    status: HARD_STOP_READ_ONLY_RESCOPE_REQUIRED
+    base_sha: eb5713a8122d53e725dfc1c3de06b9eb16e2ad96
+    source_thread: 019ff5ab-c411-70e2-bd88-766aa8221f4d
+    candidate_commit: c92f4e4b714e32e72bedb80cc523cd383549890a
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [permanent_read_only_history; deferred_guard_did_not_fix_search_path_or_qualify_public_segment_operation_receipts_and_pg_temp_shadow_could_bypass_commit_guard]
+    external_gates: [DO_NOT_REPAIR_DO_NOT_PUBLISH_DO_NOT_CHERRY_PICK]
+
+  - slice_id: P3-S05B-R2
+    title: segment-crud-operation-receipt-and-frozen-runtime-chain
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: eb5713a8122d53e725dfc1c3de06b9eb16e2ad96
+    dependency: O2_00016_AND_IDENTITY_I5_00017_CLOSED_EXACT_MAIN_GREEN
+    branch: slice/p3-s5b-r2-segment-crud
+    scope: [GET_POST_api_v1_segments, POST_api_v1_segments, PATCH_api_v1_segments_segment_id, GET_api_v1_segments_segment_id_members, Segment_owned_operation_receipt_00018, same_UoW_segment_event_receipt_completion, global_owner_scope_CSRF_idempotency_stable_errors, PG16_14_55433_acceptance]
+    excluded_scope: [OpenAPI_public_port_DSL_compiler_River_UI_GET_segment_detail_Contact_Identity_business_production_database_live_migration_real_wecom_outbound]
+    tests: [LOCAL_PG16_14_55433_00001_to_00018_down_up_PASS, LOCAL_receipt_replay_conflict_event_member_preview_and_pg_temp_shadow_negative_PASS]
+    handwritten_scope: 5_business_runtime_files_under_1500_lines_plus_tests_sqlc_generated_card_ledger_and_required_hash_receipts
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    correction_notes: [slice:standard_00018_down_up_recreated_receipt_IDs_but_event_idempotency_used_receipt_ID_and_collided_with_retained_event_log; changed_event_key_to_actor_and_command_digest_without_expanding_behavior, verification:initial_pg_temp_negative_created_the_shadow_table_through_pool_then_opened_a_separate_transaction; corrected_to_create_and_exercise_the_shadow_in_the_same_transaction_without_runtime_scope_change, verification:initial_local_repeat_reused_the_same_receipt_actor_and_key_then_isolated_each_acceptance_run_with_a_fresh_synthetic_admin_actor_and_key_without_runtime_scope_change]
+    external_gates: [REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_OUTBOUND_NOT_EXECUTED]
+
   - slice_id: P3-W1
     title: wecom-callback-url-verification-signature-aes-corp-id-boundary
     owner: Codex-Sol

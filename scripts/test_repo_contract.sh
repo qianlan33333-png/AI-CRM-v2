@@ -3231,6 +3231,53 @@ if (cd "$r3c_nested_uow" && scripts/check_repo_contract.sh >/dev/null 2>&1); the
   fail "P3-C07C-R3C nested UoW marker was accepted"
 fi
 
+s5b_missing_migration="$(make_fixture p3-s05b-r2-missing-migration)"
+rm -f "$s5b_missing_migration/migrations/00018_segment_crud_receipts.sql"
+git -C "$s5b_missing_migration" add -u migrations/00018_segment_crud_receipts.sql
+if (cd "$s5b_missing_migration" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S05B-R2 missing operation receipt migration was accepted"
+fi
+
+s5b_search_path_drift="$(make_fixture p3-s05b-r2-search-path-drift)"
+sed -i.bak '/SET search_path = pg_catalog/d; s/FROM public.segment_operation_receipts/FROM segment_operation_receipts/' "$s5b_search_path_drift/migrations/00018_segment_crud_receipts.sql"
+rm -f "$s5b_search_path_drift/migrations/00018_segment_crud_receipts.sql.bak"
+restage_p2s18_receipt "$s5b_search_path_drift" migrations/00018_segment_crud_receipts.sql
+if (cd "$s5b_search_path_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S05B-R2 search-path shadow bypass was accepted"
+fi
+
+s5b_owner_drift="$(make_fixture p3-s05b-r2-owner-drift)"
+sed -i.bak 's/, segment_operation_receipts//' "$s5b_owner_drift/docs/architecture/table-ownership.yml"
+rm -f "$s5b_owner_drift/docs/architecture/table-ownership.yml.bak"
+restage_p2s18_receipt "$s5b_owner_drift" docs/architecture/table-ownership.yml
+if (cd "$s5b_owner_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S05B-R2 receipt ownership drift was accepted"
+fi
+
+s5b_uow_drift="$(make_fixture p3-s05b-r2-uow-drift)"
+sed -i.bak 's/service.uow.Within(ctx/service.store.GetSegment(ctx/' "$s5b_uow_drift/internal/segment/app/crud.go"
+rm -f "$s5b_uow_drift/internal/segment/app/crud.go.bak"
+restage_p2s18_receipt "$s5b_uow_drift" internal/segment/app/crud.go
+if (cd "$s5b_uow_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S05B-R2 same-UoW boundary weakening was accepted"
+fi
+
+s5b_route_drift="$(make_fixture p3-s05b-r2-route-drift)"
+sed -i.bak '/http.MethodPost, "\/api\/v1\/segments", authport.CapabilitySegmentsWrite/d' "$s5b_route_drift/cmd/aicrm/api.go"
+rm -f "$s5b_route_drift/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$s5b_route_drift" cmd/aicrm/api.go
+if (cd "$s5b_route_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S05B-R2 write route or CSRF boundary drift was accepted"
+fi
+
+s5b_ci_disconnect="$(make_fixture p3-s05b-r2-ci-disconnect)"
+sed -i.bak '/SEGMENT_CRUD_TEST_DATABASE_URL=.*p3-s05b-acceptance/d' "$s5b_ci_disconnect/.github/workflows/application-go.yml"
+rm -f "$s5b_ci_disconnect/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$s5b_ci_disconnect" .github/workflows/application-go.yml
+if (cd "$s5b_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-S05B-R2 PG behavior acceptance CI disconnect was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

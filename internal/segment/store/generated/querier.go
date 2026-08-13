@@ -12,11 +12,19 @@ import (
 
 type Querier interface {
 	AcceptSegmentRefreshReceipt(ctx context.Context, arg AcceptSegmentRefreshReceiptParams) (AcceptSegmentRefreshReceiptRow, error)
+	CompleteSegmentOperationReceipt(ctx context.Context, arg CompleteSegmentOperationReceiptParams) (CompleteSegmentOperationReceiptRow, error)
 	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
+	CreateSegment(ctx context.Context, arg CreateSegmentParams) (CreateSegmentRow, error)
 	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
+	GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error)
+	GetSegmentOperationReceipt(ctx context.Context, arg GetSegmentOperationReceiptParams) (GetSegmentOperationReceiptRow, error)
 	InsertSegmentMembersForRefresh(ctx context.Context, arg InsertSegmentMembersForRefreshParams) error
 	ListScheduledSegmentRefreshes(ctx context.Context) ([]ListScheduledSegmentRefreshesRow, error)
+	ListSegmentMemberRecords(ctx context.Context, arg ListSegmentMemberRecordsParams) ([]Customer, error)
+	ListSegments(ctx context.Context, arg ListSegmentsParams) ([]ListSegmentsRow, error)
 	LockSegmentDefinitionForRefresh(ctx context.Context, segmentID int64) ([]byte, error)
+	LockSegmentForUpdate(ctx context.Context, segmentID int64) (LockSegmentForUpdateRow, error)
+	ReserveSegmentOperationReceipt(ctx context.Context, arg ReserveSegmentOperationReceiptParams) (ReserveSegmentOperationReceiptRow, error)
 	ReserveSegmentRefreshReceipt(ctx context.Context, arg ReserveSegmentRefreshReceiptParams) (ReserveSegmentRefreshReceiptRow, error)
 	SelectSegmentAddedAfter(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentAddedBefore(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
@@ -31,6 +39,7 @@ type Querier interface {
 	SelectSegmentStageEqual(ctx context.Context, stageID int64) ([]int64, error)
 	SelectSegmentTagAny(ctx context.Context, tagIds []int64) ([]int64, error)
 	SelectSegmentUniverse(ctx context.Context) ([]int64, error)
+	UpdateSegment(ctx context.Context, arg UpdateSegmentParams) (UpdateSegmentRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

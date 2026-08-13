@@ -48,6 +48,7 @@ type candidateHandler struct {
 	mutations      *contacthttp.CustomerMutationHandler
 	tags           *contacthttp.TagCatalogHandler
 	stages         *contacthttp.Handler
+	segments       *segmenthttp.CRUDHandler
 	segmentRefresh *segmenthttp.RefreshHandler
 }
 
@@ -99,6 +100,22 @@ func (handler *candidateHandler) RenameStage(writer http.ResponseWriter, request
 
 func (handler *candidateHandler) RequestSegmentRefresh(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID, params api.RequestSegmentRefreshParams) {
 	handler.segmentRefresh.RequestSegmentRefresh(writer, request, segmentID, params)
+}
+
+func (handler *candidateHandler) ListSegments(writer http.ResponseWriter, request *http.Request, params api.ListSegmentsParams) {
+	handler.segments.ListSegments(writer, request, params)
+}
+
+func (handler *candidateHandler) CreateSegment(writer http.ResponseWriter, request *http.Request, params api.CreateSegmentParams) {
+	handler.segments.CreateSegment(writer, request, params)
+}
+
+func (handler *candidateHandler) UpdateSegment(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID, params api.UpdateSegmentParams) {
+	handler.segments.UpdateSegment(writer, request, segmentID, params)
+}
+
+func (handler *candidateHandler) ListSegmentMembers(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID, params api.ListSegmentMembersParams) {
+	handler.segments.ListSegmentMembers(writer, request, segmentID, params)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -176,11 +193,18 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	segmentCRUDHandler, err := segmenthttp.NewCRUDHandler(segmentapp.NewCRUDService(
+		uow, segmentstore.NewCRUDRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
-		segmentRefresh: segmentRefreshHandler,
+		segments: segmentCRUDHandler, segmentRefresh: segmentRefreshHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
@@ -322,6 +346,10 @@ func newAPIHandlerWithCallback(logger *slog.Logger, callbackHandler http.Handler
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, true, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, true, http.HandlerFunc(wrapper.IngestIdentityEvent)},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},
+		{http.MethodGet, "/api/v1/segments", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegments)},
+		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
+		{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.UpdateSegment)},
+		{http.MethodGet, "/api/v1/segments/{segment_id}/members", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegmentMembers)},
 		{http.MethodPost, "/api/v1/segments/{segment_id}/refresh", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.RequestSegmentRefresh)},
 		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead, false, http.HandlerFunc(wrapper.ListStages)},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.CreateStage)},
