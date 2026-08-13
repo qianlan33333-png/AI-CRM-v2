@@ -22,7 +22,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p2-s15-acceptance
 .PHONY: p2-s16-acceptance
 .PHONY: p2-s18-acceptance
-.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c02a-acceptance p3-c02b-acceptance p3-c02d-acceptance p3-c02e-acceptance p3-c03-migration-acceptance p3-c07a-acceptance p3-c07b2-acceptance p3-r4b-identity-storage-acceptance p3-s05a-acceptance p3-w1-acceptance p3-w2-acceptance p3-w3-acceptance p3-w4-acceptance
+.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c02a-acceptance p3-c02b-acceptance p3-c02d-acceptance p3-c02e-acceptance p3-c03-migration-acceptance p3-c07a-acceptance p3-c07b2-acceptance p3-r4b-identity-storage-acceptance p3-s05a-acceptance p3-w1-acceptance p3-w2-acceptance p3-w3-acceptance p3-w4-acceptance p3-w5-acceptance
 .PHONY: g2-runtime-image-acceptance
 .PHONY: g2-release-archive-contract
 .PHONY: g2-web-edge-contract
@@ -281,6 +281,9 @@ p3-w4-acceptance:
 	@test -n "$${WECOM_SYNC_TEST_DATABASE_URL:-}" || { echo "WECOM_SYNC_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$WECOM_SYNC_TEST_DATABASE_URL" up
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly WECOM_SYNC_TEST_DATABASE_URL="$$WECOM_SYNC_TEST_DATABASE_URL" $(GO) test -race -count=1 -timeout=45s ./internal/wecom/client ./internal/wecom/app ./internal/wecom/store ./acceptance/wecom
+
+p3-w5-acceptance:
+	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=30s ./internal/wecom/app
 
 p2-s18-acceptance:
 	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 ./internal/platform/deployment ./cmd/aicrm-config

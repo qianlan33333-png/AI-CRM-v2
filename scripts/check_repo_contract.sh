@@ -487,6 +487,9 @@ required=(
   acceptance/wecom/doc.go
   acceptance/wecom/sync_resume_integration_test.go
   docs/execution/slices/P3-W4.md
+  internal/wecom/app/identity_contact.go
+  internal/wecom/app/identity_contact_test.go
+  docs/execution/slices/P3-W5.md
 )
 
 for file_path in "${required[@]}"; do
@@ -930,7 +933,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  e84ad5e26664bd681fa3bcb8db3891932f480230a87881ea23c8938987cd28cd
+  dfd33c654fdae5d73fe2501264e8e2d52534604132686baa58fdbd67487fcd99
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1484,7 +1487,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  824789193edb9f2db0566e57d5fd8d82ca394dc9d92adcaa7776d357d45d7515
+  b44df4c0dc98e77656f59d91759707deae0025338b562571a51adc00053ecd7d
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -3930,6 +3933,52 @@ w4_acceptance_recipe="$(make_target_recipe 'p3-w4-acceptance:')" || fail "P3-W4 
   fail "P3-W4 acceptance target lost its PostgreSQL contract"
 grep -Fq 'WECOM_SYNC_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-w4-acceptance' <(git show :.github/workflows/application-go.yml) ||
   fail "P3-W4 acceptance is disconnected from application migration CI"
+
+w5_service="$(git show :internal/wecom/app/identity_contact.go)"
+for anchor in \
+  'IdentityContactFromCallback IdentityContactFactSource = "callback_inbox"' \
+  'IdentityContactFromSync     IdentityContactFactSource = "directory_sync"' \
+  'Kind:      identityport.KindWeComExternalUserID' \
+  'Scope:     "wecom-corp:" + fact.CorpID' \
+  'Assurance: identityport.AssuranceVerified' \
+  'processor.identity.Ingest(ctx, command)' \
+  'sha256.Sum256([]byte("wecom.identity-contact.v1\x00"' \
+  'ErrIdentityContactIngestFailed' \
+  'identityport.IngestConflict'; do
+  grep -Fq -- "$anchor" <<<"$w5_service" ||
+    fail "P3-W5 Identity ingest adapter receipt drifted: $anchor"
+done
+if grep -Eq 'internal/(contact|identity)/(app|store)|internal/platform/store|\.(Query|QueryRow|Exec|Prepare)\(|github.com/riverqueue|net/http' <<<"$w5_service"; then
+  fail "P3-W5 adapter bypassed the frozen Identity port or added runtime/provider work"
+fi
+
+w5_tests="$(git show :internal/wecom/app/identity_contact_test.go)"
+for anchor in \
+  'TestIdentityContactProcessorMapsVerifiedFactsToIdentityIngest' \
+  'TestIdentityContactProcessorReplayUsesStableCommandAndResult' \
+  'TestIdentityContactProcessorScopesIdempotencyByCorp' \
+  'TestIdentityContactProcessorSurfacesRetryableFailureWithoutChangingCommand' \
+  'TestIdentityContactProcessorFailsClosedForInvalidInputOrResult' \
+  'command leaked raw input'; do
+  grep -Fq -- "$anchor" <<<"$w5_tests" ||
+    fail "P3-W5 acceptance receipt drifted: $anchor"
+done
+
+w5_card="$(git show :docs/execution/slices/P3-W5.md)"
+for anchor in \
+  'W2_DURABLE_INBOX_CRITICAL_JOB_PAYLOAD_MISSING' \
+  'W4_DURABLE_ITEM_HANDOFF_MISSING' \
+  'I5_INGEST_IMPLEMENTATION_MISSING' \
+  '没有修改 O2 已合并的连续 `00016`' \
+  'O2 #182 已 CLOSED' \
+  '已安全重放 exact-green main' \
+  '所有外部门均为 `NOT EXECUTED`'; do
+  grep -Fq -- "$anchor" <<<"$w5_card" ||
+    fail "P3-W5 dependency or hard-boundary receipt drifted: $anchor"
+done
+w5_acceptance_recipe="$(make_target_recipe 'p3-w5-acceptance:')" || fail "P3-W5 acceptance target must be unique"
+[[ "$w5_acceptance_recipe" = *'$(GO) test -race -count=1 -timeout=30s ./internal/wecom/app'* ]] ||
+  fail "P3-W5 acceptance target lost the Identity ingest adapter tests"
 
 scripts/scan_sensitive_paths.sh
 
