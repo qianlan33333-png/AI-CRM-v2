@@ -1620,15 +1620,15 @@ verify_index_sha256 web/src/main.tsx \
 verify_index_sha256 web/src/main.test.tsx \
   3baa9de2891313ade6452dd77fba1d834852a3dc755edce131897064b36ae656
 verify_index_sha256 web/src/customers.ts \
-  a4dddd6400879040c8269b2e69620db20401d42890050464ab815d4e139772a0
+  d5171da808f93014f46f4bc374b8960a3879ebf2f44ece604fa3b95907726c23
 verify_index_sha256 web/src/customers.test.ts \
-  5a5d6e31f3b6c2097a614bb06177ccdc23a76114faef2dda64fede1261879103
+  920448d8b3c3b68280fe7fe5f723da2832a78e373f9cb5546b4e3071467d12d4
 verify_index_sha256 web/src/customers-ui.tsx \
-  213af068067f7931ba7a78ce78fea71a1ecee47fb40d140cd4856bc45fb28c37
+  90946468256ffda9423deeeda06cada0f671f4018ea4445690c59585170815b5
 verify_index_sha256 web/src/customers-ui.test.tsx \
-  3a5e7c600e5771d769545cb084ef6da0c79f987531d1adcd8972c9fca57c950a
+  6a3b4b10d5dc21ea9beedb540de3c87e479a27c2b8a044ed0b754bc9afcffebf
 verify_index_sha256 web/src/customers-list.css \
-  e2e9522f30b1cd44606667f4372bb5fb76b143111a36bac36bf625ed3e6a8b3e
+  d9a64cbdb9c2d1a10de699e28fdb00515a73c38f9d52d254e37a16fc89d2632c
 verify_index_sha256 web/src/shell.css \
   993a7d533476836bab13f051f2a063d60e4f513224d355af485616de04bb033e
 verify_index_sha256 docs/execution/slices/P2-12.md \

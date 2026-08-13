@@ -40,7 +40,8 @@
 .customer-list tbody th { min-width: 13rem; font-weight: 600; }
 .customer-list__customer-name, .customer-list__customer-id { display: block; }
 .customer-list__customer-id { margin-top: 0.25rem; color: #796c5b; font-size: 0.78rem; font-weight: 400; }
-.customer-list__more { justify-self: start; }
+.customer-list__pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.customer-list__pagination p { margin: 0; color: #62584d; }
 .customer-list__more-state { color: #62584d; }
 @media (max-width: 720px) {
   .customer-list__heading { display: grid; }

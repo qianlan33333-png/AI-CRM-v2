@@ -99,6 +99,7 @@ describe("CustomerListPage shell", () => {
       ]) {
         expect(html).toContain(field);
       }
+      expect(html).toContain("清空筛选");
       expect(html.match(/<h1\b/g)).toHaveLength(1);
       expect(html).not.toContain("external_userid");
       expect(html).not.toContain("unionid");
@@ -131,17 +132,20 @@ describe("CustomerListContent states", () => {
     expect(onCustomerNavigate).toHaveBeenCalledWith(click);
   });
 
-  it("renders a semantic result table with watermark, 10k+ marker, and opaque next page action", () => {
+  it("renders a semantic result table with watermark, 10k+ marker, and opaque page controls", () => {
     const screen: CustomerListScreen = {
       kind: "ready",
-      loadingMore: false,
+      hasPreviousPage: false,
+      loadingNextPage: false,
       page,
+      pageNumber: 1,
     };
     const html = renderToStaticMarkup(
       <CustomerListContent
         role="sales"
         screen={screen}
-        onLoadMore={vi.fn()}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
         onRetry={vi.fn()}
       />,
     );
@@ -153,18 +157,24 @@ describe("CustomerListContent states", () => {
     expect(html).toContain("<table>");
     expect(html).toContain("客户列表（排序与数据范围以服务端结果为准）");
     expect(html).toContain("OneID 7");
-    expect(html).toContain("加载更多客户");
+    expect(html).toContain("客户列表分页");
+    expect(html).toContain("上一页");
+    expect(html).toContain("第 1 页");
+    expect(html).toContain("下一页");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>上一页<\/button>/);
     expect(html).not.toContain(page.nextCursor);
   });
 
   it("renders loading, empty, full error, and retryable pagination error states accessibly", () => {
     const retry = vi.fn();
-    const onLoadMore = vi.fn();
+    const onNextPage = vi.fn();
+    const onPreviousPage = vi.fn();
     const loading = renderToStaticMarkup(
       <CustomerListContent
         role="admin"
         screen={{ kind: "loading" }}
-        onLoadMore={onLoadMore}
+        onNextPage={onNextPage}
+        onPreviousPage={onPreviousPage}
         onRetry={retry}
       />,
     );
@@ -173,7 +183,9 @@ describe("CustomerListContent states", () => {
         role="admin"
         screen={{
           kind: "ready",
-          loadingMore: false,
+          hasPreviousPage: false,
+          loadingNextPage: false,
+          pageNumber: 1,
           page: {
             ...page,
             items: [],
@@ -182,14 +194,16 @@ describe("CustomerListContent states", () => {
             totalIsEstimate: false,
           },
         }}
-        onLoadMore={onLoadMore}
+        onNextPage={onNextPage}
+        onPreviousPage={onPreviousPage}
         onRetry={retry}
       />,
     );
     const failed = CustomerListContent({
       role: "admin",
       screen: { kind: "error", failure: "forbidden" },
-      onLoadMore,
+      onNextPage,
+      onPreviousPage,
       onRetry: retry,
     });
     const paginationFailed = renderToStaticMarkup(
@@ -197,11 +211,14 @@ describe("CustomerListContent states", () => {
         role="admin"
         screen={{
           kind: "ready",
-          loadingMore: false,
+          hasPreviousPage: true,
+          loadingNextPage: false,
+          pageNumber: 2,
           paginationFailure: "unavailable",
           page,
         }}
-        onLoadMore={onLoadMore}
+        onNextPage={onNextPage}
+        onPreviousPage={onPreviousPage}
         onRetry={retry}
       />,
     );
@@ -217,25 +234,32 @@ describe("CustomerListContent states", () => {
     (retryButton?.props.onClick as (() => void) | undefined)?.();
     expect(retry).toHaveBeenCalledOnce();
     expect(paginationFailed).toContain(
-      "继续加载失败：客户列表暂时不可用，请稍后重试。",
+      "翻到下一页失败：客户列表暂时不可用，请稍后重试。",
     );
-    expect(paginationFailed).toContain("重试加载更多");
+    expect(paginationFailed).toContain("重试下一页");
   });
 
-  it("announces a pending next page without inventing rows or hiding its retry action", () => {
+  it("announces a pending next page without inventing rows or enabling duplicate navigation", () => {
     const html = renderToStaticMarkup(
       <CustomerListContent
         role="ops"
-        screen={{ kind: "ready", loadingMore: true, page }}
-        onLoadMore={vi.fn()}
+        screen={{
+          kind: "ready",
+          hasPreviousPage: true,
+          loadingNextPage: true,
+          page,
+          pageNumber: 2,
+        }}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
         onRetry={vi.fn()}
       />,
     );
 
-    expect(html).toContain("正在加载更多客户…");
+    expect(html).toContain("正在读取下一页客户…");
     expect(html).toContain("陈晨");
     expect(html).toMatch(
-      /<button[^>]*disabled=""[^>]*>正在加载更多…<\/button>/,
+      /<button[^>]*disabled=""[^>]*>下一页<\/button>/,
     );
   });
 });
