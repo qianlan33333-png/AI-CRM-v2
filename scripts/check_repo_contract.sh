@@ -968,9 +968,9 @@ verify_index_sha256 docs/evidence/g2/test-server-deployment.md \
 verify_index_sha256 docs/evidence/phases/P2-closeout.md \
   80f355388180006365fda2c9f49b71499ad5f25ab4b8e05320d2fd0c7befae2c
 verify_index_sha256 docs/backlog/post-launch.md \
-  b8f29b72886cc49c22226babe481434f902161a31e0a64582c88aadcb8a33ced
+  3248fa362b357e72f562531feb5ba01297f0a19b275a1e61d40108a4fe522b31
 verify_index_sha256 docs/execution/implementation-plan.md \
-  49fe144941c712ee47ef9b99c603e5eef70194a1039cd5cef87a6cdb1657a283
+  572a8425e8d6ef98eef6aa01f84cd272400ffaa997da8295922e1f98cf31b7a5
 verify_index_sha256 docs/execution/slices/P2-01R.md \
   15e671e6d7244993157487b674473fa65acfb26dfbb24e8903130ed9dd1ece85
 verify_index_sha256 docs/execution/slices/P2-02.md \
@@ -1062,7 +1062,7 @@ verify_index_sha256 scripts/sourcepolicy/main.go \
 verify_index_sha256 scripts/test_source_policy.sh \
   5946cd133bf3e213a8d5635a231ca6161a71a9cfd785e69d87bfac7099704b80
 verify_index_sha256 AGENTS.md \
-  6d7bbe6739e98fd878d9fa7550726841f616f0190778b03587025a0cc025173f
+  35be08d85ad92730eed846e4b91dfddc597249b6b99cd78a859445cd7aeec19d
 verify_index_sha256 scripts/check_slice_inputs.sh \
   b7b1711da73974b0a89c79bab020e519095fc8aaf36f737b036027ec3a08cb25
 verify_index_sha256 scripts/test_slice_inputs.sh \
@@ -1086,11 +1086,11 @@ verify_index_sha256 docs/execution/slices/M0-3.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
   210f6d3c9d0434cba6426ab71fc1cc64bc3a6d3a1a184e55af5f1273c21a8099
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
-  816f04447e1af046d4fe6ef24b436aa062b535decc32d6a463055121dd3f6a46
+  d629f96aa6a488a5d90bae99569e688d14d33749d409d5e7b5dfee4b2fb394e4
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
   cf515dd011eb00a1b48d39611773546c8d7794e5bd7f122ef5bf20c6728f82f7
 verify_index_sha256 docs/spec/SHA256SUMS \
-  5b50d071de2613c3896811fa41a15d1cf2015683d1bf9073cb8de0d4141226ac
+  7033f2fed0eae75b9e09dbd0f5debd3de4ab8dd8f4a0058338d34701f81b6854
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -1138,7 +1138,7 @@ verify_index_sha256 docs/execution/slices/G1-D01.md \
 verify_index_sha256 docs/execution/slices/G1-D02.md \
   3fc37264f57da5fa15d8d3765554ca3e1eea7ce8bd10865176eb9d3b537f4742
 verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
-  27ad9a65169d87e07bf0fbebac05f7b3f3b63f5c384d0a8408a20a18a552e675
+  7400d8fcda4be52fe6077652c2441d0051de7b500de3cffddac30275d4390e17
 verify_index_sha256 tools/p1-reconciliation/main.go \
   2b1162a4a423b9f106b512d162a5ebc4d3bc5fded125caaa69bc0d7b823ade99
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
@@ -1476,7 +1476,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  5d56d8ac53e0f481fa000e7db26f58126c38c54fee189439ed6701563eb496ff
+  eef078b78a7839d44237e641349bfb9facd442524105f606ff46924444ac3efd
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \

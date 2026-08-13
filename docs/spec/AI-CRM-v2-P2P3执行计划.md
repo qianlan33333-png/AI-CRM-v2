@@ -102,6 +102,9 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 - 并行上限 3，路径不重叠。
 - Terra 片的 `correction_count` 归入 Sol 该片总数；仅业务实现
   `slice_induced >= 3` 触发停报，其他归因不计入该阈值。
+- `slice_induced=2` 时冻结范围并降档，但允许当前片在不扩 scope 下完成既定闭环；
+  机械环境、命令与测试夹具时序在原任务修复，不为其另开 infra 片，除非涉及共享
+  基础设施或业务范围。
 
 ---
 
@@ -301,6 +304,13 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 此外，单片 `slice_induced_correction_count >= 3` 时作为防死循环门立即停报。
 `infra_induced`、`scope_induced`、`verification_induced` 不计入该阈值，由 Sol 自行
 精确修复并留痕。
+
+预期生成物及既有 hash、manifest、ledger receipt 的正常同步属于 Definition of Done，
+不计 correction；仅首次遗漏且被门发现时记一次 `verification_induced`，在原任务补齐
+且不触发停报。P3/P4 PR 必须关闭官方业务 Slice 或经批准、可在 feature matrix 定位的
+完整业务 flow；禁止 parser/checker/governance-only PR。本次策略迁移为唯一例外。
+独立安全片仅限不可逆数据污染、鉴权、迁移或真实外发明确风险，其他安全工作随业务
+垂直片闭环。非共享业务 PR 可并行，中央契约与最终 merge/main CI 仍串行。
 
 ### 6.2 不得停下来问（照搬即可）
 

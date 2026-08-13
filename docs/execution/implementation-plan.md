@@ -13,12 +13,24 @@ P0 由 Sol 直接负责架构裁决、契约、实现、测试、修正、Git/Gi
 不再为小实现单独建立 Terra 回执、中间契约 PR 或上传包。
 
 阶段策略固定为：P1 可将互不依赖的事实盘点交 Terra 分组并行，Sol 汇总裁决；P2
-共享平台核心由 Sol 主做，孤立组件按需委派；P3/P4 契约冻结后恢复 Sol 指挥 + Terra
-并行；迁移与对账必须由与实现者独立的 Agent 复核。并行实现须至少两个互不依赖、
-路径不重叠、工作量足够且公共契约已冻结的任务；最多 3 个 Terra task。
+共享平台核心由 Sol 主做，孤立组件按需委派；P3/P4 优先用 Go + 新架构恢复旧业务
+能力，不新增产品能力。契约冻结后，互不依赖、路径不重叠且不改共享契约的业务路径
+允许并行 PR；中央契约裁决、最终 rebase/merge 与精确 main CI 串行。迁移与对账必须
+由与实现者独立的 Agent 复核；最多 3 个并行任务。
 
 每片硬上限为一个模块/API operation/UI flow；P2 为 12 个手写文件/800 行，P3 为 12 文件/1000 行，完整行为硬顶 15/1500。Sol 在
 同一 PR 内修正；委派失败先用同一 task follow-up，连续两次同根因失败或越界即拒收重拆。
+P3/P4 的每个 PR 必须关闭一个官方业务 Slice，或经用户/权威计划批准且可在 feature
+matrix 定位的完整业务 flow；禁止 parser/checker/governance-only PR。本次策略迁移
+是唯一例外，合并后不再以治理迁移名义扩张。
+
+修正硬停只看 `slice_induced`：达到 2 时冻结范围并降档，当前片可在不扩 scope 下
+完成既定闭环；达到 3 时立即停报并重切。`infra_induced` 与
+`verification_induced` 精确留痕但不降档、不硬停，机械环境、命令、测试夹具时序在
+原任务修复；只有涉及共享基础设施或业务范围才另片。预期生成物与既有
+hash/manifest/ledger receipt 的正常同步是 Definition of Done；首次遗漏被门发现才记
+一次 `verification_induced`。独立安全片仅限不可逆数据污染、鉴权、迁移或真实外发的
+明确风险，其他安全工作优先随业务垂直片完成。
 不得新建、上传或续接网页
 ChatGPT Pro 对话；P0-S01 既有链接仅为历史证据。完整规则见
 [`agent-orchestration.md`](../governance/agent-orchestration.md)。
