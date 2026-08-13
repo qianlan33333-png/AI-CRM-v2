@@ -162,9 +162,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	customerHandler, err := contacthttp.NewCustomerListHandler(contactapp.NewCustomerListService(
-		uow, contactstore.NewCustomerQueryRepository(),
-	))
+	customerService := contactapp.NewCustomerListService(uow, contactstore.NewCustomerQueryRepository())
+	customerHandler, err := contacthttp.NewCustomerListHandler(customerService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -232,6 +231,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segmentRefresh:  segmentRefreshHandler,
 		identityReviews: identityReviewHandler,
 	}
+	legacyHandler, err := NewHandler(service, customerService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -248,7 +252,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, errInvalidAPIComponent
 	}
-	handler, err := newAPIHandlerWithCallback(logger, callbackHandler, authHandler, candidate)
+	handler, err := newAPIHandlerWithCallbackAndLegacy(logger, callbackHandler, authHandler, candidate, legacyHandler)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -272,6 +276,10 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 }
 
 func newAPIHandlerWithCallback(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface) (http.Handler, error) {
+	return newAPIHandlerWithCallbackAndLegacy(logger, callbackHandler, authHandler, candidate, nil)
+}
+
+func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler) (http.Handler, error) {
 	if logger == nil || callbackHandler == nil || authHandler == nil || candidate == nil {
 		return nil, errInvalidAPIComponent
 	}
@@ -387,6 +395,46 @@ func newAPIHandlerWithCallback(logger *slog.Logger, callbackHandler http.Handler
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 			return nil, err
+		}
+	}
+	if legacy != nil {
+		registerLegacy := func(method, pattern string, capability authport.Capability, endpoint http.Handler) error {
+			tail, wrapErr := recovery(endpoint)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.TimeoutMiddleware(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.AccountBudgetMiddleware(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = legacy.Authorize(capability, tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail = legacy.Authenticate(tail)
+			tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			router.Method(method, pattern, tail)
+			return nil
+		}
+		for _, route := range []struct {
+			method, pattern string
+			capability      authport.Capability
+			endpoint        http.Handler
+		}{
+			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, http.HandlerFunc(legacy.ConfigOverview)},
+			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, http.HandlerFunc(legacy.Capabilities)},
+			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, http.HandlerFunc(legacy.ListCustomers)},
+		} {
+			if err = registerLegacy(route.method, route.pattern, route.capability, route.endpoint); err != nil {
+				return nil, err
+			}
 		}
 	}
 	notFound, err := recovery(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
