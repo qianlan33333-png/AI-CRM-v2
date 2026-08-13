@@ -27,6 +27,8 @@ import { StagesPage } from "./stages-ui";
 import type { StageTransport } from "./stages";
 import { SegmentsPage } from "./segments-ui";
 import type { SegmentTransport } from "./segments";
+import { IdentityMergeReviewsPage } from "./identity-reviews-ui";
+import type { IdentityReviewTransport } from "./identity-reviews";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -56,6 +58,12 @@ export const routes = [
     navigationLabel: "人群包",
     title: "人群包",
     description: "人群包模块边界已预留，尚未接入筛选或物化任务。",
+  },
+  {
+    path: "/identity/merge-reviews",
+    navigationLabel: "待合并",
+    title: "人工待合并",
+    description: "Identity 人工待合并审阅与决策。",
   },
   {
     path: "/outbound",
@@ -103,6 +111,7 @@ export interface AppProps {
   customerDetailTransport?: CustomerDetailTransport;
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
+  identityReviewTransport?: IdentityReviewTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -221,6 +230,7 @@ function PageContent({
   customerID,
   stageTransport,
   segmentTransport,
+  identityReviewTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -231,6 +241,7 @@ function PageContent({
   customerID?: number;
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
+  identityReviewTransport?: IdentityReviewTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -300,6 +311,17 @@ function PageContent({
     );
   }
 
+  if (route.path === "/identity/merge-reviews") {
+    return (
+      <IdentityMergeReviewsPage
+        role={principal.role}
+        transport={identityReviewTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -349,6 +371,7 @@ export function App({
   customerDetailTransport,
   stageTransport,
   segmentTransport,
+  identityReviewTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -494,6 +517,7 @@ export function App({
             customerID={customerID}
             stageTransport={stageTransport}
             segmentTransport={segmentTransport}
+            identityReviewTransport={identityReviewTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
