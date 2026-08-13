@@ -43,7 +43,7 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members]
+    tables: [segments, segment_members, segment_refresh_receipts]
 
   automation:
     package: internal/automation

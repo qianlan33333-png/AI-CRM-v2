@@ -25,6 +25,9 @@ import (
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
+	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
+	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 )
 
 var errInvalidAPIComponent = errors.New("invalid API component")
@@ -44,6 +47,7 @@ type candidateHandler struct {
 	mutations      *contacthttp.CustomerMutationHandler
 	tags           *contacthttp.TagCatalogHandler
 	stages         *contacthttp.Handler
+	segmentRefresh *segmenthttp.RefreshHandler
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
@@ -90,6 +94,10 @@ func (handler *candidateHandler) CreateStage(writer http.ResponseWriter, request
 
 func (handler *candidateHandler) RenameStage(writer http.ResponseWriter, request *http.Request, stageID api.StageID, params api.RenameStageParams) {
 	handler.stages.RenameStage(writer, request, stageID, params)
+}
+
+func (handler *candidateHandler) RequestSegmentRefresh(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID, params api.RequestSegmentRefreshParams) {
+	handler.segmentRefresh.RequestSegmentRefresh(writer, request, segmentID, params)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -155,10 +163,23 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	segmentRefreshRepository, err := segmentstore.NewRefreshRequestRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	segmentRefreshHandler, err := segmenthttp.NewRefreshHandler(segmentapp.NewRefreshRequestService(
+		uow, segmentRefreshRepository, segmentRefreshRepository,
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
+		segmentRefresh: segmentRefreshHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	handler, err := newAPIHandler(logger, authHandler, candidate)
@@ -251,6 +272,7 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, true, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, true, http.HandlerFunc(wrapper.IngestIdentityEvent)},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},
+		{http.MethodPost, "/api/v1/segments/{segment_id}/refresh", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.RequestSegmentRefresh)},
 		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead, false, http.HandlerFunc(wrapper.ListStages)},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.CreateStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
