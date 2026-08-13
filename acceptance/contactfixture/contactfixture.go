@@ -45,3 +45,53 @@ WHERE id = $1::bigint`, customerID)
 	}
 	return nil
 }
+
+// CreateTag creates one Contact-owned tag for an acceptance scenario.
+func CreateTag(ctx context.Context, tx pgx.Tx, name string) (int64, error) {
+	if tx == nil || name == "" {
+		return 0, ErrNilTransaction
+	}
+	var id int64
+	if err := tx.QueryRow(ctx, `
+INSERT INTO tags (name)
+VALUES ($1::text)
+RETURNING id`, name).Scan(&id); err != nil {
+		return 0, fmt.Errorf("create contact-owned acceptance tag: %w", err)
+	}
+	return id, nil
+}
+
+// AttachTag adds a Contact-owned tag association for an acceptance scenario.
+func AttachTag(ctx context.Context, tx pgx.Tx, customerID, tagID int64, actor string) error {
+	if tx == nil || customerID <= 0 || tagID <= 0 || actor == "" {
+		return ErrNilTransaction
+	}
+	commandTag, err := tx.Exec(ctx, `
+INSERT INTO customer_tags (customer_id, tag_id, tagged_by)
+VALUES ($1::bigint, $2::bigint, $3::text)`, customerID, tagID, actor)
+	if err != nil {
+		return fmt.Errorf("attach contact-owned acceptance tag: %w", err)
+	}
+	if commandTag.RowsAffected() != 1 {
+		return fmt.Errorf("attach contact-owned acceptance tag: expected one association")
+	}
+	return nil
+}
+
+// AppendTimelineEvent appends one Contact-owned timeline fact for an
+// acceptance scenario. The database owns append-only enforcement.
+func AppendTimelineEvent(ctx context.Context, tx pgx.Tx, customerID int64, eventType string, payload []byte, actor string) error {
+	if tx == nil || customerID <= 0 || eventType == "" || len(payload) == 0 || actor == "" {
+		return ErrNilTransaction
+	}
+	commandTag, err := tx.Exec(ctx, `
+INSERT INTO customer_events (customer_id, event_type, payload, actor, occurred_at)
+VALUES ($1::bigint, $2::text, $3::jsonb, $4::text, now())`, customerID, eventType, payload, actor)
+	if err != nil {
+		return fmt.Errorf("append contact-owned acceptance timeline event: %w", err)
+	}
+	if commandTag.RowsAffected() != 1 {
+		return fmt.Errorf("append contact-owned acceptance timeline event: expected one event")
+	}
+	return nil
+}

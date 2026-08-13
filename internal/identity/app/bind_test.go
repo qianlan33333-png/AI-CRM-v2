@@ -18,10 +18,13 @@ type bindTestStore struct {
 	err           error
 	reserveCalls  int
 	bindCalls     int
+	rebindCalls   int
+	auditCalls    int
 	completeCalls int
 	identity      NormalizedIdentity
 	customerID    int64
 	completed     identityport.BindResult
+	audit         AutoMergeAudit
 }
 
 func (store *bindTestStore) ReserveBindReceipt(_ context.Context, _, _ []byte) (BindReceipt, error) {
@@ -35,6 +38,20 @@ func (store *bindTestStore) BindNormalized(_ context.Context, identity Normalize
 	return store.record, store.err
 }
 
+func (store *bindTestStore) RebindIdentitiesForCustomerMerge(_ context.Context, _, _ contactport.CustomerID) error {
+	store.rebindCalls++
+	return store.err
+}
+
+func (store *bindTestStore) InsertAutoCustomerMergeAudit(_ context.Context, audit AutoMergeAudit) (int64, error) {
+	store.auditCalls++
+	store.audit = audit
+	if store.err != nil {
+		return 0, store.err
+	}
+	return 17, nil
+}
+
 func (store *bindTestStore) CompleteBindReceipt(_ context.Context, _ BindReceipt, result identityport.BindResult) error {
 	store.completeCalls++
 	store.completed = result
@@ -46,6 +63,24 @@ type bindTestEvents struct{ events []eventport.Event }
 func (events *bindTestEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
 	events.events = append(events.events, event)
 	return 1, nil
+}
+
+type bindTestContacts struct {
+	merges []contactport.MergeCustomersCommand
+	err    error
+}
+
+func (contacts *bindTestContacts) CreateForIdentity(context.Context, contactport.CreateForIdentityCommand) (contactport.CustomerID, error) {
+	return 0, contacts.err
+}
+
+func (contacts *bindTestContacts) MergeCustomers(_ context.Context, command contactport.MergeCustomersCommand) error {
+	contacts.merges = append(contacts.merges, command)
+	return contacts.err
+}
+
+func (contacts *bindTestContacts) AppendExternalEvent(context.Context, contactport.ExternalEventCommand) (contactport.EventID, error) {
+	return 0, contacts.err
 }
 
 func TestBindServiceBindsFloatingIdentityAndCompletesReceipt(t *testing.T) {
@@ -109,6 +144,42 @@ func TestBindServiceDivertsExistingOtherCustomerWithoutMergeOrEvent(t *testing.T
 	result, err := NewBindService(&resolveTestUoW{}, store, events, []byte("12345678901234567890123456789012")).Bind(context.Background(), validBindCommandForTest())
 	if err != nil || result != (identityport.BindResult{Status: identityport.BindRejected}) || store.completeCalls != 1 || len(events.events) != 0 {
 		t.Fatalf("result=%+v err=%v complete=%d events=%d", result, err, store.completeCalls, len(events.events))
+	}
+}
+
+func TestBindServiceAutoMergesOnlyVerifiedUnionIDWithUniqueWeComPrimary(t *testing.T) {
+	command := validBindCommandForTest()
+	command.CustomerID = 42
+	command.Ref = identityport.IDRef{
+		Kind:      identityport.KindUnionID,
+		Scope:     "wechat-open-platform:account-a",
+		Value:     "union-a",
+		Assurance: identityport.AssuranceVerified,
+		Source:    "wecom.callback",
+	}
+	store := &bindTestStore{receipt: BindReceipt{ID: 9}, record: BindRecord{
+		Status:                           identityport.BindRejected,
+		IdentityID:                       11,
+		ExistingCustomerID:               84,
+		RequestedHasVerifiedWeCom:        true,
+		ExistingCustomerHasVerifiedWeCom: false,
+	}}
+	contacts, events := &bindTestContacts{}, &bindTestEvents{}
+	service := NewBindServiceWithMergePort(&resolveTestUoW{}, store, contacts, events, []byte("12345678901234567890123456789012"))
+
+	result, err := service.Bind(context.Background(), command)
+	want := identityport.BindResult{Status: identityport.BindMerged, CustomerID: 42, PrimaryCustomerID: 42, MergeAuditID: 17}
+	if err != nil || result != want || store.completed != want || store.rebindCalls != 1 || store.auditCalls != 1 {
+		t.Fatalf("result=%+v err=%v completed=%+v rebind=%d audit=%d", result, err, store.completed, store.rebindCalls, store.auditCalls)
+	}
+	if len(contacts.merges) != 1 || contacts.merges[0].PrimaryID != 42 || contacts.merges[0].MergedID != 84 || contacts.merges[0].Reason != identityport.MergePolicyVerifiedUnionIDUniqueWeCom {
+		t.Fatalf("merge calls=%+v", contacts.merges)
+	}
+	if len(events.events) != 1 || events.events[0].Type != eventport.EvCustomerMerged || events.events[0].CustomerID != 42 || events.events[0].IdempotencyKey != "customer.merged:17" || string(events.events[0].Payload) == command.Ref.Value {
+		t.Fatalf("merge events=%+v", events.events)
+	}
+	if len(store.audit.ReviewFingerprint) != 16 || string(store.audit.Detail) == "" || string(store.audit.Detail) == command.Ref.Value {
+		t.Fatalf("audit=%+v", store.audit)
 	}
 }
 

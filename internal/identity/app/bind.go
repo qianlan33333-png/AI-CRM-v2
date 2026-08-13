@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -33,8 +34,24 @@ type BindReceipt struct {
 }
 
 type BindRecord struct {
-	Status     identityport.BindStatus
-	IdentityID int64
+	Status                           identityport.BindStatus
+	IdentityID                       int64
+	ExistingCustomerID               contactport.CustomerID
+	RequestedHasVerifiedWeCom        bool
+	ExistingCustomerHasVerifiedWeCom bool
+}
+
+// AutoMergeAudit is the redacted, identity-owned audit fact for one automatic
+// customer merge. It intentionally carries no raw or normalized identity
+// value.
+type AutoMergeAudit struct {
+	PrimaryCustomerID  contactport.CustomerID
+	MergedCustomerID   contactport.CustomerID
+	PolicyVersion      string
+	ReviewFingerprint  []byte
+	FingerprintVersion int16
+	Actor              contactport.Actor
+	Detail             json.RawMessage
 }
 
 // BindStore keeps the receipt reservation, identity edge and completion in the
@@ -42,22 +59,29 @@ type BindRecord struct {
 type BindStore interface {
 	ReserveBindReceipt(context.Context, []byte, []byte) (BindReceipt, error)
 	BindNormalized(context.Context, NormalizedIdentity, int64) (BindRecord, error)
+	RebindIdentitiesForCustomerMerge(context.Context, contactport.CustomerID, contactport.CustomerID) error
+	InsertAutoCustomerMergeAudit(context.Context, AutoMergeAudit) (int64, error)
 	CompleteBindReceipt(context.Context, BindReceipt, identityport.BindResult) error
 }
 
-// BindService implements the deliberately narrow I-3 decision boundary. It
-// may bind a floating edge, replay a same-customer edge, or reject an edge
-// already held by another customer. Merge and review creation remain later
-// slices, so this service never reassigns a non-floating identity.
+// BindService implements the narrow I-3/I-4A decision boundary. It may bind
+// a floating edge, replay a same-customer edge, reject an edge held by another
+// customer, or automatically merge only the verified-unionid policy case.
+// Review creation and every other merge policy remain later slices.
 type BindService struct {
 	uow        platformport.UnitOfWork
 	store      BindStore
+	contacts   contactport.MergePort
 	events     eventport.Appender
 	receiptKey []byte
 }
 
 func NewBindService(uow platformport.UnitOfWork, store BindStore, events eventport.Appender, receiptKey []byte) *BindService {
-	return &BindService{uow: uow, store: store, events: events, receiptKey: append([]byte(nil), receiptKey...)}
+	return NewBindServiceWithMergePort(uow, store, nil, events, receiptKey)
+}
+
+func NewBindServiceWithMergePort(uow platformport.UnitOfWork, store BindStore, contacts contactport.MergePort, events eventport.Appender, receiptKey []byte) *BindService {
+	return &BindService{uow: uow, store: store, contacts: contacts, events: events, receiptKey: append([]byte(nil), receiptKey...)}
 }
 
 func (service *BindService) Bind(ctx context.Context, command identityport.BindCommand) (identityport.BindResult, error) {
@@ -109,7 +133,15 @@ func (service *BindService) Bind(ctx context.Context, command identityport.BindC
 		case identityport.BindAlreadyBound:
 			result = identityport.BindResult{Status: identityport.BindAlreadyBound, CustomerID: command.CustomerID}
 		case identityport.BindRejected:
-			result = identityport.BindResult{Status: identityport.BindRejected}
+			merged, attempted, err := service.mergeVerifiedUnionID(txCtx, command, normalized, record)
+			if err != nil {
+				return err
+			}
+			if attempted {
+				result = merged
+			} else {
+				result = identityport.BindResult{Status: identityport.BindRejected}
+			}
 		default:
 			return ErrIdentityBindFailed
 		}
@@ -119,6 +151,95 @@ func (service *BindService) Bind(ctx context.Context, command identityport.BindC
 		return identityport.BindResult{}, errors.Join(ErrIdentityBindFailed, err)
 	}
 	return result, nil
+}
+
+func (service *BindService) mergeVerifiedUnionID(
+	ctx context.Context,
+	command identityport.BindCommand,
+	normalized NormalizedIdentity,
+	record BindRecord,
+) (identityport.BindResult, bool, error) {
+	if normalized.Kind != identityport.KindUnionID || command.Ref.Assurance != identityport.AssuranceVerified ||
+		record.IdentityID <= 0 || record.ExistingCustomerID <= 0 || record.ExistingCustomerID == command.CustomerID ||
+		record.RequestedHasVerifiedWeCom == record.ExistingCustomerHasVerifiedWeCom {
+		return identityport.BindResult{}, false, nil
+	}
+	if service.contacts == nil {
+		return identityport.BindResult{}, true, ErrIdentityBindFailed
+	}
+
+	primary, merged := command.CustomerID, record.ExistingCustomerID
+	if record.ExistingCustomerHasVerifiedWeCom {
+		primary, merged = record.ExistingCustomerID, command.CustomerID
+	}
+	fingerprint, displayFingerprint := service.mergeFingerprint(normalized)
+	detail, err := json.Marshal(struct {
+		PolicyVersion      string `json:"policy_version"`
+		Mode               string `json:"mode"`
+		FingerprintVersion int16  `json:"fingerprint_version"`
+		Fingerprint        string `json:"fingerprint"`
+	}{identityport.MergePolicyVerifiedUnionIDUniqueWeCom, string(eventport.CustomerMergeAuto), bindReceiptKeyVersion, displayFingerprint})
+	if err != nil {
+		return identityport.BindResult{}, true, err
+	}
+	if err = service.contacts.MergeCustomers(ctx, contactport.MergeCustomersCommand{
+		PrimaryID: primary,
+		MergedID:  merged,
+		Actor:     command.Actor,
+		Reason:    identityport.MergePolicyVerifiedUnionIDUniqueWeCom,
+	}); err != nil {
+		return identityport.BindResult{}, true, err
+	}
+	if err = service.store.RebindIdentitiesForCustomerMerge(ctx, primary, merged); err != nil {
+		return identityport.BindResult{}, true, err
+	}
+	auditID, err := service.store.InsertAutoCustomerMergeAudit(ctx, AutoMergeAudit{
+		PrimaryCustomerID:  primary,
+		MergedCustomerID:   merged,
+		PolicyVersion:      identityport.MergePolicyVerifiedUnionIDUniqueWeCom,
+		ReviewFingerprint:  fingerprint,
+		FingerprintVersion: bindReceiptKeyVersion,
+		Actor:              command.Actor,
+		Detail:             detail,
+	})
+	if err != nil || auditID <= 0 {
+		if err != nil {
+			return identityport.BindResult{}, true, err
+		}
+		return identityport.BindResult{}, true, ErrIdentityBindFailed
+	}
+	payload, err := json.Marshal(eventport.CustomerMergedPayload{
+		PrimaryCustomerID: eventport.CustomerID(primary),
+		MergedCustomerID:  eventport.CustomerID(merged),
+		MergeAuditID:      auditID,
+		Mode:              eventport.CustomerMergeAuto,
+		PolicyVersion:     identityport.MergePolicyVerifiedUnionIDUniqueWeCom,
+	})
+	if err != nil {
+		return identityport.BindResult{}, true, err
+	}
+	if _, err = service.events.Append(ctx, eventport.Event{
+		Type:           eventport.EvCustomerMerged,
+		CustomerID:     eventport.CustomerID(primary),
+		Payload:        payload,
+		OccurredAt:     time.Now().UTC(),
+		IdempotencyKey: "customer.merged:" + strconv.FormatInt(auditID, 10),
+	}); err != nil {
+		return identityport.BindResult{}, true, err
+	}
+	return identityport.BindResult{
+		Status:            identityport.BindMerged,
+		CustomerID:        command.CustomerID,
+		PrimaryCustomerID: primary,
+		MergeAuditID:      auditID,
+	}, true, nil
+}
+
+func (service *BindService) mergeFingerprint(normalized NormalizedIdentity) ([]byte, string) {
+	material := string(normalized.Kind) + "\x00" + normalized.Scope + "\x00" + normalized.NormalizedValue
+	digest := hmacDigest(service.receiptKey, "identity.bind.merge.audit.v1\x00"+material)
+	fingerprint := append([]byte(nil), digest[:16]...)
+	return fingerprint, "hmac-sha256-v1:" + base64.RawURLEncoding.EncodeToString(fingerprint)
 }
 
 func (service *BindService) appendBoundEvent(ctx context.Context, identityID int64, customerID contactport.CustomerID, normalized NormalizedIdentity) error {
@@ -180,6 +301,8 @@ func validBindResult(result identityport.BindResult) bool {
 	switch result.Status {
 	case identityport.BindBound, identityport.BindAlreadyBound:
 		return result.CustomerID > 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID == 0
+	case identityport.BindMerged:
+		return result.CustomerID > 0 && result.PrimaryCustomerID > 0 && result.MergeAuditID > 0 && result.ReviewID == 0
 	case identityport.BindRejected:
 		return result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID == 0
 	default:

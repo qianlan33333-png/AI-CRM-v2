@@ -37,23 +37,98 @@ SET
   state = 'completed',
   result_status = $1::text,
   result_customer_id = $2::bigint,
+  result_merge_audit_id = $3::bigint,
+  result_policy_version = $4::text,
   completed_at = now()
-WHERE id = $3::bigint
+WHERE id = $5::bigint
   AND state = 'in_progress'
 `
 
 type CompleteBindReceiptParams struct {
-	ResultStatus     string      `json:"result_status"`
-	ResultCustomerID pgtype.Int8 `json:"result_customer_id"`
-	ID               int64       `json:"id"`
+	ResultStatus        string      `json:"result_status"`
+	ResultCustomerID    pgtype.Int8 `json:"result_customer_id"`
+	ResultMergeAuditID  pgtype.Int8 `json:"result_merge_audit_id"`
+	ResultPolicyVersion pgtype.Text `json:"result_policy_version"`
+	ID                  int64       `json:"id"`
 }
 
 func (q *Queries) CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error) {
-	result, err := q.db.Exec(ctx, completeBindReceipt, arg.ResultStatus, arg.ResultCustomerID, arg.ID)
+	result, err := q.db.Exec(ctx, completeBindReceipt,
+		arg.ResultStatus,
+		arg.ResultCustomerID,
+		arg.ResultMergeAuditID,
+		arg.ResultPolicyVersion,
+		arg.ID,
+	)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const hasVerifiedWeComIdentityForBindCustomer = `-- name: HasVerifiedWeComIdentityForBindCustomer :one
+SELECT EXISTS (
+  SELECT 1
+  FROM identities
+  WHERE customer_id = $1::bigint
+    AND kind = 'wecom_external_userid'
+    AND assurance = 'verified'
+) AS has_verified_wecom_identity
+`
+
+func (q *Queries) HasVerifiedWeComIdentityForBindCustomer(ctx context.Context, customerID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, hasVerifiedWeComIdentityForBindCustomer, customerID)
+	var has_verified_wecom_identity bool
+	err := row.Scan(&has_verified_wecom_identity)
+	return has_verified_wecom_identity, err
+}
+
+const insertAutoCustomerMergeAudit = `-- name: InsertAutoCustomerMergeAudit :one
+INSERT INTO customer_merges (
+  primary_customer_id,
+  merged_customer_id,
+  mode,
+  policy_version,
+  review_fingerprint,
+  fingerprint_key_version,
+  operated_by,
+  detail
+) VALUES (
+  $1::bigint,
+  $2::bigint,
+  'auto',
+  $3::text,
+  $4::bytea,
+  $5::smallint,
+  $6::text,
+  $7::jsonb
+)
+RETURNING id
+`
+
+type InsertAutoCustomerMergeAuditParams struct {
+	PrimaryCustomerID     int64  `json:"primary_customer_id"`
+	MergedCustomerID      int64  `json:"merged_customer_id"`
+	PolicyVersion         string `json:"policy_version"`
+	ReviewFingerprint     []byte `json:"review_fingerprint"`
+	FingerprintKeyVersion int16  `json:"fingerprint_key_version"`
+	OperatedBy            string `json:"operated_by"`
+	Detail                []byte `json:"detail"`
+}
+
+func (q *Queries) InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAutoCustomerMergeAuditParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertAutoCustomerMergeAudit,
+		arg.PrimaryCustomerID,
+		arg.MergedCustomerID,
+		arg.PolicyVersion,
+		arg.ReviewFingerprint,
+		arg.FingerprintKeyVersion,
+		arg.OperatedBy,
+		arg.Detail,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const loadBindReceipt = `-- name: LoadBindReceipt :one
@@ -61,7 +136,9 @@ SELECT
   payload_hmac,
   state,
   result_status,
-  result_customer_id
+  result_customer_id,
+  result_merge_audit_id,
+  result_policy_version
 FROM identity_operation_receipts
 WHERE operation = 'bind'
   AND idempotency_scope = 'identity.bind.v1'
@@ -69,10 +146,12 @@ WHERE operation = 'bind'
 `
 
 type LoadBindReceiptRow struct {
-	PayloadHmac      []byte      `json:"payload_hmac"`
-	State            string      `json:"state"`
-	ResultStatus     pgtype.Text `json:"result_status"`
-	ResultCustomerID pgtype.Int8 `json:"result_customer_id"`
+	PayloadHmac         []byte      `json:"payload_hmac"`
+	State               string      `json:"state"`
+	ResultStatus        pgtype.Text `json:"result_status"`
+	ResultCustomerID    pgtype.Int8 `json:"result_customer_id"`
+	ResultMergeAuditID  pgtype.Int8 `json:"result_merge_audit_id"`
+	ResultPolicyVersion pgtype.Text `json:"result_policy_version"`
 }
 
 func (q *Queries) LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error) {
@@ -83,7 +162,27 @@ func (q *Queries) LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBi
 		&i.State,
 		&i.ResultStatus,
 		&i.ResultCustomerID,
+		&i.ResultMergeAuditID,
+		&i.ResultPolicyVersion,
 	)
+	return i, err
+}
+
+const loadCustomerMergeAudit = `-- name: LoadCustomerMergeAudit :one
+SELECT primary_customer_id, policy_version
+FROM customer_merges
+WHERE id = $1::bigint
+`
+
+type LoadCustomerMergeAuditRow struct {
+	PrimaryCustomerID int64  `json:"primary_customer_id"`
+	PolicyVersion     string `json:"policy_version"`
+}
+
+func (q *Queries) LoadCustomerMergeAudit(ctx context.Context, mergeAuditID int64) (LoadCustomerMergeAuditRow, error) {
+	row := q.db.QueryRow(ctx, loadCustomerMergeAudit, mergeAuditID)
+	var i LoadCustomerMergeAuditRow
+	err := row.Scan(&i.PrimaryCustomerID, &i.PolicyVersion)
 	return i, err
 }
 
@@ -100,6 +199,35 @@ func (q *Queries) LockActiveBindCustomer(ctx context.Context, customerID int64) 
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const lockActiveBindCustomersForMerge = `-- name: LockActiveBindCustomersForMerge :many
+SELECT id
+FROM customers
+WHERE id = ANY($1::bigint[])
+  AND is_deleted = FALSE
+ORDER BY id
+FOR UPDATE
+`
+
+func (q *Queries) LockActiveBindCustomersForMerge(ctx context.Context, customerIds []int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, lockActiveBindCustomersForMerge, customerIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const lockIdentityForBind = `-- name: LockIdentityForBind :one
@@ -156,6 +284,25 @@ func (q *Queries) LookupNormalizedIdentity(ctx context.Context, arg LookupNormal
 	var i LookupNormalizedIdentityRow
 	err := row.Scan(&i.IdentityCustomerID, &i.CustomerIsDeleted)
 	return i, err
+}
+
+const rebindIdentitiesForCustomerMerge = `-- name: RebindIdentitiesForCustomerMerge :execrows
+UPDATE identities
+SET customer_id = $1::bigint
+WHERE customer_id = $2::bigint
+`
+
+type RebindIdentitiesForCustomerMergeParams struct {
+	PrimaryCustomerID int64 `json:"primary_customer_id"`
+	MergedCustomerID  int64 `json:"merged_customer_id"`
+}
+
+func (q *Queries) RebindIdentitiesForCustomerMerge(ctx context.Context, arg RebindIdentitiesForCustomerMergeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, rebindIdentitiesForCustomerMerge, arg.PrimaryCustomerID, arg.MergedCustomerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const reserveBindReceipt = `-- name: ReserveBindReceipt :one
