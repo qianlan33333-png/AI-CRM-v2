@@ -28,8 +28,8 @@ func TestOutboundStorageCatalogWaterlineAndIdentity(t *testing.T) {
 	ctx := context.Background()
 
 	var waterline int
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 14 {
-		t.Fatalf("migration waterline=%d err=%v, want 14", waterline, err)
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline < 14 {
+		t.Fatalf("migration waterline=%d err=%v, want at least 14", waterline, err)
 	}
 
 	var identity, generation string

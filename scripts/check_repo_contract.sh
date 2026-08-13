@@ -480,9 +480,13 @@ required=(
   migrations/00010_identity_storage.sql
   migrations/00011_contact_external_event_idempotency.sql
   migrations/00013_identity_receipt_completion_transaction.sql
+  migrations/00015_wecom_sync_state.sql
   acceptance/identity/storage_integration_test.go
   acceptance/contact/external_event_storage_integration_test.go
   acceptance/contact/external_event_behavior_integration_test.go
+  acceptance/wecom/doc.go
+  acceptance/wecom/sync_resume_integration_test.go
+  docs/execution/slices/P3-W4.md
 )
 
 for file_path in "${required[@]}"; do
@@ -926,7 +930,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  f3fc675b40d06b3842136080fd46a66c969b4029d807e044e8aeb34a561ebba5
+  260f9ac86a21a763793d58a6b558b77d1e7e23fd7916f09e8d5b99f953a65c32
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -942,7 +946,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  21ba234c32e7470f35bf05a374afefb821db43cd31deda8c230396aa97f2e1c2
+  3279eb822d6e4985047de583208e6dc975f6fb87fc42e389a7843d37023dc5b3
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -954,11 +958,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  f9900269d1d55740352e8604a9b22d51ebf4b35f91f2c5544c2acf2bd47799f8
+  672e68196c9b4d2aa02126257d3cfbd8b0c474d4440adb8090f5a2f2306f35b2
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  d59d743b97cf6eb3873af5bff95bc573d2af17116246b7717a66b87c96a4fed7
+  a39c6ace145dab92679aba65dcc289e2a947c2aa9a91df857fad7871c05af03c
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -992,7 +996,7 @@ verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  645cb9183925dd7d95e5b5d5eb8b1a2ebbd65423c26a3eb01e6790c9a7bb0f3a
+  a812813c023dd36ca555e4051bae71f527bd5c8666abfeb713d512c79508493a
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
@@ -1480,7 +1484,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  73348188e2d2d4dd00909445ab85a3d8f1f8b9194feb76b71e9b062bc8d07741
+  8183fe0329e75cae2f0c3734465dce23fa6d4edde7641003be0ea0adb3c16231
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1786,7 +1790,7 @@ verify_index_sha256 docs/execution/slices/P3-I4B.md \
 verify_index_sha256 migrations/00013_identity_receipt_completion_transaction.sql \
   9199103badc244cc03e850ae2786ec94e8b9def50bdf22a7ff62cfb0c9322091
 verify_index_sha256 acceptance/identity/storage_integration_test.go \
-  65db9e2d28032f366eac375be8b165937feee6627f754346c05a513094a329df
+  72ca9ec767fa6d2c1797b30ee2a12a3bc38d24a6960b1f55c4aa3238f193e686
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   548200be57f325a724dc07b1295cea6e0bd554cffecd180151d4d89fba312293
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
@@ -3855,6 +3859,77 @@ for anchor in \
   grep -Fq "$anchor" <<<"$p3s04b_card" ||
     fail "P3-S04B card boundary drifted: $anchor"
 done
+
+w4_migration="$(git show :migrations/00015_wecom_sync_state.sql)"
+for anchor in \
+  'CREATE TABLE wecom_sync_state (' \
+  'sync_key     TEXT PRIMARY KEY' \
+  'cursor       TEXT NOT NULL DEFAULT' \
+  'completed_at TIMESTAMPTZ' \
+  'DROP TABLE wecom_sync_state;'; do
+  grep -Fq -- "$anchor" <<<"$w4_migration" ||
+    fail "P3-W4 migration receipt drifted: $anchor"
+done
+[[ "$(grep -Ec '^CREATE TABLE ' <<<"$w4_migration")" -eq 1 && "$(grep -Ec '^DROP TABLE ' <<<"$w4_migration")" -eq 1 ]] ||
+  fail "P3-W4 migration must own exactly wecom_sync_state"
+if grep -Eiq 'CREATE[[:space:]]+TABLE[[:space:]]+(customers|identities|pending_events|customer_events|event_log|river_)' <<<"$w4_migration"; then
+  fail "P3-W4 migration exceeded WeCom state ownership"
+fi
+
+w4_queries="$(git show :internal/wecom/store/queries/sync_state.sql)"
+for anchor in \
+  '-- name: LoadWeComSyncState :one' \
+  '-- name: AdvanceWeComSyncState :one' \
+  'ON CONFLICT (sync_key) DO UPDATE' \
+  'WHERE wecom_sync_state.cursor = sqlc.arg(expected_cursor)::text' \
+  'wecom_sync_state.completed_at IS NULL'; do
+  grep -Fq -- "$anchor" <<<"$w4_queries" ||
+    fail "P3-W4 cursor CAS query receipt drifted: $anchor"
+done
+if grep -Eiq '\b(customers|identities|pending_events|customer_events|event_log|river_job)\b' <<<"$w4_queries"; then
+  fail "P3-W4 cursor SQL exceeded WeCom state ownership"
+fi
+
+w4_service="$(git show :internal/wecom/app/sync_contacts.go)"
+for anchor in \
+  'ListExternalContacts(context.Context, string, string)' \
+  'page.NextCursor != "" && page.NextCursor == state.Cursor' \
+  'page.NextCursor == ""' \
+  'ErrCursorSyncDone' \
+  'maxCursorAdvanceAttempts = 3'; do
+  grep -Fq -- "$anchor" <<<"$w4_service" ||
+    fail "P3-W4 resume service receipt drifted: $anchor"
+done
+if grep -Eq 'internal/(identity|contact|outbound)|/callback|/worker' <<<"$w4_service"; then
+  fail "P3-W4 service exceeded cursor-resume boundary"
+fi
+
+w4_store="$(git show :internal/wecom/store/sync_state_repository.go)"
+for anchor in \
+  'platformstore.TxFromContext(ctx)' \
+  'wecomdb.New(tx).AdvanceWeComSyncState' \
+  'return wecomapp.ErrCursorAdvanced'; do
+  grep -Fq -- "$anchor" <<<"$w4_store" ||
+    fail "P3-W4 transaction-bound store receipt drifted: $anchor"
+done
+if grep -Eq '\.(Query|QueryRow|Exec|Prepare)\(' <<<"$w4_store"; then
+  fail "P3-W4 store must call generated sqlc methods only"
+fi
+
+w4_card="$(git show :docs/execution/slices/P3-W4.md)"
+for anchor in \
+  '00015_wecom_sync_state.sql' \
+  '不 push、不建 PR' \
+  '不建档、不归因、不写 Contact/Identity' \
+  '真实企微、生产数据库、live migration/cutover、外发均为 `NOT EXECUTED`'; do
+  grep -Fq -- "$anchor" <<<"$w4_card" ||
+    fail "P3-W4 card boundary drifted: $anchor"
+done
+w4_acceptance_recipe="$(make_target_recipe 'p3-w4-acceptance:')" || fail "P3-W4 acceptance target must be unique"
+[[ "$w4_acceptance_recipe" = *'WECOM_SYNC_TEST_DATABASE_URL is required'* && "$w4_acceptance_recipe" = *'./acceptance/wecom'* ]] ||
+  fail "P3-W4 acceptance target lost its PostgreSQL contract"
+grep -Fq 'WECOM_SYNC_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-w4-acceptance' <(git show :.github/workflows/application-go.yml) ||
+  fail "P3-W4 acceptance is disconnected from application migration CI"
 
 scripts/scan_sensitive_paths.sh
 
