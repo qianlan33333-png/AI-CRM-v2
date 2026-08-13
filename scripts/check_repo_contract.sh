@@ -947,7 +947,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  83ca5e9ad602f9d2743ab900ea4bf2cc488a4dc0a07ed821823876e1ec4b8007
+  784c41a36f3f2a58af2dc62eb8d688ac26eef9496389b423a471c72d9467f3ff
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -963,7 +963,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  93ed98eaed4ab00221c78c41434407c8226dbae2715421584bd9bb20004da6e4
+  f45d9a1110925cc77e05b68d8b63b7a83da17b62cc484039bd858b62847c706b
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -975,11 +975,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  2bf43d1034687be0b377a7029b6280a02c7bb0d5f004190a8d06010318c8eeb6
+  06e51a251a73140303e87bb70dfa1590e32350582136d3642cb3cdee32194966
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  e33796df1ad0dca76d3d4002a72a482ce6ea4cef1faaacca90afad2cd4489e1b
+  0b856b3aac49e9e878b01c90745d0408a8d9c84df70f285814886c4f6833b789
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1073,7 +1073,7 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
-  271a64ab57a43ec86518dfb08ad473da917c69645ed70133298a54f078ef689e
+  4be113265cf7db979f94aa7d6385cf18c9be5f5897dd857a713c68a82fa54d58
 verify_index_sha256 scripts/test_ownership.sh \
   c69b41e09d4c61d0dd2ed2774c1407e4ff432916686d1cdd56e14dea1a96ab6d
 verify_index_sha256 acceptance/fixtures/postgres.go \
@@ -1501,7 +1501,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  b42259ef12085f2f32ba5c8f62b5c49fc4fff4aa88a888ab6c6e08a887114344
+  15c7c9fb2a5c9c02732f51bedd4e63e3fd24ac98c76bde614fae3e24132d835a
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1831,7 +1831,7 @@ verify_index_sha256 acceptance/identity/storage_integration_test.go \
 verify_index_sha256 acceptance/identity/ingest_integration_test.go \
   2db7cd28bbb86dbbe7d3d3cb91b80cee4d49f42c3d8148ff11c50c71a7f1ef3f
 verify_index_sha256 acceptance/outbound/o1a_r3_integration_test.go \
-  69272336953465b6eee6a384e0fa55f61e29c7ce472f88368f2139a532761a67
+  a1bf95f43b030e6ad75275d60cdceca8fad09135f2f19fbf805ca897d2cea50f
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   548200be57f325a724dc07b1295cea6e0bd554cffecd180151d4d89fba312293
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
@@ -1847,7 +1847,7 @@ verify_index_sha256 docs/execution/slices/M0-6.md \
 verify_index_sha256 docs/architecture/canonical.md \
   0a3de6e1707271bc0390da23be9fc12e313b05363cb88325e8d050811cf31845
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  bf51e97b7f43069232b47b8d89d4b863847e92fd082e38238e5664b90b910b6e
+  7c69693a544ca72507e0c7859014043e068662817e8ee7570c3080e926818fc6
 verify_index_sha256 scripts/test_repo_contract.sh \
   0645abda831931f4703ce1d61a0b28715bca41d72e815a988837d5e9923d2cda
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
