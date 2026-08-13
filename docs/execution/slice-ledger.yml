@@ -3537,6 +3537,23 @@ slices:
     correction_notes: []
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
 
+  - slice_id: P3-I3R0
+    title: identity-receipt-same-uow-completion-migration-00013
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: 64e56d5516477816b7a283378653a670e4d0b73b
+    dependency: P3_I3_CENTRAL_MIGRATION_BLOCKER_REPRODUCED_ON_ISOLATED_PG16_14
+    branch: fix/p3-i3-receipt-reservation-transaction
+    scope: [migration_00013_deferred_receipt_final_state_check, same_uow_reservation_business_write_completed_commit, cross_connection_visibility_and_rollback, PG16_14_up_down_up_waterline]
+    excluded_scope: [I3_Bind_business_source_WeCom_Segment_OpenAPI_public_ports_HTTP_UI_SQLC_runtime_pure_checker_expansion_production_database_live_migration_real_wecom_outbound]
+    handwritten_scope: migration_acceptance_slice_card_ledger_and_required_contract_receipts_only
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [slice:initial_00013_function_body_omitted_goose_StatementBegin_and_StatementEnd_then_added_required_framing_after_isolated_PG_migration_validation_failed]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+
   - slice_id: P3-S05A
     title: segment-refresh-request-accepted-receipt-and-heavy-enqueue
     owner: Codex-Sol
