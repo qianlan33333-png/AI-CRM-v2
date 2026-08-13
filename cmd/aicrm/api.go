@@ -25,6 +25,8 @@ import (
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
+	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
+	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -231,7 +233,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segmentRefresh:  segmentRefreshHandler,
 		identityReviews: identityReviewHandler,
 	}
-	legacyHandler, err := NewHandler(service, customerService)
+	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundstore.NewTaskQueryRepository())
+	legacyHandler, err := NewHandlerWithOutbound(
+		service, customerService, outboundQueryService,
+		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
+		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
+	)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -398,7 +410,7 @@ func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler htt
 		}
 	}
 	if legacy != nil {
-		registerLegacy := func(method, pattern string, capability authport.Capability, endpoint http.Handler) error {
+		registerLegacy := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
 			tail, wrapErr := recovery(endpoint)
 			if wrapErr != nil {
 				return wrapErr
@@ -415,6 +427,12 @@ func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler htt
 			if wrapErr != nil {
 				return wrapErr
 			}
+			if csrf {
+				tail, wrapErr = legacy.RequireCSRF(tail)
+				if wrapErr != nil {
+					return wrapErr
+				}
+			}
 			tail = legacy.Authenticate(tail)
 			tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
 			if wrapErr != nil {
@@ -426,13 +444,19 @@ func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler htt
 		for _, route := range []struct {
 			method, pattern string
 			capability      authport.Capability
+			csrf            bool
 			endpoint        http.Handler
 		}{
-			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, http.HandlerFunc(legacy.ConfigOverview)},
-			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, http.HandlerFunc(legacy.Capabilities)},
-			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, http.HandlerFunc(legacy.ListCustomers)},
+			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
+			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
+			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListCustomers)},
+			{http.MethodGet, "/api/admin/push-center/jobs", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ListOutboundJobs)},
+			{http.MethodGet, "/api/admin/push-center/jobs/{job_id}", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.GetOutboundJob)},
+			{http.MethodGet, "/api/admin/push-center/jobs/{job_id}/reconciliation", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ReconcileOutboundJob)},
+			{http.MethodPost, "/api/admin/push-center/jobs/{job_id}/cancel", authport.CapabilityOutboundControl, true, http.HandlerFunc(legacy.CancelOutboundJob)},
+			{http.MethodPost, "/api/admin/push-center/jobs/{job_id}/retry", authport.CapabilityOutboundControl, true, http.HandlerFunc(legacy.RetryOutboundJob)},
 		} {
-			if err = registerLegacy(route.method, route.pattern, route.capability, route.endpoint); err != nil {
+			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 				return nil, err
 			}
 		}

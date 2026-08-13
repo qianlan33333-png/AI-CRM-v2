@@ -1038,11 +1038,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  e3796ae4cf5cf3c81f5ccb88990400f1af06f62fbf005ac16616fcfdfbc89a0b
+  95203922c6ea7f26ffb33cf32dc90488969c28d24cf3572ab3f417e9edc764e8
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  89f9e0eae2a92014373431d4f26b616abb8b1492bf4a4ea99c6854d35f5e6f59
+  85dcc2d9a0ec205213efa5e2b9b74d976e8a8a3b7a8deb811916297cc5a7bd43
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
