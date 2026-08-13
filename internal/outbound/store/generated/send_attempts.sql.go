@@ -11,6 +11,106 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const backfillOutboundFirstAttemptHistory = `-- name: BackfillOutboundFirstAttemptHistory :execrows
+INSERT INTO outbound_send_attempt_history AS history (
+  send_attempt_id, river_attempt, river_max_attempts, state, failure_kind,
+  provider_code, provider_message_id, created_at, dispatch_started_at, completed_at
+)
+SELECT marker.id, 1, $1::integer, marker.state, marker.failure_kind,
+  marker.provider_code, marker.provider_message_id, marker.created_at,
+  marker.dispatch_started_at, marker.completed_at
+FROM outbound_send_attempts AS marker
+WHERE marker.id = $2::bigint
+  AND marker.river_job_id = $3::bigint
+  AND marker.task_id = $4::bigint
+  AND marker.job_kind = $5::text
+ON CONFLICT (send_attempt_id, river_attempt) DO NOTHING
+`
+
+type BackfillOutboundFirstAttemptHistoryParams struct {
+	RiverMaxAttempts int32  `json:"river_max_attempts"`
+	SendAttemptID    int64  `json:"send_attempt_id"`
+	RiverJobID       int64  `json:"river_job_id"`
+	TaskID           int64  `json:"task_id"`
+	JobKind          string `json:"job_kind"`
+}
+
+func (q *Queries) BackfillOutboundFirstAttemptHistory(ctx context.Context, arg BackfillOutboundFirstAttemptHistoryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, backfillOutboundFirstAttemptHistory,
+		arg.RiverMaxAttempts,
+		arg.SendAttemptID,
+		arg.RiverJobID,
+		arg.TaskID,
+		arg.JobKind,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const completeOutboundAttemptHistory = `-- name: CompleteOutboundAttemptHistory :one
+UPDATE outbound_send_attempt_history AS history
+SET state = $1::text,
+    failure_kind = NULLIF($2::text, ''),
+    provider_code = NULLIF($3::text, ''),
+    provider_message_id = NULLIF($4::text, ''),
+    completed_at = now()
+WHERE history.id = $5::bigint
+  AND history.send_attempt_id = $6::bigint
+  AND history.state = 'dispatching'
+RETURNING history.id, history.send_attempt_id, history.river_attempt, history.river_max_attempts,
+  history.state, history.failure_kind, history.provider_code, history.provider_message_id,
+  history.dispatch_started_at, history.completed_at
+`
+
+type CompleteOutboundAttemptHistoryParams struct {
+	AttemptState      string `json:"attempt_state"`
+	FailureKind       string `json:"failure_kind"`
+	ProviderCode      string `json:"provider_code"`
+	ProviderMessageID string `json:"provider_message_id"`
+	HistoryID         int64  `json:"history_id"`
+	SendAttemptID     int64  `json:"send_attempt_id"`
+}
+
+type CompleteOutboundAttemptHistoryRow struct {
+	ID                int64              `json:"id"`
+	SendAttemptID     int64              `json:"send_attempt_id"`
+	RiverAttempt      int32              `json:"river_attempt"`
+	RiverMaxAttempts  int32              `json:"river_max_attempts"`
+	State             string             `json:"state"`
+	FailureKind       pgtype.Text        `json:"failure_kind"`
+	ProviderCode      pgtype.Text        `json:"provider_code"`
+	ProviderMessageID pgtype.Text        `json:"provider_message_id"`
+	DispatchStartedAt pgtype.Timestamptz `json:"dispatch_started_at"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) CompleteOutboundAttemptHistory(ctx context.Context, arg CompleteOutboundAttemptHistoryParams) (CompleteOutboundAttemptHistoryRow, error) {
+	row := q.db.QueryRow(ctx, completeOutboundAttemptHistory,
+		arg.AttemptState,
+		arg.FailureKind,
+		arg.ProviderCode,
+		arg.ProviderMessageID,
+		arg.HistoryID,
+		arg.SendAttemptID,
+	)
+	var i CompleteOutboundAttemptHistoryRow
+	err := row.Scan(
+		&i.ID,
+		&i.SendAttemptID,
+		&i.RiverAttempt,
+		&i.RiverMaxAttempts,
+		&i.State,
+		&i.FailureKind,
+		&i.ProviderCode,
+		&i.ProviderMessageID,
+		&i.DispatchStartedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const completeOutboundSendAttempt = `-- name: CompleteOutboundSendAttempt :one
 WITH completed AS (
   UPDATE outbound_send_attempts AS attempt
@@ -77,6 +177,52 @@ func (q *Queries) CompleteOutboundSendAttempt(ctx context.Context, arg CompleteO
 	return i, err
 }
 
+const loadOutboundAttemptHistory = `-- name: LoadOutboundAttemptHistory :one
+SELECT history.id, history.send_attempt_id, marker.river_job_id, marker.task_id, marker.job_kind,
+  history.river_attempt, history.river_max_attempts, history.state, history.failure_kind,
+  history.provider_code, history.provider_message_id, history.dispatch_started_at, history.completed_at
+FROM outbound_send_attempt_history AS history
+JOIN outbound_send_attempts AS marker ON marker.id = history.send_attempt_id
+WHERE history.id = $1::bigint
+`
+
+type LoadOutboundAttemptHistoryRow struct {
+	ID                int64              `json:"id"`
+	SendAttemptID     int64              `json:"send_attempt_id"`
+	RiverJobID        int64              `json:"river_job_id"`
+	TaskID            int64              `json:"task_id"`
+	JobKind           string             `json:"job_kind"`
+	RiverAttempt      int32              `json:"river_attempt"`
+	RiverMaxAttempts  int32              `json:"river_max_attempts"`
+	State             string             `json:"state"`
+	FailureKind       pgtype.Text        `json:"failure_kind"`
+	ProviderCode      pgtype.Text        `json:"provider_code"`
+	ProviderMessageID pgtype.Text        `json:"provider_message_id"`
+	DispatchStartedAt pgtype.Timestamptz `json:"dispatch_started_at"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) LoadOutboundAttemptHistory(ctx context.Context, historyID int64) (LoadOutboundAttemptHistoryRow, error) {
+	row := q.db.QueryRow(ctx, loadOutboundAttemptHistory, historyID)
+	var i LoadOutboundAttemptHistoryRow
+	err := row.Scan(
+		&i.ID,
+		&i.SendAttemptID,
+		&i.RiverJobID,
+		&i.TaskID,
+		&i.JobKind,
+		&i.RiverAttempt,
+		&i.RiverMaxAttempts,
+		&i.State,
+		&i.FailureKind,
+		&i.ProviderCode,
+		&i.ProviderMessageID,
+		&i.DispatchStartedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const loadOutboundSendRequest = `-- name: LoadOutboundSendRequest :one
 SELECT id, customer_id, template_key, payload
 FROM outbound_tasks
@@ -102,13 +248,61 @@ func (q *Queries) LoadOutboundSendRequest(ctx context.Context, id int64) (LoadOu
 	return i, err
 }
 
+const loadOutboundTaskResultFact = `-- name: LoadOutboundTaskResultFact :one
+SELECT task.id AS task_id, task.customer_id, task.status AS current_task_status,
+  task.attempt_count AS current_attempt_count, marker.id AS attempt_id, marker.river_job_id,
+  history.id AS history_id, history.river_attempt, history.river_max_attempts,
+  history.state AS attempt_state, history.failure_kind, history.provider_code,
+  history.provider_message_id, history.completed_at
+FROM outbound_send_attempt_history AS history
+JOIN outbound_send_attempts AS marker ON marker.id = history.send_attempt_id
+JOIN outbound_tasks AS task ON task.id = marker.task_id
+WHERE history.id = $1::bigint
+`
+
+type LoadOutboundTaskResultFactRow struct {
+	TaskID              int64              `json:"task_id"`
+	CustomerID          int64              `json:"customer_id"`
+	CurrentTaskStatus   string             `json:"current_task_status"`
+	CurrentAttemptCount int32              `json:"current_attempt_count"`
+	AttemptID           int64              `json:"attempt_id"`
+	RiverJobID          int64              `json:"river_job_id"`
+	HistoryID           int64              `json:"history_id"`
+	RiverAttempt        int32              `json:"river_attempt"`
+	RiverMaxAttempts    int32              `json:"river_max_attempts"`
+	AttemptState        string             `json:"attempt_state"`
+	FailureKind         pgtype.Text        `json:"failure_kind"`
+	ProviderCode        pgtype.Text        `json:"provider_code"`
+	ProviderMessageID   pgtype.Text        `json:"provider_message_id"`
+	CompletedAt         pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) LoadOutboundTaskResultFact(ctx context.Context, historyID int64) (LoadOutboundTaskResultFactRow, error) {
+	row := q.db.QueryRow(ctx, loadOutboundTaskResultFact, historyID)
+	var i LoadOutboundTaskResultFactRow
+	err := row.Scan(
+		&i.TaskID,
+		&i.CustomerID,
+		&i.CurrentTaskStatus,
+		&i.CurrentAttemptCount,
+		&i.AttemptID,
+		&i.RiverJobID,
+		&i.HistoryID,
+		&i.RiverAttempt,
+		&i.RiverMaxAttempts,
+		&i.AttemptState,
+		&i.FailureKind,
+		&i.ProviderCode,
+		&i.ProviderMessageID,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const markOutboundTaskSending = `-- name: MarkOutboundTaskSending :execrows
 UPDATE outbound_tasks AS task
 SET status = 'sending',
-    attempt_count = CASE
-      WHEN task.current_attempt_id = attempt.id THEN task.attempt_count
-      ELSE task.attempt_count + 1
-    END,
+    attempt_count = history.river_attempt,
     current_attempt_id = attempt.id,
     last_failure_kind = NULL,
     last_error = NULL,
@@ -116,82 +310,203 @@ SET status = 'sending',
     sent_at = NULL,
     status_updated_at = attempt.dispatch_started_at
 FROM outbound_send_attempts AS attempt
+JOIN outbound_send_attempt_history AS history ON history.send_attempt_id = attempt.id
 WHERE attempt.id = $1
+  AND history.id = $2
   AND attempt.task_id = task.id
   AND attempt.state = 'dispatching'
+  AND history.state = 'dispatching'
   AND (
-    (task.status IN ('pending', 'retryable_failed') AND task.current_attempt_id IS DISTINCT FROM attempt.id)
-    OR (task.status = 'sending' AND task.current_attempt_id = attempt.id)
+    (history.river_attempt = 1 AND task.status = 'pending' AND task.attempt_count = 0 AND task.current_attempt_id IS NULL)
+    OR (history.river_attempt = task.attempt_count + 1 AND task.status = 'retryable_failed' AND task.current_attempt_id = attempt.id)
+    OR (history.river_attempt = task.attempt_count AND task.status = 'sending' AND task.current_attempt_id = attempt.id)
   )
 `
 
-func (q *Queries) MarkOutboundTaskSending(ctx context.Context, attemptID int64) (int64, error) {
-	result, err := q.db.Exec(ctx, markOutboundTaskSending, attemptID)
+type MarkOutboundTaskSendingParams struct {
+	AttemptID int64 `json:"attempt_id"`
+	HistoryID int64 `json:"history_id"`
+}
+
+func (q *Queries) MarkOutboundTaskSending(ctx context.Context, arg MarkOutboundTaskSendingParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markOutboundTaskSending, arg.AttemptID, arg.HistoryID)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected(), nil
 }
 
-const projectOutboundTaskResult = `-- name: ProjectOutboundTaskResult :one
+const prepareOutboundSendAttemptRetry = `-- name: PrepareOutboundSendAttemptRetry :one
+UPDATE outbound_send_attempts AS marker
+SET state = 'reserved',
+    failure_kind = NULL,
+    provider_code = NULL,
+    provider_message_id = NULL,
+    dispatch_started_at = NULL,
+    completed_at = NULL
+FROM outbound_send_attempt_history AS history, outbound_tasks AS task
+WHERE marker.id = $1::bigint
+  AND history.id = $2::bigint
+  AND history.send_attempt_id = marker.id
+  AND history.river_attempt > 1
+  AND history.state = 'dispatching'
+  AND marker.state = 'retryable_failed'
+  AND task.id = marker.task_id
+  AND task.status = 'retryable_failed'
+  AND task.current_attempt_id = marker.id
+  AND task.attempt_count = history.river_attempt - 1
+RETURNING marker.id, marker.river_job_id, marker.task_id, marker.job_kind, marker.state,
+  marker.failure_kind, marker.provider_code, marker.provider_message_id,
+  marker.dispatch_started_at, marker.completed_at
+`
+
+type PrepareOutboundSendAttemptRetryParams struct {
+	SendAttemptID int64 `json:"send_attempt_id"`
+	HistoryID     int64 `json:"history_id"`
+}
+
+type PrepareOutboundSendAttemptRetryRow struct {
+	ID                int64              `json:"id"`
+	RiverJobID        int64              `json:"river_job_id"`
+	TaskID            int64              `json:"task_id"`
+	JobKind           string             `json:"job_kind"`
+	State             string             `json:"state"`
+	FailureKind       pgtype.Text        `json:"failure_kind"`
+	ProviderCode      pgtype.Text        `json:"provider_code"`
+	ProviderMessageID pgtype.Text        `json:"provider_message_id"`
+	DispatchStartedAt pgtype.Timestamptz `json:"dispatch_started_at"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) PrepareOutboundSendAttemptRetry(ctx context.Context, arg PrepareOutboundSendAttemptRetryParams) (PrepareOutboundSendAttemptRetryRow, error) {
+	row := q.db.QueryRow(ctx, prepareOutboundSendAttemptRetry, arg.SendAttemptID, arg.HistoryID)
+	var i PrepareOutboundSendAttemptRetryRow
+	err := row.Scan(
+		&i.ID,
+		&i.RiverJobID,
+		&i.TaskID,
+		&i.JobKind,
+		&i.State,
+		&i.FailureKind,
+		&i.ProviderCode,
+		&i.ProviderMessageID,
+		&i.DispatchStartedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const projectOutboundTaskResult = `-- name: ProjectOutboundTaskResult :execrows
 UPDATE outbound_tasks AS task
 SET status = $1,
-    attempt_count = CASE
-      WHEN task.current_attempt_id = attempt.id THEN task.attempt_count
-      ELSE task.attempt_count + 1
-    END,
+    attempt_count = history.river_attempt,
     current_attempt_id = attempt.id,
-    last_failure_kind = attempt.failure_kind,
-    last_error = attempt.provider_code,
-    provider_message_id = attempt.provider_message_id,
-    sent_at = CASE WHEN attempt.state = 'succeeded' THEN attempt.completed_at ELSE NULL END,
-    status_updated_at = attempt.completed_at
+    last_failure_kind = history.failure_kind,
+    last_error = history.provider_code,
+    provider_message_id = history.provider_message_id,
+    sent_at = CASE WHEN history.state = 'succeeded' THEN history.completed_at ELSE NULL END,
+    status_updated_at = history.completed_at
 FROM outbound_send_attempts AS attempt
+JOIN outbound_send_attempt_history AS history ON history.send_attempt_id = attempt.id
 WHERE attempt.id = $2
+  AND history.id = $3
   AND attempt.task_id = task.id
-  AND attempt.state = $3
-  AND attempt.completed_at IS NOT NULL
-  AND (
-    (task.current_attempt_id = attempt.id AND task.status IN ('sending', $1))
-    OR (task.status = 'pending' AND task.current_attempt_id IS NULL)
-  )
-RETURNING task.id AS task_id, task.customer_id, task.status, task.attempt_count,
-  task.last_failure_kind, task.last_error, task.provider_message_id,
-  attempt.id AS attempt_id, attempt.river_job_id, attempt.completed_at
+  AND history.state = $4
+  AND history.completed_at IS NOT NULL
+  AND task.current_attempt_id = attempt.id
+  AND task.attempt_count = history.river_attempt
+  AND task.status IN ('sending', $1)
 `
 
 type ProjectOutboundTaskResultParams struct {
 	TaskStatus   string `json:"task_status"`
 	AttemptID    int64  `json:"attempt_id"`
+	HistoryID    int64  `json:"history_id"`
 	AttemptState string `json:"attempt_state"`
 }
 
-type ProjectOutboundTaskResultRow struct {
-	TaskID            int64              `json:"task_id"`
-	CustomerID        int64              `json:"customer_id"`
-	Status            string             `json:"status"`
-	AttemptCount      int32              `json:"attempt_count"`
-	LastFailureKind   pgtype.Text        `json:"last_failure_kind"`
-	LastError         pgtype.Text        `json:"last_error"`
+func (q *Queries) ProjectOutboundTaskResult(ctx context.Context, arg ProjectOutboundTaskResultParams) (int64, error) {
+	result, err := q.db.Exec(ctx, projectOutboundTaskResult,
+		arg.TaskStatus,
+		arg.AttemptID,
+		arg.HistoryID,
+		arg.AttemptState,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const reserveOutboundAttemptHistory = `-- name: ReserveOutboundAttemptHistory :one
+INSERT INTO outbound_send_attempt_history AS history (
+  send_attempt_id, river_attempt, river_max_attempts
+)
+SELECT marker.id, $1::integer, $2::integer
+FROM outbound_send_attempts AS marker
+WHERE marker.id = $3::bigint
+  AND marker.river_job_id = $4::bigint
+  AND marker.task_id = $5::bigint
+  AND marker.job_kind = $6::text
+  AND (
+    $1::integer = 1
+    OR EXISTS (
+      SELECT 1
+      FROM outbound_send_attempt_history AS previous
+      WHERE previous.send_attempt_id = marker.id
+        AND previous.river_attempt = $1::integer - 1
+        AND previous.state = 'retryable_failed'
+    )
+  )
+ON CONFLICT (send_attempt_id, river_attempt) DO UPDATE
+SET send_attempt_id = EXCLUDED.send_attempt_id
+RETURNING history.id, history.send_attempt_id, history.river_attempt, history.river_max_attempts,
+  history.state, history.failure_kind, history.provider_code, history.provider_message_id,
+  history.dispatch_started_at, history.completed_at
+`
+
+type ReserveOutboundAttemptHistoryParams struct {
+	RiverAttempt     int32  `json:"river_attempt"`
+	RiverMaxAttempts int32  `json:"river_max_attempts"`
+	SendAttemptID    int64  `json:"send_attempt_id"`
+	RiverJobID       int64  `json:"river_job_id"`
+	TaskID           int64  `json:"task_id"`
+	JobKind          string `json:"job_kind"`
+}
+
+type ReserveOutboundAttemptHistoryRow struct {
+	ID                int64              `json:"id"`
+	SendAttemptID     int64              `json:"send_attempt_id"`
+	RiverAttempt      int32              `json:"river_attempt"`
+	RiverMaxAttempts  int32              `json:"river_max_attempts"`
+	State             string             `json:"state"`
+	FailureKind       pgtype.Text        `json:"failure_kind"`
+	ProviderCode      pgtype.Text        `json:"provider_code"`
 	ProviderMessageID pgtype.Text        `json:"provider_message_id"`
-	AttemptID         int64              `json:"attempt_id"`
-	RiverJobID        int64              `json:"river_job_id"`
+	DispatchStartedAt pgtype.Timestamptz `json:"dispatch_started_at"`
 	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
 }
 
-func (q *Queries) ProjectOutboundTaskResult(ctx context.Context, arg ProjectOutboundTaskResultParams) (ProjectOutboundTaskResultRow, error) {
-	row := q.db.QueryRow(ctx, projectOutboundTaskResult, arg.TaskStatus, arg.AttemptID, arg.AttemptState)
-	var i ProjectOutboundTaskResultRow
+func (q *Queries) ReserveOutboundAttemptHistory(ctx context.Context, arg ReserveOutboundAttemptHistoryParams) (ReserveOutboundAttemptHistoryRow, error) {
+	row := q.db.QueryRow(ctx, reserveOutboundAttemptHistory,
+		arg.RiverAttempt,
+		arg.RiverMaxAttempts,
+		arg.SendAttemptID,
+		arg.RiverJobID,
+		arg.TaskID,
+		arg.JobKind,
+	)
+	var i ReserveOutboundAttemptHistoryRow
 	err := row.Scan(
-		&i.TaskID,
-		&i.CustomerID,
-		&i.Status,
-		&i.AttemptCount,
-		&i.LastFailureKind,
-		&i.LastError,
+		&i.ID,
+		&i.SendAttemptID,
+		&i.RiverAttempt,
+		&i.RiverMaxAttempts,
+		&i.State,
+		&i.FailureKind,
+		&i.ProviderCode,
 		&i.ProviderMessageID,
-		&i.AttemptID,
-		&i.RiverJobID,
+		&i.DispatchStartedAt,
 		&i.CompletedAt,
 	)
 	return i, err
@@ -233,6 +548,55 @@ func (q *Queries) ReserveOutboundSendAttempt(ctx context.Context, arg ReserveOut
 		&i.RiverJobID,
 		&i.TaskID,
 		&i.JobKind,
+		&i.State,
+		&i.FailureKind,
+		&i.ProviderCode,
+		&i.ProviderMessageID,
+		&i.DispatchStartedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const startOutboundAttemptHistory = `-- name: StartOutboundAttemptHistory :one
+UPDATE outbound_send_attempt_history AS history
+SET state = 'dispatching', dispatch_started_at = now()
+WHERE history.id = $1::bigint
+  AND history.send_attempt_id = $2::bigint
+  AND history.river_attempt = $3::integer
+  AND history.state = 'reserved'
+RETURNING history.id, history.send_attempt_id, history.river_attempt, history.river_max_attempts,
+  history.state, history.failure_kind, history.provider_code, history.provider_message_id,
+  history.dispatch_started_at, history.completed_at
+`
+
+type StartOutboundAttemptHistoryParams struct {
+	HistoryID     int64 `json:"history_id"`
+	SendAttemptID int64 `json:"send_attempt_id"`
+	RiverAttempt  int32 `json:"river_attempt"`
+}
+
+type StartOutboundAttemptHistoryRow struct {
+	ID                int64              `json:"id"`
+	SendAttemptID     int64              `json:"send_attempt_id"`
+	RiverAttempt      int32              `json:"river_attempt"`
+	RiverMaxAttempts  int32              `json:"river_max_attempts"`
+	State             string             `json:"state"`
+	FailureKind       pgtype.Text        `json:"failure_kind"`
+	ProviderCode      pgtype.Text        `json:"provider_code"`
+	ProviderMessageID pgtype.Text        `json:"provider_message_id"`
+	DispatchStartedAt pgtype.Timestamptz `json:"dispatch_started_at"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) StartOutboundAttemptHistory(ctx context.Context, arg StartOutboundAttemptHistoryParams) (StartOutboundAttemptHistoryRow, error) {
+	row := q.db.QueryRow(ctx, startOutboundAttemptHistory, arg.HistoryID, arg.SendAttemptID, arg.RiverAttempt)
+	var i StartOutboundAttemptHistoryRow
+	err := row.Scan(
+		&i.ID,
+		&i.SendAttemptID,
+		&i.RiverAttempt,
+		&i.RiverMaxAttempts,
 		&i.State,
 		&i.FailureKind,
 		&i.ProviderCode,

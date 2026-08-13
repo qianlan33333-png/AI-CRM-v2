@@ -46,9 +46,13 @@ const (
 )
 
 type SendCommand struct {
-	RiverJobID int64
-	TaskID     TaskID
-	JobKind    string
+	RiverJobID       int64
+	TaskID           TaskID
+	JobKind          string
+	RiverAttempt     int32
+	RiverMaxAttempts int32
+	RiverJobState    string
+	LegacyO5         bool
 }
 
 type SendRequest struct {
@@ -66,9 +70,12 @@ type ProviderResult struct {
 
 type SendAttempt struct {
 	ID                int64
+	HistoryID         int64
 	RiverJobID        int64
 	TaskID            TaskID
 	JobKind           string
+	RiverAttempt      int32
+	RiverMaxAttempts  int32
 	State             SendAttemptState
 	FailureKind       ProviderFailureKind
 	ProviderCode      string
@@ -94,7 +101,10 @@ type TaskResultFact struct {
 	TaskID            TaskID
 	CustomerID        int64
 	AttemptID         int64
+	HistoryID         int64
 	RiverJobID        int64
+	RiverAttempt      int32
+	RiverMaxAttempts  int32
 	Status            TaskStatus
 	AttemptCount      int32
 	FailureKind       ProviderFailureKind
@@ -105,6 +115,7 @@ type TaskResultFact struct {
 
 type CompleteSendAttempt struct {
 	ID                int64
+	HistoryID         int64
 	State             SendAttemptState
 	FailureKind       ProviderFailureKind
 	ProviderCode      string
@@ -113,7 +124,7 @@ type CompleteSendAttempt struct {
 
 type SendAttemptRepository interface {
 	ReserveSendAttempt(context.Context, SendCommand) (SendAttempt, error)
-	StartSendAttempt(context.Context, int64) (SendAttempt, bool, error)
+	StartSendAttempt(context.Context, SendAttempt) (SendAttempt, bool, error)
 	LoadSendRequest(context.Context, TaskID) (SendRequest, error)
 	CompleteSendAttempt(context.Context, CompleteSendAttempt) (SendAttempt, error)
 	MarkTaskSending(context.Context, SendAttempt) error
@@ -145,6 +156,7 @@ func NewSenderService(uow platformport.UnitOfWork, repository SendAttemptReposit
 // A replay of dispatching is classified unknown and never invokes the provider
 // again. Receipt, task status, and result event are committed atomically.
 func (service *SenderService) Execute(ctx context.Context, command SendCommand) (SendAttempt, error) {
+	command = normalizeLegacySendCommand(command)
 	if ctx == nil || service == nil || service.uow == nil || service.repository == nil || service.events == nil || service.provider == nil || service.rate == nil || !validSendCommand(command) {
 		return SendAttempt{}, ErrInvalidSendCommand
 	}
@@ -181,7 +193,7 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 	}
 	if attempt.State == SendAttemptDispatching {
 		return service.complete(ctx, attempt, CompleteSendAttempt{
-			ID: attempt.ID, State: SendAttemptOutcomeUnknown, FailureKind: ProviderFailureInterruptedDispatch,
+			ID: attempt.ID, HistoryID: attempt.HistoryID, State: SendAttemptOutcomeUnknown, FailureKind: ProviderFailureInterruptedDispatch,
 			ProviderCode: "river_replay_after_dispatch",
 		})
 	}
@@ -194,7 +206,7 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 
 	var started bool
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
-		current, didStart, startErr := service.repository.StartSendAttempt(txCtx, attempt.ID)
+		current, didStart, startErr := service.repository.StartSendAttempt(txCtx, attempt)
 		if startErr != nil {
 			return startErr
 		}
@@ -218,7 +230,7 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 		}
 		if attempt.State == SendAttemptDispatching {
 			return service.complete(ctx, attempt, CompleteSendAttempt{
-				ID: attempt.ID, State: SendAttemptOutcomeUnknown, FailureKind: ProviderFailureInterruptedDispatch,
+				ID: attempt.ID, HistoryID: attempt.HistoryID, State: SendAttemptOutcomeUnknown, FailureKind: ProviderFailureInterruptedDispatch,
 				ProviderCode: "concurrent_dispatch_detected",
 			})
 		}
@@ -226,7 +238,7 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 	}
 
 	result, providerErr := service.provider.Send(ctx, request)
-	completion := classifyProviderResult(attempt.ID, result, providerErr)
+	completion := classifyProviderResult(attempt, result, providerErr)
 	return service.complete(ctx, attempt, completion)
 }
 
@@ -268,8 +280,14 @@ func (service *SenderService) projectWithin(ctx context.Context, attempt SendAtt
 	if err != nil {
 		return 0, err
 	}
-	if fact.TaskID != attempt.TaskID || fact.CustomerID <= 0 || fact.AttemptID != attempt.ID || fact.RiverJobID != attempt.RiverJobID || fact.AttemptCount < 1 || fact.Status != taskStatusForAttempt(attempt.State) || fact.OccurredAt.IsZero() {
+	if fact.TaskID != attempt.TaskID || fact.CustomerID <= 0 || fact.AttemptID != attempt.ID || fact.HistoryID != attempt.HistoryID ||
+		fact.RiverJobID != attempt.RiverJobID || fact.RiverAttempt != attempt.RiverAttempt || fact.RiverMaxAttempts != attempt.RiverMaxAttempts ||
+		fact.AttemptCount < 1 || fact.Status != taskStatusForAttempt(attempt.State) || fact.OccurredAt.IsZero() {
 		return 0, ErrSendAttemptFailed
+	}
+	riverAttempt, riverMaxAttempts := int32(0), int32(0)
+	if fact.RiverAttempt > 1 {
+		riverAttempt, riverMaxAttempts = fact.RiverAttempt, fact.RiverMaxAttempts
 	}
 	payload, err := json.Marshal(struct {
 		TaskID            TaskID              `json:"task_id"`
@@ -277,10 +295,12 @@ func (service *SenderService) projectWithin(ctx context.Context, attempt SendAtt
 		RiverJobID        int64               `json:"river_job_id"`
 		Status            TaskStatus          `json:"status"`
 		AttemptCount      int32               `json:"attempt_count"`
+		RiverAttempt      int32               `json:"river_attempt,omitempty"`
+		RiverMaxAttempts  int32               `json:"river_max_attempts,omitempty"`
 		FailureKind       ProviderFailureKind `json:"failure_kind,omitempty"`
 		ProviderCode      string              `json:"provider_code,omitempty"`
 		ProviderMessageID string              `json:"provider_message_id,omitempty"`
-	}{fact.TaskID, fact.AttemptID, fact.RiverJobID, fact.Status, fact.AttemptCount, fact.FailureKind, fact.ProviderCode, fact.ProviderMessageID})
+	}{fact.TaskID, fact.AttemptID, fact.RiverJobID, fact.Status, fact.AttemptCount, riverAttempt, riverMaxAttempts, fact.FailureKind, fact.ProviderCode, fact.ProviderMessageID})
 	if err != nil {
 		return 0, err
 	}
@@ -288,9 +308,13 @@ func (service *SenderService) projectWithin(ctx context.Context, attempt SendAtt
 	if fact.Status == TaskStatusSent {
 		eventType = eventport.EvOutboundSent
 	}
+	idempotencyKey := fmt.Sprintf("outbound.send-result:%d", fact.AttemptID)
+	if fact.RiverAttempt > 1 {
+		idempotencyKey = fmt.Sprintf("outbound.send-result:%d:%d", fact.AttemptID, fact.RiverAttempt)
+	}
 	return service.events.Append(ctx, eventport.Event{
 		Type: eventType, CustomerID: eventport.CustomerID(fact.CustomerID), Payload: payload,
-		OccurredAt: fact.OccurredAt, IdempotencyKey: fmt.Sprintf("outbound.send-result:%d", fact.AttemptID),
+		OccurredAt: fact.OccurredAt, IdempotencyKey: idempotencyKey,
 	})
 }
 
@@ -309,8 +333,8 @@ func taskStatusForAttempt(state SendAttemptState) TaskStatus {
 	}
 }
 
-func classifyProviderResult(attemptID int64, result ProviderResult, providerErr error) CompleteSendAttempt {
-	completion := CompleteSendAttempt{ID: attemptID, FailureKind: result.FailureKind, ProviderCode: strings.TrimSpace(result.Code)}
+func classifyProviderResult(attempt SendAttempt, result ProviderResult, providerErr error) CompleteSendAttempt {
+	completion := CompleteSendAttempt{ID: attempt.ID, HistoryID: attempt.HistoryID, FailureKind: result.FailureKind, ProviderCode: strings.TrimSpace(result.Code)}
 	if providerErr != nil {
 		completion.State, completion.FailureKind, completion.ProviderCode = SendAttemptOutcomeUnknown, ProviderFailureAdapterError, "adapter_error"
 		return completion
@@ -338,7 +362,20 @@ func classifyProviderResult(attemptID int64, result ProviderResult, providerErr 
 }
 
 func validSendCommand(command SendCommand) bool {
-	return command.RiverJobID > 0 && command.TaskID > 0 && (command.JobKind == OutboundEnqueueOneJobKind || command.JobKind == OutboundEnqueueBatchJobKind)
+	return command.RiverJobID > 0 && command.TaskID > 0 && command.RiverAttempt > 0 &&
+		command.RiverMaxAttempts >= command.RiverAttempt && command.RiverJobState == "running" &&
+		(!command.LegacyO5 || command.RiverAttempt == 1) &&
+		(command.JobKind == OutboundEnqueueOneJobKind || command.JobKind == OutboundEnqueueBatchJobKind)
+}
+
+func normalizeLegacySendCommand(command SendCommand) SendCommand {
+	if command.RiverAttempt == 0 && command.RiverMaxAttempts == 0 && command.RiverJobState == "" {
+		command.RiverAttempt = 1
+		command.RiverMaxAttempts = 1
+		command.RiverJobState = "running"
+		command.LegacyO5 = true
+	}
+	return command
 }
 
 func validSendRequest(request SendRequest, taskID TaskID) bool {
@@ -346,7 +383,11 @@ func validSendRequest(request SendRequest, taskID TaskID) bool {
 }
 
 func sameSendCommand(attempt SendAttempt, command SendCommand) bool {
-	return attempt.ID > 0 && attempt.RiverJobID == command.RiverJobID && attempt.TaskID == command.TaskID && attempt.JobKind == command.JobKind
+	if attempt.ID <= 0 || attempt.HistoryID <= 0 || attempt.RiverJobID != command.RiverJobID || attempt.TaskID != command.TaskID ||
+		attempt.JobKind != command.JobKind || attempt.RiverAttempt != command.RiverAttempt {
+		return false
+	}
+	return command.LegacyO5 || attempt.RiverMaxAttempts == command.RiverMaxAttempts
 }
 
 func terminalSendAttempt(state SendAttemptState) bool {

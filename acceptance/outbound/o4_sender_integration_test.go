@@ -100,7 +100,14 @@ func TestSenderConsumesEnqueueOneAndBatchJobsWithFixtureProvider(t *testing.T) {
 			if err = json.Unmarshal(encoded, &args); err != nil {
 				t.Fatal(err)
 			}
-			if err = oneWorker.Work(ctx, &river.Job[outboundapp.EnqueueOneArgs]{JobRow: &rivertype.JobRow{ID: jobID}, Args: args}); err != nil {
+			err = oneWorker.Work(ctx, &river.Job[outboundapp.EnqueueOneArgs]{
+				JobRow: &rivertype.JobRow{ID: jobID, Attempt: 1, MaxAttempts: 25, State: rivertype.JobStateRunning}, Args: args,
+			})
+			if want.state == outboundapp.SendAttemptRetryableFailed {
+				if !errors.Is(err, outboundworker.ErrRetryableSendAttempt) {
+					t.Fatalf("consume retryable one job %d: %v", jobID, err)
+				}
+			} else if err != nil {
 				t.Fatalf("consume one job %d: %v", jobID, err)
 			}
 		case outboundapp.OutboundEnqueueBatchJobKind:
@@ -108,8 +115,11 @@ func TestSenderConsumesEnqueueOneAndBatchJobsWithFixtureProvider(t *testing.T) {
 			if err = json.Unmarshal(encoded, &args); err != nil {
 				t.Fatal(err)
 			}
-			if err = batchWorker.Work(ctx, &river.Job[outboundapp.EnqueueBatchTaskArgs]{JobRow: &rivertype.JobRow{ID: jobID}, Args: args}); err != nil {
-				t.Fatalf("consume batch job %d: %v", jobID, err)
+			err = batchWorker.Work(ctx, &river.Job[outboundapp.EnqueueBatchTaskArgs]{
+				JobRow: &rivertype.JobRow{ID: jobID, Attempt: 1, MaxAttempts: 25, State: rivertype.JobStateRunning}, Args: args,
+			})
+			if !errors.Is(err, outboundworker.ErrRetryableSendAttempt) {
+				t.Fatalf("consume retryable batch job %d: %v", jobID, err)
 			}
 		default:
 			t.Fatalf("job %d kind=%q, want existing O2/O3 kind for %+v", jobID, kind, want.command)

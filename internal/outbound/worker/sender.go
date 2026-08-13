@@ -13,7 +13,10 @@ import (
 	"github.com/riverqueue/river"
 )
 
-var ErrInvalidSenderWorker = errors.New("invalid outbound sender worker")
+var (
+	ErrInvalidSenderWorker  = errors.New("invalid outbound sender worker")
+	ErrRetryableSendAttempt = errors.New("outbound send attempt is retryable")
+)
 
 type EnqueueOneSender struct {
 	river.WorkerDefaults[outboundapp.EnqueueOneArgs]
@@ -55,23 +58,38 @@ func NewEnqueueBatchTaskSender(sender *outboundapp.SenderService) (*EnqueueBatch
 }
 
 func (worker *EnqueueOneSender) Work(ctx context.Context, job *river.Job[outboundapp.EnqueueOneArgs]) error {
-	if worker == nil || worker.sender == nil || job == nil || job.ID <= 0 || job.Args.TaskID <= 0 || job.Args.ReceiptID <= 0 {
+	if worker == nil || worker.sender == nil || job == nil || job.JobRow == nil || job.ID <= 0 || job.Attempt <= 0 ||
+		job.MaxAttempts < job.Attempt || job.Attempt > math.MaxInt32 || job.MaxAttempts > math.MaxInt32 ||
+		job.Args.TaskID <= 0 || job.Args.ReceiptID <= 0 {
 		return ErrInvalidSenderWorker
 	}
-	_, err := worker.sender.Execute(ctx, outboundapp.SendCommand{
+	return executeSender(ctx, worker.sender, outboundapp.SendCommand{
 		RiverJobID: job.ID, TaskID: job.Args.TaskID, JobKind: outboundapp.OutboundEnqueueOneJobKind,
+		RiverAttempt: int32(job.Attempt), RiverMaxAttempts: int32(job.MaxAttempts), RiverJobState: string(job.State),
 	})
-	return err
 }
 
 func (worker *EnqueueBatchTaskSender) Work(ctx context.Context, job *river.Job[outboundapp.EnqueueBatchTaskArgs]) error {
-	if worker == nil || worker.sender == nil || job == nil || job.ID <= 0 || job.Args.BatchID <= 0 || job.Args.ChunkIndex < 0 || job.Args.TaskID <= 0 {
+	if worker == nil || worker.sender == nil || job == nil || job.JobRow == nil || job.ID <= 0 || job.Attempt <= 0 ||
+		job.MaxAttempts < job.Attempt || job.Attempt > math.MaxInt32 || job.MaxAttempts > math.MaxInt32 ||
+		job.Args.BatchID <= 0 || job.Args.ChunkIndex < 0 || job.Args.TaskID <= 0 {
 		return ErrInvalidSenderWorker
 	}
-	_, err := worker.sender.Execute(ctx, outboundapp.SendCommand{
+	return executeSender(ctx, worker.sender, outboundapp.SendCommand{
 		RiverJobID: job.ID, TaskID: job.Args.TaskID, JobKind: outboundapp.OutboundEnqueueBatchJobKind,
+		RiverAttempt: int32(job.Attempt), RiverMaxAttempts: int32(job.MaxAttempts), RiverJobState: string(job.State),
 	})
-	return err
+}
+
+func executeSender(ctx context.Context, sender *outboundapp.SenderService, command outboundapp.SendCommand) error {
+	attempt, err := sender.Execute(ctx, command)
+	if err != nil {
+		return err
+	}
+	if attempt.State == outboundapp.SendAttemptRetryableFailed {
+		return ErrRetryableSendAttempt
+	}
+	return nil
 }
 
 func (*EnqueueOneSender) Timeout(*river.Job[outboundapp.EnqueueOneArgs]) time.Duration {
