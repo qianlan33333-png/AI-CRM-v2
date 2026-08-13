@@ -952,11 +952,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  029e3d2ceacede71467893cbfc005a601ff5a510c8e9bfb34efc189d1b5c0273
+  15a6ef00ef56df2201ffcc016fa6375457c174b57ebabee20e7c6bcda361d6f1
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  a8ca0a5ef3feed43ba16a7d329324343058cadb76fc97ce3d66228db02659dc4
+  5533670d952d54b2da6d5313560a66ef573aa1d643840495961f9cc97b6f839c
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1478,7 +1478,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  a3d4b843ec0635e46a7ca99a92364fed9e65bd058fb11dd97894711f041931d7
+  73120af87926d7ca42714b83e5aacfc575c6d118a8b68fd6410fb3d64b431a2f
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
