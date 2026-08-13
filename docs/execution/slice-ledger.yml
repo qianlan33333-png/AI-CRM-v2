@@ -3536,6 +3536,21 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: []
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+  - slice_id: P3-I3
+    title: identity-bind-minimal-business-behavior
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: 7560ce2a6867c1582739e27458e681099e21647b
+    dependency: P3_I2_CLOSED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-i3-identity-bind-main
+    scope: [transaction_bound_floating_identity_bind, stable_bind_receipt_replay_and_fail_closed_payload_conflict, same_customer_already_bound, other_customer_rejected_diversion, identity_bound_event_on_new_edge, PostgreSQL_16_14_concurrency_and_rollback_acceptance]
+    excluded_scope: [migration_OpenAPI_public_ports_HTTP_API_UI_complete_merge_merge_review_Ingest_pending_replay_keyring_root_dependencies_production_database_live_migration_real_wecom]
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: [central_contract:00010_deferred_receipt_trigger_blocker_resolved_by_P3_I3R0_PR_173_migration_00013_then_replayed_from_exact_main]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
 
   - slice_id: P3-I3R0
     title: identity-receipt-same-uow-completion-migration-00013

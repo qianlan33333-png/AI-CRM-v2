@@ -9,7 +9,13 @@ import (
 )
 
 type Querier interface {
+	BindFloatingIdentity(ctx context.Context, arg BindFloatingIdentityParams) (int64, error)
+	CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error)
+	LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error)
+	LockActiveBindCustomer(ctx context.Context, customerID int64) (int64, error)
+	LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error)
 	LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error)
+	ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error)
 	UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormalizedIdentityParams) (UpsertNormalizedIdentityRow, error)
 }
 

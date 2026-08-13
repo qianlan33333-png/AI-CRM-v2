@@ -11,6 +11,124 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const bindFloatingIdentity = `-- name: BindFloatingIdentity :one
+UPDATE identities
+SET customer_id = $1::bigint, bound_at = now()
+WHERE id = $2::bigint
+  AND customer_id IS NULL
+RETURNING id
+`
+
+type BindFloatingIdentityParams struct {
+	CustomerID int64 `json:"customer_id"`
+	IdentityID int64 `json:"identity_id"`
+}
+
+func (q *Queries) BindFloatingIdentity(ctx context.Context, arg BindFloatingIdentityParams) (int64, error) {
+	row := q.db.QueryRow(ctx, bindFloatingIdentity, arg.CustomerID, arg.IdentityID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const completeBindReceipt = `-- name: CompleteBindReceipt :execrows
+UPDATE identity_operation_receipts
+SET
+  state = 'completed',
+  result_status = $1::text,
+  result_customer_id = $2::bigint,
+  completed_at = now()
+WHERE id = $3::bigint
+  AND state = 'in_progress'
+`
+
+type CompleteBindReceiptParams struct {
+	ResultStatus     string      `json:"result_status"`
+	ResultCustomerID pgtype.Int8 `json:"result_customer_id"`
+	ID               int64       `json:"id"`
+}
+
+func (q *Queries) CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeBindReceipt, arg.ResultStatus, arg.ResultCustomerID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const loadBindReceipt = `-- name: LoadBindReceipt :one
+SELECT
+  payload_hmac,
+  state,
+  result_status,
+  result_customer_id
+FROM identity_operation_receipts
+WHERE operation = 'bind'
+  AND idempotency_scope = 'identity.bind.v1'
+  AND key_digest = $1::bytea
+`
+
+type LoadBindReceiptRow struct {
+	PayloadHmac      []byte      `json:"payload_hmac"`
+	State            string      `json:"state"`
+	ResultStatus     pgtype.Text `json:"result_status"`
+	ResultCustomerID pgtype.Int8 `json:"result_customer_id"`
+}
+
+func (q *Queries) LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error) {
+	row := q.db.QueryRow(ctx, loadBindReceipt, keyDigest)
+	var i LoadBindReceiptRow
+	err := row.Scan(
+		&i.PayloadHmac,
+		&i.State,
+		&i.ResultStatus,
+		&i.ResultCustomerID,
+	)
+	return i, err
+}
+
+const lockActiveBindCustomer = `-- name: LockActiveBindCustomer :one
+SELECT id
+FROM customers
+WHERE id = $1::bigint
+  AND is_deleted = FALSE
+FOR UPDATE
+`
+
+func (q *Queries) LockActiveBindCustomer(ctx context.Context, customerID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, lockActiveBindCustomer, customerID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const lockIdentityForBind = `-- name: LockIdentityForBind :one
+SELECT id, customer_id
+FROM identities
+WHERE kind = $1::text
+  AND scope = $2::text
+  AND normalized_value = $3::text
+FOR UPDATE
+`
+
+type LockIdentityForBindParams struct {
+	Kind            string `json:"kind"`
+	Scope           string `json:"scope"`
+	NormalizedValue string `json:"normalized_value"`
+}
+
+type LockIdentityForBindRow struct {
+	ID         int64       `json:"id"`
+	CustomerID pgtype.Int8 `json:"customer_id"`
+}
+
+func (q *Queries) LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error) {
+	row := q.db.QueryRow(ctx, lockIdentityForBind, arg.Kind, arg.Scope, arg.NormalizedValue)
+	var i LockIdentityForBindRow
+	err := row.Scan(&i.ID, &i.CustomerID)
+	return i, err
+}
+
 const lookupNormalizedIdentity = `-- name: LookupNormalizedIdentity :one
 SELECT
   i.customer_id AS identity_customer_id,
@@ -38,6 +156,40 @@ func (q *Queries) LookupNormalizedIdentity(ctx context.Context, arg LookupNormal
 	var i LookupNormalizedIdentityRow
 	err := row.Scan(&i.IdentityCustomerID, &i.CustomerIsDeleted)
 	return i, err
+}
+
+const reserveBindReceipt = `-- name: ReserveBindReceipt :one
+INSERT INTO identity_operation_receipts (
+  operation,
+  idempotency_scope,
+  key_digest,
+  command_schema_version,
+  payload_hmac,
+  payload_hmac_key_version,
+  result_schema_version
+) VALUES (
+  'bind',
+  'identity.bind.v1',
+  $1::bytea,
+  1,
+  $2::bytea,
+  1,
+  1
+)
+ON CONFLICT (operation, idempotency_scope, key_digest) DO NOTHING
+RETURNING id
+`
+
+type ReserveBindReceiptParams struct {
+	KeyDigest   []byte `json:"key_digest"`
+	PayloadHmac []byte `json:"payload_hmac"`
+}
+
+func (q *Queries) ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error) {
+	row := q.db.QueryRow(ctx, reserveBindReceipt, arg.KeyDigest, arg.PayloadHmac)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const upsertNormalizedIdentity = `-- name: UpsertNormalizedIdentity :one
