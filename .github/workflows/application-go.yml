@@ -73,7 +73,6 @@ jobs:
           P3R4B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-r4b-identity-storage-acceptance
           P3C07C_R3B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3b-storage-acceptance
           P3C07C_R3C_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3c-behavior-acceptance
-          P3O1A_R3_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o1a-r3-acceptance
           ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02a-acceptance
           ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02b-acceptance
           ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02d-acceptance
@@ -83,6 +82,7 @@ jobs:
           P3C07B2_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07b2-acceptance
           WECOM_SYNC_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-w4-acceptance
           make p0-s04-integration
+          P3O2_ENQUEUE_ONE_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o2-enqueue-one-acceptance
   web:
     name: application / web
     runs-on: ubuntu-latest

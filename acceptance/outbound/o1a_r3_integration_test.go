@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
+	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -28,8 +30,8 @@ func TestOutboundStorageCatalogWaterlineAndIdentity(t *testing.T) {
 	ctx := context.Background()
 
 	var waterline int
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline < 14 {
-		t.Fatalf("migration waterline=%d err=%v, want at least 14", waterline, err)
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 16 {
+		t.Fatalf("migration waterline=%d err=%v, want 16", waterline, err)
 	}
 
 	var identity, generation string
@@ -125,12 +127,163 @@ func TestAcceptOneRollsBackTaskWhenAcceptedEventCannotAppend(t *testing.T) {
 	}
 }
 
+func TestEnqueueOneCommitsStableOutboundJobAndReplaysOriginalFacts(t *testing.T) {
+	pool := openOutboundPool(t)
+	secondPool := openOutboundPool(t)
+	ctx := context.Background()
+	ensureOutboundRiverCatalog(t, ctx, pool)
+	resetOutboundEnqueueFixture(t, pool)
+	customerID := createOutboundCustomer(t, ctx, pool)
+	var firstPID, secondPID int
+	if err := pool.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&firstPID); err != nil {
+		t.Fatal(err)
+	}
+	if err := secondPool.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&secondPID); err != nil || firstPID == secondPID {
+		t.Fatalf("independent PostgreSQL connections=%d/%d err=%v", firstPID, secondPID, err)
+	}
+	repository, err := outboundstore.NewEnqueueOneRepository(pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondRepository, err := outboundstore.NewEnqueueOneRepository(secondPool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := outboundapp.NewEnqueueOneService(
+		platformstore.NewUnitOfWork(pool), outboundstore.NewRepository(), eventstore.NewAppender(), repository, repository,
+	)
+	secondService := outboundapp.NewEnqueueOneService(
+		platformstore.NewUnitOfWork(secondPool), outboundstore.NewRepository(), eventstore.NewAppender(), secondRepository, secondRepository,
+	)
+	command := outboundapp.EnqueueOneCommand{
+		OneCommand:       outboundapp.OneCommand{CustomerID: customerID, TemplateKey: outboundapp.TemplateTextNoticeV1, Payload: json.RawMessage(`{"text":"enqueue once"}`)},
+		IdempotencyScope: "operator:7",
+		IdempotencyKey:   "outbound-enqueue-one-acceptance",
+	}
+	type enqueueResult struct {
+		result outboundapp.EnqueuedTask
+		err    error
+	}
+	start := make(chan struct{})
+	results := make(chan enqueueResult, 2)
+	var callers sync.WaitGroup
+	for _, caller := range []*outboundapp.EnqueueOneService{service, secondService} {
+		callers.Add(1)
+		go func(caller *outboundapp.EnqueueOneService) {
+			defer callers.Done()
+			<-start
+			result, callErr := caller.Enqueue(ctx, command)
+			results <- enqueueResult{result: result, err: callErr}
+		}(caller)
+	}
+	close(start)
+	callers.Wait()
+	close(results)
+	var first outboundapp.EnqueuedTask
+	for result := range results {
+		if result.err != nil || result.result.TaskID <= 0 || result.result.EventID <= 0 || result.result.RiverJobID <= 0 {
+			t.Fatalf("concurrent Enqueue() = %#v, %v", result.result, result.err)
+		}
+		if first.TaskID == 0 {
+			first = result.result
+			continue
+		}
+		if result.result != first {
+			t.Fatalf("concurrent replay=%#v, want original %#v", result.result, first)
+		}
+	}
+
+	var receiptTaskID, receiptEventID, receiptJobID int64
+	var state string
+	if err = pool.QueryRow(ctx, `
+SELECT state, task_id, event_id, river_job_id
+FROM outbound_enqueue_receipts
+WHERE idempotency_scope = $1::text AND idempotency_key = $2::text`, command.IdempotencyScope, command.IdempotencyKey).
+		Scan(&state, &receiptTaskID, &receiptEventID, &receiptJobID); err != nil {
+		t.Fatal(err)
+	}
+	if state != "accepted" || receiptTaskID != int64(first.TaskID) || receiptEventID != int64(first.EventID) || receiptJobID != first.RiverJobID {
+		t.Fatalf("receipt state/task/event/job=%q/%d/%d/%d, want accepted original facts", state, receiptTaskID, receiptEventID, receiptJobID)
+	}
+	var queue, kind string
+	var args outboundapp.EnqueueOneArgs
+	var encodedArgs []byte
+	if err = pool.QueryRow(ctx, `SELECT queue, kind, args FROM river_job WHERE id = $1::bigint`, first.RiverJobID).Scan(&queue, &kind, &encodedArgs); err != nil {
+		t.Fatal(err)
+	}
+	if err = json.Unmarshal(encodedArgs, &args); err != nil {
+		t.Fatal(err)
+	}
+	if queue != "outbound" || kind != outboundapp.OutboundEnqueueOneJobKind || args.TaskID != first.TaskID || args.ReceiptID <= 0 {
+		t.Fatalf("River job queue=%q kind=%q args=%#v, want stable outbound command", queue, kind, args)
+	}
+
+	conflicting := command
+	conflicting.Payload = json.RawMessage(`{"text":"different"}`)
+	if _, err = secondService.Enqueue(ctx, conflicting); !errors.Is(err, outboundapp.ErrEnqueueOneConflict) {
+		t.Fatalf("conflicting Enqueue() error=%v, want %v", err, outboundapp.ErrEnqueueOneConflict)
+	}
+	var receipts, tasks, jobs int
+	if err = pool.QueryRow(ctx, `
+SELECT
+  (SELECT count(*) FROM outbound_enqueue_receipts WHERE idempotency_scope = $1::text AND idempotency_key = $2::text),
+  (SELECT count(*) FROM outbound_tasks),
+  (SELECT count(*) FROM river_job WHERE id = $3::bigint AND kind = $4::text)`, command.IdempotencyScope, command.IdempotencyKey, first.RiverJobID, outboundapp.OutboundEnqueueOneJobKind).
+		Scan(&receipts, &tasks, &jobs); err != nil || receipts != 1 || tasks != 1 || jobs != 1 {
+		t.Fatalf("receipt/task/job counts=%d/%d/%d err=%v, want 1/1/1", receipts, tasks, jobs, err)
+	}
+}
+
+func TestEnqueueOneRollsBackReceiptTaskAndEventWhenJobCannotInsert(t *testing.T) {
+	pool := openOutboundPool(t)
+	ctx := context.Background()
+	ensureOutboundRiverCatalog(t, ctx, pool)
+	resetOutboundEnqueueFixture(t, pool)
+	var eventsBefore, jobsBefore int
+	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM event_log), (SELECT count(*) FROM river_job WHERE kind = $1::text)`, outboundapp.OutboundEnqueueOneJobKind).Scan(&eventsBefore, &jobsBefore); err != nil {
+		t.Fatal(err)
+	}
+	repository, err := outboundstore.NewEnqueueOneRepository(pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := outboundapp.NewEnqueueOneService(
+		platformstore.NewUnitOfWork(pool), outboundstore.NewRepository(), eventstore.NewAppender(), repository, failingEnqueueOne{},
+	)
+	_, err = service.Enqueue(ctx, outboundapp.EnqueueOneCommand{
+		OneCommand:       outboundapp.OneCommand{CustomerID: createOutboundCustomer(t, ctx, pool), TemplateKey: outboundapp.TemplateTextNoticeV1, Payload: json.RawMessage(`{"text":"rollback job"}`)},
+		IdempotencyScope: "operator:7",
+		IdempotencyKey:   "outbound-enqueue-one-rollback",
+	})
+	if !errors.Is(err, errEnqueueRejected) {
+		t.Fatalf("Enqueue() error=%v, want %v", err, errEnqueueRejected)
+	}
+	var receipts, tasks, eventsAfter, jobs int
+	if err = pool.QueryRow(ctx, `
+SELECT
+  (SELECT count(*) FROM outbound_enqueue_receipts),
+  (SELECT count(*) FROM outbound_tasks),
+  (SELECT count(*) FROM event_log),
+	  (SELECT count(*) FROM river_job WHERE kind = $1::text)`, outboundapp.OutboundEnqueueOneJobKind).
+		Scan(&receipts, &tasks, &eventsAfter, &jobs); err != nil || receipts != 0 || tasks != 0 || eventsAfter != eventsBefore || jobs != jobsBefore {
+		t.Fatalf("rollback receipt/task/events/job=%d/%d/%d/%d err=%v, want 0/0/%d/%d", receipts, tasks, eventsAfter, jobs, err, eventsBefore, jobsBefore)
+	}
+}
+
 var errAppendRejected = errors.New("accepted event append rejected")
 
 type failingAppender struct{}
 
 func (failingAppender) Append(context.Context, eventport.Event) (eventport.EventID, error) {
 	return 0, errAppendRejected
+}
+
+var errEnqueueRejected = errors.New("outbound River enqueue rejected")
+
+type failingEnqueueOne struct{}
+
+func (failingEnqueueOne) EnqueueOne(context.Context, outboundapp.EnqueueOneArgs) (int64, error) {
+	return 0, errEnqueueRejected
 }
 
 func openOutboundPool(t *testing.T) *pgxpool.Pool {
@@ -157,8 +310,35 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 
 func resetOutboundFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_tasks RESTART IDENTITY`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_enqueue_receipts, outbound_tasks`); err != nil {
 		t.Fatalf("reset outbound fixture: %v", err)
+	}
+}
+
+func resetOutboundEnqueueFixture(t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_enqueue_receipts, outbound_tasks`); err != nil {
+		t.Fatalf("reset outbound enqueue fixture: %v", err)
+	}
+}
+
+func ensureOutboundRiverCatalog(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var tableCount int
+	if err := pool.QueryRow(ctx, `
+SELECT count(*)
+FROM information_schema.tables
+WHERE table_schema = current_schema() AND table_name LIKE 'river_%'`).Scan(&tableCount); err != nil {
+		t.Fatal(err)
+	}
+	if tableCount == 0 {
+		if err := platformriver.Migrate(ctx, pool, platformriver.DirectionUp, nil); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	if tableCount != 6 {
+		t.Fatalf("River catalog tables=%d, want 0 or 6", tableCount)
 	}
 }
 

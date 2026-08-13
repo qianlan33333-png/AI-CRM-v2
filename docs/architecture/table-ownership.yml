@@ -51,7 +51,7 @@ owners:
 
   outbound:
     package: internal/outbound
-    tables: [outbound_batches, outbound_tasks]
+    tables: [outbound_batches, outbound_tasks, outbound_enqueue_receipts]
 
   events:
     package: internal/events

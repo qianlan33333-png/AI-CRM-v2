@@ -9,7 +9,9 @@ import (
 )
 
 type Querier interface {
+	AcceptOutboundEnqueueReceipt(ctx context.Context, arg AcceptOutboundEnqueueReceiptParams) (AcceptOutboundEnqueueReceiptRow, error)
 	CreateAcceptedOutboundTask(ctx context.Context, arg CreateAcceptedOutboundTaskParams) (int64, error)
+	ReserveOutboundEnqueueReceipt(ctx context.Context, arg ReserveOutboundEnqueueReceiptParams) (ReserveOutboundEnqueueReceiptRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -930,7 +930,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  260f9ac86a21a763793d58a6b558b77d1e7e23fd7916f09e8d5b99f953a65c32
+  e84ad5e26664bd681fa3bcb8db3891932f480230a87881ea23c8938987cd28cd
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -946,7 +946,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  3279eb822d6e4985047de583208e6dc975f6fb87fc42e389a7843d37023dc5b3
+  39d02f8e1ab544c6de57d9e369336aa4b13c9076b602ba3f40122368f58e62cc
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -958,11 +958,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  672e68196c9b4d2aa02126257d3cfbd8b0c474d4440adb8090f5a2f2306f35b2
+  0742892bc608232c46e478a6017a3e0089dda75a31aaeec53b7354469e6209ac
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  a39c6ace145dab92679aba65dcc289e2a947c2aa9a91df857fad7871c05af03c
+  84282d9b3690935678be4e23ae66b2cc08986262359704492d8596d3efaccd13
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1056,7 +1056,7 @@ verify_index_sha256 scripts/check_arch_imports.go \
 verify_index_sha256 scripts/test_arch_imports.sh \
   7798fbf0ef4b3defe3220baebcd7038305f767188e3ba42c809cfae09021b36a
 verify_index_sha256 scripts/ownership/main.go \
-  a1e2a9b2bb17d512b8772c8a7f24aa4bba4d6f36b1e8d01d9cb69e9b046619a3
+  271a64ab57a43ec86518dfb08ad473da917c69645ed70133298a54f078ef689e
 verify_index_sha256 scripts/test_ownership.sh \
   c69b41e09d4c61d0dd2ed2774c1407e4ff432916686d1cdd56e14dea1a96ab6d
 verify_index_sha256 acceptance/fixtures/postgres.go \
@@ -1484,7 +1484,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  8183fe0329e75cae2f0c3734465dce23fa6d4edde7641003be0ea0adb3c16231
+  824789193edb9f2db0566e57d5fd8d82ca394dc9d92adcaa7776d357d45d7515
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1806,7 +1806,7 @@ verify_index_sha256 docs/execution/slices/M0-6.md \
 verify_index_sha256 docs/architecture/canonical.md \
   0a3de6e1707271bc0390da23be9fc12e313b05363cb88325e8d050811cf31845
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  b265596dfe4d8a9617119afad3afc5f5ea86e0b39636754e07d669a7d88f2b0a
+  8bbebd9abf24d8f4de02947a8cc18f0431a8f88637b645258ef63e42c7ab141f
 verify_index_sha256 scripts/test_repo_contract.sh \
   0541c7b526a424f8ef6d6009bd35ca899f33746e7e700d3bed530388c29523fa
 verify_index_sha256 acceptance/p0s02/static_contract.sh \

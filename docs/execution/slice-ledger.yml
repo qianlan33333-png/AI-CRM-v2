@@ -3691,6 +3691,23 @@ slices:
     correction_notes: [slice:initial_fail_closed_test_initialized_an_absent_cursor_state_with_a_nonempty_cursor_then_corrected_the_test_fixture_to_represent_no_persisted_state, verification:repo_contract_SQL_anchor_beginning_with_double_dash_needed_explicit_grep_option_terminator, infra:web_CI_shell_was_not_activated_and_rejected_its_pinned_Node_NPM_version_before_the_authoritative_environment_rerun, verification:replay_ledger_update_initially_matched_historical_M0_7_then_restored_the_immutable_entry_before_rerunning_contract, verification:full_CI_identity_and_outbound_catalog_waterlines_were_exact_14_then_made_monotonic_for_the_required_00015_migration]
     external_gates: [REAL_WECOM_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, EXTERNAL_SEND_NOT_EXECUTED]
 
+  - slice_id: P3-O2
+    title: outbound-enqueue-one-transaction-bound-river-insertion
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: 2566eca1329f3234a6e6b9db4926ba745984dadd
+    dependency: OUTBOUND_O1A_R3_CLOSED_EXACT_MAIN_CI_SUCCESS_AND_W4_00015_MERGED
+    branch: slice/p3-outbound-o2-enqueue-one
+    scope: [single_recipient_transaction_bound_task_accepted_event_receipt_and_existing_outbound_River_job_insert, stable_same_command_replay, different_command_conflict, PostgreSQL_16_14_two_connection_and_rollback_acceptance, migration_00016_up_down_up]
+    excluded_scope: [O3_batch_O4_sender_worker_status_retry_API_UI_OpenAPI_public_ports_root_dependencies_production_database_live_migration_real_wecom_real_outbound]
+    handwritten_scope: 12_business_CI_contract_card_and_ledger_files_plus_tests_and_generated_receipts
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: []
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
