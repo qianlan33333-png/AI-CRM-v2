@@ -28,6 +28,7 @@ import (
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 )
 
 var errInvalidAPIComponent = errors.New("invalid API component")
@@ -182,7 +183,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segmentRefresh: segmentRefreshHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	handler, err := newAPIHandler(logger, authHandler, candidate)
+	callbackHandler, err := wecomcallback.NewHandler(wecomcallback.Config{
+		Enabled:        config.WeCom.Callback.Enabled,
+		CorpID:         config.WeCom.Callback.CorpID,
+		Token:          config.WeCom.Callback.Token.Value(),
+		EncodingAESKey: config.WeCom.Callback.EncodingAESKey.Value(),
+	}, wecomcallback.Options{})
+	if err != nil {
+		pool.Close()
+		return nil, errInvalidAPIComponent
+	}
+	handler, err := newAPIHandlerWithCallback(logger, callbackHandler, authHandler, candidate)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -198,7 +209,15 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 }
 
 func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate api.ServerInterface) (http.Handler, error) {
-	if logger == nil || authHandler == nil || candidate == nil {
+	callbackHandler, err := wecomcallback.NewHandler(wecomcallback.Config{}, wecomcallback.Options{})
+	if err != nil {
+		return nil, err
+	}
+	return newAPIHandlerWithCallback(logger, callbackHandler, authHandler, candidate)
+}
+
+func newAPIHandlerWithCallback(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface) (http.Handler, error) {
+	if logger == nil || callbackHandler == nil || authHandler == nil || candidate == nil {
 		return nil, errInvalidAPIComponent
 	}
 	gateway, err := platformhttp.NewGateway(platformhttp.GatewayOptions{Logger: logger})
@@ -219,6 +238,32 @@ func newAPIHandler(logger *slog.Logger, authHandler *authhttp.Handler, candidate
 		return nil, err
 	}
 	router.Method(http.MethodGet, "/healthz", health)
+	registerCallback := func(method, pattern string) error {
+		tail, wrapErr := recovery(callbackHandler)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.TimeoutMiddleware(tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		router.Method(method, pattern, tail)
+		return nil
+	}
+	for _, route := range []struct{ method, pattern string }{
+		{http.MethodGet, wecomcallback.EventsPath},
+		{http.MethodPost, wecomcallback.EventsPath},
+		{http.MethodGet, wecomcallback.ExternalContactCallbackPath},
+		{http.MethodPost, wecomcallback.ExternalContactCallbackPath},
+	} {
+		if err = registerCallback(route.method, route.pattern); err != nil {
+			return nil, err
+		}
+	}
 
 	wrapper := &api.ServerInterfaceWrapper{Handler: candidate, ErrorHandlerFunc: platformhttp.RequestErrorHandler}
 	register := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {

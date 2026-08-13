@@ -3587,6 +3587,24 @@ slices:
     correction_notes: [slice:initial_conformance_assertion_overclaimed_the_partial_RequestRefresh_service_as_the_full_frozen_Segment_Service_then_the_invalid_assertion_was_removed_without_widening_the_public_port, slice:full_architecture_gate_rejected_a_raw_River_driver_in_Segment_store_then_minimized_the_fix_to_the_platform_insert_only_adapter_without_registering_or_running_a_worker, verification:first_full_gate_detected_the_expected_sqlc_generated_hash_manifest_sync_then_the_generated_manifest_and_frozen_hash_anchor_were_updated]
     external_gates: [REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_OUTBOUND_NOT_EXECUTED]
 
+  - slice_id: P3-W1
+    title: wecom-callback-url-verification-signature-aes-corp-id-boundary
+    owner: Codex-Sol
+    status: replayed_to_70fa67c_main_ci_green_local_gates_pass_ready_for_pr
+    base_sha: 70fa67c70be72bebf982e23cac42b9476b75ab66
+    dependency: P3_I3_175_MERGED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-w1-wecom-callback
+    scope: [GET_POST_api_wecom_events_and_wecom_external_contact_callback, provider_signature_verification, AES_256_CBC_WeCom_32_byte_PKCS7_decryption, CorpID_validation, encrypted_success_ACK, typed_atomic_callback_configuration, official_format_fixtures_and_negative_cases]
+    excluded_scope: [callback_dispatch_dedup_inbox_persistence_River_enqueue_directory_external_contact_sync_Identity_Contact_wiring_migration_management_API_OpenAPI_real_WeCom_reads_writes_production_database_live_migration_cutover_external_send]
+    tests: [LOCAL_p3_w1_acceptance_PASS]
+    handwritten_scope: 13_files_including_required_repository_contract_Makefile_hash_sync_plus_tests_and_fixtures
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [slice:initial_decryptor_used_AES_block_size_16_for_WeCom_PKCS7_then_corrected_to_the_official_protocol_padding_block_size_32, verification:PR_repo_contract_detected_the_required_frozen_SHA_anchors_for_Makefile_callback_config_API_mount_and_ledger_then_the_anchors_were_synchronized_without_changing_callback_behavior]
+    external_gates: [REAL_WECOM_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, EXTERNAL_SEND_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

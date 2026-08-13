@@ -924,7 +924,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  3f620c456f3c302382d7ae5b6c370a2253ff9040e2f13606075e94de6820594b
+  86998ccb5e83c45f495455ad202a3e2dfeb96a9a16130396042fe9a3ae9c59b3
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1478,7 +1478,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  73120af87926d7ca42714b83e5aacfc575c6d118a8b68fd6410fb3d64b431a2f
+  b61d4fd410886a09e5ec92d4d9ea19158ae20eec65efbef6e1d54563f09e3931
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1508,9 +1508,9 @@ verify_index_sha256 cmd/aicrm/scheduler_test.go \
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
-  8a816973aac85def7b24b1c9afcf906e024629a4cc44b0ed2b203a299b4a115d
+  431756d33101c71d200c4a7521a609e7775c88eaedff6d89955326195bd9a5d4
 verify_index_sha256 internal/config/schema_test.go \
-  d45a6ff33780a132e744652fbfb837448a44087ca20642a4539e5e6a08bf32c5
+  df85c70e2568d94cab66a27cb7924b365d9d10b5f403635c3595da297c1983c0
 verify_index_sha256 acceptance/p0s01/process_blackbox.sh \
   dca96d9df61c3c67e2254d59e22c300850b58841d93eca70b3f1743df294ce6b
 verify_index_sha256 acceptance/p0s01/static_contract.sh \
@@ -1606,9 +1606,9 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  79994375f907b66e2f8b9b3150f85a401436e17a54acd854ec6a8884537925ab
+  9cdea0df2a8c01da1e244dd44cd2315c458b61ce7f82f94e8fdc77d318bef24c
 verify_index_sha256 cmd/aicrm/api_test.go \
-  e5644f581546f70a71ea2c94f5bdb66e47504b4cdcd3d66ff8f2e2088d353bef
+  34e65cf995c027c92b286a022c1a86016416ac24bf5320c3f562ff0da245a11f
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
