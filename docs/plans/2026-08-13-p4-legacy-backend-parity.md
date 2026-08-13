@@ -1,12 +1,12 @@
 # AI-CRM v2 P4 旧系统后端能力全量对齐实施计划
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **执行合同：** 本文是用户授权 P4 业务片后的最高执行计划；本次对本文的修订是一次性纯计划文档例外，不计入 P3/P4 业务进度。
 
 **Goal:** 在不新做前端 UI 的前提下，用 Go 与 AI-CRM v2 现有架构完整恢复旧 AI-CRM 的标准业务能力、兼容接口与可验证行为；先补齐 P3 对 P4 必需的底层能力，再按本计划进入 P4。
 
 **Architecture:** 旧前端继续使用旧 URL、请求体、响应体和错误语义，通过无业务逻辑的 Legacy Compatibility API 适配层调用 v2 各领域服务。领域之间只通过 port、事件和 River job 协作，禁止跨域直写；不可逆写、鉴权、支付回调和外部副作用保留幂等、审计、回执与人工外部门。
 
-**Tech Stack:** Go 1.26.5、PostgreSQL 16.14、sqlc、River、OpenAPI/Orval、React 仅作为旧 UI 兼容验收资产、GitHub Actions、repo-contract、secret-scan。
+**Tech Stack:** 运行时与依赖版本以每片开始时 latest exact-green main 中已冻结的 `go.mod`/`package.json`/lockfile 为唯一事实，不抄用仓外文档过时版本；本文修订审计基线为 Go 1.26.5、Node 24.18.0、npm 11.12.1、River 0.24.0、PostgreSQL 16.14，并使用 sqlc、OpenAPI/Orval、GitHub Actions、repo-contract 与 secret-scan。React 仅作为旧 UI 零修改兼容验收资产。
 
 ---
 
@@ -14,8 +14,9 @@
 
 ### 0.1 文档地位
 
-- 本文承接用户在 2026-08-13 的最新决定，是 P4 开发、排期、验收和 P3 入场门的执行依据。
-- 用户最新决定优先于旧 P4 章节中“支付、商品属于外部定制组件”“新增 Extension API/运维 UI 优先”等旧结论。
+- 强制优先级为：**用户最新指令 > 本 P4 计划 > `/Users/qianlan/Downloads/AI-CRM-v2-执行方案.md` > `/Users/qianlan/Downloads/AI-CRM-v2-重构详细设计.md` > `AGENTS.md`/ADR/`docs/rules`/`docs/evidence`/`docs/spec` > Slice 卡**。下位文档不得反向覆盖上位结论。
+- 本文承接用户在 2026-08-14 的最新决定，是 P4 开发、排期、验收和 P3 代码收口门的执行依据。若未来用户再作新决定，以更新的用户指令为准并在业务片证据中记录裁定。
+- 本文明确覆盖旧 P4 章节中“支付、商品属于外部定制组件”“新增 Extension mock/运维 UI/新 dashboard 优先或为完成条件”“并行固定为 3”等过时结论。
 - 旧系统的能力是否进入 P4，以冻结旧仓库和经批准的 `docs/feature-matrix.csv` 中逐项行为为准，不以旧代码所在目录是否名为 `extensions` 判断。
 - 每个 PR 必须关闭本文列出的业务片或其经批准的更小重切片；禁止以纯治理、纯 checker、纯 parser、纯文档同步冒充业务进度。
 
@@ -26,6 +27,7 @@
 3. **真正的客户定制扩展才走 Extension API。** Extension API 不能成为漏做商品、支付、订单等标准能力的替代品。
 4. **以具体操作而不是“大项存在”判断完成。** “有问卷模块”不代表问卷 CRUD、题型、评分、H5、OAuth、提交、归因、外推、数据导出都已完成。
 5. **只计可运行闭环。** 本地候选、开放 PR、文档、接口骨架、HTTP 200、排队成功均不能单独计为业务完成；代码完成至少要求 merge、exact-main CI 全绿和黑盒行为证据。
+6. **旧 UI 是零修改兼容目标。** P4 不是重做、改造或补新前端；不得用“改一点旧 UI”掩盖兼容合同不完整。
 
 ## 1. 对齐基线与事实盘点
 
@@ -35,10 +37,11 @@
 | --- | --- |
 | 旧系统冻结证据 | `6cb989c071255437d75953dabb943318a74eb8f4` |
 | 旧系统审计时最新 main | `4d309c0e3fa2c5981a542f9f83d9bb93b746be89` |
-| 本计划起草时 v2 exact-green main | `2cb7ce47b5a0c08939a8a8ab30e6229495b6b810` |
+| 本计划首次起草时 v2 exact-green main | `2cb7ce47b5a0c08939a8a8ab30e6229495b6b810` |
+| 本次修订开始时 v2 exact-green main | `21da77109db216acc36c7f5eadffa984e7753736` |
 | 旧系统当前相对冻结版 | 没有新增路由；主要是问卷后台交互和即时群发素材/media 解析的语义修正 |
 
-旧系统最新 main 与冻结证据没有出现新的大能力域，因此冻结路由、功能矩阵和迁移映射仍可作为 P4 完整性基线；最新语义差异必须在问卷和素材发送相关业务片中额外吸收。
+旧系统最新 main 与冻结证据没有出现新的大能力域，因此冻结路由、功能矩阵和迁移映射仍可作为 P4 完整性基线；最新语义差异必须在问卷和素材发送相关业务片中额外吸收。修订基线 SHA 只是审计起点，不是未来 Slice 可重放的固定基线；每片仍必须实时从 latest exact-green main 开始。
 
 ### 1.2 全量盘点数字
 
@@ -52,9 +55,9 @@
 | 含服务端/API 的功能矩阵行 | 287 | P4 后端/API 的直接范围 |
 | 纯前端本地动作 | 6 | 复用旧 UI，不新做 UI；只验证后端不破坏其依赖 |
 | 唯一 method/path 参考 | 约 355 | Legacy Compatibility API 的初始兼容面 |
-| 数据迁移映射 | 316 | 表/字段/语义对账与 P5 数据迁移前置 |
+| 数据迁移映射 | 316 | P4 逐项实现/处置与历史数据形态验证；作为后续 live migration 前置 |
 
-> 注意：当前 `docs/feature-matrix.csv` 的 `implementation_status`/`verification_status` 仍不能直接代表 v2 已合入的 P3 事实。进入 P4 前必须重建“旧能力行 → v2 业务片 → PR/SHA → 黑盒证据”的映射，但不得把更新矩阵拆成纯治理 PR。
+> 注意：781 条路由、293 条功能矩阵和 316 条迁移映射都必须逐项销账，不得以汇总数、模块存在或单一 happy path 代替。当前 `docs/feature-matrix.csv` 的 `implementation_status`/`verification_status` 仍不能直接代表 v2 已合入的 P3 事实。进入 P4 前必须重建“旧能力行 → v2 业务片 → PR/SHA → normal/boundary/error 黑盒证据”的映射，但不得把更新矩阵拆成纯治理 PR。
 
 ### 1.3 旧能力域总量
 
@@ -117,7 +120,7 @@ flowchart LR
 - 每张新表只允许一个领域 owner；跨域读取走 port/projection，跨域写走 command/event。
 - 金融、身份、外发、问卷提交、优惠券核销均使用 append-only 审计事实与幂等收据。
 - 旧系统表名可以作为迁移 source，但不作为新系统跨域共享数据库接口。
-- migrations 必须连续编号、可 up/down/up，并通过独立迁移复核；降级策略必须在真实新数据存在时可执行。
+- migrations 必须连续编号、可 up/down/up，并通过独立迁移复核；不得只验空库，必须在隔离 PG16.14 中装载真实历史数据形态（经冻结/脱敏的旧数据或等价的历史行 fixture）及迁移后新数据，证明降级与再升级可执行。这不授权连接或改写生产库。
 
 ### 2.4 外部效果与真实性分层
 
@@ -132,74 +135,58 @@ flowchart LR
 
 真实企微、真实支付、真实退款和真实发送不在无人值守 P4 执行范围；代码验收用官方格式 fixture、测试 provider 和 sandbox/staging。外部门单独记录，不混入代码完成度。
 
-## 3. 进入 P4 前必须完成的 P3 底层能力门
+## 3. 进入 P4 前必须完成的 P3 代码收口门
 
-P4 不得直接从旧 T4.1～T4.8 开工。以下能力全部达到 CLOSED 后，才允许发布第一个 P4 PR。每项必须以现有 P3 业务能力为可观察出口，禁止纯框架 PR。
+P4 不得直接从旧 T4.1～T4.8 开工。P3 代码收口只由 **G2A、全新 O6、O7、证据映射与最终收口报告**构成；它们全部 merge 且各自 exact-main CI 全绿后，才能发布第一个 P4 业务 PR。P3-G1 改为 P4-W0，G2B 移入 P4-A03/K02，G3 按真实 P4 双域消费者随片交付，不再作为 P3 预造门。
 
 ### P3-G0：Outbound 可靠外发闭环与后端兼容 API
 
-**现状：** O1～O5 已闭环；原 O6 因真实 retry 后 migration 回滚不成立达到 HARD STOP。必须从最新 exact-green main 全新重切。
+**当前冻结事实：** O1～O5 已闭环；当前仓库已冻结 `pending/sending/sent/retryable_failed/final_failed/outcome_unknown/cancelled` 任务状态、attempt receipt 及“`outcome_unknown` 不自动重试、调度由 River 独占”的语义；O5 明确不包含 O6 retry/cancel 和 O7 API。原 O6 因真实 retry 历史下 migration 回滚不成立达到 HARD STOP，只能作为只读证据；不得修复、整片拷贝或 cherry-pick。
 
 **交付：**
 
-- O6-R：River 负责 `retryable_failed` 的重试调度与 attempt 生命周期；同一业务任务重试不重复创建 task/event/provider 调用；`outcome_unknown` 禁止自动重试；取消与 retry 的竞争有稳定结果。
+- 全新 O6：从当时 latest exact-green main 重建；River 负责 `retryable_failed` 的重试调度与 attempt 生命周期；同一业务任务重试不重复创建 task/event/provider 调用；`outcome_unknown` 禁止自动重试；取消与 retry 的竞争有稳定结果。
 - migration 必须先证明“已经产生 attempt 1+2 后仍能安全降级”，禁止只有空库 down 成功。
 - O7：提供旧 UI/旧集成需要的发送任务查询、批量查询、取消、人工重试、attempt/receipt 查询 API；只做后端/API，不做 O8 新 UI。
 - 对真实外发保持禁用；使用可注入测试 provider。
 
-**完成门：** O6-R、O7 分别独立 PR、exact-main CI 全绿；migration up/down/up 在含 retry 历史数据时通过；旧接口黑盒合同通过。
+**完成门：** 全新 O6、O7 分别独立 PR、merge 且 exact-main CI 全绿；migration up/down/up 在已存在 attempt 1+2、retry/cancel 竞争与新数据的历史形态下通过；旧接口 normal/boundary/error 黑盒合同通过。Outbound retry 的具体实现与状态不得与当时仓库冻结事实分叉。
 
-### P3-G1：多消费者事件投递
+### P3-G1 重裁定：移至 P4-W0，不再是 P3 收口门
 
-**为什么是 P3 基座：** 现有 `event_log.dispatched` 只能表达单消费者。P4 的 automation、stats、webhook、MCP、外部回推同时消费事件，若继续共用一个布尔位会出现一个消费者抢走其他消费者事件的确定性丢失。
+**已审计事实：** Contact timeline 与 Outbound status 当前都是在各自业务事务内同步写入状态/投影，然后发出事件；它们不是两个可安全改接的现有异步消费者。在 P3 强行将它们包装成 consumer，只会造出假消费者、重复投影或状态双写。
 
-**最小业务出口：** 选择两个已经存在的 P3 消费者作为真实闭环，例如 Identity/Contact 时间线投影与 Outbound 状态投影，证明同一事件可被两个订阅者独立领取、失败、重试和完成。
+**强制裁定：** 禁止为 P3 门禁造假消费者，禁止重复 timeline/status 投影，禁止单独发布 `event_deliveries` 框架 PR。该能力改为 P4-W0，由 D01 Automation 与 L01 Stats 成为两个真实业务消费者，`event_deliveries` 随 D01 → L01 两个业务片连续交付，不占独立治理片。
 
-**数据合同：**
+P4-W0 的最终数据合同仍包括 `(event_id, consumer)` 唯一、消费状态独立、at-least-once 与消费者幂等、崩溃恢复、poison event 隔离、锁超时重领、历史数据 up/down/up；但这些合同必须由 D01/L01 的 normal/boundary/error 真实业务行为驱动。
 
-- `event_deliveries(event_id, consumer, status, attempt_count, available_at, locked_at, completed_at, last_error)`；
-- `(event_id, consumer)` 唯一；消费者状态独立；
-- at-least-once，消费者自身幂等；
-- 注册表使用代码冻结的 consumer 名称，禁止任意数据库字符串驱动动态执行；
-- `event_log.dispatched` 在安全迁移窗口后只作为兼容投影，不再决定多消费者可见性。
-
-**完成门：** 双消费者黑盒、消费者崩溃恢复、 poison event 隔离、锁超时重领、真实历史数据降级均通过。
-
-### P3-G2：Legacy Compatibility 入口、主体与鉴权基座
+### P3-G2A：Legacy Compatibility 入口、人类主体与旧 UI boot
 
 **最小业务出口：** 旧前端无需改动即可完成“会话确认 → CSRF 获取 → 当前配置/能力读取 → 一个已合 P3 的客户列表或待合并列表调用”。
 
 **交付：**
 
 - `internal/legacyapi` 仅包含 transport、DTO mapper、error mapper 和 middleware；
-- 支持旧 admin/sidebar/H5/external 的路由分组与 principal 类型；
-- session、CSRF、RBAC、owner scope 与 API key scope 均 fail-closed；
-- 新增 external API client/key 的最小存储、轮换、撤销、scope 与调用审计；密钥只保存不可逆摘要；
+- 支持旧 admin/sidebar/H5 的路由分组与 human principal 类型；
+- session、CSRF、RBAC 与 owner scope 均 fail-closed；
 - rate limit 与 request id/actor/source 写审计；
 - 旧 UI boot 所依赖的兼容接口真实调用 v2 P3 服务，不返回占位数据。
 
-**完成门：** 旧 UI 静态资产不改即可启动并调用至少一个 P3 真实 flow；错误 envelope、过期 session、CSRF、越权、撤销 key、重复 key 黑盒通过。
+**完成门：** G2A PR（修订时为 #195，以实时 GitHub 状态为准）merge 且 exact-main CI 全绿；旧 UI 静态资产零修改启动并调用至少一个 P3 真实 flow；错误 envelope、过期 session、CSRF 与越权黑盒通过。
 
-### P3-G3：跨域业务 Ports 完整性
+**G2B 移交：** external API client/key 存储、轮换、撤销、scope、rate limit 与调用审计不再阻塞 P3，分别随 P4-A03 和 P4-K02 的真实管理/外部 API flow 交付；密钥仍只允许保存不可逆摘要。
 
-这不是“先设计一套万能接口”，而是核对 P4 将直接复用的现有业务能力是否已有稳定 port。缺失 port 必须与一个现有 P3 可观察业务操作同片交付。
+### P3-G3 重裁定：禁止 P3 预造万能 public port
 
-| Port | P4 消费者 | 必须具备的能力 |
-| --- | --- | --- |
-| Contact | Automation、Survey、Commerce、WeCom | 客户读取、标签变更、负责人/阶段读取、时间线追加 |
-| Identity | Survey、Commerce、WeCom、Gateway | Resolve/Bind/Ingest、pending/replay、合并审阅 |
-| Segment | Automation、Outbound | 成员预览、冻结成员集、刷新状态、版本化读取 |
-| Outbound | Automation、Group Ops、User Ops | EnqueueOne/Batch、查询、取消、retry、receipt |
-| Events | Automation、Stats、Gateway | publish、订阅、delivery checkpoint、replay |
-| Media | Outbound、Questionnaire、Group Ops | 稳定 material reference、租约、variant、provider media receipt |
+P3 只保留已被现实业务 flow 使用的 Contact、Identity、Segment、Outbound 与 Events 合同，不为未出现的 P4 消费者先冻结宽接口。缺失能力必须随首个真实 P4 双域业务消费者交付；一个接口只有一个假定调用方时，不得冒充 public port。
 
-**完成门：** 每个 port 有 ownership、鉴权/tenant 语义、幂等与错误合同；没有跨域 SQL；至少由两个实际领域调用的 port 才可冻结为 public port。
+尤其是 Media material/lease/variant/receipt、Segment 成员 snapshot/version 以及其 public ports，必须随首个实际需要该能力的 P4 双域业务片交付。每个最终 port 必须有 ownership、鉴权/tenant、幂等、错误合同和两个真实调用方证据；禁止跨域 SQL，禁止先造 snapshot 或万能 port 再寻找业务用途。
 
-### P3-G4：兼容能力映射与证据基线
+### P3-G4：兼容能力映射与最终代码收口报告
 
-此项不得独立提交纯 checker PR。它随 P3-G1～G3 的业务 PR 同步完成。
+此项不得独立提交纯 checker PR。它随 G2A、全新 O6 与 O7 的业务 PR 同步完成，并在三者全部 CLOSED 后生成一份最终 P3 代码收口报告。
 
-每个旧功能矩阵行增加或维护以下事实：
+每个已由 P3 承接或本次收口触及的旧功能矩阵行增加或维护以下事实；其余行只绑定 P4 项目/Slice，继续保持未实现/未验证，不得在 P3 收口中伪造完成：
 
 - `legacy_route_id` / `feature_id`；
 - P4 项目与 slice；
@@ -209,9 +196,25 @@ P4 不得直接从旧 T4.1～T4.8 开工。以下能力全部达到 CLOSED 后�
 - merge SHA、exact-main SHA；
 - 外部门状态。
 
-**P3 总门：** G0～G4 全部 CLOSED；P3 代码侧最终报告明确哪些是代码完成、哪些仍是外部门；未完成项为 0 才进入 P4。
+**P3 代码侧最终门：**
+
+1. G2A、全新 O6、O7 均已 merge 且各自 exact-main CI 全绿；
+2. 兼容能力、测试与证据映射已随上述业务 PR 落库；
+3. GitHub 上没有 open P3 PR，也没有被保留为“可继续/待发布”的 P3 本地候选；历史 HARD STOP/WIP 只读，不算可继续候选；
+4. 最终报告逐域列出 Contact、Identity、Segment、WeCom、Outbound 五域的业务状态、merge SHA、exact-main SHA、migration 状态、外部门、历史/当前 HARD STOP 及处置；
+5. 真人验收、真实企微、真实发送、生产 DB 与 live migration/cutover 仅作为 `PENDING_EXTERNAL_GATE`/`NOT EXECUTED` 记录，不阻塞 P3 代码侧 CLOSED，也不得写成已成功；
+6. 总指挥在报告完成后归档全部 P3 任务，才允许 P4 第一波发布。
 
 ## 4. P4 项目与具体能力明细
+
+### P4-W0：两个真实事件消费者连续交付
+
+P4-W0 是第一波的有序业务窗口，不是新能力域或独立基建片：
+
+1. **D01 Automation 事件订阅/触发：** 以第一个真实 automation trigger 为出口，交付 `event_deliveries` 必要的最小存储、领取、失败、重试和完成语义；
+2. **L01 Stats store/projection：** 基于 D01 已合入的合同重放 latest exact-green main，接入第二个真实 stats consumer，证明同一事件对两个消费者独立可见、失败隔离、幂等重领。
+
+D01 与 L01 分别是可观察业务 PR，各自由同一任务端到端完成开发、验证、PR、merge 和 exact-main CLOSED。不得在两片之间插入纯 DDL/checker/public-port PR，不得将 Contact timeline 或 Outbound status 复制成第二个投影。
 
 ### P4-A：平台、后台管理与兼容入口
 
@@ -237,7 +240,7 @@ P4 不得直接从旧 T4.1～T4.8 开工。以下能力全部达到 CLOSED 后�
 
 - A01 旧 session/CSRF/RBAC 兼容闭环；
 - A02 系统设置与敏感字段脱敏；
-- A03 API client/key 生命周期与审计；
+- A03 G2B 管理侧 API client/key 生命周期与审计；
 - A04 runtime/preflight/setup 能力；
 - A05 release 与配置发布/回滚；
 - A06 admin jobs 生命周期；
@@ -441,7 +444,7 @@ P4 不得直接从旧 T4.1～T4.8 开工。以下能力全部达到 CLOSED 后�
 
 **架构接入：** Gateway 是鉴权/DTO/审计边界，不拥有业务事实；command/query 经 public ports；webhook 走 Outbound/Event deliveries。
 
-**初始业务片：** K01 MCP compatibility；K02 external auth/scopes/audit；K03 external read/commands；K04 webhooks/extension ingress。
+**初始业务片：** K01 MCP compatibility；K02 G2B external auth/scopes/audit；K03 external read/commands；K04 webhooks/extension ingress。
 
 ### P4-L：统计与运维 API
 
@@ -465,75 +468,64 @@ P4 不得直接从旧 T4.1～T4.8 开工。以下能力全部达到 CLOSED 后�
 
 ```mermaid
 flowchart TD
-    G0["P3-G0 Outbound O6/O7"] --> P3DONE["P3代码门"]
-    G1["P3-G1 event_deliveries"] --> P3DONE
-    G2["P3-G2 legacy/auth"] --> P3DONE
-    G3["P3-G3 ports"] --> P3DONE
-    G4["P3-G4 mapping evidence"] --> P3DONE
+    G2A["P3-G2A old UI boot"] --> P3DONE["P3 代码侧 CLOSED"]
+    O6["全新 O6 retry/cancel"] --> O7["O7 backend API"]
+    O7 --> P3DONE
+    REPORT["五域证据映射/最终报告"] --> P3DONE
 
     P3DONE --> A["P4-A Platform/Compat"]
-    P3DONE --> B["P4-B Customer Workspace"]
-    P3DONE --> C["P4-C Channels/WeCom"]
+    P3DONE --> D01["P4-W0 D01 Automation consumer"]
+    D01 --> L01["P4-W0 L01 Stats consumer"]
+    P3DONE --> F["P4-F Survey"]
     P3DONE --> H["P4-H Media/Radar"]
     P3DONE --> I["P4-I Commerce"]
-    P3DONE --> F["P4-F Survey"]
 
-    A --> K["P4-K Gateway/MCP"]
-    G1 --> D["P4-D Automation/Audience"]
-    B --> D
-    C --> E["P4-E Group/User Ops"]
-    H --> E
+    A --> B["P4-B Customer Workspace"]
+    H --> C["P4-C Channels/WeCom"]
     I --> J["P4-J Coupon/Entitlement"]
-    F --> D
-    D --> E
-    D --> G["P4-G AI"]
-    D --> L["P4-L Stats/Ops API"]
-    I --> L
-    F --> L
+    L01 --> DREST["P4-D remaining"]
+    B --> DREST
+    F --> DREST
+    DREST --> E["P4-E Group/User Ops"]
+    DREST --> G["P4-G AI"]
+    A --> K["P4-K Gateway/MCP"]
+    L01 --> LREST["P4-L remaining"]
 ```
 
-### 5.2 P3 补基座并行方案
+### 5.2 P3 收口与 P4 入场顺序
 
-| 流 | 工作 | 并行条件 | 中央契约 |
-| --- | --- | --- | --- |
-| P3-0 | O6-R → O7 后端 API | 当前主线连续执行 | migration、Outbound API |
-| P3-1 | event deliveries + 两个真实 P3 消费者 | 不与 O6 使用同一 migration 窗口时可 local 开发；发布串行 | migration、events public port |
-| P3-2 | legacy/auth + 旧 UI boot 一个真实 flow | 可与 P3-0/1 并行开发 | auth/public routes/OpenAPI |
-| P3-3 | ports gap audit 与真实调用补齐 | 按领域并行；只实现确认缺失项 | public ports/shared generated |
-| P3-4 | feature mapping/证据同步 | 随以上 PR 完成，不单独占 PR | matrix/hash/ledger DoD |
+1. G2A 必须先 merge 且 exact-main CI 全绿；本计划修订可形成候选，但不得抢在 G2A 前合并，避免让 G2A 做无收益重放。
+2. 从 G2A 后的 latest exact-green main 全新交付 O6，关闭 exact-main 后再交付 O7；两者及中央 migration/OpenAPI 发布严格串行。
+3. 证据映射随 G2A/O6/O7 同步，不单独占 PR；最后输出五域/SHA/migration/外部门/HARD STOP 收口报告，确认无 open P3 PR 或可继续候选。
+4. 总指挥归档全部 P3 任务后，P4 第一波才可发布。
 
-P3 中央队列按 latest exact-green main 严格串行：migration → OpenAPI/public ports → shared generated。业务代码可并行；后合并者重放并重跑 required CI。
+### 5.3 P4 Wave 1：五个领域窗口
 
-### 5.3 P4 Wave 1：接口兼容和高复用业务底座
+P3 代码侧 CLOSED 后，第一波只启动：
 
-P3 门全绿后并行启动：
+- P4-A 平台/兼容入口（含后续 G2B 的 A03）；
+- P4-W0：D01 Automation 真实消费者 → L01 Stats 第二真实消费者，该窗口内顺序交付；
+- P4-F 问卷/评测/H5/OAuth；
+- P4-H 素材/媒体/雷达；
+- P4-I 商品/订单/支付核心。
 
-- P4-A 平台/兼容入口；
-- P4-B 客户工作台/侧边栏；
-- P4-C 渠道/企微；
-- P4-F 问卷；
-- P4-H 素材/雷达；
-- P4-I 商品/订单/支付。
+五个窗口的非共享业务代码可并行；D01 必须在 L01 前合并。Legacy route registry、migrations、OpenAPI、public ports、root dependencies 和 shared generated 统一进中央队列串行发布。
 
-这六条线代码 ownership 基本分离，可并行开发。Legacy API route registry、OpenAPI、public ports、根依赖和 migration 仍进入中央队列。
+### 5.4 后续波次
 
-### 5.4 P4 Wave 2：依赖事件和领域能力的运营链
+第一波所需依赖 CLOSED 后，按 **B → C → J → D 余项 → E → G → K → L 余项** 的依赖顺序开放领域窗口。这个顺序是发布优先级而非要求全局单线；已满足依赖、路径不重叠且不触及中央契约的窗口可在最多五个 active writer 内并行。
 
-- P4-D 自动化/Audience：依赖 event deliveries、Contact/Segment/Outbound 和问卷/支付事件；
-- P4-E Group Ops/User Ops：依赖 WeCom、Media、Outbound、Automation；
-- P4-J 优惠券/周期权益：依赖 Product/Order/Payment；
-- P4-K Gateway/MCP：依赖 external auth/public ports；
-- P4-L Stats：依赖稳定事件 schema；
-- P4-G AI：prompt/provider 可先行，业务动作接线等待 D/E。
+- B 关闭客户工作台/侧边栏；C 关闭渠道/企微；
+- J 依赖 I 的 Product/Order/Payment；D 余项依赖 W0、B/F/I 事件与 Segment/Outbound；
+- E 依赖 C/H/D/Outbound；G 的业务动作接线依赖 D/E；
+- K 包含 G2B K02 并依赖真实 public ports；L 余项依赖已稳定的事件 schema 和各领域指标。
 
-### 5.5 动态并发原则
+### 5.5 领域窗口与动态并发原则
 
-- 不设固定活跃任务数上限；有清晰业务出口、独立 worktree、独立 owner 路径即可并行。
-- 不为凑并发拆纯 DDL、纯 checker、纯 port 或纯文档任务。
-- 同一 worktree 只能一个 writer；同一 PG slot 的破坏性测试串行。
-- 新 P4 域需要独立 PG16.14 slot 时，先一次性扩展统一 `activate.sh`/`aicrm-v2-pgctl`/doctor 的命名 slot；禁止临时 Docker/容器和未登记端口。
-- 建议稳定期同时保持 4～6 条业务线开发、1 条中央契约发布队列；具体数量由冲突率和 CI 吞吐动态调整。
-- 同时开放多个非共享 PR 允许提前跑 CI；任何后合并 PR 必须重放 latest exact-green main 并重新跑 required CI。
+- **通常最多 5 个 active writer，不是固定 3，也不是必须凑满 5。** 冲突率、CI 吞吐、PG slot 和中央契约窗口可以使实际并发更低。
+- 每个领域窗口必须连续交付独立业务 PR 直到该窗口 CLOSED，不得在中间用纯 DDL、checker、port 或文档片稀释业务完成度。
+- 同一 worktree 只能一个 writer；同一 PG slot 的破坏性测试串行。新 P4 域需要独立 PG16.14 slot 时，先一次性扩展统一 `activate.sh`/`aicrm-v2-pgctl`/doctor 的命名 slot；禁止临时 Docker/容器和未登记端口。
+- migrations、OpenAPI、public ports、root dependencies、shared generated 与其他中央契约严格串行。多个非共享 PR 可提前跑 CI；任何后合并 PR 都必须重放 latest exact-green main 并重新跑 required CI。
 
 ## 6. 初始 Slice 规模与排期口径
 
@@ -543,18 +535,22 @@ P3 门全绿后并行启动：
 - 若一个条目触及多个不可逆状态机、多个 owner 或超过阈值，必须进一步拆小。
 - 预计最终 **70～90 个独立业务 PR** 才能诚实覆盖 293 条行为和约 355 个 method/path，而不是旧方案的 8 个大卡。
 - 数量只用于容量规划；完成度按覆盖的能力矩阵行及 exact-main 证据计算，不按 PR 数量计算。
+- 每个能力都必须至少有 normal/boundary/error 三类黑盒验收；列表、批处理与统计片必须在 S 档 2C4G、20 万容量基准下验证可观察性能目标，并用 `EXPLAIN` 证明受控核心大表不存在非法 Seq Scan。
+- 业务周期任务一律进入统一 River periodic registry；API 角色不注册 worker，worker 角色不监听业务 HTTP（健康检查除外）。任何 `time.Ticker`/`time.AfterFunc`/第三方 cron 业务调度都是硬失败。
 
 ## 7. 每个业务片的标准执行模板
 
-1. 从 latest exact-green main 建全新独立 worktree；激活统一环境并运行 doctor。
-2. 冻结本 slice 对应的旧 route/feature/migration 行，写 slice card；禁止实现时回看旧 Python，只使用冻结 rules/evidence/spec。
-3. 先写 normal/boundary/error 黑盒 RED；金融、鉴权、迁移、外部效果增加永久负例。
-4. 实现最小领域行为、compatibility mapper 和必要数据变更；不扩相邻业务片。
-5. 运行 focused tests、PG16.14 up/down/up、ownership/catalog、race、repo-contract、secret-scan。
-6. 清空实现思路做第二阶段自审：diff、migration、ownership、auth、idempotency、rollback、外部效果。
-7. 同步 feature matrix、mapping、generated/hash/manifest/ledger 等 DoD；这些同步不单独计修正。
-8. 中文 PR；required CI 全绿后 match-head squash；证明唯一父、tree 等价；等待 exact-main CI 全绿后 CLOSED。
-9. 记录代码完成与外部门分界；真实企微、真实支付、真实退款、真实发送、staging 人工抽验必须标为外部门，未执行不得写成功。
+1. **单任务端到端责任。** 每片由一个主执行任务负责从开发到 merge + exact-main CLOSED；禁止把开发、发布、CI 或收口拆给另一个任务。中央契约裁定、重放、squash 与 main CI 必须由主任务自己完成。
+2. **模型与完全访问。** 业务片使用当前可用的最高执行级 coding 模型，并以完全访问模式运行。在用户已授权的仓库白名单/worktree、网络、依赖、Git/GitHub、测试 DB 和非生产工具链内直接执行；push/PR/merge/CI 已授权，禁止 `require_escalated`、`waitingOnApproval` 或重复向用户申请同一权限。
+3. **环境与基线。** 先 `source /Users/qianlan/Downloads/新CRM/handoffs/dev-env/AI-CRM-v2/activate.sh`、运行 `aicrm-v2-doctor`，实时 fetch main/PR 队列并确认 latest exact-green SHA；从该 SHA 创建全新独立 worktree，使用分配的 PG16.14 命名 slot。旧候选和历史脏 worktree 只读。
+4. **冻结行为输入。** 冻结本 slice 对应的 route/feature/migration 行并写 slice card；禁止实现时回看旧 Python，只使用冻结 rules/evidence/spec。运行时版本、Outbound retry 等易漂移事实必须再从当前仓库复核。
+5. **RED 与最小闭环。** 先写 normal/boundary/error 黑盒 RED；金融、鉴权、迁移、外部效果增加永久负例。只实现最小可观察领域行为、compatibility mapper 和必要数据变更，不扩相邻业务片。
+6. **专项硬验收。** 列表/批处理/统计按 S 档 20 万数据与无非法 Seq Scan 验收；周期任务用 River periodic job 且 API/worker 隔离；migration 用真实历史数据形态做 up/down/up；外部效果逐层证明 accepted/queued/attempted/executed/outcome_unknown/reconciled，不得把上一层伪装成下一层。
+7. **第一阶段自审与验证。** 实现完成后审查 scope/diff、合同映射、normal/boundary/error、生成物与锁文件，运行 focused tests、PG16.14 up/down/up、ownership/catalog、race、repo-contract、secret-scan 及该片所有专项门。
+8. **第二阶段独立自审。** 清空实现思路，从审查者视角重读完整 staged diff，重验 migration 终态、ownership、auth/tenant、idempotency、rollback、事件/River、外部效果与永久负例。两阶段的命令、退出码与结论都写入中文 PR。
+9. **DoD 与 GitHub 收口。** 同步 feature matrix、mapping、generated/hash/manifest/ledger 等仓库硬门要求；正常 receipt 同步属于 DoD，不单独计 correction。中文 PR 的 required CI 全绿后，用已验证 head 做 match-head squash；证明唯一父为预期 main、squash commit tree 与已验证 head tree 等价，再等待该 exact-main SHA 的 required CI 全绿才能 CLOSED。
+10. **修正阈值。** `slice_induced_correction_count=2` 时立即冻结范围并允许当前闭环完成，下片降一档；`slice_induced_correction_count>=3` 立即 HARD STOP，不得在原片续修。`infra_induced` 和 `verification_induced` 精确记录但不降档、不硬停，机械环境/命令/证据问题在原任务内修复。
+11. **外部效果禁区。** 完全访问不授权生产 DB、live migration/cutover、真实企微写、真实支付/退款或真实外发。真人验收与真实外部效果精确标为 `PENDING_EXTERNAL_GATE`/`NOT EXECUTED`，不得用 fixture/test provider 写成真实成功。
 
 ## 8. 完整性验收与退出标准
 
@@ -577,7 +573,8 @@ P3 门全绿后并行启动：
 - B 级路由有逐项替代映射且旧 UI 不需改；
 - C 级路由有批准的 retired/external-gate 证据；
 - 所有对应矩阵行不再是 `NOT_STARTED/NOT_RUN`；
-- 领域表 ownership、migration、up/down/up、事件和 River job 通过；
+- 领域表 ownership、真实历史数据形态 migration up/down/up、事件和 River periodic job 通过；
+- 列表、批处理与统计行为有 S 档 20 万基准及无非法 Seq Scan 证据；
 - 不存在占位响应、空数组假完成、动态 SQL 或跨域直写；
 - merge + exact-main CI 全绿。
 
@@ -585,13 +582,14 @@ P3 门全绿后并行启动：
 
 只有同时满足以下条件，才能宣布 P4 代码侧 CLOSED：
 
-1. 781 条旧路由全部有处置，293 条功能矩阵全部有实现与验证映射；
-2. 287 条服务端/API 行全部由 v2 后端真实承接；
-3. 旧 UI 不修改即可完成所有标准旧业务 flow；
-4. 商品、订单、支付、优惠券、周期权益、问卷、群运营等不存在“大项有名、具体操作缺失”；
-5. 每个领域 exact-main CI 全绿且无未收口 HARD STOP 候选；
-6. 外部门单独列明，不能用测试 provider 伪装真实发送/支付完成；
-7. 输出最终能力对照表、PR/SHA 列表、数据迁移覆盖表和未执行外部门清单。
+1. 781 条旧路由全部逐项处置，293 条功能矩阵全部有实现与 normal/boundary/error 验证映射；
+2. 287 条服务端/API 行全部由 v2 后端真实承接，316 条数据迁移映射全部逐项销账并有实现/处置、历史数据形态验证与回滚证据；
+3. 旧 UI **零修改**即可完成所有标准旧业务 flow；
+4. 商品、订单、支付、优惠券、周期权益、问卷、群运营等不存在“大项有名、具体操作缺失”；Extension mock、新运维 UI 或新 dashboard 不是完成条件；
+5. 完成包含全部冻结合同的全量回放，并且 **连续两轮 100% 通过**；差异白名单必须有用户最新裁定证据，不得以“新系统更合理”自行改写旧合同；
+6. 每个业务 PR 和最终累计 main 的 required exact-main CI 全绿，无 open/可继续候选和无未收口 HARD STOP；
+7. 外部门单独列明，不能用测试 provider 伪装真实发送/支付完成；生产 DB、live migration/cutover、真实企微写、真实支付/退款/外发仍不在无人值守授权内；
+8. 输出完整最终报告：781 路由对照表、293/287 功能与 API 对照表、316 迁移覆盖表、PR/merge SHA/exact-main SHA 列表、连续两轮回放报告、HARD STOP 清单及未执行外部门清单。
 
 ## 9. 明确不做的内容
 
@@ -604,9 +602,9 @@ P3 门全绿后并行启动：
 
 ## 10. 立即执行顺序
 
-1. 保留原 O6 HARD STOP 证据只读，从 latest exact-green main 完成 O6 重切与 O7 后端 API。
-2. 并行启动 P3-G1 event deliveries、P3-G2 legacy/auth、P3-G3 ports gap 的精确审计和业务闭环；中央契约串行。
-3. 将 P3 已合能力重新映射到 293 行功能矩阵，随业务 PR 更新证据。
-4. G0～G4 全部 exact-main CI 全绿，发布 P3 代码侧最终报告。
-5. 进入 P4 Wave 1；优先平台兼容、客户/侧边栏、渠道、问卷、素材、Commerce 六线并行。
-6. 依赖解除后自动进入 Wave 2，直到 P4 完整性退出标准满足。
+1. 实时确认 G2A merge 且该 exact-main SHA 的 required CI 全绿；在此之前，其他候选可本地成型，但不得抢先合并。
+2. 保留原 O6 HARD STOP 证据只读，从 G2A 后 latest exact-green main 全新完成 O6，O6 CLOSED 后完成 O7 后端 API；两片各自 merge + exact-main 全绿。
+3. 将 P3 已合能力与 G2A/O6/O7 重新映射到冻结证据，确认无 open P3 PR/可继续候选，输出五域/SHA/migration/外部门/HARD STOP 最终报告，由总指挥归档全部 P3 任务。
+4. 进入 P4 Wave 1：P4-A、P4-W0（D01 → L01）、P4-F、P4-H、P4-I；通常最多五个 active writer，中央契约串行。
+5. 按 B、C、J、D 余项、E、G、K、L 余项的优先级与依赖继续交付，每个领域窗口连续提交独立业务 PR 直到 CLOSED。
+6. 完成 781/293/287/316 逐项销账、旧 UI 零修改兼容、连续两轮全量合同回放、全部 exact-main CI 全绿，并确认所有历史 HARD STOP 证据保留且无未收口 HARD STOP，再输出 P4 完整 CLOSED 报告。
