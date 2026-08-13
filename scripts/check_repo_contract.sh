@@ -950,11 +950,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  29187866f75a7ba24d7187e70fa974961d66dd49c999742c28dea039990d358c
+  fe66a0063d5ff0b74fd8a8a3db6cbe74e750b2656354eed8628c5ea63b51392a
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  267820b4fbf667ec7fb4036ee6fbb46459312ef4d23cd97984371c98fbca1080
+  f0c8a930bc0b2ae4410f91071decc9fcc1517f06ab84290c2e10edb060f07481
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -988,7 +988,7 @@ verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  4e8dcc75e7dac421af658a9da94b9ec365f60c13e89ac4af7b3e13b68c7b5dc7
+  450ac238416af41ce48af8d24dc74402349d67388bb659d2827d269f3efe2e97
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
@@ -1476,7 +1476,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  ee5f998cd42f14790c7e065ccb0bd88edf2ddcb8c603a8b974f1a860c69470ea
+  e0474a36e8296b6bc7dd70e362ed9b5dafa9b2f42bbb10bef8e5372779eaa9da
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
