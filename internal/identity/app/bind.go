@@ -24,6 +24,8 @@ var (
 
 const bindReceiptKeyVersion = int16(1)
 
+const VerifiedPhoneMergeReviewPolicy = "verified_phone_manual_review_v1"
+
 // BindReceipt is the completed durable result of one Bind idempotency key.
 // The raw key and identity value are never persisted in the receipt.
 type BindReceipt struct {
@@ -61,13 +63,15 @@ type BindStore interface {
 	BindNormalized(context.Context, NormalizedIdentity, int64) (BindRecord, error)
 	RebindIdentitiesForCustomerMerge(context.Context, contactport.CustomerID, contactport.CustomerID) error
 	InsertAutoCustomerMergeAudit(context.Context, AutoMergeAudit) (int64, error)
+	InsertVerifiedPhoneMergeReview(context.Context, int64, []contactport.CustomerID, []byte) (int64, error)
 	CompleteBindReceipt(context.Context, BindReceipt, identityport.BindResult) error
 }
 
-// BindService implements the narrow I-3/I-4A decision boundary. It may bind
+// BindService implements the narrow I-3/I-4 decision boundary. It may bind
 // a floating edge, replay a same-customer edge, reject an edge held by another
-// customer, or automatically merge only the verified-unionid policy case.
-// Review creation and every other merge policy remain later slices.
+// customer, automatically merge only the verified-unionid policy case, or
+// create a verified-phone manual review. Review resolution and every other
+// merge policy remain later slices.
 type BindService struct {
 	uow        platformport.UnitOfWork
 	store      BindStore
@@ -139,9 +143,17 @@ func (service *BindService) Bind(ctx context.Context, command identityport.BindC
 			}
 			if attempted {
 				result = merged
-			} else {
-				result = identityport.BindResult{Status: identityport.BindRejected}
+				break
 			}
+			review, attempted, err := service.createVerifiedPhoneMergeReview(txCtx, command, normalized, record)
+			if err != nil {
+				return err
+			}
+			if attempted {
+				result = review
+				break
+			}
+			result = identityport.BindResult{Status: identityport.BindRejected}
 		default:
 			return ErrIdentityBindFailed
 		}
@@ -151,6 +163,34 @@ func (service *BindService) Bind(ctx context.Context, command identityport.BindC
 		return identityport.BindResult{}, errors.Join(ErrIdentityBindFailed, err)
 	}
 	return result, nil
+}
+
+func (service *BindService) createVerifiedPhoneMergeReview(
+	ctx context.Context,
+	command identityport.BindCommand,
+	normalized NormalizedIdentity,
+	record BindRecord,
+) (identityport.BindResult, bool, error) {
+	if normalized.Kind != identityport.KindPhone || command.Ref.Assurance != identityport.AssuranceVerified ||
+		record.IdentityID <= 0 || record.ExistingCustomerID <= 0 || record.ExistingCustomerID == command.CustomerID {
+		return identityport.BindResult{}, false, nil
+	}
+	candidates := []contactport.CustomerID{command.CustomerID, record.ExistingCustomerID}
+	if candidates[1] < candidates[0] {
+		candidates[0], candidates[1] = candidates[1], candidates[0]
+	}
+	fingerprint, _ := service.mergeReviewFingerprint(normalized)
+	reviewID, err := service.store.InsertVerifiedPhoneMergeReview(ctx, record.IdentityID, candidates, fingerprint)
+	if err != nil || reviewID <= 0 {
+		if err != nil {
+			return identityport.BindResult{}, true, err
+		}
+		return identityport.BindResult{}, true, ErrIdentityBindFailed
+	}
+	if err = service.appendMergeReviewCreatedEvent(ctx, command.CustomerID, reviewID, candidates); err != nil {
+		return identityport.BindResult{}, true, err
+	}
+	return identityport.BindResult{Status: identityport.BindManualReview, ReviewID: reviewID}, true, nil
 }
 
 func (service *BindService) mergeVerifiedUnionID(
@@ -242,6 +282,40 @@ func (service *BindService) mergeFingerprint(normalized NormalizedIdentity) ([]b
 	return fingerprint, "hmac-sha256-v1:" + base64.RawURLEncoding.EncodeToString(fingerprint)
 }
 
+func (service *BindService) mergeReviewFingerprint(normalized NormalizedIdentity) ([]byte, string) {
+	material := string(normalized.Kind) + "\x00" + normalized.Scope + "\x00" + normalized.NormalizedValue
+	digest := hmacDigest(service.receiptKey, "identity.bind.merge.review.v1\x00"+material)
+	fingerprint := append([]byte(nil), digest[:16]...)
+	return fingerprint, "hmac-sha256-v1:" + base64.RawURLEncoding.EncodeToString(fingerprint)
+}
+
+func (service *BindService) appendMergeReviewCreatedEvent(
+	ctx context.Context,
+	requestedCustomerID contactport.CustomerID,
+	reviewID int64,
+	candidates []contactport.CustomerID,
+) error {
+	if reviewID <= 0 || len(candidates) != 2 || candidates[0] <= 0 || candidates[0] >= candidates[1] {
+		return ErrIdentityBindFailed
+	}
+	payload, err := json.Marshal(struct {
+		ReviewID     int64   `json:"review_id"`
+		CandidateIDs []int64 `json:"candidate_customer_ids"`
+		Policy       string  `json:"policy_version"`
+	}{reviewID, []int64{int64(candidates[0]), int64(candidates[1])}, VerifiedPhoneMergeReviewPolicy})
+	if err != nil {
+		return err
+	}
+	_, err = service.events.Append(ctx, eventport.Event{
+		Type:           "identity.merge_review.created",
+		CustomerID:     eventport.CustomerID(requestedCustomerID),
+		Payload:        payload,
+		OccurredAt:     time.Now().UTC(),
+		IdempotencyKey: "identity.merge_review.created:" + strconv.FormatInt(reviewID, 10),
+	})
+	return err
+}
+
 func (service *BindService) appendBoundEvent(ctx context.Context, identityID int64, customerID contactport.CustomerID, normalized NormalizedIdentity) error {
 	payload, err := json.Marshal(struct {
 		IdentityID        int64               `json:"identity_id"`
@@ -303,6 +377,8 @@ func validBindResult(result identityport.BindResult) bool {
 		return result.CustomerID > 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID == 0
 	case identityport.BindMerged:
 		return result.CustomerID > 0 && result.PrimaryCustomerID > 0 && result.MergeAuditID > 0 && result.ReviewID == 0
+	case identityport.BindManualReview:
+		return result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID > 0
 	case identityport.BindRejected:
 		return result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID == 0
 	default:

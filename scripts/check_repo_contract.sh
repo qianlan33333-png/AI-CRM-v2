@@ -464,6 +464,7 @@ required=(
   docs/execution/slices/P3-R4B.md
   docs/execution/slices/P3-I3R0.md
   docs/execution/slices/P3-I4A.md
+  docs/execution/slices/P3-I4B.md
   docs/execution/slices/P3-C07C-R3B.md
   docs/execution/slices/P3-C07C-R3C.md
   docs/execution/slices/M0-1.md
@@ -953,11 +954,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  ad2bf1a71d694cc54a5fe341c997c85951040aca46a6046efec4499f5ad91d65
+  b8b457f63a8ec744badc83f927d60af386e946b22455f55fb54bd4a5e34261ce
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  3ce31e9bc0f6c168e5c19e8509f387a3a4ed6e8442bf3df240ed32d0c1f0fa52
+  b01a182eed25b7bcdda7304fbf9c941df4cae47e53a404d5c0e3cfdd0e6a187e
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1479,7 +1480,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  bfc5255aef1526a2e3a4c538ef5d2b57ac11493592995f48473a1125cfbcdecd
+  73348188e2d2d4dd00909445ab85a3d8f1f8b9194feb76b71e9b062bc8d07741
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1780,6 +1781,8 @@ verify_index_sha256 docs/execution/slices/P3-I3R0.md \
   98bd9763ae225b74ab215032e9d433611fadb6f7453c64149beb6a90d747684b
 verify_index_sha256 docs/execution/slices/P3-I4A.md \
   67b4d5ef685fc15104edaf40767664f1c441ae82b38e778f47e6762371bc3478
+verify_index_sha256 docs/execution/slices/P3-I4B.md \
+  eab53de36d28d54fecd09cb284074d5665903883a00a4f259f8ffdbe4900664e
 verify_index_sha256 migrations/00013_identity_receipt_completion_transaction.sql \
   9199103badc244cc03e850ae2786ec94e8b9def50bdf22a7ff62cfb0c9322091
 verify_index_sha256 acceptance/identity/storage_integration_test.go \

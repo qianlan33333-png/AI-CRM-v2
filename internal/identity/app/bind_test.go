@@ -20,11 +20,15 @@ type bindTestStore struct {
 	bindCalls     int
 	rebindCalls   int
 	auditCalls    int
+	reviewCalls   int
 	completeCalls int
 	identity      NormalizedIdentity
 	customerID    int64
 	completed     identityport.BindResult
 	audit         AutoMergeAudit
+	reviewIDs     []int64
+	candidates    []contactport.CustomerID
+	fingerprint   []byte
 }
 
 func (store *bindTestStore) ReserveBindReceipt(_ context.Context, _, _ []byte) (BindReceipt, error) {
@@ -50,6 +54,17 @@ func (store *bindTestStore) InsertAutoCustomerMergeAudit(_ context.Context, audi
 		return 0, store.err
 	}
 	return 17, nil
+}
+
+func (store *bindTestStore) InsertVerifiedPhoneMergeReview(_ context.Context, identityID int64, candidates []contactport.CustomerID, fingerprint []byte) (int64, error) {
+	store.reviewCalls++
+	store.reviewIDs = append(store.reviewIDs, identityID)
+	store.candidates = append([]contactport.CustomerID(nil), candidates...)
+	store.fingerprint = append([]byte(nil), fingerprint...)
+	if store.err != nil {
+		return 0, store.err
+	}
+	return 23, nil
 }
 
 func (store *bindTestStore) CompleteBindReceipt(_ context.Context, _ BindReceipt, result identityport.BindResult) error {
@@ -180,6 +195,33 @@ func TestBindServiceAutoMergesOnlyVerifiedUnionIDWithUniqueWeComPrimary(t *testi
 	}
 	if len(store.audit.ReviewFingerprint) != 16 || string(store.audit.Detail) == "" || string(store.audit.Detail) == command.Ref.Value {
 		t.Fatalf("audit=%+v", store.audit)
+	}
+}
+
+func TestBindServiceCreatesVerifiedPhoneManualReviewWithoutAutomaticMerge(t *testing.T) {
+	command := validBindCommandForTest()
+	command.CustomerID = 84
+	command.Ref = identityport.IDRef{
+		Kind:      identityport.KindPhone,
+		Scope:     "phone:e164",
+		Value:     "+86 138 0013 8000",
+		Assurance: identityport.AssuranceVerified,
+		Source:    "wecom.callback",
+	}
+	store := &bindTestStore{receipt: BindReceipt{ID: 9}, record: BindRecord{
+		Status: identityport.BindRejected, IdentityID: 11, ExistingCustomerID: 42,
+	}}
+	events := &bindTestEvents{}
+	result, err := NewBindService(&resolveTestUoW{}, store, events, []byte("12345678901234567890123456789012")).Bind(context.Background(), command)
+	want := identityport.BindResult{Status: identityport.BindManualReview, ReviewID: 23}
+	if err != nil || result != want || store.completed != want || store.reviewCalls != 1 || store.auditCalls != 0 || store.rebindCalls != 0 {
+		t.Fatalf("result=%+v completed=%+v err=%v review=%d audit=%d rebind=%d", result, store.completed, err, store.reviewCalls, store.auditCalls, store.rebindCalls)
+	}
+	if got := store.candidates; !reflect.DeepEqual(got, []contactport.CustomerID{42, 84}) || len(store.fingerprint) != 16 {
+		t.Fatalf("candidates=%v fingerprint=%x", got, store.fingerprint)
+	}
+	if len(events.events) != 1 || events.events[0].Type != "identity.merge_review.created" || events.events[0].CustomerID != eventport.CustomerID(command.CustomerID) || events.events[0].IdempotencyKey != "identity.merge_review.created:23" || string(events.events[0].Payload) == command.Ref.Value {
+		t.Fatalf("events=%+v", events.events)
 	}
 }
 

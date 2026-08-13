@@ -115,7 +115,7 @@ func (repository *Repository) ReserveBindReceipt(ctx context.Context, keyDigest,
 		}
 		return identityapp.BindReceipt{}, identityapp.ErrIdentityBindFailed
 	}
-	result, err := bindResultFromReceipt(row.ResultStatus.String, row.ResultCustomerID, row.ResultMergeAuditID, row.ResultPolicyVersion)
+	result, err := bindResultFromReceipt(row.ResultStatus.String, row.ResultCustomerID, row.ResultMergeAuditID, row.ResultPendingEventID, row.ResultPolicyVersion)
 	if err != nil {
 		return identityapp.BindReceipt{}, err
 	}
@@ -128,6 +128,14 @@ func (repository *Repository) ReserveBindReceipt(ctx context.Context, keyDigest,
 			return identityapp.BindReceipt{}, identityapp.ErrIdentityBindFailed
 		}
 		result.PrimaryCustomerID = contactport.CustomerID(audit.PrimaryCustomerID)
+	}
+	if result.Status == identityport.BindManualReview {
+		if _, err = queries.LoadBindMergeReview(ctx, result.ReviewID); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return identityapp.BindReceipt{}, identityapp.ErrIdentityBindFailed
+			}
+			return identityapp.BindReceipt{}, err
+		}
 	}
 	return identityapp.BindReceipt{Found: true, PayloadHMAC: append([]byte(nil), row.PayloadHmac...), Result: result}, nil
 }
@@ -254,6 +262,34 @@ func (repository *Repository) InsertAutoCustomerMergeAudit(ctx context.Context, 
 	return id, nil
 }
 
+func (repository *Repository) InsertVerifiedPhoneMergeReview(
+	ctx context.Context,
+	identityID int64,
+	candidates []contactport.CustomerID,
+	fingerprint []byte,
+) (int64, error) {
+	if repository == nil || identityID <= 0 || len(candidates) != 2 || candidates[0] <= 0 ||
+		candidates[0] >= candidates[1] || len(fingerprint) != 16 {
+		return 0, identityapp.ErrIdentityBindFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	id, err := identitydb.New(tx).InsertVerifiedPhoneMergeReview(ctx, identitydb.InsertVerifiedPhoneMergeReviewParams{
+		IdentityIds:          []int64{identityID},
+		CandidateCustomerIds: []int64{int64(candidates[0]), int64(candidates[1])},
+		ReviewFingerprint:    append([]byte(nil), fingerprint...),
+	})
+	if err != nil {
+		return 0, err
+	}
+	if id <= 0 {
+		return 0, identityapp.ErrIdentityBindFailed
+	}
+	return id, nil
+}
+
 func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt identityapp.BindReceipt, result identityport.BindResult) error {
 	if repository == nil || receipt.ID <= 0 || !bindReceiptResultValid(result) {
 		return identityapp.ErrIdentityBindFailed
@@ -270,6 +306,10 @@ func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt i
 		params.ResultMergeAuditID = pgtype.Int8{Int64: result.MergeAuditID, Valid: true}
 		params.ResultPolicyVersion = pgtype.Text{String: identityport.MergePolicyVerifiedUnionIDUniqueWeCom, Valid: true}
 	}
+	if result.ReviewID > 0 {
+		params.ResultPendingEventID = pgtype.Int8{Int64: result.ReviewID, Valid: true}
+		params.ResultPolicyVersion = pgtype.Text{String: identityapp.VerifiedPhoneMergeReviewPolicy, Valid: true}
+	}
 	updated, err := identitydb.New(tx).CompleteBindReceipt(ctx, params)
 	if err != nil {
 		return err
@@ -280,31 +320,37 @@ func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt i
 	return nil
 }
 
-func bindResultFromReceipt(status string, customerID pgtype.Int8, mergeAuditID pgtype.Int8, policyVersion pgtype.Text) (identityport.BindResult, error) {
+func bindResultFromReceipt(status string, customerID pgtype.Int8, mergeAuditID pgtype.Int8, reviewID pgtype.Int8, policyVersion pgtype.Text) (identityport.BindResult, error) {
 	switch identityport.BindStatus(status) {
 	case identityport.BindBound, identityport.BindAlreadyBound:
-		if !customerID.Valid || customerID.Int64 <= 0 || mergeAuditID.Valid || policyVersion.Valid {
+		if !customerID.Valid || customerID.Int64 <= 0 || mergeAuditID.Valid || reviewID.Valid || policyVersion.Valid {
 			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 		}
 		return identityport.BindResult{Status: identityport.BindStatus(status), CustomerID: contactport.CustomerID(customerID.Int64)}, nil
 	case identityport.BindRejected:
-		if customerID.Valid || mergeAuditID.Valid || policyVersion.Valid {
+		if customerID.Valid || mergeAuditID.Valid || reviewID.Valid || policyVersion.Valid {
 			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 		}
 		return identityport.BindResult{Status: identityport.BindRejected}, nil
 	case identityport.BindMerged:
-		if !customerID.Valid || customerID.Int64 <= 0 || !mergeAuditID.Valid || mergeAuditID.Int64 <= 0 ||
+		if !customerID.Valid || customerID.Int64 <= 0 || !mergeAuditID.Valid || mergeAuditID.Int64 <= 0 || reviewID.Valid ||
 			!policyVersion.Valid || policyVersion.String != identityport.MergePolicyVerifiedUnionIDUniqueWeCom {
 			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 		}
 		return identityport.BindResult{Status: identityport.BindMerged, CustomerID: contactport.CustomerID(customerID.Int64), MergeAuditID: mergeAuditID.Int64}, nil
+	case identityport.BindManualReview:
+		if customerID.Valid || mergeAuditID.Valid || !reviewID.Valid || reviewID.Int64 <= 0 ||
+			!policyVersion.Valid || policyVersion.String != identityapp.VerifiedPhoneMergeReviewPolicy {
+			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
+		}
+		return identityport.BindResult{Status: identityport.BindManualReview, ReviewID: reviewID.Int64}, nil
 	default:
 		return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 	}
 }
 
 func bindReceiptResultValid(result identityport.BindResult) bool {
-	if result.ReviewID != 0 {
+	if result.Status != identityport.BindManualReview && result.ReviewID != 0 {
 		return false
 	}
 	switch result.Status {
@@ -314,6 +360,8 @@ func bindReceiptResultValid(result identityport.BindResult) bool {
 		return result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0
 	case identityport.BindMerged:
 		return result.CustomerID > 0 && result.PrimaryCustomerID > 0 && result.MergeAuditID > 0
+	case identityport.BindManualReview:
+		return result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID > 0
 	default:
 		return false
 	}
