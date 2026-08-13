@@ -101,6 +101,12 @@ func (repository *EnqueueBatchRepository) EnqueueBatchTask(ctx context.Context, 
 	if err != nil || jobID <= 0 {
 		return 0, errors.Join(outboundapp.ErrEnqueueBatchFailed, err)
 	}
+	linked, err := recordTaskJobLink(ctx, outboundapp.TaskJob{
+		TaskID: args.TaskID, Generation: 1, RiverJobID: jobID, JobKind: args.Kind(),
+	})
+	if err != nil || linked.TaskID != args.TaskID || linked.RiverJobID != jobID || linked.JobKind != args.Kind() {
+		return 0, errors.Join(outboundapp.ErrEnqueueBatchFailed, err)
+	}
 	return jobID, nil
 }
 
