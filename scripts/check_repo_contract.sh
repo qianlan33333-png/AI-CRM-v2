@@ -1008,13 +1008,15 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  632b3c9b9da71d615f75be57826e772e248db7d0469e6ac917e85c0d59c12316
+  184da04578d13f57d7b71b5a7f2b3deeb987662a2e5e92c6f950e922a70e9d39
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
   bb2c40eaad8b8b3dd83cd2d81f58360717ab6dbaeb773afe6d65b7ae18e4f5cb
+verify_index_sha256 .tool-versions \
+  af006125eef7e7eb61d425c128103efb1d198a6967e4b6da25c4f7324f01e0ec
 verify_index_sha256 go.mod \
-  fc223e80d21cc5b2f20bcfcfb5bc219d993993c1b480621442b6f8c692071a97
+  2e77bb762be00f230b38a484170d1508cf2bde4c1cbcbafaa3e5f8dda5752229
 verify_index_sha256 go.sum \
   411aa7f8fff51ca54e7b0c3f84323a2bcbec8541a9a16cb01c3e46af1c24dee7
 verify_index_sha256 package.json \
@@ -1158,7 +1160,7 @@ verify_index_sha256 docs/execution/slices/M0-1.md \
 verify_index_sha256 docs/execution/slices/M0-2.md \
   97d9acda27150c905af7bc52eeca623034ae1c529d89aac56c253f18d426df59
 verify_index_sha256 tools/go.mod \
-  6a64133379331817837ab27823bcf7c672d3a300b2cf9d3c2c79c56f7f90e7ef
+  430d16ae44aa92c5d9754a5939f4ef0185389d9935d269e905cea662f6f66782
 verify_index_sha256 tools/go.sum \
   2515f9dd3dbc17c77f98550be06a8cdf072538e6d8eb296077b6ad91120d2753
 verify_index_sha256 tools/query-plan-gate/main.go \
@@ -1562,7 +1564,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  81f5900f50c121c7ca60e4f777dbc35bbfd7ae4056cb8888566522046c877f39
+  ff9810f6f37118dddca3293fa21256d69dd44e8b61a510bce03eaf3b22fb08ea
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1784,7 +1786,7 @@ verify_index_sha256 cmd/aicrm-config/main_test.go \
 verify_index_sha256 deploy/compose.yml \
   1a5c68290299aa87ddbab9485e293c21b5883b120f621051132a39204b2fd9fb
 verify_index_sha256 scripts/staging_deploy.sh \
-  755625464a65ef6a71d93d5261e1255b9f0d0becf5678aa015604ff5581c4d49
+  6cc71be7a0dfd8362ba25fe9bfc9ed8b68bacb896093476a75d846c6c3fbf880
 verify_index_sha256 acceptance/p2s18/test_tier_config.sh \
   ab73b731c77453c6188d6e2544d20be0e9563c67eb4746eb52ab7de5e20fafd7
 verify_index_sha256 web/src/stages.ts \
@@ -1858,7 +1860,7 @@ verify_index_sha256 scripts/check_feature_matrix_contract.sh \
 verify_index_sha256 acceptance/p0s10/test_snapshot_gate.sh \
   955d136c6cb6bf873127e78dcd4d137ecd19e11972fffb30af85260150ac7e3b
 verify_index_sha256 docs/adr/ADR-001.md \
-  e4da265cf5ffd9962d1f77f2410538e09e8b41d1cb37c1584c3d57265480e28d
+  dbf5a99d7e5ccc0740e8a32a9945a355ae64a629ca1d4699fb3393890a4bff6b
 verify_index_sha256 docs/adr/ADR-010.md \
   5fdbd62214938e6485322a84858c488a8bac812e00f312318186a5b3ec9b72dc
 verify_index_sha256 docs/adr/ADR-011.md \
@@ -2020,11 +2022,11 @@ verify_index_sha256 docs/execution/slices/M0-5.md \
 verify_index_sha256 docs/execution/slices/M0-6.md \
   96f5131c60d2eec508557f03ba1322af88c2002a259ec8d455569024d2013125
 verify_index_sha256 docs/architecture/canonical.md \
-  0a3de6e1707271bc0390da23be9fc12e313b05363cb88325e8d050811cf31845
+  3f1a95bd511402b7c08c35c395bd0e5e60bfcb66c007aa0708750fea0ef4c568
 verify_index_sha256 docs/architecture/table-ownership.yml \
   528685e35ad4a95a039bf371696971b3341df2cc9e74bdff99969a33bfa9f3a5
 verify_index_sha256 scripts/test_repo_contract.sh \
-  d631503ec1733efb9627ee369f922ef6db034b47aaad3a2514e14c5069d3b738
+  a8543cf16d14a1b29a4bb41541a70c5d3639c545260cee0baf24f1608e7ba2d9
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -2168,7 +2170,7 @@ require_unique_make_target orval-check
 bootstrap_tools_recipe="$(make_target_recipe 'bootstrap-tools:')" ||
   fail "bootstrap tools target must be unique"
 for fragment in \
-  'bootstrap-tools: missing Go 1.26.5; install versions from .tool-versions' \
+  'bootstrap-tools: missing Go 1.26.6; install versions from .tool-versions' \
   'bootstrap-tools: expected Node.js 24.18.0 from .tool-versions' \
   'failed to install pinned oapi-codegen, sqlc, goose, and govulncheck tools' \
   'failed to install pinned Orval 7.21.0 and web tools' \

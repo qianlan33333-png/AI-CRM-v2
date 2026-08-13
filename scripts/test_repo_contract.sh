@@ -76,6 +76,14 @@ if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "valid staged baseline was rejected"
 fi
 
+go_toolchain_pin_fixture="$(make_fixture go-toolchain-pin)"
+sed -i.bak 's/^golang 1[.]26[.]6$/golang 1.26.5/' "$go_toolchain_pin_fixture/.tool-versions"
+rm -f "$go_toolchain_pin_fixture/.tool-versions.bak"
+git -C "$go_toolchain_pin_fixture" add .tool-versions
+if (cd "$go_toolchain_pin_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "Go 1.26.6 toolchain pin drift was accepted"
+fi
+
 ledger_history_fixture="$(make_fixture slice-ledger-history)"
 ruby -e '
   path = ARGV.fetch(0)
