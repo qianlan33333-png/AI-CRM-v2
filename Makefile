@@ -41,7 +41,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p3-c06a1-contract p3-c06a2-contract
 
 version-check:
-	@test "$$($(GO) env GOVERSION)" = "go1.26.5"
+	@test "$$($(GO) env GOVERSION)" = "go1.26.6"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/jackc/pgx/v5)" = "v5.9.2"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/go-chi/chi/v5)" = "v5.2.3"
 	@test "$$($(GO) list -m -f '{{.Version}}' golang.org/x/text)" = "v0.39.0"
@@ -53,7 +53,7 @@ version-check:
 		printf '%s\n' "$$version_output" | grep -Fqx 'Scanner: govulncheck@v1.6.0'
 
 bootstrap-tools:
-	@command -v $(GO) >/dev/null 2>&1 || { echo "bootstrap-tools: missing Go 1.26.5; install versions from .tool-versions" >&2; exit 2; }
+	@command -v $(GO) >/dev/null 2>&1 || { echo "bootstrap-tools: missing Go 1.26.6; install versions from .tool-versions" >&2; exit 2; }
 	@command -v node >/dev/null 2>&1 || { echo "bootstrap-tools: missing Node.js 24.18.0; install versions from .tool-versions" >&2; exit 2; }
 	@command -v npm >/dev/null 2>&1 || { echo "bootstrap-tools: missing npm 11.12.1; install versions from package.json" >&2; exit 2; }
 	@test "$$(node --version)" = "v24.18.0" || { echo "bootstrap-tools: expected Node.js 24.18.0 from .tool-versions, got $$(node --version)" >&2; exit 2; }

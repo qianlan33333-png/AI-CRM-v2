@@ -44,7 +44,8 @@ done
 
 [[ "$tier_value" = 's' || "$tier_value" = 'm' || "$tier_value" = 'l' ]] || fail '--tier must be one of s, m, l'
 [[ -n "$output_directory" ]] || fail '--output-dir is required'
-command -v go >/dev/null 2>&1 || fail 'Go 1.26.5 is required to render configuration'
+command -v go >/dev/null 2>&1 || fail 'Go 1.26.6 is required to render configuration'
+[[ "$(go env GOVERSION)" = 'go1.26.6' ]] || fail 'Go 1.26.6 is required to render configuration'
 
 case "$output_directory" in
   /*) ;;
