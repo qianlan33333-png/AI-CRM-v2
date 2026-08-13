@@ -462,6 +462,7 @@ required=(
   docs/execution/slices/P3-R3A.md
   docs/execution/slices/P3-R4A.md
   docs/execution/slices/P3-R4B.md
+  docs/execution/slices/P3-I3R0.md
   docs/execution/slices/P3-C07C-R3B.md
   docs/execution/slices/P3-C07C-R3C.md
   docs/execution/slices/M0-1.md
@@ -476,6 +477,7 @@ required=(
   docs/spec/SHA256SUMS
   migrations/00010_identity_storage.sql
   migrations/00011_contact_external_event_idempotency.sql
+  migrations/00013_identity_receipt_completion_transaction.sql
   acceptance/identity/storage_integration_test.go
   acceptance/contact/external_event_storage_integration_test.go
   acceptance/contact/external_event_behavior_integration_test.go
@@ -1476,7 +1478,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  2c243ccac8325164a4fe9218196ab7070480202076bca30097bf67683fa2cfd4
+  a3d4b843ec0635e46a7ca99a92364fed9e65bd058fb11dd97894711f041931d7
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1773,8 +1775,12 @@ verify_index_sha256 scripts/check_slice_ledger_history.rb \
   1fe3b93ce6b021a9e760956324bed957bd3635662fb686cecba59851a6ecc582
 verify_index_sha256 migrations/00010_identity_storage.sql \
   bc72451450a9efff3435c17fd17d2f457ef909a7c7390e7468fddc7befe68aab
+verify_index_sha256 docs/execution/slices/P3-I3R0.md \
+  98bd9763ae225b74ab215032e9d433611fadb6f7453c64149beb6a90d747684b
+verify_index_sha256 migrations/00013_identity_receipt_completion_transaction.sql \
+  9199103badc244cc03e850ae2786ec94e8b9def50bdf22a7ff62cfb0c9322091
 verify_index_sha256 acceptance/identity/storage_integration_test.go \
-  0677b7b5d5e96677b8c4de69ad5dee4c20ef2abee3aaf1376d61cda51e28fe38
+  21fe95b9fc6044aadd023fcdbf41a3b967e8f67e781d3379ca4c79d8fe60068c
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   515c079bf80ef3da6efc0d2f9fab80edd525b942dcf88ca7fde3ad762aa23d7e
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \

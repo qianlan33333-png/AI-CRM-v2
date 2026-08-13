@@ -20,6 +20,11 @@ var databaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 ide
 func TestIdentityStorageCatalogAndOwnership(t *testing.T) {
 	pool := openIdentityPool(t)
 	resetIdentityStorage(t, pool)
+	ctx := context.Background()
+	var waterline int
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 13 {
+		t.Fatalf("migration waterline=%d err=%v, want 13", waterline, err)
+	}
 
 	tables := queryStrings(t, pool, `
 SELECT table_name FROM information_schema.tables
@@ -134,6 +139,156 @@ VALUES ('bind', $1::text, decode($2::text, 'hex'), 1, decode($3::text, 'hex'), 1
 			t.Fatal("completed receipt was mutable")
 		}
 		assertPGCode(t, err, "55000")
+	})
+}
+
+func TestIdentityReceiptReservationCompletionTransactionBoundary(t *testing.T) {
+	pool := openIdentityPool(t)
+	resetIdentityStorage(t, pool)
+	ctx := context.Background()
+
+	t.Run("same UoW reserves writes business fact and completes", func(t *testing.T) {
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+
+		scope := fmt.Sprintf("same-uow-%d", time.Now().UnixNano())
+		var receiptID int64
+		err = tx.QueryRow(ctx, `
+INSERT INTO identity_operation_receipts (operation, idempotency_scope, key_digest, command_schema_version, payload_hmac, payload_hmac_key_version, result_schema_version)
+VALUES ('bind', $1::text, decode($2::text, 'hex'), 1, decode($3::text, 'hex'), 1, 1)
+RETURNING id`, scope, repeatHex("55"), repeatHex("66")).Scan(&receiptID)
+		if err != nil || receiptID < 1 {
+			t.Fatalf("reserve receipt id=%d err=%v", receiptID, err)
+		}
+		customerID, err := contactfixture.CreateCustomer(ctx, tx)
+		if err != nil {
+			t.Fatalf("write Contact-owned business fact: %v", err)
+		}
+		if _, err = tx.Exec(ctx, `
+UPDATE identity_operation_receipts
+SET state = 'completed', result_status = 'bound', result_customer_id = $1::bigint, completed_at = now()
+WHERE id = $2::bigint`, customerID, receiptID); err != nil {
+			t.Fatalf("complete receipt: %v", err)
+		}
+		if err = tx.Commit(ctx); err != nil {
+			t.Fatalf("commit reservation, business fact, and completion: %v", err)
+		}
+
+		var state string
+		if err = pool.QueryRow(ctx, `SELECT state FROM identity_operation_receipts WHERE id = $1::bigint`, receiptID).Scan(&state); err != nil || state != "completed" {
+			t.Fatalf("receipt state=%q err=%v, want completed", state, err)
+		}
+	})
+
+	t.Run("second connection cannot complete an uncommitted reservation and rollback removes it", func(t *testing.T) {
+		first, err := pool.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer first.Release()
+		second, err := pool.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer second.Release()
+
+		scope := fmt.Sprintf("two-connection-%d", time.Now().UnixNano())
+		firstTx, err := first.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = firstTx.Rollback(ctx) }()
+		if _, err = firstTx.Exec(ctx, `
+INSERT INTO identity_operation_receipts (operation, idempotency_scope, key_digest, command_schema_version, payload_hmac, payload_hmac_key_version, result_schema_version)
+VALUES ('bind', $1::text, decode($2::text, 'hex'), 1, decode($3::text, 'hex'), 1, 1)`, scope, repeatHex("77"), repeatHex("88")); err != nil {
+			t.Fatal(err)
+		}
+		secondTx, err := second.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = secondTx.Rollback(ctx) }()
+		result, err := secondTx.Exec(ctx, `
+UPDATE identity_operation_receipts
+SET state = 'completed', result_status = 'bound', completed_at = now()
+WHERE idempotency_scope = $1::text`, scope)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.RowsAffected() != 0 {
+			t.Fatalf("second connection completed %d uncommitted reservations", result.RowsAffected())
+		}
+		if err = secondTx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if err = firstTx.Rollback(ctx); err != nil {
+			t.Fatal(err)
+		}
+		var count int
+		if err = pool.QueryRow(ctx, `SELECT count(*) FROM identity_operation_receipts WHERE idempotency_scope = $1::text`, scope).Scan(&count); err != nil || count != 0 {
+			t.Fatalf("rolled-back reservation count=%d err=%v, want 0", count, err)
+		}
+	})
+
+	t.Run("in progress reservation cannot commit for a later transaction", func(t *testing.T) {
+		scope := fmt.Sprintf("cross-uow-%d", time.Now().UnixNano())
+		first, err := pool.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer first.Release()
+		reservationTx, err := first.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = reservationTx.Rollback(ctx) }()
+		if _, err = reservationTx.Exec(ctx, `
+INSERT INTO identity_operation_receipts (operation, idempotency_scope, key_digest, command_schema_version, payload_hmac, payload_hmac_key_version, result_schema_version)
+VALUES ('bind', $1::text, decode($2::text, 'hex'), 1, decode($3::text, 'hex'), 1, 1)`, scope, repeatHex("99"), repeatHex("aa")); err != nil {
+			t.Fatal(err)
+		}
+		err = reservationTx.Commit(ctx)
+		if err == nil {
+			t.Fatal("in_progress reservation committed for later completion")
+		}
+		assertPGCode(t, err, "23514")
+
+		second, err := pool.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer second.Release()
+		result, err := second.Exec(ctx, `
+UPDATE identity_operation_receipts
+SET state = 'completed', result_status = 'bound', completed_at = now()
+WHERE idempotency_scope = $1::text`, scope)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.RowsAffected() != 0 {
+			t.Fatalf("later transaction found %d committed reservations", result.RowsAffected())
+		}
+	})
+
+	t.Run("illegal completed result and version remain rejected", func(t *testing.T) {
+		_, err := pool.Exec(ctx, `
+INSERT INTO identity_operation_receipts (operation, idempotency_scope, key_digest, command_schema_version, payload_hmac, payload_hmac_key_version, state, result_schema_version, result_status, completed_at)
+VALUES ('bind', $1::text, decode($2::text, 'hex'), 1, decode($3::text, 'hex'), 1, 'completed', 1, 'attributed', now())`, fmt.Sprintf("illegal-status-%d", time.Now().UnixNano()), repeatHex("bb"), repeatHex("cc"))
+		if err == nil {
+			t.Fatal("bind receipt accepted an ingest-only completed result")
+		}
+		assertPGCode(t, err, "23514")
+
+		_, err = pool.Exec(ctx, `
+INSERT INTO identity_operation_receipts (operation, idempotency_scope, key_digest, command_schema_version, payload_hmac, payload_hmac_key_version, result_schema_version)
+VALUES ('bind', $1::text, decode($2::text, 'hex'), 1, decode($3::text, 'hex'), 1, 0)`, fmt.Sprintf("illegal-version-%d", time.Now().UnixNano()), repeatHex("dd"), repeatHex("ee"))
+		if err == nil {
+			t.Fatal("receipt accepted a non-positive result schema version")
+		}
+		assertPGCode(t, err, "23514")
 	})
 }
 
