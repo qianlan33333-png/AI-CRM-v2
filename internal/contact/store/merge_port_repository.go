@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 )
@@ -15,12 +17,14 @@ import (
 const (
 	maximumIdentityCustomerName = 500
 	maximumMergeReason          = 1000
+	maximumExternalEventType    = 200
+	maximumExternalEventKey     = 200
 )
 
 // MergePortRepository implements the contact-owned create and pairwise merge
-// half of MergePort. AppendExternalEvent is deliberately deferred to P3-C07C.
-// Every method here requires the transaction context supplied by the caller's
-// UnitOfWork and never opens a nested transaction.
+// half of MergePort plus its external-event append boundary. Every method here
+// requires the transaction context supplied by the caller's UnitOfWork and
+// never opens a nested transaction.
 type MergePortRepository struct{}
 
 type retryableMergeStoreError struct {
@@ -129,6 +133,61 @@ func (repository *MergePortRepository) MergeCustomers(
 	return nil
 }
 
+func (repository *MergePortRepository) AppendExternalEvent(
+	ctx context.Context,
+	command contactport.ExternalEventCommand,
+) (contactport.EventID, error) {
+	if repository == nil || !validExternalEventCommand(command) {
+		return 0, contactport.ErrInvalidMergeCommand
+	}
+	queries, err := customerMutationQueriesFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	command.OccurredAt = command.OccurredAt.UTC().Truncate(time.Microsecond)
+	if err = queries.LockExternalEventIdempotencyKey(ctx, command.IdempotencyKey); err != nil {
+		return 0, mapMergePortDatabaseError(err)
+	}
+	effectiveID, err := resolveEffectiveCustomerRoot(ctx, queries, command.CustomerID)
+	if err != nil {
+		return 0, err
+	}
+	existing, err := queries.GetExternalEventIdempotency(ctx, command.IdempotencyKey)
+	if err == nil {
+		return replayExternalEvent(ctx, queries, effectiveID, command, existing)
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return 0, mapMergePortDatabaseError(err)
+	}
+
+	eventID, err := queries.AppendCustomerEvent(ctx, contactdb.AppendCustomerEventParams{
+		CustomerID: int64(effectiveID),
+		EventType:  command.EventType,
+		Payload:    append([]byte(nil), command.Payload...),
+		Actor:      string(command.Actor),
+		OccurredAt: pgtype.Timestamptz{Time: command.OccurredAt, Valid: true},
+	})
+	if err != nil {
+		return 0, mapMergePortDatabaseError(err)
+	}
+	inserted, err := queries.InsertExternalEventIdempotency(ctx, contactdb.InsertExternalEventIdempotencyParams{
+		IdempotencyKey:  command.IdempotencyKey,
+		EventOccurredAt: pgtype.Timestamptz{Time: command.OccurredAt, Valid: true},
+		EventID:         eventID,
+		EventCustomerID: int64(effectiveID),
+		EventType:       command.EventType,
+		Payload:         append([]byte(nil), command.Payload...),
+		Actor:           string(command.Actor),
+	})
+	if err != nil {
+		return 0, mapMergePortDatabaseError(err)
+	}
+	if inserted != 1 || eventID <= 0 {
+		return 0, contactport.ErrExternalEventConflict
+	}
+	return contactport.EventID(eventID), nil
+}
+
 func replaySameDirectionMerge(
 	ctx context.Context,
 	queries *contactdb.Queries,
@@ -173,6 +232,30 @@ func resolveEffectiveCustomerRoot(
 	return contactport.CustomerID(root), nil
 }
 
+func replayExternalEvent(
+	ctx context.Context,
+	queries *contactdb.Queries,
+	effectiveID contactport.CustomerID,
+	command contactport.ExternalEventCommand,
+	existing contactdb.GetExternalEventIdempotencyRow,
+) (contactport.EventID, error) {
+	existingRoot, err := resolveEffectiveCustomerRoot(
+		ctx,
+		queries,
+		contactport.CustomerID(existing.EventCustomerID),
+	)
+	if err != nil {
+		return 0, err
+	}
+	if existing.EventID <= 0 || !existing.EventOccurredAt.Valid || existingRoot != effectiveID ||
+		existing.EventType != command.EventType || existing.Actor != string(command.Actor) ||
+		!existing.EventOccurredAt.Time.Equal(command.OccurredAt) ||
+		!sameJSONObject(existing.Payload, command.Payload) {
+		return 0, contactport.ErrExternalEventConflict
+	}
+	return contactport.EventID(existing.EventID), nil
+}
+
 func validCreateForIdentityCommand(command contactport.CreateForIdentityCommand) bool {
 	return len(command.Name) <= maximumIdentityCustomerName && utf8.ValidString(command.Name) &&
 		validCustomerMutationActor(command.Actor) && positiveOptionalID(command.OwnerStaffID) &&
@@ -182,6 +265,19 @@ func validCreateForIdentityCommand(command contactport.CreateForIdentityCommand)
 func validMergeCustomersCommand(command contactport.MergeCustomersCommand) bool {
 	return command.PrimaryID > 0 && command.MergedID > 0 && command.PrimaryID != command.MergedID &&
 		validCustomerMutationActor(command.Actor) && validTrimmedMergeText(command.Reason, maximumMergeReason)
+}
+
+func validExternalEventCommand(command contactport.ExternalEventCommand) bool {
+	return command.CustomerID > 0 &&
+		validTrimmedExternalText(command.EventType, maximumExternalEventType) &&
+		validCustomerMutationActor(command.Actor) &&
+		!command.OccurredAt.IsZero() &&
+		validCustomerMutationJSONObject(command.Payload) &&
+		validTrimmedExternalText(command.IdempotencyKey, maximumExternalEventKey)
+}
+
+func validTrimmedExternalText(value string, maximum int) bool {
+	return value != "" && len(value) <= maximum && strings.TrimSpace(value) == value && utf8.ValidString(value)
 }
 
 func validTrimmedMergeText(value string, maximum int) bool {

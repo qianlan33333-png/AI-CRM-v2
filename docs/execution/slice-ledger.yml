@@ -3432,6 +3432,21 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: [slice:self_review_added_E_string_backslash_escape_and_all_recognized_statement_parenthesis_balance_after_negative_tests_exposed_initial_gaps, slice:first_ledger_correction_update_matched_two_historical_entries_then_both_were_reverted_and_zero_drift_rechecked, infra:segment_S04B_priority_advanced_exact_main_and_required_clean_replay_after_its_main_CI_closed]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-C07C-R3C
+    title: contact-external-event-behavior-only
+    owner: Codex-Sol
+    status: local_candidate_pending_pr
+    base_sha: f6f86909ad23a85f7a29b4f7c4c30c8d52ef5cc9
+    dependency: P3_C07C_R3B_P3_R6_B_AND_P3_S04B_CLOSED_EXACT_MAIN_CI_SUCCESS_AND_SHARED_QUEUE_EMPTY
+    branch: slice/p3-c07c-r3c-replay-f6f
+    scope: [transaction_bound_AppendExternalEvent, advisory_lock_same_fact_effective_root_replay, conflict_10_way_concurrency_merge_replay_rollback, sqlc_generated_runtime_and_pg16_14_acceptance]
+    excluded_scope: [migration_ownership_canonical, identity_segment_api_ui_openapi_event_log, production_database_live_migration_real_wecom_and_external_effects]
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: []
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
 
 phase_closeouts:
   P2:

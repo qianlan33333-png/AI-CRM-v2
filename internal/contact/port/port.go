@@ -21,6 +21,7 @@ var (
 	ErrMergeCustomerNotFound = errors.New("contact merge customer not found")
 	ErrMergeConflict         = errors.New("contact merge conflict")
 	ErrMergeStoreFailed      = errors.New("contact merge store failed")
+	ErrExternalEventConflict = errors.New("external customer event conflict")
 )
 
 type Stage struct {
