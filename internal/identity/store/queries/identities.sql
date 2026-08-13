@@ -65,6 +65,7 @@ SELECT
   result_status,
   result_customer_id,
   result_merge_audit_id,
+  result_pending_event_id,
   result_policy_version
 FROM identity_operation_receipts
 WHERE operation = 'bind'
@@ -78,6 +79,7 @@ SET
   result_status = sqlc.arg(result_status)::text,
   result_customer_id = sqlc.narg(result_customer_id)::bigint,
   result_merge_audit_id = sqlc.narg(result_merge_audit_id)::bigint,
+  result_pending_event_id = sqlc.narg(result_pending_event_id)::bigint,
   result_policy_version = sqlc.narg(result_policy_version)::text,
   completed_at = now()
 WHERE id = sqlc.arg(id)::bigint
@@ -121,6 +123,40 @@ SET customer_id = sqlc.arg(customer_id)::bigint, bound_at = now()
 WHERE id = sqlc.arg(identity_id)::bigint
   AND customer_id IS NULL
 RETURNING id;
+
+-- name: InsertVerifiedPhoneMergeReview :one
+INSERT INTO pending_events (
+  kind,
+  identity_ids,
+  candidate_customer_ids,
+  source,
+  policy_version,
+  review_fingerprint,
+  fingerprint_key_version
+) VALUES (
+  'merge_review',
+  sqlc.arg(identity_ids)::bigint[],
+  sqlc.arg(candidate_customer_ids)::bigint[],
+  'identity.bind',
+  'verified_phone_manual_review_v1',
+  sqlc.arg(review_fingerprint)::bytea,
+  1
+)
+RETURNING id;
+
+-- name: LoadBindMergeReview :one
+SELECT id
+FROM pending_events
+WHERE id = sqlc.arg(review_id)::bigint
+  AND kind = 'merge_review'
+  AND policy_version = 'verified_phone_manual_review_v1'
+  AND cardinality(identity_ids) = 1
+  AND cardinality(candidate_customer_ids) = 2
+  AND candidate_customer_ids[1] < candidate_customer_ids[2]
+  AND review_fingerprint IS NOT NULL
+  AND octet_length(review_fingerprint) = 16
+  AND fingerprint_key_version = 1
+  AND version >= 1;
 
 -- name: RebindIdentitiesForCustomerMerge :execrows
 UPDATE identities

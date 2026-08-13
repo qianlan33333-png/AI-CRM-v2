@@ -13,6 +13,8 @@ type Querier interface {
 	CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error)
 	HasVerifiedWeComIdentityForBindCustomer(ctx context.Context, customerID int64) (bool, error)
 	InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAutoCustomerMergeAuditParams) (int64, error)
+	InsertVerifiedPhoneMergeReview(ctx context.Context, arg InsertVerifiedPhoneMergeReviewParams) (int64, error)
+	LoadBindMergeReview(ctx context.Context, reviewID int64) (int64, error)
 	LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error)
 	LoadCustomerMergeAudit(ctx context.Context, mergeAuditID int64) (LoadCustomerMergeAuditRow, error)
 	LockActiveBindCustomer(ctx context.Context, customerID int64) (int64, error)

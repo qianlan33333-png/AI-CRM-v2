@@ -38,18 +38,20 @@ SET
   result_status = $1::text,
   result_customer_id = $2::bigint,
   result_merge_audit_id = $3::bigint,
-  result_policy_version = $4::text,
+  result_pending_event_id = $4::bigint,
+  result_policy_version = $5::text,
   completed_at = now()
-WHERE id = $5::bigint
+WHERE id = $6::bigint
   AND state = 'in_progress'
 `
 
 type CompleteBindReceiptParams struct {
-	ResultStatus        string      `json:"result_status"`
-	ResultCustomerID    pgtype.Int8 `json:"result_customer_id"`
-	ResultMergeAuditID  pgtype.Int8 `json:"result_merge_audit_id"`
-	ResultPolicyVersion pgtype.Text `json:"result_policy_version"`
-	ID                  int64       `json:"id"`
+	ResultStatus         string      `json:"result_status"`
+	ResultCustomerID     pgtype.Int8 `json:"result_customer_id"`
+	ResultMergeAuditID   pgtype.Int8 `json:"result_merge_audit_id"`
+	ResultPendingEventID pgtype.Int8 `json:"result_pending_event_id"`
+	ResultPolicyVersion  pgtype.Text `json:"result_policy_version"`
+	ID                   int64       `json:"id"`
 }
 
 func (q *Queries) CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error) {
@@ -57,6 +59,7 @@ func (q *Queries) CompleteBindReceipt(ctx context.Context, arg CompleteBindRecei
 		arg.ResultStatus,
 		arg.ResultCustomerID,
 		arg.ResultMergeAuditID,
+		arg.ResultPendingEventID,
 		arg.ResultPolicyVersion,
 		arg.ID,
 	)
@@ -131,6 +134,62 @@ func (q *Queries) InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAu
 	return id, err
 }
 
+const insertVerifiedPhoneMergeReview = `-- name: InsertVerifiedPhoneMergeReview :one
+INSERT INTO pending_events (
+  kind,
+  identity_ids,
+  candidate_customer_ids,
+  source,
+  policy_version,
+  review_fingerprint,
+  fingerprint_key_version
+) VALUES (
+  'merge_review',
+  $1::bigint[],
+  $2::bigint[],
+  'identity.bind',
+  'verified_phone_manual_review_v1',
+  $3::bytea,
+  1
+)
+RETURNING id
+`
+
+type InsertVerifiedPhoneMergeReviewParams struct {
+	IdentityIds          []int64 `json:"identity_ids"`
+	CandidateCustomerIds []int64 `json:"candidate_customer_ids"`
+	ReviewFingerprint    []byte  `json:"review_fingerprint"`
+}
+
+func (q *Queries) InsertVerifiedPhoneMergeReview(ctx context.Context, arg InsertVerifiedPhoneMergeReviewParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertVerifiedPhoneMergeReview, arg.IdentityIds, arg.CandidateCustomerIds, arg.ReviewFingerprint)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const loadBindMergeReview = `-- name: LoadBindMergeReview :one
+SELECT id
+FROM pending_events
+WHERE id = $1::bigint
+  AND kind = 'merge_review'
+  AND policy_version = 'verified_phone_manual_review_v1'
+  AND cardinality(identity_ids) = 1
+  AND cardinality(candidate_customer_ids) = 2
+  AND candidate_customer_ids[1] < candidate_customer_ids[2]
+  AND review_fingerprint IS NOT NULL
+  AND octet_length(review_fingerprint) = 16
+  AND fingerprint_key_version = 1
+  AND version >= 1
+`
+
+func (q *Queries) LoadBindMergeReview(ctx context.Context, reviewID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, loadBindMergeReview, reviewID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const loadBindReceipt = `-- name: LoadBindReceipt :one
 SELECT
   payload_hmac,
@@ -138,6 +197,7 @@ SELECT
   result_status,
   result_customer_id,
   result_merge_audit_id,
+  result_pending_event_id,
   result_policy_version
 FROM identity_operation_receipts
 WHERE operation = 'bind'
@@ -146,12 +206,13 @@ WHERE operation = 'bind'
 `
 
 type LoadBindReceiptRow struct {
-	PayloadHmac         []byte      `json:"payload_hmac"`
-	State               string      `json:"state"`
-	ResultStatus        pgtype.Text `json:"result_status"`
-	ResultCustomerID    pgtype.Int8 `json:"result_customer_id"`
-	ResultMergeAuditID  pgtype.Int8 `json:"result_merge_audit_id"`
-	ResultPolicyVersion pgtype.Text `json:"result_policy_version"`
+	PayloadHmac          []byte      `json:"payload_hmac"`
+	State                string      `json:"state"`
+	ResultStatus         pgtype.Text `json:"result_status"`
+	ResultCustomerID     pgtype.Int8 `json:"result_customer_id"`
+	ResultMergeAuditID   pgtype.Int8 `json:"result_merge_audit_id"`
+	ResultPendingEventID pgtype.Int8 `json:"result_pending_event_id"`
+	ResultPolicyVersion  pgtype.Text `json:"result_policy_version"`
 }
 
 func (q *Queries) LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error) {
@@ -163,6 +224,7 @@ func (q *Queries) LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBi
 		&i.ResultStatus,
 		&i.ResultCustomerID,
 		&i.ResultMergeAuditID,
+		&i.ResultPendingEventID,
 		&i.ResultPolicyVersion,
 	)
 	return i, err

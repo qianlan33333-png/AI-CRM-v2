@@ -299,7 +299,7 @@ func TestIdentityBindConcurrentVerifiedUnionIDMergeCreatesOneAuditAndOneEvent(t 
 	}
 }
 
-func TestIdentityBindVerifiedPhoneDoesNotAutoMergeInI4A(t *testing.T) {
+func TestIdentityBindVerifiedPhoneCreatesStableManualReviewWithoutAutomaticMerge(t *testing.T) {
 	pool := openIdentityPool(t)
 	resetIdentityUpsert(t, pool)
 	ctx := context.Background()
@@ -311,13 +311,49 @@ INSERT INTO identities (customer_id, kind, scope, normalized_value, normalizer_v
 VALUES ($1::bigint, 'phone', 'phone:e164', $2::text, 1, 'verified', 'wecom.callback', decode('20112233445566778899aabbccddeeff', 'hex'), 1, now())`, existingID, phoneValue); err != nil {
 		t.Fatal(err)
 	}
-	result, err := newIdentityBindService(pool, eventstore.NewAppender()).Bind(ctx, identityport.BindCommand{
+	service := newIdentityBindService(pool, eventstore.NewAppender())
+	command := identityport.BindCommand{
 		CustomerID: contactport.CustomerID(primaryID),
 		Ref:        identityport.IDRef{Kind: identityport.KindPhone, Scope: "phone:e164", Value: phoneValue, Assurance: identityport.AssuranceVerified, Source: "wecom.callback"},
-		Actor:      "acceptance:identity-i4a", IdempotencyKey: "bind-verified-phone-i4a",
-	})
-	if err != nil || result != (identityport.BindResult{Status: identityport.BindRejected}) {
-		t.Fatalf("verified phone I4A result=%+v err=%v", result, err)
+		Actor:      "acceptance:identity-i4b", IdempotencyKey: "bind-verified-phone-i4b",
+	}
+	result, err := service.Bind(ctx, command)
+	if err != nil || result.Status != identityport.BindManualReview || result.ReviewID <= 0 || result.CustomerID != 0 || result.PrimaryCustomerID != 0 || result.MergeAuditID != 0 {
+		t.Fatalf("verified phone I4B result=%+v err=%v", result, err)
+	}
+	replay, err := service.Bind(ctx, command)
+	if err != nil || replay != result {
+		t.Fatalf("verified phone replay=%+v err=%v, want %+v", replay, err, result)
+	}
+	conflictingCommand := command
+	conflictingCommand.Actor = "acceptance:identity-i4b-conflict"
+	if _, err = service.Bind(ctx, conflictingCommand); !errors.Is(err, identityapp.ErrIdentityBindIdempotencyConflict) {
+		t.Fatalf("verified phone same key different payload err=%v", err)
+	}
+	var state, policy string
+	var version, identityID, candidateA, candidateB, fingerprintLength, fingerprintVersion int64
+	if err = pool.QueryRow(ctx, `
+SELECT state, policy_version, version, identity_ids[1], candidate_customer_ids[1], candidate_customer_ids[2], octet_length(review_fingerprint), fingerprint_key_version
+FROM pending_events
+WHERE id=$1::bigint AND kind='merge_review'`, result.ReviewID).Scan(&state, &policy, &version, &identityID, &candidateA, &candidateB, &fingerprintLength, &fingerprintVersion); err != nil ||
+		state != "pending" || policy != identityapp.VerifiedPhoneMergeReviewPolicy || version != 1 || identityID <= 0 || candidateA >= candidateB ||
+		candidateA != minInt64(primaryID, existingID) || candidateB != maxInt64(primaryID, existingID) || fingerprintLength != 16 || fingerprintVersion != 1 {
+		t.Fatalf("merge review state=%q policy=%q version=%d identity=%d candidates=%d/%d fingerprint=%d/%d err=%v", state, policy, version, identityID, candidateA, candidateB, fingerprintLength, fingerprintVersion, err)
+	}
+	var receiptCount, eventCount int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM identity_operation_receipts WHERE operation='bind' AND result_status='manual_review' AND result_pending_event_id=$1::bigint AND result_policy_version=$2::text`, result.ReviewID, identityapp.VerifiedPhoneMergeReviewPolicy).Scan(&receiptCount); err != nil || receiptCount != 1 {
+		t.Fatalf("verified phone review receipt count=%d err=%v", receiptCount, err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM event_log WHERE event_type='identity.merge_review.created' AND idempotency_key=$1::text`, fmt.Sprintf("identity.merge_review.created:%d", result.ReviewID)).Scan(&eventCount); err != nil || eventCount != 1 {
+		t.Fatalf("verified phone review events=%d err=%v", eventCount, err)
+	}
+	var mergedDeleted bool
+	if err = pool.QueryRow(ctx, `SELECT is_deleted FROM customers WHERE id=$1::bigint`, existingID).Scan(&mergedDeleted); err != nil || mergedDeleted {
+		t.Fatalf("verified phone existing customer deleted=%t err=%v", mergedDeleted, err)
+	}
+	var phoneCustomerID int64
+	if err = pool.QueryRow(ctx, `SELECT customer_id FROM identities WHERE id=$1::bigint`, identityID).Scan(&phoneCustomerID); err != nil || phoneCustomerID != existingID {
+		t.Fatalf("verified phone identity customer=%d err=%v, want=%d", phoneCustomerID, err, existingID)
 	}
 	var auditCount, lineageCount int
 	if err = pool.QueryRow(ctx, `SELECT count(*) FROM customer_merges`).Scan(&auditCount); err != nil || auditCount != 0 {
@@ -325,6 +361,79 @@ VALUES ($1::bigint, 'phone', 'phone:e164', $2::text, 1, 'verified', 'wecom.callb
 	}
 	if err = pool.QueryRow(ctx, `SELECT count(*) FROM customer_merge_lineage WHERE (merged_customer_id=$1::bigint AND primary_customer_id=$2::bigint) OR (merged_customer_id=$2::bigint AND primary_customer_id=$1::bigint)`, primaryID, existingID).Scan(&lineageCount); err != nil || lineageCount != 0 {
 		t.Fatalf("verified phone lineage count=%d err=%v", lineageCount, err)
+	}
+}
+
+func TestIdentityBindVerifiedPhoneReviewRollsBackWhenEventAppendFails(t *testing.T) {
+	pool := openIdentityPool(t)
+	resetIdentityUpsert(t, pool)
+	ctx := context.Background()
+	requestedID, existingID := createBindCustomer(t, pool), createBindCustomer(t, pool)
+	phoneValue := "+8613800138001"
+	seedBoundVerifiedPhone(t, pool, existingID, phoneValue)
+	_, err := newIdentityBindService(pool, failingEventAppender{}).Bind(ctx, identityport.BindCommand{
+		CustomerID: contactport.CustomerID(requestedID),
+		Ref:        identityport.IDRef{Kind: identityport.KindPhone, Scope: "phone:e164", Value: phoneValue, Assurance: identityport.AssuranceVerified, Source: "wecom.callback"},
+		Actor:      "acceptance:identity-i4b", IdempotencyKey: "bind-verified-phone-rollback",
+	})
+	if err == nil {
+		t.Fatal("verified phone Bind succeeded while merge_review event append failed")
+	}
+	var reviewCount, receiptCount int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM pending_events WHERE kind='merge_review' AND candidate_customer_ids @> ARRAY[$1::bigint, $2::bigint]`, requestedID, existingID).Scan(&reviewCount); err != nil || reviewCount != 0 {
+		t.Fatalf("rolled-back verified phone reviews=%d err=%v", reviewCount, err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM identity_operation_receipts WHERE operation='bind' AND result_status='manual_review'`).Scan(&receiptCount); err != nil || receiptCount != 0 {
+		t.Fatalf("rolled-back verified phone receipts=%d err=%v", receiptCount, err)
+	}
+}
+
+func TestIdentityBindConcurrentVerifiedPhoneCreatesOneManualReview(t *testing.T) {
+	pool := openIdentityPool(t)
+	resetIdentityUpsert(t, pool)
+	ctx := context.Background()
+	requestedID, existingID := createBindCustomer(t, pool), createBindCustomer(t, pool)
+	phoneValue := "+8613800138002"
+	seedBoundVerifiedPhone(t, pool, existingID, phoneValue)
+	secondPool, err := pgxpool.New(ctx, *databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(secondPool.Close)
+	command := identityport.BindCommand{
+		CustomerID: contactport.CustomerID(requestedID),
+		Ref:        identityport.IDRef{Kind: identityport.KindPhone, Scope: "phone:e164", Value: phoneValue, Assurance: identityport.AssuranceVerified, Source: "wecom.callback"},
+		Actor:      "acceptance:identity-i4b", IdempotencyKey: "bind-verified-phone-concurrent",
+	}
+	services := []*identityapp.BindService{newIdentityBindService(pool, eventstore.NewAppender()), newIdentityBindService(secondPool, eventstore.NewAppender())}
+	start := make(chan struct{})
+	results := make([]identityport.BindResult, len(services))
+	errs := make([]error, len(services))
+	var wait sync.WaitGroup
+	for index, service := range services {
+		wait.Add(1)
+		go func(index int, service *identityapp.BindService) {
+			defer wait.Done()
+			<-start
+			results[index], errs[index] = service.Bind(ctx, command)
+		}(index, service)
+	}
+	close(start)
+	wait.Wait()
+	for index, result := range results {
+		if errs[index] != nil || result.Status != identityport.BindManualReview || result.ReviewID <= 0 || result != results[0] {
+			t.Fatalf("concurrent verified phone result[%d]=%+v err=%v first=%+v", index, result, errs[index], results[0])
+		}
+	}
+	var reviewCount, eventCount, receiptCount int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM pending_events WHERE kind='merge_review' AND candidate_customer_ids @> ARRAY[$1::bigint, $2::bigint]`, requestedID, existingID).Scan(&reviewCount); err != nil || reviewCount != 1 {
+		t.Fatalf("concurrent verified phone reviews=%d err=%v", reviewCount, err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM event_log WHERE event_type='identity.merge_review.created' AND idempotency_key=$1::text`, fmt.Sprintf("identity.merge_review.created:%d", results[0].ReviewID)).Scan(&eventCount); err != nil || eventCount != 1 {
+		t.Fatalf("concurrent verified phone events=%d err=%v", eventCount, err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM identity_operation_receipts WHERE operation='bind' AND result_status='manual_review' AND result_pending_event_id=$1::bigint`, results[0].ReviewID).Scan(&receiptCount); err != nil || receiptCount != 1 {
+		t.Fatalf("concurrent verified phone receipts=%d err=%v", receiptCount, err)
 	}
 }
 
@@ -351,6 +460,29 @@ VALUES ($1::bigint, 'unionid', 'wechat-open-platform:acceptance', $2::text, 1, '
 		t.Fatalf("seed verified unionid: %v", err)
 	}
 	return value
+}
+
+func seedBoundVerifiedPhone(t *testing.T, pool *pgxpool.Pool, customerID int64, value string) {
+	t.Helper()
+	if _, err := pool.Exec(context.Background(), `
+INSERT INTO identities (customer_id, kind, scope, normalized_value, normalizer_version, assurance, source, review_fingerprint, fingerprint_key_version, bound_at)
+VALUES ($1::bigint, 'phone', 'phone:e164', $2::text, 1, 'verified', 'wecom.callback', decode('20112233445566778899aabbccddeeff', 'hex'), 1, now())`, customerID, value); err != nil {
+		t.Fatalf("seed verified phone: %v", err)
+	}
+}
+
+func minInt64(left, right int64) int64 {
+	if left < right {
+		return left
+	}
+	return right
+}
+
+func maxInt64(left, right int64) int64 {
+	if left > right {
+		return left
+	}
+	return right
 }
 
 func seedMergeTagsAndTimeline(t *testing.T, pool *pgxpool.Pool, primaryID, mergedID int64) (int64, int64) {
