@@ -28,7 +28,7 @@ func TestSenderConsumesEnqueueOneAndBatchJobsWithFixtureProvider(t *testing.T) {
 
 	provider := &fixtureProvider{}
 	repository := outboundstore.NewSenderRepository()
-	sender := outboundapp.NewSenderService(platformstore.NewUnitOfWork(pool), repository, provider, fixtureRateGate{})
+	sender := outboundapp.NewSenderService(platformstore.NewUnitOfWork(pool), repository, eventstore.NewAppender(), provider, fixtureRateGate{})
 	oneWorker, err := outboundworker.NewEnqueueOneSender(sender)
 	if err != nil {
 		t.Fatal(err)
@@ -136,8 +136,8 @@ func TestSenderConsumesEnqueueOneAndBatchJobsWithFixtureProvider(t *testing.T) {
 		}
 	}
 	var eventsAfter int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM event_log`).Scan(&eventsAfter); err != nil || eventsAfter != eventsBefore {
-		t.Fatalf("sender event count=%d err=%v, want unchanged %d because O5 is excluded", eventsAfter, err, eventsBefore)
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM event_log`).Scan(&eventsAfter); err != nil || eventsAfter != eventsBefore+len(expectedByJob) {
+		t.Fatalf("sender event count=%d err=%v, want %d stable O5 result facts", eventsAfter, err, eventsBefore+len(expectedByJob))
 	}
 }
 
@@ -151,7 +151,7 @@ func TestSenderResultRollbackReplaysUnknownWithoutProviderDuplicate(t *testing.T
 	provider := &fixtureProvider{}
 	base := outboundstore.NewSenderRepository()
 	lossy := &rollbackCompleteRepository{SendAttemptRepository: base}
-	first := outboundapp.NewSenderService(platformstore.NewUnitOfWork(pool), lossy, provider, fixtureRateGate{})
+	first := outboundapp.NewSenderService(platformstore.NewUnitOfWork(pool), lossy, eventstore.NewAppender(), provider, fixtureRateGate{})
 	if _, err := first.Execute(ctx, command); !errors.Is(err, errFixtureResultRollback) {
 		t.Fatalf("first Execute() error=%v, want %v", err, errFixtureResultRollback)
 	}
@@ -161,7 +161,7 @@ func TestSenderResultRollbackReplaysUnknownWithoutProviderDuplicate(t *testing.T
 		t.Fatalf("rolled back receipt state/completed=%q/%v err=%v, want dispatching/nil", state, completedAt, err)
 	}
 
-	replay := outboundapp.NewSenderService(platformstore.NewUnitOfWork(pool), base, provider, fixtureRateGate{})
+	replay := outboundapp.NewSenderService(platformstore.NewUnitOfWork(pool), base, eventstore.NewAppender(), provider, fixtureRateGate{})
 	got, err := replay.Execute(ctx, command)
 	if err != nil || got.State != outboundapp.SendAttemptOutcomeUnknown || got.FailureKind != outboundapp.ProviderFailureInterruptedDispatch {
 		t.Fatalf("replay Execute()=%+v err=%v", got, err)

@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
@@ -70,6 +73,34 @@ type SendAttempt struct {
 	FailureKind       ProviderFailureKind
 	ProviderCode      string
 	ProviderMessageID string
+	CompletedAt       time.Time
+}
+
+type TaskStatus string
+
+const (
+	TaskStatusPending         TaskStatus = "pending"
+	TaskStatusSending         TaskStatus = "sending"
+	TaskStatusSent            TaskStatus = "sent"
+	TaskStatusRetryableFailed TaskStatus = "retryable_failed"
+	TaskStatusFinalFailed     TaskStatus = "final_failed"
+	TaskStatusOutcomeUnknown  TaskStatus = "outcome_unknown"
+	TaskStatusCancelled       TaskStatus = "cancelled"
+)
+
+// TaskResultFact is the stable, database-projected terminal fact used to append
+// one outbound result event. It contains no message content or recipient data.
+type TaskResultFact struct {
+	TaskID            TaskID
+	CustomerID        int64
+	AttemptID         int64
+	RiverJobID        int64
+	Status            TaskStatus
+	AttemptCount      int32
+	FailureKind       ProviderFailureKind
+	ProviderCode      string
+	ProviderMessageID string
+	OccurredAt        time.Time
 }
 
 type CompleteSendAttempt struct {
@@ -85,6 +116,8 @@ type SendAttemptRepository interface {
 	StartSendAttempt(context.Context, int64) (SendAttempt, bool, error)
 	LoadSendRequest(context.Context, TaskID) (SendRequest, error)
 	CompleteSendAttempt(context.Context, CompleteSendAttempt) (SendAttempt, error)
+	MarkTaskSending(context.Context, SendAttempt) error
+	ProjectTaskResult(context.Context, SendAttempt) (TaskResultFact, error)
 }
 
 // ProviderAdapter is deliberately injected. O4 ships no live-provider implementation.
@@ -99,19 +132,20 @@ type RateGate interface {
 type SenderService struct {
 	uow        platformport.UnitOfWork
 	repository SendAttemptRepository
+	events     eventport.Appender
 	provider   ProviderAdapter
 	rate       RateGate
 }
 
-func NewSenderService(uow platformport.UnitOfWork, repository SendAttemptRepository, provider ProviderAdapter, rate RateGate) *SenderService {
-	return &SenderService{uow: uow, repository: repository, provider: provider, rate: rate}
+func NewSenderService(uow platformport.UnitOfWork, repository SendAttemptRepository, events eventport.Appender, provider ProviderAdapter, rate RateGate) *SenderService {
+	return &SenderService{uow: uow, repository: repository, events: events, provider: provider, rate: rate}
 }
 
 // Execute reserves a durable attempt before crossing the provider boundary.
 // A replay of dispatching is classified unknown and never invokes the provider
-// again; O5 owns future task status/event projection from this stable receipt.
+// again. Receipt, task status, and result event are committed atomically.
 func (service *SenderService) Execute(ctx context.Context, command SendCommand) (SendAttempt, error) {
-	if ctx == nil || service == nil || service.uow == nil || service.repository == nil || service.provider == nil || service.rate == nil || !validSendCommand(command) {
+	if ctx == nil || service == nil || service.uow == nil || service.repository == nil || service.events == nil || service.provider == nil || service.rate == nil || !validSendCommand(command) {
 		return SendAttempt{}, ErrInvalidSendCommand
 	}
 
@@ -143,7 +177,7 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 		return SendAttempt{}, sendError(err)
 	}
 	if terminalSendAttempt(attempt.State) {
-		return attempt, nil
+		return service.project(ctx, attempt)
 	}
 	if attempt.State == SendAttemptDispatching {
 		return service.complete(ctx, attempt, CompleteSendAttempt{
@@ -167,6 +201,11 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 		if !sameSendCommand(current, command) {
 			return ErrSendAttemptConflict
 		}
+		if current.State == SendAttemptDispatching {
+			if markErr := service.repository.MarkTaskSending(txCtx, current); markErr != nil {
+				return markErr
+			}
+		}
 		attempt, started = current, didStart
 		return nil
 	})
@@ -175,7 +214,7 @@ func (service *SenderService) Execute(ctx context.Context, command SendCommand) 
 	}
 	if !started {
 		if terminalSendAttempt(attempt.State) {
-			return attempt, nil
+			return service.project(ctx, attempt)
 		}
 		if attempt.State == SendAttemptDispatching {
 			return service.complete(ctx, attempt, CompleteSendAttempt{
@@ -201,6 +240,9 @@ func (service *SenderService) complete(ctx context.Context, attempt SendAttempt,
 		if stored.ID != attempt.ID || stored.RiverJobID != attempt.RiverJobID || stored.TaskID != attempt.TaskID || stored.JobKind != attempt.JobKind || !terminalSendAttempt(stored.State) {
 			return ErrSendAttemptFailed
 		}
+		if _, projectErr := service.projectWithin(txCtx, stored); projectErr != nil {
+			return projectErr
+		}
 		completed = stored
 		return nil
 	})
@@ -208,6 +250,63 @@ func (service *SenderService) complete(ctx context.Context, attempt SendAttempt,
 		return SendAttempt{}, sendError(err)
 	}
 	return completed, nil
+}
+
+func (service *SenderService) project(ctx context.Context, attempt SendAttempt) (SendAttempt, error) {
+	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		_, projectErr := service.projectWithin(txCtx, attempt)
+		return projectErr
+	})
+	if err != nil {
+		return SendAttempt{}, sendError(err)
+	}
+	return attempt, nil
+}
+
+func (service *SenderService) projectWithin(ctx context.Context, attempt SendAttempt) (eventport.EventID, error) {
+	fact, err := service.repository.ProjectTaskResult(ctx, attempt)
+	if err != nil {
+		return 0, err
+	}
+	if fact.TaskID != attempt.TaskID || fact.CustomerID <= 0 || fact.AttemptID != attempt.ID || fact.RiverJobID != attempt.RiverJobID || fact.AttemptCount < 1 || fact.Status != taskStatusForAttempt(attempt.State) || fact.OccurredAt.IsZero() {
+		return 0, ErrSendAttemptFailed
+	}
+	payload, err := json.Marshal(struct {
+		TaskID            TaskID              `json:"task_id"`
+		AttemptID         int64               `json:"attempt_id"`
+		RiverJobID        int64               `json:"river_job_id"`
+		Status            TaskStatus          `json:"status"`
+		AttemptCount      int32               `json:"attempt_count"`
+		FailureKind       ProviderFailureKind `json:"failure_kind,omitempty"`
+		ProviderCode      string              `json:"provider_code,omitempty"`
+		ProviderMessageID string              `json:"provider_message_id,omitempty"`
+	}{fact.TaskID, fact.AttemptID, fact.RiverJobID, fact.Status, fact.AttemptCount, fact.FailureKind, fact.ProviderCode, fact.ProviderMessageID})
+	if err != nil {
+		return 0, err
+	}
+	eventType := eventport.EvOutboundFailed
+	if fact.Status == TaskStatusSent {
+		eventType = eventport.EvOutboundSent
+	}
+	return service.events.Append(ctx, eventport.Event{
+		Type: eventType, CustomerID: eventport.CustomerID(fact.CustomerID), Payload: payload,
+		OccurredAt: fact.OccurredAt, IdempotencyKey: fmt.Sprintf("outbound.send-result:%d", fact.AttemptID),
+	})
+}
+
+func taskStatusForAttempt(state SendAttemptState) TaskStatus {
+	switch state {
+	case SendAttemptSucceeded:
+		return TaskStatusSent
+	case SendAttemptRetryableFailed:
+		return TaskStatusRetryableFailed
+	case SendAttemptFinalFailed:
+		return TaskStatusFinalFailed
+	case SendAttemptOutcomeUnknown:
+		return TaskStatusOutcomeUnknown
+	default:
+		return ""
+	}
 }
 
 func classifyProviderResult(attemptID int64, result ProviderResult, providerErr error) CompleteSendAttempt {

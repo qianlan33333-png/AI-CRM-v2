@@ -16,6 +16,8 @@ type Querier interface {
 	CreateAcceptedOutboundTask(ctx context.Context, arg CreateAcceptedOutboundTaskParams) (int64, error)
 	CreateOutboundBatchTask(ctx context.Context, arg CreateOutboundBatchTaskParams) (int64, error)
 	LoadOutboundSendRequest(ctx context.Context, id int64) (LoadOutboundSendRequestRow, error)
+	MarkOutboundTaskSending(ctx context.Context, attemptID int64) (int64, error)
+	ProjectOutboundTaskResult(ctx context.Context, arg ProjectOutboundTaskResultParams) (ProjectOutboundTaskResultRow, error)
 	ReserveOutboundBatch(ctx context.Context, arg ReserveOutboundBatchParams) (ReserveOutboundBatchRow, error)
 	ReserveOutboundBatchChunk(ctx context.Context, arg ReserveOutboundBatchChunkParams) (ReserveOutboundBatchChunkRow, error)
 	ReserveOutboundEnqueueReceipt(ctx context.Context, arg ReserveOutboundEnqueueReceiptParams) (ReserveOutboundEnqueueReceiptRow, error)
