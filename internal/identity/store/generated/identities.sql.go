@@ -31,6 +31,48 @@ func (q *Queries) BindFloatingIdentity(ctx context.Context, arg BindFloatingIden
 	return id, err
 }
 
+const claimPendingReplay = `-- name: ClaimPendingReplay :one
+SELECT id, kind, identity_ids, event_type, payload, source, idempotency_key, occurred_at, version
+FROM pending_events
+WHERE state = 'pending'
+  AND kind IN ('attribution', 'conflict')
+  AND payload IS NOT NULL
+  AND jsonb_typeof(payload) = 'object'
+  AND policy_version = 'identity_ingest_attribution_v1'
+ORDER BY version, id
+FOR UPDATE SKIP LOCKED
+LIMIT 1
+`
+
+type ClaimPendingReplayRow struct {
+	ID             int64              `json:"id"`
+	Kind           string             `json:"kind"`
+	IdentityIds    []int64            `json:"identity_ids"`
+	EventType      pgtype.Text        `json:"event_type"`
+	Payload        []byte             `json:"payload"`
+	Source         string             `json:"source"`
+	IdempotencyKey pgtype.Text        `json:"idempotency_key"`
+	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
+	Version        int64              `json:"version"`
+}
+
+func (q *Queries) ClaimPendingReplay(ctx context.Context) (ClaimPendingReplayRow, error) {
+	row := q.db.QueryRow(ctx, claimPendingReplay)
+	var i ClaimPendingReplayRow
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.IdentityIds,
+		&i.EventType,
+		&i.Payload,
+		&i.Source,
+		&i.IdempotencyKey,
+		&i.OccurredAt,
+		&i.Version,
+	)
+	return i, err
+}
+
 const completeBindReceipt = `-- name: CompleteBindReceipt :execrows
 UPDATE identity_operation_receipts
 SET
@@ -99,6 +141,52 @@ func (q *Queries) CompleteIngestReceipt(ctx context.Context, arg CompleteIngestR
 		arg.ResultEventID,
 		arg.ID,
 	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const completePendingReplay = `-- name: CompletePendingReplay :execrows
+UPDATE pending_events
+SET state = 'replayed', version = version + 1, resolved_at = now()
+WHERE id = $1::bigint
+  AND version = $2::bigint
+  AND state = 'pending'
+  AND kind IN ('attribution', 'conflict')
+  AND policy_version = 'identity_ingest_attribution_v1'
+`
+
+type CompletePendingReplayParams struct {
+	PendingEventID  int64 `json:"pending_event_id"`
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
+func (q *Queries) CompletePendingReplay(ctx context.Context, arg CompletePendingReplayParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completePendingReplay, arg.PendingEventID, arg.ExpectedVersion)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deferPendingReplay = `-- name: DeferPendingReplay :execrows
+UPDATE pending_events
+SET version = version + 1
+WHERE id = $1::bigint
+  AND version = $2::bigint
+  AND state = 'pending'
+  AND kind IN ('attribution', 'conflict')
+  AND policy_version = 'identity_ingest_attribution_v1'
+`
+
+type DeferPendingReplayParams struct {
+	PendingEventID  int64 `json:"pending_event_id"`
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
+func (q *Queries) DeferPendingReplay(ctx context.Context, arg DeferPendingReplayParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deferPendingReplay, arg.PendingEventID, arg.ExpectedVersion)
 	if err != nil {
 		return 0, err
 	}
@@ -461,6 +549,48 @@ func (q *Queries) LockIdentityForBind(ctx context.Context, arg LockIdentityForBi
 	var i LockIdentityForBindRow
 	err := row.Scan(&i.ID, &i.CustomerID)
 	return i, err
+}
+
+const lockPendingReplayIdentities = `-- name: LockPendingReplayIdentities :many
+SELECT id, kind, scope, normalized_value, normalizer_version
+FROM identities
+WHERE id = ANY($1::bigint[])
+ORDER BY id
+FOR UPDATE
+`
+
+type LockPendingReplayIdentitiesRow struct {
+	ID                int64  `json:"id"`
+	Kind              string `json:"kind"`
+	Scope             string `json:"scope"`
+	NormalizedValue   string `json:"normalized_value"`
+	NormalizerVersion int16  `json:"normalizer_version"`
+}
+
+func (q *Queries) LockPendingReplayIdentities(ctx context.Context, identityIds []int64) ([]LockPendingReplayIdentitiesRow, error) {
+	rows, err := q.db.Query(ctx, lockPendingReplayIdentities, identityIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LockPendingReplayIdentitiesRow{}
+	for rows.Next() {
+		var i LockPendingReplayIdentitiesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Scope,
+			&i.NormalizedValue,
+			&i.NormalizerVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const lookupNormalizedIdentity = `-- name: LookupNormalizedIdentity :one

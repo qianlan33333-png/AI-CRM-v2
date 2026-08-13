@@ -961,11 +961,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  d947dfb8ed3c8a0c7dced2fbbba22a1acdb1f1fb139103261be9fd8c26535c35
+  c43f8ee168d418044a5a41ba9da7babe9545caf7136beef9fdbfee7c970b9ab9
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  c99786cc2f0fb3b2c715324ddc2e218c2a2bd94588653f19d9a99d35e490593b
+  5e7d342c829cc2dc2ab63f1d6233048c1adeec68a772187870406b2a7fd6231e
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1487,7 +1487,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  bc634eef20483d0f618ea4c9b56f817e53ac0863d6474dd229a0d1c3a9988f56
+  64091bc0c6cd4c4dd1ea0e0f029cc5c28270366258dd07ed9b69588119bbd8c0
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1792,6 +1792,22 @@ verify_index_sha256 docs/execution/slices/P3-I4B.md \
   eab53de36d28d54fecd09cb284074d5665903883a00a4f259f8ffdbe4900664e
 verify_index_sha256 docs/execution/slices/P3-I5.md \
   0bae282fec31140c4840908e21310288b93fa0f9e1c1540ce6a7e0e9868ebb5a
+verify_index_sha256 docs/execution/slices/P3-I6.md \
+  30eec7572c47b0d7190f4c8259ca8090d6d5030916c343045072e6df5c3e5a86
+verify_index_sha256 internal/identity/app/ingest.go \
+  a65530f14115676e0d5fb498af4f8683f1cd370389badfc6902eeff7d88290ec
+verify_index_sha256 internal/identity/app/ingest_test.go \
+  b134c1f41c8ecd051ae879f3e87bb7cc24cdfb8f64e922077641553cf7d60d32
+verify_index_sha256 internal/identity/app/replay.go \
+  4908d38aafe6bc609896df1145dcb6798a4dbf29d2996f4d43f54282fdaf9f77
+verify_index_sha256 internal/identity/app/replay_test.go \
+  fe5e2579ba8027053b3bb8210b9a40a6b37e3987742336c9f571d7cc1797472b
+verify_index_sha256 internal/identity/store/queries/identities.sql \
+  8256ddc23d719e2a21789f38154d69f182b09f489d4b7a91ee18e1e81bbf8c53
+verify_index_sha256 internal/identity/store/repository.go \
+  d44ec07c8f1d7d13267063e550fbd1c3d2719043e18a039d56806f3d4ee87c56
+verify_index_sha256 acceptance/identity/replay_integration_test.go \
+  1443486053341115224de0ad7d231d1ba900a0a5927d64a1d35ac4681dffe5f8
 verify_index_sha256 migrations/00017_identity_pending_event_payload.sql \
   c5de70f3060c42535c1c8ee851c0cd82122d9f2636ff1271e4bb7679b41d877b
 verify_index_sha256 migrations/00013_identity_receipt_completion_transaction.sql \

@@ -208,6 +208,7 @@ func (store *ingestTestStore) CompleteIngestReceipt(_ context.Context, receipt I
 type ingestTestContacts struct {
 	eventID contactport.EventID
 	calls   int
+	last    contactport.ExternalEventCommand
 }
 
 func (*ingestTestContacts) CreateForIdentity(context.Context, contactport.CreateForIdentityCommand) (contactport.CustomerID, error) {
@@ -216,8 +217,9 @@ func (*ingestTestContacts) CreateForIdentity(context.Context, contactport.Create
 func (*ingestTestContacts) MergeCustomers(context.Context, contactport.MergeCustomersCommand) error {
 	return errors.New("not implemented")
 }
-func (contacts *ingestTestContacts) AppendExternalEvent(context.Context, contactport.ExternalEventCommand) (contactport.EventID, error) {
+func (contacts *ingestTestContacts) AppendExternalEvent(_ context.Context, command contactport.ExternalEventCommand) (contactport.EventID, error) {
 	contacts.calls++
+	contacts.last = command
 	return contacts.eventID, nil
 }
 

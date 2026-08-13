@@ -23,6 +23,7 @@ var _ identityapp.UpsertStore = (*Repository)(nil)
 var _ identityapp.ResolveStore = (*Repository)(nil)
 var _ identityapp.BindStore = (*Repository)(nil)
 var _ identityapp.IngestStore = (*Repository)(nil)
+var _ identityapp.PendingReplayStore = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
 
@@ -399,6 +400,95 @@ func (repository *Repository) InsertPendingIngest(ctx context.Context, pending i
 		return 0, identityapp.ErrIdentityIngestFailed
 	}
 	return id, nil
+}
+
+func (repository *Repository) ClaimPendingReplay(ctx context.Context) (identityapp.PendingReplay, bool, error) {
+	if repository == nil {
+		return identityapp.PendingReplay{}, false, identityapp.ErrPendingReplayFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityapp.PendingReplay{}, false, err
+	}
+	queries := identitydb.New(tx)
+	row, err := queries.ClaimPendingReplay(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityapp.PendingReplay{}, false, nil
+	}
+	if err != nil {
+		return identityapp.PendingReplay{}, false, err
+	}
+	if row.ID <= 0 || !row.EventType.Valid || !row.IdempotencyKey.Valid || !row.OccurredAt.Valid ||
+		!validSortedIdentityIDs(row.IdentityIds) || !validJSONObject(row.Payload) {
+		return identityapp.PendingReplay{}, false, identityapp.ErrPendingReplayFailed
+	}
+	identityRows, err := queries.LockPendingReplayIdentities(ctx, row.IdentityIds)
+	if err != nil {
+		return identityapp.PendingReplay{}, false, err
+	}
+	if len(identityRows) != len(row.IdentityIds) {
+		return identityapp.PendingReplay{}, false, identityapp.ErrPendingReplayFailed
+	}
+	identities := make([]identityapp.PendingReplayIdentity, 0, len(identityRows))
+	for index, identityRow := range identityRows {
+		if identityRow.ID != row.IdentityIds[index] {
+			return identityapp.PendingReplay{}, false, identityapp.ErrPendingReplayFailed
+		}
+		identity := identityapp.NormalizedIdentity{
+			Kind: identityport.IDKind(identityRow.Kind), Scope: identityRow.Scope,
+			NormalizedValue: identityRow.NormalizedValue, NormalizerVersion: identityRow.NormalizerVersion,
+		}
+		if identityapp.ValidateNormalized(identity) != nil {
+			return identityapp.PendingReplay{}, false, identityapp.ErrPendingReplayFailed
+		}
+		identities = append(identities, identityapp.PendingReplayIdentity{ID: identityRow.ID, Identity: identity})
+	}
+	return identityapp.PendingReplay{
+		ID: row.ID, Kind: row.Kind, Identities: identities, EventType: row.EventType.String,
+		Payload: append([]byte(nil), row.Payload...), Source: row.Source,
+		IdempotencyKey: row.IdempotencyKey.String, OccurredAt: row.OccurredAt.Time.UTC().Truncate(time.Microsecond),
+		Version: row.Version,
+	}, true, nil
+}
+
+func (repository *Repository) CompletePendingReplay(ctx context.Context, pendingEventID, expectedVersion int64) error {
+	if repository == nil || pendingEventID <= 0 || expectedVersion <= 0 {
+		return identityapp.ErrPendingReplayFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	updated, err := identitydb.New(tx).CompletePendingReplay(ctx, identitydb.CompletePendingReplayParams{
+		PendingEventID: pendingEventID, ExpectedVersion: expectedVersion,
+	})
+	if err != nil {
+		return err
+	}
+	if updated != 1 {
+		return identityapp.ErrPendingReplayFailed
+	}
+	return nil
+}
+
+func (repository *Repository) DeferPendingReplay(ctx context.Context, pendingEventID, expectedVersion int64) error {
+	if repository == nil || pendingEventID <= 0 || expectedVersion <= 0 {
+		return identityapp.ErrPendingReplayFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	updated, err := identitydb.New(tx).DeferPendingReplay(ctx, identitydb.DeferPendingReplayParams{
+		PendingEventID: pendingEventID, ExpectedVersion: expectedVersion,
+	})
+	if err != nil {
+		return err
+	}
+	if updated != 1 {
+		return identityapp.ErrPendingReplayFailed
+	}
+	return nil
 }
 
 func (repository *Repository) CompleteIngestReceipt(ctx context.Context, receipt identityapp.IngestReceipt, result identityport.IngestResult) error {
