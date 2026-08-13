@@ -1,0 +1,9 @@
+{
+  "corp_id": "wx5823bf96d3bd56c7",
+  "token": "callback-token",
+  "encoding_aes_key": "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG",
+  "timestamp": "1700000000",
+  "nonce": "nonce-1700000000",
+  "msg_signature": "6b7bade3728fd423aac8088eed68632f5ecb202d",
+  "expected_plaintext": "<xml><ToUserName><![CDATA[wx5823bf96d3bd56c7]]></ToUserName><FromUserName><![CDATA[user-1]]></FromUserName><CreateTime>1700000000</CreateTime><MsgType><![CDATA[event]]></MsgType><Event><![CDATA[enter_agent]]></Event></xml>"
+}

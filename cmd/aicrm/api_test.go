@@ -103,6 +103,25 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 	}
 }
 
+func TestFinalRouterMountsBothWeComCallbackPathsOutsideAdminAuthentication(t *testing.T) {
+	service := &recordingAuth{}
+	authHandler, err := authhttp.NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := newAPIHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), authHandler, authHandler)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/api/wecom/events", "/wecom/external-contact/callback"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusServiceUnavailable || len(service.capabilities()) != 0 {
+			t.Fatalf("GET %s = %d with capabilities %v, want unavailable/no auth", path, response.Code, service.capabilities())
+		}
+	}
+}
+
 func TestFinalRouterKeepsHealthPublicAndUnknownRoutesUnified(t *testing.T) {
 	service := &recordingAuth{}
 	authHandler, err := authhttp.NewHandler(service)

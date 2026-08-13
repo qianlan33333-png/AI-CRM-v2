@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -13,16 +14,19 @@ import (
 )
 
 const (
-	databaseURLEnv        = "AICRM_DATABASE_URL"
-	apiListenAddressEnv   = "AICRM_HTTP_LISTEN_ADDRESS"
-	apiPoolMaxConnsEnv    = "AICRM_API_PGX_MAX_CONNS"
-	workerPoolMaxConnsEnv = "AICRM_WORKER_PGX_MAX_CONNS"
-	criticalWorkersEnv    = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
-	eventWorkersEnv       = "AICRM_RIVER_EVENT_MAX_WORKERS"
-	outboundWorkersEnv    = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
-	syncWorkersEnv        = "AICRM_RIVER_SYNC_MAX_WORKERS"
-	heavyWorkersEnv       = "AICRM_RIVER_HEAVY_MAX_WORKERS"
-	aiWorkersEnv          = "AICRM_RIVER_AI_MAX_WORKERS"
+	databaseURLEnv         = "AICRM_DATABASE_URL"
+	apiListenAddressEnv    = "AICRM_HTTP_LISTEN_ADDRESS"
+	apiPoolMaxConnsEnv     = "AICRM_API_PGX_MAX_CONNS"
+	workerPoolMaxConnsEnv  = "AICRM_WORKER_PGX_MAX_CONNS"
+	criticalWorkersEnv     = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
+	eventWorkersEnv        = "AICRM_RIVER_EVENT_MAX_WORKERS"
+	outboundWorkersEnv     = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
+	syncWorkersEnv         = "AICRM_RIVER_SYNC_MAX_WORKERS"
+	heavyWorkersEnv        = "AICRM_RIVER_HEAVY_MAX_WORKERS"
+	aiWorkersEnv           = "AICRM_RIVER_AI_MAX_WORKERS"
+	weComCallbackCorpIDEnv = "AICRM_WECOM_CALLBACK_CORP_ID"
+	weComCallbackTokenEnv  = "AICRM_WECOM_CALLBACK_TOKEN"
+	weComCallbackAESKeyEnv = "AICRM_WECOM_CALLBACK_AES_KEY"
 )
 
 var ErrInvalid = errors.New("invalid startup configuration")
@@ -43,6 +47,28 @@ type Database struct {
 type API struct {
 	ListenAddress string
 	PoolMaxConns  int32
+}
+
+// CallbackSecret is opaque to keep callback credentials out of generic logs
+// and startup error messages.
+type CallbackSecret struct{ value string }
+
+func (secret CallbackSecret) Value() string { return secret.value }
+func (CallbackSecret) String() string       { return "[REDACTED]" }
+func (CallbackSecret) GoString() string     { return "[REDACTED]" }
+
+// WeComCallback is either fully configured or disabled. Partial callback
+// configuration is rejected at process startup rather than accepting traffic
+// with an ambiguous security boundary.
+type WeComCallback struct {
+	Enabled        bool
+	CorpID         string
+	Token          CallbackSecret
+	EncodingAESKey CallbackSecret
+}
+
+type WeCom struct {
+	Callback WeComCallback
 }
 
 type Worker struct {
@@ -74,6 +100,7 @@ type Root struct {
 	Database Database
 	API      API
 	Worker   Worker
+	WeCom    WeCom
 }
 
 type validationError struct {
@@ -115,6 +142,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 			root.API.ListenAddress = listenAddress
 		}
 		root.API.PoolMaxConns = parsePositiveInt32(lookup, apiPoolMaxConnsEnv, "api.pool_max_conns", &problems)
+		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
@@ -135,6 +163,53 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		return Root{}, validationError{problems: problems}
 	}
 	return root, nil
+}
+
+func parseWeComCallback(lookup environmentLookup, problems *[]string) WeComCallback {
+	corpID, corpIDPresent := lookup(weComCallbackCorpIDEnv)
+	token, tokenPresent := lookup(weComCallbackTokenEnv)
+	aesKey, aesKeyPresent := lookup(weComCallbackAESKeyEnv)
+	if !corpIDPresent && !tokenPresent && !aesKeyPresent {
+		return WeComCallback{}
+	}
+	if !corpIDPresent || !tokenPresent || !aesKeyPresent || corpID == "" || token == "" || aesKey == "" {
+		*problems = append(*problems, "wecom.callback requires corp_id, token, and aes_key together")
+		return WeComCallback{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.callback.corp_id is invalid")
+	}
+	if !validCallbackToken(token) {
+		*problems = append(*problems, "wecom.callback.token is invalid")
+	}
+	if !validEncodingAESKey(aesKey) {
+		*problems = append(*problems, "wecom.callback.aes_key is invalid")
+	}
+	return WeComCallback{Enabled: true, CorpID: corpID, Token: CallbackSecret{value: token}, EncodingAESKey: CallbackSecret{value: aesKey}}
+}
+
+func validWeComCorpID(value string) bool {
+	if len(value) == 0 || len(value) > 128 || strings.TrimSpace(value) != value {
+		return false
+	}
+	for _, character := range value {
+		if !(character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || character == '_' || character == '-') {
+			return false
+		}
+	}
+	return true
+}
+
+func validCallbackToken(value string) bool {
+	return len(value) > 0 && len(value) <= 256 && strings.TrimSpace(value) == value
+}
+
+func validEncodingAESKey(value string) bool {
+	if len(value) != 43 || strings.TrimSpace(value) != value {
+		return false
+	}
+	decoded, err := base64.StdEncoding.DecodeString(value + "=")
+	return err == nil && len(decoded) == 32
 }
 
 func selectedComponents(role appruntime.Role) (needAPI, needWorker, valid bool) {

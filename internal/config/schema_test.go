@@ -136,6 +136,39 @@ func TestStartupFieldValidationBoundaries(t *testing.T) {
 	}
 }
 
+func TestLoadWeComCallbackIsAtomicAndRedacted(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:         "postgres://db/aicrm",
+		apiListenAddressEnv:    "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:     "1",
+		weComCallbackCorpIDEnv: "wx5823bf96d3bd56c7",
+		weComCallbackTokenEnv:  "callback-token-sentinel",
+		weComCallbackAESKeyEnv: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.WeCom.Callback.Enabled || root.WeCom.Callback.CorpID != values[weComCallbackCorpIDEnv] {
+		t.Fatalf("callback load = %#v, %v", root.WeCom.Callback, err)
+	}
+	if root.WeCom.Callback.Token.Value() != values[weComCallbackTokenEnv] || root.WeCom.Callback.EncodingAESKey.Value() != values[weComCallbackAESKeyEnv] {
+		t.Fatal("callback credentials were not preserved")
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weComCallbackTokenEnv]) || strings.Contains(formatted, values[weComCallbackAESKeyEnv]) {
+			t.Fatalf("Root formatting leaked callback credential: %q", formatted)
+		}
+	}
+	delete(values, weComCallbackTokenEnv)
+	_, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err == nil || err.Error() != "invalid startup configuration: wecom.callback requires corp_id, token, and aes_key together" {
+		t.Fatalf("partial callback configuration error = %v", err)
+	}
+	values[weComCallbackTokenEnv] = " callback-token-sentinel"
+	_, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err == nil || err.Error() != "invalid startup configuration: wecom.callback.token is invalid" || strings.Contains(err.Error(), values[weComCallbackTokenEnv]) {
+		t.Fatalf("invalid callback token error = %v", err)
+	}
+}
+
 func TestDatabaseURLFormattingIsRedacted(t *testing.T) {
 	value := DatabaseURL{value: "postgres://user:secret@db/aicrm"}
 	root := Root{Database: Database{URL: value}}

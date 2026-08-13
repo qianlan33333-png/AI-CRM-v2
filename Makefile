@@ -22,7 +22,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p2-s15-acceptance
 .PHONY: p2-s16-acceptance
 .PHONY: p2-s18-acceptance
-.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c02a-acceptance p3-c02b-acceptance p3-c02d-acceptance p3-c02e-acceptance p3-c03-migration-acceptance p3-c07a-acceptance p3-c07b2-acceptance p3-r4b-identity-storage-acceptance p3-s05a-acceptance
+.PHONY: p3-c00-acceptance p3-c01a-contract p3-c01a-migration-acceptance p3-c02a-acceptance p3-c02b-acceptance p3-c02d-acceptance p3-c02e-acceptance p3-c03-migration-acceptance p3-c07a-acceptance p3-c07b2-acceptance p3-r4b-identity-storage-acceptance p3-s05a-acceptance p3-w1-acceptance
 .PHONY: g2-runtime-image-acceptance
 .PHONY: g2-release-archive-contract
 .PHONY: g2-web-edge-contract
@@ -267,6 +267,9 @@ p2-s15-acceptance:
 p2-s16-acceptance:
 	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=60s ./acceptance/p2s16
 	@/bin/bash -eu -o pipefail -c 'env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) run ./acceptance/p2s16/snapshotgen | env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./snapshot-gate compare ../acceptance/snapshots/catalog.v1.json'
+
+p3-w1-acceptance:
+	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=30s ./internal/wecom/callback ./internal/config ./cmd/aicrm
 
 p2-s18-acceptance:
 	@GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 ./internal/platform/deployment ./cmd/aicrm-config
