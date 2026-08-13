@@ -3179,6 +3179,42 @@ slices:
       - LIVE_MIGRATION_NOT_EXECUTED
       - REAL_WECOM_NOT_EXECUTED
       - REAL_OUTBOUND_NOT_EXECUTED
+  - slice_id: P3-S04
+    title: segment-periodic-river-refresh-worker-chain
+    owner: Codex-Sol
+    status: local_candidate_scope_frozen_at_two_slice_corrections
+    base_sha: 0c0e58b80d67586255cbd10df5d206f977e2595f
+    dependency: P3_S01_S02_S03_S04A_S04B_MERGED_EXACT_MAIN_THREE_REQUIRED_CI_SUCCESS
+    branch: slice/p3-s04-river-refresh-pipeline
+    decision_anchor: P3-S04-2026-08-13
+    scope:
+      - single_scheduler_catalog_periodic_heavy_job
+      - scheduled_segment_candidate_read_and_closed_UTC_cron_match
+      - heavy_worker_delegates_only_to_existing_RefreshOnce
+      - PG16_14_River_periodic_to_worker_to_transactional_event_black_box
+      - no_DDL_public_port_HTTP_OpenAPI_UI_or_external_effect
+    tests:
+      - LOCAL_segment_cron_and_worker_race_PASS
+      - LOCAL_PG16_14_55433_River_periodic_heavy_worker_refresh_event_PASS
+      - PENDING_local_full_ci_go_and_web_gates
+    handwritten_scope: 6_business_files_plus_tests_generated_sqlc_card_and_ledger
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 1
+    verification_induced_correction_count: 2
+    correction_notes:
+      - slice:first_cron_matcher_used_an_incorrect_internal_parser_return_signature
+      - slice:first_scheduled_sqlc_reader_did_not_adapt_pgtype_nullable_refresh_cron
+      - scope:historical_S04A_S04B_receipt_contract_requires_new_S04_paths_not_mutation_of_refresh_cron_or_refresh_sql
+      - infra:host_Node_25_9_0_was_rejected_by_pinned_bootstrap_then_Node_24_18_0_reran_without_lockfile_change
+      - verification:first_PG_segment_fixture_lacked_existing_S04B_refresh_mode_and_refresh_cron_columns
+      - verification:first_River_black_box_expected_a_stale_fixture_member_and_closed_the_pool_before_runtime_stop
+    external_gates:
+      - REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE
+      - PRODUCTION_DATABASE_NOT_EXECUTED
+      - LIVE_MIGRATION_NOT_EXECUTED
+      - REAL_WECOM_NOT_EXECUTED
+      - REAL_OUTBOUND_NOT_EXECUTED
   - slice_id: INFRA-SEC-01
     title: secret-scan-bundle-fixture-cleanup-lifecycle
     owner: Codex-Sol

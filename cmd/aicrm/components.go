@@ -10,10 +10,14 @@ import (
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
+	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
+	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
 )
 
 var errInvalidWorkerDatabaseConfig = errors.New("invalid worker database configuration")
@@ -72,6 +76,24 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, partitionWorker); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	scheduledRefreshes, err := segmentstore.NewScheduledRefreshRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	refreshWorker, err := segmentworker.NewScheduledRefreshWorker(
+		scheduledRefreshes,
+		segmentapp.NewRefreshService(platformstore.NewUnitOfWork(pool), segmentstore.NewRefreshRepository(), eventstore.NewAppender()),
+		time.Now,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, refreshWorker); err != nil {
 		pool.Close()
 		return nil, err
 	}

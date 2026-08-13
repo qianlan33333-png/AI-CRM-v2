@@ -950,11 +950,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  4cfe3b80221d4f4085b9d50d44c669a12092ce57eb370f996611a36ecccc258a
+  29187866f75a7ba24d7187e70fa974961d66dd49c999742c28dea039990d358c
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  f03266d464632c2929db97e8fc07dcf69be4fbc2707346e3a437b0272366ebd9
+  267820b4fbf667ec7fb4036ee6fbb46459312ef4d23cd97984371c98fbca1080
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1476,7 +1476,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  eef078b78a7839d44237e641349bfb9facd442524105f606ff46924444ac3efd
+  ee5f998cd42f14790c7e065ccb0bd88edf2ddcb8c603a8b974f1a860c69470ea
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1496,13 +1496,13 @@ verify_index_sha256 internal/platform/store/uow_test.go \
 verify_index_sha256 cmd/aicrm/main.go \
   52fe62cdda6653e597ca338c4cb9a47605b47fb15c21410f6156f6d05691d180
 verify_index_sha256 cmd/aicrm/components.go \
-  c576ecae3bd2d237775f7e373ff5c99dd160860583d008042e159a97fb24a376
+  aa569d3f24c8416cf236f6cd322d5f221d8286bc7bcfb87ab801f745cb3ead46
 verify_index_sha256 cmd/aicrm/components_test.go \
   b81bf5c6370a3e89dbd99308d7ad31cdb03e716e76c77f412544ab32318a56e0
 verify_index_sha256 cmd/aicrm/scheduler.go \
-  b31c60bfd11ee2a70546d6bfe0420e7a957d1baefa3a6ecb48a6d8013ad41c76
+  4e64f1baadef3111255bdde2b8263e03a1184ae6204fd1b0096ecc72129cc5e1
 verify_index_sha256 cmd/aicrm/scheduler_test.go \
-  775381cd93cdcc96307b947e57541529ebca147dfedd524673c7bc54e090d15a
+  21a7441fcfd1faef6a54636dc937e0b949be262f513b841bd7de62bedac54d36
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
