@@ -24,6 +24,7 @@ startup_environment=(
   AICRM_DATABASE_URL
   AICRM_HTTP_LISTEN_ADDRESS
   AICRM_API_PGX_MAX_CONNS
+  AICRM_IDENTITY_HMAC_KEY
   AICRM_WORKER_PGX_MAX_CONNS
   AICRM_RIVER_CRITICAL_MAX_WORKERS
   AICRM_RIVER_EVENT_MAX_WORKERS
@@ -107,7 +108,7 @@ for bad_args in '--role=api --role=worker' 'api' '--debug'; do
 done
 
 expect_exit 1 --role=all
-for field_name in database.url api.listen_address api.pool_max_conns worker.pool_max_conns \
+for field_name in database.url api.listen_address api.pool_max_conns identity.hmac_key worker.pool_max_conns \
   worker.queues.critical worker.queues.event worker.queues.outbound \
   worker.queues.sync worker.queues.heavy worker.queues.ai; do
   grep -Fq "$field_name" "$test_root/stderr"
@@ -116,6 +117,7 @@ done
 
 export AICRM_DATABASE_URL='not-a-url-database-password-sentinel'
 export AICRM_HTTP_LISTEN_ADDRESS='127.0.0.1:8080'
+export AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 export AICRM_API_PGX_MAX_CONNS='not-a-number'
 export AICRM_WORKER_PGX_MAX_CONNS='0'
 export AICRM_RIVER_CRITICAL_MAX_WORKERS='2'

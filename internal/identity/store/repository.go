@@ -24,8 +24,248 @@ var _ identityapp.ResolveStore = (*Repository)(nil)
 var _ identityapp.BindStore = (*Repository)(nil)
 var _ identityapp.IngestStore = (*Repository)(nil)
 var _ identityapp.PendingReplayStore = (*Repository)(nil)
+var _ identityapp.MergeReviewStore = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) ListPendingMergeReviews(
+	ctx context.Context,
+	afterID int64,
+	limit int32,
+) ([]identityapp.MergeReviewRecord, error) {
+	if repository == nil || afterID < 0 || limit < 1 || limit > identityapp.MergeReviewMaximumLimit+1 {
+		return nil, identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := identitydb.New(tx).ListPendingMergeReviews(ctx, identitydb.ListPendingMergeReviewsParams{
+		AfterID: afterID, PageLimit: limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]identityapp.MergeReviewRecord, 0, len(rows))
+	for _, row := range rows {
+		record, convertErr := mergeReviewRecord(
+			row.ID, row.State, row.IdentityID, row.Kind, row.Scope, row.NormalizedValue,
+			row.ReviewFingerprint, row.FingerprintKeyVersion, row.CandidateCustomerIds,
+			row.PolicyVersion, row.Version, row.CreatedAt, row.ResolvedAt,
+		)
+		if convertErr != nil {
+			return nil, convertErr
+		}
+		result = append(result, record)
+	}
+	return result, nil
+}
+
+func (repository *Repository) ReserveMergeReviewReceipt(
+	ctx context.Context,
+	operation string,
+	keyDigest, payloadHMAC []byte,
+) (identityapp.MergeReviewReceipt, error) {
+	if repository == nil || !validMergeReviewOperation(operation) || len(keyDigest) != 32 || len(payloadHMAC) != 32 {
+		return identityapp.MergeReviewReceipt{}, identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityapp.MergeReviewReceipt{}, err
+	}
+	queries := identitydb.New(tx)
+	id, err := queries.ReserveMergeReviewReceipt(ctx, identitydb.ReserveMergeReviewReceiptParams{
+		Operation: operation, KeyDigest: keyDigest, PayloadHmac: payloadHMAC,
+	})
+	if err == nil {
+		if id <= 0 {
+			return identityapp.MergeReviewReceipt{}, identityapp.ErrMergeReviewUnavailable
+		}
+		return identityapp.MergeReviewReceipt{ID: id}, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return identityapp.MergeReviewReceipt{}, err
+	}
+	row, err := queries.LoadMergeReviewReceipt(ctx, identitydb.LoadMergeReviewReceiptParams{
+		Operation: operation, KeyDigest: keyDigest,
+	})
+	if err != nil {
+		return identityapp.MergeReviewReceipt{}, err
+	}
+	status := identityport.MergeReviewStatus(row.ResultStatus.String)
+	if row.State != "completed" || !row.ResultStatus.Valid || !row.ResultPendingEventID.Valid ||
+		row.ResultPendingEventID.Int64 <= 0 ||
+		(status != identityport.MergeReviewApproved && status != identityport.MergeReviewRejected) {
+		return identityapp.MergeReviewReceipt{}, identityapp.ErrMergeReviewUnavailable
+	}
+	return identityapp.MergeReviewReceipt{
+		Found: true, PayloadHMAC: append([]byte(nil), row.PayloadHmac...),
+		ReviewID: row.ResultPendingEventID.Int64, Status: status,
+	}, nil
+}
+
+func (repository *Repository) LockMergeReview(ctx context.Context, reviewID int64) (identityapp.MergeReviewRecord, error) {
+	if repository == nil || reviewID <= 0 {
+		return identityapp.MergeReviewRecord{}, identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityapp.MergeReviewRecord{}, err
+	}
+	row, err := identitydb.New(tx).LockMergeReview(ctx, reviewID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityapp.MergeReviewRecord{}, identityapp.ErrMergeReviewNotFound
+	}
+	if err != nil {
+		return identityapp.MergeReviewRecord{}, err
+	}
+	return mergeReviewRecord(
+		row.ID, row.State, row.IdentityID, row.Kind, row.Scope, row.NormalizedValue,
+		row.ReviewFingerprint, row.FingerprintKeyVersion, row.CandidateCustomerIds,
+		row.PolicyVersion, row.Version, row.CreatedAt, row.ResolvedAt,
+	)
+}
+
+func (repository *Repository) LockActiveMergeReviewCustomers(
+	ctx context.Context,
+	customerIDs []contactport.CustomerID,
+) ([]contactport.CustomerID, error) {
+	if repository == nil || len(customerIDs) != 2 || customerIDs[0] <= 0 || customerIDs[0] >= customerIDs[1] {
+		return nil, identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := identitydb.New(tx).LockActiveMergeReviewCustomers(ctx, []int64{int64(customerIDs[0]), int64(customerIDs[1])})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]contactport.CustomerID, 0, len(rows))
+	for _, id := range rows {
+		result = append(result, contactport.CustomerID(id))
+	}
+	return result, nil
+}
+
+func (repository *Repository) InsertManualCustomerMergeAudit(ctx context.Context, audit identityapp.ManualMergeAudit) (int64, error) {
+	if repository == nil || audit.PrimaryCustomerID <= 0 || audit.MergedCustomerID <= 0 ||
+		audit.PrimaryCustomerID == audit.MergedCustomerID || strings.TrimSpace(audit.PolicyVersion) == "" ||
+		len(audit.PolicyVersion) > 200 || len(audit.ReviewFingerprint) != 16 || audit.FingerprintVersion <= 0 ||
+		strings.TrimSpace(string(audit.Actor)) == "" || len(audit.Actor) > 200 || !json.Valid(audit.Detail) {
+		return 0, identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	id, err := identitydb.New(tx).InsertManualCustomerMergeAudit(ctx, identitydb.InsertManualCustomerMergeAuditParams{
+		PrimaryCustomerID: int64(audit.PrimaryCustomerID), MergedCustomerID: int64(audit.MergedCustomerID),
+		PolicyVersion: audit.PolicyVersion, ReviewFingerprint: append([]byte(nil), audit.ReviewFingerprint...),
+		FingerprintKeyVersion: audit.FingerprintVersion, OperatedBy: string(audit.Actor),
+		Detail: append([]byte(nil), audit.Detail...),
+	})
+	if err != nil {
+		return 0, err
+	}
+	if id <= 0 {
+		return 0, identityapp.ErrMergeReviewUnavailable
+	}
+	return id, nil
+}
+
+func (repository *Repository) ResolveMergeReview(
+	ctx context.Context,
+	reviewID, expectedVersion int64,
+	status identityport.MergeReviewStatus,
+) (identityapp.MergeReviewRecord, error) {
+	if repository == nil || reviewID <= 0 || expectedVersion <= 0 ||
+		(status != identityport.MergeReviewApproved && status != identityport.MergeReviewRejected) {
+		return identityapp.MergeReviewRecord{}, identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityapp.MergeReviewRecord{}, err
+	}
+	queries := identitydb.New(tx)
+	changed, err := queries.ResolveMergeReview(ctx, identitydb.ResolveMergeReviewParams{
+		ResultStatus: string(status), ReviewID: reviewID, ExpectedVersion: expectedVersion,
+	})
+	if err != nil {
+		return identityapp.MergeReviewRecord{}, err
+	}
+	if changed != 1 {
+		return identityapp.MergeReviewRecord{}, identityapp.ErrMergeReviewConflict
+	}
+	return repository.LockMergeReview(ctx, reviewID)
+}
+
+func (repository *Repository) CompleteMergeReviewReceipt(
+	ctx context.Context,
+	receipt identityapp.MergeReviewReceipt,
+	review identityapp.MergeReviewRecord,
+	mergeAuditID int64,
+) error {
+	if repository == nil || receipt.ID <= 0 || review.ReviewID <= 0 ||
+		(review.Status != identityport.MergeReviewApproved && review.Status != identityport.MergeReviewRejected) ||
+		(review.Status == identityport.MergeReviewApproved) != (mergeAuditID > 0) {
+		return identityapp.ErrMergeReviewInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	params := identitydb.CompleteMergeReviewReceiptParams{
+		ResultStatus: string(review.Status), ReviewID: review.ReviewID,
+		PolicyVersion: review.PolicyVersion, ReceiptID: receipt.ID,
+	}
+	if mergeAuditID > 0 {
+		params.ResultMergeAuditID = pgtype.Int8{Int64: mergeAuditID, Valid: true}
+	}
+	changed, err := identitydb.New(tx).CompleteMergeReviewReceipt(ctx, params)
+	if err != nil {
+		return err
+	}
+	if changed != 1 {
+		return identityapp.ErrMergeReviewUnavailable
+	}
+	return nil
+}
+
+func mergeReviewRecord(
+	id int64,
+	state string,
+	identityID int64,
+	kind, scope, normalizedValue string,
+	fingerprint []byte,
+	fingerprintVersion pgtype.Int2,
+	customerIDs []int64,
+	policy string,
+	version int64,
+	createdAt, resolvedAt pgtype.Timestamptz,
+) (identityapp.MergeReviewRecord, error) {
+	status := identityport.MergeReviewStatus(state)
+	if id <= 0 || identityID <= 0 || !fingerprintVersion.Valid || !createdAt.Valid ||
+		len(customerIDs) != 2 || customerIDs[0] <= 0 || customerIDs[0] >= customerIDs[1] {
+		return identityapp.MergeReviewRecord{}, identityapp.ErrMergeReviewUnavailable
+	}
+	record := identityapp.MergeReviewRecord{
+		ReviewID: id, Status: status, Kind: identityport.IDKind(kind), Scope: scope,
+		NormalizedValue: normalizedValue, IdentityID: identityID,
+		IdentityFingerprint: append([]byte(nil), fingerprint...), FingerprintVersion: fingerprintVersion.Int16,
+		CustomerIDs:   []contactport.CustomerID{contactport.CustomerID(customerIDs[0]), contactport.CustomerID(customerIDs[1])},
+		PolicyVersion: policy, Version: version, CreatedAt: createdAt.Time.UTC(),
+	}
+	if resolvedAt.Valid {
+		resolved := resolvedAt.Time.UTC()
+		record.ResolvedAt = &resolved
+	}
+	return record, nil
+}
+
+func validMergeReviewOperation(operation string) bool {
+	return operation == "merge_review_approve" || operation == "merge_review_reject"
+}
 
 func (repository *Repository) UpsertNormalized(
 	ctx context.Context,

@@ -131,6 +131,7 @@ func TestAPIProcessPublishesHealthAndProtectsFrozenOperations(t *testing.T) {
 		"AICRM_DATABASE_URL=postgres://aicrm:acceptance-only@127.0.0.1:5432/aicrm?sslmode=disable",
 		"AICRM_HTTP_LISTEN_ADDRESS="+address,
 		"AICRM_API_PGX_MAX_CONNS=10",
+		"AICRM_IDENTITY_HMAC_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
 	)
 	var stderr bytes.Buffer
 	command.Stderr = &stderr
@@ -157,6 +158,9 @@ func TestAPIProcessPublishesHealthAndProtectsFrozenOperations(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/bind"},
 		{http.MethodPost, "/api/v1/identity/ingest"},
 		{http.MethodPost, "/api/v1/identity/resolve"},
+		{http.MethodGet, "/api/v1/identity/merge-reviews"},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve"},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject"},
 		{http.MethodGet, "/api/v1/stages"},
 		{http.MethodPost, "/api/v1/stages"},
 		{http.MethodPatch, "/api/v1/stages/1"},

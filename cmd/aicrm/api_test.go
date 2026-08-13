@@ -44,6 +44,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve},
+		{http.MethodGet, "/api/v1/identity/merge-reviews", authport.CapabilityIdentityReviewRead},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", authport.CapabilityIdentityReviewWrite},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", authport.CapabilityIdentityReviewWrite},
 		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite},
 		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
@@ -59,8 +62,12 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			if test.capability == authport.CapabilityStagesWrite ||
 				test.capability == authport.CapabilityCustomersWrite ||
 				test.capability == authport.CapabilityIdentityBind ||
-				test.capability == authport.CapabilityIdentityIngest {
+				test.capability == authport.CapabilityIdentityIngest ||
+				test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+			}
+			if test.capability == authport.CapabilityIdentityReviewWrite {
+				request.Header.Set("Idempotency-Key", "router-review-key")
 			}
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
@@ -91,6 +98,8 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodDelete, "/api/v1/customers/1/tags/2", ""},
 		{http.MethodPost, "/api/v1/identity/bind", `{}`},
 		{http.MethodPost, "/api/v1/identity/ingest", `{}`},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", `{"expected_version":1,"primary_customer_id":1,"reason":"confirm"}`},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", `{"expected_version":1,"reason":"reject"}`},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

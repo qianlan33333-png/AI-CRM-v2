@@ -147,6 +147,43 @@ func (q *Queries) CompleteIngestReceipt(ctx context.Context, arg CompleteIngestR
 	return result.RowsAffected(), nil
 }
 
+const completeMergeReviewReceipt = `-- name: CompleteMergeReviewReceipt :execrows
+UPDATE identity_operation_receipts
+SET state = 'completed',
+    result_status = $1::text,
+    result_customer_id = $2::bigint,
+    result_merge_audit_id = $3::bigint,
+    result_pending_event_id = $4::bigint,
+    result_policy_version = $5::text,
+    completed_at = now()
+WHERE id = $6::bigint
+  AND state = 'in_progress'
+`
+
+type CompleteMergeReviewReceiptParams struct {
+	ResultStatus       string      `json:"result_status"`
+	ResultCustomerID   pgtype.Int8 `json:"result_customer_id"`
+	ResultMergeAuditID pgtype.Int8 `json:"result_merge_audit_id"`
+	ReviewID           int64       `json:"review_id"`
+	PolicyVersion      string      `json:"policy_version"`
+	ReceiptID          int64       `json:"receipt_id"`
+}
+
+func (q *Queries) CompleteMergeReviewReceipt(ctx context.Context, arg CompleteMergeReviewReceiptParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeMergeReviewReceipt,
+		arg.ResultStatus,
+		arg.ResultCustomerID,
+		arg.ResultMergeAuditID,
+		arg.ReviewID,
+		arg.PolicyVersion,
+		arg.ReceiptID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const completePendingReplay = `-- name: CompletePendingReplay :execrows
 UPDATE pending_events
 SET state = 'replayed', version = version + 1, resolved_at = now()
@@ -258,6 +295,54 @@ func (q *Queries) InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAu
 	return id, err
 }
 
+const insertManualCustomerMergeAudit = `-- name: InsertManualCustomerMergeAudit :one
+INSERT INTO customer_merges (
+  primary_customer_id,
+  merged_customer_id,
+  mode,
+  policy_version,
+  review_fingerprint,
+  fingerprint_key_version,
+  operated_by,
+  detail
+) VALUES (
+  $1::bigint,
+  $2::bigint,
+  'manual',
+  $3::text,
+  $4::bytea,
+  $5::smallint,
+  $6::text,
+  $7::jsonb
+)
+RETURNING id
+`
+
+type InsertManualCustomerMergeAuditParams struct {
+	PrimaryCustomerID     int64  `json:"primary_customer_id"`
+	MergedCustomerID      int64  `json:"merged_customer_id"`
+	PolicyVersion         string `json:"policy_version"`
+	ReviewFingerprint     []byte `json:"review_fingerprint"`
+	FingerprintKeyVersion int16  `json:"fingerprint_key_version"`
+	OperatedBy            string `json:"operated_by"`
+	Detail                []byte `json:"detail"`
+}
+
+func (q *Queries) InsertManualCustomerMergeAudit(ctx context.Context, arg InsertManualCustomerMergeAuditParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertManualCustomerMergeAudit,
+		arg.PrimaryCustomerID,
+		arg.MergedCustomerID,
+		arg.PolicyVersion,
+		arg.ReviewFingerprint,
+		arg.FingerprintKeyVersion,
+		arg.OperatedBy,
+		arg.Detail,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertPendingIngest = `-- name: InsertPendingIngest :one
 INSERT INTO pending_events (
   kind,
@@ -340,6 +425,87 @@ func (q *Queries) InsertVerifiedPhoneMergeReview(ctx context.Context, arg Insert
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const listPendingMergeReviews = `-- name: ListPendingMergeReviews :many
+SELECT
+  pending.id,
+  pending.state,
+  identity_row.id AS identity_id,
+  identity_row.kind,
+  identity_row.scope,
+  identity_row.normalized_value,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
+  pending.candidate_customer_ids,
+  pending.policy_version,
+  pending.version,
+  pending.created_at,
+  pending.resolved_at
+FROM pending_events AS pending
+JOIN identities AS identity_row
+  ON identity_row.id = pending.identity_ids[1]
+WHERE pending.kind = 'merge_review'
+  AND pending.state = 'pending'
+  AND cardinality(pending.identity_ids) = 1
+  AND pending.id > $1::bigint
+ORDER BY pending.id
+LIMIT $2::int
+`
+
+type ListPendingMergeReviewsParams struct {
+	AfterID   int64 `json:"after_id"`
+	PageLimit int32 `json:"page_limit"`
+}
+
+type ListPendingMergeReviewsRow struct {
+	ID                    int64              `json:"id"`
+	State                 string             `json:"state"`
+	IdentityID            int64              `json:"identity_id"`
+	Kind                  string             `json:"kind"`
+	Scope                 string             `json:"scope"`
+	NormalizedValue       string             `json:"normalized_value"`
+	ReviewFingerprint     []byte             `json:"review_fingerprint"`
+	FingerprintKeyVersion pgtype.Int2        `json:"fingerprint_key_version"`
+	CandidateCustomerIds  []int64            `json:"candidate_customer_ids"`
+	PolicyVersion         string             `json:"policy_version"`
+	Version               int64              `json:"version"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	ResolvedAt            pgtype.Timestamptz `json:"resolved_at"`
+}
+
+func (q *Queries) ListPendingMergeReviews(ctx context.Context, arg ListPendingMergeReviewsParams) ([]ListPendingMergeReviewsRow, error) {
+	rows, err := q.db.Query(ctx, listPendingMergeReviews, arg.AfterID, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPendingMergeReviewsRow{}
+	for rows.Next() {
+		var i ListPendingMergeReviewsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.State,
+			&i.IdentityID,
+			&i.Kind,
+			&i.Scope,
+			&i.NormalizedValue,
+			&i.ReviewFingerprint,
+			&i.FingerprintKeyVersion,
+			&i.CandidateCustomerIds,
+			&i.PolicyVersion,
+			&i.Version,
+			&i.CreatedAt,
+			&i.ResolvedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const loadBindMergeReview = `-- name: LoadBindMergeReview :one
@@ -462,6 +628,38 @@ func (q *Queries) LoadIngestReceipt(ctx context.Context, keyDigest []byte) (Load
 	return i, err
 }
 
+const loadMergeReviewReceipt = `-- name: LoadMergeReviewReceipt :one
+SELECT payload_hmac, state, result_status, result_pending_event_id
+FROM identity_operation_receipts
+WHERE operation = $1::text
+  AND idempotency_scope = $1::text || '.v1'
+  AND key_digest = $2::bytea
+`
+
+type LoadMergeReviewReceiptParams struct {
+	Operation string `json:"operation"`
+	KeyDigest []byte `json:"key_digest"`
+}
+
+type LoadMergeReviewReceiptRow struct {
+	PayloadHmac          []byte      `json:"payload_hmac"`
+	State                string      `json:"state"`
+	ResultStatus         pgtype.Text `json:"result_status"`
+	ResultPendingEventID pgtype.Int8 `json:"result_pending_event_id"`
+}
+
+func (q *Queries) LoadMergeReviewReceipt(ctx context.Context, arg LoadMergeReviewReceiptParams) (LoadMergeReviewReceiptRow, error) {
+	row := q.db.QueryRow(ctx, loadMergeReviewReceipt, arg.Operation, arg.KeyDigest)
+	var i LoadMergeReviewReceiptRow
+	err := row.Scan(
+		&i.PayloadHmac,
+		&i.State,
+		&i.ResultStatus,
+		&i.ResultPendingEventID,
+	)
+	return i, err
+}
+
 const loadPendingIngest = `-- name: LoadPendingIngest :one
 SELECT kind
 FROM pending_events
@@ -524,6 +722,35 @@ func (q *Queries) LockActiveBindCustomersForMerge(ctx context.Context, customerI
 	return items, nil
 }
 
+const lockActiveMergeReviewCustomers = `-- name: LockActiveMergeReviewCustomers :many
+SELECT id
+FROM customers
+WHERE id = ANY($1::bigint[])
+  AND is_deleted = FALSE
+ORDER BY id
+FOR UPDATE
+`
+
+func (q *Queries) LockActiveMergeReviewCustomers(ctx context.Context, customerIds []int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, lockActiveMergeReviewCustomers, customerIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockIdentityForBind = `-- name: LockIdentityForBind :one
 SELECT id, customer_id
 FROM identities
@@ -548,6 +775,67 @@ func (q *Queries) LockIdentityForBind(ctx context.Context, arg LockIdentityForBi
 	row := q.db.QueryRow(ctx, lockIdentityForBind, arg.Kind, arg.Scope, arg.NormalizedValue)
 	var i LockIdentityForBindRow
 	err := row.Scan(&i.ID, &i.CustomerID)
+	return i, err
+}
+
+const lockMergeReview = `-- name: LockMergeReview :one
+SELECT
+  pending.id,
+  pending.state,
+  identity_row.id AS identity_id,
+  identity_row.kind,
+  identity_row.scope,
+  identity_row.normalized_value,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
+  pending.candidate_customer_ids,
+  pending.policy_version,
+  pending.version,
+  pending.created_at,
+  pending.resolved_at
+FROM pending_events AS pending
+JOIN identities AS identity_row
+  ON identity_row.id = pending.identity_ids[1]
+WHERE pending.id = $1::bigint
+  AND pending.kind = 'merge_review'
+  AND cardinality(pending.identity_ids) = 1
+FOR UPDATE OF pending, identity_row
+`
+
+type LockMergeReviewRow struct {
+	ID                    int64              `json:"id"`
+	State                 string             `json:"state"`
+	IdentityID            int64              `json:"identity_id"`
+	Kind                  string             `json:"kind"`
+	Scope                 string             `json:"scope"`
+	NormalizedValue       string             `json:"normalized_value"`
+	ReviewFingerprint     []byte             `json:"review_fingerprint"`
+	FingerprintKeyVersion pgtype.Int2        `json:"fingerprint_key_version"`
+	CandidateCustomerIds  []int64            `json:"candidate_customer_ids"`
+	PolicyVersion         string             `json:"policy_version"`
+	Version               int64              `json:"version"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	ResolvedAt            pgtype.Timestamptz `json:"resolved_at"`
+}
+
+func (q *Queries) LockMergeReview(ctx context.Context, reviewID int64) (LockMergeReviewRow, error) {
+	row := q.db.QueryRow(ctx, lockMergeReview, reviewID)
+	var i LockMergeReviewRow
+	err := row.Scan(
+		&i.ID,
+		&i.State,
+		&i.IdentityID,
+		&i.Kind,
+		&i.Scope,
+		&i.NormalizedValue,
+		&i.ReviewFingerprint,
+		&i.FingerprintKeyVersion,
+		&i.CandidateCustomerIds,
+		&i.PolicyVersion,
+		&i.Version,
+		&i.CreatedAt,
+		&i.ResolvedAt,
+	)
 	return i, err
 }
 
@@ -707,6 +995,66 @@ func (q *Queries) ReserveIngestReceipt(ctx context.Context, arg ReserveIngestRec
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const reserveMergeReviewReceipt = `-- name: ReserveMergeReviewReceipt :one
+INSERT INTO identity_operation_receipts (
+  operation,
+  idempotency_scope,
+  key_digest,
+  command_schema_version,
+  payload_hmac,
+  payload_hmac_key_version,
+  result_schema_version
+) VALUES (
+  $1::text,
+  $1::text || '.v1',
+  $2::bytea,
+  1,
+  $3::bytea,
+  1,
+  1
+)
+ON CONFLICT (operation, idempotency_scope, key_digest) DO NOTHING
+RETURNING id
+`
+
+type ReserveMergeReviewReceiptParams struct {
+	Operation   string `json:"operation"`
+	KeyDigest   []byte `json:"key_digest"`
+	PayloadHmac []byte `json:"payload_hmac"`
+}
+
+func (q *Queries) ReserveMergeReviewReceipt(ctx context.Context, arg ReserveMergeReviewReceiptParams) (int64, error) {
+	row := q.db.QueryRow(ctx, reserveMergeReviewReceipt, arg.Operation, arg.KeyDigest, arg.PayloadHmac)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const resolveMergeReview = `-- name: ResolveMergeReview :execrows
+UPDATE pending_events
+SET state = $1::text,
+    version = version + 1,
+    resolved_at = now()
+WHERE id = $2::bigint
+  AND kind = 'merge_review'
+  AND state = 'pending'
+  AND version = $3::bigint
+`
+
+type ResolveMergeReviewParams struct {
+	ResultStatus    string `json:"result_status"`
+	ReviewID        int64  `json:"review_id"`
+	ExpectedVersion int64  `json:"expected_version"`
+}
+
+func (q *Queries) ResolveMergeReview(ctx context.Context, arg ResolveMergeReviewParams) (int64, error) {
+	result, err := q.db.Exec(ctx, resolveMergeReview, arg.ResultStatus, arg.ReviewID, arg.ExpectedVersion)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const upsertNormalizedIdentity = `-- name: UpsertNormalizedIdentity :one

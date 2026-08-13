@@ -22,6 +22,9 @@ import (
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
+	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
+	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -42,14 +45,15 @@ type apiComponent struct {
 
 type candidateHandler struct {
 	*authhttp.Handler
-	customers      *contacthttp.CustomerListHandler
-	customerDetail *contacthttp.CustomerDetailHandler
-	customerEvents *contacthttp.CustomerEventHandler
-	mutations      *contacthttp.CustomerMutationHandler
-	tags           *contacthttp.TagCatalogHandler
-	stages         *contacthttp.Handler
-	segments       *segmenthttp.CRUDHandler
-	segmentRefresh *segmenthttp.RefreshHandler
+	customers       *contacthttp.CustomerListHandler
+	customerDetail  *contacthttp.CustomerDetailHandler
+	customerEvents  *contacthttp.CustomerEventHandler
+	mutations       *contacthttp.CustomerMutationHandler
+	tags            *contacthttp.TagCatalogHandler
+	stages          *contacthttp.Handler
+	segments        *segmenthttp.CRUDHandler
+	segmentRefresh  *segmenthttp.RefreshHandler
+	identityReviews *identityhttp.ReviewHandler
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
@@ -116,6 +120,18 @@ func (handler *candidateHandler) UpdateSegment(writer http.ResponseWriter, reque
 
 func (handler *candidateHandler) ListSegmentMembers(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID, params api.ListSegmentMembersParams) {
 	handler.segments.ListSegmentMembers(writer, request, segmentID, params)
+}
+
+func (handler *candidateHandler) ListIdentityMergeReviews(writer http.ResponseWriter, request *http.Request, params api.ListIdentityMergeReviewsParams) {
+	handler.identityReviews.ListIdentityMergeReviews(writer, request, params)
+}
+
+func (handler *candidateHandler) ApproveIdentityMergeReview(writer http.ResponseWriter, request *http.Request, reviewID api.MergeReviewID, params api.ApproveIdentityMergeReviewParams) {
+	handler.identityReviews.ApproveIdentityMergeReview(writer, request, reviewID, params)
+}
+
+func (handler *candidateHandler) RejectIdentityMergeReview(writer http.ResponseWriter, request *http.Request, reviewID api.MergeReviewID, params api.RejectIdentityMergeReviewParams) {
+	handler.identityReviews.RejectIdentityMergeReview(writer, request, reviewID, params)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -200,11 +216,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	identityRepository := identitystore.NewRepository()
+	identityReviewHandler, err := identityhttp.NewReviewHandler(identityapp.NewMergeReviewService(
+		uow, identityRepository, contactstore.NewMergePortRepository(), eventstore.NewAppender(), config.Identity.HMACKey.Value(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
-		segments: segmentCRUDHandler, segmentRefresh: segmentRefreshHandler,
+		segments:        segmentCRUDHandler,
+		segmentRefresh:  segmentRefreshHandler,
+		identityReviews: identityReviewHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
@@ -346,6 +372,9 @@ func newAPIHandlerWithCallback(logger *slog.Logger, callbackHandler http.Handler
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, true, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, true, http.HandlerFunc(wrapper.IngestIdentityEvent)},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},
+		{http.MethodGet, "/api/v1/identity/merge-reviews", authport.CapabilityIdentityReviewRead, false, http.HandlerFunc(wrapper.ListIdentityMergeReviews)},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/{review_id}/approve", authport.CapabilityIdentityReviewWrite, true, http.HandlerFunc(wrapper.ApproveIdentityMergeReview)},
+		{http.MethodPost, "/api/v1/identity/merge-reviews/{review_id}/reject", authport.CapabilityIdentityReviewWrite, true, http.HandlerFunc(wrapper.RejectIdentityMergeReview)},
 		{http.MethodGet, "/api/v1/segments", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegments)},
 		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
 		{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.UpdateSegment)},

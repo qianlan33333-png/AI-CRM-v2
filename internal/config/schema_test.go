@@ -22,7 +22,9 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 		syncWorkersEnv:        "1",
 		heavyWorkersEnv:       "1",
 		aiWorkersEnv:          "1",
+		identityHMACKeyEnv:    strings.Repeat("A", 43),
 	}
+	var identityKey IdentityHMACKey
 	sQueues := QueueConcurrency{Critical: 2, Event: 1, Outbound: 1, Sync: 1, Heavy: 1, AI: 1}
 	tests := []struct {
 		name string
@@ -30,9 +32,9 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 		omit string
 		want Root
 	}{
-		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}}},
+		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Identity: Identity{HMACKey: identityKey}}},
 		{name: "worker", role: appruntime.RoleWorker, omit: apiListenAddressEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}}},
-		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}}},
+		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}, Identity: Identity{HMACKey: identityKey}}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -62,12 +64,13 @@ func TestLoadReturnsAllRelevantProblemsWithoutValues(t *testing.T) {
 		syncWorkersEnv:        "1",
 		heavyWorkersEnv:       "1",
 		aiWorkersEnv:          "1",
+		identityHMACKeyEnv:    "bad-" + sentinel,
 	}
 	_, err := load(appruntime.RoleAll, mapLookup(values))
 	if !errors.Is(err, ErrInvalid) {
 		t.Fatalf("load() error = %v, want ErrInvalid", err)
 	}
-	want := "invalid startup configuration: database.url must be a valid postgres URL; api.listen_address must be host:port; api.pool_max_conns must be a positive integer; worker.pool_max_conns must be a positive integer"
+	want := "invalid startup configuration: database.url must be a valid postgres URL; api.listen_address must be host:port; api.pool_max_conns must be a positive integer; identity.hmac_key must be 32-byte canonical base64url; worker.pool_max_conns must be a positive integer"
 	if err.Error() != want {
 		t.Fatalf("load() error = %q, want %q", err, want)
 	}
@@ -78,7 +81,7 @@ func TestLoadReturnsAllRelevantProblemsWithoutValues(t *testing.T) {
 
 func TestLoadRejectsMissingFieldsAndInvalidRole(t *testing.T) {
 	_, err := load(appruntime.RoleAll, mapLookup(nil))
-	want := "invalid startup configuration: database.url is required; api.listen_address is required; api.pool_max_conns is required; worker.pool_max_conns is required; worker.queues.critical is required; worker.queues.event is required; worker.queues.outbound is required; worker.queues.sync is required; worker.queues.heavy is required; worker.queues.ai is required"
+	want := "invalid startup configuration: database.url is required; api.listen_address is required; api.pool_max_conns is required; identity.hmac_key is required; worker.pool_max_conns is required; worker.queues.critical is required; worker.queues.event is required; worker.queues.outbound is required; worker.queues.sync is required; worker.queues.heavy is required; worker.queues.ai is required"
 	if err == nil || err.Error() != want {
 		t.Fatalf("missing load() error = %v, want %q", err, want)
 	}
@@ -144,6 +147,7 @@ func TestLoadWeComCallbackIsAtomicAndRedacted(t *testing.T) {
 		weComCallbackCorpIDEnv: "wx5823bf96d3bd56c7",
 		weComCallbackTokenEnv:  "callback-token-sentinel",
 		weComCallbackAESKeyEnv: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG",
+		identityHMACKeyEnv:     strings.Repeat("A", 43),
 	}
 	root, err := load(appruntime.RoleAPI, mapLookup(values))
 	if err != nil || !root.WeCom.Callback.Enabled || root.WeCom.Callback.CorpID != values[weComCallbackCorpIDEnv] {
