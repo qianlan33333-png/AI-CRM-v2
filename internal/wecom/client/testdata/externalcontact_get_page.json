@@ -1,0 +1,9 @@
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "follow_user": [
+    {"userid": "owner-a"},
+    {"userid": "owner-b"}
+  ],
+  "next_cursor": "fixture-next-cursor"
+}
