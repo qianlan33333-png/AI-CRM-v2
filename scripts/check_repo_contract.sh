@@ -922,7 +922,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  58cd5113bcd4ecfcdb32bb6d05d32c1e549e6efc5ca65121c375d1fca063c71b
+  3f620c456f3c302382d7ae5b6c370a2253ff9040e2f13606075e94de6820594b
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -950,11 +950,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  a7780a70a2375736510af5207c1a0a63312c24528750c7aba4fbc5b778019bae
+  029e3d2ceacede71467893cbfc005a601ff5a510c8e9bfb34efc189d1b5c0273
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  e2ea8db62c1fb7414d50747b5f84b60c9a2a8903273f7450ad36bd01c087f97b
+  a8ca0a5ef3feed43ba16a7d329324343058cadb76fc97ce3d66228db02659dc4
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1476,7 +1476,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  22219e89d25317a7c69bc489b9671e146bc3f7cb8cc741b62fec481ef69cd78e
+  2c243ccac8325164a4fe9218196ab7070480202076bca30097bf67683fa2cfd4
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1604,7 +1604,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  35c52dd8c1ad64685e6f7cf8c6fb035b9ebbafae0a9cb076c6b4d9a366c3448b
+  79994375f907b66e2f8b9b3150f85a401436e17a54acd854ec6a8884537925ab
 verify_index_sha256 cmd/aicrm/api_test.go \
   e5644f581546f70a71ea2c94f5bdb66e47504b4cdcd3d66ff8f2e2088d353bef
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -1790,7 +1790,7 @@ verify_index_sha256 docs/execution/slices/M0-6.md \
 verify_index_sha256 docs/architecture/canonical.md \
   0a3de6e1707271bc0390da23be9fc12e313b05363cb88325e8d050811cf31845
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  565f2a9037e89cb4cb0e422adf48834b7c84fc53fa0511a13f595c375e275a14
+  b265596dfe4d8a9617119afad3afc5f5ea86e0b39636754e07d669a7d88f2b0a
 verify_index_sha256 scripts/test_repo_contract.sh \
   0541c7b526a424f8ef6d6009bd35ca899f33746e7e700d3bed530388c29523fa
 verify_index_sha256 acceptance/p0s02/static_contract.sh \
@@ -3307,7 +3307,7 @@ p3s00_ownership="$(git show :docs/architecture/table-ownership.yml)"
 for anchor in \
   '  segment:' \
   '    package: internal/segment' \
-  '    tables: [segments, segment_members]' \
+  '    tables: [segments, segment_members, segment_refresh_receipts]' \
   '  segment:' \
   '    tables: [customers, customer_tags, tags]' \
   '    reason: indexed_audience_compilation'; do

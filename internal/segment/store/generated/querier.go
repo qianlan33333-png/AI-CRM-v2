@@ -11,11 +11,13 @@ import (
 )
 
 type Querier interface {
+	AcceptSegmentRefreshReceipt(ctx context.Context, arg AcceptSegmentRefreshReceiptParams) (AcceptSegmentRefreshReceiptRow, error)
 	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
 	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
 	InsertSegmentMembersForRefresh(ctx context.Context, arg InsertSegmentMembersForRefreshParams) error
 	ListScheduledSegmentRefreshes(ctx context.Context) ([]ListScheduledSegmentRefreshesRow, error)
 	LockSegmentDefinitionForRefresh(ctx context.Context, segmentID int64) ([]byte, error)
+	ReserveSegmentRefreshReceipt(ctx context.Context, arg ReserveSegmentRefreshReceiptParams) (ReserveSegmentRefreshReceiptRow, error)
 	SelectSegmentAddedAfter(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentAddedBefore(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentChannelAny(ctx context.Context, channelIds []int64) ([]int64, error)

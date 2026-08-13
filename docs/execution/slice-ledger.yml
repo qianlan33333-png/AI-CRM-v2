@@ -3537,6 +3537,24 @@ slices:
     correction_notes: []
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
 
+  - slice_id: P3-S05A
+    title: segment-refresh-request-accepted-receipt-and-heavy-enqueue
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: d0c32885c9b063068696d9e52570f70e6f702c72
+    dependency: P3_S04_REFRESH_ONCE_AND_HEAVY_QUEUE_CLOSED_ON_EXACT_MAIN
+    branch: slice/s5a-refresh-acceptance
+    scope: [POST_api_v1_segments_segment_id_refresh, transaction_bound_segment_refresh_receipt, explicit_heavy_River_enqueue, same_command_accepted_replay, different_command_conflict, PG16_14_acceptance]
+    excluded_scope: [OpenAPI_change_CCRUD_UI_worker_RefreshOnce_scheduler_external_effects_production_database_live_migration]
+    tests: [LOCAL_segment_app_and_http_contract_PASS, LOCAL_PG16_14_55433_receipt_plus_heavy_job_PASS, LOCAL_ownership_and_snapshot_catalog_validation_PASS]
+    handwritten_scope: 8_business_files_plus_tests_generated_sqlc_slice_card_and_ledger
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [slice:initial_conformance_assertion_overclaimed_the_partial_RequestRefresh_service_as_the_full_frozen_Segment_Service_then_the_invalid_assertion_was_removed_without_widening_the_public_port, slice:full_architecture_gate_rejected_a_raw_River_driver_in_Segment_store_then_minimized_the_fix_to_the_platform_insert_only_adapter_without_registering_or_running_a_worker, verification:first_full_gate_detected_the_expected_sqlc_generated_hash_manifest_sync_then_the_generated_manifest_and_frozen_hash_anchor_were_updated]
+    external_gates: [REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_OUTBOUND_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
