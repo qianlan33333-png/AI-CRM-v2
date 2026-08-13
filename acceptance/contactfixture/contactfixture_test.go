@@ -27,6 +27,15 @@ func TestCreateCustomerRequiresTransaction(t *testing.T) {
 	}
 }
 
+func TestSoftDeleteCustomerRequiresValidTransactionAndCustomer(t *testing.T) {
+	if err := SoftDeleteCustomer(context.Background(), nil, 1); !errors.Is(err, ErrNilTransaction) {
+		t.Fatalf("SoftDeleteCustomer nil transaction error=%v, want ErrNilTransaction", err)
+	}
+	if err := SoftDeleteCustomer(context.Background(), fixtureTx{}, 0); !errors.Is(err, ErrNilTransaction) {
+		t.Fatalf("SoftDeleteCustomer zero customer error=%v, want ErrNilTransaction", err)
+	}
+}
+
 type fixtureTx struct {
 	pgx.Tx
 	row pgx.Row

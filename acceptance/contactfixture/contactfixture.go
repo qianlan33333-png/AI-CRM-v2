@@ -26,3 +26,22 @@ RETURNING id`, "acceptance-contact-fixture").Scan(&id); err != nil {
 	}
 	return id, nil
 }
+
+// SoftDeleteCustomer marks a Contact-owned parent unavailable to an acceptance
+// scenario without allowing another domain to write customers directly.
+func SoftDeleteCustomer(ctx context.Context, tx pgx.Tx, customerID int64) error {
+	if tx == nil || customerID <= 0 {
+		return ErrNilTransaction
+	}
+	commandTag, err := tx.Exec(ctx, `
+UPDATE customers
+SET is_deleted = TRUE
+WHERE id = $1::bigint`, customerID)
+	if err != nil {
+		return fmt.Errorf("soft-delete contact-owned acceptance customer: %w", err)
+	}
+	if commandTag.RowsAffected() != 1 {
+		return fmt.Errorf("soft-delete contact-owned acceptance customer: customer not found")
+	}
+	return nil
+}

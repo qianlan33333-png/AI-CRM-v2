@@ -7,7 +7,38 @@ package identitydb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const lookupNormalizedIdentity = `-- name: LookupNormalizedIdentity :one
+SELECT
+  i.customer_id AS identity_customer_id,
+  c.is_deleted AS customer_is_deleted
+FROM identities AS i
+LEFT JOIN customers AS c ON c.id = i.customer_id
+WHERE i.kind = $1::text
+  AND i.scope = $2::text
+  AND i.normalized_value = $3::text
+`
+
+type LookupNormalizedIdentityParams struct {
+	Kind            string `json:"kind"`
+	Scope           string `json:"scope"`
+	NormalizedValue string `json:"normalized_value"`
+}
+
+type LookupNormalizedIdentityRow struct {
+	IdentityCustomerID pgtype.Int8 `json:"identity_customer_id"`
+	CustomerIsDeleted  pgtype.Bool `json:"customer_is_deleted"`
+}
+
+func (q *Queries) LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error) {
+	row := q.db.QueryRow(ctx, lookupNormalizedIdentity, arg.Kind, arg.Scope, arg.NormalizedValue)
+	var i LookupNormalizedIdentityRow
+	err := row.Scan(&i.IdentityCustomerID, &i.CustomerIsDeleted)
+	return i, err
+}
 
 const upsertNormalizedIdentity = `-- name: UpsertNormalizedIdentity :one
 INSERT INTO identities (

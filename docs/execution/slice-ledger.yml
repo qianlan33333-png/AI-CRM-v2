@@ -3521,6 +3521,21 @@ slices:
     verification_induced_correction_count: 0
     correction_notes: [slice:remote_ownership_lint_rejected_direct_event_log_access_in_the_identity_acceptance_test_then_event_observation_was_moved_to_the_events_port_recorder]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED]
+  - slice_id: P3-I2
+    title: identity-resolve-explicit-found-not-found-conflict
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: d0c32885c9b063068696d9e52570f70e6f702c72
+    dependency: P3_I1_CLOSED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-i2-identity-resolve-main
+    scope: [reuse_v1_normalizer, exact_postgresql_identity_lookup, floating_not_found, active_binding_found, unavailable_binding_conflict, no_implicit_customer_creation]
+    excluded_scope: [Bind_Ingest_merge_review_replay_HTTP_API_OpenAPI_public_ports_migration_ADR_keyring_root_dependencies_production_database_live_migration_real_wecom]
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: []
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED]
 
 phase_closeouts:
   P2:

@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error)
 	UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormalizedIdentityParams) (UpsertNormalizedIdentityRow, error)
 }
 
