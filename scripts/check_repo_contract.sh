@@ -925,7 +925,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  8882e550e16ebf339c26eb9572ca4feb564f072492e13fe7b272d9d3fb91fc05
+  9ce231ffc27424cb56fffac8615ce43c072a8610425701fc3770e358eb782e9d
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1479,7 +1479,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  fa054a74bc3f0f1003da30b6c2a551cfc48f56dde2a7f82244afc7c92af8465d
+  bfc5255aef1526a2e3a4c538ef5d2b57ac11493592995f48473a1125cfbcdecd
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
