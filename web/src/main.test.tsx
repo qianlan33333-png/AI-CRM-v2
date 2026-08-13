@@ -154,6 +154,12 @@ describe("Web shell routes", () => {
     expect(customers).toContain("筛选条件");
     expect(customers).not.toContain("客户模块边界已预留");
 
+    vi.stubGlobal("window", { location: { pathname: "/segments" } });
+    const segments = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(segments).toContain("人群包列表");
+    expect(segments).toContain("条件编辑器");
+    expect(segments).not.toContain("人群包模块边界已预留");
+
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
     const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(missing).toContain("404");
@@ -207,10 +213,10 @@ describe("Web shell routes", () => {
   it("shows only routes allowed by the frozen role table", () => {
     expect(
       navigationLinks(adminSession.principal).map((link) => link.href),
-    ).toEqual(["/", "/customers", "/stages", "/settings"]);
+    ).toEqual(["/", "/customers", "/stages", "/segments", "/settings"]);
     expect(
       navigationLinks({ adminUserID: 8, role: "ops" }).map((link) => link.href),
-    ).toEqual(["/", "/customers", "/stages"]);
+    ).toEqual(["/", "/customers", "/stages", "/segments"]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
         (link) => link.href,
@@ -220,7 +226,7 @@ describe("Web shell routes", () => {
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(html).toContain('href="/settings"');
     expect(html).toContain('href="/stages"');
-    expect(html).not.toContain('href="/segments"');
+    expect(html).toContain('href="/segments"');
     expect(html).not.toContain('href="/outbound"');
   });
 

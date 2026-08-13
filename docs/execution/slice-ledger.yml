@@ -3617,6 +3617,23 @@ slices:
     correction_notes: [slice:standard_00018_down_up_recreated_receipt_IDs_but_event_idempotency_used_receipt_ID_and_collided_with_retained_event_log; changed_event_key_to_actor_and_command_digest_without_expanding_behavior, verification:initial_pg_temp_negative_created_the_shadow_table_through_pool_then_opened_a_separate_transaction; corrected_to_create_and_exercise_the_shadow_in_the_same_transaction_without_runtime_scope_change, verification:initial_local_repeat_reused_the_same_receipt_actor_and_key_then_isolated_each_acceptance_run_with_a_fresh_synthetic_admin_actor_and_key_without_runtime_scope_change]
     external_gates: [REAL_AUDIENCE_THREE_DEFINITION_DIFF_PENDING_EXTERNAL_GATE, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_OUTBOUND_NOT_EXECUTED]
 
+  - slice_id: P3-S06
+    title: segment-ui-list-condition-member-preview-manual-refresh
+    owner: Codex-Sol
+    status: local_gates_pass_ready_for_pr
+    base_sha: 69da552b468eeeabcdb1c9a9bd86f8de39d141fc
+    dependency: OUTBOUND_O3_00019_CLOSED_EXACT_MAIN_GREEN_AND_SEGMENT_S5B_R2_CLOSED
+    branch: slice/p3-s6-segment-ui
+    scope: [Segment_navigation_permission, typed_client_list_create_update_member_preview_manual_refresh, closed_DSL_condition_editor, CSRF_and_idempotency_headers, accepted_refresh_reloads_server_facts]
+    excluded_scope: [backend_semantics_DDL_OpenAPI_public_port_dynamic_SQL_DSL_compiler_River_behavior_production_database_live_migration_real_wecom_outbound]
+    tests: [LOCAL_web_strict_typecheck_unit_render_and_segments_browser_smoke_PASS]
+    handwritten_scope: web_transport_UI_route_permission_and_style_under_12_business_files_plus_tests_slice_card_ledger_and_contract_hash_receipts
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [slice:self_review_found_the_closed_AND_OR_group_parser_was_not_initially_exposed_from_a_single_predicate_then_added_visual_group_promotion_and_nested_group_creation, verification:initial_test_fixture_asserted_an_absent_optional_cursor_property_and_undercast_generated_response_unions_then_corrected_the_fixture_without_changing_UI_behavior]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_OUTBOUND_NOT_EXECUTED]
+
   - slice_id: P3-W1
     title: wecom-callback-url-verification-signature-aes-corp-id-boundary
     owner: Codex-Sol

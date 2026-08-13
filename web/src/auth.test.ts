@@ -146,12 +146,14 @@ describe("permission navigation", () => {
       "/",
       "/customers",
       "/stages",
+      "/segments",
       "/settings",
     ]);
     expect(permittedRoutePaths({ adminUserID: 1, role: "ops" })).toEqual([
       "/",
       "/customers",
       "/stages",
+      "/segments",
     ]);
     expect(
       permittedRoutePaths({ adminUserID: 1, role: "sales", staffID: 2 }),

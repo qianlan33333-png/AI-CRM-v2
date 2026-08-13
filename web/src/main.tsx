@@ -25,6 +25,8 @@ import { CustomerDetailPage } from "./customer-detail-ui";
 import type { CustomerDetailTransport } from "./customer-detail";
 import { StagesPage } from "./stages-ui";
 import type { StageTransport } from "./stages";
+import { SegmentsPage } from "./segments-ui";
+import type { SegmentTransport } from "./segments";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -100,6 +102,7 @@ export interface AppProps {
   customerTransport?: CustomerTransport;
   customerDetailTransport?: CustomerDetailTransport;
   stageTransport?: StageTransport;
+  segmentTransport?: SegmentTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -217,6 +220,7 @@ function PageContent({
   customerDetailTransport,
   customerID,
   stageTransport,
+  segmentTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -226,6 +230,7 @@ function PageContent({
   customerDetailTransport?: CustomerDetailTransport;
   customerID?: number;
   stageTransport?: StageTransport;
+  segmentTransport?: SegmentTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -284,6 +289,17 @@ function PageContent({
     );
   }
 
+  if (route.path === "/segments") {
+    return (
+      <SegmentsPage
+        role={principal.role}
+        transport={segmentTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -332,6 +348,7 @@ export function App({
   customerTransport,
   customerDetailTransport,
   stageTransport,
+  segmentTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -476,6 +493,7 @@ export function App({
             customerDetailTransport={customerDetailTransport}
             customerID={customerID}
             stageTransport={stageTransport}
+            segmentTransport={segmentTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
