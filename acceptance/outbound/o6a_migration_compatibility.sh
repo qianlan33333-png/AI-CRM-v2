@@ -11,6 +11,7 @@ MIGRATION_TEST_DATABASE_URL="$database_url" \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
 
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 22
 
 /usr/bin/env -u BASH_ENV -u ENV \
   GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -61,4 +62,4 @@ read -r upgrade_waterline upgrade_history marker_count <<<"$(
        FROM goose_db_version
       WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "22" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]
+[[ "$upgrade_waterline" = "23" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]

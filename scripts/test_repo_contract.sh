@@ -3309,6 +3309,61 @@ if (cd "$o6a_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); 
   fail "P3-O6A PG/River acceptance CI disconnect was accepted"
 fi
 
+o6b1_cross_catalog="$(make_fixture p3-o6b1-cross-catalog)"
+printf '%s\n' '-- SELECT * FROM river_job;' >>"$o6b1_cross_catalog/internal/outbound/store/queries/control.sql"
+restage_p2s18_receipt "$o6b1_cross_catalog" internal/outbound/store/queries/control.sql
+if (cd "$o6b1_cross_catalog" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 Outbound SQLC River catalog access was accepted"
+fi
+
+o6b1_direct_database="$(make_fixture p3-o6b1-direct-database)"
+sed -i.bak 's/client[.]client[.]JobListTx(ctx, tx, params)/tx.QueryRow(ctx, "SELECT * FROM river_job")/' "$o6b1_direct_database/internal/platform/jobqueue/outbound_cancel.go"
+rm -f "$o6b1_direct_database/internal/platform/jobqueue/outbound_cancel.go.bak"
+restage_p2s18_receipt "$o6b1_direct_database" internal/platform/jobqueue/outbound_cancel.go
+if (cd "$o6b1_direct_database" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 direct platform database call was accepted"
+fi
+
+o6b1_dynamic_where="$(make_fixture p3-o6b1-dynamic-where)"
+sed -i.bak 's/Queues(outboundQueueName)/Where("args @> {}")/' "$o6b1_dynamic_where/internal/platform/jobqueue/outbound_cancel.go"
+rm -f "$o6b1_dynamic_where/internal/platform/jobqueue/outbound_cancel.go.bak"
+restage_p2s18_receipt "$o6b1_dynamic_where" internal/platform/jobqueue/outbound_cancel.go
+if (cd "$o6b1_dynamic_where" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 dynamic River Where predicate was accepted"
+fi
+
+o6b1_destructive_down="$(make_fixture p3-o6b1-destructive-down)"
+sed -i.bak 's/SELECT 1;/DROP TABLE outbound_control_receipts;/' "$o6b1_destructive_down/migrations/00023_outbound_cancel_control.sql"
+rm -f "$o6b1_destructive_down/migrations/00023_outbound_cancel_control.sql.bak"
+restage_p2s18_receipt "$o6b1_destructive_down" migrations/00023_outbound_cancel_control.sql
+if (cd "$o6b1_destructive_down" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 destructive control down migration was accepted"
+fi
+
+o6b1_manual_retry="$(make_fixture p3-o6b1-manual-retry)"
+sed -i.bak "s/operation = 'cancel'/operation IN ('cancel', 'manual_retry')/" "$o6b1_manual_retry/migrations/00023_outbound_cancel_control.sql"
+rm -f "$o6b1_manual_retry/migrations/00023_outbound_cancel_control.sql.bak"
+restage_p2s18_receipt "$o6b1_manual_retry" migrations/00023_outbound_cancel_control.sql
+if (cd "$o6b1_manual_retry" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 premature manual retry storage was accepted"
+fi
+
+o6b1_transition_weakened="$(make_fixture p3-o6b1-transition-weakened)"
+sed -i.bak 's/target[.]Status != TaskStatusPending/target.Status != TaskStatusOutcomeUnknown/' "$o6b1_transition_weakened/internal/outbound/app/control.go"
+rm -f "$o6b1_transition_weakened/internal/outbound/app/control.go.bak"
+restage_p2s18_receipt "$o6b1_transition_weakened" internal/outbound/app/control.go
+if (cd "$o6b1_transition_weakened" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 pending-only transition weakening was accepted"
+fi
+
+o6b1_ci_disconnect="$(make_fixture p3-o6b1-ci-disconnect)"
+sed -i.bak '/P3O6B1_CANCEL_TEST_DATABASE_URL=.*p3-o6b1-cancel-acceptance/d' "$o6b1_ci_disconnect/.github/workflows/application-go.yml"
+rm -f "$o6b1_ci_disconnect/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$o6b1_ci_disconnect" .github/workflows/application-go.yml
+if (cd "$o6b1_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B1 PG/River acceptance CI disconnect was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

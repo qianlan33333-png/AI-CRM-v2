@@ -53,11 +53,13 @@ owners:
 
   outbound:
     package: internal/outbound
-    tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts, outbound_send_attempt_history]
+    tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts, outbound_send_attempt_history, outbound_task_job_links, outbound_control_receipts]
     constraints:
       outbound_tasks: provider_result_driven_status_projection_without_retry_scheduling
       outbound_send_attempts: stable_provider_attempt_receipts_owned_by_outbound
       outbound_send_attempt_history: river_attempt_lifecycle_history_without_business_retry_scheduling
+      outbound_task_job_links: immutable_outbound_task_to_river_job_generation_link
+      outbound_control_receipts: transaction_scoped_idempotent_cancel_results
 
   events:
     package: internal/events

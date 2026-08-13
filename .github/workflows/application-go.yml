@@ -88,6 +88,7 @@ jobs:
           P3O4_SENDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o4-sender-acceptance
           P3O5_STATUS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o5-status-acceptance
           P3O6A_RETRY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6a-retry-acceptance
+          P3O6B1_CANCEL_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6b1-cancel-acceptance
   web:
     name: application / web
     runs-on: ubuntu-latest
