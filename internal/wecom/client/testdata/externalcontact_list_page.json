@@ -1,0 +1,9 @@
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "external_userid": [
+    "woEXTERNALUSERID-1",
+    "woEXTERNALUSERID-2"
+  ],
+  "next_cursor": "external-contact-next-cursor"
+}

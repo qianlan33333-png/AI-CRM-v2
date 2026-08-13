@@ -105,6 +105,35 @@ func TestExternalContactReaderReturnsFixtureCursorPage(t *testing.T) {
 	}
 }
 
+func TestExternalContactReaderListsExternalContactsFromFixture(t *testing.T) {
+	fixture, err := os.ReadFile("testdata/externalcontact_list_page.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet || request.URL.Path != "/cgi-bin/externalcontact/list" {
+			t.Fatalf("request = %s %s", request.Method, request.URL.Path)
+		}
+		query := request.URL.Query()
+		if query.Get("access_token") != "fixture-token" || query.Get("userid") != "owner-fixture" || query.Get("cursor") != "prior-cursor" {
+			t.Fatalf("query = %q", request.URL.RawQuery)
+		}
+		_, _ = writer.Write(fixture)
+	}))
+	defer server.Close()
+	reader, err := NewExternalContactReader(ReaderConfig{BaseURL: server.URL, HTTPClient: server.Client(), TokenProvider: staticTokenProvider{token: AccessToken{value: "fixture-token"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := reader.ListExternalContacts(context.Background(), "owner-fixture", "prior-cursor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(page.ExternalUserIDs, []string{"woEXTERNALUSERID-1", "woEXTERNALUSERID-2"}) || page.NextCursor != "external-contact-next-cursor" {
+		t.Fatalf("ListExternalContacts() = %#v", page)
+	}
+}
+
 func TestReadersFailClosedForMalformedAndUpstreamResponses(t *testing.T) {
 	for _, response := range []string{`{"errcode":0,"follow_user":[{}]}`, `{"errcode":48002,"errmsg":"forbidden"}`, `not-json`} {
 		t.Run(response, func(t *testing.T) {
@@ -129,6 +158,20 @@ func TestReadersFailClosedForMalformedAndUpstreamResponses(t *testing.T) {
 	}
 	if strings.Contains((&CorpSecret{value: "secret-value"}).String(), "secret-value") || strings.Contains((&AccessToken{value: "token-value"}).String(), "token-value") {
 		t.Fatal("credential formatting leaked a value")
+	}
+}
+
+func TestExternalContactReaderRejectsDuplicateExternalUserIDs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte(`{"errcode":0,"external_userid":["wo-1","wo-1"]}`))
+	}))
+	defer server.Close()
+	reader, err := NewExternalContactReader(ReaderConfig{BaseURL: server.URL, HTTPClient: server.Client(), TokenProvider: staticTokenProvider{token: AccessToken{value: "fixture-token"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = reader.ListExternalContacts(context.Background(), "owner-fixture", ""); !errors.Is(err, ErrUnexpectedResponse) {
+		t.Fatalf("ListExternalContacts() error = %v, want duplicate rejection", err)
 	}
 }
 
