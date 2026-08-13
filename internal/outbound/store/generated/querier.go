@@ -12,11 +12,15 @@ type Querier interface {
 	AcceptOutboundBatch(ctx context.Context, arg AcceptOutboundBatchParams) (AcceptOutboundBatchRow, error)
 	AcceptOutboundBatchChunk(ctx context.Context, id int64) (AcceptOutboundBatchChunkRow, error)
 	AcceptOutboundEnqueueReceipt(ctx context.Context, arg AcceptOutboundEnqueueReceiptParams) (AcceptOutboundEnqueueReceiptRow, error)
+	CompleteOutboundSendAttempt(ctx context.Context, arg CompleteOutboundSendAttemptParams) (CompleteOutboundSendAttemptRow, error)
 	CreateAcceptedOutboundTask(ctx context.Context, arg CreateAcceptedOutboundTaskParams) (int64, error)
 	CreateOutboundBatchTask(ctx context.Context, arg CreateOutboundBatchTaskParams) (int64, error)
+	LoadOutboundSendRequest(ctx context.Context, id int64) (LoadOutboundSendRequestRow, error)
 	ReserveOutboundBatch(ctx context.Context, arg ReserveOutboundBatchParams) (ReserveOutboundBatchRow, error)
 	ReserveOutboundBatchChunk(ctx context.Context, arg ReserveOutboundBatchChunkParams) (ReserveOutboundBatchChunkRow, error)
 	ReserveOutboundEnqueueReceipt(ctx context.Context, arg ReserveOutboundEnqueueReceiptParams) (ReserveOutboundEnqueueReceiptRow, error)
+	ReserveOutboundSendAttempt(ctx context.Context, arg ReserveOutboundSendAttemptParams) (ReserveOutboundSendAttemptRow, error)
+	StartOutboundSendAttempt(ctx context.Context, id int64) (StartOutboundSendAttemptRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

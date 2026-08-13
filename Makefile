@@ -11,7 +11,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p2-s04-acceptance
-.PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance
+.PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance
 .PHONY: p2-s05-acceptance
 .PHONY: p2-s07-acceptance
 .PHONY: p2-s08-acceptance
@@ -438,6 +438,10 @@ p3-o2-enqueue-one-acceptance:
 p3-o3-enqueue-batch-acceptance:
 	@test -n "$${P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL:-}" || { echo "P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./acceptance/outbound -args -database-url "$$P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL"
+
+p3-o4-sender-acceptance:
+	@test -n "$${P3O4_SENDER_TEST_DATABASE_URL:-}" || { echo "P3O4_SENDER_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=60s -run '^(TestOutboundStorageCatalogWaterlineAndIdentity|TestSender)' ./acceptance/outbound -args -database-url "$$P3O4_SENDER_TEST_DATABASE_URL"
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }

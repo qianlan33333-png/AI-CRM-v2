@@ -30,16 +30,18 @@ func TestOutboundStorageCatalogWaterlineAndIdentity(t *testing.T) {
 	ctx := context.Background()
 
 	var waterline int
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 19 {
-		t.Fatalf("migration waterline=%d err=%v, want 19", waterline, err)
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 20 {
+		t.Fatalf("migration waterline=%d err=%v, want 20", waterline, err)
 	}
 
-	var identity, generation string
-	if err := pool.QueryRow(ctx, `
+	for _, table := range []string{"outbound_tasks", "outbound_send_attempts"} {
+		var identity, generation string
+		if err := pool.QueryRow(ctx, `
 SELECT is_identity, identity_generation
 FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'outbound_tasks' AND column_name = 'id'`).Scan(&identity, &generation); err != nil || identity != "YES" || generation != "ALWAYS" {
-		t.Fatalf("outbound_tasks.id identity=%q generation=%q err=%v, want YES/ALWAYS", identity, generation, err)
+		WHERE table_schema = 'public' AND table_name = $1 AND column_name = 'id'`, table).Scan(&identity, &generation); err != nil || identity != "YES" || generation != "ALWAYS" {
+			t.Fatalf("%s.id identity=%q generation=%q err=%v, want YES/ALWAYS", table, identity, generation, err)
+		}
 	}
 
 	for _, forbidden := range []string{"accepted_event_id", "river_job_id"} {
@@ -310,14 +312,14 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 
 func resetOutboundFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
 		t.Fatalf("reset outbound fixture: %v", err)
 	}
 }
 
 func resetOutboundEnqueueFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
 		t.Fatalf("reset outbound enqueue fixture: %v", err)
 	}
 }
