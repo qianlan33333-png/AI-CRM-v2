@@ -1,5 +1,5 @@
-// Package sqlddl builds a deterministic model of the tables and table
-// constraints that remain effective after applying top-level PostgreSQL DDL.
+// Package sqlddl builds a deterministic model of the tables, constraints, and
+// indexes that remain effective after applying top-level PostgreSQL DDL.
 package sqlddl
 
 import "sort"
@@ -27,6 +27,25 @@ type Constraint struct {
 // normalized complete item, including its type and column modifiers.
 type Column struct {
 	Name      string
+	Canonical string
+}
+
+// IndexKey is one top-level index key expression. Column is populated only
+// when the key is a bare identifier; expression keys leave it empty.
+type IndexKey struct {
+	Column    string
+	Canonical string
+}
+
+// Index is the final effective model for one index. Method is the effective
+// PostgreSQL access method, including the implicit btree default.
+type Index struct {
+	Name      string
+	Table     string
+	Unique    bool
+	Method    string
+	Keys      []IndexKey
+	Predicate string
 	Canonical string
 }
 
@@ -81,7 +100,8 @@ func (t Table) EffectiveConstraints() []Constraint {
 
 // Catalog is the final effective table catalog.
 type Catalog struct {
-	Tables map[string]*Table
+	Tables  map[string]*Table
+	Indexes map[string]Index
 }
 
 // Table returns a value copy of a table by canonical qualified name.
@@ -101,4 +121,33 @@ func (c Catalog) TableNames() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// Index returns an index by canonical qualified name.
+func (c Catalog) Index(name string) (Index, bool) {
+	index, ok := c.Indexes[name]
+	return index, ok
+}
+
+// IndexNames returns deterministic canonical index names.
+func (c Catalog) IndexNames() []string {
+	names := make([]string, 0, len(c.Indexes))
+	for name := range c.Indexes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// IndexesForTable returns the final indexes for a canonical qualified table
+// name in deterministic index-name order.
+func (c Catalog) IndexesForTable(table string) []Index {
+	indexes := make([]Index, 0)
+	for _, index := range c.Indexes {
+		if index.Table == table {
+			indexes = append(indexes, index)
+		}
+	}
+	sort.Slice(indexes, func(i, j int) bool { return indexes[i].Name < indexes[j].Name })
+	return indexes
 }

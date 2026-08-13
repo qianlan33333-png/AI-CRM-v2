@@ -143,3 +143,97 @@ func TestParseRejectsUnbalancedRecognizedAlterTable(t *testing.T) {
 		t.Fatal("Parse() error = nil, want unbalanced ALTER TABLE error")
 	}
 }
+
+func TestParseModelsQualifiedQuotedIndex(t *testing.T) {
+	catalog, err := Parse(`
+		CREATE TABLE "CaseSchema"."Jobs" ("state" text, payload jsonb);
+		CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "CaseSchema"."Jobs State"
+			ON ONLY "CaseSchema"."Jobs" USING "gin" ("state")
+			WHERE payload IS NOT NULL;
+	`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	index, ok := catalog.Index(`"CaseSchema"."Jobs State"`)
+	if !ok {
+		t.Fatal("quoted qualified index not found")
+	}
+	if !index.Unique || index.Table != `"CaseSchema"."Jobs"` || index.Method != "gin" {
+		t.Fatalf("index = %#v", index)
+	}
+	if got, want := index.Keys, []IndexKey{{Column: "state", Canonical: `"state"`}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("index keys = %#v, want %#v", got, want)
+	}
+	if got, want := index.Predicate, "payload is not null"; got != want {
+		t.Fatalf("index predicate = %q, want %q", got, want)
+	}
+}
+
+func TestParseAppliesIndexDDLInStatementOrder(t *testing.T) {
+	catalog, err := Parse(`
+		CREATE TABLE audit.jobs (state text, created_at timestamptz);
+		CREATE INDEX jobs_state ON audit.jobs (state);
+		DROP INDEX audit.jobs_state;
+		DROP INDEX IF EXISTS audit.jobs_created;
+		CREATE INDEX audit.jobs_created ON audit.jobs (created_at DESC);
+	`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	if got, want := catalog.IndexNames(), []string{"audit.jobs_created"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("IndexNames() = %#v, want %#v", got, want)
+	}
+	indexes := catalog.IndexesForTable("audit.jobs")
+	if len(indexes) != 1 || indexes[0].Keys[0].Canonical != "created_at desc" {
+		t.Fatalf("IndexesForTable() = %#v", indexes)
+	}
+}
+
+func TestParseUnqualifiedDropResolvesUniqueSchemaIndex(t *testing.T) {
+	catalog, err := Parse(`
+		CREATE TABLE audit.jobs (state text);
+		CREATE INDEX "jobs state" ON audit.jobs (state);
+		DROP INDEX "jobs state";
+	`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if got := catalog.IndexNames(); len(got) != 0 {
+		t.Fatalf("IndexNames() = %#v, want none", got)
+	}
+}
+
+func TestParseQuotedDotsRemainInsideIdentifierParts(t *testing.T) {
+	catalog, err := Parse(`
+		CREATE TABLE "audit.schema"."jobs.table" (state text);
+		CREATE INDEX "jobs.state" ON "audit.schema"."jobs.table" (state);
+	`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if got, want := catalog.IndexNames(), []string{`"audit.schema"."jobs.state"`}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("IndexNames() = %#v, want %#v", got, want)
+	}
+}
+
+func TestParseRejectsUnknownDropIndexWithoutIfExists(t *testing.T) {
+	if _, err := Parse(`DROP INDEX missing_index;`); err == nil {
+		t.Fatal("Parse() error = nil, want unknown index error")
+	}
+}
+
+func TestParseDropTableRemovesOwnedIndexes(t *testing.T) {
+	catalog, err := Parse(`
+		CREATE TABLE jobs (state text);
+		CREATE INDEX jobs_state ON jobs (state);
+		DROP TABLE jobs;
+	`)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if got := catalog.IndexNames(); len(got) != 0 {
+		t.Fatalf("IndexNames() = %#v, want none", got)
+	}
+}

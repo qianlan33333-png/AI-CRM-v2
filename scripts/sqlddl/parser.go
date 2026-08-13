@@ -12,7 +12,10 @@ func Parse(source string) (Catalog, error) {
 	if err != nil {
 		return Catalog{}, err
 	}
-	catalog := Catalog{Tables: make(map[string]*Table)}
+	catalog := Catalog{
+		Tables:  make(map[string]*Table),
+		Indexes: make(map[string]Index),
+	}
 	for index, statement := range splitStatements(tokens) {
 		if len(statement) == 0 {
 			continue
@@ -72,6 +75,12 @@ func (c Catalog) apply(statement []token) error {
 		return c.applyAlterTable(statement[2:])
 	case keywords(statement, "drop", "table"):
 		return c.applyDropTable(statement[2:])
+	case keywords(statement, "create", "unique", "index"):
+		return c.applyCreateIndex(statement[3:], true)
+	case keywords(statement, "create", "index"):
+		return c.applyCreateIndex(statement[2:], false)
+	case keywords(statement, "drop", "index"):
+		return c.applyDropIndex(statement[2:])
 	default:
 		return nil
 	}
@@ -205,7 +214,214 @@ func (c Catalog) applyDropTable(tokens []token) error {
 		return fmt.Errorf("DROP TABLE references unknown table %s", name)
 	}
 	delete(c.Tables, name)
+	for indexName, index := range c.Indexes {
+		if index.Table == name {
+			delete(c.Indexes, indexName)
+		}
+	}
 	return nil
+}
+
+func (c Catalog) applyCreateIndex(tokens []token, unique bool) error {
+	definition := canonical(tokens)
+	if len(tokens) > 0 && tokens[0].keyword("concurrently") {
+		tokens = tokens[1:]
+	}
+	ifNotExists := false
+	if keywords(tokens, "if", "not", "exists") {
+		ifNotExists = true
+		tokens = tokens[3:]
+	}
+	on := firstTopLevelKeyword(tokens, "on")
+	if on <= 0 {
+		return fmt.Errorf("CREATE INDEX is missing ON")
+	}
+	name, err := qualifiedName(tokens[:on])
+	if err != nil {
+		return fmt.Errorf("CREATE INDEX name: %w", err)
+	}
+	tokens = tokens[on+1:]
+	if len(tokens) > 0 && tokens[0].keyword("only") {
+		tokens = tokens[1:]
+	}
+	tableEnd, err := qualifiedNameEnd(tokens)
+	if err != nil {
+		return fmt.Errorf("CREATE INDEX table: %w", err)
+	}
+	table, err := qualifiedName(tokens[:tableEnd])
+	if err != nil {
+		return fmt.Errorf("CREATE INDEX table: %w", err)
+	}
+	tokens = tokens[tableEnd:]
+	method := "btree"
+	if len(tokens) > 0 && tokens[0].keyword("using") {
+		if len(tokens) < 2 {
+			return fmt.Errorf("CREATE INDEX USING is missing an access method")
+		}
+		var ok bool
+		method, ok = identifierValue(tokens[1])
+		if !ok {
+			return fmt.Errorf("CREATE INDEX has invalid access method %q", tokens[1].raw)
+		}
+		tokens = tokens[2:]
+	}
+	if len(tokens) == 0 || tokens[0].kind != tokenSymbol || tokens[0].raw != "(" {
+		return fmt.Errorf("CREATE INDEX is missing its key list")
+	}
+	close, ok := matchingClose(tokens, 0)
+	if !ok {
+		return fmt.Errorf("CREATE INDEX has an unterminated key list")
+	}
+	keyItems := splitTopLevel(tokens[1:close], ",")
+	keys := make([]IndexKey, 0, len(keyItems))
+	for _, item := range keyItems {
+		if len(item) == 0 {
+			return fmt.Errorf("CREATE INDEX contains an empty key")
+		}
+		key := IndexKey{Canonical: canonical(item)}
+		if len(item) == 1 {
+			key.Column, _ = identifierValue(item[0])
+		}
+		keys = append(keys, key)
+	}
+	trailing := tokens[close+1:]
+	predicate := ""
+	if where := firstTopLevelKeyword(trailing, "where"); where >= 0 {
+		if where == len(trailing)-1 {
+			return fmt.Errorf("CREATE INDEX WHERE is missing a predicate")
+		}
+		predicate = canonical(trailing[where+1:])
+	}
+	name = qualifyIndexName(name, table)
+	if _, exists := c.Indexes[name]; exists {
+		if ifNotExists {
+			return nil
+		}
+		return fmt.Errorf("index %s already exists", name)
+	}
+	c.Indexes[name] = Index{
+		Name:      name,
+		Table:     table,
+		Unique:    unique,
+		Method:    method,
+		Keys:      keys,
+		Predicate: predicate,
+		Canonical: "create " + map[bool]string{true: "unique ", false: ""}[unique] + "index " + definition,
+	}
+	return nil
+}
+
+func (c Catalog) applyDropIndex(tokens []token) error {
+	if len(tokens) > 0 && tokens[0].keyword("concurrently") {
+		tokens = tokens[1:]
+	}
+	ifExists := false
+	if keywords(tokens, "if", "exists") {
+		ifExists = true
+		tokens = tokens[2:]
+	}
+	for len(tokens) > 0 && (tokens[len(tokens)-1].keyword("cascade") || tokens[len(tokens)-1].keyword("restrict")) {
+		tokens = tokens[:len(tokens)-1]
+	}
+	for _, item := range splitTopLevel(tokens, ",") {
+		name, err := qualifiedName(item)
+		if err != nil {
+			return fmt.Errorf("DROP INDEX name: %w", err)
+		}
+		resolved, exists, ambiguous := c.resolveIndexName(name)
+		if ambiguous {
+			return fmt.Errorf("DROP INDEX name %s is ambiguous without a schema", name)
+		}
+		if !exists {
+			if ifExists {
+				continue
+			}
+			return fmt.Errorf("DROP INDEX references unknown index %s", name)
+		}
+		delete(c.Indexes, resolved)
+	}
+	return nil
+}
+
+func qualifiedNameEnd(tokens []token) (int, error) {
+	if len(tokens) == 0 {
+		return 0, fmt.Errorf("missing identifier")
+	}
+	if _, ok := tokens[0].identifier(); !ok {
+		return 0, fmt.Errorf("invalid identifier token %q", tokens[0].raw)
+	}
+	end := 1
+	for end < len(tokens) && tokens[end].kind == tokenSymbol && tokens[end].raw == "." {
+		if end+1 >= len(tokens) {
+			return 0, fmt.Errorf("identifier ends with a dot")
+		}
+		if _, ok := tokens[end+1].identifier(); !ok {
+			return 0, fmt.Errorf("invalid identifier token %q", tokens[end+1].raw)
+		}
+		end += 2
+	}
+	return end, nil
+}
+
+func identifierValue(item token) (string, bool) {
+	switch item.kind {
+	case tokenWord:
+		return strings.ToLower(item.raw), true
+	case tokenQuotedIdentifier:
+		return strings.ReplaceAll(item.raw[1:len(item.raw)-1], `""`, `"`), true
+	default:
+		return "", false
+	}
+}
+
+func qualifyIndexName(name, table string) string {
+	if qualifiedIdentifierDot(name) >= 0 {
+		return name
+	}
+	if dot := qualifiedIdentifierDot(table); dot >= 0 {
+		return table[:dot+1] + name
+	}
+	return name
+}
+
+func (c Catalog) resolveIndexName(name string) (string, bool, bool) {
+	if _, ok := c.Indexes[name]; ok {
+		return name, true, false
+	}
+	if qualifiedIdentifierDot(name) >= 0 {
+		return "", false, false
+	}
+	match := ""
+	for candidate := range c.Indexes {
+		leaf := candidate
+		if dot := qualifiedIdentifierDot(candidate); dot >= 0 {
+			leaf = candidate[dot+1:]
+		}
+		if leaf != name {
+			continue
+		}
+		if match != "" {
+			return "", false, true
+		}
+		match = candidate
+	}
+	return match, match != "", false
+}
+
+func qualifiedIdentifierDot(name string) int {
+	tokens, err := lex(name)
+	if err != nil {
+		return -1
+	}
+	last := -1
+	offset := 0
+	for _, item := range tokens {
+		if item.kind == tokenSymbol && item.raw == "." {
+			last = offset
+		}
+		offset += len(item.raw)
+	}
+	return last
 }
 
 func parseConstraint(tokens []token) (Constraint, bool, error) {
