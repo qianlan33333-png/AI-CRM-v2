@@ -24,12 +24,15 @@ type senderTestRepository struct {
 func (repository *senderTestRepository) ReserveSendAttempt(_ context.Context, command SendCommand) (SendAttempt, error) {
 	repository.reserveCalls++
 	if repository.attempt.ID == 0 {
-		repository.attempt = SendAttempt{ID: 31, RiverJobID: command.RiverJobID, TaskID: command.TaskID, JobKind: command.JobKind, State: SendAttemptReserved}
+		repository.attempt = SendAttempt{
+			ID: 31, HistoryID: 41, RiverJobID: command.RiverJobID, TaskID: command.TaskID, JobKind: command.JobKind,
+			RiverAttempt: command.RiverAttempt, RiverMaxAttempts: command.RiverMaxAttempts, State: SendAttemptReserved,
+		}
 	}
 	return repository.attempt, nil
 }
 
-func (repository *senderTestRepository) StartSendAttempt(context.Context, int64) (SendAttempt, bool, error) {
+func (repository *senderTestRepository) StartSendAttempt(context.Context, SendAttempt) (SendAttempt, bool, error) {
 	repository.startCalls++
 	if repository.attempt.State != SendAttemptReserved {
 		return repository.attempt, false, nil
@@ -64,8 +67,9 @@ func (repository *senderTestRepository) MarkTaskSending(context.Context, SendAtt
 func (repository *senderTestRepository) ProjectTaskResult(_ context.Context, attempt SendAttempt) (TaskResultFact, error) {
 	repository.projectCalls++
 	return TaskResultFact{
-		TaskID: attempt.TaskID, CustomerID: 23, AttemptID: attempt.ID, RiverJobID: attempt.RiverJobID,
-		Status: taskStatusForAttempt(attempt.State), AttemptCount: 1, FailureKind: attempt.FailureKind,
+		TaskID: attempt.TaskID, CustomerID: 23, AttemptID: attempt.ID, HistoryID: attempt.HistoryID, RiverJobID: attempt.RiverJobID,
+		RiverAttempt: attempt.RiverAttempt, RiverMaxAttempts: attempt.RiverMaxAttempts,
+		Status: taskStatusForAttempt(attempt.State), AttemptCount: attempt.RiverAttempt, FailureKind: attempt.FailureKind,
 		ProviderCode: attempt.ProviderCode, ProviderMessageID: attempt.ProviderMessageID, OccurredAt: attempt.CompletedAt,
 	}, nil
 }
@@ -145,7 +149,10 @@ func TestSenderClassifiesProviderFailures(t *testing.T) {
 
 func TestSenderReplayAfterDispatchNeverCallsProviderAgain(t *testing.T) {
 	command := senderTestCommand()
-	repository := &senderTestRepository{attempt: SendAttempt{ID: 31, RiverJobID: command.RiverJobID, TaskID: command.TaskID, JobKind: command.JobKind, State: SendAttemptDispatching}}
+	repository := &senderTestRepository{attempt: SendAttempt{
+		ID: 31, HistoryID: 41, RiverJobID: command.RiverJobID, TaskID: command.TaskID, JobKind: command.JobKind,
+		RiverAttempt: 1, RiverMaxAttempts: 1, State: SendAttemptDispatching,
+	}}
 	provider := &senderTestProvider{}
 	events := &senderTestEvents{}
 	got, err := NewSenderService(enqueueTestUoW{}, repository, events, provider, &senderTestGate{}).Execute(context.Background(), command)
@@ -162,7 +169,10 @@ func TestSenderReplayAfterDispatchNeverCallsProviderAgain(t *testing.T) {
 
 func TestSenderReturnsCompletedReceiptWithoutProviderCall(t *testing.T) {
 	command := senderTestCommand()
-	want := SendAttempt{ID: 31, RiverJobID: command.RiverJobID, TaskID: command.TaskID, JobKind: command.JobKind, State: SendAttemptSucceeded, ProviderMessageID: "fixture-original"}
+	want := SendAttempt{
+		ID: 31, HistoryID: 41, RiverJobID: command.RiverJobID, TaskID: command.TaskID, JobKind: command.JobKind,
+		RiverAttempt: 1, RiverMaxAttempts: 1, State: SendAttemptSucceeded, ProviderMessageID: "fixture-original",
+	}
 	repository := &senderTestRepository{attempt: want}
 	provider := &senderTestProvider{}
 	want.CompletedAt = time.Date(2026, 8, 13, 9, 0, 0, 0, time.UTC)

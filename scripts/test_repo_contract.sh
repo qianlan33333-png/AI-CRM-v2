@@ -3278,6 +3278,37 @@ if (cd "$s5b_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); 
   fail "P3-S05B-R2 PG behavior acceptance CI disconnect was accepted"
 fi
 
+o6a_cross_catalog="$(make_fixture p3-o6a-cross-catalog)"
+printf '%s\n' '-- SELECT * FROM river_job;' >>"$o6a_cross_catalog/internal/outbound/store/queries/send_attempts.sql"
+restage_p2s18_receipt "$o6a_cross_catalog" internal/outbound/store/queries/send_attempts.sql
+if (cd "$o6a_cross_catalog" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6A Outbound SQLC River catalog access was accepted"
+fi
+
+o6a_destructive_down="$(make_fixture p3-o6a-destructive-down)"
+sed -i.bak 's/SELECT 1;/DROP TABLE outbound_send_attempt_history;/' "$o6a_destructive_down/migrations/00022_outbound_send_attempt_history.sql"
+rm -f "$o6a_destructive_down/migrations/00022_outbound_send_attempt_history.sql.bak"
+restage_p2s18_receipt "$o6a_destructive_down" migrations/00022_outbound_send_attempt_history.sql
+if (cd "$o6a_destructive_down" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6A destructive history down migration was accepted"
+fi
+
+o6a_unknown_retry="$(make_fixture p3-o6a-unknown-retry)"
+sed -i.bak 's/if attempt.State == outboundapp.SendAttemptRetryableFailed/if attempt.State == outboundapp.SendAttemptOutcomeUnknown/' "$o6a_unknown_retry/internal/outbound/worker/sender.go"
+rm -f "$o6a_unknown_retry/internal/outbound/worker/sender.go.bak"
+restage_p2s18_receipt "$o6a_unknown_retry" internal/outbound/worker/sender.go
+if (cd "$o6a_unknown_retry" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6A outcome_unknown automatic retry was accepted"
+fi
+
+o6a_ci_disconnect="$(make_fixture p3-o6a-ci-disconnect)"
+sed -i.bak '/P3O6A_RETRY_TEST_DATABASE_URL=.*p3-o6a-retry-acceptance/d' "$o6a_ci_disconnect/.github/workflows/application-go.yml"
+rm -f "$o6a_ci_disconnect/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$o6a_ci_disconnect" .github/workflows/application-go.yml
+if (cd "$o6a_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6A PG/River acceptance CI disconnect was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc
