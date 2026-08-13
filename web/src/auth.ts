@@ -176,7 +176,7 @@ export function permittedRoutePaths(
 
   const paths = ["/", "/customers", "/stages"];
   if (validated.role === "admin" || validated.role === "ops") {
-    paths.push("/segments");
+    paths.push("/segments", "/identity/merge-reviews");
   }
   if (validated.role === "admin") paths.push("/settings");
   return paths;

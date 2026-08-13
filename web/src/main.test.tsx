@@ -127,8 +127,8 @@ describe("Web shell routes", () => {
     expect(html).not.toContain("\u672a\u627e\u5230\u9875\u9762");
   });
 
-  it("matches only the six frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(6);
+  it("matches only the seven frozen pathname routes and renders a 404 for all others", () => {
+    expect(routes).toHaveLength(7);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -155,10 +155,22 @@ describe("Web shell routes", () => {
     expect(customers).not.toContain("客户模块边界已预留");
 
     vi.stubGlobal("window", { location: { pathname: "/segments" } });
-    const segments = renderToStaticMarkup(<App initialSession={adminSession} />);
+    const segments = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
     expect(segments).toContain("人群包列表");
     expect(segments).toContain("条件编辑器");
     expect(segments).not.toContain("人群包模块边界已预留");
+
+    vi.stubGlobal("window", {
+      location: { pathname: "/identity/merge-reviews" },
+    });
+    const identityReviews = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
+    expect(identityReviews).toContain("待合并列表");
+    expect(identityReviews).toContain("审阅与决策");
+    expect(identityReviews).not.toContain("模块边界");
 
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
     const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
@@ -213,10 +225,23 @@ describe("Web shell routes", () => {
   it("shows only routes allowed by the frozen role table", () => {
     expect(
       navigationLinks(adminSession.principal).map((link) => link.href),
-    ).toEqual(["/", "/customers", "/stages", "/segments", "/settings"]);
+    ).toEqual([
+      "/",
+      "/customers",
+      "/stages",
+      "/segments",
+      "/identity/merge-reviews",
+      "/settings",
+    ]);
     expect(
       navigationLinks({ adminUserID: 8, role: "ops" }).map((link) => link.href),
-    ).toEqual(["/", "/customers", "/stages", "/segments"]);
+    ).toEqual([
+      "/",
+      "/customers",
+      "/stages",
+      "/segments",
+      "/identity/merge-reviews",
+    ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
         (link) => link.href,
@@ -227,6 +252,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/settings"');
     expect(html).toContain('href="/stages"');
     expect(html).toContain('href="/segments"');
+    expect(html).toContain('href="/identity/merge-reviews"');
     expect(html).not.toContain('href="/outbound"');
   });
 
