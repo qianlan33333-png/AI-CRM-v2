@@ -50,27 +50,38 @@
 - 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
   半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
 - 修正归因分为 `slice_induced`、`infra_induced`、`scope_induced` 与
-  `verification_induced`。仅本片业务代码或设计缺陷导致的
-  `slice_induced_correction_count` 计入切片过大信号；单片达到 3，或连续三片
-  平均超过 1，下一片回退到上一档规模并在 ledger 记录。
-- 既存门禁误判、工具链/环境问题或 CI 抖动记入 `infra_induced_correction_count`，
-  验收命令、本地/CI 环境或证据调用方式的修正记入
-  `verification_induced_correction_count`。两者都不触发规模降档，由 Sol 在原片
-  精确修复或按完整行为另开基础设施片；禁止绕过或降低门禁。
+  `verification_induced`。只有本片业务代码或设计缺陷导致的
+  `slice_induced_correction_count` 参与降档与硬停：达到 2 时立即冻结范围、不得
+  扩 scope，允许当前片完成既定闭环，下一片回退一档；达到 3 时立即停报并把未闭环
+  行为重切为更小业务片。其他归因不参与硬停；历史计数必须在 ledger 保留。
+- 既存门禁误判、共享工具链/环境问题或 CI 抖动记入
+  `infra_induced_correction_count`；验收命令、本地/CI 环境、测试夹具时序或证据调用
+  方式的修正记入 `verification_induced_correction_count`。两者必须精确记录，但不
+  降档、不硬停；机械环境、命令与时序问题在原任务内修复。只有需要修改共享基础设施
+  或业务范围时才按归属另片，禁止绕过或降低门禁。
+- 预期生成物及既有 hash、manifest、ledger receipt 的正常同步属于 Definition of
+  Done，不是 correction。只有首次遗漏且被门禁发现时记一次 `verification_induced`，
+  在原任务补齐且不触发硬停。
 - 切片卡范围欠定义导致的修正记入 `scope_induced_correction_count`；Sol 应依
   完整行为自行合并、拆分或标记 `SUPERSEDED_BY_RESCOPE`，不得清零原片历史计数。
-- 并行：最多 3 个任务，且须满足互不依赖、路径不重叠、对应域 OpenAPI 与
-  公共 port 已冻结。P3 波次划分为 contact → (identity ∥ segment) →
+- P3/P4 的每个 PR 必须关闭一个 ledger 中的官方业务 Slice，或关闭一个经用户/权威
+  计划批准且能在 feature matrix 定位的完整业务 flow；禁止 parser-only、
+  checker-only 或 governance-only PR。本次业务交付优先策略迁移 PR 是唯一例外，
+  合并后不得再以迁移治理为名扩张。
+- 并行最多 3 个任务。互不依赖、路径不重叠且不修改共享契约的业务路径允许并行 PR；
+  `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收夹具等
+  中央契约仍串行。P3 波次划分为 contact → (identity ∥ segment) →
   (wecom ∥ outbound)。
 - 迁移与对账必须由与实现者独立的 Agent 复核，且不得向复核方提供迁移源码。
-- 单片 `slice_induced_correction_count >= 3` 时立即停报；`infra_induced`、
-  `scope_induced`、`verification_induced` 不计入该阈值。
+- 独立安全片只允许处理不可逆数据污染、鉴权、迁移或真实外发的明确风险；能在业务
+  垂直片内闭环时必须随业务片完成，不得把一般防御性加固扩成独立片。
 - 相对简单、边界清晰且不需要架构、产品或安全判断的机械任务，如确有需要可
   委派 Terra Max 执行；Sol 仍负责范围冻结、结果复核、Git/PR 与 main CI 闭环。
 - `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收
   夹具是中央契约区；只能由 Sol 在当前垂直 Slice 内裁决和修改，或在冻结后以精确
   白名单委派机械实现。
-- Sol 必须串行执行每片的 rebase、全门禁、PR、squash merge 和精确 main SHA CI。
+- Sol 可让非共享业务 PR 并行运行门禁；中央契约裁决、最终 rebase、squash merge 与
+  精确 main SHA CI 必须按累计 main 串行闭环。
 - 常规进度仅在 P2 全部完成、P3 每个波次完成时批量汇报。只有真实外部效果、
   identity 不可逆语义分歧、鉴权/secret/企微凭据实质变更、需要用户真实输入或
   人工验收、与已决 ADR 或架构铁律实质冲突时立即停报。

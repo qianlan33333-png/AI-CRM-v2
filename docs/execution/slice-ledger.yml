@@ -13,7 +13,7 @@ execution_policy:
   executor_model: gpt-5.6-sol
   reasoning_effort: root_session
   task_graph: vertical_slice_then_conditional_dag
-  architecture_implementation_acceptance_git_main_ci: sol_end_to_end_serial
+  architecture_implementation_acceptance_git_main_ci: non_shared_business_prs_parallel_central_contract_and_merge_main_ci_serial
   sol_receipt_fields:
     - pr_head_sha
     - merge_sha
@@ -34,7 +34,12 @@ execution_policy:
   correction_stop_threshold:
     slice_induced: gte_3
     infra_scope_verification_count_toward_stop: false
-  rolling_three_slice_average_threshold: slice_induced_average_gt_1
+  correction_scale_down_threshold:
+    slice_induced: eq_2_freeze_scope_allow_close_next_slice_one_scale_down
+  expected_artifact_sync: definition_of_done_not_correction
+  p3_p4_pr_closure: official_business_slice_or_approved_feature_matrix_flow
+  p3_p4_non_business_prs: forbidden_after_delivery_first_policy_migration
+  independent_security_slice: irreversible_data_pollution_auth_migration_or_real_external_send_only
   merge_method: squash
   pr_language: zh-CN
   external_effects_default: forbidden
@@ -50,7 +55,8 @@ ledger_semantics:
     infra_induced: existing_gate_toolchain_environment_or_ci_defect
     scope_induced: slice_card_scope_was_underdefined
     verification_induced: verification_command_environment_or_evidence_invocation_defect
-    infra_disposition: same_slice_or_independent_fix_slice_by_complete_behavior
+    infra_disposition: same_task_unless_shared_infrastructure_or_business_scope_changes
+    expected_artifact_omission_first_gate_detection: one_verification_induced_then_same_task_completion
     non_slice_attributions_stop_independently: false
     slice_induced_gte_3_requires_stop_report: true
     scope_induced_requires_rescope_not_counter_reset: true

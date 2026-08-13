@@ -388,14 +388,20 @@
   生成物与测试文件不计入手写额度。
 - 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
   半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
-- 回退信号：仅 `slice_induced` 修正计入切片过大信号；某片
-  `slice_induced_correction_count` 达到 2，或连续三片平均超过 1，
-  下一片回退到上一档规模并在 ledger 记录。
-- `infra_induced` 修正不触发规模降档，但必须另开独立基础设施修复片；
-  两类修正之和达到 2 即停报。
-- 并行：最多 3 个任务，且须满足互不依赖、路径不重叠、对应域 OpenAPI 与
-  公共 port 已冻结。P3 波次划分为 contact → (identity ∥ segment) →
+- 仅 `slice_induced` 参与降档与硬停：达到 2 时冻结范围、不得扩 scope，允许当前片
+  完成既定闭环，下一片回退一档；达到 3 时立即停报并重切更小业务片。
+- `infra_induced` 与 `verification_induced` 精确记录但不降档、不硬停；机械环境、
+  命令和测试夹具时序在原任务内修复，只有涉及共享基础设施或业务范围才另片。
+- 预期生成物及既有 hash、manifest、ledger receipt 的正常同步属于 Definition of
+  Done；首次遗漏被门发现才记一次 `verification_induced`，并在原任务补齐。
+- P3/P4 每个 PR 必须关闭官方业务 Slice，或关闭经用户/权威计划批准且能在 feature
+  matrix 定位的完整业务 flow；禁止 parser/checker/governance-only PR。本次策略迁移
+  是唯一例外，合并后例外关闭。
+- 互不依赖、路径不重叠且不修改共享契约的业务 PR 可并行；中央契约裁决、最终
+  rebase/merge 与精确 main CI 串行。P3 波次为 contact → (identity ∥ segment) →
   (wecom ∥ outbound)。
+- 独立安全片仅限不可逆数据污染、鉴权、迁移或真实外发的明确风险；其他安全工作
+  优先随业务垂直片完成。
 - 迁移与对账必须由与实现者独立的 Agent 复核，且不得向复核方提供迁移源码。
 ```
 
