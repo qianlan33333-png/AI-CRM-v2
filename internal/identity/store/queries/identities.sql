@@ -53,12 +53,19 @@ INSERT INTO identity_operation_receipts (
 ON CONFLICT (operation, idempotency_scope, key_digest) DO NOTHING
 RETURNING id;
 
+-- name: LoadCustomerMergeAudit :one
+SELECT primary_customer_id, policy_version
+FROM customer_merges
+WHERE id = sqlc.arg(merge_audit_id)::bigint;
+
 -- name: LoadBindReceipt :one
 SELECT
   payload_hmac,
   state,
   result_status,
-  result_customer_id
+  result_customer_id,
+  result_merge_audit_id,
+  result_policy_version
 FROM identity_operation_receipts
 WHERE operation = 'bind'
   AND idempotency_scope = 'identity.bind.v1'
@@ -70,6 +77,8 @@ SET
   state = 'completed',
   result_status = sqlc.arg(result_status)::text,
   result_customer_id = sqlc.narg(result_customer_id)::bigint,
+  result_merge_audit_id = sqlc.narg(result_merge_audit_id)::bigint,
+  result_policy_version = sqlc.narg(result_policy_version)::text,
   completed_at = now()
 WHERE id = sqlc.arg(id)::bigint
   AND state = 'in_progress';
@@ -80,6 +89,23 @@ FROM customers
 WHERE id = sqlc.arg(customer_id)::bigint
   AND is_deleted = FALSE
 FOR UPDATE;
+
+-- name: LockActiveBindCustomersForMerge :many
+SELECT id
+FROM customers
+WHERE id = ANY(sqlc.arg(customer_ids)::bigint[])
+  AND is_deleted = FALSE
+ORDER BY id
+FOR UPDATE;
+
+-- name: HasVerifiedWeComIdentityForBindCustomer :one
+SELECT EXISTS (
+  SELECT 1
+  FROM identities
+  WHERE customer_id = sqlc.arg(customer_id)::bigint
+    AND kind = 'wecom_external_userid'
+    AND assurance = 'verified'
+) AS has_verified_wecom_identity;
 
 -- name: LockIdentityForBind :one
 SELECT id, customer_id
@@ -94,4 +120,31 @@ UPDATE identities
 SET customer_id = sqlc.arg(customer_id)::bigint, bound_at = now()
 WHERE id = sqlc.arg(identity_id)::bigint
   AND customer_id IS NULL
+RETURNING id;
+
+-- name: RebindIdentitiesForCustomerMerge :execrows
+UPDATE identities
+SET customer_id = sqlc.arg(primary_customer_id)::bigint
+WHERE customer_id = sqlc.arg(merged_customer_id)::bigint;
+
+-- name: InsertAutoCustomerMergeAudit :one
+INSERT INTO customer_merges (
+  primary_customer_id,
+  merged_customer_id,
+  mode,
+  policy_version,
+  review_fingerprint,
+  fingerprint_key_version,
+  operated_by,
+  detail
+) VALUES (
+  sqlc.arg(primary_customer_id)::bigint,
+  sqlc.arg(merged_customer_id)::bigint,
+  'auto',
+  sqlc.arg(policy_version)::text,
+  sqlc.arg(review_fingerprint)::bytea,
+  sqlc.arg(fingerprint_key_version)::smallint,
+  sqlc.arg(operated_by)::text,
+  sqlc.arg(detail)::jsonb
+)
 RETURNING id;

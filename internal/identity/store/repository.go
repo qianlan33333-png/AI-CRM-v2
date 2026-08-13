@@ -3,7 +3,9 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -113,9 +115,19 @@ func (repository *Repository) ReserveBindReceipt(ctx context.Context, keyDigest,
 		}
 		return identityapp.BindReceipt{}, identityapp.ErrIdentityBindFailed
 	}
-	result, err := bindResultFromReceipt(row.ResultStatus.String, row.ResultCustomerID)
+	result, err := bindResultFromReceipt(row.ResultStatus.String, row.ResultCustomerID, row.ResultMergeAuditID, row.ResultPolicyVersion)
 	if err != nil {
 		return identityapp.BindReceipt{}, err
+	}
+	if result.Status == identityport.BindMerged {
+		audit, err := queries.LoadCustomerMergeAudit(ctx, result.MergeAuditID)
+		if err != nil || audit.PrimaryCustomerID <= 0 || audit.PolicyVersion != identityport.MergePolicyVerifiedUnionIDUniqueWeCom {
+			if err != nil {
+				return identityapp.BindReceipt{}, err
+			}
+			return identityapp.BindReceipt{}, identityapp.ErrIdentityBindFailed
+		}
+		result.PrimaryCustomerID = contactport.CustomerID(audit.PrimaryCustomerID)
 	}
 	return identityapp.BindReceipt{Found: true, PayloadHMAC: append([]byte(nil), row.PayloadHmac...), Result: result}, nil
 }
@@ -129,11 +141,6 @@ func (repository *Repository) BindNormalized(ctx context.Context, identity ident
 		return identityapp.BindRecord{}, err
 	}
 	queries := identitydb.New(tx)
-	if _, err = queries.LockActiveBindCustomer(ctx, customerID); errors.Is(err, pgx.ErrNoRows) {
-		return identityapp.BindRecord{Status: identityport.BindRejected}, nil
-	} else if err != nil {
-		return identityapp.BindRecord{}, err
-	}
 	row, err := queries.LockIdentityForBind(ctx, identitydb.LockIdentityForBindParams{
 		Kind: string(identity.Kind), Scope: identity.Scope, NormalizedValue: identity.NormalizedValue,
 	})
@@ -146,20 +153,105 @@ func (repository *Repository) BindNormalized(ctx context.Context, identity ident
 		}
 		return identityapp.BindRecord{}, identityapp.ErrIdentityBindFailed
 	}
-	if row.CustomerID.Valid {
-		if row.CustomerID.Int64 == customerID {
-			return identityapp.BindRecord{Status: identityport.BindAlreadyBound, IdentityID: row.ID}, nil
+	if !row.CustomerID.Valid {
+		if _, err = queries.LockActiveBindCustomer(ctx, customerID); errors.Is(err, pgx.ErrNoRows) {
+			return identityapp.BindRecord{Status: identityport.BindRejected}, nil
+		} else if err != nil {
+			return identityapp.BindRecord{}, err
 		}
-		return identityapp.BindRecord{Status: identityport.BindRejected, IdentityID: row.ID}, nil
+		boundID, err := queries.BindFloatingIdentity(ctx, identitydb.BindFloatingIdentityParams{CustomerID: customerID, IdentityID: row.ID})
+		if err != nil {
+			return identityapp.BindRecord{}, err
+		}
+		if boundID != row.ID {
+			return identityapp.BindRecord{}, identityapp.ErrIdentityBindFailed
+		}
+		return identityapp.BindRecord{Status: identityport.BindBound, IdentityID: boundID}, nil
 	}
-	boundID, err := queries.BindFloatingIdentity(ctx, identitydb.BindFloatingIdentityParams{CustomerID: customerID, IdentityID: row.ID})
+	if row.CustomerID.Int64 == customerID {
+		if _, err = queries.LockActiveBindCustomer(ctx, customerID); errors.Is(err, pgx.ErrNoRows) {
+			return identityapp.BindRecord{Status: identityport.BindRejected}, nil
+		} else if err != nil {
+			return identityapp.BindRecord{}, err
+		}
+		return identityapp.BindRecord{Status: identityport.BindAlreadyBound, IdentityID: row.ID}, nil
+	}
+	customers, err := queries.LockActiveBindCustomersForMerge(ctx, []int64{customerID, row.CustomerID.Int64})
 	if err != nil {
 		return identityapp.BindRecord{}, err
 	}
-	if boundID != row.ID {
-		return identityapp.BindRecord{}, identityapp.ErrIdentityBindFailed
+	if len(customers) != 2 {
+		return identityapp.BindRecord{Status: identityport.BindRejected, IdentityID: row.ID}, nil
 	}
-	return identityapp.BindRecord{Status: identityport.BindBound, IdentityID: boundID}, nil
+	requestedVerifiedWeCom, err := queries.HasVerifiedWeComIdentityForBindCustomer(ctx, customerID)
+	if err != nil {
+		return identityapp.BindRecord{}, err
+	}
+	existingVerifiedWeCom, err := queries.HasVerifiedWeComIdentityForBindCustomer(ctx, row.CustomerID.Int64)
+	if err != nil {
+		return identityapp.BindRecord{}, err
+	}
+	return identityapp.BindRecord{
+		Status:                           identityport.BindRejected,
+		IdentityID:                       row.ID,
+		ExistingCustomerID:               contactport.CustomerID(row.CustomerID.Int64),
+		RequestedHasVerifiedWeCom:        requestedVerifiedWeCom,
+		ExistingCustomerHasVerifiedWeCom: existingVerifiedWeCom,
+	}, nil
+}
+
+func (repository *Repository) RebindIdentitiesForCustomerMerge(
+	ctx context.Context,
+	primaryCustomerID contactport.CustomerID,
+	mergedCustomerID contactport.CustomerID,
+) error {
+	if repository == nil || primaryCustomerID <= 0 || mergedCustomerID <= 0 || primaryCustomerID == mergedCustomerID {
+		return identityapp.ErrIdentityBindFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	changed, err := identitydb.New(tx).RebindIdentitiesForCustomerMerge(ctx, identitydb.RebindIdentitiesForCustomerMergeParams{
+		PrimaryCustomerID: int64(primaryCustomerID),
+		MergedCustomerID:  int64(mergedCustomerID),
+	})
+	if err != nil {
+		return err
+	}
+	if changed < 1 {
+		return identityapp.ErrIdentityBindFailed
+	}
+	return nil
+}
+
+func (repository *Repository) InsertAutoCustomerMergeAudit(ctx context.Context, audit identityapp.AutoMergeAudit) (int64, error) {
+	if repository == nil || audit.PrimaryCustomerID <= 0 || audit.MergedCustomerID <= 0 ||
+		audit.PrimaryCustomerID == audit.MergedCustomerID || audit.PolicyVersion != identityport.MergePolicyVerifiedUnionIDUniqueWeCom ||
+		len(audit.ReviewFingerprint) != 16 || audit.FingerprintVersion <= 0 ||
+		strings.TrimSpace(string(audit.Actor)) == "" || len(audit.Actor) > 200 || !json.Valid(audit.Detail) {
+		return 0, identityapp.ErrIdentityBindFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	id, err := identitydb.New(tx).InsertAutoCustomerMergeAudit(ctx, identitydb.InsertAutoCustomerMergeAuditParams{
+		PrimaryCustomerID:     int64(audit.PrimaryCustomerID),
+		MergedCustomerID:      int64(audit.MergedCustomerID),
+		PolicyVersion:         audit.PolicyVersion,
+		ReviewFingerprint:     append([]byte(nil), audit.ReviewFingerprint...),
+		FingerprintKeyVersion: audit.FingerprintVersion,
+		OperatedBy:            string(audit.Actor),
+		Detail:                append([]byte(nil), audit.Detail...),
+	})
+	if err != nil {
+		return 0, err
+	}
+	if id <= 0 {
+		return 0, identityapp.ErrIdentityBindFailed
+	}
+	return id, nil
 }
 
 func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt identityapp.BindReceipt, result identityport.BindResult) error {
@@ -174,6 +266,10 @@ func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt i
 	if result.CustomerID > 0 {
 		params.ResultCustomerID = pgtype.Int8{Int64: int64(result.CustomerID), Valid: true}
 	}
+	if result.MergeAuditID > 0 {
+		params.ResultMergeAuditID = pgtype.Int8{Int64: result.MergeAuditID, Valid: true}
+		params.ResultPolicyVersion = pgtype.Text{String: identityport.MergePolicyVerifiedUnionIDUniqueWeCom, Valid: true}
+	}
 	updated, err := identitydb.New(tx).CompleteBindReceipt(ctx, params)
 	if err != nil {
 		return err
@@ -184,32 +280,40 @@ func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt i
 	return nil
 }
 
-func bindResultFromReceipt(status string, customerID pgtype.Int8) (identityport.BindResult, error) {
+func bindResultFromReceipt(status string, customerID pgtype.Int8, mergeAuditID pgtype.Int8, policyVersion pgtype.Text) (identityport.BindResult, error) {
 	switch identityport.BindStatus(status) {
 	case identityport.BindBound, identityport.BindAlreadyBound:
-		if !customerID.Valid || customerID.Int64 <= 0 {
+		if !customerID.Valid || customerID.Int64 <= 0 || mergeAuditID.Valid || policyVersion.Valid {
 			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 		}
 		return identityport.BindResult{Status: identityport.BindStatus(status), CustomerID: contactport.CustomerID(customerID.Int64)}, nil
 	case identityport.BindRejected:
-		if customerID.Valid {
+		if customerID.Valid || mergeAuditID.Valid || policyVersion.Valid {
 			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 		}
 		return identityport.BindResult{Status: identityport.BindRejected}, nil
+	case identityport.BindMerged:
+		if !customerID.Valid || customerID.Int64 <= 0 || !mergeAuditID.Valid || mergeAuditID.Int64 <= 0 ||
+			!policyVersion.Valid || policyVersion.String != identityport.MergePolicyVerifiedUnionIDUniqueWeCom {
+			return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
+		}
+		return identityport.BindResult{Status: identityport.BindMerged, CustomerID: contactport.CustomerID(customerID.Int64), MergeAuditID: mergeAuditID.Int64}, nil
 	default:
 		return identityport.BindResult{}, identityapp.ErrIdentityBindFailed
 	}
 }
 
 func bindReceiptResultValid(result identityport.BindResult) bool {
-	if result.PrimaryCustomerID != 0 || result.MergeAuditID != 0 || result.ReviewID != 0 {
+	if result.ReviewID != 0 {
 		return false
 	}
 	switch result.Status {
 	case identityport.BindBound, identityport.BindAlreadyBound:
-		return result.CustomerID > 0
+		return result.CustomerID > 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0
 	case identityport.BindRejected:
-		return result.CustomerID == 0
+		return result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0
+	case identityport.BindMerged:
+		return result.CustomerID > 0 && result.PrimaryCustomerID > 0 && result.MergeAuditID > 0
 	default:
 		return false
 	}
