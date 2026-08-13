@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -21,6 +22,7 @@ type Repository struct{}
 var _ identityapp.UpsertStore = (*Repository)(nil)
 var _ identityapp.ResolveStore = (*Repository)(nil)
 var _ identityapp.BindStore = (*Repository)(nil)
+var _ identityapp.IngestStore = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
 
@@ -318,6 +320,161 @@ func (repository *Repository) CompleteBindReceipt(ctx context.Context, receipt i
 		return identityapp.ErrIdentityBindFailed
 	}
 	return nil
+}
+
+func (repository *Repository) ReserveIngestReceipt(ctx context.Context, keyDigest, payloadHMAC []byte) (identityapp.IngestReceipt, error) {
+	if repository == nil || len(keyDigest) != 32 || len(payloadHMAC) != 32 {
+		return identityapp.IngestReceipt{}, identityapp.ErrIdentityIngestFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityapp.IngestReceipt{}, err
+	}
+	queries := identitydb.New(tx)
+	id, err := queries.ReserveIngestReceipt(ctx, identitydb.ReserveIngestReceiptParams{KeyDigest: keyDigest, PayloadHmac: payloadHMAC})
+	if err == nil {
+		if id <= 0 {
+			return identityapp.IngestReceipt{}, identityapp.ErrIdentityIngestFailed
+		}
+		return identityapp.IngestReceipt{ID: id}, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return identityapp.IngestReceipt{}, err
+	}
+	row, err := queries.LoadIngestReceipt(ctx, keyDigest)
+	if err != nil || row.State != "completed" || !row.ResultStatus.Valid ||
+		!row.ResultPolicyVersion.Valid || row.ResultPolicyVersion.String != identityapp.IngestAttributionPolicy {
+		if err != nil {
+			return identityapp.IngestReceipt{}, err
+		}
+		return identityapp.IngestReceipt{}, identityapp.ErrIdentityIngestFailed
+	}
+	result, err := ingestResultFromReceipt(row.ResultStatus.String, row.ResultCustomerID, row.ResultEventID, row.ResultPendingEventID)
+	if err != nil {
+		return identityapp.IngestReceipt{}, err
+	}
+	if result.Status == identityport.IngestPending || result.Status == identityport.IngestConflict {
+		kind, err := queries.LoadPendingIngest(ctx, result.PendingEventID)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return identityapp.IngestReceipt{}, identityapp.ErrIdentityIngestFailed
+			}
+			return identityapp.IngestReceipt{}, err
+		}
+		wantKind := "attribution"
+		if result.Status == identityport.IngestConflict {
+			wantKind = "conflict"
+		}
+		if kind != wantKind {
+			return identityapp.IngestReceipt{}, identityapp.ErrIdentityIngestFailed
+		}
+	}
+	return identityapp.IngestReceipt{Found: true, PayloadHMAC: append([]byte(nil), row.PayloadHmac...), Result: result}, nil
+}
+
+func (repository *Repository) InsertPendingIngest(ctx context.Context, pending identityapp.PendingIngest) (int64, error) {
+	if repository == nil || (pending.Status != identityport.IngestPending && pending.Status != identityport.IngestConflict) ||
+		!validSortedIdentityIDs(pending.IdentityIDs) || strings.TrimSpace(pending.EventType) == "" || len(pending.EventType) > 200 ||
+		strings.TrimSpace(pending.Source) == "" || len(pending.Source) > 200 || strings.TrimSpace(pending.IdempotencyKey) == "" ||
+		len(pending.IdempotencyKey) > 512 || pending.OccurredAt.IsZero() || !validJSONObject(pending.Payload) {
+		return 0, identityapp.ErrIdentityIngestFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	kind := "attribution"
+	if pending.Status == identityport.IngestConflict {
+		kind = "conflict"
+	}
+	id, err := identitydb.New(tx).InsertPendingIngest(ctx, identitydb.InsertPendingIngestParams{
+		Kind: kind, IdentityIds: append([]int64(nil), pending.IdentityIDs...), EventType: pending.EventType,
+		Payload: append([]byte(nil), pending.Payload...), Source: pending.Source, IdempotencyKey: pending.IdempotencyKey,
+		OccurredAt: pgtype.Timestamptz{Time: pending.OccurredAt.UTC().Truncate(time.Microsecond), Valid: true},
+	})
+	if err != nil {
+		return 0, err
+	}
+	if id <= 0 {
+		return 0, identityapp.ErrIdentityIngestFailed
+	}
+	return id, nil
+}
+
+func (repository *Repository) CompleteIngestReceipt(ctx context.Context, receipt identityapp.IngestReceipt, result identityport.IngestResult) error {
+	if repository == nil || receipt.ID <= 0 || !ingestReceiptResultValid(result) {
+		return identityapp.ErrIdentityIngestFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	params := identitydb.CompleteIngestReceiptParams{ID: receipt.ID, ResultStatus: string(result.Status)}
+	if result.CustomerID > 0 {
+		params.ResultCustomerID = pgtype.Int8{Int64: int64(result.CustomerID), Valid: true}
+	}
+	if result.EventID > 0 {
+		params.ResultEventID = pgtype.Int8{Int64: int64(result.EventID), Valid: true}
+	}
+	if result.PendingEventID > 0 {
+		params.ResultPendingEventID = pgtype.Int8{Int64: result.PendingEventID, Valid: true}
+	}
+	updated, err := identitydb.New(tx).CompleteIngestReceipt(ctx, params)
+	if err != nil {
+		return err
+	}
+	if updated != 1 {
+		return identityapp.ErrIdentityIngestFailed
+	}
+	return nil
+}
+
+func ingestResultFromReceipt(status string, customerID, eventID, pendingEventID pgtype.Int8) (identityport.IngestResult, error) {
+	result := identityport.IngestResult{Status: identityport.IngestStatus(status)}
+	switch result.Status {
+	case identityport.IngestAttributed:
+		if !customerID.Valid || customerID.Int64 <= 0 || !eventID.Valid || eventID.Int64 <= 0 || pendingEventID.Valid {
+			return identityport.IngestResult{}, identityapp.ErrIdentityIngestFailed
+		}
+		result.CustomerID = contactport.CustomerID(customerID.Int64)
+		result.EventID = contactport.EventID(eventID.Int64)
+	case identityport.IngestPending, identityport.IngestConflict:
+		if customerID.Valid || eventID.Valid || !pendingEventID.Valid || pendingEventID.Int64 <= 0 {
+			return identityport.IngestResult{}, identityapp.ErrIdentityIngestFailed
+		}
+		result.PendingEventID = pendingEventID.Int64
+	default:
+		return identityport.IngestResult{}, identityapp.ErrIdentityIngestFailed
+	}
+	return result, nil
+}
+
+func ingestReceiptResultValid(result identityport.IngestResult) bool {
+	switch result.Status {
+	case identityport.IngestAttributed:
+		return result.CustomerID > 0 && result.EventID > 0 && result.PendingEventID == 0
+	case identityport.IngestPending, identityport.IngestConflict:
+		return result.CustomerID == 0 && result.EventID == 0 && result.PendingEventID > 0
+	default:
+		return false
+	}
+}
+
+func validSortedIdentityIDs(ids []int64) bool {
+	if len(ids) == 0 {
+		return false
+	}
+	for index, id := range ids {
+		if id <= 0 || (index > 0 && ids[index-1] >= id) {
+			return false
+		}
+	}
+	return true
+}
+
+func validJSONObject(raw json.RawMessage) bool {
+	trimmed := strings.TrimSpace(string(raw))
+	return len(trimmed) >= 2 && trimmed[0] == '{' && trimmed[len(trimmed)-1] == '}' && json.Valid(raw)
 }
 
 func bindResultFromReceipt(status string, customerID pgtype.Int8, mergeAuditID pgtype.Int8, reviewID pgtype.Int8, policyVersion pgtype.Text) (identityport.BindResult, error) {

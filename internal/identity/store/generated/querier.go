@@ -11,18 +11,23 @@ import (
 type Querier interface {
 	BindFloatingIdentity(ctx context.Context, arg BindFloatingIdentityParams) (int64, error)
 	CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error)
+	CompleteIngestReceipt(ctx context.Context, arg CompleteIngestReceiptParams) (int64, error)
 	HasVerifiedWeComIdentityForBindCustomer(ctx context.Context, customerID int64) (bool, error)
 	InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAutoCustomerMergeAuditParams) (int64, error)
+	InsertPendingIngest(ctx context.Context, arg InsertPendingIngestParams) (int64, error)
 	InsertVerifiedPhoneMergeReview(ctx context.Context, arg InsertVerifiedPhoneMergeReviewParams) (int64, error)
 	LoadBindMergeReview(ctx context.Context, reviewID int64) (int64, error)
 	LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error)
 	LoadCustomerMergeAudit(ctx context.Context, mergeAuditID int64) (LoadCustomerMergeAuditRow, error)
+	LoadIngestReceipt(ctx context.Context, keyDigest []byte) (LoadIngestReceiptRow, error)
+	LoadPendingIngest(ctx context.Context, pendingEventID int64) (string, error)
 	LockActiveBindCustomer(ctx context.Context, customerID int64) (int64, error)
 	LockActiveBindCustomersForMerge(ctx context.Context, customerIds []int64) ([]int64, error)
 	LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error)
 	LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error)
 	RebindIdentitiesForCustomerMerge(ctx context.Context, arg RebindIdentitiesForCustomerMergeParams) (int64, error)
 	ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error)
+	ReserveIngestReceipt(ctx context.Context, arg ReserveIngestReceiptParams) (int64, error)
 	UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormalizedIdentityParams) (UpsertNormalizedIdentityRow, error)
 }
 
