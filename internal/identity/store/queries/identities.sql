@@ -167,6 +167,43 @@ INSERT INTO pending_events (
 )
 RETURNING id;
 
+-- name: ClaimPendingReplay :one
+SELECT id, kind, identity_ids, event_type, payload, source, idempotency_key, occurred_at, version
+FROM pending_events
+WHERE state = 'pending'
+  AND kind IN ('attribution', 'conflict')
+  AND payload IS NOT NULL
+  AND jsonb_typeof(payload) = 'object'
+  AND policy_version = 'identity_ingest_attribution_v1'
+ORDER BY version, id
+FOR UPDATE SKIP LOCKED
+LIMIT 1;
+
+-- name: LockPendingReplayIdentities :many
+SELECT id, kind, scope, normalized_value, normalizer_version
+FROM identities
+WHERE id = ANY(sqlc.arg(identity_ids)::bigint[])
+ORDER BY id
+FOR UPDATE;
+
+-- name: CompletePendingReplay :execrows
+UPDATE pending_events
+SET state = 'replayed', version = version + 1, resolved_at = now()
+WHERE id = sqlc.arg(pending_event_id)::bigint
+  AND version = sqlc.arg(expected_version)::bigint
+  AND state = 'pending'
+  AND kind IN ('attribution', 'conflict')
+  AND policy_version = 'identity_ingest_attribution_v1';
+
+-- name: DeferPendingReplay :execrows
+UPDATE pending_events
+SET version = version + 1
+WHERE id = sqlc.arg(pending_event_id)::bigint
+  AND version = sqlc.arg(expected_version)::bigint
+  AND state = 'pending'
+  AND kind IN ('attribution', 'conflict')
+  AND policy_version = 'identity_ingest_attribution_v1';
+
 -- name: LockActiveBindCustomer :one
 SELECT id
 FROM customers

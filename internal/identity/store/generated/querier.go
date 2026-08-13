@@ -10,8 +10,11 @@ import (
 
 type Querier interface {
 	BindFloatingIdentity(ctx context.Context, arg BindFloatingIdentityParams) (int64, error)
+	ClaimPendingReplay(ctx context.Context) (ClaimPendingReplayRow, error)
 	CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error)
 	CompleteIngestReceipt(ctx context.Context, arg CompleteIngestReceiptParams) (int64, error)
+	CompletePendingReplay(ctx context.Context, arg CompletePendingReplayParams) (int64, error)
+	DeferPendingReplay(ctx context.Context, arg DeferPendingReplayParams) (int64, error)
 	HasVerifiedWeComIdentityForBindCustomer(ctx context.Context, customerID int64) (bool, error)
 	InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAutoCustomerMergeAuditParams) (int64, error)
 	InsertPendingIngest(ctx context.Context, arg InsertPendingIngestParams) (int64, error)
@@ -24,6 +27,7 @@ type Querier interface {
 	LockActiveBindCustomer(ctx context.Context, customerID int64) (int64, error)
 	LockActiveBindCustomersForMerge(ctx context.Context, customerIds []int64) ([]int64, error)
 	LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error)
+	LockPendingReplayIdentities(ctx context.Context, identityIds []int64) ([]LockPendingReplayIdentitiesRow, error)
 	LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error)
 	RebindIdentitiesForCustomerMerge(ctx context.Context, arg RebindIdentitiesForCustomerMergeParams) (int64, error)
 	ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error)

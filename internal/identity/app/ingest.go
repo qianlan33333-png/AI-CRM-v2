@@ -118,8 +118,6 @@ func (service *IngestService) Ingest(ctx context.Context, command identityport.I
 		}
 
 		identityIDs := make([]int64, 0, len(normalized.Refs))
-		roots := make(map[int64]struct{})
-		conflict := false
 		for _, ref := range normalized.Refs {
 			identityID, created, err := service.store.UpsertNormalized(txCtx, ref.Identity)
 			if err != nil {
@@ -134,53 +132,14 @@ func (service *IngestService) Ingest(ctx context.Context, command identityport.I
 					return err
 				}
 			}
-			record, err := service.store.LookupNormalized(txCtx, ref.Identity)
-			if err != nil {
-				return err
-			}
-			if record.Conflict {
-				conflict = true
-			}
-			if record.CustomerID > 0 {
-				roots[record.CustomerID] = struct{}{}
-			}
 		}
 		sort.Slice(identityIDs, func(i, j int) bool { return identityIDs[i] < identityIDs[j] })
-
-		switch {
-		case !conflict && len(roots) == 1:
-			var customerID int64
-			for customerID = range roots {
-			}
-			eventID, err := service.contacts.AppendExternalEvent(txCtx, contactport.ExternalEventCommand{
-				CustomerID:     contactport.CustomerID(customerID),
-				EventType:      normalized.EventType,
-				Payload:        normalized.Payload,
-				Actor:          contactport.Actor(normalized.Source),
-				OccurredAt:     normalized.OccurredAt,
-				IdempotencyKey: normalized.IdempotencyKey,
-			})
-			if err != nil {
-				return err
-			}
-			if eventID <= 0 {
-				return ErrIdentityIngestFailed
-			}
-			if _, err = service.events.Append(txCtx, eventport.Event{
-				Type:           normalized.EventType,
-				CustomerID:     eventport.CustomerID(customerID),
-				Payload:        normalized.Payload,
-				OccurredAt:     normalized.OccurredAt,
-				IdempotencyKey: "identity.ingest:" + hex.EncodeToString(keyDigest),
-			}); err != nil {
-				return err
-			}
-			result = identityport.IngestResult{Status: identityport.IngestAttributed, CustomerID: contactport.CustomerID(customerID), EventID: eventID}
-		default:
-			status := identityport.IngestPending
-			if conflict || len(roots) > 1 {
-				status = identityport.IngestConflict
-			}
+		result, err = service.attributeKnown(txCtx, normalized, "identity.ingest:"+hex.EncodeToString(keyDigest))
+		if err != nil {
+			return err
+		}
+		if result.Status != identityport.IngestAttributed {
+			status := result.Status
 			pendingID, err := service.store.InsertPendingIngest(txCtx, PendingIngest{
 				Status: status, IdentityIDs: identityIDs, EventType: normalized.EventType, Payload: normalized.Payload,
 				Source: normalized.Source, IdempotencyKey: normalized.IdempotencyKey, OccurredAt: normalized.OccurredAt,
@@ -202,6 +161,56 @@ func (service *IngestService) Ingest(ctx context.Context, command identityport.I
 		return identityport.IngestResult{}, errors.Join(ErrIdentityIngestFailed, err)
 	}
 	return result, nil
+}
+
+func (service *IngestService) attributeKnown(
+	ctx context.Context,
+	command normalizedIngestCommand,
+	eventIdempotencyKey string,
+) (identityport.IngestResult, error) {
+	roots := make(map[int64]struct{})
+	conflict := false
+	for _, ref := range command.Refs {
+		record, err := service.store.LookupNormalized(ctx, ref.Identity)
+		if err != nil {
+			return identityport.IngestResult{}, err
+		}
+		if record.Conflict {
+			conflict = true
+		}
+		if record.CustomerID > 0 {
+			roots[record.CustomerID] = struct{}{}
+		}
+	}
+	if conflict || len(roots) != 1 {
+		status := identityport.IngestPending
+		if conflict || len(roots) > 1 {
+			status = identityport.IngestConflict
+		}
+		return identityport.IngestResult{Status: status}, nil
+	}
+	var customerID int64
+	for customerID = range roots {
+	}
+	eventID, err := service.contacts.AppendExternalEvent(ctx, contactport.ExternalEventCommand{
+		CustomerID: contactport.CustomerID(customerID), EventType: command.EventType, Payload: command.Payload,
+		Actor: contactport.Actor(command.Source), OccurredAt: command.OccurredAt, IdempotencyKey: command.IdempotencyKey,
+	})
+	if err != nil {
+		return identityport.IngestResult{}, err
+	}
+	if eventID <= 0 {
+		return identityport.IngestResult{}, ErrIdentityIngestFailed
+	}
+	if _, err = service.events.Append(ctx, eventport.Event{
+		Type: command.EventType, CustomerID: eventport.CustomerID(customerID), Payload: command.Payload,
+		OccurredAt: command.OccurredAt, IdempotencyKey: eventIdempotencyKey,
+	}); err != nil {
+		return identityport.IngestResult{}, err
+	}
+	return identityport.IngestResult{
+		Status: identityport.IngestAttributed, CustomerID: contactport.CustomerID(customerID), EventID: eventID,
+	}, nil
 }
 
 func normalizeIngestCommand(command identityport.IngestCommand) (normalizedIngestCommand, error) {
