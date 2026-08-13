@@ -30,8 +30,8 @@ func TestOutboundStorageCatalogWaterlineAndIdentity(t *testing.T) {
 	ctx := context.Background()
 
 	var waterline int
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline < 16 {
-		t.Fatalf("migration waterline=%d err=%v, want at least 16", waterline, err)
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 19 {
+		t.Fatalf("migration waterline=%d err=%v, want 19", waterline, err)
 	}
 
 	var identity, generation string
@@ -310,14 +310,14 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 
 func resetOutboundFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_enqueue_receipts, outbound_tasks`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
 		t.Fatalf("reset outbound fixture: %v", err)
 	}
 }
 
 func resetOutboundEnqueueFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_enqueue_receipts, outbound_tasks`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
 		t.Fatalf("reset outbound enqueue fixture: %v", err)
 	}
 }

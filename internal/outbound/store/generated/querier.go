@@ -9,8 +9,13 @@ import (
 )
 
 type Querier interface {
+	AcceptOutboundBatch(ctx context.Context, arg AcceptOutboundBatchParams) (AcceptOutboundBatchRow, error)
+	AcceptOutboundBatchChunk(ctx context.Context, id int64) (AcceptOutboundBatchChunkRow, error)
 	AcceptOutboundEnqueueReceipt(ctx context.Context, arg AcceptOutboundEnqueueReceiptParams) (AcceptOutboundEnqueueReceiptRow, error)
 	CreateAcceptedOutboundTask(ctx context.Context, arg CreateAcceptedOutboundTaskParams) (int64, error)
+	CreateOutboundBatchTask(ctx context.Context, arg CreateOutboundBatchTaskParams) (int64, error)
+	ReserveOutboundBatch(ctx context.Context, arg ReserveOutboundBatchParams) (ReserveOutboundBatchRow, error)
+	ReserveOutboundBatchChunk(ctx context.Context, arg ReserveOutboundBatchChunkParams) (ReserveOutboundBatchChunkRow, error)
 	ReserveOutboundEnqueueReceipt(ctx context.Context, arg ReserveOutboundEnqueueReceiptParams) (ReserveOutboundEnqueueReceiptRow, error)
 }
 
