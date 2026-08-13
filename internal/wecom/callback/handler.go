@@ -1,6 +1,7 @@
 // Package callback implements the provider-facing, cryptographic WeCom
-// callback boundary. It deliberately does not persist, dispatch, deduplicate,
-// synchronize, or attribute a decrypted message.
+// callback boundary. It verifies and decrypts provider messages, then hands
+// only the plaintext to the bounded durable event dispatcher. It never
+// synchronizes, attributes, or calls the provider.
 package callback
 
 import (
@@ -44,16 +45,18 @@ type Options struct {
 	Clock      func() time.Time
 	RandomByte func([]byte) error
 	Nonce      func() string
+	Dispatcher MessageDispatcher
 }
 
 type Handler struct {
-	enabled bool
-	corpID  string
-	token   string
-	key     []byte
-	clock   func() time.Time
-	random  func([]byte) error
-	nonce   func() string
+	enabled    bool
+	corpID     string
+	token      string
+	key        []byte
+	clock      func() time.Time
+	random     func([]byte) error
+	nonce      func() string
+	dispatcher MessageDispatcher
 }
 
 func NewHandler(config Config, options Options) (*Handler, error) {
@@ -63,14 +66,14 @@ func NewHandler(config Config, options Options) (*Handler, error) {
 		}
 		return &Handler{clock: defaultClock(options.Clock), random: defaultRandom(options.RandomByte), nonce: defaultNonce(options.Nonce)}, nil
 	}
-	if !validCorpID(config.CorpID) || !validToken(config.Token) {
+	if !validCorpID(config.CorpID) || !validToken(config.Token) || nilLike(options.Dispatcher) {
 		return nil, ErrInvalidConfig
 	}
 	key, err := decodeEncodingAESKey(config.EncodingAESKey)
 	if err != nil {
 		return nil, ErrInvalidConfig
 	}
-	return &Handler{enabled: true, corpID: config.CorpID, token: config.Token, key: key, clock: defaultClock(options.Clock), random: defaultRandom(options.RandomByte), nonce: defaultNonce(options.Nonce)}, nil
+	return &Handler{enabled: true, corpID: config.CorpID, token: config.Token, key: key, clock: defaultClock(options.Clock), random: defaultRandom(options.RandomByte), nonce: defaultNonce(options.Nonce), dispatcher: options.Dispatcher}, nil
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -123,6 +126,14 @@ func (handler *Handler) receiveMessage(writer http.ResponseWriter, request *http
 	message, err := handler.decrypt(encrypted)
 	if err != nil || !validMessageRecipient(message, handler.corpID) {
 		writeBoundaryError(writer, http.StatusBadRequest, "invalid callback")
+		return
+	}
+	if err = handler.dispatcher.Dispatch(request.Context(), message); err != nil {
+		if errors.Is(err, ErrUnknownCallbackEvent) {
+			writeBoundaryError(writer, http.StatusBadRequest, "invalid callback")
+			return
+		}
+		writeBoundaryError(writer, http.StatusServiceUnavailable, "callback unavailable")
 		return
 	}
 	reply, err := handler.encryptedSuccessReply()

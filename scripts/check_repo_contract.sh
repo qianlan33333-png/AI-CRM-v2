@@ -924,7 +924,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  86998ccb5e83c45f495455ad202a3e2dfeb96a9a16130396042fe9a3ae9c59b3
+  8882e550e16ebf339c26eb9572ca4feb564f072492e13fe7b272d9d3fb91fc05
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1478,7 +1478,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  b61d4fd410886a09e5ec92d4d9ea19158ae20eec65efbef6e1d54563f09e3931
+  0418b27a95800ca70a3f26c81d956b15ab0e3ce823293cc74a545cbab1969930
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1498,7 +1498,7 @@ verify_index_sha256 internal/platform/store/uow_test.go \
 verify_index_sha256 cmd/aicrm/main.go \
   52fe62cdda6653e597ca338c4cb9a47605b47fb15c21410f6156f6d05691d180
 verify_index_sha256 cmd/aicrm/components.go \
-  aa569d3f24c8416cf236f6cd322d5f221d8286bc7bcfb87ab801f745cb3ead46
+  9b66e2b5e66332dbf26a03d1428b07ce339de4b9b2aade322798c314d8d362cd
 verify_index_sha256 cmd/aicrm/components_test.go \
   b81bf5c6370a3e89dbd99308d7ad31cdb03e716e76c77f412544ab32318a56e0
 verify_index_sha256 cmd/aicrm/scheduler.go \
@@ -1606,7 +1606,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  9cdea0df2a8c01da1e244dd44cd2315c458b61ce7f82f94e8fdc77d318bef24c
+  426c4379d25e4c8f7c11024b29d1e9cbee7af4eb9e094ef999c503714da8a953
 verify_index_sha256 cmd/aicrm/api_test.go \
   34e65cf995c027c92b286a022c1a86016416ac24bf5320c3f562ff0da245a11f
 verify_index_sha256 acceptance/p2s11/doc.go \

@@ -3605,6 +3605,24 @@ slices:
     correction_notes: [slice:initial_decryptor_used_AES_block_size_16_for_WeCom_PKCS7_then_corrected_to_the_official_protocol_padding_block_size_32, verification:PR_repo_contract_detected_the_required_frozen_SHA_anchors_for_Makefile_callback_config_API_mount_and_ledger_then_the_anchors_were_synchronized_without_changing_callback_behavior]
     external_gates: [REAL_WECOM_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, EXTERNAL_SEND_NOT_EXECUTED]
 
+  - slice_id: P3-W2
+    title: wecom-callback-event-dedup-and-durable-dispatch-boundary
+    owner: Codex-Sol
+    status: local_full_gates_pass_ready_for_pr
+    base_sha: 7a592c024a81698fa1b4fea33cff877fd0040081
+    dependency: P3_W1_174_CLOSED_EXACT_MAIN_CI_SUCCESS
+    branch: slice/p3-w2-wecom-event-boundary
+    scope: [verified_decrypted_enter_agent_callback_to_deidentified_event_log_audit, stable_plaintext_sha256_idempotency_key, unknown_callback_event_audit_then_fail_closed, bounded_no_effect_event_subscriber]
+    excluded_scope: [callback_route_OpenAPI_public_port_migration_inbox_persistence_directory_external_contact_sync_Identity_Contact_writes_provider_calls_UI_production_database_live_migration_cutover_external_send]
+    tests: [LOCAL_p3_w2_acceptance_PASS, LOCAL_repo_contract_PASS, LOCAL_static_generated_contracts_PASS, LOCAL_full_Go_WEB_CI_PASS]
+    handwritten_scope: 8_business_and_governance_files_plus_tests
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 0
+    correction_notes: []
+    external_gates: [REAL_WECOM_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, EXTERNAL_SEND_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

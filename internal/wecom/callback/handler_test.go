@@ -47,7 +47,7 @@ func TestOfficialFormatMessageFixtureReturnsEncryptedSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := officialHandler(t, fixture)
+	handler, appender := officialHandlerWithAppender(t, fixture)
 	if plaintext, err := handler.decrypt(encryptedFixtureBody(t, body, fixture.CorpID)); err != nil || string(plaintext) != fixture.ExpectedPlaintext {
 		t.Fatalf("official fixture decrypt = %q, %v", plaintext, err)
 	}
@@ -71,6 +71,13 @@ func TestOfficialFormatMessageFixtureReturnsEncryptedSuccess(t *testing.T) {
 	plaintext, err := handler.decrypt(reply.Encrypt)
 	if err != nil || string(plaintext) != "success" {
 		t.Fatalf("success reply plaintext = %q, %v", plaintext, err)
+	}
+	replay := httptest.NewRecorder()
+	handler.ServeHTTP(replay, httptest.NewRequest(http.MethodPost, ExternalContactCallbackPath+"?"+url.Values{
+		"msg_signature": {fixture.Signature}, "timestamp": {fixture.Timestamp}, "nonce": {fixture.Nonce},
+	}.Encode(), strings.NewReader(string(body))))
+	if replay.Code != http.StatusOK || len(appender.events) != 1 {
+		t.Fatalf("replay response/facts = %d/%d, want 200/1", replay.Code, len(appender.events))
 	}
 }
 
@@ -111,10 +118,43 @@ func TestCallbackNegativeCasesAreStableAndNeverAuthenticate(t *testing.T) {
 	}
 }
 
+func TestCallbackRejectsUnsupportedEventWithoutEncryptedACK(t *testing.T) {
+	fixture := loadFixture(t, "official_message_callback.json")
+	appender := &deduplicatingCallbackAppender{}
+	dispatcher, err := NewEventDispatcher(immediateCallbackUoW{}, appender)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := NewHandler(Config{Enabled: true, CorpID: fixture.CorpID, Token: fixture.Token, EncodingAESKey: fixture.EncodingAESKey}, Options{Dispatcher: dispatcher})
+	if err != nil {
+		t.Fatal(err)
+	}
+	plaintext := []byte("<xml><ToUserName><![CDATA[" + fixture.CorpID + "]]></ToUserName><CreateTime>1700000001</CreateTime><MsgType><![CDATA[event]]></MsgType><Event><![CDATA[change_external_contact]]></Event></xml>")
+	encrypted, err := handler.encrypt(plaintext)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := "<xml><ToUserName><![CDATA[" + fixture.CorpID + "]]></ToUserName><Encrypt><![CDATA[" + encrypted + "]]></Encrypt></xml>"
+	request := httptest.NewRequest(http.MethodPost, EventsPath+"?"+url.Values{
+		"msg_signature": {signatureFor(fixture.Token, fixture.Timestamp, fixture.Nonce, encrypted)}, "timestamp": {fixture.Timestamp}, "nonce": {fixture.Nonce},
+	}.Encode(), strings.NewReader(body))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest || response.Body.String() != "invalid callback" || strings.Contains(response.Body.String(), "success") || len(appender.events) != 1 {
+		t.Fatalf("unsupported event response = %d, %q", response.Code, response.Body.String())
+	}
+	for _, event := range appender.events {
+		if event.Type != rejectedCallbackEventType {
+			t.Fatalf("unknown event was not auditable: %#v", event)
+		}
+	}
+}
+
 func otherRecipientCiphertext(t *testing.T, fixture officialFixture) string {
 	t.Helper()
 	handler, err := NewHandler(Config{Enabled: true, CorpID: "other-corp", Token: fixture.Token, EncodingAESKey: fixture.EncodingAESKey}, Options{
 		RandomByte: func(target []byte) error { return nil },
+		Dispatcher: &EventDispatcher{uow: immediateCallbackUoW{}, events: &deduplicatingCallbackAppender{}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -137,6 +177,9 @@ func TestHandlerRejectsPartialConfiguration(t *testing.T) {
 	if _, err := NewHandler(Config{Enabled: true, CorpID: "wx5823bf96d3bd56c7", Token: "token"}, Options{}); err == nil {
 		t.Fatal("NewHandler accepted partial configuration")
 	}
+	if _, err := NewHandler(Config{Enabled: true, CorpID: "wx5823bf96d3bd56c7", Token: "token", EncodingAESKey: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG"}, Options{}); err == nil {
+		t.Fatal("NewHandler accepted enabled callback without a durable dispatcher")
+	}
 }
 
 func loadFixture(t *testing.T, name string) officialFixture {
@@ -154,6 +197,17 @@ func loadFixture(t *testing.T, name string) officialFixture {
 
 func officialHandler(t *testing.T, fixture officialFixture) *Handler {
 	t.Helper()
+	handler, _ := officialHandlerWithAppender(t, fixture)
+	return handler
+}
+
+func officialHandlerWithAppender(t *testing.T, fixture officialFixture) (*Handler, *deduplicatingCallbackAppender) {
+	t.Helper()
+	appender := &deduplicatingCallbackAppender{}
+	dispatcher, err := NewEventDispatcher(immediateCallbackUoW{}, appender)
+	if err != nil {
+		t.Fatal(err)
+	}
 	handler, err := NewHandler(Config{Enabled: true, CorpID: fixture.CorpID, Token: fixture.Token, EncodingAESKey: fixture.EncodingAESKey}, Options{
 		Clock: func() time.Time { return time.Unix(1700000001, 0) },
 		RandomByte: func(target []byte) error {
@@ -162,12 +216,13 @@ func officialHandler(t *testing.T, fixture officialFixture) *Handler {
 			}
 			return nil
 		},
-		Nonce: func() string { return "reply-nonce" },
+		Nonce:      func() string { return "reply-nonce" },
+		Dispatcher: dispatcher,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return handler
+	return handler, appender
 }
 
 func encryptedFixtureBody(t *testing.T, body []byte, corpID string) string {
