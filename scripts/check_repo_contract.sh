@@ -961,11 +961,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  0742892bc608232c46e478a6017a3e0089dda75a31aaeec53b7354469e6209ac
+  d947dfb8ed3c8a0c7dced2fbbba22a1acdb1f1fb139103261be9fd8c26535c35
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  84282d9b3690935678be4e23ae66b2cc08986262359704492d8596d3efaccd13
+  c99786cc2f0fb3b2c715324ddc2e218c2a2bd94588653f19d9a99d35e490593b
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1487,7 +1487,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  b44df4c0dc98e77656f59d91759707deae0025338b562571a51adc00053ecd7d
+  bc634eef20483d0f618ea4c9b56f817e53ac0863d6474dd229a0d1c3a9988f56
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1790,10 +1790,18 @@ verify_index_sha256 docs/execution/slices/P3-I4A.md \
   67b4d5ef685fc15104edaf40767664f1c441ae82b38e778f47e6762371bc3478
 verify_index_sha256 docs/execution/slices/P3-I4B.md \
   eab53de36d28d54fecd09cb284074d5665903883a00a4f259f8ffdbe4900664e
+verify_index_sha256 docs/execution/slices/P3-I5.md \
+  0bae282fec31140c4840908e21310288b93fa0f9e1c1540ce6a7e0e9868ebb5a
+verify_index_sha256 migrations/00017_identity_pending_event_payload.sql \
+  c5de70f3060c42535c1c8ee851c0cd82122d9f2636ff1271e4bb7679b41d877b
 verify_index_sha256 migrations/00013_identity_receipt_completion_transaction.sql \
   9199103badc244cc03e850ae2786ec94e8b9def50bdf22a7ff62cfb0c9322091
 verify_index_sha256 acceptance/identity/storage_integration_test.go \
-  72ca9ec767fa6d2c1797b30ee2a12a3bc38d24a6960b1f55c4aa3238f193e686
+  7d1ee4dff2f5722348df60b3bb5c02e58bbfdc2fd2943fd4a14bd527ed684851
+verify_index_sha256 acceptance/identity/ingest_integration_test.go \
+  2db7cd28bbb86dbbe7d3d3cb91b80cee4d49f42c3d8148ff11c50c71a7f1ef3f
+verify_index_sha256 acceptance/outbound/o1a_r3_integration_test.go \
+  69272336953465b6eee6a384e0fa55f61e29c7ce472f88368f2139a532761a67
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   548200be57f325a724dc07b1295cea6e0bd554cffecd180151d4d89fba312293
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \

@@ -69,6 +69,42 @@ func (q *Queries) CompleteBindReceipt(ctx context.Context, arg CompleteBindRecei
 	return result.RowsAffected(), nil
 }
 
+const completeIngestReceipt = `-- name: CompleteIngestReceipt :execrows
+UPDATE identity_operation_receipts
+SET
+  state = 'completed',
+  result_status = $1::text,
+  result_customer_id = $2::bigint,
+  result_pending_event_id = $3::bigint,
+  result_event_id = $4::bigint,
+  result_policy_version = 'identity_ingest_attribution_v1',
+  completed_at = now()
+WHERE id = $5::bigint
+  AND state = 'in_progress'
+`
+
+type CompleteIngestReceiptParams struct {
+	ResultStatus         string      `json:"result_status"`
+	ResultCustomerID     pgtype.Int8 `json:"result_customer_id"`
+	ResultPendingEventID pgtype.Int8 `json:"result_pending_event_id"`
+	ResultEventID        pgtype.Int8 `json:"result_event_id"`
+	ID                   int64       `json:"id"`
+}
+
+func (q *Queries) CompleteIngestReceipt(ctx context.Context, arg CompleteIngestReceiptParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeIngestReceipt,
+		arg.ResultStatus,
+		arg.ResultCustomerID,
+		arg.ResultPendingEventID,
+		arg.ResultEventID,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const hasVerifiedWeComIdentityForBindCustomer = `-- name: HasVerifiedWeComIdentityForBindCustomer :one
 SELECT EXISTS (
   SELECT 1
@@ -128,6 +164,56 @@ func (q *Queries) InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAu
 		arg.FingerprintKeyVersion,
 		arg.OperatedBy,
 		arg.Detail,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertPendingIngest = `-- name: InsertPendingIngest :one
+INSERT INTO pending_events (
+  kind,
+  identity_ids,
+  candidate_customer_ids,
+  event_type,
+  payload,
+  source,
+  idempotency_key,
+  occurred_at,
+  policy_version
+) VALUES (
+  $1::text,
+  $2::bigint[],
+  '{}',
+  $3::text,
+  $4::jsonb,
+  $5::text,
+  $6::text,
+  $7::timestamptz,
+  'identity_ingest_attribution_v1'
+)
+RETURNING id
+`
+
+type InsertPendingIngestParams struct {
+	Kind           string             `json:"kind"`
+	IdentityIds    []int64            `json:"identity_ids"`
+	EventType      string             `json:"event_type"`
+	Payload        []byte             `json:"payload"`
+	Source         string             `json:"source"`
+	IdempotencyKey string             `json:"idempotency_key"`
+	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
+}
+
+func (q *Queries) InsertPendingIngest(ctx context.Context, arg InsertPendingIngestParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertPendingIngest,
+		arg.Kind,
+		arg.IdentityIds,
+		arg.EventType,
+		arg.Payload,
+		arg.Source,
+		arg.IdempotencyKey,
+		arg.OccurredAt,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -246,6 +332,64 @@ func (q *Queries) LoadCustomerMergeAudit(ctx context.Context, mergeAuditID int64
 	var i LoadCustomerMergeAuditRow
 	err := row.Scan(&i.PrimaryCustomerID, &i.PolicyVersion)
 	return i, err
+}
+
+const loadIngestReceipt = `-- name: LoadIngestReceipt :one
+SELECT
+  payload_hmac,
+  state,
+  result_status,
+  result_customer_id,
+  result_pending_event_id,
+  result_event_id,
+  result_policy_version
+FROM identity_operation_receipts
+WHERE operation = 'ingest'
+  AND idempotency_scope = 'identity.ingest.v1'
+  AND key_digest = $1::bytea
+`
+
+type LoadIngestReceiptRow struct {
+	PayloadHmac          []byte      `json:"payload_hmac"`
+	State                string      `json:"state"`
+	ResultStatus         pgtype.Text `json:"result_status"`
+	ResultCustomerID     pgtype.Int8 `json:"result_customer_id"`
+	ResultPendingEventID pgtype.Int8 `json:"result_pending_event_id"`
+	ResultEventID        pgtype.Int8 `json:"result_event_id"`
+	ResultPolicyVersion  pgtype.Text `json:"result_policy_version"`
+}
+
+func (q *Queries) LoadIngestReceipt(ctx context.Context, keyDigest []byte) (LoadIngestReceiptRow, error) {
+	row := q.db.QueryRow(ctx, loadIngestReceipt, keyDigest)
+	var i LoadIngestReceiptRow
+	err := row.Scan(
+		&i.PayloadHmac,
+		&i.State,
+		&i.ResultStatus,
+		&i.ResultCustomerID,
+		&i.ResultPendingEventID,
+		&i.ResultEventID,
+		&i.ResultPolicyVersion,
+	)
+	return i, err
+}
+
+const loadPendingIngest = `-- name: LoadPendingIngest :one
+SELECT kind
+FROM pending_events
+WHERE id = $1::bigint
+  AND kind IN ('attribution', 'conflict')
+  AND payload IS NOT NULL
+  AND jsonb_typeof(payload) = 'object'
+  AND policy_version = 'identity_ingest_attribution_v1'
+  AND version >= 1
+`
+
+func (q *Queries) LoadPendingIngest(ctx context.Context, pendingEventID int64) (string, error) {
+	row := q.db.QueryRow(ctx, loadPendingIngest, pendingEventID)
+	var kind string
+	err := row.Scan(&kind)
+	return kind, err
 }
 
 const lockActiveBindCustomer = `-- name: LockActiveBindCustomer :one
@@ -396,6 +540,40 @@ type ReserveBindReceiptParams struct {
 
 func (q *Queries) ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error) {
 	row := q.db.QueryRow(ctx, reserveBindReceipt, arg.KeyDigest, arg.PayloadHmac)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const reserveIngestReceipt = `-- name: ReserveIngestReceipt :one
+INSERT INTO identity_operation_receipts (
+  operation,
+  idempotency_scope,
+  key_digest,
+  command_schema_version,
+  payload_hmac,
+  payload_hmac_key_version,
+  result_schema_version
+) VALUES (
+  'ingest',
+  'identity.ingest.v1',
+  $1::bytea,
+  1,
+  $2::bytea,
+  1,
+  1
+)
+ON CONFLICT (operation, idempotency_scope, key_digest) DO NOTHING
+RETURNING id
+`
+
+type ReserveIngestReceiptParams struct {
+	KeyDigest   []byte `json:"key_digest"`
+	PayloadHmac []byte `json:"payload_hmac"`
+}
+
+func (q *Queries) ReserveIngestReceipt(ctx context.Context, arg ReserveIngestReceiptParams) (int64, error) {
+	row := q.db.QueryRow(ctx, reserveIngestReceipt, arg.KeyDigest, arg.PayloadHmac)
 	var id int64
 	err := row.Scan(&id)
 	return id, err

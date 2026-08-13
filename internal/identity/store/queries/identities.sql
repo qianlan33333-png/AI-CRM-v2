@@ -85,6 +85,88 @@ SET
 WHERE id = sqlc.arg(id)::bigint
   AND state = 'in_progress';
 
+-- name: ReserveIngestReceipt :one
+INSERT INTO identity_operation_receipts (
+  operation,
+  idempotency_scope,
+  key_digest,
+  command_schema_version,
+  payload_hmac,
+  payload_hmac_key_version,
+  result_schema_version
+) VALUES (
+  'ingest',
+  'identity.ingest.v1',
+  sqlc.arg(key_digest)::bytea,
+  1,
+  sqlc.arg(payload_hmac)::bytea,
+  1,
+  1
+)
+ON CONFLICT (operation, idempotency_scope, key_digest) DO NOTHING
+RETURNING id;
+
+-- name: LoadIngestReceipt :one
+SELECT
+  payload_hmac,
+  state,
+  result_status,
+  result_customer_id,
+  result_pending_event_id,
+  result_event_id,
+  result_policy_version
+FROM identity_operation_receipts
+WHERE operation = 'ingest'
+  AND idempotency_scope = 'identity.ingest.v1'
+  AND key_digest = sqlc.arg(key_digest)::bytea;
+
+-- name: CompleteIngestReceipt :execrows
+UPDATE identity_operation_receipts
+SET
+  state = 'completed',
+  result_status = sqlc.arg(result_status)::text,
+  result_customer_id = sqlc.narg(result_customer_id)::bigint,
+  result_pending_event_id = sqlc.narg(result_pending_event_id)::bigint,
+  result_event_id = sqlc.narg(result_event_id)::bigint,
+  result_policy_version = 'identity_ingest_attribution_v1',
+  completed_at = now()
+WHERE id = sqlc.arg(id)::bigint
+  AND state = 'in_progress';
+
+-- name: LoadPendingIngest :one
+SELECT kind
+FROM pending_events
+WHERE id = sqlc.arg(pending_event_id)::bigint
+  AND kind IN ('attribution', 'conflict')
+  AND payload IS NOT NULL
+  AND jsonb_typeof(payload) = 'object'
+  AND policy_version = 'identity_ingest_attribution_v1'
+  AND version >= 1;
+
+-- name: InsertPendingIngest :one
+INSERT INTO pending_events (
+  kind,
+  identity_ids,
+  candidate_customer_ids,
+  event_type,
+  payload,
+  source,
+  idempotency_key,
+  occurred_at,
+  policy_version
+) VALUES (
+  sqlc.arg(kind)::text,
+  sqlc.arg(identity_ids)::bigint[],
+  '{}',
+  sqlc.arg(event_type)::text,
+  sqlc.arg(payload)::jsonb,
+  sqlc.arg(source)::text,
+  sqlc.arg(idempotency_key)::text,
+  sqlc.arg(occurred_at)::timestamptz,
+  'identity_ingest_attribution_v1'
+)
+RETURNING id;
+
 -- name: LockActiveBindCustomer :one
 SELECT id
 FROM customers

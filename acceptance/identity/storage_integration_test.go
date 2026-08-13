@@ -86,8 +86,8 @@ RETURNING id`, primaryID, "00112233445566778899aabbccddeeff").Scan(&identityID)
 		t.Fatalf("insert identity id=%d err=%v", identityID, err)
 	}
 	if _, err = tx.Exec(ctx, `
-INSERT INTO pending_events (kind, identity_ids, candidate_customer_ids, source, policy_version, event_type, idempotency_key, occurred_at)
-VALUES ('attribution', ARRAY[$1::bigint], ARRAY[$2::bigint], 'acceptance', 'identity_v1', 'event', 'event-key', now())`, identityID, mergedID); err != nil {
+INSERT INTO pending_events (kind, identity_ids, candidate_customer_ids, source, policy_version, event_type, payload, idempotency_key, occurred_at)
+VALUES ('attribution', ARRAY[$1::bigint], ARRAY[$2::bigint], 'acceptance', 'identity_v1', 'event', '{}'::jsonb, 'event-key', now())`, identityID, mergedID); err != nil {
 		t.Fatalf("insert attribution pending event: %v", err)
 	}
 	if _, err = tx.Exec(ctx, `SAVEPOINT invalid_merge_detail`); err != nil {
