@@ -11,6 +11,7 @@ MIGRATION_TEST_DATABASE_URL="$database_url" \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
 
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 23
 
 /usr/bin/env -u BASH_ENV -u ENV \
   GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -58,7 +59,7 @@ read -r upgrade_waterline receipts links events jobs task_status <<<"$(
        FROM goose_db_version
       WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "23" && "$receipts" = "1" && "$links" = "1" ]]
+[[ "$upgrade_waterline" = "24" && "$receipts" = "1" && "$links" = "1" ]]
 [[ "$events" = "1" && "$jobs" = "0" && "$task_status" = "cancelled" ]]
 
 read -r outbound_links river_foreign_keys <<<"$(

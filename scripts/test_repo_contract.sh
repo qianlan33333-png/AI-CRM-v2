@@ -3364,6 +3364,37 @@ if (cd "$o6b1_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P3-O6B1 PG/River acceptance CI disconnect was accepted"
 fi
 
+o6b2_destructive_down="$(make_fixture p3-o6b2-destructive-down)"
+sed -i.bak 's/SELECT 1;/DROP TABLE outbound_control_receipts;/' "$o6b2_destructive_down/migrations/00024_outbound_manual_retry_control.sql"
+rm -f "$o6b2_destructive_down/migrations/00024_outbound_manual_retry_control.sql.bak"
+restage_p2s18_receipt "$o6b2_destructive_down" migrations/00024_outbound_manual_retry_control.sql
+if (cd "$o6b2_destructive_down" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B2 destructive manual retry down migration was accepted"
+fi
+
+o6b2_unknown_retry="$(make_fixture p3-o6b2-unknown-retry)"
+sed -i.bak 's/target[.]Status != TaskStatusFinalFailed && target[.]Status != TaskStatusCancelled/target.Status != TaskStatusOutcomeUnknown/' "$o6b2_unknown_retry/internal/outbound/app/manual_retry.go"
+rm -f "$o6b2_unknown_retry/internal/outbound/app/manual_retry.go.bak"
+restage_p2s18_receipt "$o6b2_unknown_retry" internal/outbound/app/manual_retry.go
+if (cd "$o6b2_unknown_retry" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B2 outcome_unknown manual retry was accepted"
+fi
+
+o6b2_cross_catalog="$(make_fixture p3-o6b2-cross-catalog)"
+printf '%s\n' '-- INSERT INTO river_job DEFAULT VALUES;' >>"$o6b2_cross_catalog/internal/outbound/store/queries/control.sql"
+restage_p2s18_receipt "$o6b2_cross_catalog" internal/outbound/store/queries/control.sql
+if (cd "$o6b2_cross_catalog" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B2 Outbound SQLC River catalog write was accepted"
+fi
+
+o6b2_ci_disconnect="$(make_fixture p3-o6b2-ci-disconnect)"
+sed -i.bak '/P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL=.*p3-o6b2-manual-retry-acceptance/d' "$o6b2_ci_disconnect/.github/workflows/application-go.yml"
+rm -f "$o6b2_ci_disconnect/.github/workflows/application-go.yml.bak"
+restage_p2s18_receipt "$o6b2_ci_disconnect" .github/workflows/application-go.yml
+if (cd "$o6b2_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P3-O6B2 PG/River acceptance CI disconnect was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

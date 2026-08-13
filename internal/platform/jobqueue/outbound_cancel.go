@@ -29,6 +29,29 @@ type OutboundTaskJob struct {
 	Kind string
 }
 
+type OutboundManualRetryTask struct {
+	TaskID          int64
+	JobKind         string
+	ReceiptID       int64
+	BatchID         int64
+	BatchChunkIndex int32
+}
+
+type outboundManualRetryOneArgs struct {
+	TaskID    int64 `json:"task_id"`
+	ReceiptID int64 `json:"receipt_id"`
+}
+
+func (outboundManualRetryOneArgs) Kind() string { return outboundEnqueueOneKind }
+
+type outboundManualRetryBatchArgs struct {
+	BatchID    int64 `json:"batch_id"`
+	ChunkIndex int32 `json:"chunk_index"`
+	TaskID     int64 `json:"task_id"`
+}
+
+func (outboundManualRetryBatchArgs) Kind() string { return outboundEnqueueBatchKind }
+
 // OutboundControlClient is the narrow platform-owned River catalog boundary
 // needed by Outbound cancellation. It uses only River's typed transaction APIs.
 type OutboundControlClient struct {
@@ -82,6 +105,38 @@ func (client *OutboundControlClient) DeletePendingTaskTx(
 		return OutboundTaskJob{}, classifyOutboundJobError(err, deleted)
 	}
 	return OutboundTaskJob{ID: deleted.ID, Kind: deleted.Kind}, nil
+}
+
+// InsertManualRetryTaskTx inserts only the two frozen Outbound job shapes.
+func (client *OutboundControlClient) InsertManualRetryTaskTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	task OutboundManualRetryTask,
+) (OutboundTaskJob, error) {
+	if client == nil || client.client == nil || tx == nil || task.TaskID <= 0 {
+		return OutboundTaskJob{}, ErrOutboundTaskJobUnavailable
+	}
+	var args queueriver.JobArgs
+	switch task.JobKind {
+	case outboundEnqueueOneKind:
+		if task.ReceiptID <= 0 || task.BatchID != 0 || task.BatchChunkIndex != 0 {
+			return OutboundTaskJob{}, ErrOutboundTaskJobUnavailable
+		}
+		args = outboundManualRetryOneArgs{TaskID: task.TaskID, ReceiptID: task.ReceiptID}
+	case outboundEnqueueBatchKind:
+		if task.BatchID <= 0 || task.BatchChunkIndex < 0 || task.ReceiptID != 0 {
+			return OutboundTaskJob{}, ErrOutboundTaskJobUnavailable
+		}
+		args = outboundManualRetryBatchArgs{TaskID: task.TaskID, BatchID: task.BatchID, ChunkIndex: task.BatchChunkIndex}
+	default:
+		return OutboundTaskJob{}, ErrOutboundTaskJobUnavailable
+	}
+	inserted, err := client.client.InsertTx(ctx, tx, args, &queueriver.InsertOpts{Queue: outboundQueueName})
+	if err != nil || inserted == nil || inserted.Job == nil || inserted.Job.ID <= 0 ||
+		inserted.Job.Queue != outboundQueueName || inserted.Job.Kind != task.JobKind || outboundTaskID(inserted.Job) != task.TaskID {
+		return OutboundTaskJob{}, errors.Join(ErrOutboundTaskJobUnavailable, err)
+	}
+	return OutboundTaskJob{ID: inserted.Job.ID, Kind: inserted.Job.Kind}, nil
 }
 
 func (client *OutboundControlClient) findPendingTaskJobTx(ctx context.Context, tx pgx.Tx, taskID int64) (*rivertype.JobRow, error) {

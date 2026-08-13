@@ -86,6 +86,81 @@ func (q *Queries) CompleteOutboundCancelReceipt(ctx context.Context, arg Complet
 	return i, err
 }
 
+const completeOutboundManualRetryReceipt = `-- name: CompleteOutboundManualRetryReceipt :one
+UPDATE outbound_control_receipts AS receipt
+SET state = 'completed',
+    customer_id = $1::bigint,
+    job_generation = $2::integer,
+    river_job_id = $3::bigint,
+    job_kind = $4::text,
+    event_id = $5::bigint,
+    task_status = 'pending',
+    completed_at = now()
+WHERE receipt.id = $6::bigint
+  AND receipt.operation = 'manual_retry'
+  AND receipt.task_id = $7::bigint
+  AND receipt.state = 'reserved'
+RETURNING receipt.id, receipt.idempotency_scope, receipt.idempotency_key,
+  receipt.operation, receipt.task_id, receipt.state, receipt.customer_id,
+  receipt.job_generation, receipt.river_job_id, receipt.job_kind,
+  receipt.event_id, receipt.task_status, receipt.completed_at
+`
+
+type CompleteOutboundManualRetryReceiptParams struct {
+	CustomerID    int64  `json:"customer_id"`
+	JobGeneration int32  `json:"job_generation"`
+	RiverJobID    int64  `json:"river_job_id"`
+	JobKind       string `json:"job_kind"`
+	EventID       int64  `json:"event_id"`
+	ID            int64  `json:"id"`
+	TaskID        int64  `json:"task_id"`
+}
+
+type CompleteOutboundManualRetryReceiptRow struct {
+	ID               int64              `json:"id"`
+	IdempotencyScope string             `json:"idempotency_scope"`
+	IdempotencyKey   string             `json:"idempotency_key"`
+	Operation        string             `json:"operation"`
+	TaskID           int64              `json:"task_id"`
+	State            string             `json:"state"`
+	CustomerID       pgtype.Int8        `json:"customer_id"`
+	JobGeneration    pgtype.Int4        `json:"job_generation"`
+	RiverJobID       pgtype.Int8        `json:"river_job_id"`
+	JobKind          pgtype.Text        `json:"job_kind"`
+	EventID          pgtype.Int8        `json:"event_id"`
+	TaskStatus       pgtype.Text        `json:"task_status"`
+	CompletedAt      pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) CompleteOutboundManualRetryReceipt(ctx context.Context, arg CompleteOutboundManualRetryReceiptParams) (CompleteOutboundManualRetryReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeOutboundManualRetryReceipt,
+		arg.CustomerID,
+		arg.JobGeneration,
+		arg.RiverJobID,
+		arg.JobKind,
+		arg.EventID,
+		arg.ID,
+		arg.TaskID,
+	)
+	var i CompleteOutboundManualRetryReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.IdempotencyScope,
+		&i.IdempotencyKey,
+		&i.Operation,
+		&i.TaskID,
+		&i.State,
+		&i.CustomerID,
+		&i.JobGeneration,
+		&i.RiverJobID,
+		&i.JobKind,
+		&i.EventID,
+		&i.TaskStatus,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const loadLatestOutboundTaskJobLink = `-- name: LoadLatestOutboundTaskJobLink :one
 SELECT link.task_id, link.generation, link.river_job_id, link.job_kind, link.cancelled_at
 FROM outbound_task_job_links AS link
@@ -132,6 +207,38 @@ func (q *Queries) LockOutboundTaskForCancel(ctx context.Context, taskID int64) (
 	row := q.db.QueryRow(ctx, lockOutboundTaskForCancel, taskID)
 	var i LockOutboundTaskForCancelRow
 	err := row.Scan(&i.ID, &i.CustomerID, &i.Status)
+	return i, err
+}
+
+const lockOutboundTaskForManualRetry = `-- name: LockOutboundTaskForManualRetry :one
+SELECT task.id, task.customer_id, task.status, task.batch_id, task.batch_chunk_index,
+  receipt.id AS enqueue_receipt_id
+FROM outbound_tasks AS task
+LEFT JOIN outbound_enqueue_receipts AS receipt ON receipt.task_id = task.id AND receipt.state = 'accepted'
+WHERE task.id = $1::bigint
+FOR UPDATE OF task
+`
+
+type LockOutboundTaskForManualRetryRow struct {
+	ID               int64       `json:"id"`
+	CustomerID       int64       `json:"customer_id"`
+	Status           string      `json:"status"`
+	BatchID          pgtype.Int8 `json:"batch_id"`
+	BatchChunkIndex  pgtype.Int4 `json:"batch_chunk_index"`
+	EnqueueReceiptID pgtype.Int8 `json:"enqueue_receipt_id"`
+}
+
+func (q *Queries) LockOutboundTaskForManualRetry(ctx context.Context, taskID int64) (LockOutboundTaskForManualRetryRow, error) {
+	row := q.db.QueryRow(ctx, lockOutboundTaskForManualRetry, taskID)
+	var i LockOutboundTaskForManualRetryRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.Status,
+		&i.BatchID,
+		&i.BatchChunkIndex,
+		&i.EnqueueReceiptID,
+	)
 	return i, err
 }
 
@@ -202,6 +309,40 @@ func (q *Queries) MarkOutboundTaskJobCancelled(ctx context.Context, arg MarkOutb
 		&i.RiverJobID,
 		&i.JobKind,
 		&i.CancelledAt,
+	)
+	return i, err
+}
+
+const markOutboundTaskManualRetryPending = `-- name: MarkOutboundTaskManualRetryPending :one
+UPDATE outbound_tasks AS task
+SET status = 'pending',
+    attempt_count = 0,
+    current_attempt_id = NULL,
+    last_failure_kind = NULL,
+    last_error = NULL,
+    provider_message_id = NULL,
+    sent_at = NULL,
+    status_updated_at = now()
+WHERE task.id = $1::bigint
+  AND task.status IN ('final_failed', 'cancelled')
+RETURNING task.id, task.customer_id, task.status, task.status_updated_at
+`
+
+type MarkOutboundTaskManualRetryPendingRow struct {
+	ID              int64              `json:"id"`
+	CustomerID      int64              `json:"customer_id"`
+	Status          string             `json:"status"`
+	StatusUpdatedAt pgtype.Timestamptz `json:"status_updated_at"`
+}
+
+func (q *Queries) MarkOutboundTaskManualRetryPending(ctx context.Context, taskID int64) (MarkOutboundTaskManualRetryPendingRow, error) {
+	row := q.db.QueryRow(ctx, markOutboundTaskManualRetryPending, taskID)
+	var i MarkOutboundTaskManualRetryPendingRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.Status,
+		&i.StatusUpdatedAt,
 	)
 	return i, err
 }
@@ -292,6 +433,64 @@ type ReserveOutboundCancelReceiptRow struct {
 func (q *Queries) ReserveOutboundCancelReceipt(ctx context.Context, arg ReserveOutboundCancelReceiptParams) (ReserveOutboundCancelReceiptRow, error) {
 	row := q.db.QueryRow(ctx, reserveOutboundCancelReceipt, arg.IdempotencyScope, arg.IdempotencyKey, arg.TaskID)
 	var i ReserveOutboundCancelReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.IdempotencyScope,
+		&i.IdempotencyKey,
+		&i.Operation,
+		&i.TaskID,
+		&i.State,
+		&i.CustomerID,
+		&i.JobGeneration,
+		&i.RiverJobID,
+		&i.JobKind,
+		&i.EventID,
+		&i.TaskStatus,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const reserveOutboundManualRetryReceipt = `-- name: ReserveOutboundManualRetryReceipt :one
+INSERT INTO outbound_control_receipts (
+  idempotency_scope, idempotency_key, operation, task_id
+) VALUES (
+  $1::text,
+  $2::text,
+  'manual_retry',
+  $3::bigint
+)
+ON CONFLICT (idempotency_scope, idempotency_key) DO UPDATE
+SET idempotency_key = EXCLUDED.idempotency_key
+RETURNING id, idempotency_scope, idempotency_key, operation, task_id, state,
+  customer_id, job_generation, river_job_id, job_kind, event_id, task_status, completed_at
+`
+
+type ReserveOutboundManualRetryReceiptParams struct {
+	IdempotencyScope string `json:"idempotency_scope"`
+	IdempotencyKey   string `json:"idempotency_key"`
+	TaskID           int64  `json:"task_id"`
+}
+
+type ReserveOutboundManualRetryReceiptRow struct {
+	ID               int64              `json:"id"`
+	IdempotencyScope string             `json:"idempotency_scope"`
+	IdempotencyKey   string             `json:"idempotency_key"`
+	Operation        string             `json:"operation"`
+	TaskID           int64              `json:"task_id"`
+	State            string             `json:"state"`
+	CustomerID       pgtype.Int8        `json:"customer_id"`
+	JobGeneration    pgtype.Int4        `json:"job_generation"`
+	RiverJobID       pgtype.Int8        `json:"river_job_id"`
+	JobKind          pgtype.Text        `json:"job_kind"`
+	EventID          pgtype.Int8        `json:"event_id"`
+	TaskStatus       pgtype.Text        `json:"task_status"`
+	CompletedAt      pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) ReserveOutboundManualRetryReceipt(ctx context.Context, arg ReserveOutboundManualRetryReceiptParams) (ReserveOutboundManualRetryReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveOutboundManualRetryReceipt, arg.IdempotencyScope, arg.IdempotencyKey, arg.TaskID)
+	var i ReserveOutboundManualRetryReceiptRow
 	err := row.Scan(
 		&i.ID,
 		&i.IdempotencyScope,
