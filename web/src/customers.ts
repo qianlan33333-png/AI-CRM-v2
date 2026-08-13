@@ -25,6 +25,12 @@ export interface CustomerListPage {
   readonly watermark: string;
 }
 
+/** A server response retained locally so users can return to an earlier page. */
+export interface CustomerListHistoryEntry {
+  readonly requestCursor?: string;
+  readonly page: CustomerListPage;
+}
+
 export interface CustomerListFilters {
   readonly limit: number;
   readonly keyword?: string;
@@ -288,6 +294,29 @@ export function appendCustomerListPage(
   const customerIDs = new Set(current.items.map((item) => item.id));
   if (next.items.some((item) => customerIDs.has(item.id))) return undefined;
   return { ...next, items: [...current.items, ...next.items] };
+}
+
+/**
+ * Adds a server-issued next page to local navigation history. The cursor is
+ * compared literally and remains opaque; the client never derives a cursor
+ * for a previous page.
+ */
+export function appendCustomerListHistoryPage(
+  history: readonly CustomerListHistoryEntry[],
+  requestCursor: string,
+  next: CustomerListPage,
+): readonly CustomerListHistoryEntry[] | undefined {
+  const current = history.at(-1);
+  if (!current || current.page.nextCursor !== requestCursor) return undefined;
+
+  const historicalItems = history.flatMap((entry) => entry.page.items);
+  const merged = appendCustomerListPage(
+    { ...current.page, items: historicalItems },
+    next,
+  );
+  if (!merged) return undefined;
+
+  return [...history, { requestCursor, page: next }];
 }
 
 function optionalPositiveInteger(value: unknown): number | null | undefined {

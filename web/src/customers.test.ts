@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  appendCustomerListHistoryPage,
   appendCustomerListPage,
   customerListParams,
   loadCustomers,
@@ -155,6 +156,31 @@ describe("customer response parsing", () => {
         ...next,
         items: [{ ...next.items[0], id: 7 }],
       }),
+    ).toBeUndefined();
+  });
+
+  it("keeps previous-page navigation local while accepting only its exact opaque cursor", () => {
+    const first = parseCustomerListPage(rawPage);
+    const second = parseCustomerListPage({
+      ...rawPage,
+      items: [{ ...rawCustomer, id: 8, name: "林小姐" }],
+      next_cursor: null,
+    });
+    if (!first || !second) throw new Error("expected valid pages");
+
+    const history = appendCustomerListHistoryPage(
+      [{ page: first }],
+      "opaque-server-cursor",
+      second,
+    );
+    expect(history?.map((entry) => entry.page.items[0]?.id)).toEqual([7, 8]);
+    expect(history?.[1]?.requestCursor).toBe("opaque-server-cursor");
+    expect(
+      appendCustomerListHistoryPage(
+        [{ page: first }],
+        "client-made-cursor",
+        second,
+      ),
     ).toBeUndefined();
   });
 });

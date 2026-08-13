@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  appendCustomerListPage,
+  appendCustomerListHistoryPage,
   defaultCustomerListFilterDraft,
   generatedCustomerTransport,
   loadCustomers,
   parseCustomerListFilters,
   type CustomerListFilterDraft,
   type CustomerListFilters,
+  type CustomerListHistoryEntry,
   type CustomerListPage,
   type CustomerLoadFailure,
   type CustomerRecord,
@@ -31,14 +32,16 @@ export type CustomerListScreen =
   | {
       readonly kind: "ready";
       readonly page: CustomerListPage;
-      readonly loadingMore: boolean;
+      readonly pageNumber: number;
+      readonly hasPreviousPage: boolean;
+      readonly loadingNextPage: boolean;
       readonly paginationFailure?: CustomerLoadFailure;
     };
 
 interface CustomerListRequest {
   readonly filters: CustomerListFilters;
   readonly cursor?: string;
-  readonly append: boolean;
+  readonly direction: "initial" | "next";
 }
 
 const roleLabels: Record<CustomerRole, string> = {
@@ -108,7 +111,8 @@ export interface CustomerListContentProps {
   readonly role: CustomerRole;
   readonly screen: CustomerListScreen;
   readonly onRetry: () => void;
-  readonly onLoadMore: () => void;
+  readonly onPreviousPage: () => void;
+  readonly onNextPage: () => void;
   readonly onCustomerNavigate?: CustomerNavigateHandler;
 }
 
@@ -120,7 +124,8 @@ export function CustomerListContent({
   role,
   screen,
   onRetry,
-  onLoadMore,
+  onPreviousPage,
+  onNextPage,
   onCustomerNavigate,
 }: CustomerListContentProps): React.ReactElement {
   if (screen.kind === "loading") {
@@ -187,27 +192,34 @@ export function CustomerListContent({
       </div>
       {screen.paginationFailure && (
         <div className="customer-list__pagination-error" role="alert">
-          <p>继续加载失败：{failureMessages[screen.paginationFailure]}</p>
+          <p>翻到下一页失败：{failureMessages[screen.paginationFailure]}</p>
           <button type="button" onClick={onRetry}>
-            重试加载更多
+            重试下一页
           </button>
         </div>
       )}
-      {screen.loadingMore && (
+      {screen.loadingNextPage && (
         <p className="customer-list__more-state" role="status">
-          正在加载更多客户…
+          正在读取下一页客户…
         </p>
       )}
-      {page.nextCursor && (
+      <nav className="customer-list__pagination" aria-label="客户列表分页">
         <button
-          className="customer-list__more"
-          disabled={screen.loadingMore}
+          disabled={!screen.hasPreviousPage || screen.loadingNextPage}
           type="button"
-          onClick={onLoadMore}
+          onClick={onPreviousPage}
         >
-          {screen.loadingMore ? "正在加载更多…" : "加载更多客户"}
+          上一页
         </button>
-      )}
+        <p aria-live="polite">第 {screen.pageNumber} 页</p>
+        <button
+          disabled={!page.nextCursor || screen.loadingNextPage}
+          type="button"
+          onClick={onNextPage}
+        >
+          下一页
+        </button>
+      </nav>
     </div>
   );
 }
@@ -245,12 +257,14 @@ function CustomerListFiltersForm({
   loading,
   error,
   onInputChange,
+  onClear,
   onSubmit,
 }: {
   readonly draft: CustomerListFilterDraft;
   readonly loading: boolean;
   readonly error?: string;
   readonly onInputChange: React.ChangeEventHandler<HTMLInputElement>;
+  readonly onClear: () => void;
   readonly onSubmit: React.FormEventHandler<HTMLFormElement>;
 }) {
   return (
@@ -362,6 +376,9 @@ function CustomerListFiltersForm({
         <button disabled={loading} type="submit">
           {loading ? "正在读取…" : "应用筛选"}
         </button>
+        <button disabled={loading} type="button" onClick={onClear}>
+          清空筛选
+        </button>
       </fieldset>
       {error && (
         <p className="customer-list__filter-error" role="alert">
@@ -389,19 +406,25 @@ export function CustomerListPage({
     isDeleted: false,
   });
   const lastRequest = useRef<CustomerListRequest>({
-    append: false,
+    direction: "initial",
     filters: appliedFilters.current,
   });
+  const pageHistory = useRef<readonly CustomerListHistoryEntry[]>([]);
+  const pageHistoryIndex = useRef(0);
 
   const requestPage = useCallback(
     async (request: CustomerListRequest) => {
       const version = requestVersion.current + 1;
       requestVersion.current = version;
       lastRequest.current = request;
-      if (request.append) {
+      if (request.direction === "next") {
         setScreen((current) =>
           current.kind === "ready"
-            ? { ...current, loadingMore: true, paginationFailure: undefined }
+            ? {
+                ...current,
+                loadingNextPage: true,
+                paginationFailure: undefined,
+              }
             : current,
         );
       } else {
@@ -418,10 +441,10 @@ export function CustomerListPage({
       if (result.status !== "loaded") {
         if (result.status === "unauthenticated") onUnauthenticated?.();
         setScreen((current) =>
-          request.append && current.kind === "ready"
+          request.direction === "next" && current.kind === "ready"
             ? {
                 ...current,
-                loadingMore: false,
+                loadingNextPage: false,
                 paginationFailure: result.status,
               }
             : { kind: "error", failure: result.status },
@@ -430,29 +453,45 @@ export function CustomerListPage({
       }
 
       setScreen((current) => {
-        if (request.append && current.kind === "ready") {
-          const page = appendCustomerListPage(current.page, result.page);
-          if (!page) {
+        if (request.direction === "next" && current.kind === "ready") {
+          const history = appendCustomerListHistoryPage(
+            pageHistory.current,
+            request.cursor ?? "",
+            result.page,
+          );
+          if (!history) {
             return {
               ...current,
-              loadingMore: false,
+              loadingNextPage: false,
               paginationFailure: "unavailable",
             };
           }
+          pageHistory.current = history;
+          pageHistoryIndex.current = history.length - 1;
           return {
             kind: "ready",
-            loadingMore: false,
-            page,
+            loadingNextPage: false,
+            hasPreviousPage: true,
+            page: result.page,
+            pageNumber: history.length,
           };
         }
-        return { kind: "ready", loadingMore: false, page: result.page };
+        pageHistory.current = [{ page: result.page }];
+        pageHistoryIndex.current = 0;
+        return {
+          kind: "ready",
+          hasPreviousPage: false,
+          loadingNextPage: false,
+          page: result.page,
+          pageNumber: 1,
+        };
       });
     },
     [onUnauthenticated, transport],
   );
 
   useEffect(() => {
-    void requestPage({ append: false, filters: appliedFilters.current });
+    void requestPage({ direction: "initial", filters: appliedFilters.current });
     return () => {
       requestVersion.current += 1;
     };
@@ -501,25 +540,70 @@ export function CustomerListPage({
     }
     setFilterError(undefined);
     appliedFilters.current = parsed.filters;
-    void requestPage({ append: false, filters: parsed.filters });
+    void requestPage({ direction: "initial", filters: parsed.filters });
+  };
+
+  const clearFilters = () => {
+    const clearedDraft = { ...defaultCustomerListFilterDraft };
+    const parsed = parseCustomerListFilters(clearedDraft);
+    if (!parsed.ok) return;
+    setDraft(clearedDraft);
+    setFilterError(undefined);
+    appliedFilters.current = parsed.filters;
+    void requestPage({ direction: "initial", filters: parsed.filters });
   };
 
   const retry = () => {
     void requestPage(lastRequest.current);
   };
 
-  const loadMore = () => {
+  const loadNextPage = () => {
     if (
       screen.kind !== "ready" ||
       !screen.page.nextCursor ||
-      screen.loadingMore
+      screen.loadingNextPage
     ) {
       return;
     }
+    const nextHistoryEntry =
+      pageHistory.current[pageHistoryIndex.current + 1];
+    if (nextHistoryEntry) {
+      requestVersion.current += 1;
+      pageHistoryIndex.current += 1;
+      setScreen({
+        kind: "ready",
+        hasPreviousPage: true,
+        loadingNextPage: false,
+        page: nextHistoryEntry.page,
+        pageNumber: pageHistoryIndex.current + 1,
+      });
+      return;
+    }
     void requestPage({
-      append: true,
+      direction: "next",
       cursor: screen.page.nextCursor,
       filters: appliedFilters.current,
+    });
+  };
+
+  const loadPreviousPage = () => {
+    if (
+      screen.kind !== "ready" ||
+      screen.loadingNextPage ||
+      pageHistoryIndex.current === 0
+    ) {
+      return;
+    }
+    requestVersion.current += 1;
+    pageHistoryIndex.current -= 1;
+    const page = pageHistory.current[pageHistoryIndex.current]?.page;
+    if (!page) return;
+    setScreen({
+      kind: "ready",
+      hasPreviousPage: pageHistoryIndex.current > 0,
+      loadingNextPage: false,
+      page,
+      pageNumber: pageHistoryIndex.current + 1,
     });
   };
 
@@ -537,13 +621,15 @@ export function CustomerListPage({
         draft={draft}
         error={filterError}
         loading={screen.kind === "loading"}
+        onClear={clearFilters}
         onInputChange={updateDraft}
         onSubmit={submitFilters}
       />
       <CustomerListContent
         role={role}
         screen={screen}
-        onLoadMore={loadMore}
+        onNextPage={loadNextPage}
+        onPreviousPage={loadPreviousPage}
         onRetry={retry}
         onCustomerNavigate={onCustomerNavigate}
       />
