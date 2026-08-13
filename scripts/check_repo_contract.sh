@@ -1539,7 +1539,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  2a0a52fd1256701b877bb1298b2e5c487c4dde2d03e6521c01b4d7f9266f02b3
+  13c7c16c183fb2824e44a324db22d77b5a80c2d35c7b1e885ecc7fd4130a3557
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1695,7 +1695,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  2c363171bd33937d5dd89caf5f3c2b5935b38d459077ae1c3f30a954542a666e
+  eabb7dd3cc9107204cf830f8b8916928142ccdda05625c97126037346074e2f7
 verify_index_sha256 cmd/aicrm/api_test.go \
   fc1075e0e21f655808da99579a991c7bcc766faa623e54bb6b9caa5a1de0c6cf
 verify_index_sha256 acceptance/p2s11/doc.go \
