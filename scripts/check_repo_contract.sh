@@ -926,7 +926,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  9ce231ffc27424cb56fffac8615ce43c072a8610425701fc3770e358eb782e9d
+  f3fc675b40d06b3842136080fd46a66c969b4029d807e044e8aeb34a561ebba5
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -942,7 +942,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  a67726dc66d82b07309e24651b3813119ae16b7ddb004bdc56ea8889baa5f404
+  21ba234c32e7470f35bf05a374afefb821db43cd31deda8c230396aa97f2e1c2
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -954,11 +954,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  b8b457f63a8ec744badc83f927d60af386e946b22455f55fb54bd4a5e34261ce
+  f9900269d1d55740352e8604a9b22d51ebf4b35f91f2c5544c2acf2bd47799f8
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  b01a182eed25b7bcdda7304fbf9c941df4cae47e53a404d5c0e3cfdd0e6a187e
+  d59d743b97cf6eb3873af5bff95bc573d2af17116246b7717a66b87c96a4fed7
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -992,11 +992,11 @@ verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  450ac238416af41ce48af8d24dc74402349d67388bb659d2827d269f3efe2e97
+  645cb9183925dd7d95e5b5d5eb8b1a2ebbd65423c26a3eb01e6790c9a7bb0f3a
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
-  2148ec7350278ff254bf1ba081e4c2a0625eeede2f8bd1b6f752f97b98ce1b8f
+  68cdfc28cdd44c8bb69a654c1da1d4fad22652447d6a79b3c02746ec7e742b9d
 verify_index_sha256 internal/events/port/port_test.go \
   b05782238d51e24efdeac613f4ef9ea97d31cf98113cae3005ef9f5f04cf3341
 verify_index_sha256 internal/events/store/queries/event_log.sql \
@@ -1786,7 +1786,7 @@ verify_index_sha256 docs/execution/slices/P3-I4B.md \
 verify_index_sha256 migrations/00013_identity_receipt_completion_transaction.sql \
   9199103badc244cc03e850ae2786ec94e8b9def50bdf22a7ff62cfb0c9322091
 verify_index_sha256 acceptance/identity/storage_integration_test.go \
-  21fe95b9fc6044aadd023fcdbf41a3b967e8f67e781d3379ca4c79d8fe60068c
+  65db9e2d28032f366eac375be8b165937feee6627f754346c05a513094a329df
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   548200be57f325a724dc07b1295cea6e0bd554cffecd180151d4d89fba312293
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
@@ -2662,7 +2662,7 @@ grep -Fq '{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.Capabil
   fail "updateCustomer must remain protected by the CSRF middleware"
 
 p3c02a_events="$(git show :internal/events/port/port.go)"
-grep -Fq 'EvCustomerUpdated = "customer.updated"' <<<"$p3c02a_events" ||
+grep -Eq 'EvCustomerUpdated[[:space:]]*=[[:space:]]*"customer\.updated"' <<<"$p3c02a_events" ||
   fail "P3-C02A customer.updated event contract drifted"
 
 p3c02a_openapi="$(git show :api/openapi.yaml)"
