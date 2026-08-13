@@ -55,6 +55,7 @@ owners:
     package: internal/outbound
     tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts]
     constraints:
+      outbound_tasks: provider_result_driven_status_projection_without_retry_scheduling
       outbound_send_attempts: stable_provider_attempt_receipts_owned_by_outbound
 
   events:

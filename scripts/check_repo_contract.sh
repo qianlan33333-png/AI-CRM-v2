@@ -48,6 +48,7 @@ required=(
   migrations/00009_segment_query_indexes.sql
   migrations/00018_segment_crud_receipts.sql
   migrations/00020_outbound_send_attempts.sql
+  migrations/00021_outbound_task_status.sql
   internal/outbound/app/sender.go
   internal/outbound/app/sender_test.go
   internal/outbound/store/queries/send_attempts.sql
@@ -55,7 +56,9 @@ required=(
   internal/outbound/worker/sender.go
   internal/outbound/worker/sender_test.go
   acceptance/outbound/o4_sender_integration_test.go
+  acceptance/outbound/o5_status_integration_test.go
   docs/execution/slices/P3-O4.md
+  docs/execution/slices/P3-O5.md
   internal/segment/port/port.go
   internal/segment/port/port_test.go
   internal/segment/dsl/ast.go
@@ -969,7 +972,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  f829b9eadc8e5dc6743108ae496b4c88db2abbda1c046b0369537596718aeeca
+  137d6f3de668a1fdbc675295ae71930dcebaef5ce671b7ed498c16be7642cee7
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -985,7 +988,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  6d73db1b7da4c2d762c335a780ba0fd0856d36c0fdbc1714758e5b04f1d221e1
+  a606e9b302304f9923f897004f0f4bac06bef89a640468182ddbca86306cdc18
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -997,11 +1000,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  29e77fde466f05255e0901dcdf0d3f638a831c1b735c8eb8acf7807f2e58ee9a
+  618a20f0af1075bc414e7c466a4f38c6f6bc8ce2dc82e2f9fcc5e5abfadf5e0e
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  cd00443abfbe2523a5ffa6f292ae427d4b7cc211874649c6819d9d60bb516104
+  ab616c408bc9cb483bcdd8e7d370657a442fd965ac5da08e8e189c087e12baeb
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1523,7 +1526,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  15063bcf82bd3f4cb52fbda06acb9b4fa001b27b2ae23a7ef8f4c8897d30b5a5
+  090f57ec702e6a4543fe44c4cea7c2689c1dabb49c65833ddf5e0c598129373d
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 web/src/segments.ts \
@@ -1867,25 +1870,31 @@ verify_index_sha256 acceptance/identity/storage_integration_test.go \
 verify_index_sha256 acceptance/identity/ingest_integration_test.go \
   2db7cd28bbb86dbbe7d3d3cb91b80cee4d49f42c3d8148ff11c50c71a7f1ef3f
 verify_index_sha256 acceptance/outbound/o1a_r3_integration_test.go \
-  30d130ab46a59fd880c8645103cccd6d257687fb04b8e03b4787a80eec731561
+  fa161a469c9f508b92490b4c095b3712b3e69456a74ef6324d43eeb34a2030b2
 verify_index_sha256 migrations/00020_outbound_send_attempts.sql \
   f0e1c607b8fd91894ed9ca17c35dad540b41e9efca86f469e5a9131cdeb94e6f
+verify_index_sha256 migrations/00021_outbound_task_status.sql \
+  6bd8b3578bdfe189e7c2578a0b76fe3a8b4db542fd2b2e4cdbe749c8c1b06c1d
 verify_index_sha256 internal/outbound/app/sender.go \
-  c8d17945f5d5cb17092cd0dfed88bc50e8505abc74b7158c543a4d72b0ec124e
+  cf7fb41f5fea16d22a770d6e5c75857125b203d0b89dde960a0dcf3e63522f44
 verify_index_sha256 internal/outbound/app/sender_test.go \
-  305264b837a9744c5b3b3ee00ced1c862669f55f4920f12042cd2ff2a6c06f64
+  af1a87a5495cec29227a2b97f874972fea685bad95b9b55e751d6419e18fdecc
 verify_index_sha256 internal/outbound/store/queries/send_attempts.sql \
-  c87b2f804f9758fc707d2cff37e897705906f1cd6113eb686918a3dcb434d287
+  894b29640a751c4ba95203fc1f9d45e945c89294dc0240ce134d21b3dff0b2b2
 verify_index_sha256 internal/outbound/store/sender_repository.go \
-  99820ffe635b08756cdc5abd800116976fa13b642542d6b578b0b8e45268135a
+  7f7609d7031d4acb279342ef2d7ec87e41ed4980c914d62cc757883a2ca149f9
 verify_index_sha256 internal/outbound/worker/sender.go \
   105724c6c9b13dd98c1ec238321a1ece182a6e0803c6ce42e029bb8e47de6478
 verify_index_sha256 internal/outbound/worker/sender_test.go \
-  82c48e09bd1db4ff44210f3e51f12540cbddad5b19c95904748cd5bb3742a675
+  0c8403393bfa2393ce29028e029b400bf2c88361199315c55849ba9d86e70214
 verify_index_sha256 acceptance/outbound/o4_sender_integration_test.go \
-  7da9cee7ba56d3f8f9f6e03fe434ea43eac431d2af1dd821eee9271cbf0b080e
+  b538773bd0070a596dd536691668571c7a656e89b060181af12705f81940cdf6
 verify_index_sha256 docs/execution/slices/P3-O4.md \
   545e6a8b95f27d26c0dcc03022b4799ad80173c157fb65f1aba69ba447e83f89
+verify_index_sha256 acceptance/outbound/o5_status_integration_test.go \
+  2fe6cdd0301bfe969330b86c0abcf1ae04fa2bf77450de245fa121b11044f004
+verify_index_sha256 docs/execution/slices/P3-O5.md \
+  73aa5438e583b2fcd1328bdcd51df034f609a2ab15ac16638d25fd776c22e992
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
   548200be57f325a724dc07b1295cea6e0bd554cffecd180151d4d89fba312293
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
@@ -1915,7 +1924,7 @@ verify_index_sha256 docs/execution/slices/M0-6.md \
 verify_index_sha256 docs/architecture/canonical.md \
   0a3de6e1707271bc0390da23be9fc12e313b05363cb88325e8d050811cf31845
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  609b931988dcfd696b4cecfa9af391183f117914832b1ae62470b4e8f28ca1cb
+  d923c1e775bc208dee24c6ffc179ead2cc7dfe788297450cb2941e0071a32202
 verify_index_sha256 scripts/test_repo_contract.sh \
   0645abda831931f4703ce1d61a0b28715bca41d72e815a988837d5e9923d2cda
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
@@ -4175,7 +4184,7 @@ p3o4_sender="$(git show :internal/outbound/app/sender.go)"
 for anchor in 'service.repository.ReserveSendAttempt' 'service.repository.StartSendAttempt' 'service.provider.Send(ctx, request)' 'ProviderFailureInterruptedDispatch' 'SendAttemptOutcomeUnknown'; do
   grep -Fq -- "$anchor" <<<"$p3o4_sender" || fail "P3-O4 sender safety boundary drifted: $anchor"
 done
-! grep -Eiq 'wecom|wechatwork|workwx|internal/(contact|identity|segment|events)/' <<<"$p3o4_sender" || fail "P3-O4 sender gained a real provider or cross-domain dependency"
+! grep -Eiq 'wecom|wechatwork|workwx|internal/(contact|identity|segment)/' <<<"$p3o4_sender" || fail "P3-O4 sender gained a real provider or forbidden cross-domain dependency"
 
 p3o4_worker="$(git show :internal/outbound/worker/sender.go)"
 for anchor in 'QueueOutbound' 'NewTokenBucket' 'OutboundEnqueueOneJobKind' 'OutboundEnqueueBatchJobKind'; do
@@ -4190,6 +4199,43 @@ p3o4_recipe="$(make_target_recipe 'p3-o4-sender-acceptance:')" || fail "P3-O4 ac
 [[ "$p3o4_recipe" = *'P3O4_SENDER_TEST_DATABASE_URL is required'* && "$p3o4_recipe" = *'TestSender'* ]] || fail "P3-O4 acceptance target lost its PostgreSQL contract"
 grep -Fq 'P3O4_SENDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o4-sender-acceptance' <(git show :.github/workflows/application-go.yml) || fail "P3-O4 PG acceptance is disconnected from application CI"
 grep -Fq 'outbound_send_attempts: stable_provider_attempt_receipts_owned_by_outbound' <(git show :docs/architecture/table-ownership.yml) || fail "P3-O4 receipt lost Outbound ownership"
+
+p3o5_migration="$(git show :migrations/00021_outbound_task_status.sql)"
+for anchor in \
+  "status IN ('pending', 'sending', 'sent', 'retryable_failed', 'final_failed', 'outcome_unknown', 'cancelled')" \
+  'ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0' \
+  'ADD COLUMN current_attempt_id BIGINT REFERENCES outbound_send_attempts(id)' \
+  'ADD CONSTRAINT outbound_tasks_status_lifecycle'; do
+  grep -Fq -- "$anchor" <<<"$p3o5_migration" || fail "P3-O5 task status migration drifted: $anchor"
+done
+! grep -Eiq 'next_retry_at|CREATE[[:space:]]+TABLE|river_job|wecom|wechatwork|workwx' <<<"$p3o5_migration" || fail "P3-O5 migration exceeded status-only ownership"
+
+p3o5_sender="$(git show :internal/outbound/app/sender.go)"
+for anchor in \
+  'service.repository.MarkTaskSending' \
+  'service.repository.ProjectTaskResult' \
+  'eventport.EvOutboundSent' \
+  'eventport.EvOutboundFailed' \
+  'outbound.send-result:%d' \
+  'fact.OccurredAt'; do
+  grep -Fq -- "$anchor" <<<"$p3o5_sender" || fail "P3-O5 atomic status/event boundary drifted: $anchor"
+done
+! grep -Eiq 'wecom|wechatwork|workwx|next_retry|InsertMany|JobInsert|River.*Insert' <<<"$p3o5_sender" || fail "P3-O5 gained provider or retry scheduling"
+
+p3o5_queries="$(git show :internal/outbound/store/queries/send_attempts.sql)"
+for anchor in '-- name: MarkOutboundTaskSending :execrows' '-- name: ProjectOutboundTaskResult :one' "SET status = 'sending'" 'status_updated_at = attempt.completed_at'; do
+  grep -Fq -- "$anchor" <<<"$p3o5_queries" || fail "P3-O5 status projection query drifted: $anchor"
+done
+! grep -Eiq 'INSERT[[:space:]]+INTO[[:space:]]+(river_job|outbound_batches)|DELETE[[:space:]]+FROM|next_retry' <<<"$p3o5_queries" || fail "P3-O5 query gained retry, batch, or deletion semantics"
+
+p3o5_card="$(git show :docs/execution/slices/P3-O5.md)"
+for anchor in '00021' '不在 O5 创建任何 River 重试 job' '绝不执行真实外发' '不含 O6 重试/取消、O7 API、O8 UI'; do
+  grep -Fq -- "$anchor" <<<"$p3o5_card" || fail "P3-O5 frozen scope card drifted: $anchor"
+done
+p3o5_recipe="$(make_target_recipe 'p3-o5-status-acceptance:')" || fail "P3-O5 acceptance target must be unique"
+[[ "$p3o5_recipe" = *'P3O5_STATUS_TEST_DATABASE_URL is required'* && "$p3o5_recipe" = *'TestSender'* ]] || fail "P3-O5 acceptance target lost its PostgreSQL contract"
+grep -Fq 'P3O5_STATUS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o5-status-acceptance' <(git show :.github/workflows/application-go.yml) || fail "P3-O5 PG acceptance is disconnected from application CI"
+grep -Fq 'outbound_tasks: provider_result_driven_status_projection_without_retry_scheduling' <(git show :docs/architecture/table-ownership.yml) || fail "P3-O5 task status lost Outbound ownership"
 
 scripts/scan_sensitive_paths.sh
 

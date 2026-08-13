@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	"github.com/riverqueue/river"
@@ -12,7 +13,7 @@ import (
 
 func TestRegisterSenderWorkersFreezesBothKindsToOutboundQueue(t *testing.T) {
 	registry := platformjobqueue.NewWorkerRegistry()
-	service := outboundapp.NewSenderService(senderWorkerUoW{}, &senderWorkerRepository{}, senderWorkerProvider{}, senderWorkerGate{})
+	service := outboundapp.NewSenderService(senderWorkerUoW{}, &senderWorkerRepository{}, senderWorkerEvents{}, senderWorkerProvider{}, senderWorkerGate{})
 	if err := RegisterSenderWorkers(registry, service); err != nil {
 		t.Fatal(err)
 	}
@@ -63,6 +64,18 @@ func (*senderWorkerRepository) LoadSendRequest(context.Context, outboundapp.Task
 }
 func (*senderWorkerRepository) CompleteSendAttempt(context.Context, outboundapp.CompleteSendAttempt) (outboundapp.SendAttempt, error) {
 	return outboundapp.SendAttempt{}, nil
+}
+func (*senderWorkerRepository) MarkTaskSending(context.Context, outboundapp.SendAttempt) error {
+	return nil
+}
+func (*senderWorkerRepository) ProjectTaskResult(context.Context, outboundapp.SendAttempt) (outboundapp.TaskResultFact, error) {
+	return outboundapp.TaskResultFact{}, nil
+}
+
+type senderWorkerEvents struct{}
+
+func (senderWorkerEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	return 1, nil
 }
 
 type senderWorkerProvider struct{}

@@ -86,6 +86,7 @@ jobs:
           P3O2_ENQUEUE_ONE_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o2-enqueue-one-acceptance
           P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o3-enqueue-batch-acceptance
           P3O4_SENDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o4-sender-acceptance
+          P3O5_STATUS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o5-status-acceptance
   web:
     name: application / web
     runs-on: ubuntu-latest

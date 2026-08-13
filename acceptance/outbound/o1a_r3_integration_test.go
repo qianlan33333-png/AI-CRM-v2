@@ -30,8 +30,8 @@ func TestOutboundStorageCatalogWaterlineAndIdentity(t *testing.T) {
 	ctx := context.Background()
 
 	var waterline int
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 20 {
-		t.Fatalf("migration waterline=%d err=%v, want 20", waterline, err)
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 21 {
+		t.Fatalf("migration waterline=%d err=%v, want 21", waterline, err)
 	}
 
 	for _, table := range []string{"outbound_tasks", "outbound_send_attempts"} {
@@ -52,6 +52,17 @@ SELECT EXISTS (
   WHERE table_schema = 'public' AND table_name = 'outbound_tasks' AND column_name = $1::text
 )`, forbidden).Scan(&exists); err != nil || exists {
 			t.Fatalf("outbound_tasks forbidden column=%q exists=%t err=%v", forbidden, exists, err)
+		}
+	}
+
+	for _, column := range []string{"status", "attempt_count", "current_attempt_id", "last_failure_kind", "last_error", "provider_message_id", "sent_at", "status_updated_at"} {
+		var exists bool
+		if err := pool.QueryRow(ctx, `
+SELECT EXISTS (
+  SELECT 1 FROM information_schema.columns
+  WHERE table_schema='public' AND table_name='outbound_tasks' AND column_name=$1
+)`, column).Scan(&exists); err != nil || !exists {
+			t.Fatalf("outbound_tasks status column=%q exists=%t err=%v", column, exists, err)
 		}
 	}
 }

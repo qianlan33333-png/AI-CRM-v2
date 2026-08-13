@@ -102,6 +102,101 @@ func (q *Queries) LoadOutboundSendRequest(ctx context.Context, id int64) (LoadOu
 	return i, err
 }
 
+const markOutboundTaskSending = `-- name: MarkOutboundTaskSending :execrows
+UPDATE outbound_tasks AS task
+SET status = 'sending',
+    attempt_count = CASE
+      WHEN task.current_attempt_id = attempt.id THEN task.attempt_count
+      ELSE task.attempt_count + 1
+    END,
+    current_attempt_id = attempt.id,
+    last_failure_kind = NULL,
+    last_error = NULL,
+    provider_message_id = NULL,
+    sent_at = NULL,
+    status_updated_at = attempt.dispatch_started_at
+FROM outbound_send_attempts AS attempt
+WHERE attempt.id = $1
+  AND attempt.task_id = task.id
+  AND attempt.state = 'dispatching'
+  AND (
+    (task.status IN ('pending', 'retryable_failed') AND task.current_attempt_id IS DISTINCT FROM attempt.id)
+    OR (task.status = 'sending' AND task.current_attempt_id = attempt.id)
+  )
+`
+
+func (q *Queries) MarkOutboundTaskSending(ctx context.Context, attemptID int64) (int64, error) {
+	result, err := q.db.Exec(ctx, markOutboundTaskSending, attemptID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const projectOutboundTaskResult = `-- name: ProjectOutboundTaskResult :one
+UPDATE outbound_tasks AS task
+SET status = $1,
+    attempt_count = CASE
+      WHEN task.current_attempt_id = attempt.id THEN task.attempt_count
+      ELSE task.attempt_count + 1
+    END,
+    current_attempt_id = attempt.id,
+    last_failure_kind = attempt.failure_kind,
+    last_error = attempt.provider_code,
+    provider_message_id = attempt.provider_message_id,
+    sent_at = CASE WHEN attempt.state = 'succeeded' THEN attempt.completed_at ELSE NULL END,
+    status_updated_at = attempt.completed_at
+FROM outbound_send_attempts AS attempt
+WHERE attempt.id = $2
+  AND attempt.task_id = task.id
+  AND attempt.state = $3
+  AND attempt.completed_at IS NOT NULL
+  AND (
+    (task.current_attempt_id = attempt.id AND task.status IN ('sending', $1))
+    OR (task.status = 'pending' AND task.current_attempt_id IS NULL)
+  )
+RETURNING task.id AS task_id, task.customer_id, task.status, task.attempt_count,
+  task.last_failure_kind, task.last_error, task.provider_message_id,
+  attempt.id AS attempt_id, attempt.river_job_id, attempt.completed_at
+`
+
+type ProjectOutboundTaskResultParams struct {
+	TaskStatus   string `json:"task_status"`
+	AttemptID    int64  `json:"attempt_id"`
+	AttemptState string `json:"attempt_state"`
+}
+
+type ProjectOutboundTaskResultRow struct {
+	TaskID            int64              `json:"task_id"`
+	CustomerID        int64              `json:"customer_id"`
+	Status            string             `json:"status"`
+	AttemptCount      int32              `json:"attempt_count"`
+	LastFailureKind   pgtype.Text        `json:"last_failure_kind"`
+	LastError         pgtype.Text        `json:"last_error"`
+	ProviderMessageID pgtype.Text        `json:"provider_message_id"`
+	AttemptID         int64              `json:"attempt_id"`
+	RiverJobID        int64              `json:"river_job_id"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) ProjectOutboundTaskResult(ctx context.Context, arg ProjectOutboundTaskResultParams) (ProjectOutboundTaskResultRow, error) {
+	row := q.db.QueryRow(ctx, projectOutboundTaskResult, arg.TaskStatus, arg.AttemptID, arg.AttemptState)
+	var i ProjectOutboundTaskResultRow
+	err := row.Scan(
+		&i.TaskID,
+		&i.CustomerID,
+		&i.Status,
+		&i.AttemptCount,
+		&i.LastFailureKind,
+		&i.LastError,
+		&i.ProviderMessageID,
+		&i.AttemptID,
+		&i.RiverJobID,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const reserveOutboundSendAttempt = `-- name: ReserveOutboundSendAttempt :one
 INSERT INTO outbound_send_attempts (river_job_id, task_id, job_kind)
 VALUES ($1, $2, $3)
