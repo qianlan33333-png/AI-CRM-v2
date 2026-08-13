@@ -18,6 +18,7 @@ import (
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
+	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 )
 
 var errInvalidWorkerDatabaseConfig = errors.New("invalid worker database configuration")
@@ -97,7 +98,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	router, err := eventdispatcher.NewRouter()
+	router, err := eventdispatcher.NewRouter(wecomcallback.NewAuditSubscriber())
 	if err != nil {
 		pool.Close()
 		return nil, err

@@ -183,12 +183,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segmentRefresh: segmentRefreshHandler,
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, errInvalidAPIComponent
+	}
 	callbackHandler, err := wecomcallback.NewHandler(wecomcallback.Config{
 		Enabled:        config.WeCom.Callback.Enabled,
 		CorpID:         config.WeCom.Callback.CorpID,
 		Token:          config.WeCom.Callback.Token.Value(),
 		EncodingAESKey: config.WeCom.Callback.EncodingAESKey.Value(),
-	}, wecomcallback.Options{})
+	}, wecomcallback.Options{Dispatcher: callbackDispatcher})
 	if err != nil {
 		pool.Close()
 		return nil, errInvalidAPIComponent
