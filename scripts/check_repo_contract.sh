@@ -950,11 +950,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  fe66a0063d5ff0b74fd8a8a3db6cbe74e750b2656354eed8628c5ea63b51392a
+  a7780a70a2375736510af5207c1a0a63312c24528750c7aba4fbc5b778019bae
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  f0c8a930bc0b2ae4410f91071decc9fcc1517f06ab84290c2e10edb060f07481
+  e2ea8db62c1fb7414d50747b5f84b60c9a2a8903273f7450ad36bd01c087f97b
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1476,7 +1476,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  e0474a36e8296b6bc7dd70e362ed9b5dafa9b2f42bbb10bef8e5372779eaa9da
+  22219e89d25317a7c69bc489b9671e146bc3f7cb8cc741b62fec481ef69cd78e
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1776,9 +1776,9 @@ verify_index_sha256 migrations/00010_identity_storage.sql \
 verify_index_sha256 acceptance/identity/storage_integration_test.go \
   0677b7b5d5e96677b8c4de69ad5dee4c20ef2abee3aaf1376d61cda51e28fe38
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
-  64e11787b6469d62d0ea503bf6aaf88e88a9f029ab65fdc3de1ee6472fbdc580
+  515c079bf80ef3da6efc0d2f9fab80edd525b942dcf88ca7fde3ad762aa23d7e
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
-  f121eed847e880234fd10d5e928ceaca2915830109c3047e989dfca4a78c7b5f
+  3d3ce197ee6cae2b9ac7a7c19f25e0d8f3f6f78d7f8a6cf8676253e1bde68358
 verify_index_sha256 acceptance/identity/doc.go \
   efc1a6ec165ac8844b0af5446db2da87a46e9506761aec24827ae8efd700b3bf
 verify_index_sha256 acceptance/identity/contactfixture_import_test.go \
