@@ -15,6 +15,7 @@ func setValidEnvironment(t *testing.T) {
 	t.Setenv("AICRM_DATABASE_URL", testDatabaseURL)
 	t.Setenv("AICRM_HTTP_LISTEN_ADDRESS", ":8080")
 	t.Setenv("AICRM_API_PGX_MAX_CONNS", "10")
+	t.Setenv("AICRM_IDENTITY_HMAC_KEY", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 }
 
 func TestRunMigratesUpWithoutExposingDatabaseURL(t *testing.T) {
@@ -57,6 +58,7 @@ func TestRunFailsClosedWithStableErrors(t *testing.T) {
 				t.Setenv("AICRM_DATABASE_URL", "")
 				t.Setenv("AICRM_HTTP_LISTEN_ADDRESS", "")
 				t.Setenv("AICRM_API_PGX_MAX_CONNS", "")
+				t.Setenv("AICRM_IDENTITY_HMAC_KEY", "")
 			}
 			var stdout, stderr bytes.Buffer
 			calls := 0

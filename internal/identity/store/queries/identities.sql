@@ -303,3 +303,131 @@ INSERT INTO customer_merges (
   sqlc.arg(detail)::jsonb
 )
 RETURNING id;
+
+-- name: ListPendingMergeReviews :many
+SELECT
+  pending.id,
+  pending.state,
+  identity_row.id AS identity_id,
+  identity_row.kind,
+  identity_row.scope,
+  identity_row.normalized_value,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
+  pending.candidate_customer_ids,
+  pending.policy_version,
+  pending.version,
+  pending.created_at,
+  pending.resolved_at
+FROM pending_events AS pending
+JOIN identities AS identity_row
+  ON identity_row.id = pending.identity_ids[1]
+WHERE pending.kind = 'merge_review'
+  AND pending.state = 'pending'
+  AND cardinality(pending.identity_ids) = 1
+  AND pending.id > sqlc.arg(after_id)::bigint
+ORDER BY pending.id
+LIMIT sqlc.arg(page_limit)::int;
+
+-- name: LockMergeReview :one
+SELECT
+  pending.id,
+  pending.state,
+  identity_row.id AS identity_id,
+  identity_row.kind,
+  identity_row.scope,
+  identity_row.normalized_value,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
+  pending.candidate_customer_ids,
+  pending.policy_version,
+  pending.version,
+  pending.created_at,
+  pending.resolved_at
+FROM pending_events AS pending
+JOIN identities AS identity_row
+  ON identity_row.id = pending.identity_ids[1]
+WHERE pending.id = sqlc.arg(review_id)::bigint
+  AND pending.kind = 'merge_review'
+  AND cardinality(pending.identity_ids) = 1
+FOR UPDATE OF pending, identity_row;
+
+-- name: LockActiveMergeReviewCustomers :many
+SELECT id
+FROM customers
+WHERE id = ANY(sqlc.arg(customer_ids)::bigint[])
+  AND is_deleted = FALSE
+ORDER BY id
+FOR UPDATE;
+
+-- name: ReserveMergeReviewReceipt :one
+INSERT INTO identity_operation_receipts (
+  operation,
+  idempotency_scope,
+  key_digest,
+  command_schema_version,
+  payload_hmac,
+  payload_hmac_key_version,
+  result_schema_version
+) VALUES (
+  sqlc.arg(operation)::text,
+  sqlc.arg(operation)::text || '.v1',
+  sqlc.arg(key_digest)::bytea,
+  1,
+  sqlc.arg(payload_hmac)::bytea,
+  1,
+  1
+)
+ON CONFLICT (operation, idempotency_scope, key_digest) DO NOTHING
+RETURNING id;
+
+-- name: LoadMergeReviewReceipt :one
+SELECT payload_hmac, state, result_status, result_pending_event_id
+FROM identity_operation_receipts
+WHERE operation = sqlc.arg(operation)::text
+  AND idempotency_scope = sqlc.arg(operation)::text || '.v1'
+  AND key_digest = sqlc.arg(key_digest)::bytea;
+
+-- name: ResolveMergeReview :execrows
+UPDATE pending_events
+SET state = sqlc.arg(result_status)::text,
+    version = version + 1,
+    resolved_at = now()
+WHERE id = sqlc.arg(review_id)::bigint
+  AND kind = 'merge_review'
+  AND state = 'pending'
+  AND version = sqlc.arg(expected_version)::bigint;
+
+-- name: CompleteMergeReviewReceipt :execrows
+UPDATE identity_operation_receipts
+SET state = 'completed',
+    result_status = sqlc.arg(result_status)::text,
+    result_customer_id = sqlc.narg(result_customer_id)::bigint,
+    result_merge_audit_id = sqlc.narg(result_merge_audit_id)::bigint,
+    result_pending_event_id = sqlc.arg(review_id)::bigint,
+    result_policy_version = sqlc.arg(policy_version)::text,
+    completed_at = now()
+WHERE id = sqlc.arg(receipt_id)::bigint
+  AND state = 'in_progress';
+
+-- name: InsertManualCustomerMergeAudit :one
+INSERT INTO customer_merges (
+  primary_customer_id,
+  merged_customer_id,
+  mode,
+  policy_version,
+  review_fingerprint,
+  fingerprint_key_version,
+  operated_by,
+  detail
+) VALUES (
+  sqlc.arg(primary_customer_id)::bigint,
+  sqlc.arg(merged_customer_id)::bigint,
+  'manual',
+  sqlc.arg(policy_version)::text,
+  sqlc.arg(review_fingerprint)::bytea,
+  sqlc.arg(fingerprint_key_version)::smallint,
+  sqlc.arg(operated_by)::text,
+  sqlc.arg(detail)::jsonb
+)
+RETURNING id;

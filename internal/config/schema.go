@@ -27,6 +27,7 @@ const (
 	weComCallbackCorpIDEnv = "AICRM_WECOM_CALLBACK_CORP_ID"
 	weComCallbackTokenEnv  = "AICRM_WECOM_CALLBACK_TOKEN"
 	weComCallbackAESKeyEnv = "AICRM_WECOM_CALLBACK_AES_KEY"
+	identityHMACKeyEnv     = "AICRM_IDENTITY_HMAC_KEY"
 )
 
 var ErrInvalid = errors.New("invalid startup configuration")
@@ -71,6 +72,16 @@ type WeCom struct {
 	Callback WeComCallback
 }
 
+type IdentityHMACKey struct{ value [32]byte }
+
+func (key IdentityHMACKey) Value() []byte { return append([]byte(nil), key.value[:]...) }
+func (IdentityHMACKey) String() string    { return "[REDACTED]" }
+func (IdentityHMACKey) GoString() string  { return "[REDACTED]" }
+
+type Identity struct {
+	HMACKey IdentityHMACKey
+}
+
 type Worker struct {
 	PoolMaxConns int32
 	Queues       QueueConcurrency
@@ -101,6 +112,7 @@ type Root struct {
 	API      API
 	Worker   Worker
 	WeCom    WeCom
+	Identity Identity
 }
 
 type validationError struct {
@@ -143,6 +155,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		}
 		root.API.PoolMaxConns = parsePositiveInt32(lookup, apiPoolMaxConnsEnv, "api.pool_max_conns", &problems)
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
+		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
@@ -163,6 +176,22 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		return Root{}, validationError{problems: problems}
 	}
 	return root, nil
+}
+
+func parseIdentityHMACKey(lookup environmentLookup, problems *[]string) IdentityHMACKey {
+	value, present := lookup(identityHMACKeyEnv)
+	if !present || value == "" {
+		*problems = append(*problems, "identity.hmac_key is required")
+		return IdentityHMACKey{}
+	}
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	if err != nil || len(decoded) != 32 || base64.RawURLEncoding.EncodeToString(decoded) != value {
+		*problems = append(*problems, "identity.hmac_key must be 32-byte canonical base64url")
+		return IdentityHMACKey{}
+	}
+	var key IdentityHMACKey
+	copy(key.value[:], decoded)
+	return key
 }
 
 func parseWeComCallback(lookup environmentLookup, problems *[]string) WeComCallback {

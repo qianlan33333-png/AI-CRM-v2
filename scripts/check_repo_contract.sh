@@ -975,11 +975,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  06e51a251a73140303e87bb70dfa1590e32350582136d3642cb3cdee32194966
+  bbdfd04b60890301c5f73d2a5279ba6eaf79f5a3c72876b558f4fb22f0df4d96
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  0b856b3aac49e9e878b01c90745d0408a8d9c84df70f285814886c4f6833b789
+  05ee83abe7ce8cc74c2c73a5f4ed0fe386d238c2d7fa027ce8a0d25f5b07983f
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1501,7 +1501,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  15c7c9fb2a5c9c02732f51bedd4e63e3fd24ac98c76bde614fae3e24132d835a
+  0cb89c504dce55187bf3cf1d79a9106a3037bc24375998aee078026971d588e9
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
@@ -1531,11 +1531,11 @@ verify_index_sha256 cmd/aicrm/scheduler_test.go \
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
-  431756d33101c71d200c4a7521a609e7775c88eaedff6d89955326195bd9a5d4
+  2a185ed8aa8ba9288aae9bfba053ae28e5c0bf40e232fad925113c25fec1e210
 verify_index_sha256 internal/config/schema_test.go \
-  df85c70e2568d94cab66a27cb7924b365d9d10b5f403635c3595da297c1983c0
+  5d5f329d853411e57e6c696c46db41cd544c3b55b88e193acffef377eda21e94
 verify_index_sha256 acceptance/p0s01/process_blackbox.sh \
-  dca96d9df61c3c67e2254d59e22c300850b58841d93eca70b3f1743df294ce6b
+  2b6376c3e061d074d8a94db6d5dc0876ec5a2084978eab0e348b028a381b6889
 verify_index_sha256 acceptance/p0s01/static_contract.sh \
   da67ff4f8a2e96b649cfe7940d9c0b96f1b11463f39e5152b8796073200d325a
 verify_index_sha256 acceptance/p2s04/doc.go \
@@ -1629,13 +1629,13 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  cd48f78ef89e077fc793d66deff754f51583efb49f1cc30b2fda26d3e5aa68e0
+  2c363171bd33937d5dd89caf5f3c2b5935b38d459077ae1c3f30a954542a666e
 verify_index_sha256 cmd/aicrm/api_test.go \
-  34e65cf995c027c92b286a022c1a86016416ac24bf5320c3f562ff0da245a11f
+  fc1075e0e21f655808da99579a991c7bcc766faa623e54bb6b9caa5a1de0c6cf
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
-  3f5cfb5e929d5ff103b67b1d9497cd041e35a0895944f4da80ef4704521dec36
+  b06debad2b4cf25446d25e389f0ebc58e02e8cc7678c090a5829db4633f29956
 verify_index_sha256 docs/execution/slices/P2-11.md \
   621f0fa454d672f0bab5f8589d737db91e1b3a7137407a680cc141fccaf7f34b
 verify_index_sha256 docs/evidence/slices/P2-11-gateway-tests.md \
@@ -1817,9 +1817,9 @@ verify_index_sha256 internal/identity/app/replay.go \
 verify_index_sha256 internal/identity/app/replay_test.go \
   fe5e2579ba8027053b3bb8210b9a40a6b37e3987742336c9f571d7cc1797472b
 verify_index_sha256 internal/identity/store/queries/identities.sql \
-  8256ddc23d719e2a21789f38154d69f182b09f489d4b7a91ee18e1e81bbf8c53
+  fe60a77a68c3213c1d218e156d3724e8011519517f4cfb9c937088046de62078
 verify_index_sha256 internal/identity/store/repository.go \
-  d44ec07c8f1d7d13267063e550fbd1c3d2719043e18a039d56806f3d4ee87c56
+  fbecf892a9dd9b963bd5823c44ecc2fc7431df312bae56f1475d7459ac5688c6
 verify_index_sha256 acceptance/identity/replay_integration_test.go \
   1443486053341115224de0ad7d231d1ba900a0a5927d64a1d35ac4681dffe5f8
 verify_index_sha256 migrations/00017_identity_pending_event_payload.sql \
@@ -1840,6 +1840,20 @@ verify_index_sha256 acceptance/identity/doc.go \
   efc1a6ec165ac8844b0af5446db2da87a46e9506761aec24827ae8efd700b3bf
 verify_index_sha256 acceptance/identity/contactfixture_import_test.go \
   e550f00216351ab1dc162484d69c65b58c9945d05a42313a1153bfceb326a91f
+verify_index_sha256 docs/execution/slices/P3-I7.md \
+  9d42808542676d39bb6880a8de37bd86edd2e0aa82cdc71fad9daca7247632a3
+verify_index_sha256 internal/identity/app/review.go \
+  593721b7dfed15d0a5a7ec33d6302e2a61cf0440c6aceb9b1d2c51e964a8d2bc
+verify_index_sha256 internal/identity/app/review_test.go \
+  5a20a68b462343945cdbaa7c76dd6e5b3855a7086e4c0e374f3f2afe47b2b06d
+verify_index_sha256 internal/identity/http/review_handler.go \
+  6d35b0ee53f0fc737977f43ee8274ed47d35f5043aa0a1766fac17dba8886a7d
+verify_index_sha256 internal/identity/http/review_handler_test.go \
+  114752fad95c3503243e95c1f7f490ef599fc56916890cee5f4b8e92a95544c0
+verify_index_sha256 acceptance/identity/review_integration_test.go \
+  962260908d20ba2d2f8cd346a7a128f7a8414bf2582b99c0d64571a6f86e67be
+verify_index_sha256 cmd/aicrm-river-migrate/main_test.go \
+  b5ee3df7e6ab50818ed80d77782c3e89b78d310fdf9479824bb34d6d25a476ff
 verify_index_sha256 docs/execution/slices/M0-5.md \
   c5a4f1991b8f3ecbb1a3a024c6131aea5fc3d6813ddeb34b323faf2948229609
 verify_index_sha256 docs/execution/slices/M0-6.md \
@@ -2785,7 +2799,7 @@ grep -Fq 'if canonicalCustomerExtraKey(key) == "kind" && isString && isExternalI
   fail "P3-C02B identity kind guard must reject every canonical kind collision"
 
 p3c02b_api="$(git show :cmd/aicrm/api.go)"
-grep -Fq 'customerDetail *contacthttp.CustomerDetailHandler' <<<"$p3c02b_api" ||
+grep -Eq 'customerDetail[[:space:]]+\*contacthttp\.CustomerDetailHandler' <<<"$p3c02b_api" ||
   fail "P3-C02B candidate handler lost customer detail wiring"
 grep -Fq 'contactstore.NewCustomerDetailRepository()' <<<"$p3c02b_api" ||
   fail "P3-C02B runtime lost customer detail repository wiring"
@@ -2835,7 +2849,7 @@ grep -Fq 'authorization.Capability != authport.CapabilityCustomerEventsRead' <<<
   fail "P3-C02D handler lost customer.events.read authorization"
 
 p3c02d_api="$(git show :cmd/aicrm/api.go)"
-grep -Fq 'customerEvents *contacthttp.CustomerEventHandler' <<<"$p3c02d_api" ||
+grep -Eq 'customerEvents[[:space:]]+\*contacthttp\.CustomerEventHandler' <<<"$p3c02d_api" ||
   fail "P3-C02D candidate handler lost timeline wiring"
 grep -Fq 'contactstore.NewCustomerEventRepository()' <<<"$p3c02d_api" ||
   fail "P3-C02D runtime lost timeline repository wiring"
@@ -2898,7 +2912,7 @@ grep -Fq 'validTagCatalogResponseText(*record.GroupName)' <<<"$p3c02e_handler" |
   fail "P3-C02E handler must validate provider-neutral group names before serialization"
 
 p3c02e_api="$(git show :cmd/aicrm/api.go)"
-grep -Fq 'tags           *contacthttp.TagCatalogHandler' <<<"$p3c02e_api" ||
+grep -Eq 'tags[[:space:]]+\*contacthttp\.TagCatalogHandler' <<<"$p3c02e_api" ||
   fail "P3-C02E runtime lost tag catalog handler wiring"
 grep -Fq 'contactstore.NewTagCatalogRepository()' <<<"$p3c02e_api" ||
   fail "P3-C02E runtime lost tag catalog repository wiring"
