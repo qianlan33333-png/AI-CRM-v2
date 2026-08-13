@@ -11,7 +11,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p2-s04-acceptance
-.PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance
+.PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance
 .PHONY: p2-s05-acceptance
 .PHONY: p2-s07-acceptance
 .PHONY: p2-s08-acceptance
@@ -458,6 +458,11 @@ p3-o6b1-cancel-acceptance:
 	@test -n "$${P3O6B1_CANCEL_TEST_DATABASE_URL:-}" || { echo "P3O6B1_CANCEL_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/outbound/o6b1_migration_compatibility.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s -run '^(TestCancel|TestOutboundStorageCatalogWaterlineAndIdentity)' ./acceptance/outbound -args -database-url "$$P3O6B1_CANCEL_TEST_DATABASE_URL"
+
+p3-o6b2-manual-retry-acceptance:
+	@test -n "$${P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL:-}" || { echo "P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/outbound/o6b2_migration_compatibility.sh
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s -run '^(TestManualRetry|TestOutboundStorageCatalogWaterlineAndIdentity)' ./acceptance/outbound -args -database-url "$$P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL"
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -21,6 +21,7 @@ type ControlRepository struct {
 }
 
 var _ outboundapp.CancelRepository = (*ControlRepository)(nil)
+var _ outboundapp.ManualRetryRepository = (*ControlRepository)(nil)
 
 func NewControlRepository(pool *pgxpool.Pool) (*ControlRepository, error) {
 	if pool == nil {
@@ -150,6 +151,110 @@ func (repository *ControlRepository) CompleteCancel(
 	)
 }
 
+func (repository *ControlRepository) ReserveManualRetryReceipt(ctx context.Context, command outboundapp.ManualRetryCommand) (outboundapp.ManualRetryReceipt, error) {
+	queries, err := controlQueries(ctx)
+	if repository == nil || repository.client == nil || command.TaskID <= 0 || err != nil {
+		return outboundapp.ManualRetryReceipt{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	row, err := queries.ReserveOutboundManualRetryReceipt(ctx, outbounddb.ReserveOutboundManualRetryReceiptParams{
+		IdempotencyScope: command.IdempotencyScope, IdempotencyKey: command.IdempotencyKey, TaskID: int64(command.TaskID),
+	})
+	if err != nil {
+		return outboundapp.ManualRetryReceipt{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	return storedManualRetryReceipt(
+		row.ID, row.IdempotencyScope, row.IdempotencyKey, row.Operation, row.TaskID, row.State,
+		row.CustomerID, row.JobGeneration, row.RiverJobID, row.JobKind, row.EventID, row.TaskStatus, row.CompletedAt,
+	)
+}
+
+func (repository *ControlRepository) LockManualRetryTarget(ctx context.Context, taskID outboundapp.TaskID) (outboundapp.ManualRetryTarget, error) {
+	queries, err := controlQueries(ctx)
+	if repository == nil || repository.client == nil || taskID <= 0 || err != nil {
+		return outboundapp.ManualRetryTarget{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	task, err := queries.LockOutboundTaskForManualRetry(ctx, int64(taskID))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outboundapp.ManualRetryTarget{}, outboundapp.ErrManualRetryTaskNotFound
+	}
+	if err != nil || task.ID != int64(taskID) || task.CustomerID <= 0 {
+		return outboundapp.ManualRetryTarget{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	target := outboundapp.ManualRetryTarget{
+		TaskID: taskID, CustomerID: task.CustomerID, Status: outboundapp.TaskStatus(task.Status),
+	}
+	if task.EnqueueReceiptID.Valid {
+		target.EnqueueReceiptID = task.EnqueueReceiptID.Int64
+	}
+	if task.BatchID.Valid {
+		target.BatchID = task.BatchID.Int64
+	}
+	if task.BatchChunkIndex.Valid {
+		target.BatchChunkIndex = task.BatchChunkIndex.Int32
+	}
+	link, err := queries.LoadLatestOutboundTaskJobLink(ctx, int64(taskID))
+	if err != nil || link.TaskID != int64(taskID) || link.Generation <= 0 || link.RiverJobID <= 0 || link.JobKind == "" {
+		return outboundapp.ManualRetryTarget{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	target.Job = outboundapp.TaskJob{TaskID: taskID, Generation: link.Generation, RiverJobID: link.RiverJobID, JobKind: link.JobKind}
+	return target, nil
+}
+
+func (repository *ControlRepository) InsertManualRetryJob(ctx context.Context, receiptID int64, target outboundapp.ManualRetryTarget) (outboundapp.TaskJob, error) {
+	if repository == nil || repository.client == nil || receiptID <= 0 || target.TaskID <= 0 ||
+		(target.Status != outboundapp.TaskStatusFinalFailed && target.Status != outboundapp.TaskStatusCancelled) || target.Job.Generation <= 0 {
+		return outboundapp.TaskJob{}, outboundapp.ErrManualRetryFailed
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return outboundapp.TaskJob{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	inserted, err := repository.client.InsertManualRetryTaskTx(ctx, tx, platformjobqueue.OutboundManualRetryTask{
+		TaskID: int64(target.TaskID), JobKind: target.Job.JobKind, ReceiptID: target.EnqueueReceiptID,
+		BatchID: target.BatchID, BatchChunkIndex: target.BatchChunkIndex,
+	})
+	if err != nil {
+		return outboundapp.TaskJob{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	return outboundapp.TaskJob{
+		TaskID: target.TaskID, Generation: target.Job.Generation + 1, RiverJobID: inserted.ID, JobKind: inserted.Kind,
+	}, nil
+}
+
+func (repository *ControlRepository) CompleteManualRetry(
+	ctx context.Context,
+	receiptID int64,
+	target outboundapp.ManualRetryTarget,
+	job outboundapp.TaskJob,
+	eventID eventport.EventID,
+) (outboundapp.ManualRetryReceipt, error) {
+	queries, err := controlQueries(ctx)
+	if repository == nil || repository.client == nil || receiptID <= 0 || target.TaskID <= 0 ||
+		job.TaskID != target.TaskID || job.Generation != target.Job.Generation+1 || job.RiverJobID <= 0 || job.JobKind != target.Job.JobKind || eventID <= 0 || err != nil {
+		return outboundapp.ManualRetryReceipt{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	linked, err := recordTaskJobLink(ctx, job)
+	if err != nil || linked != job {
+		return outboundapp.ManualRetryReceipt{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	pending, err := queries.MarkOutboundTaskManualRetryPending(ctx, int64(target.TaskID))
+	if err != nil || pending.ID != int64(target.TaskID) || pending.CustomerID != target.CustomerID ||
+		pending.Status != string(outboundapp.TaskStatusPending) || !pending.StatusUpdatedAt.Valid {
+		return outboundapp.ManualRetryReceipt{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	row, err := queries.CompleteOutboundManualRetryReceipt(ctx, outbounddb.CompleteOutboundManualRetryReceiptParams{
+		CustomerID: target.CustomerID, JobGeneration: job.Generation, RiverJobID: job.RiverJobID, JobKind: job.JobKind,
+		EventID: int64(eventID), ID: receiptID, TaskID: int64(target.TaskID),
+	})
+	if err != nil {
+		return outboundapp.ManualRetryReceipt{}, errors.Join(outboundapp.ErrManualRetryFailed, err)
+	}
+	return storedManualRetryReceipt(
+		row.ID, row.IdempotencyScope, row.IdempotencyKey, row.Operation, row.TaskID, row.State,
+		row.CustomerID, row.JobGeneration, row.RiverJobID, row.JobKind, row.EventID, row.TaskStatus, row.CompletedAt,
+	)
+}
+
 func recordTaskJobLink(ctx context.Context, job outboundapp.TaskJob) (outboundapp.TaskJob, error) {
 	queries, err := controlQueries(ctx)
 	if err != nil || job.TaskID <= 0 || job.Generation <= 0 || job.RiverJobID <= 0 || job.JobKind == "" {
@@ -195,6 +300,54 @@ func storedCancelReceipt(
 			TaskID: outboundapp.TaskID(taskID), IdempotencyScope: scope, IdempotencyKey: key,
 		},
 		State: outboundapp.ControlReceiptState(state),
+	}
+	if customerID.Valid {
+		receipt.CustomerID = customerID.Int64
+	}
+	if jobGeneration.Valid {
+		receipt.Job.Generation = jobGeneration.Int32
+	}
+	if riverJobID.Valid {
+		receipt.Job.RiverJobID = riverJobID.Int64
+	}
+	if jobGeneration.Valid || riverJobID.Valid {
+		receipt.Job.TaskID = outboundapp.TaskID(taskID)
+	}
+	if jobKind.Valid {
+		receipt.Job.JobKind = jobKind.String
+	}
+	if eventID.Valid {
+		receipt.EventID = eventport.EventID(eventID.Int64)
+	}
+	if taskStatus.Valid {
+		receipt.TaskStatus = outboundapp.TaskStatus(taskStatus.String)
+	}
+	if completedAt.Valid {
+		receipt.CompletedAt = completedAt.Time
+	}
+	return receipt, nil
+}
+
+func storedManualRetryReceipt(
+	id int64,
+	scope, key, operation string,
+	taskID int64,
+	state string,
+	customerID pgtype.Int8,
+	jobGeneration pgtype.Int4,
+	riverJobID pgtype.Int8,
+	jobKind pgtype.Text,
+	eventID pgtype.Int8,
+	taskStatus pgtype.Text,
+	completedAt pgtype.Timestamptz,
+) (outboundapp.ManualRetryReceipt, error) {
+	if id <= 0 || operation != "manual_retry" || taskID <= 0 {
+		return outboundapp.ManualRetryReceipt{}, outboundapp.ErrManualRetryFailed
+	}
+	receipt := outboundapp.ManualRetryReceipt{
+		ID: id, Command: outboundapp.ManualRetryCommand{
+			TaskID: outboundapp.TaskID(taskID), IdempotencyScope: scope, IdempotencyKey: key,
+		}, State: outboundapp.ControlReceiptState(state),
 	}
 	if customerID.Valid {
 		receipt.CustomerID = customerID.Int64
