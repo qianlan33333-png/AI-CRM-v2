@@ -16,14 +16,15 @@ const (
 	EvCustomerDeleted = "customer.deleted"
 	// EvCustomerUpdated is required by the frozen updateCustomer operation and
 	// the same-transaction event rule. It is additive to the original v1 list.
-	EvCustomerUpdated = "customer.updated"
-	EvCustomerMerged  = "customer.merged"
-	EvTagApplied      = "customer.tag_applied"
-	EvTagRemoved      = "customer.tag_removed"
-	EvStageChanged    = "customer.stage_changed"
-	EvSurveySubmitted = "survey.submitted"
-	EvOutboundSent    = "outbound.sent"
-	EvOutboundFailed  = "outbound.failed"
+	EvCustomerUpdated  = "customer.updated"
+	EvCustomerMerged   = "customer.merged"
+	EvTagApplied       = "customer.tag_applied"
+	EvTagRemoved       = "customer.tag_removed"
+	EvStageChanged     = "customer.stage_changed"
+	EvSurveySubmitted  = "survey.submitted"
+	EvOutboundAccepted = "outbound.accepted"
+	EvOutboundSent     = "outbound.sent"
+	EvOutboundFailed   = "outbound.failed"
 )
 
 var (
