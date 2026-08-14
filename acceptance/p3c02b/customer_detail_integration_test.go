@@ -11,6 +11,7 @@ import (
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -91,7 +92,7 @@ FROM acceptance_fixtures.customers WHERE id = $1`, customerID).Scan(
 	}
 
 	mutation := contactapp.NewCustomerMutationService(
-		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(),
+		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(), noopDeliveryAcceptor{},
 	)
 	changedName := "不得提交的名称"
 	if _, err := mutation.Update(ctx, contactapp.CustomerUpdateCommand{
@@ -153,6 +154,10 @@ func assertCustomerAndTags(
 }
 
 type fixtureUoW struct{ delegate platformport.UnitOfWork }
+
+type noopDeliveryAcceptor struct{}
+
+func (noopDeliveryAcceptor) Accept(context.Context, eventport.EventID, string) error { return nil }
 
 func (uow fixtureUoW) Within(ctx context.Context, callback func(context.Context) error) error {
 	return uow.delegate.Within(ctx, func(txCtx context.Context) error {

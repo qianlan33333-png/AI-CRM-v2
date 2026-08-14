@@ -6,13 +6,25 @@ package eventdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	AcceptEventDelivery(ctx context.Context, arg AcceptEventDeliveryParams) (pgtype.Int8, error)
 	AppendEvent(ctx context.Context, arg AppendEventParams) (int64, error)
-	ClaimUndispatchedEvents(ctx context.Context, batchSize int32) ([]EventLog, error)
+	ClaimEventDelivery(ctx context.Context, arg ClaimEventDeliveryParams) (ClaimEventDeliveryRow, error)
+	ClaimEventsMissingDelivery(ctx context.Context, arg ClaimEventsMissingDeliveryParams) ([]EventLog, error)
+	ClaimUndispatchedEvents(ctx context.Context, arg ClaimUndispatchedEventsParams) ([]EventLog, error)
+	CompleteEventDelivery(ctx context.Context, arg CompleteEventDeliveryParams) (string, error)
+	FinalFailEventDelivery(ctx context.Context, arg FinalFailEventDeliveryParams) (int64, error)
 	GetEvent(ctx context.Context, eventID int64) (EventLog, error)
+	GetEventDelivery(ctx context.Context, arg GetEventDeliveryParams) (GetEventDeliveryRow, error)
+	MarkEventDispatched(ctx context.Context, eventID int64) (int64, error)
 	MarkEventsDispatched(ctx context.Context, eventIds []int64) (int64, error)
+	OutcomeUnknownEventDelivery(ctx context.Context, arg OutcomeUnknownEventDeliveryParams) (int64, error)
+	ReserveEventDelivery(ctx context.Context, arg ReserveEventDeliveryParams) (int64, error)
+	RetryEventDelivery(ctx context.Context, arg RetryEventDeliveryParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

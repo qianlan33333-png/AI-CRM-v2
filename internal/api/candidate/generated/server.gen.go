@@ -62,6 +62,81 @@ func (e AuthSessionResponseRole) Valid() bool {
 	}
 }
 
+// Defines values for AutomationTriggerRunAgentCode.
+const (
+	TagTriggerV1 AutomationTriggerRunAgentCode = "tag-trigger-v1"
+)
+
+// Valid indicates whether the value is a known member of the AutomationTriggerRunAgentCode enum.
+func (e AutomationTriggerRunAgentCode) Valid() bool {
+	switch e {
+	case TagTriggerV1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationTriggerRunHasError.
+const (
+	False AutomationTriggerRunHasError = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationTriggerRunHasError enum.
+func (e AutomationTriggerRunHasError) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationTriggerRunRunStatus.
+const (
+	Completed AutomationTriggerRunRunStatus = "completed"
+)
+
+// Valid indicates whether the value is a known member of the AutomationTriggerRunRunStatus enum.
+func (e AutomationTriggerRunRunStatus) Valid() bool {
+	switch e {
+	case Completed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationTriggerRunTriggerSource.
+const (
+	CustomerTagApplied AutomationTriggerRunTriggerSource = "customer.tag_applied"
+)
+
+// Valid indicates whether the value is a known member of the AutomationTriggerRunTriggerSource enum.
+func (e AutomationTriggerRunTriggerSource) Valid() bool {
+	switch e {
+	case CustomerTagApplied:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationTriggerRunListResponseVisibility.
+const (
+	AutomationTriggerRunListResponseVisibilityMasked AutomationTriggerRunListResponseVisibility = "masked"
+)
+
+// Valid indicates whether the value is a known member of the AutomationTriggerRunListResponseVisibility enum.
+func (e AutomationTriggerRunListResponseVisibility) Valid() bool {
+	switch e {
+	case AutomationTriggerRunListResponseVisibilityMasked:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BindIdentityAlreadyBoundStatus.
 const (
 	AlreadyBound BindIdentityAlreadyBoundStatus = "already_bound"
@@ -449,6 +524,21 @@ func (e UpdateSegmentRequestRefreshMode) Valid() bool {
 	}
 }
 
+// Defines values for ListAutomationTriggerRunsParamsVisibility.
+const (
+	ListAutomationTriggerRunsParamsVisibilityMasked ListAutomationTriggerRunsParamsVisibility = "masked"
+)
+
+// Valid indicates whether the value is a known member of the ListAutomationTriggerRunsParamsVisibility enum.
+func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
+	switch e {
+	case ListAutomationTriggerRunsParamsVisibilityMasked:
+		return true
+	default:
+		return false
+	}
+}
+
 // AdminConfigEntry defines model for AdminConfigEntry.
 type AdminConfigEntry struct {
 	Configured   bool                         `json:"configured"`
@@ -480,6 +570,46 @@ type AuthSessionResponse struct {
 
 // AuthSessionResponseRole defines model for AuthSessionResponse.Role.
 type AuthSessionResponseRole string
+
+// AutomationTriggerRun defines model for AutomationTriggerRun.
+type AutomationTriggerRun struct {
+	AgentCode        AutomationTriggerRunAgentCode     `json:"agent_code"`
+	CompletedAt      time.Time                         `json:"completed_at"`
+	CustomerId       int64                             `json:"customer_id"`
+	HasError         AutomationTriggerRunHasError      `json:"has_error"`
+	RequestId        string                            `json:"request_id"`
+	RunId            string                            `json:"run_id"`
+	RunStatus        AutomationTriggerRunRunStatus     `json:"run_status"`
+	SourceEventId    int64                             `json:"source_event_id"`
+	StartedAt        time.Time                         `json:"started_at"`
+	TagId            int64                             `json:"tag_id"`
+	TriggerSource    AutomationTriggerRunTriggerSource `json:"trigger_source"`
+	TriggeredEventId int64                             `json:"triggered_event_id"`
+}
+
+// AutomationTriggerRunAgentCode defines model for AutomationTriggerRun.AgentCode.
+type AutomationTriggerRunAgentCode string
+
+// AutomationTriggerRunHasError defines model for AutomationTriggerRun.HasError.
+type AutomationTriggerRunHasError bool
+
+// AutomationTriggerRunRunStatus defines model for AutomationTriggerRun.RunStatus.
+type AutomationTriggerRunRunStatus string
+
+// AutomationTriggerRunTriggerSource defines model for AutomationTriggerRun.TriggerSource.
+type AutomationTriggerRunTriggerSource string
+
+// AutomationTriggerRunListResponse defines model for AutomationTriggerRunListResponse.
+type AutomationTriggerRunListResponse struct {
+	Items      []AutomationTriggerRun                     `json:"items"`
+	Page       int32                                      `json:"page"`
+	PageSize   int32                                      `json:"page_size"`
+	Total      int64                                      `json:"total"`
+	Visibility AutomationTriggerRunListResponseVisibility `json:"visibility"`
+}
+
+// AutomationTriggerRunListResponseVisibility defines model for AutomationTriggerRunListResponse.Visibility.
+type AutomationTriggerRunListResponseVisibility string
 
 // BindIdentityAlreadyBound defines model for BindIdentityAlreadyBound.
 type BindIdentityAlreadyBound struct {
@@ -946,6 +1076,26 @@ type Unauthorized = ErrorResponse
 
 // UnprocessableEntity defines model for UnprocessableEntity.
 type UnprocessableEntity = ErrorResponse
+
+// ListAutomationTriggerRunsParams defines parameters for ListAutomationTriggerRuns.
+type ListAutomationTriggerRunsParams struct {
+	Page          *int32                                     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize      *int32                                     `form:"page_size,omitempty" json:"page_size,omitempty"`
+	RequestId     *string                                    `form:"request_id,omitempty" json:"request_id,omitempty"`
+	RunId         *string                                    `form:"run_id,omitempty" json:"run_id,omitempty"`
+	AgentCode     *string                                    `form:"agent_code,omitempty" json:"agent_code,omitempty"`
+	RunStatus     *string                                    `form:"run_status,omitempty" json:"run_status,omitempty"`
+	TriggerSource *string                                    `form:"trigger_source,omitempty" json:"trigger_source,omitempty"`
+	Unionid       *string                                    `form:"unionid,omitempty" json:"unionid,omitempty"`
+	Userid        *string                                    `form:"userid,omitempty" json:"userid,omitempty"`
+	StartedAfter  *time.Time                                 `form:"started_after,omitempty" json:"started_after,omitempty"`
+	StartedBefore *time.Time                                 `form:"started_before,omitempty" json:"started_before,omitempty"`
+	HasError      *bool                                      `form:"has_error,omitempty" json:"has_error,omitempty"`
+	Visibility    *ListAutomationTriggerRunsParamsVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
+}
+
+// ListAutomationTriggerRunsParamsVisibility defines parameters for ListAutomationTriggerRuns.
+type ListAutomationTriggerRunsParamsVisibility string
 
 // LogoutAdminParams defines parameters for LogoutAdmin.
 type LogoutAdminParams struct {
@@ -1637,6 +1787,9 @@ func (t *SegmentDefinition) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// List real D01 Automation trigger receipts through the frozen legacy path
+	// (GET /api/admin/automation-conversion/agent-runs)
+	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(w http.ResponseWriter, r *http.Request)
@@ -1720,6 +1873,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// List real D01 Automation trigger receipts through the frozen legacy path
+// (GET /api/admin/automation-conversion/agent-runs)
+func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // List non-secret configuration readiness
 // (GET /api/v1/admin/config/overview)
@@ -1885,6 +2044,135 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListAutomationTriggerRuns operation middleware
+func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAutomationTriggerRunsParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "request_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "request_id", r.URL.Query(), &params.RequestId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "request_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "run_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "run_id", r.URL.Query(), &params.RunId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "run_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "agent_code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "agent_code", r.URL.Query(), &params.AgentCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "agent_code", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "run_status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "run_status", r.URL.Query(), &params.RunStatus, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "run_status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "trigger_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "trigger_source", r.URL.Query(), &params.TriggerSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trigger_source", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "unionid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "unionid", r.URL.Query(), &params.Unionid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "unionid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "userid", r.URL.Query(), &params.Userid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "started_after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "started_after", r.URL.Query(), &params.StartedAfter, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "started_after", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "started_before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "started_before", r.URL.Query(), &params.StartedBefore, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "started_before", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "has_error" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "has_error", r.URL.Query(), &params.HasError, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "has_error", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "visibility" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "visibility", r.URL.Query(), &params.Visibility, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "visibility", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetAdminConfigOverview operation middleware
 func (siw *ServerInterfaceWrapper) GetAdminConfigOverview(w http.ResponseWriter, r *http.Request) {
@@ -3425,6 +3713,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/config/overview", wrapper.GetAdminConfigOverview)
 	})
 	r.Group(func(r chi.Router) {
@@ -3519,6 +3810,59 @@ type ServiceUnavailableJSONResponse ErrorResponse
 type UnauthorizedJSONResponse ErrorResponse
 
 type UnprocessableEntityJSONResponse ErrorResponse
+
+type ListAutomationTriggerRunsRequestObject struct {
+	Params ListAutomationTriggerRunsParams
+}
+
+type ListAutomationTriggerRunsResponseObject interface {
+	VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error
+}
+
+type ListAutomationTriggerRuns200JSONResponse AutomationTriggerRunListResponse
+
+func (response ListAutomationTriggerRuns200JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationTriggerRuns400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAutomationTriggerRuns400JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationTriggerRuns401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAutomationTriggerRuns401JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationTriggerRuns403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAutomationTriggerRuns403JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationTriggerRuns503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAutomationTriggerRuns503JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
 
 type GetAdminConfigOverviewRequestObject struct {
 }
@@ -5100,6 +5444,9 @@ func (response ListTags503JSONResponse) VisitListTagsResponse(w http.ResponseWri
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// List real D01 Automation trigger receipts through the frozen legacy path
+	// (GET /api/admin/automation-conversion/agent-runs)
+	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(ctx context.Context, request GetAdminConfigOverviewRequestObject) (GetAdminConfigOverviewResponseObject, error)
@@ -5207,6 +5554,32 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ListAutomationTriggerRuns operation middleware
+func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	var request ListAutomationTriggerRunsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAutomationTriggerRuns(ctx, request.(ListAutomationTriggerRunsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAutomationTriggerRuns")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
+		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetAdminConfigOverview operation middleware

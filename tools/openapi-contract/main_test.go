@@ -131,6 +131,22 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/tags").Get.Responses.Delete("503")
 			reject(t, doc, ids)
 		},
+		"automation capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/automation-conversion/agent-runs").Get.Extensions["x-aicrm-capability"] = "automation.write"
+			reject(t, doc, ids)
+		},
+		"automation evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/automation-conversion/agent-runs").Get.Extensions["x-p4-decision-evidence"] = "P4-W0-D01-FORGED"
+			reject(t, doc, ids)
+		},
+		"automation identity filter removed": func(t *testing.T) {
+			doc, ids := fresh(t)
+			operation := doc.Paths.Value("/api/admin/automation-conversion/agent-runs").Get
+			operation.Parameters = operation.Parameters[:7]
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"

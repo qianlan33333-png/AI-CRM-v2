@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
-	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -31,10 +29,26 @@ func (subscriber *recordingSubscriber) Consume(_ context.Context, event eventpor
 	return subscriber.err
 }
 
-type testUnitOfWork struct{}
+type testDispatchStore struct{ count int }
 
-func (*testUnitOfWork) Within(ctx context.Context, callback func(context.Context) error) error {
-	return callback(ctx)
+func (store *testDispatchStore) Dispatch(context.Context) (int, error) { return store.count, nil }
+
+type testDeliveryRuntime struct{}
+
+func (*testDeliveryRuntime) Load(context.Context, eventport.EventID) (eventport.Record, error) {
+	return eventport.Record{}, nil
+}
+func (*testDeliveryRuntime) Claim(context.Context, eventport.EventID, string, string, time.Duration) (eventport.DeliveryClaim, error) {
+	return eventport.DeliveryClaim{}, nil
+}
+func (*testDeliveryRuntime) Retry(context.Context, eventport.EventID, string, string, string) error {
+	return nil
+}
+func (*testDeliveryRuntime) FinalFail(context.Context, eventport.EventID, string, string, string) error {
+	return nil
+}
+func (*testDeliveryRuntime) OutcomeUnknown(context.Context, eventport.EventID, string, string, string) error {
+	return nil
 }
 
 type testEnqueuer struct{}
@@ -139,22 +153,6 @@ func TestRouterFailsClosedWhenNoSubscriberMatches(t *testing.T) {
 	}
 }
 
-func TestDeliveryInsertOptionsAreUniqueByArgsAndLeaveQueueUnset(t *testing.T) {
-	options := deliveryInsertOptions()
-	if options == nil {
-		t.Fatal("deliveryInsertOptions() = nil")
-	}
-	if !options.UniqueOpts.ByArgs {
-		t.Fatal("deliveryInsertOptions().UniqueOpts.ByArgs = false, want true")
-	}
-	if options.UniqueOpts.ByQueue || options.UniqueOpts.ByPeriod != 0 || options.UniqueOpts.ByState != nil || options.UniqueOpts.ExcludeKind {
-		t.Fatalf("deliveryInsertOptions().UniqueOpts = %#v, want only ByArgs enabled", options.UniqueOpts)
-	}
-	if options.Queue != "" || options.Queue == "default" {
-		t.Fatalf("deliveryInsertOptions().Queue = %q, want unset and not River default", options.Queue)
-	}
-}
-
 func TestDeferredEnqueuerBindsExactlyOnceAndFailsClosedBeforeBind(t *testing.T) {
 	reference := NewDeferredEnqueuer()
 	if _, err := reference.EnqueueTx(context.Background(), nil, platformjobqueue.QueueEvent, DeliverArgs{EventID: 1}, nil); !errors.Is(err, platformjobqueue.ErrClientUnavailable) {
@@ -180,33 +178,16 @@ func TestDeferredEnqueuerBindsExactlyOnceAndFailsClosedBeforeBind(t *testing.T) 
 }
 
 func TestConstructorsFailClosedForInvalidInputs(t *testing.T) {
-	validUOW := &testUnitOfWork{}
-	validEnqueuer := &testEnqueuer{}
-	var typedNilUOW *testUnitOfWork
-	var typedNilEnqueuer *testEnqueuer
-
-	for _, test := range []struct {
-		name      string
-		uow       platformport.UnitOfWork
-		enqueuer  transactionalEnqueuer
-		batchSize int32
-	}{
-		{name: "nil unit of work", enqueuer: validEnqueuer, batchSize: 1},
-		{name: "typed nil unit of work", uow: typedNilUOW, enqueuer: validEnqueuer, batchSize: 1},
-		{name: "nil enqueuer", uow: validUOW, batchSize: 1},
-		{name: "typed nil enqueuer", uow: validUOW, enqueuer: typedNilEnqueuer, batchSize: 1},
-		{name: "zero batch size", uow: validUOW, enqueuer: validEnqueuer},
-		{name: "negative batch size", uow: validUOW, enqueuer: validEnqueuer, batchSize: -1},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			dispatcher, err := New(test.uow, test.enqueuer, test.batchSize)
+	var typedNilStore *testDispatchStore
+	for name, store := range map[string]dispatchStore{"nil": nil, "typed nil": typedNilStore} {
+		t.Run(name, func(t *testing.T) {
+			dispatcher, err := New(store)
 			if dispatcher != nil || !errors.Is(err, ErrInvalidDispatcher) {
 				t.Fatalf("New() = %v, %v; want nil, ErrInvalidDispatcher", dispatcher, err)
 			}
 		})
 	}
-
-	dispatcher, err := New(validUOW, validEnqueuer, 1)
+	dispatcher, err := New(&testDispatchStore{})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -221,14 +202,14 @@ func TestConstructorsFailClosedForInvalidInputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRouter() error = %v", err)
 	}
-	pool := &pgxpool.Pool{}
+	runtime := &testDeliveryRuntime{}
 	if worker, err := NewDeliveryWorker(nil, router); worker != nil || !errors.Is(err, ErrInvalidDispatcher) {
 		t.Fatalf("NewDeliveryWorker(nil, valid) = %v, %v; want nil, ErrInvalidDispatcher", worker, err)
 	}
-	if worker, err := NewDeliveryWorker(pool, nil); worker != nil || !errors.Is(err, ErrInvalidDispatcher) {
+	if worker, err := NewDeliveryWorker(runtime, nil); worker != nil || !errors.Is(err, ErrInvalidDispatcher) {
 		t.Fatalf("NewDeliveryWorker(valid, nil) = %v, %v; want nil, ErrInvalidDispatcher", worker, err)
 	}
-	if worker, err := NewDeliveryWorker(pool, router); err != nil || worker == nil {
+	if worker, err := NewDeliveryWorker(runtime, router); err != nil || worker == nil {
 		t.Fatalf("NewDeliveryWorker(valid) = %v, %v; want non-nil, nil", worker, err)
 	}
 }

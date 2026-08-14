@@ -24,7 +24,7 @@ func TestCustomerMutationsCommitTimelineAndDomainEventsAtomically(t *testing.T) 
 	stageOne, stageTwo, customerID, tagID := seedFacts(t, ctx, fixture)
 	uow := fixtureUoW{delegate: platformstore.NewUnitOfWork(fixture.Pool())}
 	service := contactapp.NewCustomerMutationService(
-		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(),
+		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(), noopDeliveryAcceptor{},
 	)
 
 	updatedAtBeforeNumericNoOp := customerUpdatedAt(t, ctx, fixture, customerID)
@@ -98,7 +98,7 @@ func TestCustomerMutationsCommitTimelineAndDomainEventsAtomically(t *testing.T) 
 	assertCounts(t, ctx, fixture, 4, 0)
 
 	failing := contactapp.NewCustomerMutationService(
-		uow, contactstore.NewCustomerMutationRepository(), failingAppender{err: errors.New("append failed")},
+		uow, contactstore.NewCustomerMutationRepository(), failingAppender{err: errors.New("append failed")}, noopDeliveryAcceptor{},
 	)
 	rolledBackName := "不得提交"
 	if _, err = failing.Update(ctx, contactapp.CustomerUpdateCommand{
@@ -118,6 +118,7 @@ func TestCustomerMutationsEnforceOwnerScopeInsideTransactionLock(t *testing.T) {
 		fixtureUoW{delegate: platformstore.NewUnitOfWork(fixture.Pool())},
 		contactstore.NewCustomerMutationRepository(),
 		eventstore.NewAppender(),
+		noopDeliveryAcceptor{},
 	)
 
 	updatedName := "仅本人可写"
@@ -185,6 +186,10 @@ func TestCustomerMutationsEnforceOwnerScopeInsideTransactionLock(t *testing.T) {
 }
 
 type fixtureUoW struct{ delegate platformport.UnitOfWork }
+
+type noopDeliveryAcceptor struct{}
+
+func (noopDeliveryAcceptor) Accept(context.Context, eventport.EventID, string) error { return nil }
 
 func (uow fixtureUoW) Within(ctx context.Context, callback func(context.Context) error) error {
 	return uow.delegate.Within(ctx, func(txCtx context.Context) error {

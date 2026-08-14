@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -17,6 +19,7 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	authstore "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store"
+	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
@@ -56,6 +59,9 @@ type candidateHandler struct {
 	segments        *segmenthttp.CRUDHandler
 	segmentRefresh  *segmenthttp.RefreshHandler
 	identityReviews *identityhttp.ReviewHandler
+	automationRuns  interface {
+		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
+	}
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
@@ -136,6 +142,84 @@ func (handler *candidateHandler) RejectIdentityMergeReview(writer http.ResponseW
 	handler.identityReviews.RejectIdentityMergeReview(writer, request, reviewID, params)
 }
 
+func (handler *candidateHandler) ListAutomationTriggerRuns(writer http.ResponseWriter, request *http.Request, params api.ListAutomationTriggerRunsParams) {
+	authorization, ok := authport.AuthorizationFromContext(request.Context())
+	if !ok || authorization.Capability != authport.CapabilityConfigOverviewRead || authorization.Scope != authport.ScopeGlobal || handler.automationRuns == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized))
+		return
+	}
+	input, empty, err := automationTriggerListInput(params)
+	if err != nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	result := automationstore.TriggerListResult{}
+	if !empty {
+		result, err = handler.automationRuns.List(request.Context(), input)
+		if err != nil {
+			code := platformhttp.CodeDependencyUnavailable
+			if errors.Is(err, automationstore.ErrInvalidTagTrigger) {
+				code = platformhttp.CodeMalformedRequest
+			}
+			platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+			return
+		}
+	}
+	items := make([]api.AutomationTriggerRun, 0, len(result.Items))
+	for _, receipt := range result.Items {
+		items = append(items, api.AutomationTriggerRun{
+			RunId:     "automation-trigger:" + strconv.FormatInt(receipt.ID, 10),
+			RequestId: "event:" + strconv.FormatInt(int64(receipt.EventID), 10),
+			AgentCode: api.TagTriggerV1, RunStatus: api.Completed,
+			TriggerSource: api.CustomerTagApplied, CustomerId: int64(receipt.CustomerID), TagId: receipt.TagID,
+			SourceEventId: int64(receipt.EventID), TriggeredEventId: int64(receipt.TriggeredEventID),
+			StartedAt: receipt.TriggeredAt, CompletedAt: receipt.CompletedAt, HasError: false,
+		})
+	}
+	writeJSON(writer, http.StatusOK, api.AutomationTriggerRunListResponse{
+		Items: items, Total: result.Total, Page: input.Page, PageSize: input.PageSize,
+		Visibility: api.AutomationTriggerRunListResponseVisibilityMasked,
+	})
+}
+
+func automationTriggerListInput(params api.ListAutomationTriggerRunsParams) (automationstore.TriggerListInput, bool, error) {
+	input := automationstore.TriggerListInput{Page: 1, PageSize: 50, StartedAfter: params.StartedAfter, StartedBefore: params.StartedBefore}
+	if params.Page != nil {
+		input.Page = *params.Page
+	}
+	if params.PageSize != nil {
+		input.PageSize = *params.PageSize
+	}
+	if nonempty(params.Unionid) || nonempty(params.Userid) {
+		return input, false, automationstore.ErrInvalidTagTrigger
+	}
+	empty := (params.AgentCode != nil && *params.AgentCode != "" && *params.AgentCode != string(api.TagTriggerV1)) ||
+		(params.RunStatus != nil && *params.RunStatus != "" && *params.RunStatus != string(api.Completed)) ||
+		(params.TriggerSource != nil && *params.TriggerSource != "" && *params.TriggerSource != string(api.CustomerTagApplied)) ||
+		(params.HasError != nil && *params.HasError)
+	var err error
+	if params.RunId != nil && *params.RunId != "" {
+		input.ReceiptID, err = parseLegacyRunID(*params.RunId, "automation-trigger:")
+	}
+	if err == nil && params.RequestId != nil && *params.RequestId != "" {
+		input.EventID, err = parseLegacyRunID(*params.RequestId, "event:")
+	}
+	return input, empty, err
+}
+
+func parseLegacyRunID(value, prefix string) (*int64, error) {
+	if !strings.HasPrefix(value, prefix) {
+		return nil, automationstore.ErrInvalidTagTrigger
+	}
+	id, err := strconv.ParseInt(strings.TrimPrefix(value, prefix), 10, 64)
+	if err != nil || id <= 0 {
+		return nil, automationstore.ErrInvalidTagTrigger
+	}
+	return &id, nil
+}
+
+func nonempty(value *string) bool { return value != nil && strings.TrimSpace(*value) != "" }
+
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
 	if err != nil || poolConfig.ConnConfig.DescriptionCacheCapacity < 1 || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
@@ -147,6 +231,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, errInvalidAPIComponent
 	}
 	uow := platformstore.NewUnitOfWork(pool)
+	deliveryProducer, err := eventstore.NewProducerDeliveryRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	service, err := authapp.NewService(uow, authstore.NewRepository(), authapp.Options{})
 	if err != nil {
 		pool.Close()
@@ -178,7 +267,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	mutationHandler, err := contacthttp.NewCustomerMutationHandler(contactapp.NewCustomerMutationService(
-		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(),
+		uow, contactstore.NewCustomerMutationRepository(), eventstore.NewAppender(), deliveryProducer,
 	))
 	if err != nil {
 		pool.Close()
@@ -232,6 +321,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segments:        segmentCRUDHandler,
 		segmentRefresh:  segmentRefreshHandler,
 		identityReviews: identityReviewHandler,
+		automationRuns:  automationstore.NewRepository(pool),
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -449,6 +539,7 @@ func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler htt
 		}{
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
+			{http.MethodGet, "/api/admin/automation-conversion/agent-runs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.ListAutomationTriggerRuns)},
 			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListCustomers)},
 			{http.MethodGet, "/api/admin/push-center/jobs", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ListOutboundJobs)},
 			{http.MethodGet, "/api/admin/push-center/jobs/{job_id}", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.GetOutboundJob)},

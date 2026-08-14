@@ -4,18 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
-	eventdb "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/generated"
 	"github.com/riverqueue/river"
 )
 
 const (
 	DispatchJobKind = "events_dispatch"
-	DeliverJobKind  = "events_deliver"
+	DeliverJobKind  = eventport.DeliveryJobKind
 )
 
 var (
@@ -27,11 +26,7 @@ type DispatchArgs struct{}
 
 func (DispatchArgs) Kind() string { return DispatchJobKind }
 
-type DeliverArgs struct {
-	EventID int64 `json:"event_id"`
-}
-
-func (DeliverArgs) Kind() string { return DeliverJobKind }
+type DeliverArgs = eventport.DeliveryJobArgs
 
 type DispatchWorker struct {
 	river.WorkerDefaults[DispatchArgs]
@@ -51,7 +46,8 @@ func (worker *DispatchWorker) Work(ctx context.Context, _ *river.Job[DispatchArg
 }
 
 type Router struct {
-	subscribers map[string][]eventport.Subscriber
+	subscribers       map[string][]eventport.Subscriber
+	deliveryConsumers map[string]eventport.DeliverySubscriber
 }
 
 func NewRouter(subscribers ...eventport.Subscriber) (*Router, error) {
@@ -77,7 +73,30 @@ func NewRouter(subscribers ...eventport.Subscriber) (*Router, error) {
 			routes[eventType] = append(routes[eventType], subscriber)
 		}
 	}
-	return &Router{subscribers: routes}, nil
+	return &Router{subscribers: routes, deliveryConsumers: make(map[string]eventport.DeliverySubscriber)}, nil
+}
+
+func (router *Router) RegisterDelivery(subscriber eventport.DeliverySubscriber) error {
+	if router == nil || isNil(subscriber) {
+		return ErrInvalidSubscriber
+	}
+	consumer := strings.TrimSpace(subscriber.Consumer())
+	types := subscriber.EventTypes()
+	if consumer == "" || len(types) == 0 || router.deliveryConsumers[consumer] != nil {
+		return ErrInvalidSubscriber
+	}
+	seen := make(map[string]struct{}, len(types))
+	for _, eventType := range types {
+		if eventType = strings.TrimSpace(eventType); eventType == "" {
+			return ErrInvalidSubscriber
+		}
+		if _, duplicate := seen[eventType]; duplicate {
+			return ErrInvalidSubscriber
+		}
+		seen[eventType] = struct{}{}
+	}
+	router.deliveryConsumers[consumer] = subscriber
+	return nil
 }
 
 func (router *Router) Consume(ctx context.Context, event eventport.Record) error {
@@ -97,40 +116,73 @@ func (router *Router) Consume(ctx context.Context, event eventport.Record) error
 	return consumeErr
 }
 
-type DeliveryWorker struct {
-	river.WorkerDefaults[DeliverArgs]
-	pool   *pgxpool.Pool
-	router *Router
+func (router *Router) ConsumeDelivery(ctx context.Context, claim eventport.DeliveryClaim) error {
+	if router == nil || claim.Record.ID <= 0 || claim.Consumer == "" {
+		return ErrInvalidSubscriber
+	}
+	subscriber := router.deliveryConsumers[claim.Consumer]
+	if subscriber == nil {
+		return fmt.Errorf("%w: %s", ErrNoSubscriber, claim.Consumer)
+	}
+	allowed := false
+	for _, eventType := range subscriber.EventTypes() {
+		allowed = allowed || eventType == claim.Record.Type
+	}
+	if !allowed {
+		return eventport.PoisonDelivery(fmt.Errorf("consumer %s rejects event type %s", claim.Consumer, claim.Record.Type))
+	}
+	return subscriber.ConsumeDelivery(ctx, claim)
 }
 
-func NewDeliveryWorker(pool *pgxpool.Pool, router *Router) (*DeliveryWorker, error) {
-	if pool == nil || router == nil {
+type DeliveryWorker struct {
+	river.WorkerDefaults[DeliverArgs]
+	deliveries eventport.DeliveryRuntime
+	router     *Router
+}
+
+func NewDeliveryWorker(deliveries eventport.DeliveryRuntime, router *Router) (*DeliveryWorker, error) {
+	if isNil(deliveries) || router == nil {
 		return nil, ErrInvalidDispatcher
 	}
-	return &DeliveryWorker{pool: pool, router: router}, nil
+	return &DeliveryWorker{deliveries: deliveries, router: router}, nil
 }
 
 func (worker *DeliveryWorker) Work(ctx context.Context, job *river.Job[DeliverArgs]) error {
-	if worker == nil || worker.pool == nil || worker.router == nil || job == nil || job.Args.EventID <= 0 {
+	if worker == nil || isNil(worker.deliveries) || worker.router == nil || job == nil || job.Args.EventID <= 0 {
 		return ErrInvalidDispatcher
 	}
-	row, err := eventdb.New(worker.pool).GetEvent(ctx, job.Args.EventID)
+	if job.Args.Consumer == "" {
+		record, err := worker.deliveries.Load(ctx, eventport.EventID(job.Args.EventID))
+		if err != nil {
+			return fmt.Errorf("load event %d: %w", job.Args.EventID, err)
+		}
+		return worker.router.Consume(ctx, record)
+	}
+	owner := "river:" + strconv.FormatInt(job.ID, 10)
+	claim, err := worker.deliveries.Claim(ctx, eventport.EventID(job.Args.EventID), job.Args.Consumer, owner, time.Minute)
 	if err != nil {
-		return fmt.Errorf("load event %d: %w", job.Args.EventID, err)
+		return err
 	}
-	record := eventport.Record{
-		ID: eventport.EventID(row.ID),
-		Event: eventport.Event{
-			Type:           row.EventType,
-			Payload:        append([]byte(nil), row.Payload...),
-			OccurredAt:     row.OccurredAt.Time,
-			IdempotencyKey: row.IdempotencyKey,
-		},
+	if claim.Status == eventport.DeliveryCompleted || claim.Status == eventport.DeliveryFinalFailed || claim.Status == eventport.DeliveryOutcomeUnknown {
+		return nil
 	}
-	if row.CustomerID.Valid {
-		record.CustomerID = eventport.CustomerID(row.CustomerID.Int64)
+	consumeErr := worker.router.ConsumeDelivery(ctx, claim)
+	if consumeErr == nil {
+		return nil
 	}
-	return worker.router.Consume(ctx, record)
+	if errors.Is(consumeErr, eventport.ErrDeliveryOutcomeUnknown) {
+		return worker.deliveries.OutcomeUnknown(ctx, claim.Record.ID, claim.Consumer, claim.Owner, "outcome_unknown")
+	}
+	if errors.Is(consumeErr, eventport.ErrDeliveryPoison) || errors.Is(consumeErr, ErrNoSubscriber) {
+		return worker.deliveries.FinalFail(ctx, claim.Record.ID, claim.Consumer, claim.Owner, "poison")
+	}
+	if job.Attempt >= job.MaxAttempts {
+		return worker.deliveries.FinalFail(ctx, claim.Record.ID, claim.Consumer, claim.Owner, "retry_exhausted")
+	}
+	if retryErr := worker.deliveries.Retry(ctx, claim.Record.ID, claim.Consumer, claim.Owner, "transient"); retryErr != nil {
+		return errors.Join(consumeErr, retryErr)
+	}
+	return consumeErr
 }
 
 func (worker *DeliveryWorker) Timeout(*river.Job[DeliverArgs]) time.Duration {
