@@ -27,6 +27,9 @@ const (
 	weComCallbackCorpIDEnv = "AICRM_WECOM_CALLBACK_CORP_ID"
 	weComCallbackTokenEnv  = "AICRM_WECOM_CALLBACK_TOKEN"
 	weComCallbackAESKeyEnv = "AICRM_WECOM_CALLBACK_AES_KEY"
+	weComOAuthCorpIDEnv    = "AICRM_WECOM_OAUTH_CORP_ID"
+	weComOAuthSecretEnv    = "AICRM_WECOM_OAUTH_SECRET"
+	weComOAuthCallbackEnv  = "AICRM_WECOM_OAUTH_CALLBACK_URL"
 	identityHMACKeyEnv     = "AICRM_IDENTITY_HMAC_KEY"
 )
 
@@ -68,8 +71,24 @@ type WeComCallback struct {
 	EncodingAESKey CallbackSecret
 }
 
+type OAuthSecret struct{ value string }
+
+func (secret OAuthSecret) Value() string { return secret.value }
+func (OAuthSecret) String() string       { return "[REDACTED]" }
+func (OAuthSecret) GoString() string     { return "[REDACTED]" }
+
+// WeComOAuth is optional as a whole so code acceptance can run without a live
+// provider. Any partial production configuration is rejected at startup.
+type WeComOAuth struct {
+	Enabled     bool
+	CorpID      string
+	Secret      OAuthSecret
+	CallbackURL string
+}
+
 type WeCom struct {
 	Callback WeComCallback
+	OAuth    WeComOAuth
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -155,6 +174,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		}
 		root.API.PoolMaxConns = parsePositiveInt32(lookup, apiPoolMaxConnsEnv, "api.pool_max_conns", &problems)
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
+		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 	}
 	if needWorker {
@@ -215,6 +235,35 @@ func parseWeComCallback(lookup environmentLookup, problems *[]string) WeComCallb
 		*problems = append(*problems, "wecom.callback.aes_key is invalid")
 	}
 	return WeComCallback{Enabled: true, CorpID: corpID, Token: CallbackSecret{value: token}, EncodingAESKey: CallbackSecret{value: aesKey}}
+}
+
+func parseWeComOAuth(lookup environmentLookup, problems *[]string) WeComOAuth {
+	corpID, corpIDPresent := lookup(weComOAuthCorpIDEnv)
+	secret, secretPresent := lookup(weComOAuthSecretEnv)
+	callbackURL, callbackPresent := lookup(weComOAuthCallbackEnv)
+	if !corpIDPresent && !secretPresent && !callbackPresent {
+		return WeComOAuth{}
+	}
+	if !corpIDPresent || !secretPresent || !callbackPresent || corpID == "" || secret == "" || callbackURL == "" {
+		*problems = append(*problems, "wecom.oauth requires corp_id, secret, and callback_url together")
+		return WeComOAuth{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.oauth.corp_id is invalid")
+	}
+	if len(secret) > 256 || strings.TrimSpace(secret) != secret {
+		*problems = append(*problems, "wecom.oauth.secret is invalid")
+	}
+	if !validOAuthCallbackURL(callbackURL) {
+		*problems = append(*problems, "wecom.oauth.callback_url is invalid")
+	}
+	return WeComOAuth{Enabled: true, CorpID: corpID, Secret: OAuthSecret{value: secret}, CallbackURL: callbackURL}
+}
+
+func validOAuthCallbackURL(value string) bool {
+	parsed, err := url.Parse(value)
+	return err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil && parsed.Opaque == "" &&
+		parsed.Path == "/auth/wecom/callback" && parsed.RawQuery == "" && parsed.Fragment == ""
 }
 
 func validWeComCorpID(value string) bool {

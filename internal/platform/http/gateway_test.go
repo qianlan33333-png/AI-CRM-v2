@@ -278,6 +278,28 @@ func TestGatewayUsesRouteTemplatesAndOpaqueAccountContextInStructuredLogs(t *tes
 	assertNoSensitiveText(t, logs.String(), "raw-person", "private@example.test")
 }
 
+func TestGatewayPreservesBrowserRedirectResponses(t *testing.T) {
+	t.Parallel()
+
+	logs := &bytes.Buffer{}
+	gateway := mustTestGateway(t, logs, GatewayOptions{RoutePattern: func(*http.Request) string { return "/login" }})
+	handler, err := gateway.Wrap(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Cache-Control", "no-store")
+		http.Redirect(writer, request, "/admin", http.StatusFound)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := serveGateway(handler, http.MethodGet, "/login", "redirect-request-1")
+	if response.Code != http.StatusFound || response.Header().Get("Location") != "/admin" || response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("redirect status/location/cache=%d/%q/%q body=%s", response.Code, response.Header().Get("Location"), response.Header().Get("Cache-Control"), response.Body.String())
+	}
+	entry := singleAccessLog(t, logs)
+	if entry["status"] != float64(http.StatusFound) || entry["err"] != "" {
+		t.Fatalf("redirect log = %#v", entry)
+	}
+}
+
 func TestGatewayFailsClosedForUnsafeRoutePatternAndMethodInLogs(t *testing.T) {
 	t.Parallel()
 

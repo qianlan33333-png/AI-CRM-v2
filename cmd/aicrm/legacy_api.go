@@ -366,7 +366,7 @@ func mirrorLegacyCSRFCookie(writer http.ResponseWriter, request *http.Request) {
 	if err != nil || !validToken(cookie.Value) {
 		return
 	}
-	http.SetCookie(writer, &http.Cookie{Name: LegacyCSRFCookieName, Value: cookie.Value, Path: "/", MaxAge: int(legacySessionMaxAge.Seconds()), Secure: true, HttpOnly: false, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(writer, &http.Cookie{Name: LegacyCSRFCookieName, Value: cookie.Value, Path: "/", MaxAge: int(legacySessionMaxAge.Seconds()), Secure: true, HttpOnly: false, SameSite: http.SameSiteStrictMode})
 }
 
 func validToken(token string) bool {

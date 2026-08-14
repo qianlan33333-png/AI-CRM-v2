@@ -17,6 +17,10 @@ type LoginUser struct {
 	SessionVersion int64
 }
 
+type OAuthStateClaim struct {
+	NextPath string
+}
+
 func NewRepository() *Repository { return &Repository{} }
 
 func (repository *Repository) FindVerifiedLogin(ctx context.Context, login authport.VerifiedLogin) (LoginUser, error) {
@@ -80,6 +84,31 @@ func (repository *Repository) Revoke(ctx context.Context, tokenHash, csrfHash []
 		SessionTokenHash: tokenHash, CsrfTokenHash: csrfHash, RevokedAt: timestamp(revokedAt),
 	})
 	return err
+}
+
+func (repository *Repository) InsertOAuthState(ctx context.Context, stateHash []byte, provider authport.Provider, nextPath string, createdAt, expiresAt time.Time) error {
+	queries, err := queriesFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	return queries.InsertAdminOAuthState(ctx, authdb.InsertAdminOAuthStateParams{
+		StateHash: stateHash, AuthProvider: string(provider), NextPath: nextPath,
+		CreatedAt: timestamp(createdAt), ExpiresAt: timestamp(expiresAt),
+	})
+}
+
+func (repository *Repository) ClaimOAuthState(ctx context.Context, stateHash []byte, provider authport.Provider, claimedAt time.Time) (OAuthStateClaim, error) {
+	queries, err := queriesFromContext(ctx)
+	if err != nil {
+		return OAuthStateClaim{}, err
+	}
+	row, err := queries.ClaimAdminOAuthState(ctx, authdb.ClaimAdminOAuthStateParams{
+		StateHash: stateHash, AuthProvider: string(provider), ClaimedAt: timestamp(claimedAt),
+	})
+	if err != nil {
+		return OAuthStateClaim{}, err
+	}
+	return OAuthStateClaim{NextPath: row}, nil
 }
 
 func queriesFromContext(ctx context.Context) (*authdb.Queries, error) {

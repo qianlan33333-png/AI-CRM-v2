@@ -173,6 +173,37 @@ func TestLoadWeComCallbackIsAtomicAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLoadWeComOAuthIsAtomicAndRedacted(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:        "postgres://db/aicrm",
+		apiListenAddressEnv:   "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:    "1",
+		weComOAuthCorpIDEnv:   "corp-fixture",
+		weComOAuthSecretEnv:   "oauth-secret-sentinel",
+		weComOAuthCallbackEnv: "https://crm.example.test/auth/wecom/callback",
+		identityHMACKeyEnv:    strings.Repeat("A", 43),
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.WeCom.OAuth.Enabled || root.WeCom.OAuth.CorpID != "corp-fixture" || root.WeCom.OAuth.CallbackURL != values[weComOAuthCallbackEnv] ||
+		root.WeCom.OAuth.Secret.Value() != values[weComOAuthSecretEnv] {
+		t.Fatalf("oauth load = %#v, %v", root.WeCom.OAuth, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weComOAuthSecretEnv]) {
+			t.Fatalf("Root formatting leaked OAuth credential: %q", formatted)
+		}
+	}
+	delete(values, weComOAuthSecretEnv)
+	if _, err = load(appruntime.RoleAPI, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.oauth requires corp_id, secret, and callback_url together" {
+		t.Fatalf("partial OAuth error = %v", err)
+	}
+	values[weComOAuthSecretEnv] = "oauth-secret-sentinel"
+	values[weComOAuthCallbackEnv] = "https://evil.example/callback"
+	if _, err = load(appruntime.RoleAPI, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.oauth.callback_url is invalid" {
+		t.Fatalf("unsafe OAuth callback error = %v", err)
+	}
+}
+
 func TestDatabaseURLFormattingIsRedacted(t *testing.T) {
 	value := DatabaseURL{value: "postgres://user:secret@db/aicrm"}
 	root := Root{Database: Database{URL: value}}

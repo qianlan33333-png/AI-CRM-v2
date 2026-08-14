@@ -50,3 +50,23 @@ SELECT EXISTS (
     AND u.is_active
     AND u.login_enabled
 );
+
+-- name: InsertAdminOAuthState :exec
+WITH expired AS (
+  DELETE FROM admin_oauth_states
+  WHERE expires_at <= sqlc.arg(created_at)
+  RETURNING state_hash
+)
+INSERT INTO admin_oauth_states (
+  state_hash, auth_provider, next_path, created_at, expires_at
+) VALUES (
+  sqlc.arg(state_hash), sqlc.arg(auth_provider), sqlc.arg(next_path),
+  sqlc.arg(created_at), sqlc.arg(expires_at)
+);
+
+-- name: ClaimAdminOAuthState :one
+DELETE FROM admin_oauth_states
+WHERE state_hash = sqlc.arg(state_hash)
+  AND auth_provider = sqlc.arg(auth_provider)
+  AND expires_at > sqlc.arg(claimed_at)
+RETURNING next_path;
