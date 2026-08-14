@@ -4240,6 +4240,26 @@ slices:
     tests: [LOCAL_P3_O2_real_PG16_14_acceptance_PASS, PR203_REQUIRED_CI_REVALIDATION_PENDING]
     external_gates: [PR203_APPLICATION_GO_RUN_31777019288_FAILED_ONLY_STALE_WATERLINE_ASSERTION, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-W0-D01-R5
+    title: automation-real-tag-trigger-consumer-pr203-outbound-compat-repair-receipt
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_PR203_required_CI_revalidation_pending
+    base_sha: 62ac55922d691dc33c0730cec7f3685e704d3ee0
+    dependency: P4-W0-D01-R4
+    branch: codex/p4-w0-d01-automation-recut2-policy-20260814
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/203
+    scope: [forward_record_sixth_and_seventh_non_redline_corrections, synchronize_O6_full_up_waterlines_to_25, preserve_O6B2_explicit_rollback_to_23, preserve_original_D01_DoD]
+    excluded_scope: [new_file, O6_business_semantic_change, new_business_capability, generic_consumer_framework, security_platform, extra_recovery_or_risk_control, D02_D05, L01_stats, new_UI, production_or_real_external_operations]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_D01_DoD, permanent_negatives, generated_manifest_ledger_receipts, required_CI_PR_merge_exact_main_CLOSED]
+    slice_induced_correction_count: 7
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 21
+    correction_notes: [slice:PR203_application_go_found_O6A_full_up_reached_25_while_the_fixture_expected_24_then_the_same_full_up_assertion_was_synchronized_for_O6A_O6B1_O6B2, slice:local_three_fixture_revalidation_found_O6B2_one_step_down_from_25_reached_24_then_changed_that_step_to_explicit_down_to_23_to_preserve_the_original_00024_rollback_semantics, verification:first_BSD_grep_log_filter_pattern_started_with_three_dashes_without_e_then_the_same_read_only_log_was_filtered_with_the_explicit_pattern_option, redline:none]
+    tests: [LOCAL_P3_O6A_real_PG16_14_acceptance_PASS, LOCAL_P3_O6B1_real_PG16_14_acceptance_PASS, LOCAL_P3_O6B2_real_PG16_14_acceptance_PASS, PR203_REQUIRED_CI_REVALIDATION_PENDING]
+    external_gates: [PR203_APPLICATION_GO_RUN_31777545876_FAILED_ONLY_STALE_O6_COMPAT_MIGRATION_ASSUMPTIONS, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

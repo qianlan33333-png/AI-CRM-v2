@@ -24,7 +24,7 @@ read -r receipt_id task_id event_id generation river_job_id <<<"$(
 [[ "$receipt_id" =~ ^[1-9][0-9]*$ && "$task_id" =~ ^[1-9][0-9]*$ && "$event_id" =~ ^[1-9][0-9]*$ ]]
 [[ "$generation" = "2" && "$river_job_id" =~ ^[1-9][0-9]*$ ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 23
 read -r rollback_waterline receipts links events jobs task_status <<<"$(
   psql "$database_url" -X -v ON_ERROR_STOP=1 -At -F ' ' -c \
     "SELECT max(version_id),
@@ -49,5 +49,5 @@ read -r upgrade_waterline receipts links events jobs task_status <<<"$(
             (SELECT status FROM outbound_tasks WHERE id=${task_id})
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "24" && "$receipts" = "1" && "$links" = "2" ]]
+[[ "$upgrade_waterline" = "25" && "$receipts" = "1" && "$links" = "2" ]]
 [[ "$events" = "1" && "$jobs" = "1" && "$task_status" = "pending" ]]

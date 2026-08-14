@@ -62,4 +62,4 @@ read -r upgrade_waterline upgrade_history marker_count <<<"$(
        FROM goose_db_version
       WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "24" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]
+[[ "$upgrade_waterline" = "25" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]
