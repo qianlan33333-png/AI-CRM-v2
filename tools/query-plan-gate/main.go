@@ -356,7 +356,7 @@ func seedSegmentPlanFixture(ctx context.Context, databaseURL string) error {
 	}()
 	statements := []string{
 		`INSERT INTO staff (wecom_userid, name) SELECT 'segment-plan-staff-' || n, 'staff-' || n FROM generate_series(1, 64) AS n`,
-		`INSERT INTO channels (name, code) SELECT 'channel-' || n, 'segment-plan-channel-' || n FROM generate_series(1, 64) AS n`,
+		`INSERT INTO channels (name, code, config) SELECT 'channel-' || n, 'segment-plan-channel-' || n, jsonb_build_object('schema_version', 1) FROM generate_series(1, 64) AS n`,
 		`INSERT INTO stages (name, sort_order) SELECT 'segment-plan-stage-' || n, n FROM generate_series(1, 64) AS n`,
 		`INSERT INTO tag_groups (name) VALUES ('segment-plan-tags')`,
 		`INSERT INTO tags (group_id, name) SELECT 1, 'segment-plan-tag-' || n FROM generate_series(1, 64) AS n`,

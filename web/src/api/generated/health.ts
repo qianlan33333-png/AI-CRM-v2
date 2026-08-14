@@ -5,6 +5,245 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type LegacyChannelWriteRequestChannelType =
+  (typeof LegacyChannelWriteRequestChannelType)[keyof typeof LegacyChannelWriteRequestChannelType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelWriteRequestChannelType = {
+  qrcode: "qrcode",
+  wecom_customer_acquisition: "wecom_customer_acquisition",
+} as const;
+
+export type LegacyChannelWriteRequestCarrierType =
+  (typeof LegacyChannelWriteRequestCarrierType)[keyof typeof LegacyChannelWriteRequestCarrierType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelWriteRequestCarrierType = {
+  qrcode: "qrcode",
+  link: "link",
+} as const;
+
+export type LegacyChannelWriteRequestStatus =
+  (typeof LegacyChannelWriteRequestStatus)[keyof typeof LegacyChannelWriteRequestStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelWriteRequestStatus = {
+  active: "active",
+  inactive: "inactive",
+  archived: "archived",
+} as const;
+
+export type LegacyChannelWriteRequestAssignmentMode =
+  (typeof LegacyChannelWriteRequestAssignmentMode)[keyof typeof LegacyChannelWriteRequestAssignmentMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelWriteRequestAssignmentMode = {
+  single_owner: "single_owner",
+  multi_staff: "multi_staff",
+} as const;
+
+export type LegacyChannelWriteRequestAssignmentStrategy =
+  (typeof LegacyChannelWriteRequestAssignmentStrategy)[keyof typeof LegacyChannelWriteRequestAssignmentStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelWriteRequestAssignmentStrategy = {
+  ratio: "ratio",
+  cap_switch: "cap_switch",
+} as const;
+
+export type LegacyChannelWriteRequestAssignmentConfigJson = {
+  [key: string]: unknown;
+};
+
+export interface LegacyChannelWriteRequest {
+  channel_type?: LegacyChannelWriteRequestChannelType;
+  carrier_type?: LegacyChannelWriteRequestCarrierType;
+  /** @maxLength 200 */
+  channel_name?: string;
+  /** @maxLength 200 */
+  channel_code?: string;
+  /** @maxLength 10000 */
+  scene_value?: string;
+  /** @maxLength 10000 */
+  qr_url?: string;
+  status?: LegacyChannelWriteRequestStatus;
+  /** @maxLength 10000 */
+  owner_staff_id?: string;
+  /** @maxLength 10000 */
+  customer_channel?: string;
+  /** @maxLength 10000 */
+  link_url?: string;
+  /** @maxLength 10000 */
+  final_url?: string;
+  /** @maxLength 10000 */
+  welcome_message?: string;
+  /** @maxItems 12 */
+  welcome_image_library_ids?: number[];
+  /** @maxItems 12 */
+  welcome_miniprogram_library_ids?: number[];
+  /** @maxItems 12 */
+  welcome_attachment_library_ids?: number[];
+  /** @maxItems 12 */
+  welcome_group_invite_library_ids?: number[];
+  auto_accept_friend?: boolean;
+  /** @maxLength 10000 */
+  entry_tag_id?: string;
+  /** @maxLength 10000 */
+  entry_tag_name?: string;
+  /** @maxLength 10000 */
+  entry_tag_group_name?: string;
+  assignment_mode?: LegacyChannelWriteRequestAssignmentMode;
+  assignment_strategy?: LegacyChannelWriteRequestAssignmentStrategy;
+  /** @maxLength 10000 */
+  overflow_policy?: string;
+  assignment_config_json?: LegacyChannelWriteRequestAssignmentConfigJson;
+}
+
+export type LegacyChannelAllOfLatestChannelEnteredAt =
+  (typeof LegacyChannelAllOfLatestChannelEnteredAt)[keyof typeof LegacyChannelAllOfLatestChannelEnteredAt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelAllOfLatestChannelEnteredAt = {
+  "": "",
+} as const;
+
+export type LegacyChannelAllOfQrcodeStatus =
+  (typeof LegacyChannelAllOfQrcodeStatus)[keyof typeof LegacyChannelAllOfQrcodeStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelAllOfQrcodeStatus = {
+  not_generated: "not_generated",
+} as const;
+
+export type LegacyChannelAllOfQrDownloadUrl =
+  (typeof LegacyChannelAllOfQrDownloadUrl)[keyof typeof LegacyChannelAllOfQrDownloadUrl];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelAllOfQrDownloadUrl = {
+  "": "",
+} as const;
+
+export type LegacyChannelAllOfShareUrl =
+  (typeof LegacyChannelAllOfShareUrl)[keyof typeof LegacyChannelAllOfShareUrl];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelAllOfShareUrl = {
+  "": "",
+} as const;
+
+export type LegacyChannelAllOfCopyText =
+  (typeof LegacyChannelAllOfCopyText)[keyof typeof LegacyChannelAllOfCopyText];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelAllOfCopyText = {
+  "": "",
+} as const;
+
+export type LegacyChannelAllOf = {
+  /** @minimum 1 */
+  id?: number;
+  created_at?: string;
+  updated_at?: string;
+  /** @maxItems 0 */
+  assignees?: unknown[];
+  /** @maxItems 0 */
+  assignment_stats_24h?: unknown[];
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  assignee_count?: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  channel_contact_count?: number;
+  latest_channel_entered_at?: LegacyChannelAllOfLatestChannelEnteredAt;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  qrcode_asset_id?: number;
+  qrcode_status?: LegacyChannelAllOfQrcodeStatus;
+  qr_download_url?: LegacyChannelAllOfQrDownloadUrl;
+  share_url?: LegacyChannelAllOfShareUrl;
+  copy_text?: LegacyChannelAllOfCopyText;
+};
+
+export type LegacyChannel = LegacyChannelWriteRequest & LegacyChannelAllOf;
+
+export type LegacyChannelListResponseReason =
+  (typeof LegacyChannelListResponseReason)[keyof typeof LegacyChannelListResponseReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelListResponseReason = {
+  channels_listed: "channels_listed",
+} as const;
+
+export type LegacyChannelListResponseSource =
+  (typeof LegacyChannelListResponseSource)[keyof typeof LegacyChannelListResponseSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelListResponseSource = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyChannelListResponse {
+  ok: boolean;
+  channels: LegacyChannel[];
+  reason: LegacyChannelListResponseReason;
+  source: LegacyChannelListResponseSource;
+}
+
+export type LegacyChannelDetailResponseReason =
+  (typeof LegacyChannelDetailResponseReason)[keyof typeof LegacyChannelDetailResponseReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelDetailResponseReason = {
+  channel_loaded: "channel_loaded",
+} as const;
+
+export type LegacyChannelDetailResponseSource =
+  (typeof LegacyChannelDetailResponseSource)[keyof typeof LegacyChannelDetailResponseSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelDetailResponseSource = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyChannelDetailResponse {
+  ok: boolean;
+  channel: LegacyChannel;
+  reason: LegacyChannelDetailResponseReason;
+  source: LegacyChannelDetailResponseSource;
+}
+
+export type LegacyChannelMutationResponseReason =
+  (typeof LegacyChannelMutationResponseReason)[keyof typeof LegacyChannelMutationResponseReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelMutationResponseReason = {
+  channel_created: "channel_created",
+  channel_updated: "channel_updated",
+} as const;
+
+export type LegacyChannelMutationResponseSource =
+  (typeof LegacyChannelMutationResponseSource)[keyof typeof LegacyChannelMutationResponseSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelMutationResponseSource = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyChannelMutationResponse {
+  ok: boolean;
+  channel: LegacyChannel;
+  reason: LegacyChannelMutationResponseReason;
+  source: LegacyChannelMutationResponseSource;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface LegacyCustomer {
   /**
    * @minLength 1
@@ -1482,6 +1721,26 @@ export type ListAutomationTriggerRunsVisibility =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
+} as const;
+
+export type ListLegacyChannelsParams = {
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+  status?: ListLegacyChannelsStatus;
+  include_archived?: boolean;
+};
+
+export type ListLegacyChannelsStatus =
+  (typeof ListLegacyChannelsStatus)[keyof typeof ListLegacyChannelsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyChannelsStatus = {
+  active: "active",
+  inactive: "inactive",
+  archived: "archived",
 } as const;
 
 export type ListLegacyQuestionnairesParams = {
@@ -3905,6 +4164,312 @@ export const listAutomationTriggerRuns = async (
     status: res.status,
     headers: res.headers,
   } as listAutomationTriggerRunsResponse;
+};
+
+/**
+ * @summary List persisted local channel resources without querying WeCom
+ */
+export type listLegacyChannelsResponse200 = {
+  data: LegacyChannelListResponse;
+  status: 200;
+};
+
+export type listLegacyChannelsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyChannelsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyChannelsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyChannelsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyChannelsResponseSuccess =
+  listLegacyChannelsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyChannelsResponseError = (
+  | listLegacyChannelsResponse400
+  | listLegacyChannelsResponse401
+  | listLegacyChannelsResponse403
+  | listLegacyChannelsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyChannelsResponse =
+  listLegacyChannelsResponseSuccess | listLegacyChannelsResponseError;
+
+export const getListLegacyChannelsUrl = (params?: ListLegacyChannelsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/channels?${stringifiedParams}`
+    : `/api/admin/channels`;
+};
+
+export const listLegacyChannels = async (
+  params?: ListLegacyChannelsParams,
+  options?: RequestInit,
+): Promise<listLegacyChannelsResponse> => {
+  const res = await fetch(getListLegacyChannelsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyChannelsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyChannelsResponse;
+};
+
+/**
+ * @summary Create one local channel resource without QR, welcome, assignment, or provider execution
+ */
+export type createLegacyChannelResponse201 = {
+  data: LegacyChannelMutationResponse;
+  status: 201;
+};
+
+export type createLegacyChannelResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyChannelResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyChannelResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyChannelResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyChannelResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyChannelResponseSuccess =
+  createLegacyChannelResponse201 & {
+    headers: Headers;
+  };
+export type createLegacyChannelResponseError = (
+  | createLegacyChannelResponse400
+  | createLegacyChannelResponse401
+  | createLegacyChannelResponse403
+  | createLegacyChannelResponse409
+  | createLegacyChannelResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyChannelResponse =
+  createLegacyChannelResponseSuccess | createLegacyChannelResponseError;
+
+export const getCreateLegacyChannelUrl = () => {
+  return `/api/admin/channels`;
+};
+
+export const createLegacyChannel = async (
+  legacyChannelWriteRequest: LegacyChannelWriteRequest,
+  options?: RequestInit,
+): Promise<createLegacyChannelResponse> => {
+  const res = await fetch(getCreateLegacyChannelUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyChannelWriteRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyChannelResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyChannelResponse;
+};
+
+/**
+ * @summary Get one persisted local channel resource
+ */
+export type getLegacyChannelResponse200 = {
+  data: LegacyChannelDetailResponse;
+  status: 200;
+};
+
+export type getLegacyChannelResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyChannelResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyChannelResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyChannelResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyChannelResponseSuccess = getLegacyChannelResponse200 & {
+  headers: Headers;
+};
+export type getLegacyChannelResponseError = (
+  | getLegacyChannelResponse401
+  | getLegacyChannelResponse403
+  | getLegacyChannelResponse404
+  | getLegacyChannelResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyChannelResponse =
+  getLegacyChannelResponseSuccess | getLegacyChannelResponseError;
+
+export const getGetLegacyChannelUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}`;
+};
+
+export const getLegacyChannel = async (
+  channelId: number,
+  options?: RequestInit,
+): Promise<getLegacyChannelResponse> => {
+  const res = await fetch(getGetLegacyChannelUrl(channelId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyChannelResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyChannelResponse;
+};
+
+/**
+ * @summary Update local channel fields without executing future channel capabilities
+ */
+export type updateLegacyChannelResponse200 = {
+  data: LegacyChannelMutationResponse;
+  status: 200;
+};
+
+export type updateLegacyChannelResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyChannelResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyChannelResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyChannelResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyChannelResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateLegacyChannelResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyChannelResponseSuccess =
+  updateLegacyChannelResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyChannelResponseError = (
+  | updateLegacyChannelResponse400
+  | updateLegacyChannelResponse401
+  | updateLegacyChannelResponse403
+  | updateLegacyChannelResponse404
+  | updateLegacyChannelResponse409
+  | updateLegacyChannelResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyChannelResponse =
+  updateLegacyChannelResponseSuccess | updateLegacyChannelResponseError;
+
+export const getUpdateLegacyChannelUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}`;
+};
+
+export const updateLegacyChannel = async (
+  channelId: number,
+  legacyChannelWriteRequest: LegacyChannelWriteRequest,
+  options?: RequestInit,
+): Promise<updateLegacyChannelResponse> => {
+  const res = await fetch(getUpdateLegacyChannelUrl(channelId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyChannelWriteRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyChannelResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyChannelResponse;
 };
 
 /**

@@ -797,6 +797,93 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels:
+    get:
+      tags: [p4-channel-compat]
+      operationId: listLegacyChannels
+      summary: List persisted local channel resources without querying WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0190]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+        - { name: status, in: query, schema: { type: string, enum: [active, inactive, archived] } }
+        - { name: include_archived, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Frozen legacy channel-list envelope backed only by local PostgreSQL.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-channel-compat]
+      operationId: createLegacyChannel
+      summary: Create one local channel resource without QR, welcome, assignment, or provider execution
+      x-legacy-mapping-ids: [LEGACY-API-0191]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelWriteRequest" } } }
+      responses:
+        "201":
+          description: Local channel persisted with receipt and Event in one UoW.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelMutationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}:
+    parameters:
+      - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-channel-compat]
+      operationId: getLegacyChannel
+      summary: Get one persisted local channel resource
+      x-legacy-mapping-ids: [LEGACY-API-0195]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200":
+          description: Frozen legacy channel-detail envelope.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelDetailResponse" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p4-channel-compat]
+      operationId: updateLegacyChannel
+      summary: Update local channel fields without executing future channel capabilities
+      x-legacy-mapping-ids: [LEGACY-API-0196]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelWriteRequest" } } }
+      responses:
+        "200":
+          description: Local channel updated with receipt and Event in one UoW.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelMutationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/questionnaires:
     get:
       tags: [p4-survey-compat]
@@ -1057,6 +1144,81 @@ components:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
+    LegacyChannelWriteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        channel_type: { type: string, enum: [qrcode, wecom_customer_acquisition] }
+        carrier_type: { type: string, enum: [qrcode, link] }
+        channel_name: { type: string, maxLength: 200 }
+        channel_code: { type: string, maxLength: 200 }
+        scene_value: { type: string, maxLength: 10000 }
+        qr_url: { type: string, maxLength: 10000 }
+        status: { type: string, enum: [active, inactive, archived] }
+        owner_staff_id: { type: string, maxLength: 10000 }
+        customer_channel: { type: string, maxLength: 10000 }
+        link_url: { type: string, maxLength: 10000 }
+        final_url: { type: string, maxLength: 10000 }
+        welcome_message: { type: string, maxLength: 10000 }
+        welcome_image_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        welcome_miniprogram_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        welcome_attachment_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        welcome_group_invite_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        auto_accept_friend: { type: boolean }
+        entry_tag_id: { type: string, maxLength: 10000 }
+        entry_tag_name: { type: string, maxLength: 10000 }
+        entry_tag_group_name: { type: string, maxLength: 10000 }
+        assignment_mode: { type: string, enum: [single_owner, multi_staff] }
+        assignment_strategy: { type: string, enum: [ratio, cap_switch] }
+        overflow_policy: { type: string, maxLength: 10000 }
+        assignment_config_json: { type: object }
+    LegacyChannel:
+      allOf:
+        - $ref: "#/components/schemas/LegacyChannelWriteRequest"
+        - type: object
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+            assignees: { type: array, maxItems: 0, items: {} }
+            assignment_stats_24h: { type: array, maxItems: 0, items: {} }
+            assignee_count: { type: integer, minimum: 0, maximum: 0 }
+            channel_contact_count: { type: integer, minimum: 0, maximum: 0 }
+            latest_channel_entered_at: { type: string, enum: [""] }
+            qrcode_asset_id: { type: integer, minimum: 0, maximum: 0 }
+            qrcode_status: { type: string, enum: [not_generated] }
+            qr_download_url: { type: string, enum: [""] }
+            share_url: { type: string, enum: [""] }
+            copy_text: { type: string, enum: [""] }
+    LegacyChannelListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, channels, reason, source]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        channels: { type: array, items: { $ref: "#/components/schemas/LegacyChannel" } }
+        reason: { type: string, enum: [channels_listed] }
+        source: { type: string, enum: [ai_crm_next] }
+    LegacyChannelDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, channel, reason, source]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        channel: { $ref: "#/components/schemas/LegacyChannel" }
+        reason: { type: string, enum: [channel_loaded] }
+        source: { type: string, enum: [ai_crm_next] }
+    LegacyChannelMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, channel, reason, source, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        channel: { $ref: "#/components/schemas/LegacyChannel" }
+        reason: { type: string, enum: [channel_created, channel_updated] }
+        source: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyCustomer:
       type: object
       additionalProperties: false

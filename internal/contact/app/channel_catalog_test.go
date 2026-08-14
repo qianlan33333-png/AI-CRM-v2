@@ -1,0 +1,157 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"testing"
+	"time"
+
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+)
+
+func TestC01ChannelCreateReplayUpdateListAndGet(t *testing.T) {
+	service, store, events := channelTestService()
+	created, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-create-key-0001", ChannelName: "公开课", LegacyProjection: json.RawMessage(`{"owner_staff_id":"staff-7","welcome_message":"欢迎"}`)})
+	if err != nil || created.ID != 1 || created.ChannelCode == "" || created.Status != "active" || len(events.items) != 1 || events.items[0].Type != eventport.EvChannelCreated {
+		t.Fatalf("create=%#v events=%#v err=%v", created, events.items, err)
+	}
+	replay, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-create-key-0001", ChannelName: "公开课", LegacyProjection: json.RawMessage(`{"owner_staff_id":"staff-7","welcome_message":"欢迎"}`)})
+	if err != nil || replay.ID != created.ID || store.creates != 1 || len(events.items) != 1 {
+		t.Fatalf("replay=%#v creates=%d events=%d err=%v", replay, store.creates, len(events.items), err)
+	}
+	updated, err := service.UpdateChannel(context.Background(), UpdateChannelCommand{Actor: 7, ChannelID: created.ID, IdempotencyKey: "channel-update-key-0001", Patch: json.RawMessage(`{"status":"archived"}`)})
+	if err != nil || updated.Status != "archived" || len(events.items) != 2 || events.items[1].Type != eventport.EvChannelUpdated {
+		t.Fatalf("update=%#v events=%#v err=%v", updated, events.items, err)
+	}
+	rows, err := service.ListChannels(context.Background(), 100, "archived", true)
+	if err != nil || len(rows) != 1 || rows[0].ID != created.ID {
+		t.Fatalf("list=%#v err=%v", rows, err)
+	}
+	got, err := service.GetChannel(context.Background(), created.ID)
+	if err != nil || got.Status != "archived" {
+		t.Fatalf("get=%#v err=%v", got, err)
+	}
+}
+
+func TestC01ChannelBoundariesAndActorScopedReceipt(t *testing.T) {
+	service, store, events := channelTestService()
+	base := CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-shared-key-0001", ChannelCode: "course", ChannelName: "课程"}
+	if _, err := service.CreateChannel(context.Background(), base); err != nil {
+		t.Fatal(err)
+	}
+	conflict := base
+	conflict.ChannelName = "冲突"
+	if _, err := service.CreateChannel(context.Background(), conflict); !errors.Is(err, ErrChannelConflict) {
+		t.Fatalf("payload conflict=%v", err)
+	}
+	second := base
+	second.Actor = 8
+	second.ChannelCode = "course-2"
+	if _, err := service.CreateChannel(context.Background(), second); err != nil {
+		t.Fatalf("actor isolation=%v", err)
+	}
+	for _, command := range []CreateChannelCommand{
+		{Actor: 7, IdempotencyKey: "short", ChannelName: "x"},
+		{Actor: 7, IdempotencyKey: "channel-invalid-key-0001", ChannelName: "x", Status: "deleted"},
+		{Actor: 7, IdempotencyKey: "channel-invalid-key-0002", ChannelName: "x", LegacyProjection: json.RawMessage(`{"tenant` + `_id":"forbidden"}`)},
+	} {
+		before := store.creates
+		if _, err := service.CreateChannel(context.Background(), command); !errors.Is(err, ErrInvalidChannel) {
+			t.Fatalf("command=%#v err=%v", command, err)
+		}
+		if store.creates != before {
+			t.Fatal("invalid input leaked a channel write")
+		}
+	}
+	if len(events.items) != 2 {
+		t.Fatalf("events=%#v", events.items)
+	}
+}
+
+type channelUOW struct{}
+
+func (channelUOW) Within(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) }
+
+type channelEvents struct{ items []eventport.Event }
+
+func (events *channelEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
+	events.items = append(events.items, event)
+	return eventport.EventID(len(events.items)), nil
+}
+
+type channelStore struct {
+	items    []Channel
+	receipts map[string]ChannelReceipt
+	creates  int
+}
+
+func (store *channelStore) ListChannels(_ context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
+	result := []Channel{}
+	for i := len(store.items) - 1; i >= 0; i-- {
+		item := store.items[i]
+		if status != "" && item.Status != status || !includeArchived && item.Status == "archived" {
+			continue
+		}
+		result = append(result, item)
+		if len(result) == int(limit) {
+			break
+		}
+	}
+	return result, nil
+}
+func (store *channelStore) GetChannel(_ context.Context, id int64) (Channel, error) {
+	for _, item := range store.items {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return Channel{}, ErrChannelNotFound
+}
+func (store *channelStore) CreateChannel(_ context.Context, c CreateChannelCommand, now time.Time) (Channel, error) {
+	store.creates++
+	item := Channel{ID: int64(len(store.items) + 1), ChannelCode: c.ChannelCode, ChannelName: c.ChannelName, Status: c.Status, LegacyProjection: c.LegacyProjection, CreatedBy: c.Actor, UpdatedBy: c.Actor, CreatedAt: now, UpdatedAt: now}
+	store.items = append(store.items, item)
+	return item, nil
+}
+func (store *channelStore) UpdateChannel(_ context.Context, current Channel, actor int64, now time.Time) (Channel, error) {
+	for i := range store.items {
+		if store.items[i].ID == current.ID {
+			current.CreatedAt = store.items[i].CreatedAt
+			current.CreatedBy = store.items[i].CreatedBy
+			current.UpdatedBy = actor
+			current.UpdatedAt = now
+			store.items[i] = current
+			return current, nil
+		}
+	}
+	return Channel{}, ErrChannelNotFound
+}
+func (store *channelStore) ReserveChannel(_ context.Context, x ChannelReservation) (ChannelReceipt, bool, error) {
+	key := x.Operation + ":" + x.ActorScope + ":" + fmt.Sprintf("%x", x.KeyDigest)
+	if old, ok := store.receipts[key]; ok {
+		return old, false, nil
+	}
+	r := ChannelReceipt{ID: int64(len(store.receipts) + 1), Operation: x.Operation, ActorScope: x.ActorScope, KeyDigest: x.KeyDigest, PayloadDigest: x.PayloadDigest, State: "in_progress"}
+	store.receipts[key] = r
+	return r, true, nil
+}
+func (store *channelStore) CompleteChannel(_ context.Context, id int64, snapshot json.RawMessage, _ time.Time) (ChannelReceipt, error) {
+	for key, r := range store.receipts {
+		if r.ID == id {
+			r.State = "completed"
+			r.ResultSnapshot = append([]byte(nil), snapshot...)
+			store.receipts[key] = r
+			return r, nil
+		}
+	}
+	return ChannelReceipt{}, ErrChannelUnavailable
+}
+func channelTestService() (*ChannelService, *channelStore, *channelEvents) {
+	store := &channelStore{receipts: map[string]ChannelReceipt{}}
+	events := &channelEvents{}
+	service := NewChannelService(channelUOW{}, store, events)
+	service.now = func() time.Time { return time.Date(2026, 8, 15, 11, 0, 0, 0, time.UTC) }
+	return service, store, events
+}
