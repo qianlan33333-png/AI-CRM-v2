@@ -110,7 +110,7 @@ const ProviderWeCom Provider = "wecom"
 // verified the OAuth result. It is never accepted directly from an HTTP body.
 type VerifiedLogin struct {
 	Provider  Provider
-	TenantID  string
+	CorpID    string
 	SubjectID string
 }
 

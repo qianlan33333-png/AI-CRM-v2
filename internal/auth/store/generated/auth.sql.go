@@ -36,7 +36,7 @@ const findAdminUserForVerifiedLogin = `-- name: FindAdminUserForVerifiedLogin :o
 SELECT id, role, staff_id, session_version
 FROM admin_users
 WHERE auth_provider = $1
-  AND provider_tenant_id = $2
+  AND wecom_corp_id = $2
   AND provider_subject_id = $3
   AND is_active
   AND login_enabled
@@ -44,7 +44,7 @@ WHERE auth_provider = $1
 
 type FindAdminUserForVerifiedLoginParams struct {
 	AuthProvider      string `json:"auth_provider"`
-	ProviderTenantID  string `json:"provider_tenant_id"`
+	WecomCorpID       string `json:"wecom_corp_id"`
 	ProviderSubjectID string `json:"provider_subject_id"`
 }
 
@@ -56,7 +56,7 @@ type FindAdminUserForVerifiedLoginRow struct {
 }
 
 func (q *Queries) FindAdminUserForVerifiedLogin(ctx context.Context, arg FindAdminUserForVerifiedLoginParams) (FindAdminUserForVerifiedLoginRow, error) {
-	row := q.db.QueryRow(ctx, findAdminUserForVerifiedLogin, arg.AuthProvider, arg.ProviderTenantID, arg.ProviderSubjectID)
+	row := q.db.QueryRow(ctx, findAdminUserForVerifiedLogin, arg.AuthProvider, arg.WecomCorpID, arg.ProviderSubjectID)
 	var i FindAdminUserForVerifiedLoginRow
 	err := row.Scan(
 		&i.ID,

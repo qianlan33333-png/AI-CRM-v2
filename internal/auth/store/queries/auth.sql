@@ -2,7 +2,7 @@
 SELECT id, role, staff_id, session_version
 FROM admin_users
 WHERE auth_provider = sqlc.arg(auth_provider)
-  AND provider_tenant_id = sqlc.arg(provider_tenant_id)
+  AND wecom_corp_id = sqlc.arg(wecom_corp_id)
   AND provider_subject_id = sqlc.arg(provider_subject_id)
   AND is_active
   AND login_enabled;

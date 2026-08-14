@@ -266,7 +266,7 @@ func TestL01StorageCatalogHasValidatedStatsOwnedTables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != 27 || constraints != 10 || invalidConstraints != 0 || indexes != 3 || invalidIndexes != 0 ||
+	if waterline != 28 || constraints != 10 || invalidConstraints != 0 || indexes != 3 || invalidIndexes != 0 ||
 		foreignKeys != 0 || dailyPersistence != "p" || receiptPersistence != "p" {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%d/%s/%s",
 			waterline, constraints, invalidConstraints, indexes, invalidIndexes, foreignKeys, dailyPersistence, receiptPersistence)

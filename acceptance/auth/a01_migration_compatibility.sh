@@ -48,7 +48,7 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
      id, session_version, now(), now() + interval '8 hours'
    FROM admin_users WHERE id=${admin_user_id};"
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 27
 read -r upgrade_waterline oauth_table oauth_index session_count <<<"$(
   psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c \
     "SELECT max(version_id),
@@ -74,7 +74,7 @@ read -r rollback_waterline oauth_table session_count <<<"$(
 )"
 [[ "$rollback_waterline" = "26" && "$oauth_table" = "0" && "$session_count" = "1" ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 27
 read -r final_waterline oauth_table state_count session_count <<<"$(
   psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c \
     "SELECT max(version_id),

@@ -167,6 +167,14 @@ if (cd "$tenant_runtime_escape_fixture" && scripts/check_repo_contract.sh >/dev/
   fail "runtime tenant selector escaped the Auth compatibility bridge"
 fi
 
+si00b_tenant_column_fixture="$(make_fixture si00b-migration-tenant-column)"
+sed -i.bak 's/RENAME COLUMN provider_tenant_id TO wecom_corp_id;/ADD COLUMN tenant_id TEXT;/' "$si00b_tenant_column_fixture/migrations/00028_auth_wecom_corp_id.sql"
+rm -f "$si00b_tenant_column_fixture/migrations/00028_auth_wecom_corp_id.sql.bak"
+restage_p2s18_receipt "$si00b_tenant_column_fixture" migrations/00028_auth_wecom_corp_id.sql
+if (cd "$si00b_tenant_column_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-SI00B migration tenant column escape was accepted after receipt refresh"
+fi
+
 receipt_verifier_drift="$(make_fixture receipt-verifier-drift)"
 printf '%s\n' '# receipt verifier drift' >>"$receipt_verifier_drift/scripts/verify_repo_receipts.pl"
 git -C "$receipt_verifier_drift" add scripts/verify_repo_receipts.pl

@@ -29,7 +29,7 @@ func (repository *Repository) FindVerifiedLogin(ctx context.Context, login authp
 		return LoginUser{}, err
 	}
 	row, err := queries.FindAdminUserForVerifiedLogin(ctx, authdb.FindAdminUserForVerifiedLoginParams{
-		AuthProvider: string(login.Provider), ProviderTenantID: login.TenantID,
+		AuthProvider: string(login.Provider), WecomCorpID: login.CorpID,
 		ProviderSubjectID: login.SubjectID,
 	})
 	if err != nil {

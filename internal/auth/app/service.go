@@ -70,7 +70,7 @@ func NewService(uow platformport.UnitOfWork, repo repository, options Options) (
 
 func (service *Service) IssueVerified(ctx context.Context, login authport.VerifiedLogin) (authport.BrowserSession, error) {
 	if service == nil || service.uow == nil || service.repo == nil || service.clock == nil || service.random == nil ||
-		login.Provider != authport.ProviderWeCom || !safeProviderID.MatchString(login.TenantID) || !safeProviderID.MatchString(login.SubjectID) {
+		login.Provider != authport.ProviderWeCom || !safeProviderID.MatchString(login.CorpID) || !safeProviderID.MatchString(login.SubjectID) {
 		return authport.BrowserSession{}, authport.ErrInvalidVerifiedLogin
 	}
 	session, sessionHash, err := service.newToken()
