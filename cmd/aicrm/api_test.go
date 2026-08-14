@@ -48,6 +48,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", authport.CapabilityIdentityReviewWrite},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", authport.CapabilityIdentityReviewWrite},
 		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead},
+		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead},
+		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite},
+		{http.MethodGet, "/api/v1/products/1", authport.CapabilityProductsRead},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite},
 		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 	}
@@ -65,6 +68,10 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 				test.capability == authport.CapabilityIdentityIngest ||
 				test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+			}
+			if test.capability == authport.CapabilityProductsWrite {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-product-key")
 			}
 			if test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("Idempotency-Key", "router-review-key")
@@ -100,6 +107,7 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/ingest", `{}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", `{"expected_version":1,"primary_customer_id":1,"reason":"confirm"}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", `{"expected_version":1,"reason":"reject"}`},
+		{http.MethodPost, "/api/v1/products", `{"product_code":"sku","name":"商品","description":"","price_minor":1,"currency":"CNY","stock_quantity":0,"images":[]}`},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

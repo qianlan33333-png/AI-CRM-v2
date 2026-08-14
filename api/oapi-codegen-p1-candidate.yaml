@@ -12,3 +12,4 @@ output-options:
     - p3-identity
     - p3-segment
     - p4-automation-compat
+    - p4-product

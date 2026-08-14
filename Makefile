@@ -493,6 +493,11 @@ p4-si00b-auth-acceptance:
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$$P4SI00B_AUTH_TEST_DATABASE_URL" $(GO) test -race -count=1 -timeout=90s ./acceptance/p2s09 ./acceptance/p2s16
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s -run '^(TestA01|TestHumanOAuth|TestHumanAuth|TestFinalRouter)' ./cmd/aicrm -args -p4-a01-database-url "$$P4SI00B_AUTH_TEST_DATABASE_URL"
 
+p4-i01a-product-acceptance:
+	@test -n "$${P4I01A_PRODUCT_TEST_DATABASE_URL:-}" || { echo "P4I01A_PRODUCT_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/product/i01a_migration_compatibility.sh
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/product/... ./cmd/aicrm
+
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=45s ./acceptance/p3c02a

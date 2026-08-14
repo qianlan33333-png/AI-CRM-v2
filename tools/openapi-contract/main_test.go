@@ -147,6 +147,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			operation.Parameters = operation.Parameters[:7]
 			reject(t, doc, ids)
 		},
+		"product evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/products").Get.Extensions["x-p4-decision-evidence"] = "P4-I01A-FORGED"
+			reject(t, doc, ids)
+		},
+		"product legacy mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/products/{product_id}").Get.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0526"}
+			reject(t, doc, ids)
+		},
+		"product capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/v1/products").Get.Extensions["x-aicrm-capability"] = "products.write"
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"

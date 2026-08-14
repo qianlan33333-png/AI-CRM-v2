@@ -20,7 +20,7 @@ seed() {
   mkdir -p "$root/cmd/aicrm" "$root/cmd/aicrm-river-migrate" "$root/cmd/aicrm-contact-perf" "$root/internal/contact/app" \
     "$root/internal/identity/port" "$root/internal/identity/store" \
     "$root/internal/automation/app" "$root/internal/stats/app" "$root/internal/events/store" \
-    "$root/internal/outbound/app" \
+    "$root/internal/outbound/app" "$root/internal/product/app" \
     "$root/internal/platform/store" "$root/internal/api/generated" \
     "$root/internal/config"
   printf '%s\n' 'package app' \
@@ -44,6 +44,9 @@ seed() {
     'import queue "github.com/riverqueue/river"' \
     'var _ queue.JobArgs' \
     >"$root/internal/outbound/app/use.go"
+  printf '%s\n' 'package app' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"' \
+    >"$root/internal/product/app/use.go"
   printf '%s\n' 'package config' 'import "os"' \
     'func load() { _, _ = os.LookupEnv("AICRM_DATABASE_URL") }' \
     >"$root/internal/config/load.go"

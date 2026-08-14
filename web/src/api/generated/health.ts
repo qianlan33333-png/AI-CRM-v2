@@ -5,6 +5,45 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface Product {
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  name: string;
+  description: string;
+  price_minor: number;
+  currency: string;
+  stock_quantity: number;
+  images: string[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductPage {
+  items: Product[];
+  next_cursor?: string;
+}
+
+export interface CreateProductRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  name: string;
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  images: string[];
+}
+
 export type HealthResponseStatus =
   (typeof HealthResponseStatus)[keyof typeof HealthResponseStatus];
 
@@ -851,6 +890,20 @@ export type LastInteractAfterFilterParameter = string;
 
 export type LastInteractBeforeFilterParameter = string;
 
+export type ListProductsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
 export type ListCustomersParams = {
   /**
    * Opaque keyset cursor; clients must not parse or synthesize it.
@@ -999,6 +1052,210 @@ export type ListAutomationTriggerRunsVisibility =
 export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
+
+/**
+ * @summary List ordinary products using a keyset cursor
+ */
+export type listProductsResponse200 = {
+  data: ProductPage;
+  status: 200;
+};
+
+export type listProductsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProductsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProductsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProductsResponseSuccess = listProductsResponse200 & {
+  headers: Headers;
+};
+export type listProductsResponseError = (
+  listProductsResponse400 | listProductsResponse401 | listProductsResponse403
+) & {
+  headers: Headers;
+};
+
+export type listProductsResponse =
+  listProductsResponseSuccess | listProductsResponseError;
+
+export const getListProductsUrl = (params?: ListProductsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/products?${stringifiedParams}`
+    : `/api/v1/products`;
+};
+
+export const listProducts = async (
+  params?: ListProductsParams,
+  options?: RequestInit,
+): Promise<listProductsResponse> => {
+  const res = await fetch(getListProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProductsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProductsResponse;
+};
+
+/**
+ * @summary Create one ordinary product
+ */
+export type createProductResponse201 = {
+  data: Product;
+  status: 201;
+};
+
+export type createProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createProductResponseSuccess = createProductResponse201 & {
+  headers: Headers;
+};
+export type createProductResponseError = (
+  | createProductResponse400
+  | createProductResponse401
+  | createProductResponse403
+  | createProductResponse409
+) & {
+  headers: Headers;
+};
+
+export type createProductResponse =
+  createProductResponseSuccess | createProductResponseError;
+
+export const getCreateProductUrl = () => {
+  return `/api/v1/products`;
+};
+
+export const createProduct = async (
+  createProductRequest: CreateProductRequest,
+  options?: RequestInit,
+): Promise<createProductResponse> => {
+  const res = await fetch(getCreateProductUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createProductRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createProductResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createProductResponse;
+};
+
+/**
+ * @summary Get one ordinary product
+ */
+export type getProductResponse200 = {
+  data: Product;
+  status: 200;
+};
+
+export type getProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getProductResponseSuccess = getProductResponse200 & {
+  headers: Headers;
+};
+export type getProductResponseError = (
+  | getProductResponse400
+  | getProductResponse401
+  | getProductResponse403
+  | getProductResponse404
+) & {
+  headers: Headers;
+};
+
+export type getProductResponse =
+  getProductResponseSuccess | getProductResponseError;
+
+export const getGetProductUrl = (productId: number) => {
+  return `/api/v1/products/${productId}`;
+};
+
+export const getProduct = async (
+  productId: number,
+  options?: RequestInit,
+): Promise<getProductResponse> => {
+  const res = await fetch(getGetProductUrl(productId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getProductResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getProductResponse;
+};
 
 /**
  * @summary Process liveness
