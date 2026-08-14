@@ -1572,7 +1572,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  538a80f01337fb6ddf44a90abc14226b7debb6a9d76c5a420e18959e38d2afd9
+  e00c057e2e1096d21d8b225ce467a206ea521e4ed00fd3e4ce27a3f3c6736f2c
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \

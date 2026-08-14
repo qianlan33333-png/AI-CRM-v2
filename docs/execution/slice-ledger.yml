@@ -4118,6 +4118,25 @@ slices:
     correction_notes: [slice:first_checker_semantic_patch_used_an_inexact_context_anchor_and_failed_atomically_without_file_change_then_was_reapplied_in_smaller_exact_patches, slice:first_stage_staged_diff_review_found_template_redline_enum_abbreviations_differed_from_the_ledger_closed_set_then_the_template_was_aligned_and_scope_frozen_at_count_two, verification:first_repo_contract_sync_pass_found_one_omitted_existing_v2_spec_content_pin_then_it_was_synchronized, verification:system_Ruby_full_YAML_parse_was_not_applicable_to_the_preexisting_plain_scalar_ledger_format_and_hit_historical_line_779_without_mutating_it, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: GOV-SLICE-CORRECTION-POLICY-20260814-R1
+    title: one-time-slice-correction-policy-PR-receipt
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_PR202_required_CI_pending
+    base_sha: 44460ea3464a3be9137c5ec0c5ed541fd415bb24
+    dependency: GOV-SLICE-CORRECTION-POLICY-20260814
+    branch: codex/governance-slice-repair-policy-20260814
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/202
+    scope: [forward_record_PR_URL, preserve_committed_GOV_receipt_byte_for_byte, synchronize_ledger_content_pin]
+    excluded_scope: [new_policy_capability, D01_L01_business_implementation, production_or_real_external_operations]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    correction_notes: [verification:first_attempt_to_add_PR_URL_mutated_the_now_committed_GOV_receipt_then_append_only_history_rejected_it_before_commit_or_push_so_the_original_receipt_was_restored_and_this_forward_R1_receipt_was_appended, redline:none]
+    tests: [LOCAL_append_only_history_rejection_PASS, LOCAL_repo_contract_pending_after_forward_receipt]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
