@@ -4325,6 +4325,22 @@ slices:
     correction_notes: [verification:first_clean_commit_ci_go_manually_supplied_an_incorrectly_completed_head_SHA_after_all_prior_gates_passed_then_the_query_plan_gate_rejected_the_missing_Git_object_and_the_replay_uses_git_rev_parse_HEAD, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-A01-R2
+    title: forward-migration-workflow-environment-receipt
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_MIGRATION_REPLAY
+    base_sha: 4a57f43678f2d0295e83a5bcaca4d396155a3833
+    dependency: P4_A01_R1_and_full_ci_go_PASS
+    branch: codex/p4-a01-legacy-auth-recut-20260814
+    scope: [forward_record_River_migration_test_environment_correction, preserve_original_A01_DoD]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 22
+    correction_notes: [verification:first_migration_workflow_replay_applied_the_River_destructive_test_flag_only_to_the_first_make_command_then_p0_s04_failed_closed_before_execution_and_the_replay_exports_the_exact_step_level_environment, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
