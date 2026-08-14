@@ -1,6 +1,6 @@
 # AI-CRM v2 P4 旧系统后端能力全量对齐实施计划
 
-> **执行合同：** 本文是用户授权 P4 业务片后的最高执行计划；本次对本文的修订是一次性纯计划文档例外，不计入 P3/P4 业务进度。
+> **执行合同：** 本文是用户授权 P4 业务片后的最高执行计划；本次一次性修正处理规则 PR 是明确授权的纯治理例外，不计入 P3/P4 业务进度，合并后例外关闭。
 
 **Goal:** 在不新做前端 UI 的前提下，用 Go 与 AI-CRM v2 现有架构完整恢复旧 AI-CRM 的标准业务能力、兼容接口与可验证行为；先补齐 P3 对 P4 必需的底层能力，再按本计划进入 P4。
 
@@ -549,7 +549,7 @@ P3 代码侧 CLOSED 后，第一波只启动：
 7. **第一阶段自审与验证。** 实现完成后审查 scope/diff、合同映射、normal/boundary/error、生成物与锁文件，运行 focused tests、PG16.14 up/down/up、ownership/catalog、race、repo-contract、secret-scan 及该片所有专项门。
 8. **第二阶段独立自审。** 清空实现思路，从审查者视角重读完整 staged diff，重验 migration 终态、ownership、auth/tenant、idempotency、rollback、事件/River、外部效果与永久负例。两阶段的命令、退出码与结论都写入中文 PR。
 9. **DoD 与 GitHub 收口。** 同步 feature matrix、mapping、generated/hash/manifest/ledger 等仓库硬门要求；正常 receipt 同步属于 DoD，不单独计 correction。中文 PR 的 required CI 全绿后，用已验证 head 做 match-head squash；证明唯一父为预期 main、squash commit tree 与已验证 head tree 等价，再等待该 exact-main SHA 的 required CI 全绿才能 CLOSED。
-10. **修正阈值。** `slice_induced_correction_count=2` 时立即冻结范围并允许当前闭环完成，下片降一档；`slice_induced_correction_count>=3` 立即 HARD STOP，不得在原片续修。`infra_induced` 和 `verification_induced` 精确记录但不降档、不硬停，机械环境/命令/证据问题在原任务内修复。
+10. **修正状态机。** 非红线 `slice_induced` 第 1、2 个允许原片修复并继续；第 2 个起立即降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结能力范围，禁止扩 scope、新能力和无关重构。第 3 个及以后保持 repair-only，不得仅因计数丢弃候选；允许修复既有缺陷、补永久负例、完成原始 DoD、generated/manifest/ledger、rebase、required CI、PR/merge 与 exact-main CLOSED。任一红线立即进入 `HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、commit、push、PR、merge，并从 latest exact-green main 全新重切。红线封闭为：tenant/actor/授权/数据隔离破坏（含跨租户泄漏或越权）；认证绕过、密钥泄露、注入、开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River acceptance 未按合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider 或真实外部效果重复执行，或 `outcome_unknown` 自动重试；不可逆数据损坏或迁移丢失；未授权生产写、真实企微/真实发送/真实支付退款等外部操作。未触及上述红线的纯实现、错误分类、JSON 规范化、sentinel、文件结构、lint、测试断言和性能索引缺陷均属非红线。新规则只前向适用于合入后的全新候选或当时尚无 WIP 的候选；旧规则下 W0/A/H/I 与两次 W0 HARD STOP 候选永久只读，不追溯复活、复制或 cherry-pick。
 11. **外部效果禁区。** 完全访问不授权生产 DB、live migration/cutover、真实企微写、真实支付/退款或真实外发。真人验收与真实外部效果精确标为 `PENDING_EXTERNAL_GATE`/`NOT EXECUTED`，不得用 fixture/test provider 写成真实成功。
 
 ## 8. 完整性验收与退出标准

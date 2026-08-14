@@ -100,9 +100,12 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 - Sol 始终负责：范围冻结 → 结果复核 → rebase/门禁/PR/squash/main CI 闭环。**Terra 产出不直接进 main。**
 - 委派时启用 hash 收据（`input_sha256`/`output_hashes`/`file_manifest_sha256`），Sol 自执行片仍免除。
 - 并行上限 3，路径不重叠。
-- Terra 片的 `correction_count` 归入 Sol 该片总数；仅业务实现
-  `slice_induced >= 3` 触发停报，其他归因不计入该阈值。
-- `slice_induced=2` 时冻结范围并降档，但允许当前片在不扩 scope 下完成既定闭环；
+- Terra 片的 `correction_count` 归入 Sol 该片总数；非红线 `slice_induced` 第 1、2 个
+  允许原片修复，第 2 个起降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结能力范围。
+- 第 3 个及以后保持 repair-only，不因计数丢弃候选；仍可完成既有修复、原始 DoD、
+  PR/merge 与 exact-main CLOSED。任一封闭红线进入 `HARD_STOP_REDLINE_READ_ONLY`，
+  停止修复及发布链并从 latest exact-green main 全新重切；红线集合以 AGENTS.md 为准。
+- 未触及红线的纯实现/分类/规范化/sentinel/结构/lint/测试/索引错误均为非红线；
   机械环境、命令与测试夹具时序在原任务修复，不为其另开 infra 片，除非涉及共享
   基础设施或业务范围。
 
@@ -301,14 +304,21 @@ AGENTS.md 已允许"边界清晰、无架构/产品/安全判断的机械任务"
 4. 需要用户提供 3 个真实人群包、feature top-20 抽查或 G2/G3 人工验收。
 5. 与已决 ADR 或架构铁律出现实质冲突。
 
-此外，单片 `slice_induced_correction_count >= 3` 时作为防死循环门立即停报。
-`infra_induced`、`scope_induced`、`verification_induced` 不计入该阈值，由 Sol 自行
+此外，非红线单片第 2 个 `slice_induced` 起进入 `SCOPE_FROZEN_REPAIR_ONLY`；第 3 个及
+以后不得扩范围、增加能力或无关重构，但不得仅因计数丢弃候选，须在冻结范围内完成
+原始 DoD。红线无论第几个均进入 `HARD_STOP_REDLINE_READ_ONLY`；封闭集合为 tenant/
+actor/授权/数据隔离、安全边界、跨域 ownership/要求事务原子性、外部效果重复或
+`outcome_unknown` 自动重试、不可逆数据或迁移损坏、未授权生产或真实外部操作。
+`infra_induced`、`scope_induced`、`verification_induced` 不参与上述状态计数，由 Sol
 精确修复并留痕。
 
 预期生成物及既有 hash、manifest、ledger receipt 的正常同步属于 Definition of Done，
 不计 correction；仅首次遗漏且被门发现时记一次 `verification_induced`，在原任务补齐
 且不触发停报。P3/P4 PR 必须关闭官方业务 Slice 或经批准、可在 feature matrix 定位的
-完整业务 flow；禁止 parser/checker/governance-only PR。本次策略迁移为唯一例外。
+完整业务 flow；禁止 parser/checker/governance-only PR。本次一次性修正处理规则 PR
+是明确批准的唯一例外，不计 P4 业务进度，合并后例外关闭。新规则只前向适用于合入后
+的全新候选或当时尚无 WIP 的候选；旧规则下 W0/A/H/I 与两次 W0 HARD STOP 候选永久
+只读，不追溯复活、复制或 cherry-pick。
 独立安全片仅限不可逆数据污染、鉴权、迁移或真实外发明确风险，其他安全工作随业务
 垂直片闭环。非共享业务 PR 可并行，中央契约与最终 merge/main CI 仍串行。
 

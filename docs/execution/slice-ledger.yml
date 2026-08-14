@@ -31,14 +31,27 @@ execution_policy:
     P2: 12_files_800_lines
     P3_P4: 12_files_1000_lines
     hard_cap: 15_files_1500_lines
-  correction_stop_threshold:
-    slice_induced: gte_3
-    infra_scope_verification_count_toward_stop: false
-  correction_scale_down_threshold:
-    slice_induced: eq_2_freeze_scope_allow_close_next_slice_one_scale_down
+  correction_state_machine:
+    non_redline_slice_induced_1: ACTIVE_REPAIR_ALLOWED
+    non_redline_slice_induced_gte_2: SCOPE_FROZEN_REPAIR_ONLY
+    non_redline_slice_induced_gte_3_discards_candidate: false
+    repair_only_allows: existing_defect_fixes_permanent_negatives_original_DoD_generated_manifest_ledger_rebase_required_CI_PR_merge_exact_main_CLOSED
+    redline_any_count: HARD_STOP_REDLINE_READ_ONLY
+    redline_action: stop_repair_rerun_generate_commit_push_PR_merge_then_fresh_task_from_latest_exact_green
+    infra_scope_verification_count_toward_state: false
+  redline_categories:
+    - tenant_actor_auth_data_isolation_or_cross_tenant_privilege_violation
+    - security_boundary_auth_bypass_secret_leak_injection_or_open_redirect
+    - cross_domain_ownership_or_required_transaction_atomicity_violation
+    - duplicate_payment_refund_provider_real_external_effect_or_outcome_unknown_auto_retry
+    - irreversible_data_damage_or_migration_loss
+    - unauthorized_production_write_or_real_wecom_send_payment_refund_external_operation
+  non_redline_examples: implementation_error_error_classification_JSON_normalization_sentinel_chain_file_structure_lint_test_assertion_performance_index_when_no_redline_is_touched
+  policy_effective_scope: forward_only_after_policy_merge_for_fresh_or_no_WIP_candidates
+  historical_hard_stops_retroactive_revival: false
   expected_artifact_sync: definition_of_done_not_correction
   p3_p4_pr_closure: official_business_slice_or_approved_feature_matrix_flow
-  p3_p4_non_business_prs: forbidden_after_delivery_first_policy_migration
+  p3_p4_non_business_prs: forbidden_after_one_time_slice_correction_policy_revision
   independent_security_slice: irreversible_data_pollution_auth_migration_or_real_external_send_only
   merge_method: squash
   pr_language: zh-CN
@@ -58,7 +71,9 @@ ledger_semantics:
     infra_disposition: same_task_unless_shared_infrastructure_or_business_scope_changes
     expected_artifact_omission_first_gate_detection: one_verification_induced_then_same_task_completion
     non_slice_attributions_stop_independently: false
-    slice_induced_gte_3_requires_stop_report: true
+    non_redline_slice_induced_gte_3_requires_candidate_discard: false
+    redline_any_count_requires_HARD_STOP_REDLINE_READ_ONLY: true
+    historical_W0_A_H_I_and_two_W0_candidates: permanent_read_only_no_revival_copy_or_cherry_pick
     scope_induced_requires_rescope_not_counter_reset: true
   reporting:
     P2: phase_completion
@@ -4077,6 +4092,31 @@ slices:
     verification_induced_correction_count: 10
     correction_notes: [definition_of_done:expected_rebase_conflicts_were_limited_to_the_shared_append_only_ledger_tail_and_content_pins_then_the_exact_union_and_current_digests_were_preserved_without_business_changes_or_new_correction]
     external_gates: [PR200_REQUIRED_CI_PENDING, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: GOV-SLICE-CORRECTION-POLICY-20260814
+    title: one-time-forward-only-slice-correction-policy-revision
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_local_RED_GREEN_complete_pending_PR_and_required_CI
+    business_progress: NOT_COUNTED_TOWARD_P4
+    base_sha: 44460ea3464a3be9137c5ec0c5ed541fd415bb24
+    branch: codex/governance-slice-repair-policy-20260814
+    pr_url: PENDING_GITHUB_PR_CREATION
+    scope: [authoritative_slice_correction_state_machine, closed_redline_categories, forward_only_non_revival_rule, staged_index_semantic_checker, permanent_negative_fixtures, content_hash_receipts]
+    excluded_scope: [D01_L01_business_implementation, business_migrations, OpenAPI, feature_matrix_293, migration_mapping_316, production_database, live_migration, real_wecom, real_send, real_payment_refund]
+    handwritten_file_budget: 11_governance_files_all_owned_by_Codex_Sol
+    actual_governance_files: [AGENTS.md, docs_governance_agent_orchestration.md, docs_execution_implementation_plan.md, docs_plans_2026_08_13_p4_legacy_backend_parity.md, docs_spec_AI_CRM_v2_execution_plan_v2_to_P3.md, docs_spec_AI_CRM_v2_P2P3_execution_plan.md, docs_execution_slice_ledger.yml, docs_execution_slice_card_template.md, scripts_check_repo_contract.sh, scripts_test_repo_contract.sh, docs_spec_SHA256SUMS]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [authoritative_rule_text, ledger_schema, slice_card_schema, staged_index_semantic_checker, permanent_negatives, content_hash_receipts, CI_PR_merge_exact_main_CLOSED]
+    tests: [LOCAL_repo_contract_baseline_PASS, LOCAL_policy_permanent_negatives_expected_RED_then_PASS, LOCAL_full_repo_contract_negative_matrix_PASS]
+    generated_manifest_status: NOT_APPLICABLE_no_generated_or_tracked_path_set_change
+    content_hash_status: synchronized_checker_pins_and_docs_spec_SHA256SUMS
+    historical_receipts_status: byte_preserved_no_retroactive_revival
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    correction_notes: [slice:first_checker_semantic_patch_used_an_inexact_context_anchor_and_failed_atomically_without_file_change_then_was_reapplied_in_smaller_exact_patches, slice:first_stage_staged_diff_review_found_template_redline_enum_abbreviations_differed_from_the_ledger_closed_set_then_the_template_was_aligned_and_scope_frozen_at_count_two, verification:first_repo_contract_sync_pass_found_one_omitted_existing_v2_spec_content_pin_then_it_was_synchronized, verification:system_Ruby_full_YAML_parse_was_not_applicable_to_the_preexisting_plain_scalar_ledger_format_and_hit_historical_line_779_without_mutating_it, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
 phase_closeouts:
   P2:

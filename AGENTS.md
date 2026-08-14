@@ -50,10 +50,20 @@
 - 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
   半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
 - 修正归因分为 `slice_induced`、`infra_induced`、`scope_induced` 与
-  `verification_induced`。只有本片业务代码或设计缺陷导致的
-  `slice_induced_correction_count` 参与降档与硬停：达到 2 时立即冻结范围、不得
-  扩 scope，允许当前片完成既定闭环，下一片回退一档；达到 3 时立即停报并把未闭环
-  行为重切为更小业务片。其他归因不参与硬停；历史计数必须在 ledger 保留。
+  `verification_induced`。非红线 `slice_induced` 第 1、2 个均允许在原片修复并继续；
+  第 2 个起立即降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结已批准能力范围，禁止新增
+  能力、扩 scope 或无关重构。第 3 个及以后保持该状态，不得仅因计数达到 3 丢弃候选；
+  仍允许修复既有缺陷、补永久负例、完成原始 DoD、同步 generated/manifest/ledger、
+  rebase、required CI、PR/merge 与 exact-main CLOSED。
+- 红线缺陷无论第几个都立即进入 `HARD_STOP_REDLINE_READ_ONLY`：停止修复、重跑、
+  generate、commit、push、PR、merge，必须在全新任务从 latest exact-green main 重切。
+  红线是封闭集合：tenant/actor/授权/数据隔离破坏（含跨租户泄漏或越权）；认证绕过、
+  密钥泄露、注入、开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River
+  acceptance 未按合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider
+  或真实外部效果重复执行，或 `outcome_unknown` 被自动重试；不可逆数据损坏或迁移
+  丢失；未授权生产写、真实企微/真实发送/真实支付退款等外部操作。未触及上述红线的
+  纯实现错误、错误分类、JSON 规范化、sentinel 链、文件结构、lint、测试断言或性能
+  索引缺陷均属非红线，可在冻结范围内修复。
 - 既存门禁误判、共享工具链/环境问题或 CI 抖动记入
   `infra_induced_correction_count`；验收命令、本地/CI 环境、测试夹具时序或证据调用
   方式的修正记入 `verification_induced_correction_count`。两者必须精确记录，但不
@@ -64,10 +74,13 @@
   在原任务补齐且不触发硬停。
 - 切片卡范围欠定义导致的修正记入 `scope_induced_correction_count`；Sol 应依
   完整行为自行合并、拆分或标记 `SUPERSEDED_BY_RESCOPE`，不得清零原片历史计数。
+- 新规则只适用于规则合入后从 exact-green main 新建、或规则合入时尚未产生 WIP 的
+  候选；已按旧规则 HARD STOP 的 W0/A/H/I 及两次 W0 候选永久只读，不追溯复活、
+  复制或 cherry-pick。历史计数与证据必须在 ledger 原样保留。
 - P3/P4 的每个 PR 必须关闭一个 ledger 中的官方业务 Slice，或关闭一个经用户/权威
   计划批准且能在 feature matrix 定位的完整业务 flow；禁止 parser-only、
-  checker-only 或 governance-only PR。本次业务交付优先策略迁移 PR 是唯一例外，
-  合并后不得再以迁移治理为名扩张。
+  checker-only 或 governance-only PR。本次一次性修正处理规则 PR 是用户明确批准的
+  唯一例外，不计 P4 业务进度；合并后例外关闭。
 - 并行最多 3 个任务。互不依赖、路径不重叠且不修改共享契约的业务路径允许并行 PR；
   `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收夹具等
   中央契约仍串行。P3 波次划分为 contact → (identity ∥ segment) →
