@@ -1256,7 +1256,7 @@ set +e
 completion_output="$(cd / && /bin/bash "$matrix_valid_fixture/scripts/check_feature_matrix_contract.sh" --completion p1 2>&1)"
 completion_status=$?
 set -e
-[[ "$completion_status" -eq 0 && "$completion_output" == 'feature-matrix-completion: PASS phase=p1 rows=293 synthetic=13 staging=0 production=0' ]] ||
+[[ "$completion_status" -eq 0 && "$completion_output" == 'feature-matrix-completion: PASS phase=p1 rows=293 synthetic=17 staging=0 production=0' ]] ||
   fail "P1 completion did not report the signed G1-D02 state"
 
 assert_completion() {
@@ -1271,20 +1271,20 @@ sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPL
   -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","method=fixture;command=make-test",""#' \
   "$synthetic_matrix_fixture/docs/feature-matrix.csv"; rm -f "$synthetic_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$synthetic_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid synthetic evidence was rejected"
-assert_completion "$synthetic_matrix_fixture" p4 'feature-matrix-completion: PENDING phase=p4 rows=293 pending=279 synthetic=14 staging=0 production=0'
-assert_completion "$synthetic_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=293 synthetic=14 staging=0 production=0'
+assert_completion "$synthetic_matrix_fixture" p4 'feature-matrix-completion: PENDING phase=p4 rows=293 pending=275 synthetic=18 staging=0 production=0'
+assert_completion "$synthetic_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=293 synthetic=18 staging=0 production=0'
 staging_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-staging)"
 sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","STAGING_PASS","APPROVED"/' \
   -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=staging;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=log",""#' \
   "$staging_matrix_fixture/docs/feature-matrix.csv"; rm -f "$staging_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$staging_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid staging evidence was rejected"
-assert_completion "$staging_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=13 staging=1 production=0'
+assert_completion "$staging_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=17 staging=1 production=0'
 production_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-production)"
 sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","PRODUCTION_PASS","APPROVED"/' \
   -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=production;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=receipt;authorization=fixture",""#' \
   "$production_matrix_fixture/docs/feature-matrix.csv"; rm -f "$production_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$production_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid production evidence was rejected"
-assert_completion "$production_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=13 staging=0 production=1'
+assert_completion "$production_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=293 pending=292 synthetic=17 staging=0 production=1'
 
 duplicate_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-duplicate)"
 sed -i.bak '3s/LEGACY-S05-002/LEGACY-S05-001/' "$duplicate_matrix_fixture/docs/feature-matrix.csv"; rm -f "$duplicate_matrix_fixture/docs/feature-matrix.csv.bak"
@@ -3477,6 +3477,38 @@ rm -f "$o6b2_ci_disconnect/.github/workflows/application-go.yml.bak"
 restage_p2s18_receipt "$o6b2_ci_disconnect" .github/workflows/application-go.yml
 if (cd "$o6b2_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-O6B2 PG/River acceptance CI disconnect was accepted"
+fi
+
+j01_cross_product_fk="$(make_fixture p4-j01-cross-product-fk)"
+sed -i.bak 's/product_id BIGINT NOT NULL,/product_id BIGINT NOT NULL REFERENCES public.products(id),/' "$j01_cross_product_fk/migrations/00033_coupon_rules.sql"
+rm -f "$j01_cross_product_fk/migrations/00033_coupon_rules.sql.bak"
+restage_p2s18_receipt "$j01_cross_product_fk" migrations/00033_coupon_rules.sql
+if (cd "$j01_cross_product_fk" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-J01 cross-domain Product foreign key was accepted"
+fi
+
+j01_route_disconnect="$(make_fixture p4-j01-route-disconnect)"
+sed -i.bak '/\/api\/admin\/coupons\/{coupon_id}\/publish/d' "$j01_route_disconnect/cmd/aicrm/api.go"
+rm -f "$j01_route_disconnect/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$j01_route_disconnect" cmd/aicrm/api.go
+if (cd "$j01_route_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-J01 publish route disconnect was accepted"
+fi
+
+j01_openapi_relationship="$(make_fixture p4-j01-openapi-relationship)"
+sed -i.bak 's/, target_refs]$/]/' "$j01_openapi_relationship/api/openapi.yaml"
+rm -f "$j01_openapi_relationship/api/openapi.yaml.bak"
+restage_p2s18_receipt "$j01_openapi_relationship" api/openapi.yaml
+if (cd "$j01_openapi_relationship" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-J01 12-property required target relationship drift was accepted"
+fi
+
+j01_legacy_import_forgery="$(make_fixture p4-j01-legacy-import-forgery)"
+sed -i.bak '/"mapping_id":"LEGACY-T14-146"/s/"implementation":"NOT_STARTED"/"implementation":"IMPLEMENTED"/' "$j01_legacy_import_forgery/docs/migration-mapping.jsonl"
+rm -f "$j01_legacy_import_forgery/docs/migration-mapping.jsonl.bak"
+restage_p2s18_receipt "$j01_legacy_import_forgery" docs/migration-mapping.jsonl
+if (cd "$j01_legacy_import_forgery" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-J01 legacy migration completion forgery was accepted"
 fi
 
 envrc_fixture="$(make_fixture envrc-file_path)"

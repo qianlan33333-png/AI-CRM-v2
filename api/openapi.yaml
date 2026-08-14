@@ -884,6 +884,113 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listLegacyCoupons
+      summary: List persisted coupon rules without claims, redemption, or public-grid execution
+      x-legacy-mapping-ids: [LEGACY-API-0285]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+        - { name: q, in: query, schema: { type: string, maxLength: 80, default: "" } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, published, stopped] } }
+      responses:
+        "200": { description: Coupon rule list, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-coupon-compat]
+      operationId: createLegacyCoupon
+      summary: Create a draft coupon rule; this legacy route is not replay-safe
+      x-legacy-mapping-ids: [LEGACY-API-0286]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CouponUpsertRequest" } } } }
+      responses:
+        "200": { description: Draft persisted with Event and technical receipt in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}:
+    parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0289]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Coupon rule detail, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-coupon-compat]
+      operationId: updateLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0290]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CouponUpsertRequest" } } } }
+      responses:
+        "200": { description: Draft rule updated in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/publish:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: publishLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0294]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      responses:
+        "200": { description: "Draft becomes published, or published is a no-op", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/stop:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: stopLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0296]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      responses:
+        "200": { description: "Published becomes stopped, or stopped is a no-op", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/questionnaires:
     get:
       tags: [p4-survey-compat]
@@ -1271,6 +1378,74 @@ components:
         source_status: { type: string, enum: [v2_identity_contact_read] }
         fallback_used: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    CouponUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [name, discount_amount_total, total_issue_limit, claim_starts_at, claim_ends_at, validity_mode, target_refs]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 45 }
+        discount_amount_total: { type: integer, format: int64, minimum: 1 }
+        total_issue_limit: { type: integer, format: int64, minimum: 1 }
+        per_user_issue_limit: { type: integer, format: int64, minimum: 1, default: 1 }
+        claim_starts_at: { type: string, format: date-time }
+        claim_ends_at: { type: string, format: date-time }
+        validity_mode: { type: string, enum: [fixed_range, relative_days] }
+        use_starts_at: { type: string, format: date-time, nullable: true }
+        use_ends_at: { type: string, format: date-time, nullable: true }
+        relative_validity_days: { type: integer, format: int32, minimum: 1, nullable: true }
+        instructions: { type: string, maxLength: 200, default: "" }
+        target_refs:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items: { type: string, pattern: '^standard_product:[1-9][0-9]*$' }
+    Coupon:
+      allOf:
+        - $ref: "#/components/schemas/CouponUpsertRequest"
+        - type: object
+          additionalProperties: false
+          required: [id, currency, status, availability_status, issued_count, created_by, updated_by, version, created_at, updated_at]
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            currency: { type: string, enum: [CNY] }
+            status: { type: string, enum: [draft, published, stopped] }
+            availability_status: { type: string, enum: [draft, stopped, scheduled, active, sold_out, ended] }
+            issued_count: { type: integer, format: int64, minimum: 0 }
+            created_by: { type: integer, format: int64, minimum: 1 }
+            updated_by: { type: integer, format: int64, minimum: 1 }
+            version: { type: integer, format: int64, minimum: 1 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    LegacyCouponListResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, coupons, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupons: { type: array, items: { $ref: "#/components/schemas/Coupon" } }
+        items: { type: array, items: { $ref: "#/components/schemas/Coupon" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    LegacyCouponDetailResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, coupon]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+    LegacyCouponMutationResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, coupon, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        create_replay_safe: { type: boolean, enum: [false] }
+        idempotent_same_state: { type: boolean, enum: [true] }
     LegacyQuestionnaireValidation:
       type: object
       additionalProperties: false

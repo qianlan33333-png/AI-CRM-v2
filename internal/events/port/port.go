@@ -31,6 +31,10 @@ const (
 	EvSurveyCreated       = "survey.created"
 	EvChannelCreated      = "channel.created"
 	EvChannelUpdated      = "channel.updated"
+	EvCouponCreated       = "coupon.created"
+	EvCouponUpdated       = "coupon.updated"
+	EvCouponPublished     = "coupon.published"
+	EvCouponStopped       = "coupon.stopped"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied      = "stats.tag-applied.v1"

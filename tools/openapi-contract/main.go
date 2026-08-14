@@ -84,6 +84,17 @@ var p4ChannelLegacyMappings = map[string][]string{
 	"updateLegacyChannel": {"LEGACY-API-0196"},
 }
 
+var p4CouponOperations = map[string]bool{
+	"listLegacyCoupons": true, "createLegacyCoupon": true, "getLegacyCoupon": true,
+	"updateLegacyCoupon": true, "publishLegacyCoupon": true, "stopLegacyCoupon": true,
+}
+
+var p4CouponLegacyMappings = map[string][]string{
+	"listLegacyCoupons": {"LEGACY-API-0285"}, "createLegacyCoupon": {"LEGACY-API-0286"},
+	"getLegacyCoupon": {"LEGACY-API-0289"}, "updateLegacyCoupon": {"LEGACY-API-0290"},
+	"publishLegacyCoupon": {"LEGACY-API-0294"}, "stopLegacyCoupon": {"LEGACY-API-0296"},
+}
+
 var p4CustomerCompatOperations = map[string]bool{
 	"listLegacyCustomers": true, "getLegacyCustomer": true,
 }
@@ -154,6 +165,12 @@ var authorizationContracts = map[string]authorizationContract{
 	"createLegacyChannel":        {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyChannel":           {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
 	"updateLegacyChannel":        {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyCoupons":          {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createLegacyCoupon":         {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyCoupon":            {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"updateLegacyCoupon":         {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"publishLegacyCoupon":        {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"stopLegacyCoupon":           {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyCustomers":        {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getLegacyCustomer":          {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 }
@@ -168,6 +185,7 @@ const p4ProductDecisionEvidence = "P4-I01A-2026-08-14"
 const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
 const p4SurveyDecisionEvidence = "P4-F01A-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
+const p4CouponDecisionEvidence = "P4-J01-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
 
 func main() {
@@ -182,7 +200,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=25 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_survey_operations=3 p4_channel_operations=4 p4_customer_compat_operations=2)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=31 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_customer_compat_operations=2)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -230,15 +248,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4Survey, seenP4Channel, seenP4CustomerCompat := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4Survey, seenP4Channel, seenP4Coupon, seenP4CustomerCompat := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4CustomerCompat[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4CustomerCompat[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -337,6 +355,17 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 				links++
+			} else if p4CouponOperations[op.OperationID] {
+				seenP4Coupon[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4CouponDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Coupon evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4CouponLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				links++
 			} else {
 				seenP4CustomerCompat[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -384,8 +413,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4CustomerCompat) != 2 || links != 25 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4CustomerCompat), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Coupon) != 6 || len(seenP4CustomerCompat) != 2 || links != 31 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4CustomerCompat), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -435,6 +464,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4ChannelOperations {
 		if !seenP4Channel[id] {
 			return fmt.Errorf("missing P4 Channel operation: %s", id)
+		}
+	}
+	for id := range p4CouponOperations {
+		if !seenP4Coupon[id] {
+			return fmt.Errorf("missing P4 Coupon operation: %s", id)
 		}
 	}
 	for id := range p4CustomerCompatOperations {
@@ -501,6 +535,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if err := validateChannelContract(doc); err != nil {
 		return err
 	}
+	if err := validateCouponContract(doc); err != nil {
+		return err
+	}
 	if err := validateCustomerCompatContract(doc); err != nil {
 		return err
 	}
@@ -532,6 +569,47 @@ func validateChannelContract(doc *openapi3.T) error {
 	request := doc.Components.Schemas["LegacyChannelWriteRequest"]
 	if request == nil || request.Value == nil || request.Value.AdditionalProperties.Has == nil || *request.Value.AdditionalProperties.Has {
 		return errors.New("LegacyChannelWriteRequest must remain closed")
+	}
+	return nil
+}
+
+func validateCouponContract(doc *openapi3.T) error {
+	collection := doc.Paths.Value("/api/admin/coupons")
+	detail := doc.Paths.Value("/api/admin/coupons/{coupon_id}")
+	publish := doc.Paths.Value("/api/admin/coupons/{coupon_id}/publish")
+	stop := doc.Paths.Value("/api/admin/coupons/{coupon_id}/stop")
+	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil || detail.Put == nil || publish == nil || publish.Post == nil || stop == nil || stop.Post == nil {
+		return errors.New("P4-J01 Coupon compatibility operations are incomplete")
+	}
+	if !operationResponseUsesLocalSchema(collection.Get, "LegacyCouponListResponse") || !operationRequestUsesLocalSchema(collection.Post, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(collection.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(detail.Get, "LegacyCouponDetailResponse") || !operationRequestUsesLocalSchema(detail.Put, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(detail.Put, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(publish.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(stop.Post, "LegacyCouponMutationResponse") {
+		return errors.New("P4-J01 Coupon request or response schema drifted")
+	}
+	for name, operation := range map[string]*openapi3.Operation{"createLegacyCoupon": collection.Post, "updateLegacyCoupon": detail.Put, "publishLegacyCoupon": publish.Post, "stopLegacyCoupon": stop.Post} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		if operation.Responses.Value("400") == nil || operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s boundary or failure responses drifted", name)
+		}
+	}
+	for _, parameter := range collection.Post.Parameters {
+		if parameter != nil && parameter.Value != nil && parameter.Value.Name == "Idempotency-Key" {
+			return errors.New("legacy coupon create must not claim replay safety")
+		}
+	}
+	request := doc.Components.Schemas["CouponUpsertRequest"]
+	if request == nil || request.Value == nil || request.Value.AdditionalProperties.Has == nil || *request.Value.AdditionalProperties.Has || len(request.Value.Properties) != 12 {
+		return errors.New("CouponUpsertRequest must remain closed with 11 rule fields plus target_refs")
+	}
+	required := append([]string(nil), request.Value.Required...)
+	sort.Strings(required)
+	want := []string{"claim_ends_at", "claim_starts_at", "discount_amount_total", "name", "target_refs", "total_issue_limit", "validity_mode"}
+	if !reflect.DeepEqual(required, want) {
+		return fmt.Errorf("CouponUpsertRequest required=%v", required)
+	}
+	perUser, instructions := request.Value.Properties["per_user_issue_limit"], request.Value.Properties["instructions"]
+	if perUser == nil || perUser.Value == nil || fmt.Sprint(perUser.Value.Default) != "1" || instructions == nil || instructions.Value == nil || fmt.Sprint(instructions.Value.Default) != "" {
+		return errors.New("CouponUpsertRequest defaults drifted")
 	}
 	return nil
 }
