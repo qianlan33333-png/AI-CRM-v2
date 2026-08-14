@@ -8,13 +8,17 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 )
 
@@ -78,6 +82,9 @@ func TestFinalRouterMountsLegacyBootFlowWithAccountBudget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	legacy.customerDetail = &legacyCustomerDetailStub{result: legacyCustomerDetailResult(9)}
+	legacy.identityResolve = &legacyIdentityStub{result: identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 101}}
+	legacy.weComCorpID = "corp-fixture"
 	authHandler, err := authhttp.NewHandler(service)
 	if err != nil {
 		t.Fatal(err)
@@ -108,6 +115,11 @@ func TestFinalRouterMountsLegacyBootFlowWithAccountBudget(t *testing.T) {
 	router.ServeHTTP(customerResponse, legacyRequest(http.MethodGet, "/api/customers?limit=1", legacyToken(6)))
 	if customerResponse.Code != http.StatusOK || customers.calls != 1 {
 		t.Fatalf("customer status/calls = %d/%d, body=%s", customerResponse.Code, customers.calls, customerResponse.Body.String())
+	}
+	detailResponse := httptest.NewRecorder()
+	router.ServeHTTP(detailResponse, legacyRequest(http.MethodGet, "/api/customers/ext-router-fixture", legacyToken(6)))
+	if detailResponse.Code != http.StatusOK {
+		t.Fatalf("customer detail status = %d, body=%s", detailResponse.Code, detailResponse.Body.String())
 	}
 }
 
@@ -183,6 +195,96 @@ func TestLegacyRoutesFailClosedForExpiredSessionCSRFAndOwnerScope(t *testing.T) 
 	})
 }
 
+func TestLegacyCustomerDetailResolvesIdentityThenReadsOwnerScopedContact(t *testing.T) {
+	owner := int64(7)
+	auth := &legacyAuthStub{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleSales, StaffID: &owner}}
+	identity := &legacyIdentityStub{result: identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 101}}
+	detail := &legacyCustomerDetailStub{result: legacyCustomerDetailResult(owner)}
+	handler := &Handler{auth: auth, customerDetail: detail, identityResolve: identity, weComCorpID: "corp-fixture"}
+	endpoint := legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.GetCustomer)
+	router := chi.NewRouter()
+	router.Get("/api/customers/{external_userid}", endpoint.ServeHTTP)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/customers/ext-fixture", legacyToken(10)))
+	if response.Code != http.StatusOK {
+		t.Fatalf("detail status = %d, body=%s", response.Code, response.Body.String())
+	}
+	if identity.calls != 1 || identity.ref.Kind != identityport.KindWeComExternalUserID || identity.ref.Scope != "wecom-corp:corp-fixture" || identity.ref.Value != "ext-fixture" {
+		t.Fatalf("identity resolve = %#v calls=%d", identity.ref, identity.calls)
+	}
+	if detail.calls != 1 || detail.input.ID != 101 || detail.input.OwnerStaffID == nil || *detail.input.OwnerStaffID != owner {
+		t.Fatalf("contact detail input = %#v calls=%d", detail.input, detail.calls)
+	}
+	var body struct {
+		OK       bool `json:"ok"`
+		Customer struct {
+			ExternalUserID string   `json:"external_userid"`
+			CustomerID     int64    `json:"customer_id"`
+			Tags           []string `json:"tags"`
+		} `json:"customer"`
+		SourceStatus             string `json:"source_status"`
+		FallbackUsed             bool   `json:"fallback_used"`
+		RealExternalCallExecuted bool   `json:"real_external_call_executed"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil || !body.OK || body.Customer.ExternalUserID != "ext-fixture" || body.Customer.CustomerID != 101 || len(body.Customer.Tags) != 1 || body.Customer.Tags[0] != "high-intent" || body.SourceStatus != "v2_identity_contact_read" || body.FallbackUsed || body.RealExternalCallExecuted {
+		t.Fatalf("detail body = %#v err=%v", body, err)
+	}
+}
+
+func TestLegacyCustomerDetailFailsClosedBeforeContactRead(t *testing.T) {
+	for _, testCase := range []struct {
+		name        string
+		identity    identityport.ResolveResult
+		identityErr error
+		wantStatus  int
+		wantCode    platformhttp.ErrorCode
+	}{
+		{name: "not found", identity: identityport.ResolveResult{Status: identityport.ResolveNotFound}, wantStatus: http.StatusNotFound, wantCode: platformhttp.CodeNotFound},
+		{name: "conflict", identity: identityport.ResolveResult{Status: identityport.ResolveConflict}, wantStatus: http.StatusNotFound, wantCode: platformhttp.CodeNotFound},
+		{name: "identity unavailable", identityErr: identityapp.ErrIdentityResolveFailed, wantStatus: http.StatusServiceUnavailable, wantCode: platformhttp.CodeDependencyUnavailable},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			detail := &legacyCustomerDetailStub{result: legacyCustomerDetailResult(1)}
+			handler := &Handler{auth: &legacyAuthStub{}, customerDetail: detail, identityResolve: &legacyIdentityStub{result: testCase.identity, err: testCase.identityErr}, weComCorpID: "corp-fixture"}
+			endpoint := legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.GetCustomer)
+			router := chi.NewRouter()
+			router.Get("/api/customers/{external_userid}", endpoint.ServeHTTP)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/customers/ext-fixture", legacyToken(11)))
+			assertLegacyError(t, response, testCase.wantStatus, testCase.wantCode)
+			if detail.calls != 0 {
+				t.Fatalf("contact detail calls = %d, want 0", detail.calls)
+			}
+		})
+	}
+}
+
+func TestLegacyCustomerDetailMapsContactFailuresWithoutIdentityLeak(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		detailErr  error
+		wantStatus int
+		wantCode   platformhttp.ErrorCode
+	}{
+		{name: "not found", detailErr: contactapp.ErrCustomerNotFound, wantStatus: http.StatusNotFound, wantCode: platformhttp.CodeNotFound},
+		{name: "unavailable", detailErr: contactapp.ErrCustomerDetailUnavailable, wantStatus: http.StatusServiceUnavailable, wantCode: platformhttp.CodeDependencyUnavailable},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			detail := &legacyCustomerDetailStub{err: testCase.detailErr}
+			handler := &Handler{auth: &legacyAuthStub{}, customerDetail: detail, identityResolve: &legacyIdentityStub{result: identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 101}}, weComCorpID: "corp-fixture"}
+			endpoint := legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.GetCustomer)
+			router := chi.NewRouter()
+			router.Get("/api/customers/{external_userid}", endpoint.ServeHTTP)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/customers/identity-secret", legacyToken(12)))
+			assertLegacyError(t, response, testCase.wantStatus, testCase.wantCode)
+			if detail.calls != 1 || strings.Contains(response.Body.String(), "identity-secret") {
+				t.Fatalf("detail calls/body = %d/%s", detail.calls, response.Body.String())
+			}
+		})
+	}
+}
+
 func legacyRoute(t *testing.T, handler *Handler, capability authport.Capability, endpoint http.HandlerFunc) http.Handler {
 	t.Helper()
 	protected, err := handler.Authorize(capability, endpoint)
@@ -227,6 +329,40 @@ type legacyAuthStub struct {
 	principal       authport.Principal
 	authenticateErr error
 	csrfErr         error
+}
+
+type legacyIdentityStub struct {
+	result identityport.ResolveResult
+	err    error
+	ref    identityport.IDRef
+	calls  int
+}
+
+func (stub *legacyIdentityStub) Resolve(_ context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
+	stub.calls++
+	stub.ref = ref
+	return stub.result, stub.err
+}
+
+type legacyCustomerDetailStub struct {
+	result contactapp.CustomerDetailStoreResult
+	err    error
+	input  contactapp.CustomerDetailInput
+	calls  int
+}
+
+func (stub *legacyCustomerDetailStub) Get(_ context.Context, input contactapp.CustomerDetailInput) (contactapp.CustomerDetailStoreResult, error) {
+	stub.calls++
+	stub.input = input
+	return stub.result, stub.err
+}
+
+func legacyCustomerDetailResult(owner int64) contactapp.CustomerDetailStoreResult {
+	now := time.Date(2026, 8, 15, 1, 2, 3, 0, time.UTC)
+	return contactapp.CustomerDetailStoreResult{
+		Customer: contactapp.CustomerRecord{ID: 101, Name: "Ada", OwnerStaffID: &owner, CreatedAt: now, UpdatedAt: now},
+		Tags:     []contactapp.CustomerTagRecord{{ID: 5, Name: "high-intent"}},
+	}
 }
 
 func (stub *legacyAuthStub) Authenticate(context.Context, authport.SessionRef) (authport.Principal, error) {

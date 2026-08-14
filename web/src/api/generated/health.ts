@@ -5,6 +5,100 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface LegacyCustomer {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid?: string;
+  /** @minimum 1 */
+  customer_id: number;
+  customer_name: string;
+  /** @nullable */
+  avatar_url?: string | null;
+  /**
+   * @minimum -32768
+   * @maximum 32767
+   * @nullable
+   */
+  gender?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  stage_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  /** @nullable */
+  added_at?: string | null;
+  /** @nullable */
+  last_interact_at?: string | null;
+  is_deleted: boolean;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyCustomerListResponseFilters = { [key: string]: unknown };
+
+export type LegacyCustomerListResponseSourceStatus =
+  (typeof LegacyCustomerListResponseSourceStatus)[keyof typeof LegacyCustomerListResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerListResponseSourceStatus = {
+  v2_contact_service: "v2_contact_service",
+} as const;
+
+export interface LegacyCustomerListResponse {
+  ok: boolean;
+  customers: LegacyCustomer[];
+  items: LegacyCustomer[];
+  /** @minimum 0 */
+  count: number;
+  /** @minimum 0 */
+  total: number;
+  total_is_estimate: boolean;
+  has_more: boolean;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  offset: number;
+  filters: LegacyCustomerListResponseFilters;
+  projection_watermark: string;
+  source_status: LegacyCustomerListResponseSourceStatus;
+  fallback_used: boolean;
+}
+
+export type LegacyCustomerDetailResponseSourceStatus =
+  (typeof LegacyCustomerDetailResponseSourceStatus)[keyof typeof LegacyCustomerDetailResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerDetailResponseSourceStatus = {
+  v2_identity_contact_read: "v2_identity_contact_read",
+} as const;
+
+export interface LegacyCustomerDetailResponse {
+  ok: boolean;
+  customer: LegacyCustomer;
+  source_status: LegacyCustomerDetailResponseSourceStatus;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface LegacyQuestionnaireValidation {
   /**
    * @minimum 0
@@ -1219,6 +1313,28 @@ export type ListProductsParams = {
   limit?: LimitParameter;
 };
 
+export type ListLegacyCustomersParams = {
+  owner_userid?: string;
+  tag?: string;
+  status?: string;
+  is_bound?: string;
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  keyword?: string;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  offset?: number;
+};
+
 export type ListCustomersParams = {
   /**
    * Opaque keyset cursor; clients must not parse or synthesize it.
@@ -1630,6 +1746,155 @@ export const getHealthz = async (
     status: res.status,
     headers: res.headers,
   } as getHealthzResponse;
+};
+
+/**
+ * @summary List the channel-neutral customer projection for the frozen old UI
+ */
+export type listLegacyCustomersResponse200 = {
+  data: LegacyCustomerListResponse;
+  status: 200;
+};
+
+export type listLegacyCustomersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyCustomersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyCustomersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyCustomersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyCustomersResponseSuccess =
+  listLegacyCustomersResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyCustomersResponseError = (
+  | listLegacyCustomersResponse400
+  | listLegacyCustomersResponse401
+  | listLegacyCustomersResponse403
+  | listLegacyCustomersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyCustomersResponse =
+  listLegacyCustomersResponseSuccess | listLegacyCustomersResponseError;
+
+export const getListLegacyCustomersUrl = (
+  params?: ListLegacyCustomersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/customers?${stringifiedParams}`
+    : `/api/customers`;
+};
+
+export const listLegacyCustomers = async (
+  params?: ListLegacyCustomersParams,
+  options?: RequestInit,
+): Promise<listLegacyCustomersResponse> => {
+  const res = await fetch(getListLegacyCustomersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyCustomersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyCustomersResponse;
+};
+
+/**
+ * @summary Resolve a WeCom external identity and read its channel-neutral customer projection
+ */
+export type getLegacyCustomerResponse200 = {
+  data: LegacyCustomerDetailResponse;
+  status: 200;
+};
+
+export type getLegacyCustomerResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCustomerResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCustomerResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyCustomerResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCustomerResponseSuccess = getLegacyCustomerResponse200 & {
+  headers: Headers;
+};
+export type getLegacyCustomerResponseError = (
+  | getLegacyCustomerResponse401
+  | getLegacyCustomerResponse403
+  | getLegacyCustomerResponse404
+  | getLegacyCustomerResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCustomerResponse =
+  getLegacyCustomerResponseSuccess | getLegacyCustomerResponseError;
+
+export const getGetLegacyCustomerUrl = (externalUserid: string) => {
+  return `/api/customers/${externalUserid}`;
+};
+
+export const getLegacyCustomer = async (
+  externalUserid: string,
+  options?: RequestInit,
+): Promise<getLegacyCustomerResponse> => {
+  const res = await fetch(getGetLegacyCustomerUrl(externalUserid), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCustomerResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCustomerResponse;
 };
 
 /**
