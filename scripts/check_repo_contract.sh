@@ -1594,7 +1594,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  92deb1ca22cb32a1bdee8e77e61089d8b9b3e1f4b54bf5c81d7efc7a39b365d3
+  73c233dd3bc68d5c667f0ecbf75dd7b8d2183bf743b57faf5815eb185922ed06
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1952,7 +1952,7 @@ verify_index_sha256 acceptance/identity/storage_integration_test.go \
 verify_index_sha256 acceptance/identity/ingest_integration_test.go \
   2db7cd28bbb86dbbe7d3d3cb91b80cee4d49f42c3d8148ff11c50c71a7f1ef3f
 verify_index_sha256 acceptance/outbound/o1a_r3_integration_test.go \
-  85103361f3e3b260da9b2f09684166e9397443b0c21335a7446c19d8c1b14250
+  b53185b13c3d2d1e1c187dc962646177edcd5698da5ddb6bc87a51507edd56fb
 verify_index_sha256 migrations/00020_outbound_send_attempts.sql \
   f0e1c607b8fd91894ed9ca17c35dad540b41e9efca86f469e5a9131cdeb94e6f
 verify_index_sha256 migrations/00021_outbound_task_status.sql \
@@ -2120,7 +2120,7 @@ verify_index_sha256 acceptance/automation/d01_migration_compatibility.sh \
 verify_index_sha256 cmd/aicrm/legacy_automation_api_test.go \
   99823a1e71fb137d2a6c3709199e7c5cc540ec003c45556d5ca3e2034cf1d91d
 verify_index_sha256 docs/execution/slices/P4-W0-D01.md \
-  d9d4499b08c6eac7636c48aafee7203cf8502311a24f5f5d2222789b8c3bcfe3
+  88fa279d5e798602d3ab306775f4d3298fcb16d81457ad2e764fd1b2310eae99
 verify_index_sha256 scripts/verify_repo_receipts.pl \
   d28a528cfc1aa8d8a5c6fa62b652699059bb632e8640fbd868ba0e3967881e27
 
@@ -4738,7 +4738,7 @@ p4d01_migration_mapping="$(git show :docs/migration-mapping.jsonl | sed -n '62p'
 p4d01_card="$(git show :docs/execution/slices/P4-W0-D01.md)"
 for anchor in \
   '15 个手写/治理业务合同文件' \
-  'slice_induced=4' \
+  'slice_induced=5' \
   'SCOPE_FROZEN_REPAIR_ONLY' \
   '293 功能矩阵精确审计后没有' \
   'PRODUCTION_DATABASE_NOT_EXECUTED'; do

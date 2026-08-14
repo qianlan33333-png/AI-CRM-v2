@@ -4220,6 +4220,26 @@ slices:
     tests: [LOCAL_full_ci_go_PASS, LOCAL_P4_W0_D01_real_PG16_14_acceptance_PASS, LOCAL_repo_contract_PASS, LOCAL_static_policy_and_ownership_PASS, LOCAL_293_316_P1_OpenAPI_query_plan_PASS]
     external_gates: [PR203_REQUIRED_CI_PENDING, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-W0-D01-R4
+    title: automation-real-tag-trigger-consumer-pr203-waterline-repair-receipt
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_PR203_application_go_revalidation_pending
+    base_sha: dc434cec22fc6b7aaec2d5d61f5c30bdc20618d9
+    dependency: P4-W0-D01-R3
+    branch: codex/p4-w0-d01-automation-recut2-policy-20260814
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/203
+    scope: [forward_record_fifth_non_redline_correction, synchronize_existing_Outbound_catalog_waterline_to_25, preserve_original_D01_DoD]
+    excluded_scope: [new_file, O6_fixture_semantic_change, new_business_capability, generic_consumer_framework, security_platform, extra_recovery_or_risk_control, D02_D05, L01_stats, new_UI, production_or_real_external_operations]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_D01_DoD, permanent_negatives, generated_manifest_ledger_receipts, required_CI_PR_merge_exact_main_CLOSED]
+    slice_induced_correction_count: 5
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 20
+    correction_notes: [slice:PR203_application_go_found_the_existing_Outbound_catalog_acceptance_still_expected_repository_migration_waterline_24_then_only_that_global_assertion_was_synchronized_to_D01_waterline_25_while_O6_targeted_24_rollback_fixtures_remained_unchanged, verification:gh_fix_ci_inspector_was_first_stopped_by_a_non_active_stale_keyring_account_status_then_the_documented_gh_job_log_fallback_used_the_active_account, verification:first_multi_hash_receipt_patch_was_atomically_rejected_for_non_file_order_then_reordered_without_partial_file_change, redline:none]
+    tests: [LOCAL_P3_O2_real_PG16_14_acceptance_PASS, PR203_REQUIRED_CI_REVALIDATION_PENDING]
+    external_gates: [PR203_APPLICATION_GO_RUN_31777019288_FAILED_ONLY_STALE_WATERLINE_ASSERTION, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
