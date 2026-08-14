@@ -4058,6 +4058,26 @@ slices:
     correction_notes: [slice:first_PR_secret_scan_found_a_high_entropy_test_idempotency_literal_then_it_was_replaced_with_a_low_entropy_non_secret_fixture_and_the_unmerged_branch_was_rewritten_to_remove_the_literal_from_history_before_freezing_scope_at_count_two, infra:exact_main_dispatch_31750176613_independently_confirmed_the_same_shared_Go_1_26_5_vulnerability_database_failure, verification:first_security_correction_evidence_attempt_mutated_the_committed_P3_O7_ledger_entry_then_append_only_history_rejected_it_and_P3_O7_R1_was_appended_instead]
     external_gates: [SHARED_GO_1_26_5_GOVULN_BASELINE_BLOCKED, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P3-O7-R2
+    title: legacy-push-center-go-1-26-6-exact-main-replay
+    owner: Codex-Sol
+    status: replayed_to_4814695_C07_real_service_blackbox_pass_pending_required_CI
+    base_sha: 4814695f3dfc7df52af10db36d6e475ec873f801
+    dependency: P3_GO_SEC_01_PR201_CLOSED_EXACT_MAIN_ALL_REQUIRED_GATES_SUCCESS
+    branch: codex/p3-g0-o7-20260814
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/200
+    business_commit: 66225536684f3c4bd3628fff33b1529e01a380a4
+    scope: [replay_existing_O7_business_flow_to_Go_1_26_6_exact_green_main, resolve_append_only_ledger_union, synchronize_existing_content_pins, rerun_C07_55432_real_service_blackbox]
+    excluded_scope: [shared_Go_security_fix_new_business_behavior_O8_UI_P4_production_database_live_migration_real_wecom_real_outbound]
+    tests: [BASE_PR201_head_c6d3156_and_exact_main_4814695_required_CI_SUCCESS, LOCAL_doctor_Go1_26_6_Node24_18_npm11_12_1_PG16_14_server160014_PASS, LOCAL_O7_C07_55432_real_service_blackbox_PASS]
+    handwritten_scope: replay_only_no_new_business_files_plus_append_only_receipt_and_content_hash_DoD
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 10
+    correction_notes: [definition_of_done:expected_rebase_conflicts_were_limited_to_the_shared_append_only_ledger_tail_and_content_pins_then_the_exact_union_and_current_digests_were_preserved_without_business_changes_or_new_correction]
+    external_gates: [PR200_REQUIRED_CI_PENDING, REAL_WECOM_NOT_EXECUTED, OUTBOUND_EXTERNAL_EFFECT_NOT_EXECUTED, PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
