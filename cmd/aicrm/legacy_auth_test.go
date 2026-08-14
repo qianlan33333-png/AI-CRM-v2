@@ -77,7 +77,7 @@ func TestHumanOAuthBrowserFlowIssuesCanonicalAndLegacySessionAndRevokesWithBound
 	handler.Callback(callbackResponse, callbackRequest)
 	if callbackResponse.Code != http.StatusFound || callbackResponse.Header().Get("Location") != "/admin/customers" ||
 		application.claimState != state || provider.exchangeCode != "provider-code" ||
-		application.issued.Provider != authport.ProviderWeCom || application.issued.TenantID != "corp-fixture" || application.issued.SubjectID != "member-fixture" {
+		application.issued.Provider != authport.ProviderWeCom || application.issued.CorpID != "corp-fixture" || application.issued.SubjectID != "member-fixture" {
 		t.Fatalf("callback status/location/claim/exchange/issued=%d/%q/%q/%q/%+v body=%s", callbackResponse.Code, callbackResponse.Header().Get("Location"), application.claimState, provider.exchangeCode, application.issued, callbackResponse.Body.String())
 	}
 	callbackCookies := cookiesByName(callbackResponse.Result().Cookies())

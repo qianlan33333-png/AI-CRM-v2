@@ -4360,6 +4360,28 @@ slices:
     correction_notes: [redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-SI00B
+    title: wecom-CorpID-forward-rename
+    owner: Codex-Sol
+    status: LOCAL_FOCUSED_DOD_PASS_REQUIRED_CI_PENDING
+    base_sha: 55d301a2dce28e244dc1f1e45ef1a3a7be5e036c
+    dependency: P4_SI00A_CLOSED_exact_green_main
+    branch: codex/p4-si00b-wecom-corp-id-rename
+    pr_url: PENDING_GITHUB_PR_CREATION
+    scope: [00028_provider_tenant_id_to_wecom_corp_id_forward_rename, VerifiedLogin_TenantID_to_CorpID, Auth_query_repository_SQLC_and_direct_acceptance_alignment, existing_account_and_session_compatibility]
+    deployment_model: single_instance_single_enterprise_single_database_private_deployment
+    provider_identity_semantics: provider_tenant_id_was_WeCom_CorpID_namespace_not_a_SaaS_tenant
+    excluded_scope: [tenant_model_selector_switch_RBAC_column_index_or_cross_tenant_test, generic_provider_or_SSO, risk_or_audit_alerting, operations_UI_or_dashboard, recovery_daemon, new_semantics, legacy_UI, production_or_real_external_operations]
+    tests: [LOCAL_PG16_14_provider_identity_preflight_PASS, LOCAL_27_28_27_28_history_PASS, LOCAL_Auth_A01_P2_direct_chain_PASS, LOCAL_repo_contract_positive_and_tenant_column_negative_PASS, LOCAL_generated_and_secret_PASS]
+    reusable_base: [SI00A_single_instance_governance, A01_wecom_human_login, canonical_and_legacy_session_cookie_compatibility, session_bound_CSRF, existing_RBAC_capability, safe_internal_redirect]
+    correction_state: OPEN
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    correction_notes: [verification:isolated_database_was_uninitialized_then_existing_A01_compatibility_established_the_nonproduction_27_baseline_before_read_only_semantic_inspection, verification:activated_environment_did_not_expose_auxiliary_rg_then_the_same_read_only_search_ran_outside_that_PATH, verification:first_A01_focused_replay_finished_its_historical_proof_at_27_then_the_current_runtime_blackbox_expected_28_so_the_target_now_returns_to_current_waterline_after_the_26_27_26_27_proof_before_running_the_unchanged_blackbox, infra:first_focused_negative_fixture_command_contained_temporary_cleanup_syntax_rejected_by_local_tool_policy_before_execution_then_the_same_fixture_ran_without_delete_actions_and_rejected_the_tenant_column_escape, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

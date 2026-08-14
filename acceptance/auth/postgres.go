@@ -35,10 +35,10 @@ func (fixture *PostgreSQL) SeedAdmin(ctx context.Context) (int64, error) {
 	var userID int64
 	err := fixture.pool.QueryRow(ctx, `
 INSERT INTO admin_users (
-  auth_provider, provider_tenant_id, provider_subject_id, display_name, role,
+  auth_provider, wecom_corp_id, provider_subject_id, display_name, role,
   is_active, login_enabled, session_version
 ) VALUES ('wecom', 'corp-a01-fixture', 'member-a01-fixture', 'A01 fixture', 'admin', TRUE, TRUE, 1)
-ON CONFLICT (auth_provider, provider_tenant_id, provider_subject_id) DO UPDATE SET
+ON CONFLICT (auth_provider, wecom_corp_id, provider_subject_id) DO UPDATE SET
   display_name=EXCLUDED.display_name, role=EXCLUDED.role, staff_id=NULL,
   is_active=TRUE, login_enabled=TRUE, session_version=admin_users.session_version + 1,
   updated_at=now()

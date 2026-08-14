@@ -113,7 +113,7 @@ func createAuthTables(t *testing.T, ctx context.Context, fixture *acceptancefixt
 CREATE TABLE acceptance_fixtures.admin_users (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   auth_provider text NOT NULL,
-  provider_tenant_id text NOT NULL,
+  wecom_corp_id text NOT NULL,
   provider_subject_id text NOT NULL,
   display_name text NOT NULL,
   role text NOT NULL,
@@ -121,7 +121,7 @@ CREATE TABLE acceptance_fixtures.admin_users (
   is_active boolean NOT NULL,
   login_enabled boolean NOT NULL,
   session_version bigint NOT NULL,
-  UNIQUE (auth_provider, provider_tenant_id, provider_subject_id)
+  UNIQUE (auth_provider, wecom_corp_id, provider_subject_id)
 );
 CREATE TABLE acceptance_fixtures.admin_sessions (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -144,7 +144,7 @@ func seedAdmin(t *testing.T, ctx context.Context, fixture *acceptancefixtures.Po
 	t.Helper()
 	_, err := fixture.Pool().Exec(ctx, `
 INSERT INTO acceptance_fixtures.admin_users (
-  auth_provider, provider_tenant_id, provider_subject_id, display_name,
+  auth_provider, wecom_corp_id, provider_subject_id, display_name,
   role, staff_id, is_active, login_enabled, session_version
 ) VALUES ('wecom', 'corp-fixture', 'user-fixture', 'Fixture Admin', 'admin', 42, true, true, 1)`)
 	if err != nil {
@@ -155,7 +155,7 @@ INSERT INTO acceptance_fixtures.admin_users (
 func issueSession(t *testing.T, ctx context.Context, service *authapp.Service) authport.BrowserSession {
 	t.Helper()
 	session, err := service.IssueVerified(ctx, authport.VerifiedLogin{
-		Provider: authport.ProviderWeCom, TenantID: "corp-fixture", SubjectID: "user-fixture",
+		Provider: authport.ProviderWeCom, CorpID: "corp-fixture", SubjectID: "user-fixture",
 	})
 	if err != nil {
 		t.Fatalf("IssueVerified() error = %v", err)

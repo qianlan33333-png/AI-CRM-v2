@@ -11,7 +11,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p2-s04-acceptance
-.PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance p3-o7-legacy-api-acceptance p4-w0-d01-automation-acceptance p4-w0-l01-stats-acceptance p4-a01-auth-acceptance
+.PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance p3-o7-legacy-api-acceptance p4-w0-d01-automation-acceptance p4-w0-l01-stats-acceptance p4-a01-auth-acceptance p4-si00b-auth-acceptance
 .PHONY: p2-s05-acceptance
 .PHONY: p2-s07-acceptance
 .PHONY: p2-s08-acceptance
@@ -483,7 +483,15 @@ p4-w0-l01-stats-acceptance:
 p4-a01-auth-acceptance:
 	@test -n "$${P4A01_AUTH_TEST_DATABASE_URL:-}" || { echo "P4A01_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/auth/a01_migration_compatibility.sh
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$P4A01_AUTH_TEST_DATABASE_URL" up
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s -run '^TestA01' ./cmd/aicrm -args -p4-a01-database-url "$$P4A01_AUTH_TEST_DATABASE_URL"
+
+p4-si00b-auth-acceptance:
+	@test -n "$${P4SI00B_AUTH_TEST_DATABASE_URL:-}" || { echo "P4SI00B_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/auth/si00b_migration_compatibility.sh
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=90s ./internal/auth/app ./internal/auth/store
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$$P4SI00B_AUTH_TEST_DATABASE_URL" $(GO) test -race -count=1 -timeout=90s ./acceptance/p2s09 ./acceptance/p2s16
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s -run '^(TestA01|TestHumanOAuth|TestHumanAuth|TestFinalRouter)' ./cmd/aicrm -args -p4-a01-database-url "$$P4SI00B_AUTH_TEST_DATABASE_URL"
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -125,13 +125,13 @@ func TestIssueVerifiedRejectsUntrustedOrUnsafeIdentityBeforeTransaction(t *testi
 		name  string
 		login authport.VerifiedLogin
 	}{
-		{name: "non-WeCom provider", login: authport.VerifiedLogin{Provider: "oidc", TenantID: "corp-1", SubjectID: "user-1"}},
-		{name: "empty tenant", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, SubjectID: "user-1"}},
-		{name: "tenant begins with punctuation", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, TenantID: ".corp-1", SubjectID: "user-1"}},
-		{name: "tenant has path separator", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, TenantID: "corp/1", SubjectID: "user-1"}},
-		{name: "empty subject", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, TenantID: "corp-1"}},
-		{name: "subject has whitespace", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, TenantID: "corp-1", SubjectID: "user 1"}},
-		{name: "subject too long", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, TenantID: "corp-1", SubjectID: strings.Repeat("u", 129)}},
+		{name: "non-WeCom provider", login: authport.VerifiedLogin{Provider: "oidc", CorpID: "corp-1", SubjectID: "user-1"}},
+		{name: "empty corp ID", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, SubjectID: "user-1"}},
+		{name: "corp ID begins with punctuation", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, CorpID: ".corp-1", SubjectID: "user-1"}},
+		{name: "corp ID has path separator", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, CorpID: "corp/1", SubjectID: "user-1"}},
+		{name: "empty subject", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, CorpID: "corp-1"}},
+		{name: "subject has whitespace", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, CorpID: "corp-1", SubjectID: "user 1"}},
+		{name: "subject too long", login: authport.VerifiedLogin{Provider: authport.ProviderWeCom, CorpID: "corp-1", SubjectID: strings.Repeat("u", 129)}},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			uow := &fakeAuthUoW{}
@@ -609,7 +609,7 @@ func newTestAuthService(t *testing.T, uow platformport.UnitOfWork, repo reposito
 }
 
 func safeVerifiedLogin() authport.VerifiedLogin {
-	return authport.VerifiedLogin{Provider: authport.ProviderWeCom, TenantID: "corp-1", SubjectID: "user_1"}
+	return authport.VerifiedLogin{Provider: authport.ProviderWeCom, CorpID: "corp-1", SubjectID: "user_1"}
 }
 
 func usablePrincipal() authport.Principal {

@@ -161,10 +161,8 @@ func (handler *HumanAuthHandler) Callback(writer http.ResponseWriter, request *h
 		redirectLoginError(writer, request, "account_blocked")
 		return
 	}
-	// TenantID is the merged auth port's historical name for the provider
-	// identity namespace. A later forward-only cleanup will rename it to CorpID.
 	session, err := handler.issuer.IssueVerified(request.Context(), authport.VerifiedLogin{
-		Provider: authport.ProviderWeCom, TenantID: handler.provider.CorpID(), SubjectID: identity.UserID,
+		Provider: authport.ProviderWeCom, CorpID: handler.provider.CorpID(), SubjectID: identity.UserID,
 	})
 	if err != nil {
 		if errors.Is(err, authport.ErrUnauthenticated) || errors.Is(err, authport.ErrInvalidVerifiedLogin) {
