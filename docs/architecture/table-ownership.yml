@@ -98,6 +98,15 @@ owners:
     constraints:
       stats_event_receipts: unique_projection_receipt_per_source_event
 
+  product:
+    package: internal/product
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts]
+    constraints:
+      products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
+      product_images: product_owned_native_image_urls_only
+      product_catalog_counters: exact_legacy_total_without_catalog_scan
+      product_operation_receipts: transaction_scoped_create_idempotency_receipts
+
   ops:
     package: internal/ops
     tables: []

@@ -56,6 +56,23 @@ required=(
   migrations/00028_auth_wecom_corp_id.sql
   acceptance/auth/si00b_migration_compatibility.sh
   docs/execution/slices/P4-SI00B.md
+  migrations/00029_product_catalog.sql
+  acceptance/product/doc.go
+  acceptance/product/i01a_integration_test.go
+  acceptance/product/i01a_migration_compatibility.sh
+  docs/execution/slices/P4-I01A.md
+  internal/product/app/catalog.go
+  internal/product/app/catalog_test.go
+  internal/product/http/handler.go
+  internal/product/port/port.go
+  internal/product/store/catalog_repository.go
+  internal/product/store/queries/catalog.sql
+  internal/product/store/generated/catalog.sql.go
+  internal/product/store/generated/db.go
+  internal/product/store/generated/models.go
+  internal/product/store/generated/querier.go
+  cmd/aicrm/legacy_api.go
+  cmd/aicrm/legacy_product_api_test.go
   internal/automation/store/tag_trigger.go
   internal/automation/store/queries/tag_trigger.sql
   internal/automation/store/generated/db.go
@@ -624,6 +641,9 @@ done <<'EOF'
 100644 migrations/00028_auth_wecom_corp_id.sql
 100755 acceptance/auth/si00b_migration_compatibility.sh
 100644 docs/execution/slices/P4-SI00B.md
+100644 migrations/00029_product_catalog.sql
+100755 acceptance/product/i01a_migration_compatibility.sh
+100644 docs/execution/slices/P4-I01A.md
 100644 internal/automation/store/tag_trigger.go
 100644 internal/automation/store/queries/tag_trigger.sql
 100644 internal/automation/store/generated/db.go
@@ -1040,7 +1060,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  bfe157e4128260fa2dd978a2c56eaef6508b47f4a47a2eee26f0fec2b52ed304
+  042dc8a5aa9f5f04ac820c842c6bf9526321f237658d1c1241be7b5ac19175ee
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1056,9 +1076,9 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  9f5060e72d0aca60ccfb28bbb757664f845686950be7ff30e9c7135b9b33ada4
+  dcf03a416a638745d237f14c89804e6c5bb1c7d1334af3342602382d3022fca6
 verify_index_sha256 .github/workflows/application-go.yml \
-  017e41dc8db022b36e1ea535b3f30f3a2f378eacc085120649dd905226328f7a
+  c178ba1e42e37d1b29990471be72695ce67d24971b9ee2ce4b5e7393fbcc224c
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -1070,11 +1090,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  9e8ef4c6e62e9800b39667554694f84c7a4ab1393d1e0e6c2a3afd3126218226
+  2cc0f986e68a16b0e2827a3928f68df574df2525e8f39a56c035745385b6c880
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  fe0850a1abb72fdd5c74e55c413fde56ddafc853488843cd1ab47583eadee0bf
+  cd1772a679c2040394eea347f97f00821c83a41ff5dda6ee5e7f1b33e9988e89
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1108,11 +1128,11 @@ verify_index_sha256 docs/evidence/slices/P2-03-registry-tests.md \
 verify_index_sha256 docs/execution/slices/P2-06.md \
   dcd53bfbd51951f9da51a3719a34835b02ecb22ac87e21667db1494e1dad456a
 verify_index_sha256 sqlc.yaml \
-  bdd71dbf6237451aaa4f8824b0dc55fe8a0d42e3f44b325753ad552aa27221b9
+  2239308a9f0ac590ff094665fa42870556193750e28892dc1a2be39fa3e86c9e
 verify_index_sha256 migrations/00002_event_log.sql \
   ffae249b7d5398d0bdacdb72078663b9646d0af908aee2c259a9d476dce73b62
 verify_index_sha256 internal/events/port/port.go \
-  36df96d5de261fc6f5a17bec6f6454b0eabc7ace3ff9a75fccd6e96a718fcc74
+  c7a9ffa137835d931650ea989497c8ad5367687af3d2bdc498b2d166b2fdb128
 verify_index_sha256 internal/events/port/port_test.go \
   b05782238d51e24efdeac613f4ef9ea97d31cf98113cae3005ef9f5f04cf3341
 verify_index_sha256 internal/events/store/queries/event_log.sql \
@@ -1164,9 +1184,9 @@ verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
-  d256748dc6bec9a60773872d7c59444f12ae43ba0e9285a4bd8a476e305e5392
+  2b243326e8c6209ea4b88455f7583b3f88899ffa25efdbbc95525e71a451d81c
 verify_index_sha256 scripts/test_arch_imports.sh \
-  53bb11f533a2edb057c6fa378aa97739ef794676ce335d49b5d914f40b4f5488
+  4234fe90ad372336ad3b4e1cd92e8d3ca6c75c532555892c0a513a7e66016819
 verify_index_sha256 scripts/ownership/main.go \
   92a5275e488fb4c2c1096f67b4d581d322ee8e76d5e65defc44723fbc7e168b7
 verify_index_sha256 scripts/test_ownership.sh \
@@ -1272,21 +1292,21 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  6759776ba25b71da7a70e19a1afa9764d7abd2b0bfa9d328926e9fdc886a8fab
+  4455ca0d4195ee5f22761b235898c92c1f61d95f467a2ad5f795fc3f7263ba33
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
-  0b9fa67c4a6d1c7f425a5c4127813d9cc9543da13959ff165902c24577bac723
+  17058e729ac6cab2e8a1e8cf0a211e6f4db3d5f36af5e75186822b18b6a33742
 verify_index_sha256 internal/api/generated/server.gen.go \
   f1e66b50f9ba6722b663967ec1da44cf6bda718246d66a82aef9179c670f2e38
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
-  e5e815f84fde8d4be8e1ac1360670f9783648a2d1382da6882c6df3db202c5c4
+  bf9c42e5f053d633ea3683c2cbce66735964fa5963f96ed31df0363105334c0e
 verify_index_sha256 tools/openapi-contract/main.go \
-  53d4bae17526cbd21e2a44c15f207433cbc3fbe46c0086a6f74059460a8fd530
+  92fd10b4e10379c2c81b290dbf604096777a168d57156a6316323ee60273e9c5
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  5f8f13f8d47d327fb34e7bedc5df8055e681f4d44bf4ded082ded70e393ea01f
+  806ac284cfad996bba29dc4c06bf75b108ce027919d8a4c4214139c9f9459fbc
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
-  883c5c75826797b76295d5ac49cf5c165391dcbad6e235fb5daa9cd3f3e76478
+  78ac2c4bd0555dd2d268fa8584da9291ec207aaf7b2d6c4d65b98e2b6244611f
 verify_index_sha256 acceptance/p1s11/doc.go \
   8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
 verify_index_sha256 acceptance/p3c00/contracts_test.go \
@@ -1602,7 +1622,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  8da031275bba0ddc523f52419cea4075ef2fe7eb1b57b514b93c802861181333
+  d284da572b5ad4acb274b1ccc7a2245e3e599c0ae2c7bf1dc1d1a2f734d9f058
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1634,7 +1654,7 @@ verify_index_sha256 web/scripts/identity-reviews-browser-smoke.mjs \
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
-  438a79cc3ae2f7ba7cdd51890222fcf6ffcf106ffe2d72511c4e096d81d7fb59
+  fdfb40cfe593fbd0643d169c9f280eb74ac8d760e1f752f2f7a2278ecf16ec62
 verify_index_sha256 internal/contact/port/port.go \
   32d4b5301f9565c536a038dffcbac7be11dcdf980caf3ffb3c9c06f395fe7169
 verify_index_sha256 internal/identity/port/port.go \
@@ -1744,7 +1764,7 @@ verify_index_sha256 docs/evidence/slices/P2-09-auth-service-tests.md \
 verify_index_sha256 internal/auth/port/port_test.go \
   b959779d34a7707fdd5ca9c4485dd563b1ac569bc8756d5389afbfbcc63c1d0b
 verify_index_sha256 internal/auth/app/policy.go \
-  980bd6020019042861cbd33a5b288cfca9ccfb718ffbf6714e85d0e2ccb06179
+  62292ee43091fe4d81a372f42bb8758734b14387f695f6feadd39d11ce8a48c0
 verify_index_sha256 internal/auth/app/policy_test.go \
   391972462fd2b9096e3a75515e37fbf375cf9889b18901711ff3c0de6503181d
 verify_index_sha256 internal/auth/http/authorization.go \
@@ -1758,9 +1778,9 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  4d43933ebb6c212fbbbd1e17f43e7b1499e3680c6ca14b7afcae375e50398f3c
+  6c58e19b7fec58fea2b931433b46aa82fb42ccdbe83f0ad2d34b5c92ca855cb5
 verify_index_sha256 cmd/aicrm/api_test.go \
-  fc1075e0e21f655808da99579a991c7bcc766faa623e54bb6b9caa5a1de0c6cf
+  c8e0ed59f3758867a869f08a7b4cf36f766cf24831da23a1ba3b137985244ab5
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
@@ -1962,7 +1982,7 @@ verify_index_sha256 acceptance/identity/storage_integration_test.go \
 verify_index_sha256 acceptance/identity/ingest_integration_test.go \
   2db7cd28bbb86dbbe7d3d3cb91b80cee4d49f42c3d8148ff11c50c71a7f1ef3f
 verify_index_sha256 acceptance/outbound/o1a_r3_integration_test.go \
-  b5d622d55a8a2bd4c4a15c47fb19ec4daa2999427ba9e49e4dcd9309989e6e80
+  6ccc05635cdac99ce458f5287a1fb85b95f56895da8dc72ca0ca439930fdaf23
 verify_index_sha256 migrations/00020_outbound_send_attempts.sql \
   f0e1c607b8fd91894ed9ca17c35dad540b41e9efca86f469e5a9131cdeb94e6f
 verify_index_sha256 migrations/00021_outbound_task_status.sql \
@@ -1992,7 +2012,7 @@ verify_index_sha256 migrations/00022_outbound_send_attempt_history.sql \
 verify_index_sha256 acceptance/outbound/o6a_retry_integration_test.go \
   8f2edb3f7c233eefa408ba0d3a496c68cf2a3b23ad4a5894a28b8efeffc670f5
 verify_index_sha256 acceptance/outbound/o6a_migration_compatibility.sh \
-  cd83c04a290d518813a4a48efe7c9109e486bdb6ec17168a8c98debae578e2b6
+  dad1c4d60ef9ff5aa877ca1a3909217f74f5aedfaa386e3748f7ef5a82815eca
 verify_index_sha256 docs/execution/slices/P3-O6A.md \
   45285f6d0764dd978eda613167dba6cb498cf796031664f4d0a72eb9474847be
 verify_index_sha256 acceptance/outbound/o3_integration_test.go \
@@ -2000,11 +2020,11 @@ verify_index_sha256 acceptance/outbound/o3_integration_test.go \
 verify_index_sha256 acceptance/outbound/o6b1_cancel_integration_test.go \
   27b8cf4f6103fe0f51750122ed471355d6d1e85a441c71d6e7b8ae298f29f315
 verify_index_sha256 acceptance/outbound/o6b1_migration_compatibility.sh \
-  0691a186d401bf0b47297b29463eed1a962957cf695a88960f3e91ddee09f67f
+  0e9d186c3b6d4ae01609075539024782ee8342bbd1f24a27c1042808ff0bc6b9
 verify_index_sha256 acceptance/outbound/o6b2_manual_retry_integration_test.go \
   248042036f6e91eaa03202b45dc5677cb2f2cbc26b74d1996a39d3993fa1f52a
 verify_index_sha256 acceptance/outbound/o6b2_migration_compatibility.sh \
-  fe42230d1d5366cd535e1e3b3cdd7ae545ec2ddf77724913a7df44f4f64b6c13
+  6241d1621a0bb71462db60a00be27bb26c3a48af8ddd585bac9c0aa32f6942b2
 verify_index_sha256 docs/execution/slices/P3-O6B1.md \
   5036062b03bd5858c060fb3a2da4b11a73cf15201368fe471cbfb86067d5fc16
 verify_index_sha256 internal/outbound/app/control.go \
@@ -2064,9 +2084,9 @@ verify_index_sha256 docs/execution/slices/M0-6.md \
 verify_index_sha256 docs/architecture/canonical.md \
   3f1a95bd511402b7c08c35c395bd0e5e60bfcb66c007aa0708750fea0ef4c568
 verify_index_sha256 docs/architecture/table-ownership.yml \
-  7855a99349d3ed41cdba5b593f045df032cdf49065bc967eb9ecb8d9242b0bb2
+  2ae8f262c5a71974bdf58b6e3aaae2a3380d0571d185846b82b2d43e1bcc3469
 verify_index_sha256 scripts/test_repo_contract.sh \
-  9cef67befb23a765b26293f0e5d60fc99a290884204d6583781c349a566f36e0
+  d9d7d4019962be0b36c64fbcc0bffa815528f273b0503d748160cd63f3540980
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -2124,9 +2144,9 @@ verify_index_sha256 internal/automation/store/generated/querier.go \
 verify_index_sha256 internal/automation/store/generated/tag_trigger.sql.go \
   e368abf5dab842a41a790315ca8437937056b2c9018a1db89935feeed433b73d
 verify_index_sha256 acceptance/automation/d01_integration_test.go \
-  3c3c00b0bbd258a543bf967a64a2a9fea16806105cac4f64718ef59099f0a2de
+  bb9c75a9ca77b668f4f787d3cca0185fb2f759a0aa85b907da2d683893df14fd
 verify_index_sha256 acceptance/automation/d01_migration_compatibility.sh \
-  aef4d0ff8254c9fe35cf86f177399bca2afb2908a1bac99cc97ad073fdd53bb1
+  b4fd20cf2a5aed56b1457567d2905ac92c0ce5265d1d50d8881bc11f5c1df3ce
 verify_index_sha256 cmd/aicrm/legacy_automation_api_test.go \
   99823a1e71fb137d2a6c3709199e7c5cc540ec003c45556d5ca3e2034cf1d91d
 verify_index_sha256 docs/execution/slices/P4-W0-D01.md \
@@ -2138,19 +2158,53 @@ verify_index_sha256 acceptance/auth/a01_migration_compatibility.sh \
 verify_index_sha256 acceptance/auth/postgres.go \
   97a91d32f1d192bdbd77269cfdb58088375a7033ae67bc13470122d8d070b072
 verify_index_sha256 acceptance/stats/l01_integration_test.go \
-  1a37ce8aeaeeb53025d17023d653090e07b5ef9881e74880028b025ca4e146c6
+  0866204a92915d15802311864225fe01c8dd5e665052736503b8ed0b7386fda0
 verify_index_sha256 acceptance/stats/l01_migration_compatibility.sh \
-  9cbd6566132fb26852763ad8cd4b1f2b55e82f14b18f91ef147610c9294a554a
+  6d2d5b9c200f8b46aed17b9a8461ddf448180ad6d9a977e903ed0d1a88c636ef
 verify_index_sha256 cmd/aicrm/legacy_auth.go \
   3475c768c2385ba02065f6ae11551279584a3fdfc6acbb8cf6cc357b1da8edbf
 verify_index_sha256 cmd/aicrm/legacy_auth_test.go \
   969990053fc5b736d8481a1794a055216fedb89a26004af6a527e11cf3836a61
 verify_index_sha256 acceptance/auth/si00b_migration_compatibility.sh \
-  60c02d2a483e6b6c14342134fe98560fa6be2790139988e3a5bbcf8be7c8f56f
+  1c1bbbab6a15b813d2db1f076dd04ff3903086e40e792734dc3f8a430e3fbb42
 verify_index_sha256 docs/execution/slices/P4-SI00B.md \
   1391ffffb60cddcbaf04a2c49bbbbb85f9edc5fa159603210c98f05d01e14d59
 verify_index_sha256 migrations/00028_auth_wecom_corp_id.sql \
   e93ad5201d446c484f45544fa596b4b0e1b3587e89c9ea03a7b88f5e498a0d5f
+verify_index_sha256 migrations/00029_product_catalog.sql \
+  3dab3890ece5afe54f2c383ec21a72c2292e0594a1c3f447b8f84c7bf9413e41
+verify_index_sha256 acceptance/product/doc.go \
+  5e6931d2b2be2d907090ccc9de710350fcf2c07cfbcf56b6d22f4a2d788373f6
+verify_index_sha256 acceptance/product/i01a_integration_test.go \
+  4cdf1057e04ca803c2ccda0e5fb7e97f134a103ce22191adc01c2ab857ee6fd0
+verify_index_sha256 acceptance/product/i01a_migration_compatibility.sh \
+  3bc73a389c22bb6f441cf2c65c7249a325b98c09866f8fb7b7d47f02ab93d05a
+verify_index_sha256 docs/execution/slices/P4-I01A.md \
+  0f071da55a5c1cd4ee4cb867f0322f5545f567cba5214e299ed96c649f8a5878
+verify_index_sha256 internal/product/app/catalog.go \
+  693d25657ec325261094ff065d00175a3ff262dcec987dcd126eada897799d48
+verify_index_sha256 internal/product/app/catalog_test.go \
+  a8aaa8d7237914fa4d220ef5df5ef99f48349b6ed222aaf383954640b3a8657f
+verify_index_sha256 internal/product/http/handler.go \
+  d1f133d1a7fb090757b6e2b387d112b35cfb5ff04dec641136aa013d76e28787
+verify_index_sha256 internal/product/port/port.go \
+  ae6a3ba46f17a1858c81f6a964947afa0d9dbe14d055f47d924f0195293195bf
+verify_index_sha256 internal/product/store/catalog_repository.go \
+  db89877e3324f0088529a7063dc8d5115fd34120dfde3690d90229704f548f59
+verify_index_sha256 internal/product/store/queries/catalog.sql \
+  18f463a0a404ebe439a8ebd464b5ec9ee59d3b14d806e04d86207f1f1a13451a
+verify_index_sha256 internal/product/store/generated/catalog.sql.go \
+  d3043bb5b893a7cc7e8e90518781a7684e714052a33d704dca2a8517236fb58a
+verify_index_sha256 internal/product/store/generated/db.go \
+  81ace641f87433f29f031e3f08f195dcc6f558060e31c1ff73be57638a549ab0
+verify_index_sha256 internal/product/store/generated/models.go \
+  d589e8998b577c7de19a839751708bf13cd100a453938f09a596a80b675145de
+verify_index_sha256 internal/product/store/generated/querier.go \
+  ee2e794ee795c60ea4a0b50242ac21fd49e601207a7d6f166faa01c7e866c763
+verify_index_sha256 cmd/aicrm/legacy_api.go \
+  ec17c9b03037f6f3cb699d7833ad3bd214f2e737ea740d38a7ccaf962634b927
+verify_index_sha256 cmd/aicrm/legacy_product_api_test.go \
+  7418ef9787c6753c5dba66a7f065a0a386dbb4eb5f977570fef1a3958a7a0c6e
 
 scripts/verify_repo_receipts.pl receipts "${receipt_arguments[@]}"
 
@@ -4562,7 +4616,7 @@ for anchor in \
   "goose -dir migrations postgres \"\$database_url\" down" \
   'ON CONFLICT (river_job_id) DO UPDATE' \
   '[[ "$rollback_waterline" = "21" && "$rollback_history" = "2" ]]' \
-  '[[ "$upgrade_waterline" = "28" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]'; do
+  '[[ "$upgrade_waterline" = "29" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6a_compat" || fail "P3-O6A historical migration acceptance drifted: $anchor"
 done
 
@@ -4637,7 +4691,7 @@ done
 p3o6b1_compat="$(git show :acceptance/outbound/o6b1_migration_compatibility.sh)"
 for anchor in \
   '[[ "$rollback_waterline" = "22" && "$receipts" = "1" && "$links" = "1" ]]' \
-  '[[ "$upgrade_waterline" = "28" && "$receipts" = "1" && "$links" = "1" ]]' \
+  '[[ "$upgrade_waterline" = "29" && "$receipts" = "1" && "$links" = "1" ]]' \
   '[[ "$events" = "1" && "$jobs" = "0" && "$task_status" = "cancelled" ]]' \
   '[[ "$outbound_links" = "1" && "$river_foreign_keys" = "0" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6b1_compat" || fail "P3-O6B1 historical migration acceptance drifted: $anchor"
@@ -4706,7 +4760,7 @@ p3o6b2_compat="$(git show :acceptance/outbound/o6b2_migration_compatibility.sh)"
 for anchor in \
   'goose -dir migrations postgres "$database_url" down-to 23' \
   '[[ "$rollback_waterline" = "23" && "$receipts" = "1" && "$links" = "2" ]]' \
-  '[[ "$upgrade_waterline" = "28" && "$receipts" = "1" && "$links" = "2" ]]' \
+  '[[ "$upgrade_waterline" = "29" && "$receipts" = "1" && "$links" = "2" ]]' \
   '[[ "$events" = "1" && "$jobs" = "1" && "$task_status" = "pending" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6b2_compat" || fail "P3-O6B2 historical migration acceptance drifted: $anchor"
 done
@@ -4778,8 +4832,8 @@ p4d01_compat="$(git show :acceptance/automation/d01_migration_compatibility.sh)"
 for anchor in \
   'down-to 24' \
   '[[ "$rollback_waterline" = "24" && "$history_events" = "1" ]]' \
-  '[[ "$final_waterline" = "28" && "$history_events" = "1" ]]' \
-  'P4-W0-D01 migration compatibility: PASS (24/28/24/28, D01, L01, and current history preserved)'; do
+  '[[ "$final_waterline" = "29" && "$history_events" = "1" ]]' \
+  'P4-W0-D01 migration compatibility: PASS (24/29/24/29, D01, L01, and current history preserved)'; do
   grep -Fq -- "$anchor" <<<"$p4d01_compat" || fail "P4-W0-D01 historical migration acceptance drifted: $anchor"
 done
 
@@ -4897,8 +4951,8 @@ for anchor in \
   'up-to 25' \
   'down-to 25' \
   '[[ "$rollback_waterline" = "25"' \
-  '[[ "$final_waterline" = "28"' \
-  'P4-W0-L01 migration compatibility: PASS (25/28/25/28, history preserved through current waterline)'; do
+  '[[ "$final_waterline" = "29"' \
+  'P4-W0-L01 migration compatibility: PASS (25/29/25/29, history preserved through current waterline)'; do
   grep -Fq -- "$anchor" <<<"$p4l01_compat" || fail "P4-W0-L01 historical migration acceptance drifted: $anchor"
 done
 
@@ -5095,9 +5149,9 @@ grep -Fq 'CorpID() string' <<<"$p4a01_handler" || fail "P4-SI00B removed the A01
 p4si00b_compat="$(git show :acceptance/auth/si00b_migration_compatibility.sh)"
 for anchor in \
   'down-to 27' \
-  '[[ "$upgrade_waterline" = "28"' \
+  '[[ "$upgrade_waterline" = "29"' \
   '[[ "$rollback_waterline" = "27"' \
-  '[[ "$final_waterline" = "28"' \
+  '[[ "$final_waterline" = "29"' \
   'ck_admin_users_wecom_corp_id' \
   'uq_admin_users_wecom_identity' \
   'count(DISTINCT wecom_corp_id)' \
@@ -5134,6 +5188,149 @@ for ledger_anchor in \
   '    infra_induced_correction_count: 1' \
   '    verification_induced_correction_count: 3'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-SI00B ledger drifted: $ledger_anchor"
+done
+
+p4i01a_migration="$(git show :migrations/00029_product_catalog.sql)"
+for anchor in \
+  'CREATE TABLE public.products (' \
+  'product_code TEXT NOT NULL UNIQUE' \
+  'legacy_admin_projection JSONB NOT NULL' \
+  'CREATE TABLE public.product_images (' \
+  'CREATE TABLE public.product_catalog_counters (' \
+  'CREATE TABLE public.product_operation_receipts (' \
+  'product operation receipt must complete in its reservation transaction' \
+  '-- +goose Down' \
+  'DROP TABLE public.product_operation_receipts;' \
+  'DROP TABLE public.products;'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_migration" || fail "P4-I01A Product migration drifted: $anchor"
+done
+! grep -Eiq 'tenant|payment|refund|order|media' <<<"$p4i01a_migration" ||
+  fail "P4-I01A Product migration gained excluded product semantics"
+
+p4i01a_app="$(git show :internal/product/app/catalog.go)"
+for anchor in \
+  'func (s *Service) ListLegacy' \
+  'func (s *Service) Create' \
+  'CanonicalLegacyAdminProjection' \
+  'subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:])' \
+  'jsonEquivalent(canonical, receipt.ResultSnapshot)' \
+  'eventport.EvProductCreated' \
+  's.events.Append(tx'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_app" || fail "P4-I01A Product application drifted: $anchor"
+done
+! grep -Eiq 'TenantID|tenant_id|payment_request|refund|Media' <<<"$p4i01a_app" ||
+  fail "P4-I01A Product application gained excluded tenant or external-effect semantics"
+
+p4i01a_queries="$(git show :internal/product/store/queries/catalog.sql)"
+for anchor in \
+  '-- name: ListProductsOffset :many' \
+  '-- name: CountProducts :one' \
+  'SELECT total_products FROM product_catalog_counters WHERE singleton = TRUE;' \
+  '-- name: IncrementProductCount :one' \
+  '-- name: ReserveProductOperationReceipt :one' \
+  '-- name: CompleteProductOperationReceipt :one'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_queries" || fail "P4-I01A Product SQLC query drifted: $anchor"
+done
+
+p4i01a_legacy="$(git show :cmd/aicrm/legacy_api.go)"
+for anchor in \
+  'func (handler *Handler) ListProducts' \
+  'func (handler *Handler) GetProduct' \
+  'func (handler *Handler) CreateProduct' \
+  'StockQuantity: 0' \
+  'values["fallback_used"] = false' \
+  'values["real_external_call_executed"] = false' \
+  'values["payment_request_executed"] = false' \
+  'values["real_refund_executed"] = false' \
+  'platformhttp.WriteError'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_legacy" || fail "P4-I01A legacy adapter drifted: $anchor"
+done
+p4i01a_legacy_test="$(git show :cmd/aicrm/legacy_product_api_test.go)"
+for anchor in \
+  '/api/admin/wechat-pay/products?limit=5&offset=10' \
+  '"real_wechat_pay_executed"' \
+  '"provider_signature_verified"' \
+  '"request_id"' \
+  'platform error leaked legacy success field'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_legacy_test" || fail "P4-I01A legacy blackbox drifted: $anchor"
+done
+
+p4i01a_compat="$(git show :acceptance/product/i01a_migration_compatibility.sh)"
+for anchor in \
+  'down-to 28' \
+  'up-to 29' \
+  '[[ "$upgrade_waterline" = "29"' \
+  '[[ "$rollback_waterline" = "28"' \
+  '[[ "$final_waterline" = "29"' \
+  'baseline_admin_hash' \
+  'baseline_session_hash' \
+  'pre-existing Event/Auth/session history preserved'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_compat" || fail "P4-I01A migration compatibility drifted: $anchor"
+done
+p4i01a_recipe="$(make_target_recipe 'p4-i01a-product-acceptance:')" ||
+  fail "P4-I01A acceptance target must be unique"
+[[ "$p4i01a_recipe" = *'P4I01A_PRODUCT_TEST_DATABASE_URL is required'* &&
+   "$p4i01a_recipe" = *'i01a_migration_compatibility.sh'* &&
+   "$p4i01a_recipe" = *'./internal/product/... ./cmd/aicrm'* ]] ||
+  fail "P4-I01A acceptance target lost the directly affected Product chain"
+grep -Fq 'P4I01A_PRODUCT_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-i01a-product-acceptance' <(git show :.github/workflows/application-go.yml) ||
+  fail "P4-I01A acceptance is disconnected from application CI"
+
+for ownership_anchor in \
+  'tables: [products, product_images, product_catalog_counters, product_operation_receipts]' \
+  'product_catalog_counters: exact_legacy_total_without_catalog_scan'; do
+  grep -Fq -- "$ownership_anchor" <(git show :docs/architecture/table-ownership.yml) ||
+    fail "P4-I01A Product ownership drifted: $ownership_anchor"
+done
+for mapping_id in LEGACY-API-0525 LEGACY-API-0526 LEGACY-API-0530; do
+  p4i01a_route="$(git show :docs/api-mapping.jsonl | grep -F "\"mapping_id\":\"$mapping_id\"")"
+  [[ "$p4i01a_route" = *'"candidate_v2_operation_id":"PENDING_HUMAN_DESIGN"'* &&
+     "$p4i01a_route" = *'"disposition":"MIGRATE"'* ]] ||
+    fail "P4-I01A forged or lost frozen route authority for $mapping_id"
+done
+p4i01a_migration_mapping="$(git show :docs/migration-mapping.jsonl | grep -F '"mapping_id":"LEGACY-T14-302"')"
+[[ "$p4i01a_migration_mapping" = *'"decision":"ARCHIVE_ONLY"'* &&
+   "$p4i01a_migration_mapping" = *'"implementation":"NOT_STARTED"'* &&
+   "$p4i01a_migration_mapping" = *'"verification":"NOT_RUN"'* ]] ||
+  fail "P4-I01A incorrectly closed the frozen historical Product migration"
+
+p4i01a_card="$(git show :docs/execution/slices/P4-I01A.md)"
+for anchor in \
+  'LEGACY-API-0525/0526/0530' \
+  'LEGACY-S07-164/165' \
+  'LEGACY-T14-302' \
+  'stock_quantity=0' \
+  'fallback_used=false' \
+  '28→29→28→29' \
+  'slice_induced=10' \
+  'verification_induced=18' \
+  'https://github.com/qianlan33333-png/AI-CRM-v2/pull/208' \
+  'REAL_PAYMENT_REFUND_NOT_EXECUTED'; do
+  grep -Fq -- "$anchor" <<<"$p4i01a_card" || fail "P4-I01A slice card drifted: $anchor"
+done
+for evidence_anchor in \
+  'TestI01AFourFailurePointsRollbackAllProductFacts' \
+  'TestI01AConcurrentReplayAndProductCodeConflict' \
+  'EXPLAIN (FORMAT JSON, COSTS OFF)'; do
+  grep -Fq -- "$evidence_anchor" <(git show :acceptance/product/i01a_integration_test.go) ||
+    fail "P4-I01A focused PG evidence drifted: $evidence_anchor"
+done
+for ledger_anchor in \
+  '  - slice_id: P4-I01A' \
+  '    status: SCOPE_FROZEN_REPAIR_ONLY_PR_REQUIRED_CI_PENDING' \
+  '    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/208' \
+  '    slice_induced_correction_count: 10' \
+  '    infra_induced_correction_count: 0' \
+  '    verification_induced_correction_count: 18'; do
+  grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-I01A ledger drifted: $ledger_anchor"
+done
+
+for feature_id in LEGACY-S07-164 LEGACY-S07-165; do
+  p4i01a_feature="$(git show :docs/feature-matrix.csv | grep -F "\"$feature_id\"")"
+  [[ "$p4i01a_feature" = *'"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"'* &&
+     "$p4i01a_feature" = *'https://github.com/qianlan33333-png/AI-CRM-v2/pull/208'* &&
+     "$p4i01a_feature" = *'b068ae02b24856aec4283e7de19056e3a5581b44'* ]] ||
+    fail "P4-I01A feature reconciliation drifted for $feature_id"
 done
 
 scripts/scan_sensitive_paths.sh

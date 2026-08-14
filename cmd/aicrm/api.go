@@ -33,6 +33,9 @@ import (
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
+	producthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http"
+	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
@@ -58,6 +61,7 @@ type candidateHandler struct {
 	tags            *contacthttp.TagCatalogHandler
 	stages          *contacthttp.Handler
 	segments        *segmenthttp.CRUDHandler
+	products        *producthttp.Handler
 	segmentRefresh  *segmenthttp.RefreshHandler
 	identityReviews *identityhttp.ReviewHandler
 	automationRuns  interface {
@@ -117,6 +121,18 @@ func (handler *candidateHandler) RequestSegmentRefresh(writer http.ResponseWrite
 
 func (handler *candidateHandler) ListSegments(writer http.ResponseWriter, request *http.Request, params api.ListSegmentsParams) {
 	handler.segments.ListSegments(writer, request, params)
+}
+
+func (handler *candidateHandler) ListProducts(writer http.ResponseWriter, request *http.Request, params api.ListProductsParams) {
+	handler.products.ListProducts(writer, request, params)
+}
+
+func (handler *candidateHandler) CreateProduct(writer http.ResponseWriter, request *http.Request, params api.CreateProductParams) {
+	handler.products.CreateProduct(writer, request, params)
+}
+
+func (handler *candidateHandler) GetProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID) {
+	handler.products.GetProduct(writer, request, productID)
 }
 
 func (handler *candidateHandler) CreateSegment(writer http.ResponseWriter, request *http.Request, params api.CreateSegmentParams) {
@@ -342,6 +358,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	productService := productapp.NewService(uow, productstore.NewCatalogRepository(), eventstore.NewAppender())
+	productHandler, err := producthttp.NewHandler(productService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	identityRepository := identitystore.NewRepository()
 	identityReviewHandler, err := identityhttp.NewReviewHandler(identityapp.NewMergeReviewService(
 		uow, identityRepository, contactstore.NewMergePortRepository(), eventstore.NewAppender(), config.Identity.HMACKey.Value(),
@@ -355,6 +377,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
 		segments:        segmentCRUDHandler,
+		products:        productHandler,
 		segmentRefresh:  segmentRefreshHandler,
 		identityReviews: identityReviewHandler,
 		automationRuns:  automationstore.NewRepository(pool),
@@ -365,10 +388,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundstore.NewTaskQueryRepository())
-	legacyHandler, err := NewHandlerWithOutbound(
+	legacyHandler, err := NewHandlerWithOutboundAndProducts(
 		service, customerService, outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
+		productService,
 	)
 	if err != nil {
 		pool.Close()
@@ -561,6 +585,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 		{http.MethodPost, "/api/v1/identity/merge-reviews/{review_id}/approve", authport.CapabilityIdentityReviewWrite, true, http.HandlerFunc(wrapper.ApproveIdentityMergeReview)},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/{review_id}/reject", authport.CapabilityIdentityReviewWrite, true, http.HandlerFunc(wrapper.RejectIdentityMergeReview)},
 		{http.MethodGet, "/api/v1/segments", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegments)},
+		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.ListProducts)},
+		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CreateProduct)},
+		{http.MethodGet, "/api/v1/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetProduct)},
 		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
 		{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.UpdateSegment)},
 		{http.MethodGet, "/api/v1/segments/{segment_id}/members", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegmentMembers)},
@@ -621,6 +648,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/push-center/jobs/{job_id}/reconciliation", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ReconcileOutboundJob)},
 			{http.MethodPost, "/api/admin/push-center/jobs/{job_id}/cancel", authport.CapabilityOutboundControl, true, http.HandlerFunc(legacy.CancelOutboundJob)},
 			{http.MethodPost, "/api/admin/push-center/jobs/{job_id}/retry", authport.CapabilityOutboundControl, true, http.HandlerFunc(legacy.RetryOutboundJob)},
+			{http.MethodGet, "/api/admin/wechat-pay/products", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.ListProducts)},
+			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
+			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 				return nil, err

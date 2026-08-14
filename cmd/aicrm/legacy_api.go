@@ -4,19 +4,25 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
+	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
+	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 )
 
 const (
@@ -25,10 +31,19 @@ const (
 	legacySessionMaxAge     = 8 * time.Hour
 )
 
-var errInvalidLegacyQuery = errors.New("legacy customer list query cannot be mapped safely")
+var (
+	errInvalidLegacyQuery   = errors.New("legacy customer list query cannot be mapped safely")
+	errInvalidLegacyProduct = errors.New("legacy product request cannot be mapped safely")
+)
 
 type customerListApplication interface {
 	List(context.Context, contactapp.CustomerListInput) (contactapp.CustomerListResult, error)
+}
+
+type legacyProductApplication interface {
+	ListLegacy(context.Context, int32, int32) (productport.LegacyPage, error)
+	Get(context.Context, productport.ID) (productport.Product, error)
+	Create(context.Context, productport.CreateCommand) (productport.Product, error)
 }
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
@@ -38,6 +53,23 @@ type Handler struct {
 	outbound    legacyOutboundQueryApplication
 	cancel      legacyCancelApplication
 	manualRetry legacyRetryApplication
+	products    legacyProductApplication
+}
+
+func NewHandlerWithOutboundAndProducts(
+	auth authport.Service,
+	customers customerListApplication,
+	outbound legacyOutboundQueryApplication,
+	cancel legacyCancelApplication,
+	manualRetry legacyRetryApplication,
+	products legacyProductApplication,
+) (*Handler, error) {
+	handler, err := NewHandlerWithOutbound(auth, customers, outbound, cancel, manualRetry)
+	if err != nil || nilLegacyDependency(products) {
+		return nil, authport.ErrAuthenticationUnavailable
+	}
+	handler.products = products
+	return handler, nil
 }
 
 func NewHandler(auth authport.Service, customers customerListApplication) (*Handler, error) {
@@ -246,6 +278,253 @@ func (handler *Handler) ListCustomers(writer http.ResponseWriter, request *http.
 	})
 }
 
+func (handler *Handler) ListProducts(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.products) || request == nil {
+		writeLegacyProductError(writer, request, productapp.ErrUnavailable)
+		return
+	}
+	limit, offset, err := legacyProductPage(request)
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	page, err := handler.products.ListLegacy(request.Context(), limit, offset)
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	items := make([]map[string]any, len(page.Items))
+	for i, item := range page.Items {
+		items[i], err = legacyProduct(item)
+		if err != nil {
+			writeLegacyProductError(writer, request, err)
+			return
+		}
+	}
+	writeJSON(writer, http.StatusOK, legacyProductEnvelope(map[string]any{
+		"ok": true, "items": items, "total": page.Total, "limit": page.Limit, "offset": page.Offset,
+	}))
+}
+
+func (handler *Handler) GetProduct(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.products) || request == nil {
+		writeLegacyProductError(writer, request, productapp.ErrUnavailable)
+		return
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(chi.URLParam(request, "product_id")), 10, 64)
+	if err != nil || id < 1 {
+		writeLegacyProductError(writer, request, errInvalidLegacyProduct)
+		return
+	}
+	item, err := handler.products.Get(request.Context(), productport.ID(id))
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	mapped, err := legacyProduct(item)
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, legacyProductEnvelope(map[string]any{"ok": true, "product": mapped}))
+}
+
+func (handler *Handler) CreateProduct(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.products) || request == nil {
+		writeLegacyProductError(writer, request, productapp.ErrUnavailable)
+		return
+	}
+	principal, ok := authport.PrincipalFromContext(request.Context())
+	if !ok || principal.AdminUserID < 1 {
+		writeLegacyProductError(writer, request, authport.ErrUnauthorized)
+		return
+	}
+	command, err := legacyProductCommand(writer, request, principal.AdminUserID)
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	item, err := handler.products.Create(request.Context(), command)
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	mapped, err := legacyProduct(item)
+	if err != nil {
+		writeLegacyProductError(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, legacyProductEnvelope(map[string]any{"ok": true, "product": mapped}))
+}
+
+type legacyProductUpsertRequest struct {
+	ProductCode               string          `json:"product_code"`
+	Title                     string          `json:"title"`
+	Name                      string          `json:"name"`
+	Description               string          `json:"description"`
+	PriceCents                *int64          `json:"price_cents"`
+	AmountTotal               *int64          `json:"amount_total"`
+	Currency                  string          `json:"currency"`
+	Status                    *string         `json:"status"`
+	Enabled                   *bool           `json:"enabled"`
+	BuyButtonText             string          `json:"buy_button_text"`
+	RequireMobile             bool            `json:"require_mobile"`
+	LeadProgramID             *int64          `json:"lead_program_id"`
+	LeadChannelID             *int64          `json:"lead_channel_id"`
+	LeadQRTitle               string          `json:"lead_qr_title"`
+	LeadQRSubtitle            string          `json:"lead_qr_subtitle"`
+	CompletionRedirectEnabled bool            `json:"completion_redirect_enabled"`
+	CompletionRedirectURL     string          `json:"completion_redirect_url"`
+	CompletionTarget          json.RawMessage `json:"completion_target"`
+	WeComTagging              json.RawMessage `json:"wecom_tagging"`
+	Slices                    json.RawMessage `json:"slices"`
+}
+
+func legacyProductCommand(writer http.ResponseWriter, request *http.Request, actor int64) (productport.CreateCommand, error) {
+	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 256<<10))
+	decoder.DisallowUnknownFields()
+	decoder.UseNumber()
+	var body legacyProductUpsertRequest
+	if decoder.Decode(&body) != nil {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	name := strings.TrimSpace(body.Title)
+	alias := strings.TrimSpace(body.Name)
+	if name == "" {
+		name = alias
+	} else if alias != "" && alias != name {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	if body.PriceCents == nil {
+		body.PriceCents = body.AmountTotal
+	} else if body.AmountTotal != nil && *body.AmountTotal != *body.PriceCents {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	if body.PriceCents == nil || body.Status == nil || body.Enabled == nil {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	projection, err := json.Marshal(map[string]any{
+		"schema_version": 1, "status": *body.Status, "enabled": *body.Enabled,
+		"buy_button_text": body.BuyButtonText, "require_mobile": body.RequireMobile,
+		"lead_program_id": body.LeadProgramID, "lead_channel_id": body.LeadChannelID,
+		"lead_qr_title": body.LeadQRTitle, "lead_qr_subtitle": body.LeadQRSubtitle,
+		"completion_redirect_enabled": body.CompletionRedirectEnabled,
+		"completion_redirect_url":     body.CompletionRedirectURL,
+		"completion_target":           legacyJSON(body.CompletionTarget, json.RawMessage(`null`)),
+		"wecom_tagging":               legacyJSON(body.WeComTagging, json.RawMessage(`{}`)),
+		"slices":                      legacyJSON(body.Slices, json.RawMessage(`[]`)),
+	})
+	if err != nil {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	projection, err = productapp.CanonicalLegacyAdminProjection(projection)
+	if err != nil {
+		return productport.CreateCommand{}, errInvalidLegacyProduct
+	}
+	idempotencyKey := strings.TrimSpace(request.Header.Get("Idempotency-Key"))
+	if idempotencyKey == "" {
+		digest := sha256.Sum256([]byte(strings.TrimSpace(body.ProductCode)))
+		idempotencyKey = "legacy-product-code:" + hex.EncodeToString(digest[:])
+	}
+	return productport.CreateCommand{
+		ProductCode: strings.TrimSpace(body.ProductCode), Name: name, Description: body.Description,
+		PriceMinor: *body.PriceCents, Currency: body.Currency, StockQuantity: 0, Images: []string{},
+		LegacyAdminProjection: projection, Actor: actor, IdempotencyKey: idempotencyKey,
+	}, nil
+}
+
+func legacyJSON(value, fallback json.RawMessage) json.RawMessage {
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
+
+func legacyProductPage(request *http.Request) (int32, int32, error) {
+	query := request.URL.Query()
+	for key := range query {
+		if key != "limit" && key != "offset" {
+			return 0, 0, errInvalidLegacyProduct
+		}
+	}
+	limit, offset := int64(productapp.DefaultLimit), int64(0)
+	var err error
+	if value := strings.TrimSpace(query.Get("limit")); value != "" {
+		limit, err = strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return 0, 0, errInvalidLegacyProduct
+		}
+	}
+	if value := strings.TrimSpace(query.Get("offset")); value != "" {
+		offset, err = strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return 0, 0, errInvalidLegacyProduct
+		}
+	}
+	if limit < 1 || limit > int64(productapp.MaximumLimit) || offset < 0 || offset > int64(productapp.MaximumLegacyOffset) {
+		return 0, 0, errInvalidLegacyProduct
+	}
+	return int32(limit), int32(offset), nil
+}
+
+func legacyProduct(product productport.Product) (map[string]any, error) {
+	projection, err := productapp.CanonicalLegacyAdminProjection(product.LegacyAdminProjection)
+	if err != nil {
+		return nil, productapp.ErrUnavailable
+	}
+	var fields map[string]any
+	if json.Unmarshal(projection, &fields) != nil {
+		return nil, productapp.ErrUnavailable
+	}
+	delete(fields, "schema_version")
+	fields["id"] = int64(product.ID)
+	fields["product_code"] = product.ProductCode
+	fields["title"] = product.Name
+	fields["name"] = product.Name
+	fields["description"] = product.Description
+	fields["price_cents"] = product.PriceMinor
+	fields["amount_total"] = product.PriceMinor
+	fields["currency"] = product.Currency
+	fields["stock_quantity"] = product.StockQuantity
+	fields["images"] = append([]string(nil), product.Images...)
+	fields["sold_count"] = int64(0)
+	fields["created_at"] = product.CreatedAt.UTC()
+	fields["updated_at"] = product.UpdatedAt.UTC()
+	return fields, nil
+}
+
+func legacyProductEnvelope(values map[string]any) map[string]any {
+	values["source_status"] = "v2_product_catalog"
+	values["fallback_used"] = false
+	values["real_external_call_executed"] = false
+	values["payment_request_executed"] = false
+	values["real_wechat_pay_executed"] = false
+	values["real_alipay_executed"] = false
+	values["provider_signature_verified"] = false
+	values["real_refund_executed"] = false
+	return values
+}
+
+func writeLegacyProductError(writer http.ResponseWriter, request *http.Request, err error) {
+	// The immutable legacy helper classifies contract/not-found/internal errors
+	// as 400/404/500. The v2 gateway then emits its unified safe error body.
+	code := platformhttp.CodeInternal
+	switch {
+	case errors.Is(err, errInvalidLegacyProduct), errors.Is(err, productapp.ErrInvalidProduct), errors.Is(err, productapp.ErrInvalidCursor):
+		code = platformhttp.CodeMalformedRequest
+	case errors.Is(err, productapp.ErrNotFound):
+		code = platformhttp.CodeNotFound
+	case errors.Is(err, productapp.ErrConflict):
+		code = platformhttp.CodeMalformedRequest
+	case errors.Is(err, authport.ErrUnauthorized):
+		code = platformhttp.CodeUnauthorized
+	}
+	platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+}
+
 type legacyCustomer struct {
 	CustomerID     int64      `json:"customer_id"`
 	CustomerName   string     `json:"customer_name"`
@@ -332,6 +611,7 @@ func (handler *Handler) allowedCapabilities(ctx context.Context, principal authp
 		authport.CapabilityConfigOverviewRead, authport.CapabilityStagesRead,
 		authport.CapabilityStagesWrite, authport.CapabilitySegmentsRead, authport.CapabilitySegmentsWrite,
 		authport.CapabilityOutboundRead, authport.CapabilityOutboundControl,
+		authport.CapabilityProductsRead, authport.CapabilityProductsWrite,
 	}
 	allowed := make([]string, 0, len(all))
 	for _, capability := range all {

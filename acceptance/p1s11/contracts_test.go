@@ -187,9 +187,9 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
-		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateSegment", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
-		"GetCustomer", "GetSegment", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
-		"ListSegmentMembers", "ListSegments", "ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
+		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateProduct", "CreateSegment", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
+		"GetCustomer", "GetProduct", "GetSegment", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
+		"ListProducts", "ListSegmentMembers", "ListSegments", "ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
 		"RemoveCustomerTag", "RenameStage", "RequestSegmentRefresh", "ResolveIdentity", "SetCustomerStage", "UpdateCustomer", "UpdateSegment",
 	})
 }

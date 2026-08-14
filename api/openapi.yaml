@@ -6,6 +6,53 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/v1/products:
+    get:
+      tags: [p4-product]
+      operationId: listProducts
+      summary: List ordinary products using a keyset cursor
+      x-legacy-mapping-ids: [LEGACY-API-0525]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/Cursor"}, {$ref: "#/components/parameters/Limit"}]
+      responses:
+        "200": {description: Product page, content: {application/json: {schema: {$ref: "#/components/schemas/ProductPage"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+    post:
+      tags: [p4-product]
+      operationId: createProduct
+      summary: Create one ordinary product
+      x-legacy-mapping-ids: [LEGACY-API-0526]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/CreateProductRequest"}}}}
+      responses:
+        "201": {description: Product created, content: {application/json: {schema: {$ref: "#/components/schemas/Product"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/products/{product_id}:
+    get:
+      tags: [p4-product]
+      operationId: getProduct
+      summary: Get one ordinary product
+      x-legacy-mapping-ids: [LEGACY-API-0530]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/ProductID"}]
+      responses:
+        "200": {description: Product, content: {application/json: {schema: {$ref: "#/components/schemas/Product"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
   /healthz:
     get:
       tags: [health]
@@ -716,6 +763,11 @@ components:
       in: cookie
       name: aicrm_session
   parameters:
+    ProductID:
+      name: product_id
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
     CSRFToken:
       name: X-CSRF-Token
       in: header
@@ -841,6 +893,38 @@ components:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
+    Product:
+      type: object
+      required: [id, product_code, name, description, price_minor, currency, stock_quantity, images, created_by, created_at, updated_at]
+      properties:
+        id: {type: integer, format: int64}
+        product_code: {type: string, minLength: 1, maxLength: 200}
+        name: {type: string}
+        description: {type: string}
+        price_minor: {type: integer, format: int64}
+        currency: {type: string}
+        stock_quantity: {type: integer, format: int32}
+        images: {type: array, items: {type: string}}
+        created_by: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    ProductPage:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/Product"}}
+        next_cursor: {type: string}
+    CreateProductRequest:
+      type: object
+      required: [product_code, name, description, price_minor, currency, stock_quantity, images]
+      properties:
+        product_code: {type: string, minLength: 1, maxLength: 200}
+        name: {type: string}
+        description: {type: string}
+        price_minor: {type: integer, format: int64, minimum: 0}
+        currency: {type: string}
+        stock_quantity: {type: integer, format: int32, minimum: 0}
+        images: {type: array, items: {type: string}}
     HealthResponse:
       type: object
       additionalProperties: false
