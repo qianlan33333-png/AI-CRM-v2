@@ -152,6 +152,21 @@ if (cd "$third_non_redline_discard_fixture" && scripts/check_repo_contract.sh >/
   fail "third non-redline candidate discard was accepted after receipt refresh"
 fi
 
+single_instance_adr_fixture="$(make_fixture single-instance-adr-deployment-model)"
+sed -i.bak 's/单实例、单企业、单数据库/多租户 SaaS 共享数据库/' "$single_instance_adr_fixture/docs/adr/ADR-013.md"
+rm -f "$single_instance_adr_fixture/docs/adr/ADR-013.md.bak"
+restage_p2s18_receipt "$single_instance_adr_fixture" docs/adr/ADR-013.md
+if (cd "$single_instance_adr_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "multi-tenant SaaS deployment drift was accepted after receipt refresh"
+fi
+
+tenant_runtime_escape_fixture="$(make_fixture single-instance-runtime-tenant-escape)"
+printf '\n%s\n' 'type TenantSelector struct { TenantID string }' >>"$tenant_runtime_escape_fixture/internal/contact/app/service.go"
+restage_p2s18_receipt "$tenant_runtime_escape_fixture" internal/contact/app/service.go
+if (cd "$tenant_runtime_escape_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "runtime tenant selector escaped the Auth compatibility bridge"
+fi
+
 receipt_verifier_drift="$(make_fixture receipt-verifier-drift)"
 printf '%s\n' '# receipt verifier drift' >>"$receipt_verifier_drift/scripts/verify_repo_receipts.pl"
 git -C "$receipt_verifier_drift" add scripts/verify_repo_receipts.pl

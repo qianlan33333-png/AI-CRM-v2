@@ -8,6 +8,10 @@
 相关约束见 [AGENTS.md](../../AGENTS.md)、[CONTRIBUTING.md](../../CONTRIBUTING.md)、
 [Slice 模板](../execution/slice-card-template.md) 和 [执行台账](../execution/slice-ledger.yml)。
 
+部署语义以 [ADR-013](../adr/ADR-013.md) 为准：单实例、单企业、单数据库
+私有化。编排不得发布 tenant 模型、选择/切换、RBAC、列、复合索引、
+public port 或跨租户测试任务。
+
 ## 职责
 
 | 工作 | Codex Sol | 按需 Terra/独立 Agent |
@@ -54,7 +58,7 @@ CI 接线、修正和 GitHub 全流程；不另立小型中间合同 PR、Terra 
   原始 DoD、generated/manifest/ledger、rebase、required CI、PR/merge 和 exact-main CLOSED。
 - 任一红线缺陷立即进入 `HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、
   commit、push、PR、merge，并在全新任务从 latest exact-green main 重切。红线封闭为：
-  tenant/actor/授权/数据隔离破坏（含跨租户泄漏或越权）；认证绕过、密钥泄露、注入、
+  actor/授权/数据归属破坏或越权；认证绕过、密钥泄露、注入、
   开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River acceptance 未按
   合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider 或真实外部效果
   重复执行，或 `outcome_unknown` 自动重试；不可逆数据损坏或迁移丢失；未授权生产写、

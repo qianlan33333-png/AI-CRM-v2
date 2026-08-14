@@ -75,6 +75,16 @@
 
 ## 2. 目标架构与旧 UI 套用方案
 
+P4 以 [ADR-013](../adr/ADR-013.md) 为前向部署语义：只交付单实例、单企业、
+单数据库私有化能力，不建设 tenant model/selector/switch/RBAC/column/复合索引/
+public port 或跨租户测试。actor 身份、RBAC/capability、session/CSRF/安全
+redirect、数据归属、actor/业务幂等、ownership/UoW、支付和外部效果边界
+保持不变。源映射不回改：28/316 个含 `tenant_id` 的迁移源事实由
+目标片以 `DROP_SOURCE_SCOPE` 或单一部署常量销账，不建 v2 tenant 列；
+2/781 个旧 API `tenant_id` 参数可在兼容边界接收，但不得传播到
+domain、store、SQL 或公共 port。本治理与后续命名清理均不计入
+781/293/316 业务进度。
+
 ```mermaid
 flowchart LR
     UI["旧系统前端资产"] --> LC["Legacy Compatibility API\n旧 method/path/envelope/error"]
@@ -180,7 +190,7 @@ P4-W0 的最终数据合同仍包括 `(event_id, consumer)` 唯一、消费状�
 
 P3 只保留已被现实业务 flow 使用的 Contact、Identity、Segment、Outbound 与 Events 合同，不为未出现的 P4 消费者先冻结宽接口。缺失能力必须随首个真实 P4 双域业务消费者交付；一个接口只有一个假定调用方时，不得冒充 public port。
 
-尤其是 Media material/lease/variant/receipt、Segment 成员 snapshot/version 以及其 public ports，必须随首个实际需要该能力的 P4 双域业务片交付。每个最终 port 必须有 ownership、鉴权/tenant、幂等、错误合同和两个真实调用方证据；禁止跨域 SQL，禁止先造 snapshot 或万能 port 再寻找业务用途。
+尤其是 Media material/lease/variant/receipt、Segment 成员 snapshot/version 以及其 public ports，必须随首个实际需要该能力的 P4 双域业务片交付。每个最终 port 必须有 ownership、actor/鉴权、幂等、错误合同和两个真实调用方证据；禁止跨域 SQL，禁止先造 snapshot 或万能 port 再寻找业务用途。
 
 ### P3-G4：兼容能力映射与最终代码收口报告
 
@@ -547,9 +557,9 @@ P3 代码侧 CLOSED 后，第一波只启动：
 5. **RED 与最小闭环。** 先写 normal/boundary/error 黑盒 RED；金融、鉴权、迁移、外部效果增加永久负例。只实现最小可观察领域行为、compatibility mapper 和必要数据变更，不扩相邻业务片。
 6. **专项硬验收。** 列表/批处理/统计按 S 档 20 万数据与无非法 Seq Scan 验收；周期任务用 River periodic job 且 API/worker 隔离；migration 用真实历史数据形态做 up/down/up；外部效果逐层证明 accepted/queued/attempted/executed/outcome_unknown/reconciled，不得把上一层伪装成下一层。
 7. **第一阶段自审与验证。** 实现完成后审查 scope/diff、合同映射、normal/boundary/error、生成物与锁文件，运行 focused tests、PG16.14 up/down/up、ownership/catalog、race、repo-contract、secret-scan 及该片所有专项门。
-8. **第二阶段独立自审。** 清空实现思路，从审查者视角重读完整 staged diff，重验 migration 终态、ownership、auth/tenant、idempotency、rollback、事件/River、外部效果与永久负例。两阶段的命令、退出码与结论都写入中文 PR。
+8. **第二阶段独立自审。** 清空实现思路，从审查者视角重读完整 staged diff，重验 migration 终态、ownership、actor/auth、idempotency、rollback、事件/River、外部效果与永久负例。两阶段的命令、退出码与结论都写入中文 PR。
 9. **DoD 与 GitHub 收口。** 同步 feature matrix、mapping、generated/hash/manifest/ledger 等仓库硬门要求；正常 receipt 同步属于 DoD，不单独计 correction。中文 PR 的 required CI 全绿后，用已验证 head 做 match-head squash；证明唯一父为预期 main、squash commit tree 与已验证 head tree 等价，再等待该 exact-main SHA 的 required CI 全绿才能 CLOSED。
-10. **修正状态机。** 非红线 `slice_induced` 第 1、2 个允许原片修复并继续；第 2 个起立即降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结能力范围，禁止扩 scope、新能力和无关重构。第 3 个及以后保持 repair-only，不得仅因计数丢弃候选；允许修复既有缺陷、补永久负例、完成原始 DoD、generated/manifest/ledger、rebase、required CI、PR/merge 与 exact-main CLOSED。任一红线立即进入 `HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、commit、push、PR、merge，并从 latest exact-green main 全新重切。红线封闭为：tenant/actor/授权/数据隔离破坏（含跨租户泄漏或越权）；认证绕过、密钥泄露、注入、开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River acceptance 未按合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider 或真实外部效果重复执行，或 `outcome_unknown` 自动重试；不可逆数据损坏或迁移丢失；未授权生产写、真实企微/真实发送/真实支付退款等外部操作。未触及上述红线的纯实现、错误分类、JSON 规范化、sentinel、文件结构、lint、测试断言和性能索引缺陷均属非红线。新规则只前向适用于合入后的全新候选或当时尚无 WIP 的候选；旧规则下 W0/A/H/I 与两次 W0 HARD STOP 候选永久只读，不追溯复活、复制或 cherry-pick。
+10. **修正状态机。** 非红线 `slice_induced` 第 1、2 个允许原片修复并继续；第 2 个起立即降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结能力范围，禁止扩 scope、新能力和无关重构。第 3 个及以后保持 repair-only，不得仅因计数丢弃候选；允许修复既有缺陷、补永久负例、完成原始 DoD、generated/manifest/ledger、rebase、required CI、PR/merge 与 exact-main CLOSED。任一红线立即进入 `HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、commit、push、PR、merge，并从 latest exact-green main 全新重切。红线封闭为：actor/授权/数据归属破坏或越权；认证绕过、密钥泄露、注入、开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River acceptance 未按合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider 或真实外部效果重复执行，或 `outcome_unknown` 自动重试；不可逆数据损坏或迁移丢失；未授权生产写、真实企微/真实发送/真实支付退款等外部操作。未触及上述红线的纯实现、错误分类、JSON 规范化、sentinel、文件结构、lint、测试断言和性能索引缺陷均属非红线。新规则只前向适用于合入后的全新候选或当时尚无 WIP 的候选；旧规则下 W0/A/H/I 与两次 W0 HARD STOP 候选永久只读，不追溯复活、复制或 cherry-pick。
 11. **外部效果禁区。** 完全访问不授权生产 DB、live migration/cutover、真实企微写、真实支付/退款或真实外发。真人验收与真实外部效果精确标为 `PENDING_EXTERNAL_GATE`/`NOT EXECUTED`，不得用 fixture/test provider 写成真实成功。
 
 ## 8. 完整性验收与退出标准
