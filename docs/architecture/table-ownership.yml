@@ -22,11 +22,14 @@ owners:
       - customer_events
       - customer_merge_lineage
       - customer_event_idempotency
+      - channel_operation_receipts
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
       customer_merge_lineage: contact_owned_effective_customer_projection
       customer_event_idempotency: external_event_fact_registry
+      channels: single_instance_local_channel_resource_without_provider_truth
+      channel_operation_receipts: actor_scoped_transactional_create_update_idempotency_receipts
 
   identity:
     package: internal/identity

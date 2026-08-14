@@ -11,10 +11,14 @@ import (
 type Querier interface {
 	AddCustomerTag(ctx context.Context, arg AddCustomerTagParams) (int64, error)
 	AppendCustomerEvent(ctx context.Context, arg AppendCustomerEventParams) (int64, error)
+	CompleteChannelOperationReceipt(ctx context.Context, arg CompleteChannelOperationReceiptParams) (CompleteChannelOperationReceiptRow, error)
 	CopyCustomerTagsForMerge(ctx context.Context, arg CopyCustomerTagsForMergeParams) (int64, error)
 	CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error)
+	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
 	EnsureCustomerEventPartitions(ctx context.Context, arg EnsureCustomerEventPartitionsParams) error
+	GetChannel(ctx context.Context, channelID int64) (GetChannelRow, error)
+	GetChannelOperationReceipt(ctx context.Context, arg GetChannelOperationReceiptParams) (GetChannelOperationReceiptRow, error)
 	GetCustomerDetailSnapshot(ctx context.Context, arg GetCustomerDetailSnapshotParams) ([]GetCustomerDetailSnapshotRow, error)
 	GetCustomerMergeLineage(ctx context.Context, mergedCustomerID int64) (int64, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
@@ -22,6 +26,8 @@ type Querier interface {
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)
 	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
+	// Contact owns the local channel catalog; WeCom remains a provider adapter.
+	ListChannels(ctx context.Context, arg ListChannelsParams) ([]ListChannelsRow, error)
 	ListCustomerEvents(ctx context.Context, arg ListCustomerEventsParams) ([]ListCustomerEventsRow, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListStages(ctx context.Context) ([]Stage, error)
@@ -32,8 +38,10 @@ type Querier interface {
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error)
+	ReserveChannelOperationReceipt(ctx context.Context, arg ReserveChannelOperationReceiptParams) (ReserveChannelOperationReceiptRow, error)
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
+	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)
 	UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error)
 }
 

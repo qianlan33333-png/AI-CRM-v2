@@ -71,6 +71,13 @@ type legacySurveyApplication interface {
 	Create(context.Context, surveyport.CreateCommand) (surveyport.Questionnaire, error)
 }
 
+type legacyChannelApplication interface {
+	ListChannels(context.Context, int32, string, bool) ([]contactapp.Channel, error)
+	GetChannel(context.Context, int64) (contactapp.Channel, error)
+	CreateChannel(context.Context, contactapp.CreateChannelCommand) (contactapp.Channel, error)
+	UpdateChannel(context.Context, contactapp.UpdateChannelCommand) (contactapp.Channel, error)
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth            authport.Service
@@ -84,6 +91,7 @@ type Handler struct {
 	products        legacyProductApplication
 	media           legacyMediaApplication
 	surveys         legacySurveyApplication
+	channels        legacyChannelApplication
 }
 
 func NewHandlerWithAll(
@@ -98,16 +106,18 @@ func NewHandlerWithAll(
 	products legacyProductApplication,
 	media legacyMediaApplication,
 	surveys legacySurveyApplication,
+	channels legacyChannelApplication,
 ) (*Handler, error) {
 	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
 	)
-	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) {
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.customerDetail = customerDetail
 	handler.identityResolve = identityResolve
 	handler.weComCorpID = strings.TrimSpace(weComCorpID)
+	handler.channels = channels
 	return handler, nil
 }
 
@@ -867,6 +877,7 @@ func (handler *Handler) allowedCapabilities(ctx context.Context, principal authp
 		authport.CapabilityOutboundRead, authport.CapabilityOutboundControl,
 		authport.CapabilityProductsRead, authport.CapabilityProductsWrite,
 		authport.CapabilityQuestionnairesRead, authport.CapabilityQuestionnairesWrite,
+		authport.CapabilityChannelsRead, authport.CapabilityChannelsWrite,
 	}
 	allowed := make([]string, 0, len(all))
 	for _, capability := range all {

@@ -197,6 +197,27 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Components.Schemas["LegacyQuestionnaireCreateRequest"].Value.Properties["assessment_enabled"].Value.Enum = nil
 			reject(t, doc, ids)
 		},
+		"channel evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/channels").Get.Extensions["x-p4-decision-evidence"] = "P4-C01-FORGED"
+			reject(t, doc, ids)
+		},
+		"channel legacy mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/channels/{channel_id}").Patch.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0195"}
+			reject(t, doc, ids)
+		},
+		"channel capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/channels").Get.Extensions["x-aicrm-capability"] = "channels.write"
+			reject(t, doc, ids)
+		},
+		"channel request opened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			opened := true
+			doc.Components.Schemas["LegacyChannelWriteRequest"].Value.AdditionalProperties.Has = &opened
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"
