@@ -4263,17 +4263,17 @@ slices:
   - slice_id: P4-W0-L01
     title: stats-tag-applied-second-real-consumer
     owner: Codex-Sol
-    status: ACTIVE_REPAIR_ALLOWED_local_DoD_complete_pending_clean_candidate_CI_and_PR
+    status: ACTIVE_REPAIR_ALLOWED_PR204_required_CI_pending
     base_sha: 3069e4f273bd482a8b9a0b3a5d890750cb2819e2
     dependency: P4_W0_D01_PR203_CLOSED_EXACT_MAIN_ALL_REQUIRED_GATES_SUCCESS
     branch: codex/p4-w0-l01-stats-20260814
-    pr_url: PENDING_GITHUB_PR_CREATION
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/204
     scope: [contact_second_named_delivery_same_UoW, stats_unique_event_receipt, stats_daily_customer_tag_applied_projection, independent_retry_poison_unknown_lease, idempotent_reclaim_and_replay, historical_missing_consumer_backfill]
     excluded_scope: [L02_refresh_or_independent_backfill_capability, L03_dashboard_compatibility_APIs, L04_operations_health_lineage, new_UI, generic_consumer_registry, security_risk_policy_platform, extra_recovery, new_product_semantics, production_database, live_migration, real_wecom, real_send, real_payment_refund]
     handwritten_file_budget: 12_business_and_governance_files_all_owned_by_Codex_Sol
     correction_state: ACTIVE_REPAIR_ALLOWED
     frozen_capability_scope: [original_L01_DoD, Stats_owned_projection_and_receipt, D01_named_delivery_reuse, permanent_negatives, generated_manifest_ledger_receipts, required_CI_PR_merge_exact_main_CLOSED]
-    tests: [LOCAL_static_policy_permanent_negatives_PASS, LOCAL_repo_contract_and_generated_manifest_PASS, LOCAL_293_781_316_reconciliation_PASS, LOCAL_PG16_14_25_26_25_26_history_PASS, LOCAL_same_event_two_consumers_PASS, LOCAL_stats_independent_retry_poison_unknown_lease_PASS, LOCAL_stats_idempotent_replay_and_backfill_PASS, LOCAL_two_named_acceptances_atomic_rollback_PASS, LOCAL_S200K_two_Stats_tables_no_illegal_seq_scan_PASS, LOCAL_D01_regression_PASS, LOCAL_full_ci_go_clean_candidate_PENDING]
+    tests: [LOCAL_static_policy_permanent_negatives_PASS, LOCAL_repo_contract_and_generated_manifest_PASS, LOCAL_293_781_316_reconciliation_PASS, LOCAL_PG16_14_25_26_25_26_history_PASS, LOCAL_same_event_two_consumers_PASS, LOCAL_stats_independent_retry_poison_unknown_lease_PASS, LOCAL_stats_idempotent_replay_and_backfill_PASS, LOCAL_two_named_acceptances_atomic_rollback_PASS, LOCAL_S200K_two_Stats_tables_no_illegal_seq_scan_PASS, LOCAL_D01_regression_PASS, LOCAL_full_ci_go_clean_candidate_PASS, PR204_REQUIRED_CI_PENDING]
     generated_manifest_status: synchronized_SQLC_and_generated_sources_manifest
     mapping_status: exact_293_rows_preserved_LEGACY_S07_015_NOT_STARTED_LEGACY_API_0340_DEFERRED_POST_LAUNCH_LEGACY_T14_285_REBUILD_NOT_STARTED_no_false_route_or_migration_close
     slice_induced_correction_count: 1
