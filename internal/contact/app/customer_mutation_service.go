@@ -244,7 +244,10 @@ func (service *CustomerMutationService) mutateTag(
 		if appendErr != nil || !add {
 			return appendErr
 		}
-		return service.deliveries.Accept(txCtx, eventID, eventport.ConsumerAutomationTagTrigger)
+		if acceptErr := service.deliveries.Accept(txCtx, eventID, eventport.ConsumerAutomationTagTrigger); acceptErr != nil {
+			return acceptErr
+		}
+		return service.deliveries.Accept(txCtx, eventID, eventport.ConsumerStatsTagApplied)
 	})
 	if err != nil {
 		return errors.Join(ErrCustomerMutationFailed, err)

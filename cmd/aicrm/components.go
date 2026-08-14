@@ -20,6 +20,7 @@ import (
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
+	statsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/stats/store"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 )
 
@@ -101,9 +102,10 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	enqueuer := eventdispatcher.NewDeferredEnqueuer()
-	deliveries, err := eventstore.NewRuntimeDeliveryRepository(pool, enqueuer, eventdispatcher.DefaultBatchSize, []eventport.DeliveryBinding{{
-		EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerAutomationTagTrigger,
-	}})
+	deliveries, err := eventstore.NewRuntimeDeliveryRepository(pool, enqueuer, eventdispatcher.DefaultBatchSize, []eventport.DeliveryBinding{
+		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerAutomationTagTrigger},
+		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerStatsTagApplied},
+	})
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -118,6 +120,16 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	)
 	if err == nil {
 		err = router.RegisterDelivery(automationConsumer)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	statsConsumer, err := statsstore.NewTagAppliedConsumer(
+		platformstore.NewUnitOfWork(pool), statsstore.NewRepository(pool), deliveries,
+	)
+	if err == nil {
+		err = router.RegisterDelivery(statsConsumer)
 	}
 	if err != nil {
 		pool.Close()

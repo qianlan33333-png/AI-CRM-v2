@@ -260,7 +260,7 @@ func TestD01StorageCatalogIsValidatedAndHasNoRiverOrAutomationCrossDomainFK(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != 25 || constraints != 16 || invalidConstraints != 0 || indexes != 7 || invalidIndexes != 0 ||
+	if waterline != 26 || constraints != 16 || invalidConstraints != 0 || indexes != 7 || invalidIndexes != 0 ||
 		eventLogFKs != 1 || receiptFKs != 0 || riverFKs != 0 || deliveryPersistence != "p" || receiptPersistence != "p" {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%d/%d/%d/%s/%s",
 			waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventLogFKs, receiptFKs, riverFKs, deliveryPersistence, receiptPersistence)
@@ -355,8 +355,8 @@ func assertProducerFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, 
       (SELECT count(*) FROM customer_events WHERE customer_id=$1 AND payload->>'tag_id'=$2),
       (SELECT count(*) FROM customer_tags WHERE customer_id=$1 AND tag_id=$3)
       FROM event_log e JOIN event_deliveries d ON d.event_id=e.id JOIN river_job j ON j.id=d.river_job_id
-      WHERE e.customer_id=$1 AND e.payload->>'tag_id'=$2 ORDER BY e.id DESC LIMIT 1`,
-		customerID, strconv.FormatInt(tagID, 10), tagID).Scan(&eventID, &jobID, &eventType, &consumer, &status, &kind, &queue, &customerEvents, &tags)
+      WHERE e.customer_id=$1 AND e.payload->>'tag_id'=$2 AND d.consumer=$4 ORDER BY e.id DESC LIMIT 1`,
+		customerID, strconv.FormatInt(tagID, 10), tagID, eventport.ConsumerAutomationTagTrigger).Scan(&eventID, &jobID, &eventType, &consumer, &status, &kind, &queue, &customerEvents, &tags)
 	if err != nil || eventType != eventport.EvTagApplied || consumer != eventport.ConsumerAutomationTagTrigger || status != "pending" ||
 		kind != eventport.DeliveryJobKind || queue != "event" || customerEvents != 1 || tags != 1 {
 		t.Fatalf("producer facts=%d/%d %s/%s/%s %s/%s timeline=%d tags=%d err=%v", eventID, jobID, eventType, consumer, status, kind, queue, customerEvents, tags, err)

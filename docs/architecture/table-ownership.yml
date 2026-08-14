@@ -93,7 +93,9 @@ owners:
 
   stats:
     package: internal/stats
-    tables: [stats_daily]
+    tables: [stats_daily, stats_event_receipts]
+    constraints:
+      stats_event_receipts: unique_projection_receipt_per_source_event
 
   ops:
     package: internal/ops

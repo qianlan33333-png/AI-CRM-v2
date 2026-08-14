@@ -28,6 +28,7 @@ const (
 	EvAutomationTriggered = "automation.triggered"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
+	ConsumerStatsTagApplied      = "stats.tag-applied.v1"
 	DeliveryJobKind              = "events_deliver"
 )
 
