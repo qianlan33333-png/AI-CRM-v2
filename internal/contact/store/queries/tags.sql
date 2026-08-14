@@ -8,9 +8,38 @@ SELECT
   t.sort_order
 FROM tags AS t
 LEFT JOIN tag_groups AS g ON g.id = t.group_id
+WHERE t.name NOT LIKE 'archived:%'
 ORDER BY
   (t.group_id IS NULL),
   g.sort_order,
   g.id,
   t.sort_order,
   t.id;
+
+-- name: ListLegacyTagGroups :many
+SELECT id, name, sort_order FROM tag_groups WHERE name NOT LIKE 'archived:%' ORDER BY sort_order, id;
+-- name: ListLegacyTags :many
+SELECT t.id, t.group_id, g.name AS group_name, t.name, t.sort_order FROM tags t JOIN tag_groups g ON g.id=t.group_id
+WHERE g.name NOT LIKE 'archived:%' AND t.name NOT LIKE 'archived:%' ORDER BY g.sort_order,g.id,t.sort_order,t.id;
+-- name: CreateLegacyTagGroup :one
+INSERT INTO tag_groups(name) VALUES (sqlc.arg(name)) RETURNING id,name,sort_order;
+-- name: CreateLegacyTag :one
+INSERT INTO tags(group_id,name) VALUES (sqlc.arg(group_id),sqlc.arg(name)) RETURNING id,group_id,name,sort_order;
+-- name: UpdateLegacyTagGroup :one
+UPDATE tag_groups SET name=sqlc.arg(name) WHERE id=sqlc.arg(id) AND name NOT LIKE 'archived:%' RETURNING id,name,sort_order;
+-- name: ArchiveLegacyTagGroup :one
+WITH archived_tags AS (
+  UPDATE tags AS t
+  SET name = 'archived:' || t.id::text
+  WHERE t.group_id = sqlc.arg(group_id)
+    AND t.name NOT LIKE 'archived:%'
+)
+UPDATE tag_groups AS g
+SET name = 'archived:' || g.id::text
+WHERE g.id = sqlc.arg(group_id)
+  AND g.name NOT LIKE 'archived:%'
+RETURNING g.id, g.name, g.sort_order;
+-- name: UpdateLegacyTag :one
+UPDATE tags SET name=sqlc.arg(name) WHERE id=sqlc.arg(id) AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order;
+-- name: ArchiveLegacyTag :one
+UPDATE tags SET name='archived:'||id::text WHERE id=sqlc.arg(id) AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order;

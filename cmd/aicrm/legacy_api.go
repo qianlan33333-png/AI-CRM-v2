@@ -79,6 +79,16 @@ type legacyChannelApplication interface {
 	UpdateChannel(context.Context, contactapp.UpdateChannelCommand) (contactapp.Channel, error)
 }
 
+type legacyTagApplication interface {
+	List(context.Context) (contactapp.LegacyTagCatalog, error)
+	CreateGroup(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, contactapp.LegacyTag, error)
+	UpdateGroup(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, error)
+	ArchiveGroup(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, error)
+	CreateTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
+	UpdateTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
+	ArchiveTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth            authport.Service
@@ -93,6 +103,7 @@ type Handler struct {
 	media           legacyMediaApplication
 	surveys         legacySurveyApplication
 	channels        legacyChannelApplication
+	legacyTags      legacyTagApplication
 	coupons         legacyCouponApplication
 }
 
@@ -119,11 +130,12 @@ func NewHandlerWithAll(
 	surveys legacySurveyApplication,
 	channels legacyChannelApplication,
 	coupons legacyCouponApplication,
+	legacyTags legacyTagApplication,
 ) (*Handler, error) {
 	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
 	)
-	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) {
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.customerDetail = customerDetail
@@ -131,6 +143,7 @@ func NewHandlerWithAll(
 	handler.weComCorpID = strings.TrimSpace(weComCorpID)
 	handler.channels = channels
 	handler.coupons = coupons
+	handler.legacyTags = legacyTags
 	return handler, nil
 }
 

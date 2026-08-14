@@ -4494,6 +4494,29 @@ slices:
     correction_notes: [verification:fresh_worktree_first_Orval_generation_required_repository_pinned_7_21_0_bootstrap_then_generation_completed, verification:first_second_phase_forbidden_pattern_search_scanned_excluded_scope_prose_then_the_same_review_was_narrowed_to_business_Go_diff, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-B02
+    title: local-tag-catalog-legacy-crud-compatibility
+    owner: Codex
+    status: SCOPE_FROZEN_REPAIR_ONLY_LOCAL_VERIFICATION
+    base_sha: 16d2c34ef869539e3342647f9f1b82a0984df2c1
+    dependency: P4_A01_CLOSED_exact_green_main
+    branch: codex/p4-b02-tags-catalog-20260815
+    pr_url: PENDING
+    scope: [legacy_local_tag_catalog_read_group_crud_tag_crud, API_0555_0552_0553_0556_0562, S05_010_013_014_015_016_017_018, PUT_PATCH_same_update_compatibility, human_session_admin_ops_RBAC_CSRF, Contact_owned_projection_UoW_Event]
+    excluded_scope: [batch_tagging, wecom_sync, live_gate, sidebar, migration_DDL, T14_148_309_310, tenant_model_selector_column_index_permission_cross_tenant_test, new_UI, provider_call, production_or_live_migration]
+    handwritten_file_budget: focused_B02_Contact_transport_OpenAPI_registry_tests_and_governance_only
+    reusable_base: [A01_human_session_RBAC_CSRF, Contact_tag_groups_tags_ownership, platform_UnitOfWork, Events_Appender, existing_customer_Add_Remove_tag_transaction]
+    mapping_status: exact_plus_5_API_0555_0552_0553_0556_0562_plus_7_matrix_S05_010_013_014_015_016_017_018_plus_0_T14_with_148_309_310_pending_target_schema
+    tests: [LOCAL_focused_Go_normal_boundary_error_PASS, LOCAL_SQLC_store_PASS, LOCAL_OpenAPI_registry_PASS, LOCAL_generated_race_vet_static_repo_contract_PENDING]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_B02_DoD, API_0555_0552_0553_0556_0562, S05_010_013_014_015_016_017_018, generated_mapping_matrix_ledger_receipts, required_CI_PR_merge_promotion_exact_main_CLOSED]
+    slice_induced_correction_count: 6
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 6
+    correction_notes: [slice:sqlc_archive_group_query_qualified_CTE_and_target_identifiers, slice:generated_group_name_is_nonnullable_string, slice:archive_projection_uses_local_name_tombstone_to_preserve_existing_no_WeCom_field_query_boundary, slice:PUT_PATCH_method_bundle_received_unique_operation_ids_without_new_mapping_count, slice:P4_Tag_operations_added_to_OpenAPI_registry, slice:P4_Tag_operations_added_to_authorization_registry, verification:fresh_worktree_bootstrapped_pinned_Orval_7_21_0, verification:tools_module_test_was_first_invoked_from_root_then_rerun_from_tools, verification:feature_matrix_evidence_was_changed_from_plain_label_to_repository_paths, verification:Orval_generated_file_pinned_hash_was_synchronized, verification:feature_matrix_IMPLEMENTED_requires_real_PR_and_existing_commit_anchor_so_checkpoint_precedes_final_evidence, verification:first_forbidden_pattern_review_matched_the_tenant_rejection_negative_test_then_narrowed_to_non_test_business_diff, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
   - slice_id: P4-J01
     title: legacy-coupon-store-rule-crud-and-lifecycle
     owner: Codex
@@ -4516,6 +4539,42 @@ slices:
     verification_induced_correction_count: 11
     correction_notes: [slice:first_compile_corrected_UpsertCommand_type_signature, slice:first_OpenAPI_contract_removed_invalid_empty_status_enum_default, slice:YAML_inline_description_comma_was_quoted_without_contract_change_and_scope_froze, slice:stop_technical_receipt_key_accepted_the_frozen_deterministic_short_key, slice:claimed_total_only_increase_stopped_rewriting_unchanged_frozen_targets, slice:second_PR_Go_CI_canonicalized_coupon_rule_times_to_PostgreSQL_microsecond_precision_before_claimed_equality, verification:OpenAPI_tool_was_first_invoked_from_root_module_then_passed_from_tools, verification:first_PG_assertions_added_explicit_bigint_text_casts, verification:repeat_PG_run_replaced_static_acceptance_actor_keys_with_case_unique_values, verification:migration_script_took_pre_acceptance_baseline_for_legitimate_Product_Event_fixtures_then_verified_post_acceptance_history_across_down_up, verification:HTTP_test_used_nonexistent_typed_status_constants_then_asserted_frozen_wire_strings, verification:fresh_worktree_first_generate_required_repository_pinned_Orval_bootstrap, verification:first_permanent_negative_replay_synchronized_the_feature_matrix_derived_counts_for_four_new_synthetic_rows, verification:first_PR_Go_arch_import_gate_synchronized_Coupon_into_the_affected_module_registry, verification:second_PR_Go_source_policy_lexical_gate_reworded_a_test_diagnostic_that_contained_update_space_without_SQL, verification:first_targeted_claimed_precision_PG_command_left_the_DSN_query_unquoted_and_zsh_rejected_the_glob_before_execution, verification:first_ledger_counter_patch_used_an_ambiguous_anchor_and_append_only_history_rejected_the_historical_match_before_push, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_CLAIM_NOT_EXECUTED, REAL_PAYMENT_ORDER_NOT_EXECUTED, REAL_EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: P4-B02-R1
+    title: local-tag-catalog-release-evidence-repair
+    owner: Codex
+    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING
+    base_sha: b535b3c84930a3bcd919019321d5164ac97be6a7
+    dependency: P4_B02_SCOPE_FROZEN_CHECKPOINT
+    branch: codex/p4-b02-tags-catalog-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/215
+    scope: [feature_matrix_real_PR_SHA_evidence, generated_and_contract_pinned_receipts, append_only_ledger_repair]
+    excluded_scope: [business_logic, API_or_DTO_expansion, matrix_or_T14_expansion, migration_DDL, tenant, UI, provider_or_production]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 1
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 11
+    correction_notes: [slice:removed_forbidden_cross_tenant_negative_test_without_runtime_tenant_semantics, verification:feature_matrix_real_PR_SHA_method_command_and_target_column, verification:generated_OpenAPI_registry_composition_SQLC_receipts, verification:ledger_was_twice_restored_from_exact_HEAD_after_nonunique_patch_anchors_then_only_R1_appended, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: P4-B02-R2
+    title: local-tag-catalog-secret-scan-evidence-repair
+    owner: Codex
+    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING
+    base_sha: baae5a988a2248f088134068508d7768ff2dd262
+    dependency: P4_B02_R1_PR_CHECKPOINT
+    branch: codex/p4-b02-tags-catalog-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/215
+    scope: [feature_matrix_command_evidence_delimiter, affected_repo_contract_fixtures]
+    excluded_scope: [business_logic, API_or_DTO_expansion, matrix_or_T14_expansion, migration_DDL, tenant, UI, provider_or_production, secret_scan_allowlist_or_rule_change]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    correction_notes: [verification:first_PR_secret_scan_found_cross_line_generic_api_key_false_positives_from_feature_matrix_command_key_then_added_only_the_command_value_delimiter_without_rule_or_command_change, verification:first_repo_contract_negative_replay_retained_the_pre_B02_synthetic_completion_count_then_synchronized_only_the_derived_fixture_from_17_to_24, verification:the_affected_repo_contract_negative_fixture_receipt_was_synchronized_after_its_derived_completion_count_changed, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
 phase_closeouts:
   P2:

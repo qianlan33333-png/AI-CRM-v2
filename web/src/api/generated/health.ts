@@ -5,6 +5,138 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface LegacyWriteMetadata {
+  actor?: unknown;
+  /** @maxLength 200 */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  dry_run?: boolean;
+}
+
+export type LegacyTagGroupCreateRequestAllOf = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  first_tag_name: string;
+  actor?: unknown;
+  /** @maxLength 200 */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  dry_run?: boolean;
+};
+
+export type LegacyTagGroupCreateRequest = LegacyWriteMetadata &
+  LegacyTagGroupCreateRequestAllOf;
+
+export type LegacyTagGroupUpdateRequestAllOf = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  actor?: unknown;
+  /** @maxLength 200 */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  dry_run?: boolean;
+};
+
+export type LegacyTagGroupUpdateRequest = LegacyWriteMetadata &
+  LegacyTagGroupUpdateRequestAllOf;
+
+export type LegacyTagCreateRequestAllOf = {
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tag_name: string;
+  actor?: unknown;
+  /** @maxLength 200 */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  dry_run?: boolean;
+};
+
+export type LegacyTagCreateRequest = LegacyWriteMetadata &
+  LegacyTagCreateRequestAllOf;
+
+export type LegacyTagUpdateRequestAllOf = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tag_name: string;
+  actor?: unknown;
+  /** @maxLength 200 */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  dry_run?: boolean;
+};
+
+export type LegacyTagUpdateRequest = LegacyWriteMetadata &
+  LegacyTagUpdateRequestAllOf;
+
+export type LegacyTagCatalogResponseItemsItem = { [key: string]: unknown };
+
+export type LegacyTagCatalogResponseTagsItem = { [key: string]: unknown };
+
+export type LegacyTagCatalogResponseGroupsItem = { [key: string]: unknown };
+
+export type LegacyTagCatalogResponseTagLimit =
+  (typeof LegacyTagCatalogResponseTagLimit)[keyof typeof LegacyTagCatalogResponseTagLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCatalogResponseTagLimit = {
+  NUMBER_1000: 1000,
+} as const;
+
+export type LegacyTagCatalogResponseRouteOwner =
+  (typeof LegacyTagCatalogResponseRouteOwner)[keyof typeof LegacyTagCatalogResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCatalogResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagCatalogResponse {
+  ok: boolean;
+  items: LegacyTagCatalogResponseItemsItem[];
+  tags: LegacyTagCatalogResponseTagsItem[];
+  groups: LegacyTagCatalogResponseGroupsItem[];
+  /** @minimum 0 */
+  count: number;
+  /** @minimum 0 */
+  total_tags: number;
+  tag_limit: LegacyTagCatalogResponseTagLimit;
+  synced_at: unknown;
+  source_status: string;
+  read_model_status: string;
+  route_owner: LegacyTagCatalogResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  [key: string]: unknown;
+}
+
 export type LegacyChannelWriteRequestChannelType =
   (typeof LegacyChannelWriteRequestChannelType)[keyof typeof LegacyChannelWriteRequestChannelType];
 
@@ -4317,6 +4449,676 @@ export const listAutomationTriggerRuns = async (
     status: res.status,
     headers: res.headers,
   } as listAutomationTriggerRunsResponse;
+};
+
+/**
+ * @summary Read the local tag catalog without WeCom execution
+ */
+export type listLegacyWecomTagsResponse200 = {
+  data: LegacyTagCatalogResponse;
+  status: 200;
+};
+
+export type listLegacyWecomTagsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyWecomTagsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyWecomTagsResponseSuccess =
+  listLegacyWecomTagsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyWecomTagsResponseError = (
+  listLegacyWecomTagsResponse401 | listLegacyWecomTagsResponse403
+) & {
+  headers: Headers;
+};
+
+export type listLegacyWecomTagsResponse =
+  listLegacyWecomTagsResponseSuccess | listLegacyWecomTagsResponseError;
+
+export const getListLegacyWecomTagsUrl = () => {
+  return `/api/admin/wecom/tags`;
+};
+
+export const listLegacyWecomTags = async (
+  options?: RequestInit,
+): Promise<listLegacyWecomTagsResponse> => {
+  const res = await fetch(getListLegacyWecomTagsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyWecomTagsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyWecomTagsResponse;
+};
+
+/**
+ * @summary Create one tag in the local Contact-owned catalog
+ */
+export type createLegacyWecomTagResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type createLegacyWecomTagResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyWecomTagResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyWecomTagResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyWecomTagResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createLegacyWecomTagResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyWecomTagResponseSuccess =
+  createLegacyWecomTagResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyWecomTagResponseError = (
+  | createLegacyWecomTagResponse400
+  | createLegacyWecomTagResponse401
+  | createLegacyWecomTagResponse403
+  | createLegacyWecomTagResponse404
+  | createLegacyWecomTagResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyWecomTagResponse =
+  createLegacyWecomTagResponseSuccess | createLegacyWecomTagResponseError;
+
+export const getCreateLegacyWecomTagUrl = () => {
+  return `/api/admin/wecom/tags`;
+};
+
+export const createLegacyWecomTag = async (
+  legacyTagCreateRequest: LegacyTagCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyWecomTagResponse> => {
+  const res = await fetch(getCreateLegacyWecomTagUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyWecomTagResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyWecomTagResponse;
+};
+
+/**
+ * @summary Create one local tag group and its required first tag
+ */
+export type createLegacyWecomTagGroupResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type createLegacyWecomTagGroupResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyWecomTagGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyWecomTagGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyWecomTagGroupResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyWecomTagGroupResponseSuccess =
+  createLegacyWecomTagGroupResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyWecomTagGroupResponseError = (
+  | createLegacyWecomTagGroupResponse400
+  | createLegacyWecomTagGroupResponse401
+  | createLegacyWecomTagGroupResponse403
+  | createLegacyWecomTagGroupResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyWecomTagGroupResponse =
+  | createLegacyWecomTagGroupResponseSuccess
+  | createLegacyWecomTagGroupResponseError;
+
+export const getCreateLegacyWecomTagGroupUrl = () => {
+  return `/api/admin/wecom/tag-groups`;
+};
+
+export const createLegacyWecomTagGroup = async (
+  legacyTagGroupCreateRequest: LegacyTagGroupCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyWecomTagGroupResponse> => {
+  const res = await fetch(getCreateLegacyWecomTagGroupUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagGroupCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyWecomTagGroupResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyWecomTagGroupResponse;
+};
+
+/**
+ * @summary Update one local group name using the frozen PUT compatibility method
+ */
+export type updateLegacyWecomTagGroupPutResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type updateLegacyWecomTagGroupPutResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyWecomTagGroupPutResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyWecomTagGroupPutResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyWecomTagGroupPutResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyWecomTagGroupPutResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyWecomTagGroupPutResponseSuccess =
+  updateLegacyWecomTagGroupPutResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyWecomTagGroupPutResponseError = (
+  | updateLegacyWecomTagGroupPutResponse400
+  | updateLegacyWecomTagGroupPutResponse401
+  | updateLegacyWecomTagGroupPutResponse403
+  | updateLegacyWecomTagGroupPutResponse404
+  | updateLegacyWecomTagGroupPutResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyWecomTagGroupPutResponse =
+  | updateLegacyWecomTagGroupPutResponseSuccess
+  | updateLegacyWecomTagGroupPutResponseError;
+
+export const getUpdateLegacyWecomTagGroupPutUrl = (groupId: number) => {
+  return `/api/admin/wecom/tag-groups/${groupId}`;
+};
+
+export const updateLegacyWecomTagGroupPut = async (
+  groupId: number,
+  legacyTagGroupUpdateRequest: LegacyTagGroupUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyWecomTagGroupPutResponse> => {
+  const res = await fetch(getUpdateLegacyWecomTagGroupPutUrl(groupId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagGroupUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyWecomTagGroupPutResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyWecomTagGroupPutResponse;
+};
+
+/**
+ * @summary Update one local group name using the frozen PATCH compatibility method
+ */
+export type updateLegacyWecomTagGroupPatchResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type updateLegacyWecomTagGroupPatchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyWecomTagGroupPatchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyWecomTagGroupPatchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyWecomTagGroupPatchResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyWecomTagGroupPatchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyWecomTagGroupPatchResponseSuccess =
+  updateLegacyWecomTagGroupPatchResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyWecomTagGroupPatchResponseError = (
+  | updateLegacyWecomTagGroupPatchResponse400
+  | updateLegacyWecomTagGroupPatchResponse401
+  | updateLegacyWecomTagGroupPatchResponse403
+  | updateLegacyWecomTagGroupPatchResponse404
+  | updateLegacyWecomTagGroupPatchResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyWecomTagGroupPatchResponse =
+  | updateLegacyWecomTagGroupPatchResponseSuccess
+  | updateLegacyWecomTagGroupPatchResponseError;
+
+export const getUpdateLegacyWecomTagGroupPatchUrl = (groupId: number) => {
+  return `/api/admin/wecom/tag-groups/${groupId}`;
+};
+
+export const updateLegacyWecomTagGroupPatch = async (
+  groupId: number,
+  legacyTagGroupUpdateRequest: LegacyTagGroupUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyWecomTagGroupPatchResponse> => {
+  const res = await fetch(getUpdateLegacyWecomTagGroupPatchUrl(groupId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagGroupUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyWecomTagGroupPatchResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyWecomTagGroupPatchResponse;
+};
+
+/**
+ * @summary Archive one local group and hide its tags
+ */
+export type archiveLegacyWecomTagGroupResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type archiveLegacyWecomTagGroupResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveLegacyWecomTagGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyWecomTagGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyWecomTagGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveLegacyWecomTagGroupResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveLegacyWecomTagGroupResponseSuccess =
+  archiveLegacyWecomTagGroupResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyWecomTagGroupResponseError = (
+  | archiveLegacyWecomTagGroupResponse400
+  | archiveLegacyWecomTagGroupResponse401
+  | archiveLegacyWecomTagGroupResponse403
+  | archiveLegacyWecomTagGroupResponse404
+  | archiveLegacyWecomTagGroupResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyWecomTagGroupResponse =
+  | archiveLegacyWecomTagGroupResponseSuccess
+  | archiveLegacyWecomTagGroupResponseError;
+
+export const getArchiveLegacyWecomTagGroupUrl = (groupId: number) => {
+  return `/api/admin/wecom/tag-groups/${groupId}`;
+};
+
+export const archiveLegacyWecomTagGroup = async (
+  groupId: number,
+  options?: RequestInit,
+): Promise<archiveLegacyWecomTagGroupResponse> => {
+  const res = await fetch(getArchiveLegacyWecomTagGroupUrl(groupId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyWecomTagGroupResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyWecomTagGroupResponse;
+};
+
+/**
+ * @summary Update one local tag name using the frozen PUT compatibility method
+ */
+export type updateLegacyWecomTagPutResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type updateLegacyWecomTagPutResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyWecomTagPutResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyWecomTagPutResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyWecomTagPutResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyWecomTagPutResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyWecomTagPutResponseSuccess =
+  updateLegacyWecomTagPutResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyWecomTagPutResponseError = (
+  | updateLegacyWecomTagPutResponse400
+  | updateLegacyWecomTagPutResponse401
+  | updateLegacyWecomTagPutResponse403
+  | updateLegacyWecomTagPutResponse404
+  | updateLegacyWecomTagPutResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyWecomTagPutResponse =
+  updateLegacyWecomTagPutResponseSuccess | updateLegacyWecomTagPutResponseError;
+
+export const getUpdateLegacyWecomTagPutUrl = (tagId: number) => {
+  return `/api/admin/wecom/tags/${tagId}`;
+};
+
+export const updateLegacyWecomTagPut = async (
+  tagId: number,
+  legacyTagUpdateRequest: LegacyTagUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyWecomTagPutResponse> => {
+  const res = await fetch(getUpdateLegacyWecomTagPutUrl(tagId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyWecomTagPutResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyWecomTagPutResponse;
+};
+
+/**
+ * @summary Update one local tag name using the frozen PATCH compatibility method
+ */
+export type updateLegacyWecomTagPatchResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type updateLegacyWecomTagPatchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyWecomTagPatchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyWecomTagPatchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyWecomTagPatchResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyWecomTagPatchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyWecomTagPatchResponseSuccess =
+  updateLegacyWecomTagPatchResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyWecomTagPatchResponseError = (
+  | updateLegacyWecomTagPatchResponse400
+  | updateLegacyWecomTagPatchResponse401
+  | updateLegacyWecomTagPatchResponse403
+  | updateLegacyWecomTagPatchResponse404
+  | updateLegacyWecomTagPatchResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyWecomTagPatchResponse =
+  | updateLegacyWecomTagPatchResponseSuccess
+  | updateLegacyWecomTagPatchResponseError;
+
+export const getUpdateLegacyWecomTagPatchUrl = (tagId: number) => {
+  return `/api/admin/wecom/tags/${tagId}`;
+};
+
+export const updateLegacyWecomTagPatch = async (
+  tagId: number,
+  legacyTagUpdateRequest: LegacyTagUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyWecomTagPatchResponse> => {
+  const res = await fetch(getUpdateLegacyWecomTagPatchUrl(tagId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyWecomTagPatchResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyWecomTagPatchResponse;
+};
+
+/**
+ * @summary Archive one local tag
+ */
+export type archiveLegacyWecomTagResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type archiveLegacyWecomTagResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveLegacyWecomTagResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyWecomTagResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyWecomTagResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveLegacyWecomTagResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveLegacyWecomTagResponseSuccess =
+  archiveLegacyWecomTagResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyWecomTagResponseError = (
+  | archiveLegacyWecomTagResponse400
+  | archiveLegacyWecomTagResponse401
+  | archiveLegacyWecomTagResponse403
+  | archiveLegacyWecomTagResponse404
+  | archiveLegacyWecomTagResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyWecomTagResponse =
+  archiveLegacyWecomTagResponseSuccess | archiveLegacyWecomTagResponseError;
+
+export const getArchiveLegacyWecomTagUrl = (tagId: number) => {
+  return `/api/admin/wecom/tags/${tagId}`;
+};
+
+export const archiveLegacyWecomTag = async (
+  tagId: number,
+  options?: RequestInit,
+): Promise<archiveLegacyWecomTagResponse> => {
+  const res = await fetch(getArchiveLegacyWecomTagUrl(tagId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyWecomTagResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyWecomTagResponse;
 };
 
 /**

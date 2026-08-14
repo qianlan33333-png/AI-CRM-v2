@@ -11,6 +11,152 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const archiveLegacyTag = `-- name: ArchiveLegacyTag :one
+UPDATE tags SET name='archived:'||id::text WHERE id=$1 AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order
+`
+
+type ArchiveLegacyTagRow struct {
+	ID        int64       `json:"id"`
+	GroupID   pgtype.Int8 `json:"group_id"`
+	Name      string      `json:"name"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+func (q *Queries) ArchiveLegacyTag(ctx context.Context, id int64) (ArchiveLegacyTagRow, error) {
+	row := q.db.QueryRow(ctx, archiveLegacyTag, id)
+	var i ArchiveLegacyTagRow
+	err := row.Scan(
+		&i.ID,
+		&i.GroupID,
+		&i.Name,
+		&i.SortOrder,
+	)
+	return i, err
+}
+
+const archiveLegacyTagGroup = `-- name: ArchiveLegacyTagGroup :one
+WITH archived_tags AS (
+  UPDATE tags AS t
+  SET name = 'archived:' || t.id::text
+  WHERE t.group_id = $1
+    AND t.name NOT LIKE 'archived:%'
+)
+UPDATE tag_groups AS g
+SET name = 'archived:' || g.id::text
+WHERE g.id = $1
+  AND g.name NOT LIKE 'archived:%'
+RETURNING g.id, g.name, g.sort_order
+`
+
+func (q *Queries) ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (TagGroup, error) {
+	row := q.db.QueryRow(ctx, archiveLegacyTagGroup, groupID)
+	var i TagGroup
+	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
+	return i, err
+}
+
+const createLegacyTag = `-- name: CreateLegacyTag :one
+INSERT INTO tags(group_id,name) VALUES ($1,$2) RETURNING id,group_id,name,sort_order
+`
+
+type CreateLegacyTagParams struct {
+	GroupID pgtype.Int8 `json:"group_id"`
+	Name    string      `json:"name"`
+}
+
+type CreateLegacyTagRow struct {
+	ID        int64       `json:"id"`
+	GroupID   pgtype.Int8 `json:"group_id"`
+	Name      string      `json:"name"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+func (q *Queries) CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams) (CreateLegacyTagRow, error) {
+	row := q.db.QueryRow(ctx, createLegacyTag, arg.GroupID, arg.Name)
+	var i CreateLegacyTagRow
+	err := row.Scan(
+		&i.ID,
+		&i.GroupID,
+		&i.Name,
+		&i.SortOrder,
+	)
+	return i, err
+}
+
+const createLegacyTagGroup = `-- name: CreateLegacyTagGroup :one
+INSERT INTO tag_groups(name) VALUES ($1) RETURNING id,name,sort_order
+`
+
+func (q *Queries) CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error) {
+	row := q.db.QueryRow(ctx, createLegacyTagGroup, name)
+	var i TagGroup
+	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
+	return i, err
+}
+
+const listLegacyTagGroups = `-- name: ListLegacyTagGroups :many
+SELECT id, name, sort_order FROM tag_groups WHERE name NOT LIKE 'archived:%' ORDER BY sort_order, id
+`
+
+func (q *Queries) ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error) {
+	rows, err := q.db.Query(ctx, listLegacyTagGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TagGroup{}
+	for rows.Next() {
+		var i TagGroup
+		if err := rows.Scan(&i.ID, &i.Name, &i.SortOrder); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLegacyTags = `-- name: ListLegacyTags :many
+SELECT t.id, t.group_id, g.name AS group_name, t.name, t.sort_order FROM tags t JOIN tag_groups g ON g.id=t.group_id
+WHERE g.name NOT LIKE 'archived:%' AND t.name NOT LIKE 'archived:%' ORDER BY g.sort_order,g.id,t.sort_order,t.id
+`
+
+type ListLegacyTagsRow struct {
+	ID        int64       `json:"id"`
+	GroupID   pgtype.Int8 `json:"group_id"`
+	GroupName string      `json:"group_name"`
+	Name      string      `json:"name"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+func (q *Queries) ListLegacyTags(ctx context.Context) ([]ListLegacyTagsRow, error) {
+	rows, err := q.db.Query(ctx, listLegacyTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLegacyTagsRow{}
+	for rows.Next() {
+		var i ListLegacyTagsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.GroupID,
+			&i.GroupName,
+			&i.Name,
+			&i.SortOrder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTags = `-- name: ListTags :many
 SELECT
   t.id,
@@ -21,6 +167,7 @@ SELECT
   t.sort_order
 FROM tags AS t
 LEFT JOIN tag_groups AS g ON g.id = t.group_id
+WHERE t.name NOT LIKE 'archived:%'
 ORDER BY
   (t.group_id IS NULL),
   g.sort_order,
@@ -63,4 +210,48 @@ func (q *Queries) ListTags(ctx context.Context) ([]ListTagsRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateLegacyTag = `-- name: UpdateLegacyTag :one
+UPDATE tags SET name=$1 WHERE id=$2 AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order
+`
+
+type UpdateLegacyTagParams struct {
+	Name string `json:"name"`
+	ID   int64  `json:"id"`
+}
+
+type UpdateLegacyTagRow struct {
+	ID        int64       `json:"id"`
+	GroupID   pgtype.Int8 `json:"group_id"`
+	Name      string      `json:"name"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+func (q *Queries) UpdateLegacyTag(ctx context.Context, arg UpdateLegacyTagParams) (UpdateLegacyTagRow, error) {
+	row := q.db.QueryRow(ctx, updateLegacyTag, arg.Name, arg.ID)
+	var i UpdateLegacyTagRow
+	err := row.Scan(
+		&i.ID,
+		&i.GroupID,
+		&i.Name,
+		&i.SortOrder,
+	)
+	return i, err
+}
+
+const updateLegacyTagGroup = `-- name: UpdateLegacyTagGroup :one
+UPDATE tag_groups SET name=$1 WHERE id=$2 AND name NOT LIKE 'archived:%' RETURNING id,name,sort_order
+`
+
+type UpdateLegacyTagGroupParams struct {
+	Name string `json:"name"`
+	ID   int64  `json:"id"`
+}
+
+func (q *Queries) UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error) {
+	row := q.db.QueryRow(ctx, updateLegacyTagGroup, arg.Name, arg.ID)
+	var i TagGroup
+	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
+	return i, err
 }
