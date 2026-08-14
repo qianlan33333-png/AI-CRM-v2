@@ -1594,7 +1594,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  5780bae1835f2563496bbd49172defcda4af7d275efb071019a85eaa37e1fe2d
+  ad5109b237404d5793bbbb0654b65223ba5308ce3e0d7df9a5c82aa901d1cd57
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1682,7 +1682,7 @@ verify_index_sha256 acceptance/p2s05/scheduler_integration_test.go \
 verify_index_sha256 acceptance/p2s07/doc.go \
   c9c184fc05b5f37a83bf1bf03497c6d39a77440e22825515dc235cd684709741
 verify_index_sha256 acceptance/p2s07/dispatcher_integration_test.go \
-  37f55bc45d7afcc45c13c6c3de0d95cddb512a8fb5cc186f9b69b6a258659fa7
+  99228a216fb404853419715de60804737c4552726d15a89b6f0c70972b776ec7
 verify_index_sha256 internal/events/dispatcher/dispatcher.go \
   da3291b6344074358016e9d03b38651a8652d883caf20e2eb392829b102f58ab
 verify_index_sha256 internal/events/dispatcher/dispatcher_test.go \
@@ -2120,7 +2120,7 @@ verify_index_sha256 acceptance/automation/d01_migration_compatibility.sh \
 verify_index_sha256 cmd/aicrm/legacy_automation_api_test.go \
   99823a1e71fb137d2a6c3709199e7c5cc540ec003c45556d5ca3e2034cf1d91d
 verify_index_sha256 docs/execution/slices/P4-W0-D01.md \
-  5a93487f8e8b35ca79c7978d04993eba709db52a9323f32669c94cf2485051d6
+  e963536214a4bc796452f9059ed2ea97381b03df9a79e1777aa66b9ae30c7160
 verify_index_sha256 scripts/verify_repo_receipts.pl \
   d28a528cfc1aa8d8a5c6fa62b652699059bb632e8640fbd868ba0e3967881e27
 
@@ -4734,7 +4734,7 @@ p4d01_migration_mapping="$(git show :docs/migration-mapping.jsonl | sed -n '62p'
 p4d01_card="$(git show :docs/execution/slices/P4-W0-D01.md)"
 for anchor in \
   '15 个手写/治理业务合同文件' \
-  'slice_induced=2' \
+  'slice_induced=3' \
   'SCOPE_FROZEN_REPAIR_ONLY' \
   '293 功能矩阵精确审计后没有' \
   'PRODUCTION_DATABASE_NOT_EXECUTED'; do

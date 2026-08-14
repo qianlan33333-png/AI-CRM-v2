@@ -14,9 +14,9 @@ import (
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
-	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -256,7 +256,12 @@ func newHarness(t *testing.T, pool *pgxpool.Pool, afterEnqueue func(), subscribe
 	if err != nil {
 		t.Fatal(err)
 	}
-	deliveryWorker, err := eventdispatcher.NewDeliveryWorker(pool, router)
+	reference := &clientReference{afterEnqueue: afterEnqueue}
+	deliveries, err := eventstore.NewRuntimeDeliveryRepository(pool, reference, eventdispatcher.DefaultBatchSize, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deliveryWorker, err := eventdispatcher.NewDeliveryWorker(deliveries, router)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,8 +269,7 @@ func newHarness(t *testing.T, pool *pgxpool.Pool, afterEnqueue func(), subscribe
 	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueEvent, deliveryWorker); err != nil {
 		t.Fatal(err)
 	}
-	reference := &clientReference{afterEnqueue: afterEnqueue}
-	dispatcher, err := eventdispatcher.New(platformstore.NewUnitOfWork(pool), reference, eventdispatcher.DefaultBatchSize)
+	dispatcher, err := eventdispatcher.New(deliveries)
 	if err != nil {
 		t.Fatal(err)
 	}

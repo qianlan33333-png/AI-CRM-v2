@@ -4160,6 +4160,26 @@ slices:
     correction_notes: [slice:first_stage_review_found_destructive_Down_before_any_migration_execution_and_replaced_it_with_history_preserving_noop, slice:second_stage_review_found_fake_backfill_assertion_and_repaired_consumer_level_missing_delivery_backfill_including_already_globally_dispatched_history_then_scope_was_frozen, verification:staged_history_gate_found_one_accidentally_mutated_historical_P3_C06D_verification_count_then_restored_the_original_byte_before_delivery, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-W0-D01-R1
+    title: automation-real-tag-trigger-consumer-ci-repair-receipt
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_local_DoD_revalidation_pending
+    base_sha: 02f31aeaa8af8611590c876df18bdf638b13feea
+    dependency: P4-W0-D01
+    branch: codex/p4-w0-d01-automation-recut2-policy-20260814
+    pr_url: PENDING_GITHUB_PR_CREATION
+    scope: [forward_record_third_non_redline_correction, adapt_existing_P2_S07_acceptance_to_Events_delivery_public_port, preserve_original_D01_DoD]
+    excluded_scope: [new_business_capability, generic_consumer_framework, security_platform, extra_recovery_or_risk_control, D02_D05, L01_stats, new_UI, production_or_real_external_operations]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_D01_DoD, permanent_negatives, generated_manifest_ledger_receipts, required_CI_PR_merge_exact_main_CLOSED]
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 18
+    correction_notes: [slice:full_ci_go_vet_found_the_existing_P2_S07_acceptance_still_passed_a_raw_pgxpool_to_the_dispatcher_and_worker_constructors_then_the_fixture_was_adapted_to_the_same_Events_DeliveryRepository_public_port_without_runtime_or_capability_expansion, redline:none]
+    tests: [LOCAL_P2_S07_real_PG_race_PASS, LOCAL_full_ci_go_revalidation_pending]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
