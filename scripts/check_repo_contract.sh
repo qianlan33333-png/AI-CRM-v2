@@ -92,6 +92,7 @@ required=(
   acceptance/survey/f01a_integration_test.go
   acceptance/survey/f01a_migration_compatibility.sh
   docs/execution/slices/P4-F01A.md
+  docs/execution/slices/P4-B01.md
   internal/survey/app/service.go
   internal/survey/app/service_test.go
   internal/survey/port/port.go
@@ -704,6 +705,7 @@ done <<'EOF'
 100644 acceptance/survey/f01a_integration_test.go
 100755 acceptance/survey/f01a_migration_compatibility.sh
 100644 docs/execution/slices/P4-F01A.md
+100644 docs/execution/slices/P4-B01.md
 100644 internal/survey/app/service.go
 100644 internal/survey/app/service_test.go
 100644 internal/survey/port/port.go
@@ -1148,7 +1150,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  d5aba0d3c1c2457a7630ac8a863181def0d7007babd461a3a2d1a67f9a0c4d1f
+  518e82958d7847ef4ee31d770da1e349963064233a31e2ae5f29d8a2541a2831
 verify_index_sha256 .github/workflows/application-go.yml \
   e2b3f14d70fbc1e218462e6acb0a2315940c8f7cd8319fd7b7f76208738ee61e
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -1370,7 +1372,7 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  08fe64cd716389695dde8e138a0e084da028f5b9cdc3bb34a46fc990af7049ce
+  af1312961d4204e2595c678aa9a8dd1432a938e6de54ab9580eddf4559cb5c0b
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
@@ -1380,7 +1382,7 @@ verify_index_sha256 internal/api/generated/server.gen.go \
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
   bf9c42e5f053d633ea3683c2cbce66735964fa5963f96ed31df0363105334c0e
 verify_index_sha256 tools/openapi-contract/main.go \
-  568e116617ed845762f9dd30ce2566bfc7b7e5e8a225b21938696639ea7f4816
+  4d5afec57c174aa039386e17f1f1a8e7eee09cca0b475e9f824b7b6d0dfd13ec
 verify_index_sha256 tools/openapi-contract/main_test.go \
   970fb559400b044d7c8a48ddb059b2484427f26a54f293f8451e14d09a4f73d2
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
@@ -1700,7 +1702,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  e4b50f0949ca91deb352312ee0a5835e1d10c2087d9ec27fa600c7c62db6db55
+  a6e51f8177f0abf9aec75253d27681b90c19c717cc66b00341401bc8cedb8cad
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1856,7 +1858,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  d81c33897aabc81871bc68341ef0eaa358091c2023a6a01d62622e6d69a3524b
+  f6832c7e55805d9b738fa308cb0a78a6634d370d7633575921f82679c2bbf267
 verify_index_sha256 cmd/aicrm/api_test.go \
   c8e0ed59f3758867a869f08a7b4cf36f766cf24831da23a1ba3b137985244ab5
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -2280,7 +2282,7 @@ verify_index_sha256 internal/product/store/generated/models.go \
 verify_index_sha256 internal/product/store/generated/querier.go \
   ee2e794ee795c60ea4a0b50242ac21fd49e601207a7d6f166faa01c7e866c763
 verify_index_sha256 cmd/aicrm/legacy_api.go \
-  37f05bb53d7a699911aab2865aee8d22556a2bd08616d97abd4b604a055c5f5a
+  a810cea44b93c8488ee267c9adbc5b0cfa0b2aa7304189697dc1fe30c3de0aa2
 verify_index_sha256 cmd/aicrm/legacy_product_api_test.go \
   7418ef9787c6753c5dba66a7f065a0a386dbb4eb5f977570fef1a3958a7a0c6e
 
@@ -2294,6 +2296,8 @@ verify_index_sha256 acceptance/survey/f01a_migration_compatibility.sh \
   7d25a283497cfca8786c0b5a1b358cb3bacccfd8c3dd53d845345e1fc89708b9
 verify_index_sha256 docs/execution/slices/P4-F01A.md \
   b9c40b5a29f16c89821e3cabb14768b389f00e90ae1cb4b0e112ad683228a541
+verify_index_sha256 docs/execution/slices/P4-B01.md \
+  9f64d1f4818d2d38df7d01d34a3b230dc57af3bf4c49a93b670663657d7e850d
 verify_index_sha256 internal/survey/app/service.go \
   9a90c6ffdd3bbf8c442f721c2bdfc4a90db610022349cd9f64113f902d02ece2
 verify_index_sha256 internal/survey/app/service_test.go \

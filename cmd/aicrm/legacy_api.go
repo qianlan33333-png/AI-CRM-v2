@@ -21,6 +21,8 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
@@ -45,6 +47,14 @@ type customerListApplication interface {
 	List(context.Context, contactapp.CustomerListInput) (contactapp.CustomerListResult, error)
 }
 
+type customerDetailApplication interface {
+	Get(context.Context, contactapp.CustomerDetailInput) (contactapp.CustomerDetailStoreResult, error)
+}
+
+type identityResolveApplication interface {
+	Resolve(context.Context, identityport.IDRef) (identityport.ResolveResult, error)
+}
+
 type legacyProductApplication interface {
 	ListLegacy(context.Context, int32, int32) (productport.LegacyPage, error)
 	Get(context.Context, productport.ID) (productport.Product, error)
@@ -63,14 +73,42 @@ type legacySurveyApplication interface {
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
-	auth        authport.Service
-	customers   customerListApplication
-	outbound    legacyOutboundQueryApplication
-	cancel      legacyCancelApplication
-	manualRetry legacyRetryApplication
-	products    legacyProductApplication
-	media       legacyMediaApplication
-	surveys     legacySurveyApplication
+	auth            authport.Service
+	customers       customerListApplication
+	customerDetail  customerDetailApplication
+	identityResolve identityResolveApplication
+	weComCorpID     string
+	outbound        legacyOutboundQueryApplication
+	cancel          legacyCancelApplication
+	manualRetry     legacyRetryApplication
+	products        legacyProductApplication
+	media           legacyMediaApplication
+	surveys         legacySurveyApplication
+}
+
+func NewHandlerWithAll(
+	auth authport.Service,
+	customers customerListApplication,
+	customerDetail customerDetailApplication,
+	identityResolve identityResolveApplication,
+	weComCorpID string,
+	outbound legacyOutboundQueryApplication,
+	cancel legacyCancelApplication,
+	manualRetry legacyRetryApplication,
+	products legacyProductApplication,
+	media legacyMediaApplication,
+	surveys legacySurveyApplication,
+) (*Handler, error) {
+	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
+		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
+	)
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) {
+		return nil, authport.ErrAuthenticationUnavailable
+	}
+	handler.customerDetail = customerDetail
+	handler.identityResolve = identityResolve
+	handler.weComCorpID = strings.TrimSpace(weComCorpID)
+	return handler, nil
 }
 
 func NewHandlerWithOutboundAndProducts(
@@ -425,6 +463,72 @@ func (handler *Handler) ListCustomers(writer http.ResponseWriter, request *http.
 		"has_more": result.NextCursor != nil, "limit": input.Limit, "offset": 0,
 		"filters": filters, "projection_watermark": result.Watermark.UTC(),
 		"source_status": "v2_contact_service", "fallback_used": false,
+	})
+}
+
+// GetCustomer resolves the frozen external_userid through Identity before it
+// reads Contact's channel-neutral OneID projection. The raw identifier is
+// never passed to Contact or persisted by this adapter.
+func (handler *Handler) GetCustomer(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.customerDetail) || nilLegacyDependency(handler.identityResolve) || request == nil || handler.weComCorpID == "" {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, contactapp.ErrCustomerDetailUnavailable))
+		return
+	}
+	externalUserID := strings.TrimSpace(chi.URLParam(request, "external_userid"))
+	if externalUserID == "" {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeNotFound, contactapp.ErrCustomerNotFound))
+		return
+	}
+	authorization, ok := authport.AuthorizationFromContext(request.Context())
+	if !ok || authorization.Capability != authport.CapabilityCustomersRead {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized))
+		return
+	}
+	ownerStaffID, err := legacyOwnerScope(authorization, nil)
+	if err != nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, err))
+		return
+	}
+	resolved, err := handler.identityResolve.Resolve(request.Context(), identityport.IDRef{
+		Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:" + handler.weComCorpID,
+		Value: externalUserID, Assurance: identityport.AssuranceVerified, Source: "legacy-customer-read",
+	})
+	if err != nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, err))
+		return
+	}
+	if resolved.Status != identityport.ResolveFound || resolved.CustomerID <= 0 {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeNotFound, contactapp.ErrCustomerNotFound))
+		return
+	}
+	result, err := handler.customerDetail.Get(request.Context(), contactapp.CustomerDetailInput{
+		ID: contactport.CustomerID(resolved.CustomerID), OwnerStaffID: ownerStaffID,
+	})
+	if err != nil {
+		code := platformhttp.CodeDependencyUnavailable
+		if errors.Is(err, contactapp.ErrCustomerNotFound) || errors.Is(err, contactapp.ErrInvalidCustomerDetailQuery) {
+			code = platformhttp.CodeNotFound
+		}
+		platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+		return
+	}
+	tags := make([]string, 0, len(result.Tags))
+	for _, tag := range result.Tags {
+		tags = append(tags, tag.Name)
+	}
+	customer := map[string]any{
+		"external_userid": externalUserID, "customer_id": int64(result.Customer.ID),
+		"customer_name": result.Customer.Name, "avatar_url": result.Customer.AvatarURL,
+		"gender": result.Customer.Gender, "stage_id": result.Customer.StageID,
+		"owner_staff_id": result.Customer.OwnerStaffID, "channel_id": result.Customer.ChannelID,
+		"added_at": result.Customer.AddedAt, "last_interact_at": result.Customer.LastInteractAt,
+		"is_deleted": result.Customer.IsDeleted, "tags": tags,
+		"created_at": result.Customer.CreatedAt.UTC(), "updated_at": result.Customer.UpdatedAt.UTC(),
+	}
+	mirrorLegacyCSRFCookie(writer, request)
+	writeJSON(writer, http.StatusOK, map[string]any{
+		"ok": true, "customer": customer, "source_status": "v2_identity_contact_read",
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
