@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  checks: read
+  pull-requests: read
 
 concurrency:
   group: repo-contract-${{ github.ref }}
@@ -24,7 +26,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Select exact-main verification mode
+        id: promotion
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: scripts/ci_promotion_decision.sh
       - name: Verify repository contract
+        if: steps.promotion.outputs.mode == 'full'
         run: scripts/check_repo_contract.sh
       - name: Verify repository contract negative cases
+        if: steps.promotion.outputs.mode == 'full'
         run: scripts/test_repo_contract.sh
+      - name: Verify promotion fingerprints
+        if: steps.promotion.outputs.mode == 'promotion'
+        run: scripts/check_ci_promotion_smoke.sh
