@@ -33,8 +33,11 @@ type customerListApplication interface {
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
-	auth      authport.Service
-	customers customerListApplication
+	auth        authport.Service
+	customers   customerListApplication
+	outbound    legacyOutboundQueryApplication
+	cancel      legacyCancelApplication
+	manualRetry legacyRetryApplication
 }
 
 func NewHandler(auth authport.Service, customers customerListApplication) (*Handler, error) {
@@ -42,6 +45,23 @@ func NewHandler(auth authport.Service, customers customerListApplication) (*Hand
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	return &Handler{auth: auth, customers: customers}, nil
+}
+
+func NewHandlerWithOutbound(
+	auth authport.Service,
+	customers customerListApplication,
+	outbound legacyOutboundQueryApplication,
+	cancel legacyCancelApplication,
+	manualRetry legacyRetryApplication,
+) (*Handler, error) {
+	handler, err := NewHandler(auth, customers)
+	if err != nil || nilLegacyDependency(outbound) || nilLegacyDependency(cancel) || nilLegacyDependency(manualRetry) {
+		return nil, authport.ErrAuthenticationUnavailable
+	}
+	handler.outbound = outbound
+	handler.cancel = cancel
+	handler.manualRetry = manualRetry
+	return handler, nil
 }
 
 // Authenticate accepts the current v2 cookie and the frozen legacy name. The
@@ -311,6 +331,7 @@ func (handler *Handler) allowedCapabilities(ctx context.Context, principal authp
 		authport.CapabilityIdentityReviewRead, authport.CapabilityIdentityReviewWrite,
 		authport.CapabilityConfigOverviewRead, authport.CapabilityStagesRead,
 		authport.CapabilityStagesWrite, authport.CapabilitySegmentsRead, authport.CapabilitySegmentsWrite,
+		authport.CapabilityOutboundRead, authport.CapabilityOutboundControl,
 	}
 	allowed := make([]string, 0, len(all))
 	for _, capability := range all {
@@ -374,4 +395,12 @@ func nilCustomers(application customerListApplication) bool {
 	}
 	value := reflect.ValueOf(application)
 	return value.Kind() == reflect.Pointer && value.IsNil()
+}
+
+func nilLegacyDependency(value any) bool {
+	if value == nil {
+		return true
+	}
+	reflected := reflect.ValueOf(value)
+	return reflected.Kind() == reflect.Pointer && reflected.IsNil()
 }

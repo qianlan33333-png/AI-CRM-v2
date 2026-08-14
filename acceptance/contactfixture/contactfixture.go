@@ -27,6 +27,39 @@ RETURNING id`, "acceptance-contact-fixture").Scan(&id); err != nil {
 	return id, nil
 }
 
+// CreateStaff creates a Contact-owned owner row for acceptance scenarios.
+func CreateStaff(ctx context.Context, tx pgx.Tx, wecomUserID string) (int64, error) {
+	if tx == nil || wecomUserID == "" {
+		return 0, ErrNilTransaction
+	}
+	var id int64
+	if err := tx.QueryRow(ctx, `
+INSERT INTO staff (wecom_userid, name)
+VALUES ($1::text, $2::text)
+RETURNING id`, wecomUserID, "acceptance-contact-owner").Scan(&id); err != nil {
+		return 0, fmt.Errorf("create contact-owned acceptance staff: %w", err)
+	}
+	return id, nil
+}
+
+// AssignCustomerOwner updates the Contact-owned relationship for a fixture.
+func AssignCustomerOwner(ctx context.Context, tx pgx.Tx, customerID, staffID int64) error {
+	if tx == nil || customerID <= 0 || staffID <= 0 {
+		return ErrNilTransaction
+	}
+	commandTag, err := tx.Exec(ctx, `
+UPDATE customers
+SET owner_staff_id = $2::bigint
+WHERE id = $1::bigint`, customerID, staffID)
+	if err != nil {
+		return fmt.Errorf("assign contact-owned acceptance owner: %w", err)
+	}
+	if commandTag.RowsAffected() != 1 {
+		return fmt.Errorf("assign contact-owned acceptance owner: customer not found")
+	}
+	return nil
+}
+
 // SoftDeleteCustomer marks a Contact-owned parent unavailable to an acceptance
 // scenario without allowing another domain to write customers directly.
 func SoftDeleteCustomer(ctx context.Context, tx pgx.Tx, customerID int64) error {

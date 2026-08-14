@@ -1008,7 +1008,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  184da04578d13f57d7b71b5a7f2b3deeb987662a2e5e92c6f950e922a70e9d39
+  79d5ff66fea45a8f6d1a17947354d621beb89975bd201a052b0e9395311d8f1f
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1026,7 +1026,7 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   da69ae0d8815fb53cc6e67b8367904b7a1fe1bfb7557d9a4a54744a9f5552864
 verify_index_sha256 .github/workflows/application-go.yml \
-  b02551fdca332f65ccc52e8902d1754853d5680f5de14947b5ff7a09bc7f0074
+  d7a24cb7712fccc9dbd8b3012a166f6583879b407dc67b8d291cda415643a0ae
 verify_index_sha256 .github/workflows/repo-contract.yml \
   300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
 verify_index_sha256 .github/workflows/secret-scan.yml \
@@ -1038,11 +1038,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  e3796ae4cf5cf3c81f5ccb88990400f1af06f62fbf005ac16616fcfdfbc89a0b
+  95203922c6ea7f26ffb33cf32dc90488969c28d24cf3572ab3f417e9edc764e8
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  89f9e0eae2a92014373431d4f26b616abb8b1492bf4a4ea99c6854d35f5e6f59
+  85dcc2d9a0ec205213efa5e2b9b74d976e8a8a3b7a8deb811916297cc5a7bd43
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1564,7 +1564,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  ff9810f6f37118dddca3293fa21256d69dd44e8b61a510bce03eaf3b22fb08ea
+  5bfd50b79950a6f7f2d12554c7e540271e8d8590aff44b110b4cedf7fd35383a
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -1596,7 +1596,7 @@ verify_index_sha256 web/scripts/identity-reviews-browser-smoke.mjs \
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
-  4f506c362f42329c0c906a81756307128e87af58ffdb5e7076ad1fc3f5c322f3
+  24770e677d39fdbd65e48c96b0599b6b865443c49e937340379e94d401b91857
 verify_index_sha256 internal/contact/port/port.go \
   32d4b5301f9565c536a038dffcbac7be11dcdf980caf3ffb3c9c06f395fe7169
 verify_index_sha256 internal/identity/port/port.go \
@@ -1706,9 +1706,9 @@ verify_index_sha256 docs/evidence/slices/P2-09-auth-service-tests.md \
 verify_index_sha256 internal/auth/port/port_test.go \
   b959779d34a7707fdd5ca9c4485dd563b1ac569bc8756d5389afbfbcc63c1d0b
 verify_index_sha256 internal/auth/app/policy.go \
-  f907c858159900a8ef15eab8905b31f204a28bead139659547e77f2286c2e0e2
+  980bd6020019042861cbd33a5b288cfca9ccfb718ffbf6714e85d0e2ccb06179
 verify_index_sha256 internal/auth/app/policy_test.go \
-  d0302c9bbf67b65013e7305f73795841f4423d058986ab883fe7a7da6be424ba
+  391972462fd2b9096e3a75515e37fbf375cf9889b18901711ff3c0de6503181d
 verify_index_sha256 internal/auth/http/authorization.go \
   acd3c1c15a5361c1023115ea339be68636c15911832a13f711765e4b0768452f
 verify_index_sha256 acceptance/p2s10/doc.go \
@@ -1720,7 +1720,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  eabb7dd3cc9107204cf830f8b8916928142ccdda05625c97126037346074e2f7
+  0304d408d8f8b792ea9fe0ad30b4e317e24de31462a83fe5880a4f005f64673e
 verify_index_sha256 cmd/aicrm/api_test.go \
   fc1075e0e21f655808da99579a991c7bcc766faa623e54bb6b9caa5a1de0c6cf
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -1980,7 +1980,7 @@ verify_index_sha256 internal/outbound/store/enqueue_one_repository.go \
 verify_index_sha256 internal/outbound/store/generated/control.sql.go \
   8b63c592c3680cd2a71f64c3465282a5d88288e128c586bb2d7360e07fce0d43
 verify_index_sha256 internal/outbound/store/generated/querier.go \
-  4da7f303f1ad0f4a565b704625eb4b768825df81b2b0ebb9f1262eb41a320a1c
+  32331850f514219e3623eb7ad25176efe5720cd4893cd5e96168ab408f9e3261
 verify_index_sha256 internal/outbound/store/queries/control.sql \
   73c90eceda5179641ccbd34cd471394daabf760576c319af3046e513550c2c8c
 verify_index_sha256 internal/platform/jobqueue/outbound_cancel.go \
@@ -1996,7 +1996,7 @@ verify_index_sha256 internal/outbound/app/manual_retry_test.go \
 verify_index_sha256 docs/execution/slices/P3-O6B2.md \
   3e88d624ca8091c2c862daeef6a81852cc7f379d5036dd96068adbf004efc66e
 verify_index_sha256 acceptance/contactfixture/contactfixture.go \
-  548200be57f325a724dc07b1295cea6e0bd554cffecd180151d4d89fba312293
+  ff13575d17ec3f882256b328f111ad41683e4d012e10e626794760f188e8d990
 verify_index_sha256 acceptance/contactfixture/contactfixture_test.go \
   3d3ce197ee6cae2b9ac7a7c19f25e0d8f3f6f78d7f8a6cf8676253e1bde68358
 verify_index_sha256 acceptance/identity/doc.go \
