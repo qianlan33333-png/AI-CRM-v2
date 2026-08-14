@@ -30,3 +30,9 @@ type Stage struct {
 	SortOrder int32  `json:"sort_order"`
 	Config    []byte `json:"config"`
 }
+
+type TagGroup struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}

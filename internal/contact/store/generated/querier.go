@@ -11,11 +11,15 @@ import (
 type Querier interface {
 	AddCustomerTag(ctx context.Context, arg AddCustomerTagParams) (int64, error)
 	AppendCustomerEvent(ctx context.Context, arg AppendCustomerEventParams) (int64, error)
+	ArchiveLegacyTag(ctx context.Context, id int64) (ArchiveLegacyTagRow, error)
+	ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (TagGroup, error)
 	CompleteChannelOperationReceipt(ctx context.Context, arg CompleteChannelOperationReceiptParams) (CompleteChannelOperationReceiptRow, error)
 	CopyCustomerTagsForMerge(ctx context.Context, arg CopyCustomerTagsForMergeParams) (int64, error)
 	CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
+	CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams) (CreateLegacyTagRow, error)
+	CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error)
 	EnsureCustomerEventPartitions(ctx context.Context, arg EnsureCustomerEventPartitionsParams) error
 	GetChannel(ctx context.Context, channelID int64) (GetChannelRow, error)
 	GetChannelOperationReceipt(ctx context.Context, arg GetChannelOperationReceiptParams) (GetChannelOperationReceiptRow, error)
@@ -30,6 +34,8 @@ type Querier interface {
 	ListChannels(ctx context.Context, arg ListChannelsParams) ([]ListChannelsRow, error)
 	ListCustomerEvents(ctx context.Context, arg ListCustomerEventsParams) ([]ListCustomerEventsRow, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
+	ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error)
+	ListLegacyTags(ctx context.Context) ([]ListLegacyTagsRow, error)
 	ListStages(ctx context.Context) ([]Stage, error)
 	ListTags(ctx context.Context) ([]ListTagsRow, error)
 	LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error)
@@ -43,6 +49,8 @@ type Querier interface {
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
 	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)
 	UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error)
+	UpdateLegacyTag(ctx context.Context, arg UpdateLegacyTagParams) (UpdateLegacyTagRow, error)
+	UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error)
 }
 
 var _ Querier = (*Queries)(nil)
