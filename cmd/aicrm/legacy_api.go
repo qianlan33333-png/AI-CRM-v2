@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -20,6 +21,9 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -46,6 +50,10 @@ type legacyProductApplication interface {
 	Create(context.Context, productport.CreateCommand) (productport.Product, error)
 }
 
+type legacyMediaApplication interface {
+	Upload(context.Context, mediaport.UploadCommand) (mediaport.Image, error)
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth        authport.Service
@@ -54,6 +62,7 @@ type Handler struct {
 	cancel      legacyCancelApplication
 	manualRetry legacyRetryApplication
 	products    legacyProductApplication
+	media       legacyMediaApplication
 }
 
 func NewHandlerWithOutboundAndProducts(
@@ -70,6 +79,83 @@ func NewHandlerWithOutboundAndProducts(
 	}
 	handler.products = products
 	return handler, nil
+}
+
+func NewHandlerWithOutboundProductsAndMedia(
+	auth authport.Service,
+	customers customerListApplication,
+	outbound legacyOutboundQueryApplication,
+	cancel legacyCancelApplication,
+	manualRetry legacyRetryApplication,
+	products legacyProductApplication,
+	media legacyMediaApplication,
+) (*Handler, error) {
+	handler, err := NewHandlerWithOutboundAndProducts(auth, customers, outbound, cancel, manualRetry, products)
+	if err != nil || nilLegacyDependency(media) {
+		return nil, authport.ErrAuthenticationUnavailable
+	}
+	handler.media = media
+	return handler, nil
+}
+
+func (handler *Handler) UploadImage(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.media) || request == nil {
+		writeLegacyImageError(writer, mediaapp.ErrUnavailable)
+		return
+	}
+	principal, ok := authport.PrincipalFromContext(request.Context())
+	if !ok || principal.AdminUserID < 1 {
+		writeLegacyImageError(writer, mediaapp.ErrUnavailable)
+		return
+	}
+	request.Body = http.MaxBytesReader(writer, request.Body, domain.MaxImageBytes+(1<<20))
+	if err := request.ParseMultipartForm(domain.MaxImageBytes + (64 << 10)); err != nil {
+		writeLegacyImageError(writer, mediaapp.ErrInvalidUpload)
+		return
+	}
+	file, header, err := request.FormFile("image")
+	if err != nil {
+		writeLegacyImageError(writer, mediaapp.ErrInvalidUpload)
+		return
+	}
+	defer file.Close()
+	content, err := domain.ReadBounded(file)
+	if err != nil {
+		writeLegacyImageError(writer, mediaapp.ErrInvalidUpload)
+		return
+	}
+	key := request.Header.Get("Idempotency-Key")
+	if key == "" {
+		var value [16]byte
+		if _, err = rand.Read(value[:]); err != nil {
+			writeLegacyImageError(writer, mediaapp.ErrUnavailable)
+			return
+		}
+		key = "legacy-upload:" + hex.EncodeToString(value[:])
+	}
+	result, err := handler.media.Upload(request.Context(), mediaport.UploadCommand{
+		Actor: principal.AdminUserID, IdempotencyKey: key, FileName: header.Filename,
+		DeclaredType: header.Header.Get("Content-Type"), Content: content,
+		Name: request.FormValue("name"), Description: request.FormValue("description"),
+		Tags: request.FormValue("tags"), Category: request.FormValue("category"),
+	})
+	if err != nil {
+		writeLegacyImageError(writer, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, map[string]any{
+		"ok": true, "item": result, "source_status": "local_upload", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
+		"storage_adapter_mode": "postgresql", "adapter_mode": "postgresql",
+	})
+}
+
+func writeLegacyImageError(writer http.ResponseWriter, err error) {
+	platformhttp.MarkCompatibilityError(writer, platformhttp.CodeMalformedRequest)
+	writeJSON(writer, http.StatusBadRequest, map[string]any{
+		"ok": false, "error": err.Error(), "source_status": "next_media_library_error", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
+	})
 }
 
 func NewHandler(auth authport.Service, customers customerListApplication) (*Handler, error) {

@@ -68,6 +68,9 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityProductsWrite: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityMediaImagesWrite: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
 }
 
 func authorize(principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {

@@ -19,7 +19,7 @@ var domains = map[string]bool{
 	"contact": true, "identity": true, "segment": true, "automation": true,
 	"outbound": true, "wecom": true, "ai": true, "survey": true,
 	"gateway": true, "config": true, "events": true, "auth": true,
-	"stats": true, "product": true, "ops": true,
+	"stats": true, "product": true, "media": true, "ops": true,
 }
 
 var compositionRoots = map[string]bool{

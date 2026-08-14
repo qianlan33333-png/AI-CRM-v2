@@ -107,6 +107,14 @@ owners:
       product_catalog_counters: exact_legacy_total_without_catalog_scan
       product_operation_receipts: transaction_scoped_create_idempotency_receipts
 
+  media:
+    package: internal/media
+    tables: [media_images, media_image_blobs, media_image_upload_receipts]
+    constraints:
+      media_images: validated_single_instance_image_metadata
+      media_image_blobs: exact_validated_image_bytes_owned_by_media
+      media_image_upload_receipts: actor_scoped_transactional_upload_idempotency_receipts
+
   ops:
     package: internal/ops
     tables: []

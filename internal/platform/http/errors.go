@@ -107,6 +107,15 @@ type errorMarker interface {
 	markError(ErrorCode)
 }
 
+// MarkCompatibilityError preserves an explicitly frozen compatibility body
+// while retaining the gateway's error classification and access-log code.
+// Callers must write a bounded, non-secret JSON body immediately afterwards.
+func MarkCompatibilityError(writer http.ResponseWriter, code ErrorCode) {
+	if marker, ok := writer.(errorMarker); ok {
+		marker.markError(code)
+	}
+}
+
 func WriteError(writer http.ResponseWriter, request *http.Request, err error) {
 	if writer == nil || request == nil {
 		return
