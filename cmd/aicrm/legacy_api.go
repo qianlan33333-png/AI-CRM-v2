@@ -27,6 +27,7 @@ import (
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
 const (
@@ -54,6 +55,12 @@ type legacyMediaApplication interface {
 	Upload(context.Context, mediaport.UploadCommand) (mediaport.Image, error)
 }
 
+type legacySurveyApplication interface {
+	ListLegacy(context.Context, int32, int32) (surveyport.LegacyPage, error)
+	Get(context.Context, surveyport.ID) (surveyport.Questionnaire, error)
+	Create(context.Context, surveyport.CreateCommand) (surveyport.Questionnaire, error)
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth        authport.Service
@@ -63,6 +70,7 @@ type Handler struct {
 	manualRetry legacyRetryApplication
 	products    legacyProductApplication
 	media       legacyMediaApplication
+	surveys     legacySurveyApplication
 }
 
 func NewHandlerWithOutboundAndProducts(
@@ -95,6 +103,24 @@ func NewHandlerWithOutboundProductsAndMedia(
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.media = media
+	return handler, nil
+}
+
+func NewHandlerWithOutboundProductsMediaAndSurvey(
+	auth authport.Service,
+	customers customerListApplication,
+	outbound legacyOutboundQueryApplication,
+	cancel legacyCancelApplication,
+	manualRetry legacyRetryApplication,
+	products legacyProductApplication,
+	media legacyMediaApplication,
+	surveys legacySurveyApplication,
+) (*Handler, error) {
+	handler, err := NewHandlerWithOutboundProductsAndMedia(auth, customers, outbound, cancel, manualRetry, products, media)
+	if err != nil || nilLegacyDependency(surveys) {
+		return nil, authport.ErrAuthenticationUnavailable
+	}
+	handler.surveys = surveys
 	return handler, nil
 }
 
@@ -258,11 +284,28 @@ func (handler *Handler) RequireCSRF(next http.Handler) (http.Handler, error) {
 			return
 		}
 		values := request.Header.Values("X-CSRF-Token")
-		if len(values) != 1 || !validToken(values[0]) {
+		var token string
+		switch len(values) {
+		case 0:
+			if !sameOriginBrowserRequest(request) {
+				platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrCSRFInvalid))
+				return
+			}
+			for _, name := range []string{authhttp.CSRFCookieName, LegacyCSRFCookieName} {
+				cookie, err := request.Cookie(name)
+				if err == nil && validToken(cookie.Value) {
+					token = cookie.Value
+					break
+				}
+			}
+		case 1:
+			token = values[0]
+		}
+		if !validToken(token) {
 			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrCSRFInvalid))
 			return
 		}
-		if err := handler.auth.ValidateCSRF(request.Context(), session, authport.CSRFToken(values[0])); err != nil {
+		if err := handler.auth.ValidateCSRF(request.Context(), session, authport.CSRFToken(token)); err != nil {
 			code := platformhttp.CodeUnauthorized
 			if errors.Is(err, authport.ErrUnauthenticated) {
 				code = platformhttp.CodeUnauthenticated
@@ -274,6 +317,27 @@ func (handler *Handler) RequireCSRF(next http.Handler) (http.Handler, error) {
 		}
 		next.ServeHTTP(writer, request)
 	}), nil
+}
+
+func sameOriginBrowserRequest(request *http.Request) bool {
+	if request == nil {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(request.Header.Get("Sec-Fetch-Site"))) {
+	case "same-origin":
+		return true
+	case "cross-site", "same-site", "none":
+		return false
+	}
+	origin := strings.TrimSpace(request.Header.Get("Origin"))
+	if origin == "" {
+		return false
+	}
+	prefix := "https://"
+	if request.TLS == nil {
+		prefix = "http://"
+	}
+	return strings.EqualFold(origin, prefix+request.Host)
 }
 
 // ConfigOverview preserves the old envelope while reporting real v2 operation
@@ -698,6 +762,7 @@ func (handler *Handler) allowedCapabilities(ctx context.Context, principal authp
 		authport.CapabilityStagesWrite, authport.CapabilitySegmentsRead, authport.CapabilitySegmentsWrite,
 		authport.CapabilityOutboundRead, authport.CapabilityOutboundControl,
 		authport.CapabilityProductsRead, authport.CapabilityProductsWrite,
+		authport.CapabilityQuestionnairesRead, authport.CapabilityQuestionnairesWrite,
 	}
 	allowed := make([]string, 0, len(all))
 	for _, capability := range all {

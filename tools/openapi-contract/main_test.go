@@ -177,6 +177,26 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/admin/image-library/upload").Post.Extensions["x-aicrm-capability"] = "media.images.read"
 			reject(t, doc, ids)
 		},
+		"survey evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/questionnaires").Get.Extensions["x-p4-decision-evidence"] = "P4-F01A-FORGED"
+			reject(t, doc, ids)
+		},
+		"survey legacy mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}").Get.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0424"}
+			reject(t, doc, ids)
+		},
+		"survey capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/questionnaires").Get.Extensions["x-aicrm-capability"] = "questionnaires.write"
+			reject(t, doc, ids)
+		},
+		"survey assessment enabled": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyQuestionnaireCreateRequest"].Value.Properties["assessment_enabled"].Value.Enum = nil
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"

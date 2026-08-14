@@ -5,6 +5,210 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface LegacyQuestionnaireValidation {
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  min_selections?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  max_selections?: number;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  min_length?: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  max_length?: number;
+}
+
+export interface LegacyQuestionnaireOption {
+  /** @minimum 1 */
+  id?: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  option_text: string;
+  score: number;
+  /** @maxLength 200 */
+  assessment_type_key: string;
+  /** @maxItems 100 */
+  tag_codes: string[];
+  is_other: boolean;
+  /** @maxLength 500 */
+  other_placeholder: string;
+  /**
+   * @minimum 0
+   * @maximum 2000
+   */
+  other_max_length: number;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export type LegacyQuestionnaireQuestionType =
+  (typeof LegacyQuestionnaireQuestionType)[keyof typeof LegacyQuestionnaireQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+  textarea: "textarea",
+  mobile: "mobile",
+} as const;
+
+export interface LegacyQuestionnaireQuestion {
+  /** @minimum 1 */
+  id?: number;
+  type: LegacyQuestionnaireQuestionType;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  title: string;
+  /** @maxLength 200 */
+  assessment_dimension_key: string;
+  /** @maxLength 200 */
+  sidebar_profile_field: string;
+  required: boolean;
+  /** @minimum 0 */
+  sort_order: number;
+  /** @maxLength 500 */
+  placeholder_text: string;
+  validation?: LegacyQuestionnaireValidation;
+  /** @maxItems 100 */
+  options: LegacyQuestionnaireOption[];
+}
+
+export type LegacyQuestionnaireCreateRequestAnswerDisplayMode =
+  (typeof LegacyQuestionnaireCreateRequestAnswerDisplayMode)[keyof typeof LegacyQuestionnaireCreateRequestAnswerDisplayMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireCreateRequestAnswerDisplayMode = {
+  all_in_one: "all_in_one",
+  one_by_one: "one_by_one",
+} as const;
+
+export type LegacyQuestionnaireCreateRequestAssessmentConfig = {
+  [key: string]: unknown;
+};
+
+export type LegacyQuestionnaireCreateRequestScoreRulesItem = {
+  [key: string]: unknown;
+};
+
+export interface LegacyQuestionnaireCreateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  title: string;
+  /** @maxLength 10000 */
+  description: string;
+  answer_display_mode: LegacyQuestionnaireCreateRequestAnswerDisplayMode;
+  assessment_enabled: boolean;
+  assessment_config: LegacyQuestionnaireCreateRequestAssessmentConfig;
+  /** @maxLength 200 */
+  slug: string;
+  is_disabled: boolean;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  questions: LegacyQuestionnaireQuestion[];
+  /** @maxItems 0 */
+  score_rules: LegacyQuestionnaireCreateRequestScoreRulesItem[];
+}
+
+export type LegacyQuestionnaireAllOfStatus =
+  (typeof LegacyQuestionnaireAllOfStatus)[keyof typeof LegacyQuestionnaireAllOfStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireAllOfStatus = {
+  active: "active",
+  disabled: "disabled",
+} as const;
+
+export type LegacyQuestionnaireAllOf = {
+  /** @minimum 1 */
+  id: number;
+  enabled: boolean;
+  status: LegacyQuestionnaireAllOfStatus;
+  /** @minimum 1 */
+  version: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  question_count: number;
+  /** @minimum 0 */
+  submission_count: number;
+  created_at: string;
+  updated_at: string;
+  public_path: string;
+  submitted_path: string;
+};
+
+export type LegacyQuestionnaire = LegacyQuestionnaireCreateRequest &
+  LegacyQuestionnaireAllOf;
+
+export type LegacyQuestionnaireListResponseData = {
+  questionnaires: LegacyQuestionnaire[];
+};
+
+export interface LegacyQuestionnaireListResponse {
+  ok: boolean;
+  questionnaires: LegacyQuestionnaire[];
+  items: LegacyQuestionnaire[];
+  data: LegacyQuestionnaireListResponseData;
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type LegacyQuestionnaireDetailResponseData = {
+  questionnaire: LegacyQuestionnaire;
+};
+
+export interface LegacyQuestionnaireDetailResponse {
+  ok: boolean;
+  questionnaire: LegacyQuestionnaire;
+  questions: LegacyQuestionnaireQuestion[];
+  data: LegacyQuestionnaireDetailResponseData;
+}
+
+export type LegacyQuestionnaireCreateResponseAllOf = {
+  /** @minimum 1 */
+  questionnaire_id: number;
+};
+
+export type LegacyQuestionnaireCreateResponse =
+  LegacyQuestionnaireDetailResponse & LegacyQuestionnaireCreateResponseAllOf;
+
+export interface LegacyQuestionnaireError {
+  ok: boolean;
+  message: string;
+  detail: string;
+}
+
 export type LegacyImageUploadItemMimeType =
   (typeof LegacyImageUploadItemMimeType)[keyof typeof LegacyImageUploadItemMimeType];
 
@@ -1163,6 +1367,19 @@ export type ListAutomationTriggerRunsVisibility =
 export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
+
+export type ListLegacyQuestionnairesParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
 
 export type UploadLegacyImageBody = {
   image: Blob;
@@ -3423,6 +3640,243 @@ export const listAutomationTriggerRuns = async (
     status: res.status,
     headers: res.headers,
   } as listAutomationTriggerRunsResponse;
+};
+
+/**
+ * @summary List persisted questionnaire definitions for the frozen old admin UI
+ */
+export type listLegacyQuestionnairesResponse200 = {
+  data: LegacyQuestionnaireListResponse;
+  status: 200;
+};
+
+export type listLegacyQuestionnairesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyQuestionnairesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyQuestionnairesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyQuestionnairesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyQuestionnairesResponseSuccess =
+  listLegacyQuestionnairesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyQuestionnairesResponseError = (
+  | listLegacyQuestionnairesResponse400
+  | listLegacyQuestionnairesResponse401
+  | listLegacyQuestionnairesResponse403
+  | listLegacyQuestionnairesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyQuestionnairesResponse =
+  | listLegacyQuestionnairesResponseSuccess
+  | listLegacyQuestionnairesResponseError;
+
+export const getListLegacyQuestionnairesUrl = (
+  params?: ListLegacyQuestionnairesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/questionnaires?${stringifiedParams}`
+    : `/api/admin/questionnaires`;
+};
+
+export const listLegacyQuestionnaires = async (
+  params?: ListLegacyQuestionnairesParams,
+  options?: RequestInit,
+): Promise<listLegacyQuestionnairesResponse> => {
+  const res = await fetch(getListLegacyQuestionnairesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyQuestionnairesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyQuestionnairesResponse;
+};
+
+/**
+ * @summary Create one F01 questionnaire definition without assessment or submission effects
+ */
+export type createLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireCreateResponse;
+  status: 200;
+};
+
+export type createLegacyQuestionnaireResponse400 = {
+  data: LegacyQuestionnaireError;
+  status: 400;
+};
+
+export type createLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyQuestionnaireResponse409 = {
+  data: LegacyQuestionnaireError;
+  status: 409;
+};
+
+export type createLegacyQuestionnaireResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type createLegacyQuestionnaireResponseSuccess =
+  createLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyQuestionnaireResponseError = (
+  | createLegacyQuestionnaireResponse400
+  | createLegacyQuestionnaireResponse401
+  | createLegacyQuestionnaireResponse403
+  | createLegacyQuestionnaireResponse409
+  | createLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyQuestionnaireResponse =
+  | createLegacyQuestionnaireResponseSuccess
+  | createLegacyQuestionnaireResponseError;
+
+export const getCreateLegacyQuestionnaireUrl = () => {
+  return `/api/admin/questionnaires`;
+};
+
+export const createLegacyQuestionnaire = async (
+  legacyQuestionnaireCreateRequest: LegacyQuestionnaireCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyQuestionnaireResponse> => {
+  const res = await fetch(getCreateLegacyQuestionnaireUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyQuestionnaireCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Get one persisted questionnaire definition with ordered questions and options
+ */
+export type getLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireDetailResponse;
+  status: 200;
+};
+
+export type getLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnaireResponse404 = {
+  data: LegacyQuestionnaireError;
+  status: 404;
+};
+
+export type getLegacyQuestionnaireResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type getLegacyQuestionnaireResponseSuccess =
+  getLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyQuestionnaireResponseError = (
+  | getLegacyQuestionnaireResponse400
+  | getLegacyQuestionnaireResponse401
+  | getLegacyQuestionnaireResponse403
+  | getLegacyQuestionnaireResponse404
+  | getLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnaireResponse =
+  getLegacyQuestionnaireResponseSuccess | getLegacyQuestionnaireResponseError;
+
+export const getGetLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}`;
+};
+
+export const getLegacyQuestionnaire = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<getLegacyQuestionnaireResponse> => {
+  const res = await fetch(getGetLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnaireResponse;
 };
 
 /**

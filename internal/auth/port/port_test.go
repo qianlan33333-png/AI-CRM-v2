@@ -17,6 +17,8 @@ func TestAuthorizationContextRejectsCapabilityScopeMismatch(t *testing.T) {
 		{Capability: CapabilitySegmentsRead, Scope: ScopeSelf},
 		{Capability: CapabilitySegmentsWrite, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
 		{Capability: CapabilityMediaImagesWrite, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
+		{Capability: CapabilityQuestionnairesRead, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
+		{Capability: CapabilityQuestionnairesWrite, Scope: ScopeSelf},
 	}
 	for _, authorization := range tests {
 		ctx, err := WithAuthorization(context.Background(), authorization)
@@ -36,6 +38,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
 		CapabilityMediaImagesWrite,
+		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 	} {
 		if !capability.Known() {
 			t.Fatalf("capability %q is not known", capability)
@@ -43,6 +46,20 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 	}
 	if Capability("customers.delete").Known() {
 		t.Fatal("unknown capability became known")
+	}
+}
+
+func TestQuestionnaireCapabilitiesStayGlobal(t *testing.T) {
+	for capability, want := range map[Capability]string{
+		CapabilityQuestionnairesRead: "questionnaires.read", CapabilityQuestionnairesWrite: "questionnaires.write",
+	} {
+		if string(capability) != want || !capability.Known() {
+			t.Fatalf("capability %q drifted", capability)
+		}
+		ctx, err := WithAuthorization(context.Background(), Authorization{Capability: capability, Scope: ScopeGlobal})
+		if value, ok := AuthorizationFromContext(ctx); err != nil || !ok || value.Capability != capability || value.Scope != ScopeGlobal {
+			t.Fatalf("global authorization=%#v/%v err=%v", value, ok, err)
+		}
 	}
 }
 
