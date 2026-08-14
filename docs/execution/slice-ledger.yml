@@ -4341,6 +4341,25 @@ slices:
     correction_notes: [verification:first_migration_workflow_replay_applied_the_River_destructive_test_flag_only_to_the_first_make_command_then_p0_s04_failed_closed_before_execution_and_the_replay_exports_the_exact_step_level_environment, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-A01-R3
+    title: forward-PR-and-local-DoD-receipt
+    owner: Codex-Sol
+    status: REQUIRED_CI_RUNNING
+    base_sha: d1006d964d5d789ee18873e14075c6a978ad3f16
+    dependency: P4_A01_R2_and_exact_head_local_DoD_PASS
+    branch: codex/p4-a01-legacy-auth-recut-20260814
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/205
+    implementation_head_sha: d1006d964d5d789ee18873e14075c6a978ad3f16
+    scope: [forward_record_PR_URL, forward_record_exact_head_local_DoD, preserve_original_A01_DoD]
+    tests: [LOCAL_clean_exact_head_ci_go_PASS_query_plan_checked_33, LOCAL_full_migration_workflow_and_all_acceptance_PASS, LOCAL_PG16_14_A01_26_27_26_27_and_S200K_PASS, LOCAL_repo_contract_and_gitleaks_8_30_1_PASS]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    slice_induced_correction_count: 3
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 22
+    correction_notes: [redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
