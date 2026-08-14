@@ -433,7 +433,10 @@ func (response *bufferedResponse) finalize(request *http.Request) {
 	if response.status == 0 {
 		response.status = http.StatusOK
 	}
-	if response.status >= http.StatusMultipleChoices && response.errorCode == "" {
+	// Browser compatibility routes legitimately use redirects. Error
+	// normalization begins at 4xx; redirect target safety remains the owning
+	// handler's responsibility.
+	if response.status >= http.StatusBadRequest && response.errorCode == "" {
 		code := defaultCodeForStatus(response.status)
 		response.reset()
 		WriteError(response, request, NewError(code, nil))

@@ -87,9 +87,10 @@ owners:
 
   auth:
     package: internal/auth
-    tables: [admin_users, admin_sessions]
+    tables: [admin_users, admin_sessions, admin_oauth_states]
     constraints:
       admin_sessions: token_and_csrf_hashes_only
+      admin_oauth_states: hashed_one_time_nonce_and_safe_internal_next_only
 
   stats:
     package: internal/stats

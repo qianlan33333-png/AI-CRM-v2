@@ -34,7 +34,7 @@ func TestLegacyBootFlowUsesV2SessionCapabilitiesAndContactService(t *testing.T) 
 	if response.Code != http.StatusOK {
 		t.Fatalf("config status = %d, body=%s", response.Code, response.Body.String())
 	}
-	if cookie := response.Result().Cookies(); len(cookie) != 1 || cookie[0].Name != LegacyCSRFCookieName || cookie[0].Value != legacyToken(2) {
+	if cookie := response.Result().Cookies(); len(cookie) != 1 || cookie[0].Name != LegacyCSRFCookieName || cookie[0].Value != legacyToken(2) || cookie[0].SameSite != http.SameSiteStrictMode {
 		t.Fatalf("legacy csrf cookie = %#v, want mirrored %q", cookie, LegacyCSRFCookieName)
 	}
 	var configPayload struct {

@@ -37,6 +37,7 @@ import (
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
+	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
 
 var errInvalidAPIComponent = errors.New("invalid API component")
@@ -241,6 +242,41 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	oauthStates, err := authapp.NewOAuthStateService(uow, authstore.NewRepository(), authapp.OAuthStateOptions{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	var humanOAuth *wecomclient.HumanOAuthClient
+	if config.WeCom.OAuth.Enabled {
+		credentials, credentialErr := wecomclient.NewCredentials(config.WeCom.OAuth.CorpID, config.WeCom.OAuth.Secret.Value())
+		if credentialErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		providerHTTP := &http.Client{Timeout: 5 * time.Second}
+		tokenProvider, tokenErr := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{
+			BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: providerHTTP, Now: time.Now,
+		})
+		if tokenErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		humanOAuth, err = wecomclient.NewHumanOAuthClient(wecomclient.HumanOAuthConfig{
+			BaseURL: wecomclient.ProductionBaseURL, AuthorizeURL: wecomclient.ProductionAuthorizeURL,
+			CallbackURL: config.WeCom.OAuth.CallbackURL, CorpID: wecomclient.CorpID(config.WeCom.OAuth.CorpID),
+			HTTPClient: providerHTTP, TokenProvider: tokenProvider,
+		})
+		if err != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+	}
+	humanAuth, err := NewHumanAuthHandler(service, service, oauthStates, humanOAuth, HumanAuthOptions{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	authHandler, err := authhttp.NewHandler(service)
 	if err != nil {
 		pool.Close()
@@ -354,7 +390,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, errInvalidAPIComponent
 	}
-	handler, err := newAPIHandlerWithCallbackAndLegacy(logger, callbackHandler, authHandler, candidate, legacyHandler)
+	handler, err := newAPIHandlerWithAll(logger, callbackHandler, authHandler, candidate, legacyHandler, humanAuth)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -382,6 +418,10 @@ func newAPIHandlerWithCallback(logger *slog.Logger, callbackHandler http.Handler
 }
 
 func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler) (http.Handler, error) {
+	return newAPIHandlerWithAll(logger, callbackHandler, authHandler, candidate, legacy, nil)
+}
+
+func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler) (http.Handler, error) {
 	if logger == nil || callbackHandler == nil || authHandler == nil || candidate == nil {
 		return nil, errInvalidAPIComponent
 	}
@@ -427,6 +467,41 @@ func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler htt
 	} {
 		if err = registerCallback(route.method, route.pattern); err != nil {
 			return nil, err
+		}
+	}
+	if humanAuth != nil {
+		registerHuman := func(method, pattern string, endpoint http.Handler) error {
+			tail, wrapErr := recovery(endpoint)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.TimeoutMiddleware(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			router.Method(method, pattern, tail)
+			return nil
+		}
+		for _, route := range []struct {
+			method, pattern string
+			endpoint        http.Handler
+		}{
+			{http.MethodGet, legacyLoginPath, http.HandlerFunc(humanAuth.Login)},
+			{http.MethodOptions, legacyLoginPath, http.HandlerFunc(humanAuth.Options)},
+			{http.MethodGet, legacyLogoutPath, http.HandlerFunc(humanAuth.Logout)},
+			{http.MethodOptions, legacyLogoutPath, http.HandlerFunc(humanAuth.Options)},
+			{http.MethodGet, weComOAuthStartPath, http.HandlerFunc(humanAuth.Start)},
+			{http.MethodOptions, weComOAuthStartPath, http.HandlerFunc(humanAuth.Options)},
+			{http.MethodGet, weComOAuthCallbackPath, http.HandlerFunc(humanAuth.Callback)},
+			{http.MethodOptions, weComOAuthCallbackPath, http.HandlerFunc(humanAuth.Options)},
+		} {
+			if err = registerHuman(route.method, route.pattern, route.endpoint); err != nil {
+				return nil, err
+			}
 		}
 	}
 

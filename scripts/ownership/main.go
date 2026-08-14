@@ -280,6 +280,9 @@ func checkWeCom(text, source, rel string) error {
 	lower := strings.ToLower(text)
 	marker := strings.Index(lower, "/cgi-bin/")
 	if marker < 0 {
+		if lower == "https://qyapi.weixin.qq.com" && source == "wecom" {
+			return nil
+		}
 		if strings.Contains(lower, "qyapi.weixin.qq.com") {
 			return fmt.Errorf("unknown WeCom operation in %s", rel)
 		}
@@ -290,7 +293,7 @@ func checkWeCom(text, source, rel string) error {
 		operation = operation[:cut]
 	}
 	write := map[string]bool{"message/send": true, "externalcontact/add_msg_template": true, "externalcontact/remind_groupmsg_send": true, "externalcontact/add_contact_way": true, "externalcontact/update_contact_way": true, "externalcontact/del_contact_way": true, "externalcontact/mark_tag": true}
-	read := map[string]bool{"gettoken": true, "externalcontact/get": true, "externalcontact/list": true, "externalcontact/batch/get_by_user": true, "externalcontact/get_follow_user_list": true, "externalcontact/groupchat/get": true, "externalcontact/groupchat/list": true, "externalcontact/get_corp_tag_list": true}
+	read := map[string]bool{"gettoken": true, "auth/getuserinfo": true, "externalcontact/get": true, "externalcontact/list": true, "externalcontact/batch/get_by_user": true, "externalcontact/get_follow_user_list": true, "externalcontact/groupchat/get": true, "externalcontact/groupchat/list": true, "externalcontact/get_corp_tag_list": true}
 	if write[operation] && source == "outbound" || read[operation] && source == "wecom" {
 		return nil
 	}

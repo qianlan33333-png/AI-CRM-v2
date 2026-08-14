@@ -13,6 +13,8 @@ var (
 	ErrCSRFInvalid               = errors.New("csrf validation failed")
 	ErrInvalidVerifiedLogin      = errors.New("invalid verified login")
 	ErrAuthenticationUnavailable = errors.New("authentication unavailable")
+	ErrOAuthStateInvalid         = errors.New("oauth state is invalid")
+	ErrOAuthStateUnavailable     = errors.New("oauth state unavailable")
 )
 
 type Role string
@@ -120,6 +122,18 @@ type BrowserSession struct {
 	ExpiresAt time.Time
 }
 
+type OAuthState string
+
+type OAuthAttempt struct {
+	State     OAuthState
+	ExpiresAt time.Time
+}
+
+type OAuthClaim struct {
+	Provider Provider
+	NextPath string
+}
+
 type principalContextKey struct{}
 type sessionContextKey struct{}
 type authorizationContextKey struct{}
@@ -185,6 +199,13 @@ func validAuthorization(authorization Authorization) bool {
 
 type Issuer interface {
 	IssueVerified(context.Context, VerifiedLogin) (BrowserSession, error)
+}
+
+// OAuthStateManager owns one-time, server-side OAuth state. The raw state is
+// browser-only material; storage receives only its hash.
+type OAuthStateManager interface {
+	Begin(context.Context, Provider, string) (OAuthAttempt, error)
+	Claim(context.Context, Provider, OAuthState) (OAuthClaim, error)
 }
 
 // Service authenticates an opaque session and authorizes a named capability.

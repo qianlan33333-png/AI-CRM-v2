@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const claimAdminOAuthState = `-- name: ClaimAdminOAuthState :one
+DELETE FROM admin_oauth_states
+WHERE state_hash = $1
+  AND auth_provider = $2
+  AND expires_at > $3
+RETURNING next_path
+`
+
+type ClaimAdminOAuthStateParams struct {
+	StateHash    []byte             `json:"state_hash"`
+	AuthProvider string             `json:"auth_provider"`
+	ClaimedAt    pgtype.Timestamptz `json:"claimed_at"`
+}
+
+func (q *Queries) ClaimAdminOAuthState(ctx context.Context, arg ClaimAdminOAuthStateParams) (string, error) {
+	row := q.db.QueryRow(ctx, claimAdminOAuthState, arg.StateHash, arg.AuthProvider, arg.ClaimedAt)
+	var next_path string
+	err := row.Scan(&next_path)
+	return next_path, err
+}
+
 const findAdminUserForVerifiedLogin = `-- name: FindAdminUserForVerifiedLogin :one
 SELECT id, role, staff_id, session_version
 FROM admin_users
@@ -74,6 +95,39 @@ func (q *Queries) GetActiveSession(ctx context.Context, arg GetActiveSessionPara
 	var i GetActiveSessionRow
 	err := row.Scan(&i.ID, &i.Role, &i.StaffID)
 	return i, err
+}
+
+const insertAdminOAuthState = `-- name: InsertAdminOAuthState :exec
+WITH expired AS (
+  DELETE FROM admin_oauth_states
+  WHERE expires_at <= $4
+  RETURNING state_hash
+)
+INSERT INTO admin_oauth_states (
+  state_hash, auth_provider, next_path, created_at, expires_at
+) VALUES (
+  $1, $2, $3,
+  $4, $5
+)
+`
+
+type InsertAdminOAuthStateParams struct {
+	StateHash    []byte             `json:"state_hash"`
+	AuthProvider string             `json:"auth_provider"`
+	NextPath     string             `json:"next_path"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) InsertAdminOAuthState(ctx context.Context, arg InsertAdminOAuthStateParams) error {
+	_, err := q.db.Exec(ctx, insertAdminOAuthState,
+		arg.StateHash,
+		arg.AuthProvider,
+		arg.NextPath,
+		arg.CreatedAt,
+		arg.ExpiresAt,
+	)
+	return err
 }
 
 const insertAdminSession = `-- name: InsertAdminSession :exec

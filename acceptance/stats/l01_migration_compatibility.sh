@@ -47,7 +47,7 @@ read -r upgrade_waterline daily_table receipt_table daily_index <<<"$(
             (to_regclass('public.stats_daily_metric_date_idx') IS NOT NULL)::int
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "26" && "$daily_table" = "1" && "$receipt_table" = "1" && "$daily_index" = "1" ]]
+[[ "$upgrade_waterline" = "27" && "$daily_table" = "1" && "$receipt_table" = "1" && "$daily_index" = "1" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=90s -run '^TestL01ConsumeMigrationHistory$' \
@@ -69,7 +69,7 @@ read -r receipt_count projection_value delivery_status automation_receipt job_co
 [[ "$receipt_count" = "1" && "$projection_value" = "1" && "$delivery_status" = "completed" ]]
 [[ "$automation_receipt" = "1" && "$job_count" = "1" ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 25
 read -r rollback_waterline receipt_count projection_value delivery_status automation_receipt job_count <<<"$(
   psql "$database_url" -X -v ON_ERROR_STOP=1 -At -F ' ' -c \
     "SELECT max(version_id),
@@ -102,7 +102,7 @@ read -r final_waterline receipt_count projection_value delivery_status automatio
        (SELECT count(*) FROM river_job WHERE id=${history_stats_job})
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$final_waterline" = "26" && "$receipt_count" = "1" && "$projection_value" = "1" ]]
+[[ "$final_waterline" = "27" && "$receipt_count" = "1" && "$projection_value" = "1" ]]
 [[ "$delivery_status" = "completed" && "$automation_receipt" = "1" && "$job_count" = "1" ]]
 
-printf 'P4-W0-L01 migration compatibility: PASS (25/26/25/26, history preserved)\n'
+printf 'P4-W0-L01 migration compatibility: PASS (25/27/25/27, history preserved through current waterline)\n'

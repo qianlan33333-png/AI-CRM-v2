@@ -9,8 +9,10 @@ import (
 )
 
 type Querier interface {
+	ClaimAdminOAuthState(ctx context.Context, arg ClaimAdminOAuthStateParams) (string, error)
 	FindAdminUserForVerifiedLogin(ctx context.Context, arg FindAdminUserForVerifiedLoginParams) (FindAdminUserForVerifiedLoginRow, error)
 	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
+	InsertAdminOAuthState(ctx context.Context, arg InsertAdminOAuthStateParams) error
 	InsertAdminSession(ctx context.Context, arg InsertAdminSessionParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) (int64, error)
 	ValidateSessionCSRF(ctx context.Context, arg ValidateSessionCSRFParams) (bool, error)
