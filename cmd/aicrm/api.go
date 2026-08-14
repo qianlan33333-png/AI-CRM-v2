@@ -28,6 +28,8 @@ import (
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
+	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
+	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
@@ -359,6 +361,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	productService := productapp.NewService(uow, productstore.NewCatalogRepository(), eventstore.NewAppender())
+	mediaService := mediaapp.NewService(uow, mediastore.NewUploadRepository(), eventstore.NewAppender())
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -388,11 +391,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundstore.NewTaskQueryRepository())
-	legacyHandler, err := NewHandlerWithOutboundAndProducts(
+	legacyHandler, err := NewHandlerWithOutboundProductsAndMedia(
 		service, customerService, outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
-		productService,
+		productService, mediaService,
 	)
 	if err != nil {
 		pool.Close()
@@ -651,6 +654,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/wechat-pay/products", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.ListProducts)},
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
+			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 				return nil, err

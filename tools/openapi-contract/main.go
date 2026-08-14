@@ -55,6 +55,14 @@ var p4ProductLegacyMappings = map[string][]string{
 	"getProduct":    {"LEGACY-API-0530"},
 }
 
+var p4MediaOperations = map[string]bool{
+	"uploadLegacyImage": true,
+}
+
+var p4MediaLegacyMappings = map[string][]string{
+	"uploadLegacyImage": {"LEGACY-API-0361"},
+}
+
 var identityOperations = map[string]bool{
 	"resolveIdentity": true, "bindIdentity": true, "ingestIdentityEvent": true,
 	"listIdentityMergeReviews": true, "approveIdentityMergeReview": true,
@@ -108,6 +116,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listProducts":               {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createProduct":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getProduct":                 {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"uploadLegacyImage":          {"media.images.write", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -117,6 +126,7 @@ const p3IdentityDecisionEvidence = "P3-I00-2026-08-12"
 const p3SegmentDecisionEvidence = "P3-S00-2026-08-12"
 const p4AutomationDecisionEvidence = "P4-W0-D01-2026-08-14"
 const p4ProductDecisionEvidence = "P4-I01A-2026-08-14"
+const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -130,7 +140,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=16 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -178,15 +188,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product := map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -243,7 +253,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, []string{"LEGACY-API-0141"}) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-			} else {
+			} else if p4ProductOperations[op.OperationID] {
 				seenP4Product[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
 				if !ok || evidence != p4ProductDecisionEvidence {
@@ -251,6 +261,16 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ProductLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+			} else {
+				seenP4Media[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4MediaDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Media evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4MediaLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 			}
@@ -289,8 +309,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || links != 16 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || links != 16 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -325,6 +345,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4ProductOperations {
 		if !seenP4Product[id] {
 			return fmt.Errorf("missing P4 Product operation: %s", id)
+		}
+	}
+	for id := range p4MediaOperations {
+		if !seenP4Media[id] {
+			return fmt.Errorf("missing P4 Media operation: %s", id)
 		}
 	}
 	customer := doc.Components.Schemas["Customer"]

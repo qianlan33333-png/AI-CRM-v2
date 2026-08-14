@@ -5,6 +5,117 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type LegacyImageUploadItemMimeType =
+  (typeof LegacyImageUploadItemMimeType)[keyof typeof LegacyImageUploadItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export interface LegacyImageUploadItem {
+  /** @minimum 1 */
+  id: number;
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  mime_type: LegacyImageUploadItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  description: string;
+  tags: string;
+  category: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyImageUploadSuccessSourceStatus =
+  (typeof LegacyImageUploadSuccessSourceStatus)[keyof typeof LegacyImageUploadSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessSourceStatus = {
+  local_upload: "local_upload",
+} as const;
+
+export type LegacyImageUploadSuccessRouteOwner =
+  (typeof LegacyImageUploadSuccessRouteOwner)[keyof typeof LegacyImageUploadSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageUploadSuccessStorageAdapterMode =
+  (typeof LegacyImageUploadSuccessStorageAdapterMode)[keyof typeof LegacyImageUploadSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageUploadSuccessAdapterMode =
+  (typeof LegacyImageUploadSuccessAdapterMode)[keyof typeof LegacyImageUploadSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageUploadSuccess {
+  ok: boolean;
+  item: LegacyImageUploadItem;
+  source_status: LegacyImageUploadSuccessSourceStatus;
+  route_owner: LegacyImageUploadSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageUploadSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageUploadSuccessAdapterMode;
+}
+
+export type LegacyImageUploadErrorSourceStatus =
+  (typeof LegacyImageUploadErrorSourceStatus)[keyof typeof LegacyImageUploadErrorSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadErrorSourceStatus = {
+  next_media_library_error: "next_media_library_error",
+} as const;
+
+export type LegacyImageUploadErrorRouteOwner =
+  (typeof LegacyImageUploadErrorRouteOwner)[keyof typeof LegacyImageUploadErrorRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadErrorRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyImageUploadError {
+  ok: boolean;
+  /** @minLength 1 */
+  error: string;
+  source_status: LegacyImageUploadErrorSourceStatus;
+  route_owner: LegacyImageUploadErrorRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface Product {
   id: number;
   /**
@@ -1052,6 +1163,18 @@ export type ListAutomationTriggerRunsVisibility =
 export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
+
+export type UploadLegacyImageBody = {
+  image: Blob;
+  /** @maxLength 200 */
+  name?: string;
+  /** @maxLength 10000 */
+  description?: string;
+  /** @maxLength 10000 */
+  tags?: string;
+  /** @maxLength 200 */
+  category?: string;
+};
 
 /**
  * @summary List ordinary products using a keyset cursor
@@ -3300,4 +3423,80 @@ export const listAutomationTriggerRuns = async (
     status: res.status,
     headers: res.headers,
   } as listAutomationTriggerRunsResponse;
+};
+
+/**
+ * @summary Safely persist one legacy UI PNG, JPEG, or GIF image
+ */
+export type uploadLegacyImageResponse200 = {
+  data: LegacyImageUploadSuccess;
+  status: 200;
+};
+
+export type uploadLegacyImageResponse400 = {
+  data: LegacyImageUploadError;
+  status: 400;
+};
+
+export type uploadLegacyImageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type uploadLegacyImageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type uploadLegacyImageResponseSuccess = uploadLegacyImageResponse200 & {
+  headers: Headers;
+};
+export type uploadLegacyImageResponseError = (
+  | uploadLegacyImageResponse400
+  | uploadLegacyImageResponse401
+  | uploadLegacyImageResponse403
+) & {
+  headers: Headers;
+};
+
+export type uploadLegacyImageResponse =
+  uploadLegacyImageResponseSuccess | uploadLegacyImageResponseError;
+
+export const getUploadLegacyImageUrl = () => {
+  return `/api/admin/image-library/upload`;
+};
+
+export const uploadLegacyImage = async (
+  uploadLegacyImageBody: UploadLegacyImageBody,
+  options?: RequestInit,
+): Promise<uploadLegacyImageResponse> => {
+  const formData = new FormData();
+  formData.append(`image`, uploadLegacyImageBody.image);
+  if (uploadLegacyImageBody.name !== undefined) {
+    formData.append(`name`, uploadLegacyImageBody.name);
+  }
+  if (uploadLegacyImageBody.description !== undefined) {
+    formData.append(`description`, uploadLegacyImageBody.description);
+  }
+  if (uploadLegacyImageBody.tags !== undefined) {
+    formData.append(`tags`, uploadLegacyImageBody.tags);
+  }
+  if (uploadLegacyImageBody.category !== undefined) {
+    formData.append(`category`, uploadLegacyImageBody.category);
+  }
+
+  const res = await fetch(getUploadLegacyImageUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: uploadLegacyImageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as uploadLegacyImageResponse;
 };

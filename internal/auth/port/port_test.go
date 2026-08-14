@@ -16,6 +16,7 @@ func TestAuthorizationContextRejectsCapabilityScopeMismatch(t *testing.T) {
 		{Capability: CapabilityStagesWrite, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
 		{Capability: CapabilitySegmentsRead, Scope: ScopeSelf},
 		{Capability: CapabilitySegmentsWrite, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
+		{Capability: CapabilityMediaImagesWrite, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
 	}
 	for _, authorization := range tests {
 		ctx, err := WithAuthorization(context.Background(), authorization)
@@ -34,6 +35,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityConfigOverviewRead,
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
+		CapabilityMediaImagesWrite,
 	} {
 		if !capability.Known() {
 			t.Fatalf("capability %q is not known", capability)
@@ -41,6 +43,19 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 	}
 	if Capability("customers.delete").Known() {
 		t.Fatal("unknown capability became known")
+	}
+}
+
+func TestMediaImageWriteCapabilityStaysGlobal(t *testing.T) {
+	if string(CapabilityMediaImagesWrite) != "media.images.write" || !CapabilityMediaImagesWrite.Known() {
+		t.Fatal("media image write capability drifted")
+	}
+	ctx, err := WithAuthorization(context.Background(), Authorization{Capability: CapabilityMediaImagesWrite, Scope: ScopeGlobal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value, ok := AuthorizationFromContext(ctx); !ok || value != (Authorization{Capability: CapabilityMediaImagesWrite, Scope: ScopeGlobal}) {
+		t.Fatalf("authorization=%#v/%v", value, ok)
 	}
 }
 

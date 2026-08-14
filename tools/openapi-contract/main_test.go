@@ -162,6 +162,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/products").Get.Extensions["x-aicrm-capability"] = "products.write"
 			reject(t, doc, ids)
 		},
+		"media evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/image-library/upload").Post.Extensions["x-p4-decision-evidence"] = "P4-H01A1-FORGED"
+			reject(t, doc, ids)
+		},
+		"media legacy mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/image-library/upload").Post.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0362"}
+			reject(t, doc, ids)
+		},
+		"media capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/image-library/upload").Post.Extensions["x-aicrm-capability"] = "media.images.read"
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"
