@@ -507,6 +507,7 @@ required=(
   docs/adr/ADR-010.md
   docs/adr/ADR-011.md
   docs/adr/ADR-012.md
+  docs/adr/ADR-013.md
   docs/architecture/port-contracts.md
   docs/architecture/table-ownership.yml
   docs/governance/agent-orchestration.md
@@ -1017,6 +1018,7 @@ done <<'EOF'
 100644 docs/adr/ADR-010.md
 100644 docs/adr/ADR-011.md
 100644 docs/adr/ADR-012.md
+100644 docs/adr/ADR-013.md
 100644 docs/spec/AI-CRM-v2-执行方案.md
 100644 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
 100644 docs/spec/AI-CRM-v2-重构详细设计.md
@@ -1174,11 +1176,11 @@ verify_index_sha256 scripts/sourcepolicy/main.go \
 verify_index_sha256 scripts/test_source_policy.sh \
   96c0e6c0ae5074e458d44cf1ff4ad7411546fc5818930a4f0e252ed324d04e6c
 verify_index_sha256 AGENTS.md \
-  fd48bab3d325f265c928da680103933dc63fcd6bae9ae0addf99d23524585bb1
+  f223df590a995a2ccb7dcc75e82b90663c51c4802411893c730fb712333732d4
 verify_index_sha256 docs/governance/agent-orchestration.md \
-  ad5d5564997295502de3fc53f6a3069db3357ef61d26d6b68f010d7ea9a425cc
+  acb65b41dfbb8b4afc331549494b457d2a947b0c08564a351675444a5aa4940d
 verify_index_sha256 docs/plans/2026-08-13-p4-legacy-backend-parity.md \
-  e9a89ce8b9572f262d81b8b7fe3db1dd3b0db17e517163db0e168adbaadd18f6
+  d403b499f12c5034a7f9e032564c8990e72581b453265f38cc49cc262507f90d
 verify_index_sha256 docs/execution/slice-card-template.md \
   8ed52176806cd8a2372ee945294760293979a4e4efe00561a4b63642b889512a
 verify_index_sha256 scripts/check_slice_inputs.sh \
@@ -1897,6 +1899,8 @@ verify_index_sha256 docs/adr/ADR-011.md \
   3fb1954942b0de9da1989276d535af090c0dcd22841437dbb7d6e49e54b7f92d
 verify_index_sha256 docs/adr/ADR-012.md \
   a4943e7a665309a388ce4ffad7d4a7610f2038191b9d5d9483b2370d5df0dd4b
+verify_index_sha256 docs/adr/ADR-013.md \
+  3924512aa2718298d2013387979397b5bb72a4ed0dee520fd0e2030490a1de2d
 verify_index_sha256 docs/execution/slices/P3-R3A.md \
   cac248d380f467833560cbd3992a86100c9f56594380bc0fd013be241c6614db
 verify_index_sha256 docs/execution/slices/P3-R4A.md \
@@ -2056,7 +2060,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   7855a99349d3ed41cdba5b593f045df032cdf49065bc967eb9ecb8d9242b0bb2
 verify_index_sha256 scripts/test_repo_contract.sh \
-  e1feba3abfdd19f88dce3bab109d77da5d1ee244f7748f7998d95bc5e22edd99
+  97c2d3c9612d2a322628aaaf7ff5138c588584220fcc7077c734b8c4785f1c8d
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -2821,6 +2825,63 @@ grep -Fq '已按旧规则 HARD STOP 的 W0/A/H/I 及两次 W0 候选永久只读
   <<<"$slice_policy_agents" ||
   fail "AGENTS lost historical hard-stop non-revival"
 
+single_instance_adr="$(git show ':docs/adr/ADR-013.md')"
+single_instance_orchestration="$(git show ':docs/governance/agent-orchestration.md')"
+single_instance_p4_plan="$(git show ':docs/plans/2026-08-13-p4-legacy-backend-parity.md')"
+for required_single_instance_adr_text in \
+  '单实例、单企业、单数据库' \
+  'tenant model、tenant selector/switch、tenant RBAC、tenant 列、tenant 复合索引' \
+  'actor 身份、RBAC/capability、session/CSRF/安全 redirect、数据归属' \
+  'DROP_SOURCE_SCOPE' \
+  '28/316' \
+  '2/781' \
+  '不得向 domain、store、SQL 或公共 port 传播' \
+  'provider identity namespace' \
+  '不得回改 `00004_auth.sql`' \
+  '不计入 781/293/316 业务进度'; do
+  grep -Fq "$required_single_instance_adr_text" <<<"$single_instance_adr" ||
+    fail "ADR-013 lost single-instance decision: $required_single_instance_adr_text"
+done
+grep -Fq '部署模型固定为单实例、单企业、单数据库私有化' <<<"$slice_policy_agents" ||
+  fail "AGENTS lost the single-instance deployment model"
+grep -Fq '部署语义以 [ADR-013]' <<<"$single_instance_orchestration" ||
+  fail "agent orchestration lost ADR-013 deployment semantics"
+grep -Fq 'P4 以 [ADR-013]' <<<"$single_instance_p4_plan" ||
+  fail "P4 plan lost ADR-013 deployment semantics"
+for active_single_instance_document in \
+  "$slice_policy_agents" \
+  "$single_instance_orchestration" \
+  "$single_instance_p4_plan"; do
+  ! grep -Fq 'tenant/actor/授权/数据隔离破坏' <<<"$active_single_instance_document" ||
+    fail "active policy restored tenant isolation as a product redline"
+  ! grep -Fq '鉴权/tenant' <<<"$active_single_instance_document" ||
+    fail "active policy restored tenant as a port requirement"
+  ! grep -Fq 'auth/tenant' <<<"$active_single_instance_document" ||
+    fail "active policy restored tenant as a review requirement"
+done
+
+[[ "$(git show ':docs/migration-mapping.jsonl' | grep -c 'tenant_id')" = "28" ]] ||
+  fail "legacy migration mapping tenant_id source facts must remain exactly 28/316"
+[[ "$(git show ':docs/api-mapping.jsonl' | grep -c '"name":"tenant_id"')" = "2" ]] ||
+  fail "legacy API tenant_id compatibility parameters must remain exactly 2/781"
+
+allowed_tenant_runtime_paths="$(printf '%s\n' \
+  acceptance/auth/postgres.go \
+  acceptance/p2s09/session_integration_test.go \
+  acceptance/p2s16/csrf_integration_test.go \
+  cmd/aicrm/legacy_auth.go \
+  cmd/aicrm/legacy_auth_test.go \
+  internal/auth/app/service.go \
+  internal/auth/app/service_test.go \
+  internal/auth/port/port.go \
+  internal/auth/store/generated/auth.sql.go \
+  internal/auth/store/queries/auth.sql \
+  internal/auth/store/repository.go \
+  migrations/00004_auth.sql)"
+actual_tenant_runtime_paths="$(git grep -Il -E 'tenant_id|TenantID|TenantId|tenant selector|tenant switch|cross.?tenant|multi.?tenant|跨租户' -- '*.go' '*.sql' | LC_ALL=C sort)"
+[[ "$actual_tenant_runtime_paths" = "$allowed_tenant_runtime_paths" ]] ||
+  fail "runtime tenant semantics escaped the temporary Auth compatibility bridge"
+
 slice_policy_ledger="$(git show ':docs/execution/slice-ledger.yml')"
 slice_policy_template="$(git show ':docs/execution/slice-card-template.md')"
 for required_slice_policy_ledger_text in \
@@ -2835,7 +2896,6 @@ for required_slice_policy_ledger_text in \
     fail "slice ledger lost correction policy: $required_slice_policy_ledger_text"
 done
 for required_redline_category in \
-  '    - tenant_actor_auth_data_isolation_or_cross_tenant_privilege_violation' \
   '    - security_boundary_auth_bypass_secret_leak_injection_or_open_redirect' \
   '    - cross_domain_ownership_or_required_transaction_atomicity_violation' \
   '    - duplicate_payment_refund_provider_real_external_effect_or_outcome_unknown_auto_retry' \

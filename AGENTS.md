@@ -10,6 +10,9 @@
 - 未明确授权时，禁止部署、修改服务器/旧系统、连接真实用户数据、执行
   真实企微写操作或运行 live migration。
 - 每个 Slice 必须基于精确 `main` SHA；不得顺手扩大修改范围。
+- 部署模型固定为单实例、单企业、单数据库私有化。禁止建设 tenant
+  model/selector/switch/RBAC/column/复合索引/public port 或跨租户测试；
+  完整决策见 [ADR-013](docs/adr/ADR-013.md)。
 
 ## 2. 九条架构铁律
 
@@ -57,7 +60,7 @@
   rebase、required CI、PR/merge 与 exact-main CLOSED。
 - 红线缺陷无论第几个都立即进入 `HARD_STOP_REDLINE_READ_ONLY`：停止修复、重跑、
   generate、commit、push、PR、merge，必须在全新任务从 latest exact-green main 重切。
-  红线是封闭集合：tenant/actor/授权/数据隔离破坏（含跨租户泄漏或越权）；认证绕过、
+  红线是封闭集合：actor/授权/数据归属破坏或越权；认证绕过、
   密钥泄露、注入、开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River
   acceptance 未按合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider
   或真实外部效果重复执行，或 `outcome_unknown` 被自动重试；不可逆数据损坏或迁移
