@@ -22,6 +22,7 @@ import (
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
@@ -92,6 +93,16 @@ type Handler struct {
 	media           legacyMediaApplication
 	surveys         legacySurveyApplication
 	channels        legacyChannelApplication
+	coupons         legacyCouponApplication
+}
+
+type legacyCouponApplication interface {
+	List(context.Context, int32, int32, string, string) (couponport.Page, error)
+	Get(context.Context, couponport.ID) (couponport.Coupon, error)
+	Create(context.Context, couponport.UpsertCommand) (couponport.Coupon, error)
+	Update(context.Context, couponport.UpsertCommand) (couponport.Coupon, error)
+	Publish(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
+	Stop(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
 }
 
 func NewHandlerWithAll(
@@ -107,17 +118,19 @@ func NewHandlerWithAll(
 	media legacyMediaApplication,
 	surveys legacySurveyApplication,
 	channels legacyChannelApplication,
+	coupons legacyCouponApplication,
 ) (*Handler, error) {
 	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
 	)
-	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) {
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.customerDetail = customerDetail
 	handler.identityResolve = identityResolve
 	handler.weComCorpID = strings.TrimSpace(weComCorpID)
 	handler.channels = channels
+	handler.coupons = coupons
 	return handler, nil
 }
 

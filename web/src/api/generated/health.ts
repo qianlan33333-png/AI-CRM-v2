@@ -338,6 +338,131 @@ export interface LegacyCustomerDetailResponse {
   real_external_call_executed: boolean;
 }
 
+export type CouponUpsertRequestValidityMode =
+  (typeof CouponUpsertRequestValidityMode)[keyof typeof CouponUpsertRequestValidityMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponUpsertRequestValidityMode = {
+  fixed_range: "fixed_range",
+  relative_days: "relative_days",
+} as const;
+
+export interface CouponUpsertRequest {
+  /**
+   * @minLength 1
+   * @maxLength 45
+   */
+  name: string;
+  /** @minimum 1 */
+  discount_amount_total: number;
+  /** @minimum 1 */
+  total_issue_limit: number;
+  /** @minimum 1 */
+  per_user_issue_limit?: number;
+  claim_starts_at: string;
+  claim_ends_at: string;
+  validity_mode: CouponUpsertRequestValidityMode;
+  /** @nullable */
+  use_starts_at?: string | null;
+  /** @nullable */
+  use_ends_at?: string | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  relative_validity_days?: number | null;
+  /** @maxLength 200 */
+  instructions?: string;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  target_refs: string[];
+}
+
+export type CouponAllOfCurrency =
+  (typeof CouponAllOfCurrency)[keyof typeof CouponAllOfCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponAllOfCurrency = {
+  CNY: "CNY",
+} as const;
+
+export type CouponAllOfStatus =
+  (typeof CouponAllOfStatus)[keyof typeof CouponAllOfStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponAllOfStatus = {
+  draft: "draft",
+  published: "published",
+  stopped: "stopped",
+} as const;
+
+export type CouponAllOfAvailabilityStatus =
+  (typeof CouponAllOfAvailabilityStatus)[keyof typeof CouponAllOfAvailabilityStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponAllOfAvailabilityStatus = {
+  draft: "draft",
+  stopped: "stopped",
+  scheduled: "scheduled",
+  active: "active",
+  sold_out: "sold_out",
+  ended: "ended",
+} as const;
+
+export type CouponAllOf = {
+  /** @minimum 1 */
+  id: number;
+  currency: CouponAllOfCurrency;
+  status: CouponAllOfStatus;
+  availability_status: CouponAllOfAvailabilityStatus;
+  /** @minimum 0 */
+  issued_count: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Coupon = CouponUpsertRequest & CouponAllOf;
+
+export interface LegacyCouponListResponse {
+  ok: boolean;
+  coupons: Coupon[];
+  items: Coupon[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  [key: string]: unknown;
+}
+
+export interface LegacyCouponDetailResponse {
+  ok: boolean;
+  coupon: Coupon;
+  [key: string]: unknown;
+}
+
+export interface LegacyCouponMutationResponse {
+  ok: boolean;
+  coupon: Coupon;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  create_replay_safe?: boolean;
+  idempotent_same_state?: boolean;
+  [key: string]: unknown;
+}
+
 export interface LegacyQuestionnaireValidation {
   /**
    * @minimum 0
@@ -1741,6 +1866,34 @@ export const ListLegacyChannelsStatus = {
   active: "active",
   inactive: "inactive",
   archived: "archived",
+} as const;
+
+export type ListLegacyCouponsParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  /**
+   * @maxLength 80
+   */
+  q?: string;
+  status?: ListLegacyCouponsStatus;
+};
+
+export type ListLegacyCouponsStatus =
+  (typeof ListLegacyCouponsStatus)[keyof typeof ListLegacyCouponsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyCouponsStatus = {
+  draft: "draft",
+  published: "published",
+  stopped: "stopped",
 } as const;
 
 export type ListLegacyQuestionnairesParams = {
@@ -4470,6 +4623,454 @@ export const updateLegacyChannel = async (
     status: res.status,
     headers: res.headers,
   } as updateLegacyChannelResponse;
+};
+
+/**
+ * @summary List persisted coupon rules without claims, redemption, or public-grid execution
+ */
+export type listLegacyCouponsResponse200 = {
+  data: LegacyCouponListResponse;
+  status: 200;
+};
+
+export type listLegacyCouponsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyCouponsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyCouponsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyCouponsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyCouponsResponseSuccess = listLegacyCouponsResponse200 & {
+  headers: Headers;
+};
+export type listLegacyCouponsResponseError = (
+  | listLegacyCouponsResponse400
+  | listLegacyCouponsResponse401
+  | listLegacyCouponsResponse403
+  | listLegacyCouponsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyCouponsResponse =
+  listLegacyCouponsResponseSuccess | listLegacyCouponsResponseError;
+
+export const getListLegacyCouponsUrl = (params?: ListLegacyCouponsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/coupons?${stringifiedParams}`
+    : `/api/admin/coupons`;
+};
+
+export const listLegacyCoupons = async (
+  params?: ListLegacyCouponsParams,
+  options?: RequestInit,
+): Promise<listLegacyCouponsResponse> => {
+  const res = await fetch(getListLegacyCouponsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyCouponsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyCouponsResponse;
+};
+
+/**
+ * @summary Create a draft coupon rule; this legacy route is not replay-safe
+ */
+export type createLegacyCouponResponse200 = {
+  data: LegacyCouponMutationResponse;
+  status: 200;
+};
+
+export type createLegacyCouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyCouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyCouponResponseSuccess =
+  createLegacyCouponResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyCouponResponseError = (
+  | createLegacyCouponResponse400
+  | createLegacyCouponResponse401
+  | createLegacyCouponResponse403
+  | createLegacyCouponResponse409
+  | createLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyCouponResponse =
+  createLegacyCouponResponseSuccess | createLegacyCouponResponseError;
+
+export const getCreateLegacyCouponUrl = () => {
+  return `/api/admin/coupons`;
+};
+
+export const createLegacyCoupon = async (
+  couponUpsertRequest: CouponUpsertRequest,
+  options?: RequestInit,
+): Promise<createLegacyCouponResponse> => {
+  const res = await fetch(getCreateLegacyCouponUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(couponUpsertRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyCouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyCouponResponse;
+};
+
+export type getLegacyCouponResponse200 = {
+  data: LegacyCouponDetailResponse;
+  status: 200;
+};
+
+export type getLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCouponResponseSuccess = getLegacyCouponResponse200 & {
+  headers: Headers;
+};
+export type getLegacyCouponResponseError = (
+  | getLegacyCouponResponse401
+  | getLegacyCouponResponse403
+  | getLegacyCouponResponse404
+  | getLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCouponResponse =
+  getLegacyCouponResponseSuccess | getLegacyCouponResponseError;
+
+export const getGetLegacyCouponUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}`;
+};
+
+export const getLegacyCoupon = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<getLegacyCouponResponse> => {
+  const res = await fetch(getGetLegacyCouponUrl(couponId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCouponResponse;
+};
+
+export type updateLegacyCouponResponse200 = {
+  data: LegacyCouponMutationResponse;
+  status: 200;
+};
+
+export type updateLegacyCouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyCouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyCouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyCouponResponseSuccess =
+  updateLegacyCouponResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyCouponResponseError = (
+  | updateLegacyCouponResponse400
+  | updateLegacyCouponResponse401
+  | updateLegacyCouponResponse403
+  | updateLegacyCouponResponse404
+  | updateLegacyCouponResponse409
+  | updateLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyCouponResponse =
+  updateLegacyCouponResponseSuccess | updateLegacyCouponResponseError;
+
+export const getUpdateLegacyCouponUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}`;
+};
+
+export const updateLegacyCoupon = async (
+  couponId: number,
+  couponUpsertRequest: CouponUpsertRequest,
+  options?: RequestInit,
+): Promise<updateLegacyCouponResponse> => {
+  const res = await fetch(getUpdateLegacyCouponUrl(couponId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(couponUpsertRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyCouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyCouponResponse;
+};
+
+export type publishLegacyCouponResponse200 = {
+  data: LegacyCouponMutationResponse;
+  status: 200;
+};
+
+export type publishLegacyCouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type publishLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type publishLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type publishLegacyCouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type publishLegacyCouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type publishLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type publishLegacyCouponResponseSuccess =
+  publishLegacyCouponResponse200 & {
+    headers: Headers;
+  };
+export type publishLegacyCouponResponseError = (
+  | publishLegacyCouponResponse400
+  | publishLegacyCouponResponse401
+  | publishLegacyCouponResponse403
+  | publishLegacyCouponResponse404
+  | publishLegacyCouponResponse409
+  | publishLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type publishLegacyCouponResponse =
+  publishLegacyCouponResponseSuccess | publishLegacyCouponResponseError;
+
+export const getPublishLegacyCouponUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}/publish`;
+};
+
+export const publishLegacyCoupon = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<publishLegacyCouponResponse> => {
+  const res = await fetch(getPublishLegacyCouponUrl(couponId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: publishLegacyCouponResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as publishLegacyCouponResponse;
+};
+
+export type stopLegacyCouponResponse200 = {
+  data: LegacyCouponMutationResponse;
+  status: 200;
+};
+
+export type stopLegacyCouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type stopLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type stopLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type stopLegacyCouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type stopLegacyCouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type stopLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type stopLegacyCouponResponseSuccess = stopLegacyCouponResponse200 & {
+  headers: Headers;
+};
+export type stopLegacyCouponResponseError = (
+  | stopLegacyCouponResponse400
+  | stopLegacyCouponResponse401
+  | stopLegacyCouponResponse403
+  | stopLegacyCouponResponse404
+  | stopLegacyCouponResponse409
+  | stopLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type stopLegacyCouponResponse =
+  stopLegacyCouponResponseSuccess | stopLegacyCouponResponseError;
+
+export const getStopLegacyCouponUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}/stop`;
+};
+
+export const stopLegacyCoupon = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<stopLegacyCouponResponse> => {
+  const res = await fetch(getStopLegacyCouponUrl(couponId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: stopLegacyCouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as stopLegacyCouponResponse;
 };
 
 /**

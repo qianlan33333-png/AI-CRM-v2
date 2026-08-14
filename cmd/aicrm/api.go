@@ -24,6 +24,8 @@ import (
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
+	couponstore "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
@@ -366,6 +368,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	mediaService := mediaapp.NewService(uow, mediastore.NewUploadRepository(), eventstore.NewAppender())
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	channelService := contactapp.NewChannelService(uow, contactstore.NewChannelRepository(), eventstore.NewAppender())
+	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -402,7 +405,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
-		productService, mediaService, surveyService, channelService,
+		productService, mediaService, surveyService, channelService, couponService,
 	)
 	if err != nil {
 		pool.Close()
@@ -670,6 +673,12 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/channels", authport.CapabilityChannelsWrite, true, http.HandlerFunc(legacy.CreateChannel)},
 			{http.MethodGet, "/api/admin/channels/{channel_id}", authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.GetChannel)},
 			{http.MethodPatch, "/api/admin/channels/{channel_id}", authport.CapabilityChannelsWrite, true, http.HandlerFunc(legacy.UpdateChannel)},
+			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},
+			{http.MethodPost, "/api/admin/coupons", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CreateCoupon)},
+			{http.MethodGet, "/api/admin/coupons/{coupon_id}", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.GetCoupon)},
+			{http.MethodPut, "/api/admin/coupons/{coupon_id}", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.UpdateCoupon)},
+			{http.MethodPost, "/api/admin/coupons/{coupon_id}/publish", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.PublishCoupon)},
+			{http.MethodPost, "/api/admin/coupons/{coupon_id}/stop", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.StopCoupon)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 				return nil, err

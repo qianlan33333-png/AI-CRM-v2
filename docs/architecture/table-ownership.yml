@@ -116,6 +116,15 @@ owners:
       product_catalog_counters: exact_legacy_total_without_catalog_scan
       product_operation_receipts: transaction_scoped_create_idempotency_receipts
 
+  coupon:
+    package: internal/coupon
+    tables: [coupons, coupon_targets, coupon_catalog_counters, coupon_operation_receipts]
+    constraints:
+      coupons: single_instance_coupon_rule_and_lifecycle_facts
+      coupon_targets: typed_standard_product_references_validated_through_product_read_port
+      coupon_catalog_counters: exact_unfiltered_legacy_total_without_coupon_scan
+      coupon_operation_receipts: transaction_scoped_mutation_receipts_without_create_replay_claim
+
   media:
     package: internal/media
     tables: [media_images, media_image_blobs, media_image_upload_receipts]
