@@ -99,6 +99,59 @@ if (cd "$ledger_history_fixture" && scripts/check_repo_contract.sh >/dev/null 2>
   fail "historical slice ledger drift was accepted"
 fi
 
+scope_frozen_policy_fixture="$(make_fixture slice-policy-scope-frozen-token)"
+ruby -e '
+  file = ARGV.fetch(0)
+  source = File.read(file)
+  replacement = source.sub("SCOPE_FROZEN_REPAIR_ONLY", "SCOPE_FROZEN_REPAIR_ONLY_DISABLED")
+  abort "missing SCOPE_FROZEN_REPAIR_ONLY policy token" if replacement == source
+  File.write(file, replacement)
+' "$scope_frozen_policy_fixture/AGENTS.md"
+restage_p2s18_receipt "$scope_frozen_policy_fixture" AGENTS.md
+if (cd "$scope_frozen_policy_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "scope-frozen repair-only policy drift was accepted after receipt refresh"
+fi
+
+redline_closed_set_fixture="$(make_fixture slice-policy-redline-closed-set)"
+ruby -e '
+  file = ARGV.fetch(0)
+  source = File.read(file)
+  category = "    - unauthorized_production_write_or_real_wecom_send_payment_refund_external_operation\n"
+  abort "missing closed redline category" unless source.include?(category)
+  File.write(file, source.sub(category, ""))
+' "$redline_closed_set_fixture/docs/execution/slice-ledger.yml"
+restage_p2s18_receipt "$redline_closed_set_fixture" docs/execution/slice-ledger.yml
+if (cd "$redline_closed_set_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "incomplete closed redline category set was accepted after receipt refresh"
+fi
+
+redline_template_fixture="$(make_fixture slice-policy-redline-template-set)"
+ruby -e '
+  file = ARGV.fetch(0)
+  source = File.read(file)
+  category = "|unauthorized_production_write_or_real_wecom_send_payment_refund_external_operation"
+  abort "missing template redline category" unless source.include?(category)
+  File.write(file, source.sub(category, ""))
+' "$redline_template_fixture/docs/execution/slice-card-template.md"
+restage_p2s18_receipt "$redline_template_fixture" docs/execution/slice-card-template.md
+if (cd "$redline_template_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "incomplete slice-card redline category set was accepted after receipt refresh"
+fi
+
+third_non_redline_discard_fixture="$(make_fixture slice-policy-third-non-redline-discard)"
+ruby -e '
+  file = ARGV.fetch(0)
+  source = File.read(file)
+  before = "    non_redline_slice_induced_gte_3_discards_candidate: false"
+  after = "    non_redline_slice_induced_gte_3_discards_candidate: true"
+  abort "missing third non-redline retention rule" unless source.include?(before)
+  File.write(file, source.sub(before, after))
+' "$third_non_redline_discard_fixture/docs/execution/slice-ledger.yml"
+restage_p2s18_receipt "$third_non_redline_discard_fixture" docs/execution/slice-ledger.yml
+if (cd "$third_non_redline_discard_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "third non-redline candidate discard was accepted after receipt refresh"
+fi
+
 receipt_verifier_drift="$(make_fixture receipt-verifier-drift)"
 printf '%s\n' '# receipt verifier drift' >>"$receipt_verifier_drift/scripts/verify_repo_receipts.pl"
 git -C "$receipt_verifier_drift" add scripts/verify_repo_receipts.pl

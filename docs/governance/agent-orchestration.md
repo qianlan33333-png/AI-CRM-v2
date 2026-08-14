@@ -39,8 +39,8 @@ CI 接线、修正和 GitHub 全流程；不另立小型中间合同 PR、Terra 
 - P2：Sol 主做共享平台核心，孤立组件按需委派。
 - P3/P4：在 API/公共契约冻结后，恢复 Sol 指挥与 Terra 并行；每个 PR 必须关闭
   ledger 官方业务 Slice，或关闭经用户/权威计划批准且能在 feature matrix 定位的
-  完整业务 flow。禁止 parser/checker/governance-only PR；本次业务交付优先策略迁移
-  是唯一例外，合并后例外关闭。
+  完整业务 flow。禁止 parser/checker/governance-only PR；本次一次性修正处理规则 PR
+  是用户明确批准的唯一例外，不计 P4 业务进度，合并后例外关闭。
 - 迁移与对账：必须由与实现者独立的 Agent 执行复核，不允许实现者自证。
 
 并行实现须至少有两个互不依赖、路径不重叠、单任务足以覆盖交接成本的任务，且
@@ -48,12 +48,24 @@ CI 接线、修正和 GitHub 全流程；不另立小型中间合同 PR、Terra 
 
 ## 修正与交付归因
 
-- 只有 `slice_induced` 参与降档与硬停：达到 2 时冻结范围并降档，允许当前片在不扩
-  scope 下完成既定闭环；达到 3 时立即停报并重切更小业务片。
+- 非红线 `slice_induced` 第 1、2 个允许原片修复并继续。第 2 个起立即降档并进入
+  `SCOPE_FROZEN_REPAIR_ONLY`：冻结已批准能力范围，禁止扩 scope、新增能力和无关重构；
+  第 3 个及以后保持该状态，不因计数丢弃候选，仍可修复既有缺陷、补永久负例并完成
+  原始 DoD、generated/manifest/ledger、rebase、required CI、PR/merge 和 exact-main CLOSED。
+- 任一红线缺陷立即进入 `HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、
+  commit、push、PR、merge，并在全新任务从 latest exact-green main 重切。红线封闭为：
+  tenant/actor/授权/数据隔离破坏（含跨租户泄漏或越权）；认证绕过、密钥泄露、注入、
+  开放跳转等安全边界缺陷；跨域直写或业务事实/event/delivery/River acceptance 未按
+  合同处于同一要求事务等 ownership/原子性破坏；支付、退款、provider 或真实外部效果
+  重复执行，或 `outcome_unknown` 自动重试；不可逆数据损坏或迁移丢失；未授权生产写、
+  真实企微/真实发送/真实支付退款等外部操作。未触及该封闭集合的纯实现、错误分类、
+  JSON 规范化、sentinel、文件结构、lint、测试断言和性能索引缺陷均为非红线。
 - `infra_induced` 与 `verification_induced` 精确记录但不降档、不硬停。机械环境、
   命令和测试夹具时序在原任务内修复；只有涉及共享基础设施或业务范围才另片。
 - 预期生成物及既有 hash、manifest、ledger receipt 正常同步属于 Definition of Done；
   首次遗漏被门发现才记一次 `verification_induced`，并在原任务补齐。
+- 新规则只前向适用于规则合入后的全新候选或当时尚无 WIP 的候选；旧规则下已经
+  HARD STOP 的 W0/A/H/I 与两次 W0 候选永久只读，不追溯复活、复制或 cherry-pick。
 - 独立安全片只限不可逆数据污染、鉴权、迁移或真实外发的明确风险；其余安全工作
   优先随业务垂直片完成。
 

@@ -388,15 +388,23 @@
   生成物与测试文件不计入手写额度。
 - 当一个完整行为无法在上限内闭环时，优先突破上限而非拆成无法独立验收的
   半成品；突破需在 slice 卡写明理由与实际规模，硬顶 15 文件 / 1500 行。
-- 仅 `slice_induced` 参与降档与硬停：达到 2 时冻结范围、不得扩 scope，允许当前片
-  完成既定闭环，下一片回退一档；达到 3 时立即停报并重切更小业务片。
+- 非红线 `slice_induced` 第 1、2 个允许原片修复；第 2 个起降档并进入
+  `SCOPE_FROZEN_REPAIR_ONLY`，冻结能力范围、禁止扩 scope、新能力和无关重构；第 3 个
+  及以后保持 repair-only，不因计数丢弃候选，并可完成原始 DoD、PR/merge/exact-main。
+- 任一红线进入 `HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、commit、
+  push、PR、merge，并从 latest exact-green main 全新重切。红线封闭为 tenant/actor/
+  授权/数据隔离、安全边界、跨域 ownership/要求事务原子性、外部效果重复或
+  `outcome_unknown` 自动重试、不可逆数据或迁移损坏、未授权生产或真实外部操作。
+  未触及红线的纯实现、分类、规范化、sentinel、结构、lint、测试或索引错误为非红线。
 - `infra_induced` 与 `verification_induced` 精确记录但不降档、不硬停；机械环境、
   命令和测试夹具时序在原任务内修复，只有涉及共享基础设施或业务范围才另片。
 - 预期生成物及既有 hash、manifest、ledger receipt 的正常同步属于 Definition of
   Done；首次遗漏被门发现才记一次 `verification_induced`，并在原任务补齐。
+- 新规则只前向适用于合入后的全新候选或当时尚无 WIP 的候选；旧规则下 W0/A/H/I
+  与两次 W0 HARD STOP 候选永久只读，不追溯复活、复制或 cherry-pick。
 - P3/P4 每个 PR 必须关闭官方业务 Slice，或关闭经用户/权威计划批准且能在 feature
-  matrix 定位的完整业务 flow；禁止 parser/checker/governance-only PR。本次策略迁移
-  是唯一例外，合并后例外关闭。
+  matrix 定位的完整业务 flow；禁止 parser/checker/governance-only PR。本次一次性
+  修正处理规则 PR 是明确批准的唯一例外，不计 P4 业务进度，合并后例外关闭。
 - 互不依赖、路径不重叠且不修改共享契约的业务 PR 可并行；中央契约裁决、最终
   rebase/merge 与精确 main CI 串行。P3 波次为 contact → (identity ∥ segment) →
   (wecom ∥ outbound)。

@@ -55,6 +55,20 @@ Allowed paths（逐项）：
 无法闭环完整行为时可先说明理由再扩大，但硬顶为 15 文件/1500 行；超过
 硬顶必须停止报告，不得拆成无法独立验收的半成品。
 
+## Correction state
+
+- `slice_induced_correction_count`: `<integer>`
+- `correction_state`: `<ACTIVE_REPAIR_ALLOWED|SCOPE_FROZEN_REPAIR_ONLY|HARD_STOP_REDLINE_READ_ONLY>`
+- `redline_category`: `<none|tenant_actor_auth_data_isolation_or_cross_tenant_privilege_violation|security_boundary_auth_bypass_secret_leak_injection_or_open_redirect|cross_domain_ownership_or_required_transaction_atomicity_violation|duplicate_payment_refund_provider_real_external_effect_or_outcome_unknown_auto_retry|irreversible_data_damage_or_migration_loss|unauthorized_production_write_or_real_wecom_send_payment_refund_external_operation>`
+- `frozen_capability_scope`: `<exact original capability set; required from count 2>`
+- `historical_candidate_policy`: `<forward_applicable|permanent_read_only_no_revival_or_copy>`
+
+非红线第 1 个修正可原片修复；第 2 个起降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`；第 3 个
+及以后保持 repair-only，不因计数丢弃候选。任一红线立即进入
+`HARD_STOP_REDLINE_READ_ONLY`，停止修复、重跑、generate、commit、push、PR、merge，
+并从 latest exact-green main 全新重切。红线只允许使用上述封闭枚举；未触及红线的
+纯实现、分类、规范化、sentinel、结构、lint、测试或索引错误为非红线。
+
 ## Required implementation and tests
 
 1. 先写能够证明目标行为的失败测试。

@@ -498,7 +498,9 @@ required=(
   docs/adr/ADR-012.md
   docs/architecture/port-contracts.md
   docs/architecture/table-ownership.yml
+  docs/governance/agent-orchestration.md
   docs/governance/limitations.md
+  docs/plans/2026-08-13-p4-legacy-backend-parity.md
   docs/execution/slice-card-template.md
   docs/execution/slice-ledger.yml
   docs/execution/slices/P3-S06.md
@@ -1058,7 +1060,7 @@ verify_index_sha256 docs/evidence/phases/P2-closeout.md \
 verify_index_sha256 docs/backlog/post-launch.md \
   3248fa362b357e72f562531feb5ba01297f0a19b275a1e61d40108a4fe522b31
 verify_index_sha256 docs/execution/implementation-plan.md \
-  572a8425e8d6ef98eef6aa01f84cd272400ffaa997da8295922e1f98cf31b7a5
+  2aa87d7574418b1c3860b634ec5bb24e3e1533169bbf73e1036a2cc08f7fa965
 verify_index_sha256 docs/execution/slices/P2-01R.md \
   15e671e6d7244993157487b674473fa65acfb26dfbb24e8903130ed9dd1ece85
 verify_index_sha256 docs/execution/slices/P2-02.md \
@@ -1150,7 +1152,13 @@ verify_index_sha256 scripts/sourcepolicy/main.go \
 verify_index_sha256 scripts/test_source_policy.sh \
   5946cd133bf3e213a8d5635a231ca6161a71a9cfd785e69d87bfac7099704b80
 verify_index_sha256 AGENTS.md \
-  35be08d85ad92730eed846e4b91dfddc597249b6b99cd78a859445cd7aeec19d
+  fd48bab3d325f265c928da680103933dc63fcd6bae9ae0addf99d23524585bb1
+verify_index_sha256 docs/governance/agent-orchestration.md \
+  ad5d5564997295502de3fc53f6a3069db3357ef61d26d6b68f010d7ea9a425cc
+verify_index_sha256 docs/plans/2026-08-13-p4-legacy-backend-parity.md \
+  e9a89ce8b9572f262d81b8b7fe3db1dd3b0db17e517163db0e168adbaadd18f6
+verify_index_sha256 docs/execution/slice-card-template.md \
+  8ed52176806cd8a2372ee945294760293979a4e4efe00561a4b63642b889512a
 verify_index_sha256 scripts/check_slice_inputs.sh \
   b7b1711da73974b0a89c79bab020e519095fc8aaf36f737b036027ec3a08cb25
 verify_index_sha256 scripts/test_slice_inputs.sh \
@@ -1174,11 +1182,11 @@ verify_index_sha256 docs/execution/slices/M0-3.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案.md \
   210f6d3c9d0434cba6426ab71fc1cc64bc3a6d3a1a184e55af5f1273c21a8099
 verify_index_sha256 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md \
-  d629f96aa6a488a5d90bae99569e688d14d33749d409d5e7b5dfee4b2fb394e4
+  2cbe7cfda8388a3c122162b2a9f9d188e5428a80a54eb8de8fd362dc87c87853
 verify_index_sha256 docs/spec/AI-CRM-v2-重构详细设计.md \
   cf515dd011eb00a1b48d39611773546c8d7794e5bd7f122ef5bf20c6728f82f7
 verify_index_sha256 docs/spec/SHA256SUMS \
-  7033f2fed0eae75b9e09dbd0f5debd3de4ab8dd8f4a0058338d34701f81b6854
+  bc4a681c8c7c5323ad1a54ab731f4b77d4d9095e3a6aa18d501c96f4e76dd673
 verify_index_sha256 tools/snapshot-gate/main.go \
   425cb0ea7702d9aeb817687487f97db27b7e3c03b8a5a95df722aedd8390992c
 verify_index_sha256 tools/snapshot-gate/main_test.go \
@@ -1226,7 +1234,7 @@ verify_index_sha256 docs/execution/slices/G1-D01.md \
 verify_index_sha256 docs/execution/slices/G1-D02.md \
   3fc37264f57da5fa15d8d3765554ca3e1eea7ce8bd10865176eb9d3b537f4742
 verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
-  7400d8fcda4be52fe6077652c2441d0051de7b500de3cffddac30275d4390e17
+  28273beaca7c626b86d6553ac43342c58b73056438b64d209b5b8273d4a35ef4
 verify_index_sha256 tools/p1-reconciliation/main.go \
   2b1162a4a423b9f106b512d162a5ebc4d3bc5fded125caaa69bc0d7b823ade99
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
@@ -1564,7 +1572,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  5bfd50b79950a6f7f2d12554c7e540271e8d8590aff44b110b4cedf7fd35383a
+  e00c057e2e1096d21d8b225ce467a206ea521e4ed00fd3e4ce27a3f3c6736f2c
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -2026,7 +2034,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   528685e35ad4a95a039bf371696971b3341df2cc9e74bdff99969a33bfa9f3a5
 verify_index_sha256 scripts/test_repo_contract.sh \
-  a8543cf16d14a1b29a4bb41541a70c5d3639c545260cee0baf24f1608e7ba2d9
+  e1feba3abfdd19f88dce3bab109d77da5d1ee244f7748f7998d95bc5e22edd99
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -2734,6 +2742,63 @@ grep -Fq 'event_deliveries 推迟到 P4' <<<"$design" ||
 implementation_plan="$(git show ':docs/execution/implementation-plan.md')"
 grep -Fq 'contact → (identity ∥ segment) → (wecom ∥ outbound)' <<<"$implementation_plan" ||
   fail "implementation plan lost the frozen P3 waves"
+
+slice_policy_documents=(
+  AGENTS.md
+  docs/governance/agent-orchestration.md
+  docs/execution/implementation-plan.md
+  docs/plans/2026-08-13-p4-legacy-backend-parity.md
+  docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
+  docs/spec/AI-CRM-v2-P2P3执行计划.md
+  docs/execution/slice-card-template.md
+)
+for slice_policy_document in "${slice_policy_documents[@]}"; do
+  slice_policy_source="$(git show ":$slice_policy_document")"
+  grep -Fq 'SCOPE_FROZEN_REPAIR_ONLY' <<<"$slice_policy_source" ||
+    fail "slice correction policy lost repair-only state: $slice_policy_document"
+  grep -Fq 'HARD_STOP_REDLINE_READ_ONLY' <<<"$slice_policy_source" ||
+    fail "slice correction policy lost redline hard-stop state: $slice_policy_document"
+done
+
+slice_policy_agents="$(git show ':AGENTS.md')"
+grep -Fq '第 2 个起立即降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结已批准能力范围' \
+  <<<"$slice_policy_agents" ||
+  fail "AGENTS lost the count-two scope freeze rule"
+grep -Fq '第 3 个及以后保持该状态，不得仅因计数达到 3 丢弃候选' \
+  <<<"$slice_policy_agents" ||
+  fail "AGENTS restored count-three candidate discard"
+grep -Fq '停止修复、重跑、' <<<"$slice_policy_agents" ||
+  fail "AGENTS lost immediate redline stop actions"
+grep -Fq '已按旧规则 HARD STOP 的 W0/A/H/I 及两次 W0 候选永久只读' \
+  <<<"$slice_policy_agents" ||
+  fail "AGENTS lost historical hard-stop non-revival"
+
+slice_policy_ledger="$(git show ':docs/execution/slice-ledger.yml')"
+slice_policy_template="$(git show ':docs/execution/slice-card-template.md')"
+for required_slice_policy_ledger_text in \
+  '    non_redline_slice_induced_1: ACTIVE_REPAIR_ALLOWED' \
+  '    non_redline_slice_induced_gte_2: SCOPE_FROZEN_REPAIR_ONLY' \
+  '    non_redline_slice_induced_gte_3_discards_candidate: false' \
+  '    redline_any_count: HARD_STOP_REDLINE_READ_ONLY' \
+  '  policy_effective_scope: forward_only_after_policy_merge_for_fresh_or_no_WIP_candidates' \
+  '  historical_hard_stops_retroactive_revival: false' \
+  '    historical_W0_A_H_I_and_two_W0_candidates: permanent_read_only_no_revival_copy_or_cherry_pick'; do
+  grep -Fxq "$required_slice_policy_ledger_text" <<<"$slice_policy_ledger" ||
+    fail "slice ledger lost correction policy: $required_slice_policy_ledger_text"
+done
+for required_redline_category in \
+  '    - tenant_actor_auth_data_isolation_or_cross_tenant_privilege_violation' \
+  '    - security_boundary_auth_bypass_secret_leak_injection_or_open_redirect' \
+  '    - cross_domain_ownership_or_required_transaction_atomicity_violation' \
+  '    - duplicate_payment_refund_provider_real_external_effect_or_outcome_unknown_auto_retry' \
+  '    - irreversible_data_damage_or_migration_loss' \
+  '    - unauthorized_production_write_or_real_wecom_send_payment_refund_external_operation'; do
+  grep -Fxq "$required_redline_category" <<<"$slice_policy_ledger" ||
+    fail "slice ledger lost closed redline category: $required_redline_category"
+  redline_category_name="${required_redline_category#    - }"
+  grep -Fq "$redline_category_name" <<<"$slice_policy_template" ||
+    fail "slice card template lost closed redline category: $redline_category_name"
+done
 grep -Fq '安全、数据损坏/不可逆风险、已决 ADR、全部架构铁律与 CI 门禁均不得进入' \
   <<<"$(git show ':docs/backlog/post-launch.md')" ||
   fail "post-launch backlog lost its non-deferrable boundaries"
