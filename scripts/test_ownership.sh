@@ -13,7 +13,7 @@ seed() {
     "$root/internal/segment/store/queries" "$root/internal/outbound/worker" \
     "$root/internal/wecom/store" "$root/internal/platform/store" \
     "$root/internal/events/store/queries" \
-    "$root/internal/automation/store/queries" \
+    "$root/internal/automation/store/queries" "$root/internal/stats/store/queries" \
     "$root/acceptance/fixtures" "$root/acceptance/contactfixture"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
@@ -59,6 +59,7 @@ mutate() {
     platform-write) echo 'INSERT INTO event_log DEFAULT VALUES;' >"$root/internal/platform/store/write.sql" ;;
     contact-event-update) echo 'UPDATE event_log SET dispatched = true;' >"$root/internal/contact/store/queries/write.sql" ;;
     automation-event-delivery) echo 'UPDATE event_deliveries SET status = '\''completed'\'';' >"$root/internal/automation/store/queries/write.sql" ;;
+    stats-event-delivery) echo 'UPDATE event_deliveries SET status = '\''completed'\'';' >"$root/internal/stats/store/queries/write.sql" ;;
     acceptance-event-delivery) mkdir -p "$root/acceptance/automation"; echo 'package automation; const dml = "INSERT INTO event_deliveries (event_id, consumer) VALUES (1, '\''automation.tag-trigger.v1'\'')"' >"$root/acceptance/automation/direct_event_write.go" ;;
     contact-auth-session) echo 'UPDATE admin_sessions SET revoked_reason = '\''bypass'\'';' >"$root/internal/contact/store/queries/write.sql" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
@@ -76,6 +77,7 @@ mutate() {
 reject contact-identity 'table write ownership violation'; reject segment-write 'table write ownership violation'
 reject platform-write 'table write ownership violation'; reject contact-event-update 'table write ownership violation'
 reject automation-event-delivery 'table write ownership violation'
+reject stats-event-delivery 'table write ownership violation'
 reject acceptance-event-delivery 'table write ownership violation'
 reject contact-auth-session 'table write ownership violation'
 reject unknown-table 'write to unknown table'

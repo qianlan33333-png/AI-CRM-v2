@@ -33,7 +33,7 @@ read -r upgrade_waterline history_events delivery_table receipt_table delivery_i
             (to_regclass('public.automation_trigger_receipts_list_idx') IS NOT NULL)::int
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "25" && "$history_events" = "1" ]]
+[[ "$upgrade_waterline" = "26" && "$history_events" = "1" ]]
 [[ "$delivery_table" = "1" && "$receipt_table" = "1" && "$delivery_index" = "1" && "$receipt_index" = "1" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -52,7 +52,7 @@ read -r receipt_id delivery_event_id river_job_id triggered_event_id <<<"$(
 [[ "$receipt_id" =~ ^[1-9][0-9]*$ && "$delivery_event_id" =~ ^[1-9][0-9]*$ ]]
 [[ "$river_job_id" =~ ^[1-9][0-9]*$ && "$triggered_event_id" =~ ^[1-9][0-9]*$ ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 24
 read -r rollback_waterline history_events receipts deliveries jobs triggered_events <<<"$(
   psql "$database_url" -X -v ON_ERROR_STOP=1 -At -F ' ' -c \
     "SELECT max(version_id),
@@ -77,7 +77,7 @@ read -r final_waterline history_events receipts deliveries jobs triggered_events
             (SELECT count(*) FROM event_log WHERE id=${triggered_event_id} AND event_type='automation.triggered')
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$final_waterline" = "25" && "$history_events" = "1" ]]
+[[ "$final_waterline" = "26" && "$history_events" = "1" ]]
 [[ "$receipts" = "1" && "$deliveries" = "1" && "$jobs" = "1" && "$triggered_events" = "1" ]]
 
-printf 'P4-W0-D01 migration compatibility: PASS (24/25/24/25, history preserved)\n'
+printf 'P4-W0-D01 migration compatibility: PASS (24/26/24/26, D01 and L01 history preserved)\n'

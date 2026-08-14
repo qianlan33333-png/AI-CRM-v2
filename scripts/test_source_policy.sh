@@ -10,7 +10,7 @@ seed() {
   local root="$1"
   mkdir -p "$root/cmd/aicrm" "$root/internal/platform/runtime" "$root/internal/config/source" \
     "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
-    "$root/internal/events/dispatcher" \
+    "$root/internal/events/dispatcher" "$root/internal/stats/app" \
     "$root/internal/api/candidate/generated"
   echo 'package main' >"$root/cmd/aicrm/main.go"
   mkdir -p "$root/cmd/aicrm-contact-perf-data" "$root/cmd/aicrm-contact-perf"
@@ -45,6 +45,7 @@ mutate() {
     sql-split) echo 'package app; const q = "SEL"+("ECT 1")' >"$root/internal/contact/app/app.go" ;;
     db-call) echo 'package app; func f(){ db.Query("SELECT * FROM customers") }' >"$root/internal/contact/app/app.go" ;;
     dispatcher-savepoint) echo 'package dispatcher; func f(){ db.Exec("SAVEPOINT automation_delivery") }' >"$root/internal/events/dispatcher/jobs.go" ;;
+    stats-runtime-sql) echo 'package app; func f(){ db.Query("SELECT value FROM stats_daily") }' >"$root/internal/stats/app/app.go" ;;
     performance-command-copy) mkdir -p "$root/cmd/aicrm-contact-perf-data-copy"; echo 'package main; const q = "TRUNCATE TABLE customers"; func f(){ db.Exec(q) }' >"$root/cmd/aicrm-contact-perf-data-copy/main.go" ;;
     performance-runner-copy) mkdir -p "$root/cmd/aicrm-contact-perf-copy"; echo 'package main; const q = "SELECT count(*) FROM customers"; func f(){ db.Query(q) }' >"$root/cmd/aicrm-contact-perf-copy/main.go" ;;
     customer-plan-wrapper-copy) echo 'package store; type wrapper struct{ Tx database }; func (db wrapper) f(){ db.Tx.Query() }' >"$root/internal/contact/store/customer_query_plan_copy.go" ;;
@@ -63,6 +64,7 @@ reject env 'environment read forbidden'; reject env-loader 'environment loader f
 reject sql-path 'SQL source outside'; reject sql-literal 'handwritten SQL forbidden'; reject sql-split 'constructed SQL forbidden'
 reject db-call 'direct database call forbidden'; reject candidate-manual 'direct database call forbidden'; reject orm 'dynamic SQL library forbidden'
 reject dispatcher-savepoint 'direct database call forbidden'
+reject stats-runtime-sql 'direct database call forbidden'
 reject performance-command-copy 'handwritten SQL forbidden'
 reject performance-runner-copy 'handwritten SQL forbidden'
 reject customer-plan-wrapper-copy 'direct database call forbidden'
