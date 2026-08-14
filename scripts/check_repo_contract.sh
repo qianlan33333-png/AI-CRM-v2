@@ -542,6 +542,9 @@ required=(
   scripts/check_slice_inputs.sh scripts/test_slice_inputs.sh
   scripts/check_slice_ledger_history.rb
   scripts/check_generated_sources.sh
+  scripts/ci_promotion_decision.sh
+  scripts/check_ci_promotion_smoke.sh
+  scripts/test_ci_promotion_decision.sh
   scripts/check_repo_contract.sh
   scripts/verify_repo_receipts.pl
   scripts/generated-sources.sha256
@@ -653,6 +656,9 @@ done <<'EOF'
 100644 web/src/shell.css
 100644 web/src/api/generated/health.ts
 100644 .github/workflows/application-go.yml
+100755 scripts/ci_promotion_decision.sh
+100755 scripts/check_ci_promotion_smoke.sh
+100755 scripts/test_ci_promotion_decision.sh
 100755 scripts/check_repo_contract.sh
 100755 scripts/verify_repo_receipts.pl
 100644 scripts/check_arch_imports.go
@@ -1144,11 +1150,17 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   d5aba0d3c1c2457a7630ac8a863181def0d7007babd461a3a2d1a67f9a0c4d1f
 verify_index_sha256 .github/workflows/application-go.yml \
-  490850326cfc9cab45221fc03e926a926b9faa48c941c84d4faa13480acba931
+  e2b3f14d70fbc1e218462e6acb0a2315940c8f7cd8319fd7b7f76208738ee61e
 verify_index_sha256 .github/workflows/repo-contract.yml \
-  300a14e1c96209efe09e98d319c446962d24eaf7f5a33ecbc6bf1e16d81d4883
+  d7ac507239228441b74d1cc8a71ea0f97d1edbdd5c0fdc0ab30b056287e705bf
 verify_index_sha256 .github/workflows/secret-scan.yml \
-  e3077f509e0cfe5a9b70c4064cc666f53258c62cda590f191ea401d1734d02fe
+  699a8058682b54611c3cccbf7cd230d647f5c4724d5165fb83f9c2c31b156056
+verify_index_sha256 scripts/ci_promotion_decision.sh \
+  b6029b28956d4a65f377e8a8d6d1b5566d68b71e99e6106b85bc584e58083e78
+verify_index_sha256 scripts/check_ci_promotion_smoke.sh \
+  72d48a5a0fbf73611f8030f102030176aeb9b95835def8dbc384a009bd1e9d2c
+verify_index_sha256 scripts/test_ci_promotion_decision.sh \
+  333ec5478f5aae4484aae400539b133275fec064f823ffdd2994965bcb2e9e0b
 verify_index_sha256 .gitleaks.toml \
   b220c3b1e00671ed5d45f796b341a586a533659b7eecadf4906516769414ff74
 verify_index_sha256 scripts/test_gitleaks_config.sh \
@@ -3125,13 +3137,16 @@ while IFS= read -r workflow; do
     in_top_permissions && /^[[:space:]]*($|#)/ { next }
     in_top_permissions {
       permission_entries++
-      if ($0 != "  contents: read") invalid_permission = 1
+      if ($0 == "  contents: read") saw_contents = 1
+      else if ($0 == "  checks: read") saw_checks = 1
+      else if ($0 == "  pull-requests: read") saw_pull_requests = 1
+      else invalid_permission = 1
     }
     END {
-      exit !(saw_permissions && permission_entries == 1 && !invalid_permission)
+      exit !(saw_permissions && permission_entries == 3 && saw_contents && saw_checks && saw_pull_requests && !invalid_permission)
     }
   ' "$workflow" ||
-    fail "$workflow must declare only top-level contents: read"
+    fail "$workflow must declare only top-level contents/checks/pull-requests read permissions"
 
   [[ "$(grep -Ec '^[[:space:]]*permissions[[:space:]]*:' "$workflow")" -eq 1 ]] ||
     fail "$workflow must have exactly one canonical permissions key"
