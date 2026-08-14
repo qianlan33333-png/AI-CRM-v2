@@ -150,7 +150,7 @@ test:
 	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) test -race $$packages
 
 build:
-	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) build $$packages
+	@packages="$$(GOWORK=off $(GO) list -f '{{if or .GoFiles .CgoFiles}}{{.ImportPath}}{{end}}' ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) build $$packages
 
 vuln:
 	@packages="$$(GOWORK=off $(GO) list ./... | grep -Ev '(^|/)([.]git|node_modules|vendor)(/|$$)')"; test -n "$$packages"; $(GO) tool -modfile=$(TOOLS_MOD) govulncheck $$packages

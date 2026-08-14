@@ -1032,7 +1032,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  2b4e70b8e82d51e9e281002476f811cc42a3d3319c78cd51e084208f1db22fd5
+  d9cead4714d2420ce639691389c86c6339f42884f1f6753e54efa3e92402c33b
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1594,7 +1594,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  ad5109b237404d5793bbbb0654b65223ba5308ce3e0d7df9a5c82aa901d1cd57
+  d41ea430e0fe4ed190dc2c7d8ba1d2a045eb67eda1f8bd081e154c9d391aad0c
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -2120,7 +2120,7 @@ verify_index_sha256 acceptance/automation/d01_migration_compatibility.sh \
 verify_index_sha256 cmd/aicrm/legacy_automation_api_test.go \
   99823a1e71fb137d2a6c3709199e7c5cc540ec003c45556d5ca3e2034cf1d91d
 verify_index_sha256 docs/execution/slices/P4-W0-D01.md \
-  e963536214a4bc796452f9059ed2ea97381b03df9a79e1777aa66b9ae30c7160
+  d9d4499b08c6eac7636c48aafee7203cf8502311a24f5f5d2222789b8c3bcfe3
 verify_index_sha256 scripts/verify_repo_receipts.pl \
   d28a528cfc1aa8d8a5c6fa62b652699059bb632e8640fbd868ba0e3967881e27
 
@@ -2193,7 +2193,11 @@ make_target_recipe() {
 for target in vet test build vuln; do
   recipe="$(make_target_recipe "$target:")" ||
     fail "Makefile target must be unique: $target"
-  [[ "$(grep -Fc 'GOWORK=off $(GO) list ./...' <<<"$recipe" || true)" = "1" ]] ||
+  discovery='GOWORK=off $(GO) list ./...'
+  if [[ "$target" = build ]]; then
+    discovery="GOWORK=off \$(GO) list -f '{{if or .GoFiles .CgoFiles}}{{.ImportPath}}{{end}}' ./..."
+  fi
+  [[ "$(grep -Fc "$discovery" <<<"$recipe" || true)" = "1" ]] ||
     fail "$target must use Go to discover buildable packages"
   [[ "$(grep -Fc "grep -Ev '(^|/)([.]git|node_modules|vendor)(/|\$\$)'" <<<"$recipe" || true)" = "1" ]] ||
     fail "$target must exclude .git, node_modules, and vendor packages"
@@ -4734,7 +4738,7 @@ p4d01_migration_mapping="$(git show :docs/migration-mapping.jsonl | sed -n '62p'
 p4d01_card="$(git show :docs/execution/slices/P4-W0-D01.md)"
 for anchor in \
   '15 个手写/治理业务合同文件' \
-  'slice_induced=3' \
+  'slice_induced=4' \
   'SCOPE_FROZEN_REPAIR_ONLY' \
   '293 功能矩阵精确审计后没有' \
   'PRODUCTION_DATABASE_NOT_EXECUTED'; do

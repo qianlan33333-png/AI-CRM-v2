@@ -4180,6 +4180,26 @@ slices:
     tests: [LOCAL_P2_S07_real_PG_race_PASS, LOCAL_full_ci_go_revalidation_pending]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-W0-D01-R2
+    title: automation-real-tag-trigger-consumer-build-repair-receipt
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_local_DoD_revalidation_pending
+    base_sha: 13f253e8d34f255bca9b6647776f95b9ed87fbee
+    dependency: P4-W0-D01-R1
+    branch: codex/p4-w0-d01-automation-recut2-policy-20260814
+    pr_url: PENDING_GITHUB_PR_CREATION
+    scope: [forward_record_fourth_non_redline_correction, build_only_non_test_Go_packages, preserve_original_D01_DoD]
+    excluded_scope: [new_file, new_business_capability, generic_consumer_framework, security_platform, extra_recovery_or_risk_control, D02_D05, L01_stats, new_UI, production_or_real_external_operations]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_D01_DoD, permanent_negatives, generated_manifest_ledger_receipts, required_CI_PR_merge_exact_main_CLOSED]
+    slice_induced_correction_count: 4
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 18
+    correction_notes: [slice:full_ci_go_build_found_the_new_acceptance_automation_package_has_only_test_files_then_the_existing_build_package_list_was_limited_to_packages_with_non_test_Go_or_Cgo_files_without_adding_a_doc_or_runtime_file, redline:none]
+    tests: [LOCAL_make_build_PASS, LOCAL_full_ci_go_revalidation_pending]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
