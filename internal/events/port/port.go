@@ -28,6 +28,7 @@ const (
 	EvAutomationTriggered = "automation.triggered"
 	EvProductCreated      = "product.created"
 	EvMediaImageCreated   = "media.image_created"
+	EvSurveyCreated       = "survey.created"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied      = "stats.tag-applied.v1"

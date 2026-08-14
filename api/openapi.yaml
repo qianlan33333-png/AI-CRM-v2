@@ -756,6 +756,83 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires:
+    get:
+      tags: [p4-survey-compat]
+      operationId: listLegacyQuestionnaires
+      summary: List persisted questionnaire definitions for the frozen old admin UI
+      x-legacy-mapping-ids: [LEGACY-API-0423]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Frozen legacy questionnaire list envelope.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-survey-compat]
+      operationId: createLegacyQuestionnaire
+      summary: Create one F01 questionnaire definition without assessment or submission effects
+      x-legacy-mapping-ids: [LEGACY-API-0424]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional actor-scoped business key; omission mints a one-request key.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest" } } }
+      responses:
+        "200":
+          description: Frozen old UI success envelope with data.questionnaire.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateResponse" } } }
+        "400":
+          description: Invalid schema or explicit F02 assessment unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Actor-scoped idempotency payload conflict.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Questionnaire storage or Event UoW unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaire
+      summary: Get one persisted questionnaire definition with ordered questions and options
+      x-legacy-mapping-ids: [LEGACY-API-0427]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: Frozen old UI questionnaire detail envelope.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDetailResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Questionnaire storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
   /api/admin/image-library/upload:
     post:
       tags: [p4-media-compat]
@@ -939,6 +1016,107 @@ components:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
+    LegacyQuestionnaireValidation:
+      type: object
+      additionalProperties: false
+      properties:
+        min_selections: { type: integer, minimum: 0, maximum: 100 }
+        max_selections: { type: integer, minimum: 1, maximum: 100 }
+        min_length: { type: integer, minimum: 0, maximum: 10000 }
+        max_length: { type: integer, minimum: 1, maximum: 10000 }
+    LegacyQuestionnaireOption:
+      type: object
+      additionalProperties: false
+      required: [option_text, score, assessment_type_key, tag_codes, is_other, other_placeholder, other_max_length, sort_order]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        option_text: { type: string, minLength: 1, maxLength: 500 }
+        score: { type: number, format: double }
+        assessment_type_key: { type: string, maxLength: 200 }
+        tag_codes: { type: array, maxItems: 100, items: { type: string, minLength: 1, maxLength: 200 } }
+        is_other: { type: boolean }
+        other_placeholder: { type: string, maxLength: 500 }
+        other_max_length: { type: integer, minimum: 0, maximum: 2000 }
+        sort_order: { type: integer, minimum: 0 }
+    LegacyQuestionnaireQuestion:
+      type: object
+      additionalProperties: false
+      required: [type, title, assessment_dimension_key, sidebar_profile_field, required, sort_order, placeholder_text, options]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        type: { type: string, enum: [single_choice, multi_choice, textarea, mobile] }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        assessment_dimension_key: { type: string, maxLength: 200 }
+        sidebar_profile_field: { type: string, maxLength: 200 }
+        required: { type: boolean }
+        sort_order: { type: integer, minimum: 0 }
+        placeholder_text: { type: string, maxLength: 500 }
+        validation: { $ref: "#/components/schemas/LegacyQuestionnaireValidation" }
+        options: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/LegacyQuestionnaireOption" } }
+    LegacyQuestionnaireCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, title, description, answer_display_mode, assessment_enabled, assessment_config, slug, is_disabled, questions, score_rules]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        title: { type: string, minLength: 1, maxLength: 300 }
+        description: { type: string, maxLength: 10000 }
+        answer_display_mode: { type: string, enum: [all_in_one, one_by_one] }
+        assessment_enabled: { type: boolean, enum: [false] }
+        assessment_config: { type: object, maxProperties: 0 }
+        slug: { type: string, maxLength: 200 }
+        is_disabled: { type: boolean }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/LegacyQuestionnaireQuestion" } }
+        score_rules: { type: array, maxItems: 0, items: { type: object } }
+    LegacyQuestionnaire:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest"
+        - type: object
+          required: [id, enabled, status, version, question_count, submission_count, created_at, updated_at, public_path, submitted_path]
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            enabled: { type: boolean }
+            status: { type: string, enum: [active, disabled] }
+            version: { type: integer, format: int64, minimum: 1 }
+            question_count: { type: integer, minimum: 1, maximum: 100 }
+            submission_count: { type: integer, format: int64, minimum: 0 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+            public_path: { type: string }
+            submitted_path: { type: string }
+    LegacyQuestionnaireListResponse:
+      type: object
+      required: [ok, questionnaires, items, data, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaires: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaire" } }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaire" } }
+        data: { type: object, required: [questionnaires], properties: { questionnaires: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaire" } } } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 200 }
+        offset: { type: integer, minimum: 0 }
+    LegacyQuestionnaireDetailResponse:
+      type: object
+      required: [ok, questionnaire, questions, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire: { $ref: "#/components/schemas/LegacyQuestionnaire" }
+        questions: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireQuestion" } }
+        data: { type: object, required: [questionnaire], properties: { questionnaire: { $ref: "#/components/schemas/LegacyQuestionnaire" } } }
+    LegacyQuestionnaireCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireDetailResponse"
+        - type: object
+          required: [questionnaire_id]
+          properties: { questionnaire_id: { type: integer, format: int64, minimum: 1 } }
+    LegacyQuestionnaireError:
+      type: object
+      additionalProperties: false
+      required: [ok, message, detail]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        message: { type: string }
+        detail: { type: string }
     LegacyImageUploadItem:
       type: object
       additionalProperties: false

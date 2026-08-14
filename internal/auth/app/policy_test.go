@@ -34,6 +34,8 @@ func TestAuthorizeFrozenCapabilityMatrix(t *testing.T) {
 		{authport.CapabilityOutboundRead, authport.ScopeGlobal, authport.ScopeGlobal, authport.ScopeOwnerStaff},
 		{authport.CapabilityOutboundControl, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 		{authport.CapabilityMediaImagesWrite, authport.ScopeGlobal, authport.ScopeGlobal, ""},
+		{authport.CapabilityQuestionnairesRead, authport.ScopeGlobal, authport.ScopeGlobal, ""},
+		{authport.CapabilityQuestionnairesWrite, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 	}
 	principals := []struct {
 		name      string

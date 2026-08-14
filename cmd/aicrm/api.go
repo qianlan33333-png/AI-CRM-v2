@@ -41,6 +41,8 @@ import (
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
+	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
@@ -362,6 +364,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	productService := productapp.NewService(uow, productstore.NewCatalogRepository(), eventstore.NewAppender())
 	mediaService := mediaapp.NewService(uow, mediastore.NewUploadRepository(), eventstore.NewAppender())
+	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -391,11 +394,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundstore.NewTaskQueryRepository())
-	legacyHandler, err := NewHandlerWithOutboundProductsAndMedia(
+	legacyHandler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		service, customerService, outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
-		productService, mediaService,
+		productService, mediaService, surveyService,
 	)
 	if err != nil {
 		pool.Close()
@@ -655,6 +658,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
+			{http.MethodGet, "/api/admin/questionnaires", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaires)},
+			{http.MethodPost, "/api/admin/questionnaires", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.CreateQuestionnaire)},
+			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaire)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 				return nil, err
