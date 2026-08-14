@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
@@ -98,12 +100,30 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	enqueuer := eventdispatcher.NewDeferredEnqueuer()
+	deliveries, err := eventstore.NewRuntimeDeliveryRepository(pool, enqueuer, eventdispatcher.DefaultBatchSize, []eventport.DeliveryBinding{{
+		EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerAutomationTagTrigger,
+	}})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	router, err := eventdispatcher.NewRouter(wecomcallback.NewAuditSubscriber())
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
-	deliveryWorker, err := eventdispatcher.NewDeliveryWorker(pool, router)
+	automationConsumer, err := automationstore.NewTagTriggerConsumer(
+		platformstore.NewUnitOfWork(pool), automationstore.NewRepository(pool), eventstore.NewAppender(), deliveries,
+	)
+	if err == nil {
+		err = router.RegisterDelivery(automationConsumer)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	deliveryWorker, err := eventdispatcher.NewDeliveryWorker(deliveries, router)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -112,8 +132,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	enqueuer := eventdispatcher.NewDeferredEnqueuer()
-	dispatcher, err := eventdispatcher.New(platformstore.NewUnitOfWork(pool), enqueuer, eventdispatcher.DefaultBatchSize)
+	dispatcher, err := eventdispatcher.New(deliveries)
 	if err != nil {
 		pool.Close()
 		return nil, err

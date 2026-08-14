@@ -4,15 +4,11 @@ package dispatcher
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
-	eventdb "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/generated"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
-	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
-	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -21,7 +17,6 @@ const DefaultBatchSize int32 = 100
 
 var (
 	ErrInvalidDispatcher = errors.New("invalid event dispatcher")
-	ErrDispatchProgress  = errors.New("event dispatch progress mismatch")
 	ErrEnqueuerBound     = errors.New("event dispatcher enqueuer is already bound")
 )
 
@@ -66,66 +61,27 @@ func (reference *DeferredEnqueuer) EnqueueTx(ctx context.Context, tx pgx.Tx, que
 	return enqueuer.EnqueueTx(ctx, tx, queue, args, options)
 }
 
-// Dispatcher atomically inserts River delivery jobs and advances event_log
-// dispatch progress. It does not run subscribers or call external services.
-type Dispatcher struct {
-	uow       platformport.UnitOfWork
-	enqueuer  transactionalEnqueuer
-	batchSize int32
+type dispatchStore interface {
+	Dispatch(context.Context) (int, error)
 }
 
-func New(uow platformport.UnitOfWork, enqueuer transactionalEnqueuer, batchSize int32) (*Dispatcher, error) {
-	if isNil(uow) || isNil(enqueuer) || batchSize <= 0 {
+// Dispatcher is a SQL-free runtime wrapper around the Events-owned store.
+type Dispatcher struct {
+	store dispatchStore
+}
+
+func New(store dispatchStore) (*Dispatcher, error) {
+	if isNil(store) {
 		return nil, ErrInvalidDispatcher
 	}
-	return &Dispatcher{uow: uow, enqueuer: enqueuer, batchSize: batchSize}, nil
+	return &Dispatcher{store: store}, nil
 }
 
 func (dispatcher *Dispatcher) Dispatch(ctx context.Context) (int, error) {
-	if dispatcher == nil || isNil(dispatcher.uow) || isNil(dispatcher.enqueuer) || dispatcher.batchSize <= 0 {
+	if dispatcher == nil || isNil(dispatcher.store) {
 		return 0, ErrInvalidDispatcher
 	}
-	var dispatched int
-	err := dispatcher.uow.Within(ctx, func(txCtx context.Context) error {
-		tx, err := platformstore.TxFromContext(txCtx)
-		if err != nil {
-			return err
-		}
-		queries := eventdb.New(tx)
-		events, err := queries.ClaimUndispatchedEvents(txCtx, dispatcher.batchSize)
-		if err != nil {
-			return fmt.Errorf("claim undispatched events: %w", err)
-		}
-		if len(events) == 0 {
-			dispatched = 0
-			return nil
-		}
-		ids := make([]int64, 0, len(events))
-		for _, event := range events {
-			if _, err = dispatcher.enqueuer.EnqueueTx(txCtx, tx, platformjobqueue.QueueEvent,
-				DeliverArgs{EventID: event.ID}, deliveryInsertOptions()); err != nil {
-				return fmt.Errorf("enqueue event %d: %w", event.ID, err)
-			}
-			ids = append(ids, event.ID)
-		}
-		updated, err := queries.MarkEventsDispatched(txCtx, ids)
-		if err != nil {
-			return fmt.Errorf("mark events dispatched: %w", err)
-		}
-		if updated != int64(len(ids)) {
-			return ErrDispatchProgress
-		}
-		dispatched = len(ids)
-		return nil
-	})
-	if err != nil {
-		return 0, err
-	}
-	return dispatched, nil
-}
-
-func deliveryInsertOptions() *river.InsertOpts {
-	return &river.InsertOpts{UniqueOpts: river.UniqueOpts{ByArgs: true}}
+	return dispatcher.store.Dispatch(ctx)
 }
 
 func isNil(value any) bool {

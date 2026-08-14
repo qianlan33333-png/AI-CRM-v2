@@ -712,6 +712,73 @@ export interface AdminConfigOverviewResponse {
   items: AdminConfigEntry[];
 }
 
+export type AutomationTriggerRunAgentCode =
+  (typeof AutomationTriggerRunAgentCode)[keyof typeof AutomationTriggerRunAgentCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunAgentCode = {
+  "tag-trigger-v1": "tag-trigger-v1",
+} as const;
+
+export type AutomationTriggerRunRunStatus =
+  (typeof AutomationTriggerRunRunStatus)[keyof typeof AutomationTriggerRunRunStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunRunStatus = {
+  completed: "completed",
+} as const;
+
+export type AutomationTriggerRunTriggerSource =
+  (typeof AutomationTriggerRunTriggerSource)[keyof typeof AutomationTriggerRunTriggerSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunTriggerSource = {
+  customertag_applied: "customer.tag_applied",
+} as const;
+
+export interface AutomationTriggerRun {
+  /** @pattern ^automation-trigger:[1-9][0-9]*$ */
+  run_id: string;
+  /** @pattern ^event:[1-9][0-9]*$ */
+  request_id: string;
+  agent_code: AutomationTriggerRunAgentCode;
+  run_status: AutomationTriggerRunRunStatus;
+  trigger_source: AutomationTriggerRunTriggerSource;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  tag_id: number;
+  /** @minimum 1 */
+  source_event_id: number;
+  /** @minimum 1 */
+  triggered_event_id: number;
+  started_at: string;
+  completed_at: string;
+  has_error: boolean;
+}
+
+export type AutomationTriggerRunListResponseVisibility =
+  (typeof AutomationTriggerRunListResponseVisibility)[keyof typeof AutomationTriggerRunListResponseVisibility];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunListResponseVisibility = {
+  masked: "masked",
+} as const;
+
+export interface AutomationTriggerRunListResponse {
+  items: AutomationTriggerRun[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size: number;
+  visibility: AutomationTriggerRunListResponseVisibility;
+}
+
 /**
  * Request validation failed.
  */
@@ -879,6 +946,59 @@ export type ListIdentityMergeReviewsParams = {
    */
   limit?: LimitParameter;
 };
+
+export type ListAutomationTriggerRunsParams = {
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size?: number;
+  /**
+   * @maxLength 80
+   */
+  request_id?: string;
+  /**
+   * @maxLength 80
+   */
+  run_id?: string;
+  /**
+   * @maxLength 80
+   */
+  agent_code?: string;
+  /**
+   * @maxLength 40
+   */
+  run_status?: string;
+  /**
+   * @maxLength 80
+   */
+  trigger_source?: string;
+  /**
+   * @maxLength 200
+   */
+  unionid?: string;
+  /**
+   * @maxLength 200
+   */
+  userid?: string;
+  started_after?: string;
+  started_before?: string;
+  has_error?: boolean;
+  visibility?: ListAutomationTriggerRunsVisibility;
+};
+
+export type ListAutomationTriggerRunsVisibility =
+  (typeof ListAutomationTriggerRunsVisibility)[keyof typeof ListAutomationTriggerRunsVisibility];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListAutomationTriggerRunsVisibility = {
+  masked: "masked",
+} as const;
 
 /**
  * @summary Process liveness
@@ -2839,4 +2959,88 @@ export const getAdminConfigOverview = async (
     status: res.status,
     headers: res.headers,
   } as getAdminConfigOverviewResponse;
+};
+
+/**
+ * @summary List real D01 Automation trigger receipts through the frozen legacy path
+ */
+export type listAutomationTriggerRunsResponse200 = {
+  data: AutomationTriggerRunListResponse;
+  status: 200;
+};
+
+export type listAutomationTriggerRunsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAutomationTriggerRunsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationTriggerRunsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationTriggerRunsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationTriggerRunsResponseSuccess =
+  listAutomationTriggerRunsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationTriggerRunsResponseError = (
+  | listAutomationTriggerRunsResponse400
+  | listAutomationTriggerRunsResponse401
+  | listAutomationTriggerRunsResponse403
+  | listAutomationTriggerRunsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationTriggerRunsResponse =
+  | listAutomationTriggerRunsResponseSuccess
+  | listAutomationTriggerRunsResponseError;
+
+export const getListAutomationTriggerRunsUrl = (
+  params?: ListAutomationTriggerRunsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/agent-runs?${stringifiedParams}`
+    : `/api/admin/automation-conversion/agent-runs`;
+};
+
+export const listAutomationTriggerRuns = async (
+  params?: ListAutomationTriggerRunsParams,
+  options?: RequestInit,
+): Promise<listAutomationTriggerRunsResponse> => {
+  const res = await fetch(getListAutomationTriggerRunsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationTriggerRunsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationTriggerRunsResponse;
 };

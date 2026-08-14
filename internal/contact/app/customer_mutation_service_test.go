@@ -113,6 +113,12 @@ type fakeMutationAppender struct {
 	sequence *[]string
 }
 
+type fakeMutationDeliveryAcceptor struct{}
+
+func (fakeMutationDeliveryAcceptor) Accept(context.Context, eventport.EventID, string) error {
+	return nil
+}
+
 func (appender *fakeMutationAppender) Append(ctx context.Context, event eventport.Event) (eventport.EventID, error) {
 	appender.calls++
 	event.Payload = append(json.RawMessage(nil), event.Payload...)
@@ -127,10 +133,11 @@ func (appender *fakeMutationAppender) Append(ctx context.Context, event eventpor
 
 func newTestMutationService(uow *fakeMutationUoW, store *fakeMutationStore, events *fakeMutationAppender) *CustomerMutationService {
 	return &CustomerMutationService{
-		uow:    uow,
-		store:  store,
-		events: events,
-		now:    mutationTime,
+		uow:        uow,
+		store:      store,
+		events:     events,
+		deliveries: fakeMutationDeliveryAcceptor{},
+		now:        mutationTime,
 		newEventKey: func() (string, error) {
 			return "fixed-key", nil
 		},

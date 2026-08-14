@@ -19,6 +19,7 @@ seed() {
   local root="$1"
   mkdir -p "$root/cmd/aicrm" "$root/cmd/aicrm-river-migrate" "$root/cmd/aicrm-contact-perf" "$root/internal/contact/app" \
     "$root/internal/identity/port" "$root/internal/identity/store" \
+    "$root/internal/automation/app" "$root/internal/events/store" \
     "$root/internal/outbound/app" \
     "$root/internal/platform/store" "$root/internal/api/generated" \
     "$root/internal/config"
@@ -82,6 +83,8 @@ mutate() {
   case "$name" in
     concrete)
       printf '%s\n' 'package app' 'import alias "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"' >"$root/internal/contact/app/use.go" ;;
+    automation-events-store)
+      printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"' >"$root/internal/automation/app/use.go" ;;
     nested-port)
       printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port/internal"' >"$root/internal/contact/app/use.go" ;;
     platform-domain)
@@ -119,6 +122,7 @@ mutate() {
 }
 
 reject concrete 'forbidden cross-module import'
+reject automation-events-store 'forbidden cross-module import'
 reject nested-port 'forbidden cross-module import'
 reject platform-domain 'forbidden cross-module import'
 reject api-domain 'forbidden cross-module import'

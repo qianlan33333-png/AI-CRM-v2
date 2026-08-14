@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const acceptEventDelivery = `-- name: AcceptEventDelivery :one
+UPDATE event_deliveries
+SET river_job_id = $1, updated_at = now()
+WHERE event_id = $2
+  AND consumer = $3
+  AND (river_job_id IS NULL OR river_job_id = $1)
+RETURNING river_job_id
+`
+
+type AcceptEventDeliveryParams struct {
+	RiverJobID pgtype.Int8 `json:"river_job_id"`
+	EventID    int64       `json:"event_id"`
+	Consumer   string      `json:"consumer"`
+}
+
+func (q *Queries) AcceptEventDelivery(ctx context.Context, arg AcceptEventDeliveryParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, acceptEventDelivery, arg.RiverJobID, arg.EventID, arg.Consumer)
+	var river_job_id pgtype.Int8
+	err := row.Scan(&river_job_id)
+	return river_job_id, err
+}
+
 const appendEvent = `-- name: AppendEvent :one
 INSERT INTO event_log (
   event_type,
@@ -55,24 +77,103 @@ func (q *Queries) AppendEvent(ctx context.Context, arg AppendEventParams) (int64
 	return id, err
 }
 
-const claimUndispatchedEvents = `-- name: ClaimUndispatchedEvents :many
-SELECT
-  id,
-  event_type,
-  customer_id,
-  payload,
-  occurred_at,
-  idempotency_key,
-  dispatched
-FROM event_log
-WHERE NOT dispatched
-ORDER BY id
-LIMIT $1
-FOR UPDATE SKIP LOCKED
+const claimEventDelivery = `-- name: ClaimEventDelivery :one
+UPDATE event_deliveries AS delivery
+SET status = 'processing',
+    attempt_count = attempt_count + 1,
+    lease_owner = $1,
+    lease_expires_at = $2,
+    last_error_code = NULL,
+    updated_at = now()
+FROM event_log AS event
+WHERE delivery.event_id = $3
+  AND delivery.consumer = $4
+  AND event.id = delivery.event_id
+  AND (
+    delivery.status = 'pending'
+    OR (delivery.status = 'processing' AND (
+      delivery.lease_owner = $1
+      OR delivery.lease_expires_at <= $5
+    ))
+  )
+RETURNING event.id, event.event_type, event.customer_id, event.payload,
+          event.occurred_at, event.idempotency_key,
+          delivery.consumer, delivery.status, delivery.attempt_count
 `
 
-func (q *Queries) ClaimUndispatchedEvents(ctx context.Context, batchSize int32) ([]EventLog, error) {
-	rows, err := q.db.Query(ctx, claimUndispatchedEvents, batchSize)
+type ClaimEventDeliveryParams struct {
+	LeaseOwner     pgtype.Text        `json:"lease_owner"`
+	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
+	EventID        int64              `json:"event_id"`
+	Consumer       string             `json:"consumer"`
+	ClaimedAt      pgtype.Timestamptz `json:"claimed_at"`
+}
+
+type ClaimEventDeliveryRow struct {
+	ID             int64              `json:"id"`
+	EventType      string             `json:"event_type"`
+	CustomerID     pgtype.Int8        `json:"customer_id"`
+	Payload        []byte             `json:"payload"`
+	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
+	IdempotencyKey string             `json:"idempotency_key"`
+	Consumer       string             `json:"consumer"`
+	Status         string             `json:"status"`
+	AttemptCount   int32              `json:"attempt_count"`
+}
+
+func (q *Queries) ClaimEventDelivery(ctx context.Context, arg ClaimEventDeliveryParams) (ClaimEventDeliveryRow, error) {
+	row := q.db.QueryRow(ctx, claimEventDelivery,
+		arg.LeaseOwner,
+		arg.LeaseExpiresAt,
+		arg.EventID,
+		arg.Consumer,
+		arg.ClaimedAt,
+	)
+	var i ClaimEventDeliveryRow
+	err := row.Scan(
+		&i.ID,
+		&i.EventType,
+		&i.CustomerID,
+		&i.Payload,
+		&i.OccurredAt,
+		&i.IdempotencyKey,
+		&i.Consumer,
+		&i.Status,
+		&i.AttemptCount,
+	)
+	return i, err
+}
+
+const claimEventsMissingDelivery = `-- name: ClaimEventsMissingDelivery :many
+SELECT
+  event.id,
+  event.event_type,
+  event.customer_id,
+  event.payload,
+  event.occurred_at,
+  event.idempotency_key,
+  event.dispatched
+FROM event_log AS event
+WHERE event.event_type = $1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM event_deliveries AS delivery
+    WHERE delivery.event_id = event.id
+      AND delivery.consumer = $2
+  )
+ORDER BY event.id
+LIMIT $3
+FOR UPDATE OF event SKIP LOCKED
+`
+
+type ClaimEventsMissingDeliveryParams struct {
+	EventType string `json:"event_type"`
+	Consumer  string `json:"consumer"`
+	BatchSize int32  `json:"batch_size"`
+}
+
+func (q *Queries) ClaimEventsMissingDelivery(ctx context.Context, arg ClaimEventsMissingDeliveryParams) ([]EventLog, error) {
+	rows, err := q.db.Query(ctx, claimEventsMissingDelivery, arg.EventType, arg.Consumer, arg.BatchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +198,112 @@ func (q *Queries) ClaimUndispatchedEvents(ctx context.Context, batchSize int32) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const claimUndispatchedEvents = `-- name: ClaimUndispatchedEvents :many
+SELECT
+  id,
+  event_type,
+  customer_id,
+  payload,
+  occurred_at,
+  idempotency_key,
+  dispatched
+FROM event_log
+WHERE NOT dispatched
+  AND NOT (event_type = ANY($1::text[]))
+ORDER BY id
+LIMIT $2
+FOR UPDATE SKIP LOCKED
+`
+
+type ClaimUndispatchedEventsParams struct {
+	ExcludedEventTypes []string `json:"excluded_event_types"`
+	BatchSize          int32    `json:"batch_size"`
+}
+
+func (q *Queries) ClaimUndispatchedEvents(ctx context.Context, arg ClaimUndispatchedEventsParams) ([]EventLog, error) {
+	rows, err := q.db.Query(ctx, claimUndispatchedEvents, arg.ExcludedEventTypes, arg.BatchSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []EventLog{}
+	for rows.Next() {
+		var i EventLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.CustomerID,
+			&i.Payload,
+			&i.OccurredAt,
+			&i.IdempotencyKey,
+			&i.Dispatched,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const completeEventDelivery = `-- name: CompleteEventDelivery :one
+UPDATE event_deliveries
+SET status = 'completed', lease_owner = NULL, lease_expires_at = NULL,
+    last_error_code = NULL, completed_at = COALESCE(completed_at, now()), updated_at = now()
+WHERE event_id = $1
+  AND consumer = $2
+  AND (
+    status = 'completed'
+    OR (status = 'processing' AND lease_owner = $3)
+  )
+RETURNING status
+`
+
+type CompleteEventDeliveryParams struct {
+	EventID    int64       `json:"event_id"`
+	Consumer   string      `json:"consumer"`
+	LeaseOwner pgtype.Text `json:"lease_owner"`
+}
+
+func (q *Queries) CompleteEventDelivery(ctx context.Context, arg CompleteEventDeliveryParams) (string, error) {
+	row := q.db.QueryRow(ctx, completeEventDelivery, arg.EventID, arg.Consumer, arg.LeaseOwner)
+	var status string
+	err := row.Scan(&status)
+	return status, err
+}
+
+const finalFailEventDelivery = `-- name: FinalFailEventDelivery :execrows
+UPDATE event_deliveries
+SET status = 'final_failed', lease_owner = NULL, lease_expires_at = NULL,
+    last_error_code = $1, completed_at = now(), updated_at = now()
+WHERE event_id = $2
+  AND consumer = $3
+  AND status = 'processing'
+  AND lease_owner = $4
+`
+
+type FinalFailEventDeliveryParams struct {
+	ErrorCode  pgtype.Text `json:"error_code"`
+	EventID    int64       `json:"event_id"`
+	Consumer   string      `json:"consumer"`
+	LeaseOwner pgtype.Text `json:"lease_owner"`
+}
+
+func (q *Queries) FinalFailEventDelivery(ctx context.Context, arg FinalFailEventDeliveryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, finalFailEventDelivery,
+		arg.ErrorCode,
+		arg.EventID,
+		arg.Consumer,
+		arg.LeaseOwner,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getEvent = `-- name: GetEvent :one
@@ -127,6 +334,60 @@ func (q *Queries) GetEvent(ctx context.Context, eventID int64) (EventLog, error)
 	return i, err
 }
 
+const getEventDelivery = `-- name: GetEventDelivery :one
+SELECT event_id, consumer, status, attempt_count, river_job_id,
+       lease_owner, lease_expires_at, last_error_code, completed_at
+FROM event_deliveries
+WHERE event_id = $1 AND consumer = $2
+`
+
+type GetEventDeliveryParams struct {
+	EventID  int64  `json:"event_id"`
+	Consumer string `json:"consumer"`
+}
+
+type GetEventDeliveryRow struct {
+	EventID        int64              `json:"event_id"`
+	Consumer       string             `json:"consumer"`
+	Status         string             `json:"status"`
+	AttemptCount   int32              `json:"attempt_count"`
+	RiverJobID     pgtype.Int8        `json:"river_job_id"`
+	LeaseOwner     pgtype.Text        `json:"lease_owner"`
+	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
+	LastErrorCode  pgtype.Text        `json:"last_error_code"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) GetEventDelivery(ctx context.Context, arg GetEventDeliveryParams) (GetEventDeliveryRow, error) {
+	row := q.db.QueryRow(ctx, getEventDelivery, arg.EventID, arg.Consumer)
+	var i GetEventDeliveryRow
+	err := row.Scan(
+		&i.EventID,
+		&i.Consumer,
+		&i.Status,
+		&i.AttemptCount,
+		&i.RiverJobID,
+		&i.LeaseOwner,
+		&i.LeaseExpiresAt,
+		&i.LastErrorCode,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const markEventDispatched = `-- name: MarkEventDispatched :execrows
+UPDATE event_log SET dispatched = TRUE
+WHERE id = $1 AND NOT dispatched
+`
+
+func (q *Queries) MarkEventDispatched(ctx context.Context, eventID int64) (int64, error) {
+	result, err := q.db.Exec(ctx, markEventDispatched, eventID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const markEventsDispatched = `-- name: MarkEventsDispatched :execrows
 UPDATE event_log
 SET dispatched = TRUE
@@ -136,6 +397,85 @@ WHERE id = ANY($1::bigint[])
 
 func (q *Queries) MarkEventsDispatched(ctx context.Context, eventIds []int64) (int64, error) {
 	result, err := q.db.Exec(ctx, markEventsDispatched, eventIds)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const outcomeUnknownEventDelivery = `-- name: OutcomeUnknownEventDelivery :execrows
+UPDATE event_deliveries
+SET status = 'outcome_unknown', lease_owner = NULL, lease_expires_at = NULL,
+    last_error_code = $1, completed_at = now(), updated_at = now()
+WHERE event_id = $2
+  AND consumer = $3
+  AND status = 'processing'
+  AND lease_owner = $4
+`
+
+type OutcomeUnknownEventDeliveryParams struct {
+	ErrorCode  pgtype.Text `json:"error_code"`
+	EventID    int64       `json:"event_id"`
+	Consumer   string      `json:"consumer"`
+	LeaseOwner pgtype.Text `json:"lease_owner"`
+}
+
+func (q *Queries) OutcomeUnknownEventDelivery(ctx context.Context, arg OutcomeUnknownEventDeliveryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, outcomeUnknownEventDelivery,
+		arg.ErrorCode,
+		arg.EventID,
+		arg.Consumer,
+		arg.LeaseOwner,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const reserveEventDelivery = `-- name: ReserveEventDelivery :one
+INSERT INTO event_deliveries (event_id, consumer)
+VALUES ($1, $2)
+ON CONFLICT (event_id, consumer) DO NOTHING
+RETURNING event_id
+`
+
+type ReserveEventDeliveryParams struct {
+	EventID  int64  `json:"event_id"`
+	Consumer string `json:"consumer"`
+}
+
+func (q *Queries) ReserveEventDelivery(ctx context.Context, arg ReserveEventDeliveryParams) (int64, error) {
+	row := q.db.QueryRow(ctx, reserveEventDelivery, arg.EventID, arg.Consumer)
+	var event_id int64
+	err := row.Scan(&event_id)
+	return event_id, err
+}
+
+const retryEventDelivery = `-- name: RetryEventDelivery :execrows
+UPDATE event_deliveries
+SET status = 'pending', lease_owner = NULL, lease_expires_at = NULL,
+    last_error_code = $1, updated_at = now()
+WHERE event_id = $2
+  AND consumer = $3
+  AND status = 'processing'
+  AND lease_owner = $4
+`
+
+type RetryEventDeliveryParams struct {
+	ErrorCode  pgtype.Text `json:"error_code"`
+	EventID    int64       `json:"event_id"`
+	Consumer   string      `json:"consumer"`
+	LeaseOwner pgtype.Text `json:"lease_owner"`
+}
+
+func (q *Queries) RetryEventDelivery(ctx context.Context, arg RetryEventDeliveryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, retryEventDelivery,
+		arg.ErrorCode,
+		arg.EventID,
+		arg.Consumer,
+		arg.LeaseOwner,
+	)
 	if err != nil {
 		return 0, err
 	}

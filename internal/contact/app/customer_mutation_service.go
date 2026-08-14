@@ -90,6 +90,7 @@ type CustomerMutationService struct {
 	uow         platformport.UnitOfWork
 	store       CustomerMutationStore
 	events      eventport.Appender
+	deliveries  eventport.DeliveryAcceptor
 	now         func() time.Time
 	newEventKey func() (string, error)
 }
@@ -98,9 +99,10 @@ func NewCustomerMutationService(
 	uow platformport.UnitOfWork,
 	store CustomerMutationStore,
 	events eventport.Appender,
+	deliveries eventport.DeliveryAcceptor,
 ) *CustomerMutationService {
 	return &CustomerMutationService{
-		uow: uow, store: store, events: events,
+		uow: uow, store: store, events: events, deliveries: deliveries,
 		now: time.Now, newEventKey: randomEventKey,
 	}
 }
@@ -139,7 +141,8 @@ func (service *CustomerMutationService) Update(
 		if marshalErr != nil {
 			return marshalErr
 		}
-		return service.appendEvents(txCtx, command.ID, eventport.EvCustomerUpdated, payload, command.Actor, occurredAt, key)
+		_, appendErr := service.appendEvents(txCtx, command.ID, eventport.EvCustomerUpdated, payload, command.Actor, occurredAt, key)
+		return appendErr
 	})
 	if err != nil {
 		return CustomerRecord{}, errors.Join(ErrCustomerMutationFailed, err)
@@ -182,7 +185,8 @@ func (service *CustomerMutationService) SetStage(
 		if marshalErr != nil {
 			return marshalErr
 		}
-		return service.appendEvents(txCtx, command.ID, eventport.EvStageChanged, payload, command.Actor, occurredAt, key)
+		_, appendErr := service.appendEvents(txCtx, command.ID, eventport.EvStageChanged, payload, command.Actor, occurredAt, key)
+		return appendErr
 	})
 	if err != nil {
 		return CustomerRecord{}, errors.Join(ErrCustomerMutationFailed, err)
@@ -236,7 +240,11 @@ func (service *CustomerMutationService) mutateTag(
 		if marshalErr != nil {
 			return marshalErr
 		}
-		return service.appendEvents(txCtx, command.ID, eventType, payload, command.Actor, occurredAt, key)
+		eventID, appendErr := service.appendEvents(txCtx, command.ID, eventType, payload, command.Actor, occurredAt, key)
+		if appendErr != nil || !add {
+			return appendErr
+		}
+		return service.deliveries.Accept(txCtx, eventID, eventport.ConsumerAutomationTagTrigger)
 	})
 	if err != nil {
 		return errors.Join(ErrCustomerMutationFailed, err)
@@ -252,18 +260,18 @@ func (service *CustomerMutationService) appendEvents(
 	actor contactport.Actor,
 	occurredAt time.Time,
 	eventKey string,
-) error {
+) (eventport.EventID, error) {
 	if _, err := service.store.AppendCustomerEvent(ctx, CustomerEventAppend{
 		CustomerID: customerID, EventType: eventType, Payload: payload,
 		Actor: actor, OccurredAt: occurredAt,
 	}); err != nil {
-		return err
+		return 0, err
 	}
-	_, err := service.events.Append(ctx, eventport.Event{
+	eventID, err := service.events.Append(ctx, eventport.Event{
 		Type: eventType, CustomerID: eventport.CustomerID(customerID), Payload: payload,
 		OccurredAt: occurredAt, IdempotencyKey: eventKey,
 	})
-	return err
+	return eventID, err
 }
 
 func (service *CustomerMutationService) eventMetadata(eventType string) (time.Time, string, error) {
@@ -279,7 +287,7 @@ func (service *CustomerMutationService) eventMetadata(eventType string) (time.Ti
 }
 
 func (service *CustomerMutationService) ready() error {
-	if service == nil || service.uow == nil || service.store == nil || service.events == nil ||
+	if service == nil || service.uow == nil || service.store == nil || service.events == nil || service.deliveries == nil ||
 		service.now == nil || service.newEventKey == nil {
 		return ErrCustomerMutationFailed
 	}

@@ -4137,6 +4137,29 @@ slices:
     tests: [LOCAL_append_only_history_rejection_PASS, LOCAL_repo_contract_pending_after_forward_receipt]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-W0-D01
+    title: automation-real-tag-trigger-consumer
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_local_DoD_complete_pending_PR_and_required_CI
+    base_sha: f0342877a50028e2feaf456e46d3c736c9812dab
+    dependency: GOV_SLICE_CORRECTION_POLICY_PR202_CLOSED_EXACT_MAIN_ALL_REQUIRED_GATES_SUCCESS
+    branch: codex/p4-w0-d01-automation-recut2-policy-20260814
+    pr_url: PENDING_GITHUB_PR_CREATION
+    scope: [contact_tag_applied_atomic_delivery_acceptance, automation_unique_trigger_receipt, automation_triggered_event, per_consumer_delivery_lifecycle, river_at_least_once, lease_reclaim, poison_isolation, outcome_unknown_terminal, historical_consumer_backfill, legacy_real_receipt_GET]
+    excluded_scope: [D02_D05, L01_stats, new_UI, new_capability, automation_execution_trace, Group_Ops, production_database, live_migration, real_wecom, real_send, real_payment_refund]
+    handwritten_file_budget: 15_business_contract_files_all_owned_by_Codex_Sol
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_D01_DoD, permanent_negatives, generated_manifest_ledger_receipts, rebase_required_CI_PR_merge_exact_main_CLOSED]
+    tests: [LOCAL_static_policy_RED_then_GREEN, LOCAL_PG16_14_24_25_24_25_history_PASS, LOCAL_atomic_five_fact_rollback_PASS, LOCAL_normal_retry_poison_unknown_lease_replay_backfill_PASS, LOCAL_legacy_route_RBAC_blackbox_PASS, LOCAL_S200K_no_illegal_seq_scan_PASS]
+    generated_manifest_status: synchronized_SQLC_OpenAPI_Orval_and_generated_sources_manifest
+    mapping_status: LEGACY_API_0141_P1_authority_preserved_with_forward_OpenAPI_card_ledger_receipt_293_no_direct_row_no_false_close_LEGACY_T14_062_stays_DEFER_NOT_STARTED
+    slice_induced_correction_count: 2
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 18
+    correction_notes: [slice:first_stage_review_found_destructive_Down_before_any_migration_execution_and_replaced_it_with_history_preserving_noop, slice:second_stage_review_found_fake_backfill_assertion_and_repaired_consumer_level_missing_delivery_backfill_including_already_globally_dispatched_history_then_scope_was_frozen, verification:staged_history_gate_found_one_accidentally_mutated_historical_P3_C06D_verification_count_then_restored_the_original_byte_before_delivery, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, REAL_PAYMENT_REFUND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

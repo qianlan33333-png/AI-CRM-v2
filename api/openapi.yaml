@@ -676,6 +676,39 @@ paths:
                 $ref: "#/components/schemas/AdminConfigOverviewResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/automation-conversion/agent-runs:
+    get:
+      tags: [p4-automation-compat]
+      operationId: listAutomationTriggerRuns
+      summary: List real D01 Automation trigger receipts through the frozen legacy path
+      x-legacy-mapping-ids: [LEGACY-API-0141]
+      x-p4-decision-evidence: P4-W0-D01-2026-08-14
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      parameters:
+        - { name: page, in: query, schema: { type: integer, format: int32, minimum: 1, maximum: 10000, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: request_id, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: run_id, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: agent_code, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: run_status, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: trigger_source, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: unionid, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: userid, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: started_after, in: query, schema: { type: string, format: date-time } }
+        - { name: started_before, in: query, schema: { type: string, format: date-time } }
+        - { name: has_error, in: query, schema: { type: boolean } }
+        - { name: visibility, in: query, schema: { type: string, enum: [masked], default: masked } }
+      responses:
+        "200":
+          description: Real, masked Automation trigger receipts; no historical execution trace projection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AutomationTriggerRunListResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -1251,3 +1284,30 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/AdminConfigEntry" } }
+    AutomationTriggerRun:
+      type: object
+      additionalProperties: false
+      required: [run_id, request_id, agent_code, run_status, trigger_source, customer_id, tag_id, source_event_id, triggered_event_id, started_at, completed_at, has_error]
+      properties:
+        run_id: { type: string, pattern: '^automation-trigger:[1-9][0-9]*$' }
+        request_id: { type: string, pattern: '^event:[1-9][0-9]*$' }
+        agent_code: { type: string, enum: [tag-trigger-v1] }
+        run_status: { type: string, enum: [completed] }
+        trigger_source: { type: string, enum: [customer.tag_applied] }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        source_event_id: { type: integer, format: int64, minimum: 1 }
+        triggered_event_id: { type: integer, format: int64, minimum: 1 }
+        started_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+        has_error: { type: boolean, enum: [false] }
+    AutomationTriggerRunListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, total, page, page_size, visibility]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AutomationTriggerRun" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        page: { type: integer, format: int32, minimum: 1 }
+        page_size: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        visibility: { type: string, enum: [masked] }

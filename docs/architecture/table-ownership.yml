@@ -49,7 +49,9 @@ owners:
 
   automation:
     package: internal/automation
-    tables: [automations, automation_enrollments]
+    tables: [automations, automation_enrollments, automation_trigger_receipts]
+    constraints:
+      automation_trigger_receipts: unique_tag_trigger_receipt_per_source_event
 
   outbound:
     package: internal/outbound
@@ -63,9 +65,10 @@ owners:
 
   events:
     package: internal/events
-    tables: [event_log]
+    tables: [event_log, event_deliveries]
     constraints:
       event_log: append_and_dispatch_state_only
+      event_deliveries: per_consumer_delivery_state_and_lease
 
   survey:
     package: internal/survey
