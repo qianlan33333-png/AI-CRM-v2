@@ -1814,7 +1814,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  90eadff6db9212a4b582e08544b47971380e6c5712ecf3cfdbcd003a79ecf8a5
+  a8698b67cbef8ac7900242ca7a72b42f34ab846a7f99efc8ed642b524263b5d7
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -2278,7 +2278,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   37bf353ca92330154417d99f743328240878036f17d7454a942113b9d40f8407
 verify_index_sha256 scripts/test_repo_contract.sh \
-  9c19b0f34cabea978fa8e0db9cf03832862200b38c095ebb4f73249d52a53839
+  76b5f672855ad07a228fcfcd64fc628721a47251ded9d07a1432f58104d661d7
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -6368,6 +6368,9 @@ p4i03_mapping="$(git show :docs/api-mapping.jsonl | grep -F '"mapping_id":"LEGAC
   fail "P4-I03 forged or lost frozen route authority"
 git diff --cached --quiet -- docs/migration-mapping.jsonl docs/migration-mapping.md ||
   fail "P4-I03 T14 +0 contract was modified"
+p4i03_feature="$(git show :docs/feature-matrix.csv | grep -F '"LEGACY-S07-174"')"
+[[ "$p4i03_feature" = *'"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"'* && "$p4i03_feature" = *'sha=e4a7d88203a505f26d7fa401283fb74abe59e522;pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/218'* && "$p4i03_feature" = *'command=make_p4-i03-order-acceptance'* ]] ||
+  fail "P4-I03 feature matrix release evidence drifted or forged"
 
 p4i03_compat="$(git show :acceptance/order/i03_migration_compatibility.sh)"
 for anchor in \
@@ -6391,7 +6394,13 @@ for ledger_anchor in \
   '    hard_stop: false' \
   '    migration_correction_attribution: [slice_induced=1, verification_induced=0, infra_induced=0, scope_induced=0, redline=0, first_S200K_load_exceeded_180_seconds, repaired_S200K_load_4_6_seconds]' \
   '    verification_induced_correction_count: 12' \
-  '    scope_induced_correction_count: 0'; do
+  '    scope_induced_correction_count: 0' \
+  '  - slice_id: P4-I03-R1' \
+  '    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING' \
+  '    base_sha: e4a7d88203a505f26d7fa401283fb74abe59e522' \
+  '    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/218' \
+  '    verification_induced_correction_count: 1' \
+  '    cumulative_corrections: [slice_induced=2, verification_induced=13, infra_induced=1, scope_induced=0, redline=0]'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-I03 ledger drifted: $ledger_anchor"
 done
 
