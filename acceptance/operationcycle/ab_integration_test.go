@@ -19,7 +19,7 @@ import (
 )
 
 var operationCycleDatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 operation-cycle database")
-var operationCycleExpectedWaterline = flag.Int("expected-waterline", 41, "expected migration waterline for operation-cycle database")
+var operationCycleExpectedWaterline = flag.Int("expected-waterline", 42, "expected migration waterline for operation-cycle database")
 
 func TestP4OperationCycleABNormalBoundaryAndOutcomeUnknownTerminal(t *testing.T) {
 	pool, ctx := openOperationCyclePool(t)

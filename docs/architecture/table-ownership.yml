@@ -58,9 +58,11 @@ owners:
 
   automation:
     package: internal/automation
-    tables: [automations, automation_enrollments, automation_trigger_receipts]
+    tables: [automations, automation_enrollments, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts]
     constraints:
       automation_trigger_receipts: unique_tag_trigger_receipt_per_source_event
+      automation_agent_configurations: single_instance_configuration_only_without_generation_execution_or_send
+      automation_agent_operation_receipts: actor_scoped_transactional_configuration_idempotency_receipts
 
   outbound:
     package: internal/outbound

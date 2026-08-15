@@ -59,9 +59,9 @@ read -r waterline receipts exports effects refunds <<<"$(psql "$database_url" -X
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "40" ]]
 [[ "$(history_snapshot)" = "$post_acceptance" ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 41
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 42
 current_waterline="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")"
-[[ "$current_waterline" = "41" ]]
+[[ "$current_waterline" = "42" ]]
 [[ "$(history_snapshot)" = "$post_acceptance" ]]
 
-printf 'P4 Order A+B migration compatibility: PASS (38/40/38/40/41, Event/Auth/session/order history preserved, no provider execution)\n'
+printf 'P4 Order A+B migration compatibility: PASS (38/40/38/40/42, Event/Auth/session/order history preserved, no provider execution)\n'

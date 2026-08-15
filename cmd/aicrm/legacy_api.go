@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -130,6 +131,7 @@ type Handler struct {
 	surveys               legacySurveyApplication
 	channels              legacyChannelApplication
 	legacyTags            legacyTagApplication
+	automationAgents      automationport.AgentService
 	legacyTagSync         legacyTagSyncApplication
 	legacyTagLive         legacyTagLiveMutationApplication
 	legacyTagStatus       legacyTagExecutionStatusApplication

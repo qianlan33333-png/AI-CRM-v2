@@ -8,6 +8,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AutomationAgentConfiguration struct {
+	ID                      int64              `json:"id"`
+	AgentName               string             `json:"agent_name"`
+	AgentCode               string             `json:"agent_code"`
+	AutomationType          string             `json:"automation_type"`
+	Status                  string             `json:"status"`
+	DraftRolePrompt         string             `json:"draft_role_prompt"`
+	DraftTaskPrompt         string             `json:"draft_task_prompt"`
+	PublishedRolePrompt     string             `json:"published_role_prompt"`
+	PublishedTaskPrompt     string             `json:"published_task_prompt"`
+	DraftVersion            int64              `json:"draft_version"`
+	PublishedVersion        int64              `json:"published_version"`
+	FixedContentPackageJson []byte             `json:"fixed_content_package_json"`
+	CreatedBy               int64              `json:"created_by"`
+	UpdatedBy               int64              `json:"updated_by"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AutomationAgentOperationReceipt struct {
+	ID             int64              `json:"id"`
+	Operation      string             `json:"operation"`
+	ActorScope     string             `json:"actor_scope"`
+	KeyDigest      []byte             `json:"key_digest"`
+	PayloadDigest  []byte             `json:"payload_digest"`
+	State          string             `json:"state"`
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+}
+
 type AutomationTriggerReceipt struct {
 	ID               int64              `json:"id"`
 	EventID          int64              `json:"event_id"`

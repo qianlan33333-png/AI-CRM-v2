@@ -19,6 +19,7 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	authstore "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store"
+	automationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/app"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
@@ -388,6 +389,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyTagLiveService := contactapp.NewLegacyTagLiveMutationService(uow, legacyTagExecutionRepository, eventstore.NewAppender(), legacyTagExecutionRepository)
 	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
+	automationAgentService := automationapp.NewAgentService(uow, automationstore.NewAgentRepository(), eventstore.NewAppender())
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -444,6 +446,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	)
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
+	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.messageArchive = wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
 	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
@@ -694,6 +697,18 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)},
 			{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)},
 			{http.MethodGet, "/api/admin/automation-conversion/agent-runs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.ListAutomationTriggerRuns)},
+			{http.MethodGet, "/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentListPage)},
+			{http.MethodGet, "/admin/automation-agents/{agent_id}/edit", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentEditPage)},
+			{http.MethodGet, "/api/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationAgents)},
+			{http.MethodPost, "/api/admin/automation-agents", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.CreateAutomationAgent)},
+			{http.MethodDelete, "/api/admin/automation-agents/{agent_id}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.DeleteAutomationAgent)},
+			{http.MethodGet, "/api/admin/automation-agents/{agent_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.GetAutomationAgent)},
+			{http.MethodPatch, "/api/admin/automation-agents/{agent_id}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.UpdateAutomationAgent)},
+			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/activate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.ActivateAutomationAgent)},
+			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/copy", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.CopyAutomationAgent)},
+			{http.MethodPut, "/api/admin/automation-agents/{agent_id}/fixed-content", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAutomationAgentFixedContent)},
+			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/pause", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.PauseAutomationAgent)},
+			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.PublishAutomationAgent)},
 			{http.MethodGet, "/api/archive/health", authport.CapabilityMessageArchiveRead, false, http.HandlerFunc(legacy.ArchiveHealth)},
 			{http.MethodPost, "/api/archive/sync", authport.CapabilityMessageArchiveExecute, true, http.HandlerFunc(legacy.RequestArchiveSync)},
 			{http.MethodGet, "/api/external/chat-records", authport.CapabilityMessageArchiveExternalRead, false, http.HandlerFunc(legacy.ListExternalChatRecords)},
