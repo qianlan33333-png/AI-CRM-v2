@@ -1434,7 +1434,7 @@ verify_index_sha256 acceptance/p2s03/settings_integration_test.go \
 verify_index_sha256 docs/execution/slices/SEC-01.md \
   94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92
 verify_index_sha256 scripts/check_arch_imports.go \
-  f3a484f9712515894344059366c0aaecde5cf3b499f8882a452122ab7258d732
+  0de79816a0df4745418ad271a86f1746114719e677aec0662aca9a514e011d0c
 verify_index_sha256 scripts/test_arch_imports.sh \
   0164b9f845d739bf77f6187ab131ec612cc416344dea765985d29afc4b848ffa
 verify_index_sha256 scripts/ownership/main.go \
