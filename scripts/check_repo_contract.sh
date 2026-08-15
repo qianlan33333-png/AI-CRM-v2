@@ -1595,9 +1595,9 @@ verify_index_sha256 internal/api/generated/server.gen.go \
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
   bf9c42e5f053d633ea3683c2cbce66735964fa5963f96ed31df0363105334c0e
 verify_index_sha256 tools/openapi-contract/main.go \
-  da7d19e32bb1cbdce6c7843814fbef645a7971cf1f8f4083b40d4e94e54450e5
+  fea455938211807f791bd9933a2aa472577de6866294b832d6b9caa07d25ff12
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  f77cbf04815c2a4a4e8b7e11e6ac7d4c51ee6dff63be8a4e0c594d7c5b17d725
+  9c59c83fac495fe3fde245c8b8575c231f5d071c3e202d9b0e7e0f548a394539
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
   78ac2c4bd0555dd2d268fa8584da9291ec207aaf7b2d6c4d65b98e2b6244611f
 verify_index_sha256 acceptance/p1s11/doc.go \

@@ -92,6 +92,16 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/admin/config/app-settings").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global"}
 			reject(t, doc, ids)
 		},
+		"JSON settings resource write missing": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/config/app-settings").Put = nil
+			reject(t, doc, ids)
+		},
+		"JSON settings resource action token missing": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Paths.Value("/api/admin/config/app-settings").Put.Extensions, "x-aicrm-route-bound-action-token")
+			reject(t, doc, ids)
+		},
 		"secret value exposed": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Components.Schemas["LegacyMaskedAppSetting"].Value.Properties["value"] = doc.Components.Schemas["AdminConfigEntry"]
