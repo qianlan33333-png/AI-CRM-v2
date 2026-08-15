@@ -35,6 +35,28 @@ func (stub *legacySurveyStub) Create(_ context.Context, command surveyport.Creat
 	stub.command, stub.creates = command, stub.creates+1
 	return stub.item, stub.err
 }
+func (stub *legacySurveyStub) Update(_ context.Context, _ surveyport.ID, command surveyport.UpdateCommand) (surveyport.Questionnaire, error) {
+	stub.command = surveyport.CreateCommand{Questionnaire: command.Questionnaire, Actor: command.Actor, IdempotencyKey: command.IdempotencyKey}
+	return stub.item, stub.err
+}
+func (stub *legacySurveyStub) SetDisabled(_ context.Context, _ surveyport.ID, disabled bool, _ int64, _ string) (surveyport.Questionnaire, error) {
+	stub.item.IsDisabled = disabled
+	return stub.item, stub.err
+}
+func (stub *legacySurveyStub) Delete(_ context.Context, _ surveyport.ID, _ int64, _ string) (surveyport.DeleteResult, error) {
+	return surveyport.DeleteResult{Questionnaire: stub.item, Deleted: stub.err == nil}, stub.err
+}
+func (stub *legacySurveyStub) Duplicate(_ context.Context, _ surveyport.ID, _ int64, _ string, title, slug string) (surveyport.Questionnaire, error) {
+	item := stub.item
+	if title != "" {
+		item.Title = title
+	}
+	if slug != "" {
+		item.Slug = slug
+	}
+	item.IsDisabled = true
+	return item, stub.err
+}
 
 func TestF01ALegacyQuestionnaireExactBodyRoundTripWithoutExtraHeader(t *testing.T) {
 	item := legacySurveyItem()
@@ -103,6 +125,42 @@ func TestF01ALegacyQuestionnaireRejectsCrossOriginF02AndStableErrors(t *testing.
 	}
 }
 
+func TestF01BLegacyQuestionnaireManagementRoutesPreserveDirectContract(t *testing.T) {
+	stub := &legacySurveyStub{item: legacySurveyItem()}
+	router, _ := legacySurveyRouter(t, stub)
+
+	update := httptest.NewRecorder()
+	router.ServeHTTP(update, legacySurveyWriteRequest(http.MethodPut, "/api/admin/questionnaires/41", `{"name":"改名问卷","title":"新标题","description":"","answer_display_mode":"all_in_one","assessment_enabled":false,"assessment_config":{},"slug":"welcome","questions":[{"type":"single_choice","title":"你的目标","required":true,"sort_order":0,"options":[{"option_text":"增长","score":0,"tag_codes":[],"is_other":false,"other_max_length":0,"sort_order":0}]}],"score_rules":[]}`))
+	if update.Code != http.StatusOK || stub.command.Name != "改名问卷" || !strings.Contains(update.Body.String(), `"write_model_status":"updated"`) {
+		t.Fatalf("revision status=%d command=%#v body=%s", update.Code, stub.command, update.Body.String())
+	}
+
+	disable := httptest.NewRecorder()
+	router.ServeHTTP(disable, legacySurveyWriteRequest(http.MethodPost, "/api/admin/questionnaires/41/disable", `{}`))
+	if disable.Code != http.StatusOK || !stub.item.IsDisabled || !strings.Contains(disable.Body.String(), `"write_model_status":"disabled"`) {
+		t.Fatalf("disable status=%d disabled=%t body=%s", disable.Code, stub.item.IsDisabled, disable.Body.String())
+	}
+
+	enable := httptest.NewRecorder()
+	router.ServeHTTP(enable, legacySurveyWriteRequest(http.MethodPost, "/api/admin/questionnaires/41/enable", ""))
+	if enable.Code != http.StatusOK || stub.item.IsDisabled || !strings.Contains(enable.Body.String(), `"write_model_status":"enabled"`) {
+		t.Fatalf("enable status=%d disabled=%t body=%s", enable.Code, stub.item.IsDisabled, enable.Body.String())
+	}
+
+	duplicate := httptest.NewRecorder()
+	router.ServeHTTP(duplicate, legacySurveyWriteRequest(http.MethodPost, "/api/admin/questionnaires/41/duplicate", `{"title":"副本","slug":"copy"}`))
+	if duplicate.Code != http.StatusOK || !strings.Contains(duplicate.Body.String(), `"write_model_status":"duplicated"`) || !strings.Contains(duplicate.Body.String(), `"source_questionnaire_id":41`) {
+		t.Fatalf("duplicate status=%d body=%s", duplicate.Code, duplicate.Body.String())
+	}
+
+	stub.item.IsDisabled = true
+	deleted := httptest.NewRecorder()
+	router.ServeHTTP(deleted, legacySurveyWriteRequest(http.MethodDelete, "/api/admin/questionnaires/41", ""))
+	if deleted.Code != http.StatusOK || !strings.Contains(deleted.Body.String(), `"delete_mode":"hard_delete"`) || !strings.Contains(deleted.Body.String(), `"deleted":true`) {
+		t.Fatalf("removal status=%d body=%s", deleted.Code, deleted.Body.String())
+	}
+}
+
 func legacySurveyRouter(t *testing.T, surveys legacySurveyApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
@@ -124,7 +182,11 @@ func legacySurveyRouter(t *testing.T, surveys legacySurveyApplication) (http.Han
 }
 
 func legacySurveyCreateRequest(body string) *http.Request {
-	request := httptest.NewRequest(http.MethodPost, "/api/admin/questionnaires", strings.NewReader(body))
+	return legacySurveyWriteRequest(http.MethodPost, "/api/admin/questionnaires", body)
+}
+
+func legacySurveyWriteRequest(method, path, body string) *http.Request {
+	request := httptest.NewRequest(method, path, strings.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Origin", "http://example.com")
 	request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(70)})

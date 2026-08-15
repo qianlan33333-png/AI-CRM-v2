@@ -1012,6 +1012,56 @@ export type LegacyQuestionnaireCreateResponseAllOf = {
 export type LegacyQuestionnaireCreateResponse =
   LegacyQuestionnaireDetailResponse & LegacyQuestionnaireCreateResponseAllOf;
 
+export interface LegacyQuestionnaireDuplicateRequest {
+  /** @maxLength 300 */
+  title?: string;
+  /** @maxLength 200 */
+  slug?: string;
+}
+
+export interface LegacyQuestionnaireDisableRequest {
+  is_disabled?: boolean;
+}
+
+export type LegacyQuestionnaireMutationResponseAllOfWriteModelStatus =
+  (typeof LegacyQuestionnaireMutationResponseAllOfWriteModelStatus)[keyof typeof LegacyQuestionnaireMutationResponseAllOfWriteModelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireMutationResponseAllOfWriteModelStatus = {
+  updated: "updated",
+  duplicated: "duplicated",
+  enabled: "enabled",
+  disabled: "disabled",
+  deleted: "deleted",
+} as const;
+
+export type LegacyQuestionnaireMutationResponseAllOf = {
+  /** @minimum 1 */
+  questionnaire_id: number;
+  write_model_status: LegacyQuestionnaireMutationResponseAllOfWriteModelStatus;
+  /** @minimum 1 */
+  source_questionnaire_id?: number;
+};
+
+export type LegacyQuestionnaireMutationResponse =
+  LegacyQuestionnaireDetailResponse & LegacyQuestionnaireMutationResponseAllOf;
+
+export type LegacyQuestionnaireDeleteResponseAllOfDeleteMode =
+  (typeof LegacyQuestionnaireDeleteResponseAllOfDeleteMode)[keyof typeof LegacyQuestionnaireDeleteResponseAllOfDeleteMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireDeleteResponseAllOfDeleteMode = {
+  hard_delete: "hard_delete",
+} as const;
+
+export type LegacyQuestionnaireDeleteResponseAllOf = {
+  deleted: boolean;
+  delete_mode: LegacyQuestionnaireDeleteResponseAllOfDeleteMode;
+};
+
+export type LegacyQuestionnaireDeleteResponse =
+  LegacyQuestionnaireMutationResponse & LegacyQuestionnaireDeleteResponseAllOf;
+
 export interface LegacyQuestionnaireError {
   ok: boolean;
   message: string;
@@ -8415,6 +8465,510 @@ export const getLegacyQuestionnaire = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Replace one legacy questionnaire definition with the editor's complete schema
+ */
+export type replaceLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireMutationResponse;
+  status: 200;
+};
+
+export type replaceLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type replaceLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type replaceLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type replaceLegacyQuestionnaireResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type replaceLegacyQuestionnaireResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type replaceLegacyQuestionnaireResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type replaceLegacyQuestionnaireResponseSuccess =
+  replaceLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type replaceLegacyQuestionnaireResponseError = (
+  | replaceLegacyQuestionnaireResponse400
+  | replaceLegacyQuestionnaireResponse401
+  | replaceLegacyQuestionnaireResponse403
+  | replaceLegacyQuestionnaireResponse404
+  | replaceLegacyQuestionnaireResponse409
+  | replaceLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type replaceLegacyQuestionnaireResponse =
+  | replaceLegacyQuestionnaireResponseSuccess
+  | replaceLegacyQuestionnaireResponseError;
+
+export const getReplaceLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}`;
+};
+
+export const replaceLegacyQuestionnaire = async (
+  questionnaireId: number,
+  legacyQuestionnaireCreateRequest: LegacyQuestionnaireCreateRequest,
+  options?: RequestInit,
+): Promise<replaceLegacyQuestionnaireResponse> => {
+  const res = await fetch(getReplaceLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyQuestionnaireCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: replaceLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as replaceLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Compatibility alias for complete legacy questionnaire editor writes
+ */
+export type updateLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireMutationResponse;
+  status: 200;
+};
+
+export type updateLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyQuestionnaireResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyQuestionnaireResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateLegacyQuestionnaireResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyQuestionnaireResponseSuccess =
+  updateLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyQuestionnaireResponseError = (
+  | updateLegacyQuestionnaireResponse400
+  | updateLegacyQuestionnaireResponse401
+  | updateLegacyQuestionnaireResponse403
+  | updateLegacyQuestionnaireResponse404
+  | updateLegacyQuestionnaireResponse409
+  | updateLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyQuestionnaireResponse =
+  | updateLegacyQuestionnaireResponseSuccess
+  | updateLegacyQuestionnaireResponseError;
+
+export const getUpdateLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}`;
+};
+
+export const updateLegacyQuestionnaire = async (
+  questionnaireId: number,
+  legacyQuestionnaireCreateRequest: LegacyQuestionnaireCreateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyQuestionnaireResponse> => {
+  const res = await fetch(getUpdateLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyQuestionnaireCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Delete a disabled legacy questionnaire definition
+ */
+export type deleteLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireDeleteResponse;
+  status: 200;
+};
+
+export type deleteLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteLegacyQuestionnaireResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteLegacyQuestionnaireResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteLegacyQuestionnaireResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteLegacyQuestionnaireResponseSuccess =
+  deleteLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type deleteLegacyQuestionnaireResponseError = (
+  | deleteLegacyQuestionnaireResponse400
+  | deleteLegacyQuestionnaireResponse401
+  | deleteLegacyQuestionnaireResponse403
+  | deleteLegacyQuestionnaireResponse404
+  | deleteLegacyQuestionnaireResponse409
+  | deleteLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteLegacyQuestionnaireResponse =
+  | deleteLegacyQuestionnaireResponseSuccess
+  | deleteLegacyQuestionnaireResponseError;
+
+export const getDeleteLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}`;
+};
+
+export const deleteLegacyQuestionnaire = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<deleteLegacyQuestionnaireResponse> => {
+  const res = await fetch(getDeleteLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Create a disabled copy of one legacy questionnaire definition
+ */
+export type duplicateLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireMutationResponse;
+  status: 200;
+};
+
+export type duplicateLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type duplicateLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type duplicateLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type duplicateLegacyQuestionnaireResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type duplicateLegacyQuestionnaireResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type duplicateLegacyQuestionnaireResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type duplicateLegacyQuestionnaireResponseSuccess =
+  duplicateLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type duplicateLegacyQuestionnaireResponseError = (
+  | duplicateLegacyQuestionnaireResponse400
+  | duplicateLegacyQuestionnaireResponse401
+  | duplicateLegacyQuestionnaireResponse403
+  | duplicateLegacyQuestionnaireResponse404
+  | duplicateLegacyQuestionnaireResponse409
+  | duplicateLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type duplicateLegacyQuestionnaireResponse =
+  | duplicateLegacyQuestionnaireResponseSuccess
+  | duplicateLegacyQuestionnaireResponseError;
+
+export const getDuplicateLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}/duplicate`;
+};
+
+export const duplicateLegacyQuestionnaire = async (
+  questionnaireId: number,
+  legacyQuestionnaireDuplicateRequest?: LegacyQuestionnaireDuplicateRequest,
+  options?: RequestInit,
+): Promise<duplicateLegacyQuestionnaireResponse> => {
+  const res = await fetch(getDuplicateLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyQuestionnaireDuplicateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: duplicateLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as duplicateLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Disable one legacy questionnaire definition
+ */
+export type disableLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireMutationResponse;
+  status: 200;
+};
+
+export type disableLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type disableLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type disableLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type disableLegacyQuestionnaireResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type disableLegacyQuestionnaireResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type disableLegacyQuestionnaireResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type disableLegacyQuestionnaireResponseSuccess =
+  disableLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type disableLegacyQuestionnaireResponseError = (
+  | disableLegacyQuestionnaireResponse400
+  | disableLegacyQuestionnaireResponse401
+  | disableLegacyQuestionnaireResponse403
+  | disableLegacyQuestionnaireResponse404
+  | disableLegacyQuestionnaireResponse409
+  | disableLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type disableLegacyQuestionnaireResponse =
+  | disableLegacyQuestionnaireResponseSuccess
+  | disableLegacyQuestionnaireResponseError;
+
+export const getDisableLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}/disable`;
+};
+
+export const disableLegacyQuestionnaire = async (
+  questionnaireId: number,
+  legacyQuestionnaireDisableRequest?: LegacyQuestionnaireDisableRequest,
+  options?: RequestInit,
+): Promise<disableLegacyQuestionnaireResponse> => {
+  const res = await fetch(getDisableLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyQuestionnaireDisableRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: disableLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as disableLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Enable one legacy questionnaire definition
+ */
+export type enableLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireMutationResponse;
+  status: 200;
+};
+
+export type enableLegacyQuestionnaireResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type enableLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type enableLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type enableLegacyQuestionnaireResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type enableLegacyQuestionnaireResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type enableLegacyQuestionnaireResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type enableLegacyQuestionnaireResponseSuccess =
+  enableLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type enableLegacyQuestionnaireResponseError = (
+  | enableLegacyQuestionnaireResponse400
+  | enableLegacyQuestionnaireResponse401
+  | enableLegacyQuestionnaireResponse403
+  | enableLegacyQuestionnaireResponse404
+  | enableLegacyQuestionnaireResponse409
+  | enableLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type enableLegacyQuestionnaireResponse =
+  | enableLegacyQuestionnaireResponseSuccess
+  | enableLegacyQuestionnaireResponseError;
+
+export const getEnableLegacyQuestionnaireUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}/enable`;
+};
+
+export const enableLegacyQuestionnaire = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<enableLegacyQuestionnaireResponse> => {
+  const res = await fetch(getEnableLegacyQuestionnaireUrl(questionnaireId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: enableLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as enableLegacyQuestionnaireResponse;
 };
 
 /**

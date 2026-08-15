@@ -73,17 +73,47 @@ RETURNING id;
 UPDATE questionnaire_catalog_counters SET total_questionnaires = total_questionnaires + 1
 WHERE singleton = TRUE RETURNING total_questionnaires;
 
+-- name: DecrementQuestionnaireCount :one
+UPDATE questionnaire_catalog_counters SET total_questionnaires = total_questionnaires - 1
+WHERE singleton = TRUE AND total_questionnaires > 0 RETURNING total_questionnaires;
+
+-- name: UpdateQuestionnaire :one
+UPDATE questionnaires
+SET slug = sqlc.arg(slug)::text,
+    name = sqlc.arg(name)::text,
+    title = sqlc.arg(title)::text,
+    description = sqlc.arg(description)::text,
+    answer_display_mode = sqlc.arg(answer_display_mode)::text,
+    is_disabled = sqlc.arg(is_disabled)::boolean,
+    version = version + 1,
+    updated_at = sqlc.arg(updated_at)::timestamptz
+WHERE id = sqlc.arg(questionnaire_id)::bigint
+RETURNING id;
+
+-- name: DeleteQuestionnaireChildren :exec
+DELETE FROM questionnaire_questions WHERE questionnaire_id = sqlc.arg(questionnaire_id)::bigint;
+
+-- name: SetQuestionnaireDisabled :one
+UPDATE questionnaires SET is_disabled = sqlc.arg(is_disabled)::boolean,
+  version = version + 1, updated_at = sqlc.arg(updated_at)::timestamptz
+WHERE id = sqlc.arg(questionnaire_id)::bigint
+RETURNING id;
+
+-- name: DeleteDisabledQuestionnaire :one
+DELETE FROM questionnaires WHERE id = sqlc.arg(questionnaire_id)::bigint AND is_disabled = TRUE
+RETURNING id;
+
 -- name: ReserveQuestionnaireOperationReceipt :one
 INSERT INTO questionnaire_operation_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
-VALUES ('create', sqlc.arg(actor_scope)::text, sqlc.arg(key_digest)::bytea,
+VALUES (sqlc.arg(operation)::text, sqlc.arg(actor_scope)::text, sqlc.arg(key_digest)::bytea,
   sqlc.arg(payload_digest)::bytea, sqlc.arg(created_at)::timestamptz)
 ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
-RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot;
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot;
 
 -- name: GetQuestionnaireOperationReceipt :one
-SELECT id, actor_scope, key_digest, payload_digest, state, result_snapshot
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 FROM questionnaire_operation_receipts
-WHERE operation = 'create' AND actor_scope = sqlc.arg(actor_scope)::text
+WHERE operation = sqlc.arg(operation)::text AND actor_scope = sqlc.arg(actor_scope)::text
   AND key_digest = sqlc.arg(key_digest)::bytea;
 
 -- name: CompleteQuestionnaireOperationReceipt :one
@@ -91,4 +121,24 @@ UPDATE questionnaire_operation_receipts
 SET state = 'completed', result_snapshot = sqlc.arg(result_snapshot)::jsonb,
     completed_at = sqlc.arg(completed_at)::timestamptz
 WHERE id = sqlc.arg(id)::bigint AND state = 'in_progress'
-RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot;
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot;
+
+-- name: ReserveQuestionnaireManagementReceipt :one
+INSERT INTO questionnaire_management_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
+VALUES (sqlc.arg(operation)::text, sqlc.arg(actor_scope)::text, sqlc.arg(key_digest)::bytea,
+  sqlc.arg(payload_digest)::bytea, sqlc.arg(created_at)::timestamptz)
+ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot;
+
+-- name: GetQuestionnaireManagementReceipt :one
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+FROM questionnaire_management_receipts
+WHERE operation = sqlc.arg(operation)::text AND actor_scope = sqlc.arg(actor_scope)::text
+  AND key_digest = sqlc.arg(key_digest)::bytea;
+
+-- name: CompleteQuestionnaireManagementReceipt :one
+UPDATE questionnaire_management_receipts
+SET state = 'completed', result_snapshot = sqlc.arg(result_snapshot)::jsonb,
+    completed_at = sqlc.arg(completed_at)::timestamptz
+WHERE id = sqlc.arg(id)::bigint AND state = 'in_progress'
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot;

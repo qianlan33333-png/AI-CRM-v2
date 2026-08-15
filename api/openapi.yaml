@@ -1506,6 +1506,141 @@ paths:
         "503":
           description: Questionnaire storage unavailable.
           content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+    put:
+      tags: [p4-survey-compat]
+      operationId: replaceLegacyQuestionnaire
+      summary: Replace one legacy questionnaire definition with the editor's complete schema
+      x-legacy-mapping-ids: [LEGACY-API-0429]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest" } } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p4-survey-compat]
+      operationId: updateLegacyQuestionnaire
+      summary: Compatibility alias for complete legacy questionnaire editor writes
+      x-legacy-mapping-ids: [LEGACY-API-0428]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest" } } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-survey-compat]
+      operationId: deleteLegacyQuestionnaire
+      summary: Delete a disabled legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0426]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Frozen old UI delete envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDeleteResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/duplicate:
+    post:
+      tags: [p4-survey-compat]
+      operationId: duplicateLegacyQuestionnaire
+      summary: Create a disabled copy of one legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0431]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: false
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDuplicateRequest" } } }
+      responses:
+        "200": { description: Frozen old UI copy envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/disable:
+    post:
+      tags: [p4-survey-compat]
+      operationId: disableLegacyQuestionnaire
+      summary: Disable one legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0430]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: false
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDisableRequest" } } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/enable:
+    post:
+      tags: [p4-survey-compat]
+      operationId: enableLegacyQuestionnaire
+      summary: Enable one legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0432]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/image-library/upload:
     post:
       tags: [p4-media-compat]
@@ -2266,6 +2401,33 @@ components:
         - type: object
           required: [questionnaire_id]
           properties: { questionnaire_id: { type: integer, format: int64, minimum: 1 } }
+    LegacyQuestionnaireDuplicateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title: { type: string, maxLength: 300 }
+        slug: { type: string, maxLength: 200 }
+    LegacyQuestionnaireDisableRequest:
+      type: object
+      additionalProperties: false
+      properties: { is_disabled: { type: boolean } }
+    LegacyQuestionnaireMutationResponse:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireDetailResponse"
+        - type: object
+          required: [questionnaire_id, write_model_status]
+          properties:
+            questionnaire_id: { type: integer, format: int64, minimum: 1 }
+            write_model_status: { type: string, enum: [updated, duplicated, enabled, disabled, deleted] }
+            source_questionnaire_id: { type: integer, format: int64, minimum: 1 }
+    LegacyQuestionnaireDeleteResponse:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse"
+        - type: object
+          required: [deleted, delete_mode]
+          properties:
+            deleted: { type: boolean, enum: [true] }
+            delete_mode: { type: string, enum: [hard_delete] }
     LegacyQuestionnaireError:
       type: object
       additionalProperties: false

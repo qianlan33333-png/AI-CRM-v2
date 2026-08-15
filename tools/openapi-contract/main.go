@@ -76,12 +76,33 @@ var p4GroupInviteLegacyMappings = map[string][]string{
 
 var p4SurveyOperations = map[string]bool{
 	"listLegacyQuestionnaires": true, "createLegacyQuestionnaire": true, "getLegacyQuestionnaire": true,
+	"replaceLegacyQuestionnaire": true, "updateLegacyQuestionnaire": true,
+	"deleteLegacyQuestionnaire": true, "duplicateLegacyQuestionnaire": true,
+	"disableLegacyQuestionnaire": true, "enableLegacyQuestionnaire": true,
 }
 
 var p4SurveyLegacyMappings = map[string][]string{
-	"listLegacyQuestionnaires":  {"LEGACY-API-0423"},
-	"createLegacyQuestionnaire": {"LEGACY-API-0424"},
-	"getLegacyQuestionnaire":    {"LEGACY-API-0427"},
+	"listLegacyQuestionnaires":     {"LEGACY-API-0423"},
+	"createLegacyQuestionnaire":    {"LEGACY-API-0424"},
+	"getLegacyQuestionnaire":       {"LEGACY-API-0427"},
+	"replaceLegacyQuestionnaire":   {"LEGACY-API-0429"},
+	"updateLegacyQuestionnaire":    {"LEGACY-API-0428"},
+	"deleteLegacyQuestionnaire":    {"LEGACY-API-0426"},
+	"duplicateLegacyQuestionnaire": {"LEGACY-API-0431"},
+	"disableLegacyQuestionnaire":   {"LEGACY-API-0430"},
+	"enableLegacyQuestionnaire":    {"LEGACY-API-0432"},
+}
+
+var p4SurveyEvidence = map[string]string{
+	"listLegacyQuestionnaires":     "P4-F01A-2026-08-15",
+	"createLegacyQuestionnaire":    "P4-F01A-2026-08-15",
+	"getLegacyQuestionnaire":       "P4-F01A-2026-08-15",
+	"replaceLegacyQuestionnaire":   "P4-F01AB-2026-08-15",
+	"updateLegacyQuestionnaire":    "P4-F01AB-2026-08-15",
+	"deleteLegacyQuestionnaire":    "P4-F01AB-2026-08-15",
+	"duplicateLegacyQuestionnaire": "P4-F01AB-2026-08-15",
+	"disableLegacyQuestionnaire":   "P4-F01AB-2026-08-15",
+	"enableLegacyQuestionnaire":    "P4-F01AB-2026-08-15",
 }
 
 var p4ChannelOperations = map[string]bool{
@@ -246,6 +267,12 @@ var authorizationContracts = map[string]authorizationContract{
 	"listLegacyQuestionnaires":       {"questionnaires.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createLegacyQuestionnaire":      {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyQuestionnaire":         {"questionnaires.read", map[string]string{"admin": "global", "ops": "global"}},
+	"replaceLegacyQuestionnaire":     {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
+	"updateLegacyQuestionnaire":      {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
+	"deleteLegacyQuestionnaire":      {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
+	"duplicateLegacyQuestionnaire":   {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
+	"disableLegacyQuestionnaire":     {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
+	"enableLegacyQuestionnaire":      {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyChannels":             {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createLegacyChannel":            {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyChannel":               {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
@@ -292,7 +319,6 @@ const p4AutomationDecisionEvidence = "P4-W0-D01-2026-08-14"
 const p4ProductDecisionEvidence = "P4-I01A-2026-08-14"
 const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
 const p4GroupInviteDecisionEvidence = "P4-H03-2026-08-15"
-const p4SurveyDecisionEvidence = "P4-F01A-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
 const p4CouponJ01DecisionEvidence = "P4-J01-2026-08-15"
@@ -313,7 +339,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=64 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=1 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=70 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=1 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -460,7 +486,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			} else if p4SurveyOperations[op.OperationID] {
 				seenP4Survey[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4SurveyDecisionEvidence {
+				if !ok || evidence != p4SurveyEvidence[op.OperationID] {
 					return fmt.Errorf("%s has missing or forged P4 Survey evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
@@ -586,7 +612,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 64 {
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 70 {
 		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), links)
 	}
 	for id := range p1CandidateOperations {
@@ -946,7 +972,12 @@ func validateCustomerCompatContract(doc *openapi3.T) error {
 func validateSurveyContract(doc *openapi3.T) error {
 	collection := doc.Paths.Value("/api/admin/questionnaires")
 	detail := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}")
-	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil {
+	duplicate := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/duplicate")
+	disable := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/disable")
+	enable := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/enable")
+	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil ||
+		detail.Put == nil || detail.Patch == nil || detail.Delete == nil ||
+		duplicate == nil || duplicate.Post == nil || disable == nil || disable.Post == nil || enable == nil || enable.Post == nil {
 		return errors.New("P4-F01A Survey compatibility operations are incomplete")
 	}
 	if !operationResponseUsesLocalSchema(collection.Get, "LegacyQuestionnaireListResponse") ||
@@ -961,6 +992,32 @@ func validateSurveyContract(doc *openapi3.T) error {
 	if collection.Post.Responses.Value("400") == nil || collection.Post.Responses.Value("409") == nil ||
 		collection.Post.Responses.Value("503") == nil || detail.Get.Responses.Value("404") == nil || detail.Get.Responses.Value("503") == nil {
 		return errors.New("P4-F01A Survey boundary or failure responses drifted")
+	}
+	for _, contract := range []struct {
+		name     string
+		op       *openapi3.Operation
+		request  string
+		response string
+	}{
+		{"replaceLegacyQuestionnaire", detail.Put, "LegacyQuestionnaireCreateRequest", "LegacyQuestionnaireMutationResponse"},
+		{"updateLegacyQuestionnaire", detail.Patch, "LegacyQuestionnaireCreateRequest", "LegacyQuestionnaireMutationResponse"},
+		{"deleteLegacyQuestionnaire", detail.Delete, "", "LegacyQuestionnaireDeleteResponse"},
+		{"duplicateLegacyQuestionnaire", duplicate.Post, "LegacyQuestionnaireDuplicateRequest", "LegacyQuestionnaireMutationResponse"},
+		{"disableLegacyQuestionnaire", disable.Post, "LegacyQuestionnaireDisableRequest", "LegacyQuestionnaireMutationResponse"},
+		{"enableLegacyQuestionnaire", enable.Post, "", "LegacyQuestionnaireMutationResponse"},
+	} {
+		if contract.op.OperationID != contract.name ||
+			(contract.request == "" && contract.op.RequestBody != nil) ||
+			(contract.request != "" && !operationRequestUsesLocalSchema(contract.op, contract.request)) ||
+			!operationResponseUsesLocalSchema(contract.op, contract.response) ||
+			!hasHeader(contract.op, "Idempotency-Key") ||
+			contract.op.Responses.Value("400") == nil || contract.op.Responses.Value("404") == nil ||
+			contract.op.Responses.Value("409") == nil || contract.op.Responses.Value("503") == nil {
+			return fmt.Errorf("%s F01B boundary, schema, or idempotency contract drifted", contract.name)
+		}
+		if err := validateRequiredCSRF(contract.op); err != nil {
+			return fmt.Errorf("%s: %w", contract.name, err)
+		}
 	}
 	request := doc.Components.Schemas["LegacyQuestionnaireCreateRequest"]
 	if request == nil || request.Value == nil || request.Value.AdditionalProperties.Has == nil || *request.Value.AdditionalProperties.Has {
@@ -1297,6 +1354,15 @@ func validateStrictStatusUnion(doc *openapi3.T, name string, variants map[string
 func hasRequiredHeader(operation *openapi3.Operation, name string) bool {
 	for _, ref := range operation.Parameters {
 		if ref != nil && ref.Value != nil && ref.Value.In == "header" && ref.Value.Name == name && ref.Value.Required {
+			return true
+		}
+	}
+	return false
+}
+
+func hasHeader(operation *openapi3.Operation, name string) bool {
+	for _, ref := range operation.Parameters {
+		if ref != nil && ref.Value != nil && ref.Value.In == "header" && ref.Value.Name == name {
 			return true
 		}
 	}

@@ -11,7 +11,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance
-.PHONY: p4-f01a-survey-acceptance
+.PHONY: p4-f01a-survey-acceptance p4-f01ab-survey-acceptance
 .PHONY: p4-c01-channel-acceptance
 .PHONY: p4-j01-coupon-acceptance p4-coupon-ab-acceptance p4-i03-order-acceptance
 .PHONY: p2-s04-acceptance
@@ -516,6 +516,11 @@ p4-f01a-survey-acceptance:
 	@test -n "$${P4F01A_SURVEY_TEST_DATABASE_URL:-}" || { echo "P4F01A_SURVEY_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/survey/f01a_migration_compatibility.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+
+p4-f01ab-survey-acceptance:
+	@test -n "$${P4F01AB_SURVEY_TEST_DATABASE_URL:-}" || { echo "P4F01AB_SURVEY_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/survey/f01ab_migration_compatibility.sh
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm ./acceptance/survey
 
 p4-c01-channel-acceptance:
 	@test -n "$${P4C01_CHANNEL_TEST_DATABASE_URL:-}" || { echo "P4C01_CHANNEL_TEST_DATABASE_URL is required" >&2; exit 2; }

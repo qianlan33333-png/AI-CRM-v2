@@ -25,7 +25,7 @@ type legacyQuestionnaireRequest struct {
 	AssessmentEnabled bool                         `json:"assessment_enabled"`
 	AssessmentConfig  json.RawMessage              `json:"assessment_config"`
 	Slug              string                       `json:"slug"`
-	IsDisabled        bool                         `json:"is_disabled"`
+	IsDisabled        *bool                        `json:"is_disabled"`
 	Questions         []surveyport.Question        `json:"questions"`
 	ScoreRules        []surveyport.ScoreRule       `json:"score_rules"`
 }
@@ -109,7 +109,7 @@ func (handler *Handler) CreateQuestionnaire(writer http.ResponseWriter, request 
 		Questionnaire: surveyport.Questionnaire{
 			Name: body.Name, Title: body.Title, Description: body.Description,
 			AnswerDisplayMode: body.AnswerDisplayMode, AssessmentEnabled: body.AssessmentEnabled,
-			AssessmentConfig: body.AssessmentConfig, Slug: body.Slug, IsDisabled: body.IsDisabled,
+			AssessmentConfig: body.AssessmentConfig, Slug: body.Slug, IsDisabled: body.IsDisabled != nil && *body.IsDisabled,
 			Questions: body.Questions, ScoreRules: body.ScoreRules,
 		},
 		Actor: principal.AdminUserID, IdempotencyKey: key,
@@ -123,6 +123,151 @@ func (handler *Handler) CreateQuestionnaire(writer http.ResponseWriter, request 
 		"ok": true, "questionnaire": mapped, "questionnaire_id": int64(created.ID),
 		"questions": created.Questions, "data": map[string]any{"questionnaire": mapped},
 	})
+}
+
+func (handler *Handler) UpdateQuestionnaire(writer http.ResponseWriter, request *http.Request) {
+	id, principal, body, key, ok := handler.legacySurveyWriteInput(writer, request)
+	if !ok {
+		return
+	}
+	updated, err := handler.surveys.Update(request.Context(), id, surveyport.UpdateCommand{Questionnaire: questionnaireFromRequest(body), Actor: principal.AdminUserID, IdempotencyKey: key})
+	if err != nil {
+		writeLegacySurveyError(writer, err)
+		return
+	}
+	writeLegacySurveyMutation(writer, updated, "updated", map[string]any{"questionnaire_id": int64(updated.ID)})
+}
+
+func (handler *Handler) DuplicateQuestionnaire(writer http.ResponseWriter, request *http.Request) {
+	id, principal, body, key, ok := handler.legacySurveyWriteInput(writer, request)
+	if !ok {
+		return
+	}
+	item, err := handler.surveys.Duplicate(request.Context(), id, principal.AdminUserID, key, strings.TrimSpace(body.Title), strings.TrimSpace(body.Slug))
+	if err != nil {
+		writeLegacySurveyError(writer, err)
+		return
+	}
+	writeLegacySurveyMutation(writer, item, "duplicated", map[string]any{"questionnaire_id": int64(item.ID), "source_questionnaire_id": int64(id)})
+}
+
+func (handler *Handler) SetQuestionnaireDisabled(writer http.ResponseWriter, request *http.Request) {
+	id, principal, body, key, ok := handler.legacySurveyWriteInput(writer, request)
+	if !ok {
+		return
+	}
+	disabled := !strings.HasSuffix(request.URL.Path, "/enable")
+	if body.IsDisabled != nil {
+		disabled = *body.IsDisabled
+	}
+	item, err := handler.surveys.SetDisabled(request.Context(), id, disabled, principal.AdminUserID, key)
+	if err != nil {
+		writeLegacySurveyError(writer, err)
+		return
+	}
+	status := "enabled"
+	if disabled {
+		status = "disabled"
+	}
+	writeLegacySurveyMutation(writer, item, status, map[string]any{"questionnaire_id": int64(id)})
+}
+
+func (handler *Handler) DeleteQuestionnaire(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.surveys) || request == nil {
+		writeLegacySurveyError(writer, surveyapp.ErrUnavailable)
+		return
+	}
+	id, err := legacySurveyID(request)
+	if err != nil {
+		writeLegacySurveyError(writer, err)
+		return
+	}
+	principal, ok := authport.PrincipalFromContext(request.Context())
+	if !ok || principal.AdminUserID < 1 {
+		writeLegacySurveyError(writer, authport.ErrUnauthorized)
+		return
+	}
+	key, err := legacySurveyIdempotencyKey(request)
+	if err != nil {
+		writeLegacySurveyError(writer, surveyapp.ErrUnavailable)
+		return
+	}
+	result, err := handler.surveys.Delete(request.Context(), id, principal.AdminUserID, key)
+	if err != nil {
+		writeLegacySurveyError(writer, err)
+		return
+	}
+	writeLegacySurveyMutation(writer, result.Questionnaire, "deleted", map[string]any{"questionnaire_id": int64(id), "deleted": result.Deleted, "delete_mode": "hard_delete"})
+}
+
+func (handler *Handler) legacySurveyWriteInput(writer http.ResponseWriter, request *http.Request) (surveyport.ID, authport.Principal, legacyQuestionnaireRequest, string, bool) {
+	if handler == nil || nilLegacyDependency(handler.surveys) || request == nil {
+		writeLegacySurveyError(writer, surveyapp.ErrUnavailable)
+		return 0, authport.Principal{}, legacyQuestionnaireRequest{}, "", false
+	}
+	id, err := legacySurveyID(request)
+	if err != nil {
+		writeLegacySurveyError(writer, err)
+		return 0, authport.Principal{}, legacyQuestionnaireRequest{}, "", false
+	}
+	principal, ok := authport.PrincipalFromContext(request.Context())
+	if !ok || principal.AdminUserID < 1 {
+		writeLegacySurveyError(writer, authport.ErrUnauthorized)
+		return 0, authport.Principal{}, legacyQuestionnaireRequest{}, "", false
+	}
+	var body legacyQuestionnaireRequest
+	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 1<<20))
+	decoder.UseNumber()
+	decodeErr := decoder.Decode(&body)
+	if decodeErr != nil && !errors.Is(decodeErr, io.EOF) {
+		writeLegacySurveyError(writer, surveyapp.ErrInvalidQuestionnaire)
+		return 0, authport.Principal{}, legacyQuestionnaireRequest{}, "", false
+	}
+	if decodeErr == nil && !errors.Is(decoder.Decode(&struct{}{}), io.EOF) {
+		writeLegacySurveyError(writer, surveyapp.ErrInvalidQuestionnaire)
+		return 0, authport.Principal{}, legacyQuestionnaireRequest{}, "", false
+	}
+	key, err := legacySurveyIdempotencyKey(request)
+	if err != nil {
+		writeLegacySurveyError(writer, surveyapp.ErrUnavailable)
+		return 0, authport.Principal{}, legacyQuestionnaireRequest{}, "", false
+	}
+	return id, principal, body, key, true
+}
+
+func legacySurveyID(request *http.Request) (surveyport.ID, error) {
+	id, err := strconv.ParseInt(strings.TrimSpace(chi.URLParam(request, "questionnaire_id")), 10, 64)
+	if err != nil || id < 1 {
+		return 0, surveyapp.ErrInvalidQuestionnaire
+	}
+	return surveyport.ID(id), nil
+}
+
+func legacySurveyIdempotencyKey(request *http.Request) (string, error) {
+	key := strings.TrimSpace(request.Header.Get("Idempotency-Key"))
+	if key != "" {
+		return key, nil
+	}
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return "", err
+	}
+	return "legacy-questionnaire:" + hex.EncodeToString(random[:]), nil
+}
+
+func questionnaireFromRequest(body legacyQuestionnaireRequest) surveyport.Questionnaire {
+	return surveyport.Questionnaire{Name: body.Name, Title: body.Title, Description: body.Description,
+		AnswerDisplayMode: body.AnswerDisplayMode, AssessmentEnabled: body.AssessmentEnabled, AssessmentConfig: body.AssessmentConfig,
+		Slug: body.Slug, IsDisabled: body.IsDisabled != nil && *body.IsDisabled, Questions: body.Questions, ScoreRules: body.ScoreRules}
+}
+
+func writeLegacySurveyMutation(writer http.ResponseWriter, item surveyport.Questionnaire, status string, extra map[string]any) {
+	mapped := legacyQuestionnaire(item)
+	payload := map[string]any{"ok": true, "questionnaire": mapped, "questions": item.Questions, "data": map[string]any{"questionnaire": mapped}, "write_model_status": status}
+	for key, value := range extra {
+		payload[key] = value
+	}
+	writeJSON(writer, http.StatusOK, payload)
 }
 
 func legacySurveyPage(request *http.Request) (int32, int32, error) {
