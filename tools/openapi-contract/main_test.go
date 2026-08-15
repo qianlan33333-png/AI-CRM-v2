@@ -329,9 +329,32 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/v1/customers/{customer_id}/tags/{tag_id}").Put.Parameters = nil
 			reject(t, doc, ids)
 		},
+		"tag A+B evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/wecom/tags/sync").Post.Extensions["x-p4-decision-evidence"] = "P4-B02AB-FORGED"
+			reject(t, doc, ids)
+		},
+		"tag A+B mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/wecom/tags/live/mark").Post.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0559"}
+			reject(t, doc, ids)
+		},
+		"tag A+B queue capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/wecom/tags/live/unmark").Post.Extensions["x-aicrm-capability"] = "customers.read"
+			reject(t, doc, ids)
+		},
+		"tag A+B queue without csrf": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/wecom/tags/sync-due").Post.Parameters = nil
+			reject(t, doc, ids)
+		},
 	}
 	for name, test := range tests {
-		t.Run(name, test)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			test(t)
+		})
 	}
 }
 
@@ -599,6 +622,7 @@ func TestRejectsP3IdentityContractMutations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			doc, ids := fresh(t)
 			test.mutate(t, doc)
 			reject(t, doc, ids)

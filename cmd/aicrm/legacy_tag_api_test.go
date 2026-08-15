@@ -22,8 +22,53 @@ type legacyTagStub struct {
 	writes  int
 }
 
+type legacyTagSyncStub struct {
+	command contactapp.LegacyTagSyncCommand
+	err     error
+}
+
+func (stub *legacyTagSyncStub) Request(_ context.Context, command contactapp.LegacyTagSyncCommand) (contactapp.LegacyTagSyncAcceptance, error) {
+	stub.command = command
+	return contactapp.LegacyTagSyncAcceptance{ReceiptID: 41, EventID: 42, RiverJobID: 43, State: contactapp.LegacyTagSyncQueued}, stub.err
+}
+
+type legacyTagLiveStub struct {
+	command contactapp.LegacyTagLiveMutationCommand
+	err     error
+}
+
+func (stub *legacyTagLiveStub) Request(_ context.Context, command contactapp.LegacyTagLiveMutationCommand) (contactapp.LegacyTagLiveMutationAcceptance, error) {
+	stub.command = command
+	return contactapp.LegacyTagLiveMutationAcceptance{ReceiptID: 51, EventID: 52, RiverJobID: 53, State: contactapp.LegacyTagLiveMutationQueued}, stub.err
+}
+
+type legacyTagStatusStub struct {
+	status contactapp.LegacyTagExecutionStatus
+	err    error
+}
+
+func (stub *legacyTagStatusStub) Get(context.Context) (contactapp.LegacyTagExecutionStatus, error) {
+	return stub.status, stub.err
+}
+
 func (s *legacyTagStub) List(context.Context) (contactapp.LegacyTagCatalog, error) {
 	return s.catalog, s.err
+}
+func (s *legacyTagStub) GetGroup(_ context.Context, id int64) (contactapp.LegacyTagGroup, error) {
+	for _, group := range s.catalog.Groups {
+		if group.ID == id {
+			return group, s.err
+		}
+	}
+	return contactapp.LegacyTagGroup{}, contactapp.ErrLegacyTagNotFound
+}
+func (s *legacyTagStub) GetTag(_ context.Context, id int64) (contactapp.LegacyTag, error) {
+	for _, tag := range s.catalog.Tags {
+		if tag.ID == id {
+			return tag, s.err
+		}
+	}
+	return contactapp.LegacyTag{}, contactapp.ErrLegacyTagNotFound
 }
 func (s *legacyTagStub) CreateGroup(_ context.Context, c contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, contactapp.LegacyTag, error) {
 	s.command = c
@@ -105,11 +150,65 @@ func TestB02LegacyTagCatalogDegradesAndCSRFRejects(t *testing.T) {
 	}
 }
 
+func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testing.T) {
+	tags := &legacyTagStub{catalog: legacyTagFixture()}
+	sync := &legacyTagSyncStub{}
+	live := &legacyTagLiveStub{}
+	status := &legacyTagStatusStub{status: contactapp.LegacyTagExecutionStatus{Payload: []byte(`{"accepted":true,"queued":true,"attempted":false,"executed":false,"outcome_unknown":false,"reconciled":false,"real_external_call_executed":false}`)}}
+	router, auth := legacyTagRouterWithExecution(t, tags, sync, live, status)
+
+	for _, target := range []string{"/api/admin/wecom/tag-groups", "/api/admin/wecom/tag-groups/1", "/api/admin/wecom/tags/2", "/api/admin/wecom/tags/live/gate"} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, legacyRequest(http.MethodGet, target, legacyToken(145)))
+		if response.Code != http.StatusOK || strings.Contains(response.Body.String(), `"executed":true`) || !strings.Contains(response.Body.String(), `"real_external_call_executed":false`) {
+			t.Fatalf("read %s=%d %s", target, response.Code, response.Body.String())
+		}
+	}
+	page := httptest.NewRecorder()
+	router.ServeHTTP(page, legacyRequest(http.MethodGet, "/admin/wecom-tags", legacyToken(146)))
+	if page.Code != http.StatusFound || page.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Fwecom-tags" {
+		t.Fatalf("page=%d location=%q", page.Code, page.Header().Get("Location"))
+	}
+
+	manual := httptest.NewRecorder()
+	request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tags/sync", `{"trace_id":"tag-sync","idempotency_key":"body-key"}`)
+	request.Header.Set("Idempotency-Key", "header-key")
+	router.ServeHTTP(manual, request)
+	if manual.Code != http.StatusAccepted || sync.command.Actor != 1 || sync.command.Kind != contactapp.LegacyTagSyncManual || sync.command.IdempotencyKey != "header-key" || !strings.Contains(manual.Body.String(), `"state":"queued"`) || strings.Contains(manual.Body.String(), `"executed":true`) {
+		t.Fatalf("sync=%d command=%#v body=%s", manual.Code, sync.command, manual.Body.String())
+	}
+	due := httptest.NewRecorder()
+	router.ServeHTTP(due, legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tags/sync-due", `{}`))
+	if due.Code != http.StatusAccepted || sync.command.Kind != contactapp.LegacyTagSyncDue {
+		t.Fatalf("sync-due=%d command=%#v", due.Code, sync.command)
+	}
+
+	mark := httptest.NewRecorder()
+	router.ServeHTTP(mark, legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tags/live/mark", `{"tag_id":2,"external_userid":"u-1","trace_id":"tag-live"}`))
+	if mark.Code != http.StatusAccepted || live.command.Actor != 1 || live.command.Operation != contactapp.LegacyTagLiveMutationMark || !strings.Contains(string(live.command.Payload), `"tag_id":2`) || !strings.Contains(mark.Body.String(), `"real_external_call_executed":false`) {
+		t.Fatalf("mark=%d command=%#v body=%s", mark.Code, live.command, mark.Body.String())
+	}
+	missingCSRF := httptest.NewRecorder()
+	bad := legacyRequest(http.MethodPost, "/api/admin/wecom/tags/live/unmark", legacyToken(147))
+	bad.Header.Set("Content-Type", "application/json")
+	bad.Body = io.NopCloser(strings.NewReader(`{"tag_id":2}`))
+	router.ServeHTTP(missingCSRF, bad)
+	if missingCSRF.Code != http.StatusForbidden {
+		t.Fatalf("missing csrf=%d %s", missingCSRF.Code, missingCSRF.Body.String())
+	}
+	if seen := auth.capabilities(); len(seen) != 8 || seen[0] != authport.CapabilityCustomersRead || seen[4] != authport.CapabilityCustomersRead || seen[5] != authport.CapabilityCustomersWrite {
+		t.Fatalf("capabilities=%v", seen)
+	}
+}
+
 func legacyTagFixture() contactapp.LegacyTagCatalog {
 	now := time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC)
 	return contactapp.LegacyTagCatalog{Groups: []contactapp.LegacyTagGroup{{ID: 1, Name: "客户阶段"}}, Tags: []contactapp.LegacyTag{{ID: 2, GroupID: 1, GroupName: "客户阶段", Name: "新客"}}, SyncedAt: now}
 }
 func legacyTagRouter(t *testing.T, tags legacyTagApplication) (http.Handler, *recordingAuth) {
+	return legacyTagRouterWithExecution(t, tags, &legacyTagSyncStub{}, &legacyTagLiveStub{}, &legacyTagStatusStub{status: contactapp.LegacyTagExecutionStatus{Payload: []byte(`{"accepted":true,"queued":true,"attempted":false,"executed":false,"outcome_unknown":false,"reconciled":false,"real_external_call_executed":false}`)}})
+}
+func legacyTagRouterWithExecution(t *testing.T, tags legacyTagApplication, sync legacyTagSyncApplication, live legacyTagLiveMutationApplication, status legacyTagExecutionStatusApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
 	legacy, e := NewHandlerWithOutboundProductsMediaAndSurvey(service, &legacyCustomerStub{result: legacyCustomerResult()}, &legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, &legacyMediaStub{}, &legacySurveyStub{})
@@ -117,6 +216,9 @@ func legacyTagRouter(t *testing.T, tags legacyTagApplication) (http.Handler, *re
 		t.Fatal(e)
 	}
 	legacy.legacyTags = tags
+	legacy.legacyTagSync = sync
+	legacy.legacyTagLive = live
+	legacy.legacyTagStatus = status
 	authHandler, e := authhttp.NewHandler(service)
 	if e != nil {
 		t.Fatal(e)

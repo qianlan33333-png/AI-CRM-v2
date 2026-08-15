@@ -23,6 +23,9 @@ owners:
       - customer_merge_lineage
       - customer_event_idempotency
       - channel_operation_receipts
+      - legacy_tag_sync_receipts
+      - legacy_tag_live_mutation_receipts
+      - legacy_tag_execution_status
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -30,6 +33,9 @@ owners:
       customer_event_idempotency: external_event_fact_registry
       channels: single_instance_local_channel_resource_without_provider_truth
       channel_operation_receipts: actor_scoped_transactional_create_update_idempotency_receipts
+      legacy_tag_sync_receipts: actor_scoped_local_sync_queue_acceptance_receipts_without_provider_execution
+      legacy_tag_live_mutation_receipts: actor_scoped_opaque_live_mutation_queue_acceptance_receipts_without_provider_execution
+      legacy_tag_execution_status: singleton_fail_closed_local_execution_gate_projection
 
   identity:
     package: internal/identity

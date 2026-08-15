@@ -43,3 +43,40 @@ RETURNING g.id, g.name, g.sort_order;
 UPDATE tags SET name=sqlc.arg(name) WHERE id=sqlc.arg(id) AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order;
 -- name: ArchiveLegacyTag :one
 UPDATE tags SET name='archived:'||id::text WHERE id=sqlc.arg(id) AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order;
+
+-- name: ReserveLegacyTagSyncReceipt :one
+INSERT INTO legacy_tag_sync_receipts(actor_id, idempotency_key, key_digest, kind, trace_id)
+VALUES (sqlc.arg(actor_id), sqlc.arg(idempotency_key), sqlc.arg(key_digest), sqlc.arg(kind), sqlc.arg(trace_id))
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, idempotency_key, kind, trace_id, state, event_id, river_job_id;
+
+-- name: GetLegacyTagSyncReceipt :one
+SELECT id, actor_id, idempotency_key, kind, trace_id, state, event_id, river_job_id
+FROM legacy_tag_sync_receipts
+WHERE actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest);
+
+-- name: AcceptLegacyTagSyncReceipt :one
+UPDATE legacy_tag_sync_receipts
+SET state = 'queued', event_id = sqlc.arg(event_id), river_job_id = sqlc.arg(river_job_id), accepted_at = now()
+WHERE id = sqlc.arg(id) AND state = 'reserved'
+RETURNING id, actor_id, idempotency_key, kind, trace_id, state, event_id, river_job_id;
+
+-- name: ReserveLegacyTagLiveMutationReceipt :one
+INSERT INTO legacy_tag_live_mutation_receipts(actor_id, idempotency_key, key_digest, operation, payload, trace_id)
+VALUES (sqlc.arg(actor_id), sqlc.arg(idempotency_key), sqlc.arg(key_digest), sqlc.arg(operation), sqlc.arg(payload), sqlc.arg(trace_id))
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id;
+
+-- name: GetLegacyTagLiveMutationReceipt :one
+SELECT id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id
+FROM legacy_tag_live_mutation_receipts
+WHERE actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest);
+
+-- name: AcceptLegacyTagLiveMutationReceipt :one
+UPDATE legacy_tag_live_mutation_receipts
+SET state = 'queued', event_id = sqlc.arg(event_id), river_job_id = sqlc.arg(river_job_id), accepted_at = now()
+WHERE id = sqlc.arg(id) AND state = 'reserved'
+RETURNING id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id;
+
+-- name: GetLegacyTagExecutionStatus :one
+SELECT payload FROM legacy_tag_execution_status WHERE singleton = true;

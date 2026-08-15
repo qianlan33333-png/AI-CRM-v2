@@ -114,3 +114,46 @@ func TestB02LegacyTagCatalogBoundaryErrorsDoNotWrite(t *testing.T) {
 		t.Fatalf("calls=%d writes=%d events=%d", u.calls, s.writes, len(e.items))
 	}
 }
+
+func TestP4CustomerTagsReadsOneGroupAndOneTagFromTheLocalCatalog(t *testing.T) {
+	u := &legacyTagUOW{}
+	store := &legacyTagStore{u: u, groups: []LegacyTagGroup{{ID: 11, Name: "客户阶段", SortOrder: 3}}, tags: []LegacyTag{{ID: 21, GroupID: 11, GroupName: "客户阶段", Name: "新客", SortOrder: 4}}}
+	events := &legacyTagEvents{u: u}
+	service := NewLegacyTagCatalogService(u, store, events)
+	service.now = func() time.Time { return time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC) }
+
+	group, err := service.GetGroup(context.Background(), 11)
+	if err != nil || group != (LegacyTagGroup{ID: 11, Name: "客户阶段", SortOrder: 3}) {
+		t.Fatalf("GetGroup() = %#v, %v", group, err)
+	}
+	tag, err := service.GetTag(context.Background(), 21)
+	if err != nil || tag != (LegacyTag{ID: 21, GroupID: 11, GroupName: "客户阶段", Name: "新客", SortOrder: 4}) {
+		t.Fatalf("GetTag() = %#v, %v", tag, err)
+	}
+	if u.calls != 2 || store.writes != 0 || len(events.items) != 0 {
+		t.Fatalf("uow/writes/events = %d/%d/%d, want 2/0/0", u.calls, store.writes, len(events.items))
+	}
+}
+
+func TestP4CustomerTagsReadsFailClosedForInvalidOrAbsentIDs(t *testing.T) {
+	u := &legacyTagUOW{}
+	store := &legacyTagStore{u: u, groups: []LegacyTagGroup{{ID: 12, Name: "已有组"}}, tags: []LegacyTag{{ID: 22, GroupID: 12, GroupName: "已有组", Name: "已有标签"}}}
+	events := &legacyTagEvents{u: u}
+	service := NewLegacyTagCatalogService(u, store, events)
+
+	for name, read := range map[string]func() error{
+		"invalid group": func() error { _, err := service.GetGroup(context.Background(), 0); return err },
+		"absent group":  func() error { _, err := service.GetGroup(context.Background(), 11); return err },
+		"invalid tag":   func() error { _, err := service.GetTag(context.Background(), 0); return err },
+		"absent tag":    func() error { _, err := service.GetTag(context.Background(), 21); return err },
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := read(); !errors.Is(err, ErrLegacyTagNotFound) {
+				t.Fatalf("read error = %v, want not found", err)
+			}
+		})
+	}
+	if store.writes != 0 || len(events.items) != 0 {
+		t.Fatalf("writes/events = %d/%d, want 0/0", store.writes, len(events.items))
+	}
+}
