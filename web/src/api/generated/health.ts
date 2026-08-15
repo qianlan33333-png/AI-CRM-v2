@@ -1762,6 +1762,366 @@ export interface AdminConfigOverviewResponse {
   items: AdminConfigEntry[];
 }
 
+export type LegacyAppSettingMetadataKey =
+  (typeof LegacyAppSettingMetadataKey)[keyof typeof LegacyAppSettingMetadataKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataKey = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+  databaseurl: "database.url",
+  wecomsecret: "wecom.secret",
+  wecomcallback_token: "wecom.callback_token",
+  wecomcallback_aes_key: "wecom.callback_aes_key",
+  aiapi_key: "ai.api_key",
+  authjwt_secret: "auth.jwt_secret",
+  extensionapi_key_pepper: "extension.api_key_pepper",
+  gatewaywebhook_master_key: "gateway.webhook_master_key",
+} as const;
+
+export type LegacyAppSettingMetadataMode =
+  (typeof LegacyAppSettingMetadataMode)[keyof typeof LegacyAppSettingMetadataMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataMode = {
+  editable: "editable",
+  masked: "masked",
+} as const;
+
+export type LegacyAppSettingMetadataInputType =
+  (typeof LegacyAppSettingMetadataInputType)[keyof typeof LegacyAppSettingMetadataInputType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataInputType = {
+  text: "text",
+  number: "number",
+  password: "password",
+} as const;
+
+export type LegacyAppSettingMetadataDescription =
+  (typeof LegacyAppSettingMetadataDescription)[keyof typeof LegacyAppSettingMetadataDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataDescription = {
+  "": "",
+} as const;
+
+export interface LegacyAppSettingMetadata {
+  key: LegacyAppSettingMetadataKey;
+  label: string;
+  mode: LegacyAppSettingMetadataMode;
+  input_type: LegacyAppSettingMetadataInputType;
+  description: LegacyAppSettingMetadataDescription;
+}
+
+export type LegacyEditableAppSettingKey =
+  (typeof LegacyEditableAppSettingKey)[keyof typeof LegacyEditableAppSettingKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingKey = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+} as const;
+
+export type LegacyEditableAppSettingLabel =
+  (typeof LegacyEditableAppSettingLabel)[keyof typeof LegacyEditableAppSettingLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingLabel = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+} as const;
+
+export type LegacyEditableAppSettingMode =
+  (typeof LegacyEditableAppSettingMode)[keyof typeof LegacyEditableAppSettingMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingMode = {
+  editable: "editable",
+} as const;
+
+export type LegacyEditableAppSettingInputType =
+  (typeof LegacyEditableAppSettingInputType)[keyof typeof LegacyEditableAppSettingInputType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingInputType = {
+  text: "text",
+  number: "number",
+} as const;
+
+export type LegacyEditableAppSettingDescription =
+  (typeof LegacyEditableAppSettingDescription)[keyof typeof LegacyEditableAppSettingDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingDescription = {
+  "": "",
+} as const;
+
+export type LegacyEditableAppSettingSource =
+  (typeof LegacyEditableAppSettingSource)[keyof typeof LegacyEditableAppSettingSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingSource = {
+  app_settings: "app_settings",
+  config: "config",
+} as const;
+
+export type LegacyEditableAppSettingVersion =
+  (typeof LegacyEditableAppSettingVersion)[keyof typeof LegacyEditableAppSettingVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingVersion = {
+  "": "",
+} as const;
+
+export type LegacyEditableAppSettingLastActionType =
+  (typeof LegacyEditableAppSettingLastActionType)[keyof typeof LegacyEditableAppSettingLastActionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingLastActionType = {
+  create: "create",
+  update: "update",
+  empty: "empty",
+} as const;
+
+export interface LegacyEditableAppSetting {
+  key: LegacyEditableAppSettingKey;
+  label: LegacyEditableAppSettingLabel;
+  mode: LegacyEditableAppSettingMode;
+  input_type: LegacyEditableAppSettingInputType;
+  description: LegacyEditableAppSettingDescription;
+  value: string;
+  display_value: string;
+  configured: boolean;
+  source: LegacyEditableAppSettingSource;
+  version: LegacyEditableAppSettingVersion;
+  updated_at: string;
+  last_modified_at: string;
+  last_modified_by: string;
+  last_action_type: LegacyEditableAppSettingLastActionType;
+}
+
+export type LegacyMaskedAppSettingKey =
+  (typeof LegacyMaskedAppSettingKey)[keyof typeof LegacyMaskedAppSettingKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingKey = {
+  databaseurl: "database.url",
+  wecomsecret: "wecom.secret",
+  wecomcallback_token: "wecom.callback_token",
+  wecomcallback_aes_key: "wecom.callback_aes_key",
+  aiapi_key: "ai.api_key",
+  authjwt_secret: "auth.jwt_secret",
+  extensionapi_key_pepper: "extension.api_key_pepper",
+  gatewaywebhook_master_key: "gateway.webhook_master_key",
+} as const;
+
+export type LegacyMaskedAppSettingLabel =
+  (typeof LegacyMaskedAppSettingLabel)[keyof typeof LegacyMaskedAppSettingLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingLabel = {
+  databaseurl: "database.url",
+  wecomsecret: "wecom.secret",
+  wecomcallback_token: "wecom.callback_token",
+  wecomcallback_aes_key: "wecom.callback_aes_key",
+  aiapi_key: "ai.api_key",
+  authjwt_secret: "auth.jwt_secret",
+  extensionapi_key_pepper: "extension.api_key_pepper",
+  gatewaywebhook_master_key: "gateway.webhook_master_key",
+} as const;
+
+export type LegacyMaskedAppSettingMode =
+  (typeof LegacyMaskedAppSettingMode)[keyof typeof LegacyMaskedAppSettingMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingMode = {
+  masked: "masked",
+} as const;
+
+export type LegacyMaskedAppSettingInputType =
+  (typeof LegacyMaskedAppSettingInputType)[keyof typeof LegacyMaskedAppSettingInputType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingInputType = {
+  password: "password",
+} as const;
+
+export type LegacyMaskedAppSettingDescription =
+  (typeof LegacyMaskedAppSettingDescription)[keyof typeof LegacyMaskedAppSettingDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingDescription = {
+  "": "",
+} as const;
+
+export interface LegacyMaskedAppSetting {
+  key: LegacyMaskedAppSettingKey;
+  label: LegacyMaskedAppSettingLabel;
+  mode: LegacyMaskedAppSettingMode;
+  input_type: LegacyMaskedAppSettingInputType;
+  description: LegacyMaskedAppSettingDescription;
+  configured: boolean;
+  masked: boolean;
+}
+
+export type LegacyAppSettingsSummaryCardLabel =
+  (typeof LegacyAppSettingsSummaryCardLabel)[keyof typeof LegacyAppSettingsSummaryCardLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsSummaryCardLabel = {
+  可直接编辑: "可直接编辑",
+  敏感信息: "敏感信息",
+  已配置: "已配置",
+} as const;
+
+export type LegacyAppSettingsSummaryCardDescription =
+  (typeof LegacyAppSettingsSummaryCardDescription)[keyof typeof LegacyAppSettingsSummaryCardDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsSummaryCardDescription = {
+  可以直接修改的设置项: "可以直接修改的设置项",
+  只显示掩码的设置项: "只显示掩码的设置项",
+  当前已经配置完成的设置项: "当前已经配置完成的设置项",
+} as const;
+
+export interface LegacyAppSettingsSummaryCard {
+  label: LegacyAppSettingsSummaryCardLabel;
+  /**
+   * @minimum 0
+   * @maximum 12
+   */
+  value: number;
+  description: LegacyAppSettingsSummaryCardDescription;
+}
+
+export type LegacyAppSettingsAuditEntryActionType =
+  (typeof LegacyAppSettingsAuditEntryActionType)[keyof typeof LegacyAppSettingsAuditEntryActionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsAuditEntryActionType = {
+  create: "create",
+  update: "update",
+} as const;
+
+export type LegacyAppSettingsAuditEntryTargetId =
+  (typeof LegacyAppSettingsAuditEntryTargetId)[keyof typeof LegacyAppSettingsAuditEntryTargetId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsAuditEntryTargetId = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+} as const;
+
+export interface LegacyAppSettingsAuditEntry {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  operator: string;
+  action_type: LegacyAppSettingsAuditEntryActionType;
+  target_id: LegacyAppSettingsAuditEntryTargetId;
+  created_at: string;
+}
+
+export type LegacyAppSettingsProjectionRowsItem =
+  LegacyEditableAppSetting | LegacyMaskedAppSetting;
+
+export type LegacyAppSettingsProjectionMetadataMap = {
+  [key: string]: LegacyAppSettingMetadata;
+};
+
+export interface LegacyAppSettingsProjection {
+  /** @maxItems 12 */
+  rows: LegacyAppSettingsProjectionRowsItem[];
+  metadata_map: LegacyAppSettingsProjectionMetadataMap;
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  summary_cards: LegacyAppSettingsSummaryCard[];
+  /** @maxItems 10 */
+  audit_entries: LegacyAppSettingsAuditEntry[];
+}
+
+export type LegacyAppSettingsResponseSourceStatus =
+  (typeof LegacyAppSettingsResponseSourceStatus)[keyof typeof LegacyAppSettingsResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsResponseSourceStatus = {
+  next_read_model: "next_read_model",
+} as const;
+
+export interface LegacyAppSettingsResponse {
+  ok: boolean;
+  config: LegacyAppSettingsProjection;
+  source_status: LegacyAppSettingsResponseSourceStatus;
+  fallback_used: boolean;
+}
+
+export type LegacyAppSettingsSaveFormConfirm =
+  (typeof LegacyAppSettingsSaveFormConfirm)[keyof typeof LegacyAppSettingsSaveFormConfirm];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsSaveFormConfirm = {
+  NUMBER_1: "1",
+} as const;
+
+export interface LegacyAppSettingsSaveForm {
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  csrf_token: string;
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token: string;
+  confirm: LegacyAppSettingsSaveFormConfirm;
+  /** Ignored; actor is always derived from the authenticated Principal. */
+  operator?: string;
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  "setting__wecom.corp_id"?: string;
+  /** @pattern ^[1-9][0-9]*$ */
+  "setting__wecom.agent_id"?: string;
+  /** @pattern ^([1-9]|[1-4][0-9]|50)$ */
+  "setting__outbound.rate_per_second"?: string;
+  /** @pattern ^([1-9]|10)$ */
+  "setting__outbound.max_attempts"?: string;
+  /** @maxLength 0 */
+  "setting__database.url"?: string;
+  /** @maxLength 0 */
+  "setting__wecom.secret"?: string;
+  /** @maxLength 0 */
+  "setting__wecom.callback_token"?: string;
+  /** @maxLength 0 */
+  "setting__wecom.callback_aes_key"?: string;
+  /** @maxLength 0 */
+  "setting__ai.api_key"?: string;
+  /** @maxLength 0 */
+  "setting__auth.jwt_secret"?: string;
+  /** @maxLength 0 */
+  "setting__extension.api_key_pepper"?: string;
+  /** @maxLength 0 */
+  "setting__gateway.webhook_master_key"?: string;
+}
+
 export type AutomationTriggerRunAgentCode =
   (typeof AutomationTriggerRunAgentCode)[keyof typeof AutomationTriggerRunAgentCode];
 
@@ -2032,6 +2392,42 @@ export type ListIdentityMergeReviewsParams = {
    */
   limit?: LimitParameter;
 };
+
+export type GetLegacyAppSettingsPageParams = {
+  /**
+   * @maxLength 200
+   */
+  q?: string;
+  scope?: GetLegacyAppSettingsPageScope;
+};
+
+export type GetLegacyAppSettingsPageScope =
+  (typeof GetLegacyAppSettingsPageScope)[keyof typeof GetLegacyAppSettingsPageScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyAppSettingsPageScope = {
+  "": "",
+  editable: "editable",
+  masked: "masked",
+} as const;
+
+export type GetLegacyAppSettingsResourceParams = {
+  /**
+   * @maxLength 200
+   */
+  q?: string;
+  scope?: GetLegacyAppSettingsResourceScope;
+};
+
+export type GetLegacyAppSettingsResourceScope =
+  (typeof GetLegacyAppSettingsResourceScope)[keyof typeof GetLegacyAppSettingsResourceScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyAppSettingsResourceScope = {
+  "": "",
+  editable: "editable",
+  masked: "masked",
+} as const;
 
 export type ListAutomationTriggerRunsParams = {
   /**
@@ -4489,6 +4885,329 @@ export const getAdminConfigOverview = async (
     status: res.status,
     headers: res.headers,
   } as getAdminConfigOverviewResponse;
+};
+
+/**
+ * @summary Render the frozen server-side app-settings page
+ */
+export type getLegacyAppSettingsPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyAppSettingsPageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyAppSettingsPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAppSettingsPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAppSettingsPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAppSettingsPageResponseSuccess =
+  getLegacyAppSettingsPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAppSettingsPageResponseError = (
+  | getLegacyAppSettingsPageResponse400
+  | getLegacyAppSettingsPageResponse401
+  | getLegacyAppSettingsPageResponse403
+  | getLegacyAppSettingsPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAppSettingsPageResponse =
+  | getLegacyAppSettingsPageResponseSuccess
+  | getLegacyAppSettingsPageResponseError;
+
+export const getGetLegacyAppSettingsPageUrl = (
+  params?: GetLegacyAppSettingsPageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/admin/config/app-settings?${stringifiedParams}`
+    : `/admin/config/app-settings`;
+};
+
+export const getLegacyAppSettingsPage = async (
+  params?: GetLegacyAppSettingsPageParams,
+  options?: RequestInit,
+): Promise<getLegacyAppSettingsPageResponse> => {
+  const res = await fetch(getGetLegacyAppSettingsPageUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAppSettingsPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAppSettingsPageResponse;
+};
+
+/**
+ * @summary Validate and save non-secret app settings before redirecting to the page
+ */
+export type saveLegacyAppSettingsPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type saveLegacyAppSettingsPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveLegacyAppSettingsPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveLegacyAppSettingsPageResponseError = (
+  | saveLegacyAppSettingsPageResponse302
+  | saveLegacyAppSettingsPageResponse401
+  | saveLegacyAppSettingsPageResponse403
+) & {
+  headers: Headers;
+};
+
+export type saveLegacyAppSettingsPageResponse =
+  saveLegacyAppSettingsPageResponseError;
+
+export const getSaveLegacyAppSettingsPageUrl = () => {
+  return `/admin/config/app-settings/save`;
+};
+
+export const saveLegacyAppSettingsPage = async (
+  legacyAppSettingsSaveForm: LegacyAppSettingsSaveForm,
+  options?: RequestInit,
+): Promise<saveLegacyAppSettingsPageResponse> => {
+  const formUrlEncoded = new URLSearchParams();
+  formUrlEncoded.append(`csrf_token`, legacyAppSettingsSaveForm.csrf_token);
+  formUrlEncoded.append(
+    `admin_action_token`,
+    legacyAppSettingsSaveForm.admin_action_token,
+  );
+  formUrlEncoded.append(`confirm`, legacyAppSettingsSaveForm.confirm);
+  if (legacyAppSettingsSaveForm.operator !== undefined) {
+    formUrlEncoded.append(`operator`, legacyAppSettingsSaveForm.operator);
+  }
+  if (legacyAppSettingsSaveForm["setting__wecom.corp_id"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__wecom.corp_id`,
+      legacyAppSettingsSaveForm["setting__wecom.corp_id"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__wecom.agent_id"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__wecom.agent_id`,
+      legacyAppSettingsSaveForm["setting__wecom.agent_id"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__outbound.rate_per_second"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__outbound.rate_per_second`,
+      legacyAppSettingsSaveForm["setting__outbound.rate_per_second"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__outbound.max_attempts"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__outbound.max_attempts`,
+      legacyAppSettingsSaveForm["setting__outbound.max_attempts"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__database.url"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__database.url`,
+      legacyAppSettingsSaveForm["setting__database.url"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__wecom.secret"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__wecom.secret`,
+      legacyAppSettingsSaveForm["setting__wecom.secret"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__wecom.callback_token"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__wecom.callback_token`,
+      legacyAppSettingsSaveForm["setting__wecom.callback_token"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__wecom.callback_aes_key"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__wecom.callback_aes_key`,
+      legacyAppSettingsSaveForm["setting__wecom.callback_aes_key"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__ai.api_key"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__ai.api_key`,
+      legacyAppSettingsSaveForm["setting__ai.api_key"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__auth.jwt_secret"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__auth.jwt_secret`,
+      legacyAppSettingsSaveForm["setting__auth.jwt_secret"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__extension.api_key_pepper"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__extension.api_key_pepper`,
+      legacyAppSettingsSaveForm["setting__extension.api_key_pepper"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__gateway.webhook_master_key"] !==
+    undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__gateway.webhook_master_key`,
+      legacyAppSettingsSaveForm["setting__gateway.webhook_master_key"],
+    );
+  }
+
+  const res = await fetch(getSaveLegacyAppSettingsPageUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...options?.headers,
+    },
+    body: formUrlEncoded,
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveLegacyAppSettingsPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveLegacyAppSettingsPageResponse;
+};
+
+/**
+ * @summary Read the frozen twelve-key compatibility projection
+ */
+export type getLegacyAppSettingsResourceResponse200 = {
+  data: LegacyAppSettingsResponse;
+  status: 200;
+};
+
+export type getLegacyAppSettingsResourceResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyAppSettingsResourceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAppSettingsResourceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAppSettingsResourceResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAppSettingsResourceResponseSuccess =
+  getLegacyAppSettingsResourceResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAppSettingsResourceResponseError = (
+  | getLegacyAppSettingsResourceResponse400
+  | getLegacyAppSettingsResourceResponse401
+  | getLegacyAppSettingsResourceResponse403
+  | getLegacyAppSettingsResourceResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAppSettingsResourceResponse =
+  | getLegacyAppSettingsResourceResponseSuccess
+  | getLegacyAppSettingsResourceResponseError;
+
+export const getGetLegacyAppSettingsResourceUrl = (
+  params?: GetLegacyAppSettingsResourceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/config/app-settings?${stringifiedParams}`
+    : `/api/admin/config/app-settings`;
+};
+
+export const getLegacyAppSettingsResource = async (
+  params?: GetLegacyAppSettingsResourceParams,
+  options?: RequestInit,
+): Promise<getLegacyAppSettingsResourceResponse> => {
+  const res = await fetch(getGetLegacyAppSettingsResourceUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAppSettingsResourceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAppSettingsResourceResponse;
 };
 
 /**

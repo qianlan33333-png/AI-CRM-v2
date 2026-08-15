@@ -1226,7 +1226,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  9b083c0fd470589198198c661cfc767e1ac3509117e442c97380868863029e5e
+  87d6b419ef8a6ef31271dffb754820f399dd2a962a56f9f6e20ff94789b4cd95
 verify_index_sha256 .github/workflows/application-go.yml \
   781a5e4d6467fff420eb8e62ab97da8e29a3b86290cc9a3da325f0cdb498d74d
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -1412,7 +1412,7 @@ verify_index_sha256 docs/evidence/p1/feature-matrix-id-anchor.v1 \
 verify_index_sha256 docs/execution/slices/P1-S08.md \
   707667f4058d212ed628d8b868e02225c93a3948c9d90a229856162c15b13d99
 verify_index_sha256 docs/migration-mapping.jsonl \
-  60ce5a991e59d75e2a4d756f9a28b0147e029d866aca2defe5baec3fad8d1e9a
+  770fc70538cedbe14e2865e1e21001d92540981b923b201b114174d9262ca512
 verify_index_sha256 docs/evidence/p1/migration-lifecycle-index-6cb989c.json \
   404083ca07522a993f349b9a53331663375b53b3344743ddcb238966e3ff2540
 verify_index_sha256 docs/migration-mapping.md \
@@ -1778,7 +1778,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  ed4a2b587df16789aa35c7191dedd57d2ec9069d1098d322fe80cb4d22f73d05
+  e2eac60a669dc09780885a9de290233d0a2cd01e4961bd4a22b140d90226b802
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -2242,7 +2242,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   a8d1bbe2c6b5a8e5144a2654d5723a4a9e71d26ffaf55dc29187dfc2f95b4d39
 verify_index_sha256 scripts/test_repo_contract.sh \
-  327bd237551095db1e42e3f5057522f11b00816d9f299b99950c7ee2a4474470
+  4ba10e48afecd2803940d155594dbd875682af6fc1dc98fb6f8777761e887513
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -6218,7 +6218,7 @@ for mapping_id in LEGACY-API-0026 LEGACY-API-0027 LEGACY-API-0253; do
   [[ "$mapping_row" = *'"legacy_source_sha":"6cb989c071255437d75953dabb943318a74eb8f4"'* && "$mapping_row" = *'"disposition":"MIGRATE"'* && "$mapping_row" = *'"candidate_v2_operation_id":"PENDING_HUMAN_DESIGN"'* ]] || fail "P4-A02 forged or lost frozen route authority for $mapping_id"
 done
 p4a02_feature="$(git show :docs/feature-matrix.csv | grep -F '"LEGACY-S05-053"')"
-[[ "$p4a02_feature" = *'"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"'* && "$p4a02_feature" = *'sha=05541a6dfbedbec0797a2cca19a43f41512512f6;pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/217'* && "$p4a02_feature" = *'command=go_test_race+acceptance_p2s03+generate_check+repo_contract+gitleaks'* ]] || fail "P4-A02 feature matrix release evidence drifted or forged"
+[[ "$p4a02_feature" = *'"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"'* && "$p4a02_feature" = *'sha=05541a6dfbedbec0797a2cca19a43f41512512f6;pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/217'* && "$p4a02_feature" = *'command=go_test_race+acceptance_p2s03+generate_check+orval_check+repo_contract+gitleaks'* ]] || fail "P4-A02 feature matrix release evidence drifted or forged"
 p4a02_t14="$(git show :docs/migration-mapping.jsonl | grep -F '"mapping_id":"LEGACY-T14-024"')"
 [[ "$p4a02_t14" = *'"decision":"MANUAL_REENTRY"'* && "$p4a02_t14" = *'"implementation":"NOT_STARTED"'* && "$p4a02_t14" = *'"verification":"NOT_RUN"'* && "$p4a02_t14" = *'4_non_secret_keys'* && "$p4a02_t14" = *'legacy values imported=false'* && "$p4a02_t14" = *'legacy secrets imported=false'* && "$p4a02_t14" = *'legacy updated_at imported=false'* && "$p4a02_t14" = *'production_execution=false'* ]] || fail "P4-A02 T14 manual re-entry evidence drifted"
 for ledger_anchor in \
@@ -6230,7 +6230,16 @@ for ledger_anchor in \
   '    fresh_verification_induced_correction_count: 11' \
   '  - slice_id: P4-A02-R1' \
   '    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217' \
-  '    verification_induced_correction_count: 1'; do
+  '    verification_induced_correction_count: 1' \
+  '  - slice_id: P4-A02-R2' \
+  '    infra_induced_correction_count: 1' \
+  '    verification_induced_correction_count: 3' \
+  '  - slice_id: P4-A02-R3' \
+  '    verification_induced_correction_count: 2' \
+  '    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=17, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]' \
+  '  - slice_id: P4-A02-R4' \
+  '    verification_induced_correction_count: 1' \
+  '    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=18, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-A02 ledger drifted: $ledger_anchor"
 done
 
