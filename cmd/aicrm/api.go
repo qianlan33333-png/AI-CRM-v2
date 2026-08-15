@@ -427,6 +427,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),
 	)
+	legacyHandler.couponBoard = couponService
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -713,10 +714,64 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPut, "/api/admin/coupons/{coupon_id}", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.UpdateCoupon)},
 			{http.MethodPost, "/api/admin/coupons/{coupon_id}/publish", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.PublishCoupon)},
 			{http.MethodPost, "/api/admin/coupons/{coupon_id}/stop", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.StopCoupon)},
+			{http.MethodGet, "/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponListPage)},
+			{http.MethodGet, "/admin/coupons/new", authport.CapabilityCouponsWrite, false, http.HandlerFunc(legacy.CouponNewPage)},
+			{http.MethodGet, "/admin/coupons/{coupon_id}/data", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponDataPage)},
+			{http.MethodGet, "/admin/coupons/{coupon_id}/edit", authport.CapabilityCouponsWrite, false, http.HandlerFunc(legacy.CouponEditPage)},
+			{http.MethodGet, "/api/admin/coupons/product-options", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponProductOptions)},
+			{http.MethodDelete, "/api/admin/coupons/{coupon_id}", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CouponDelete)},
+			{http.MethodPost, "/api/admin/coupons/{coupon_id}/archive", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CouponArchive)},
+			{http.MethodGet, "/api/admin/coupons/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponClaims)},
+			{http.MethodPost, "/api/admin/coupons/{coupon_id}/copy", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CouponCopy)},
+			{http.MethodGet, "/api/admin/coupons/{coupon_id}/share", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponShare)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 				return nil, err
 			}
+		}
+		// Public coupon reads use no human-session middleware. The handlers resolve
+		// the opaque payment identity only for the two self-scoped operations.
+		for _, route := range []struct {
+			method, pattern string
+			identity        string
+			endpoint        http.Handler
+		}{
+			{http.MethodGet, "/api/h5/coupons/available", "payment", http.HandlerFunc(legacy.H5AvailableCoupons)},
+			{http.MethodGet, "/api/h5/coupons/{public_slug}", "", http.HandlerFunc(legacy.H5Coupon)},
+			{http.MethodPost, "/api/h5/coupons/{public_slug}/claim", "payment", http.HandlerFunc(legacy.H5ClaimCoupon)},
+			{http.MethodGet, "/api/sidebar/v2/coupons", "sidebar", http.HandlerFunc(legacy.SidebarCoupons)},
+			{http.MethodGet, "/c/{public_slug}", "", http.HandlerFunc(legacy.PublicCouponPage)},
+		} {
+			tail, wrapErr := recovery(route.endpoint)
+			if wrapErr != nil {
+				return nil, wrapErr
+			}
+			tail, wrapErr = gateway.TimeoutMiddleware(tail)
+			if wrapErr != nil {
+				return nil, wrapErr
+			}
+			if route.identity != "" {
+				tail, wrapErr = gateway.AccountBudgetMiddleware(tail)
+				if wrapErr != nil {
+					return nil, wrapErr
+				}
+				switch route.identity {
+				case "payment":
+					tail, wrapErr = legacy.BindCouponPaymentIdentityAccount(tail)
+				case "sidebar":
+					tail, wrapErr = legacy.BindCouponSidebarGrantAccount(tail)
+				default:
+					return nil, errInvalidAPIComponent
+				}
+				if wrapErr != nil {
+					return nil, wrapErr
+				}
+			}
+			tail, wrapErr = gateway.RoutePatternMiddleware(route.pattern, tail)
+			if wrapErr != nil {
+				return nil, wrapErr
+			}
+			router.Method(route.method, route.pattern, tail)
 		}
 	}
 	notFound, err := recovery(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

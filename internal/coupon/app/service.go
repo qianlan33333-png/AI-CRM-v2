@@ -32,6 +32,7 @@ var (
 	ErrConflict      = errors.New("coupon command conflict")
 	ErrRulesFrozen   = errors.New("claimed coupon rules are frozen")
 	ErrUnavailable   = errors.New("coupon service unavailable")
+	ErrNotClaimable  = errors.New("coupon is not claimable")
 )
 
 type Receipt struct {
@@ -39,6 +40,20 @@ type Receipt struct {
 	Operation, ActorScope, State string
 	KeyDigest, PayloadDigest     [32]byte
 	ResultSnapshot               json.RawMessage
+}
+
+type BoardStore interface {
+	Store
+	DeleteDraft(context.Context, couponport.ID) error
+	ListClaims(context.Context, couponport.ID, int32, int32) ([]couponport.Claim, error)
+	CountClaims(context.Context, couponport.ID) (int64, error)
+	CountCustomerClaims(context.Context, couponport.ID, int64) (int64, error)
+	CreateClaim(context.Context, couponport.ID, int64, int32, string, time.Time) (couponport.Claim, error)
+	IncrementIssued(context.Context, couponport.ID, time.Time) error
+	ListAvailable(context.Context, string, int64, time.Time, int32) ([]couponport.Coupon, error)
+	ResolvePaymentIdentitySession(context.Context, [32]byte, time.Time) (int64, error)
+	ResolveSidebarGrant(context.Context, [32]byte, time.Time) (int64, error)
+	ListSidebarClaims(context.Context, int64, int32) ([]couponport.SidebarCoupon, error)
 }
 type Reservation struct {
 	Operation, ActorScope    string
@@ -82,7 +97,7 @@ func (s *Service) List(ctx context.Context, limit, offset int32, search, status 
 		limit = DefaultLimit
 	}
 	search, status = strings.TrimSpace(search), strings.TrimSpace(status)
-	if limit < 1 || limit > MaximumLimit || offset < 0 || offset > MaximumOffset || len(search) > 80 || len(status) > 32 || status != "" && status != "draft" && status != "published" && status != "stopped" {
+	if limit < 1 || limit > MaximumLimit || offset < 0 || offset > MaximumOffset || len(search) > 80 || len(status) > 32 || status != "" && status != "draft" && status != "published" && status != "stopped" && status != "archived" {
 		return couponport.Page{}, ErrInvalidCoupon
 	}
 	page := couponport.Page{Limit: limit, Offset: offset}
@@ -141,6 +156,340 @@ func (s *Service) Stop(ctx context.Context, id couponport.ID, actor int64, key s
 	return s.mutate(ctx, "stop", couponport.UpsertCommand{Coupon: couponport.Coupon{ID: id}, Actor: actor, IdempotencyKey: key}, "stopped")
 }
 
+func (s *Service) Archive(ctx context.Context, id couponport.ID, actor int64, key string) (couponport.Coupon, error) {
+	return s.boardMutation(ctx, "archive", id, actor, key, func(tx context.Context, now time.Time) (couponport.Coupon, bool, error) {
+		old, e := s.store.Lock(tx, id)
+		if e != nil {
+			return couponport.Coupon{}, false, e
+		}
+		if old.Status == "archived" {
+			return withAvailability(old, now), false, nil
+		}
+		if old.Status != "draft" && old.Status != "published" && old.Status != "stopped" {
+			return couponport.Coupon{}, false, ErrConflict
+		}
+		item, e := s.store.SetStatus(tx, id, "archived", actor, now)
+		return withAvailability(item, now), e == nil, e
+	})
+}
+
+func (s *Service) Delete(ctx context.Context, id couponport.ID, actor int64, key string) (couponport.Coupon, error) {
+	b, ok := s.store.(BoardStore)
+	if !ok {
+		return couponport.Coupon{}, ErrUnavailable
+	}
+	return s.boardMutation(ctx, "delete", id, actor, key, func(tx context.Context, now time.Time) (couponport.Coupon, bool, error) {
+		old, e := b.Lock(tx, id)
+		if e != nil {
+			return couponport.Coupon{}, false, e
+		}
+		if old.Status != "draft" || old.IssuedCount != 0 {
+			return couponport.Coupon{}, false, ErrConflict
+		}
+		if e = b.DeleteDraft(tx, id); e != nil {
+			return couponport.Coupon{}, false, e
+		}
+		result := withAvailability(old, now)
+		result.Status = "deleted"
+		result.AvailabilityStatus = "deleted"
+		return result, true, nil
+	})
+}
+
+func (s *Service) Copy(ctx context.Context, id couponport.ID, actor int64, key string) (couponport.Coupon, error) {
+	return s.boardMutation(ctx, "copy", id, actor, key, func(tx context.Context, now time.Time) (couponport.Coupon, bool, error) {
+		old, e := s.store.Lock(tx, id)
+		if e != nil {
+			return couponport.Coupon{}, false, e
+		}
+		command, ids, e := normalize(couponport.UpsertCommand{Coupon: couponport.Coupon{Name: copiedCouponName(old.Name), DiscountAmountTotal: old.DiscountAmountTotal, TotalIssueLimit: old.TotalIssueLimit, PerUserIssueLimit: old.PerUserIssueLimit, ClaimStartsAt: old.ClaimStartsAt, ClaimEndsAt: old.ClaimEndsAt, ValidityMode: old.ValidityMode, UseStartsAt: old.UseStartsAt, UseEndsAt: old.UseEndsAt, RelativeValidityDays: old.RelativeValidityDays, Instructions: old.Instructions, TargetRefs: old.TargetRefs}, Actor: actor, IdempotencyKey: key})
+		if e != nil {
+			return couponport.Coupon{}, false, e
+		}
+		result, e := s.store.Create(tx, command, ids, now)
+		return withAvailability(result, now), e == nil, e
+	})
+}
+
+func (s *Service) boardMutation(ctx context.Context, operation string, id couponport.ID, actor int64, key string, apply func(context.Context, time.Time) (couponport.Coupon, bool, error)) (couponport.Coupon, error) {
+	if !ready(s) || id < 1 || actor < 1 || !validBoardKey(key) || apply == nil {
+		return couponport.Coupon{}, ErrInvalidCoupon
+	}
+	now := s.now().UTC()
+	payload, e := json.Marshal(struct {
+		CouponID  couponport.ID `json:"coupon_id"`
+		Operation string        `json:"operation"`
+	}{CouponID: id, Operation: operation})
+	if e != nil {
+		return couponport.Coupon{}, ErrUnavailable
+	}
+	reservation := Reservation{Operation: operation, ActorScope: fmt.Sprintf("admin:%d", actor), KeyDigest: sha256.Sum256([]byte(key)), PayloadDigest: sha256.Sum256(payload), CreatedAt: now}
+	var result couponport.Coupon
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, e := s.store.Reserve(tx, reservation)
+		if e != nil {
+			return e
+		}
+		if !receiptMatches(receipt, reservation) || subtle.ConstantTimeCompare(receipt.PayloadDigest[:], reservation.PayloadDigest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validStored(result) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		var changed bool
+		result, changed, e = apply(tx, now)
+		if e != nil {
+			return e
+		}
+		if !validStored(result) {
+			return ErrUnavailable
+		}
+		if changed {
+			if e = s.appendBoardEvent(tx, operation, result, actor, key, now); e != nil {
+				return e
+			}
+		}
+		snapshot, e := json.Marshal(result)
+		if e != nil {
+			return e
+		}
+		completed, e := s.store.Complete(tx, receipt.ID, snapshot, now)
+		if e != nil || completed.State != "completed" || !jsonEquivalent(completed.ResultSnapshot, snapshot) {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return couponport.Coupon{}, classify(err)
+	}
+	return result, nil
+}
+
+func (s *Service) Claim(ctx context.Context, input couponport.ClaimCommand) (couponport.Claim, error) {
+	b, ok := s.store.(BoardStore)
+	if !ready(s) || !ok || input.CouponID < 1 || input.CustomerID < 1 || !validBoardKey(input.IdempotencyKey) {
+		return couponport.Claim{}, ErrInvalidCoupon
+	}
+	now := s.now().UTC()
+	var result couponport.Claim
+	payload, _ := json.Marshal(struct {
+		CouponID couponport.ID
+		Customer int64
+	}{input.CouponID, input.CustomerID})
+	reservation := Reservation{Operation: "claim", ActorScope: fmt.Sprintf("customer:%d", input.CustomerID), KeyDigest: sha256.Sum256([]byte(input.IdempotencyKey)), PayloadDigest: sha256.Sum256(payload), CreatedAt: now}
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, e := s.store.Reserve(tx, reservation)
+		if e != nil {
+			return e
+		}
+		if !receiptMatches(receipt, reservation) || subtle.ConstantTimeCompare(receipt.PayloadDigest[:], reservation.PayloadDigest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validClaim(result) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		old, e := b.Lock(tx, input.CouponID)
+		if e != nil {
+			return e
+		}
+		if withAvailability(old, now).AvailabilityStatus != "active" {
+			return ErrNotClaimable
+		}
+		count, e := b.CountCustomerClaims(tx, input.CouponID, input.CustomerID)
+		if e != nil {
+			return e
+		}
+		if count >= old.PerUserIssueLimit || old.IssuedCount >= old.TotalIssueLimit {
+			return ErrConflict
+		}
+		key := sha256.Sum256([]byte("coupon-claim\x00" + input.IdempotencyKey + "\x00" + strconv.FormatInt(input.CustomerID, 10)))
+		ref := "cp_" + hex.EncodeToString(key[:16])
+		result, e = b.CreateClaim(tx, input.CouponID, input.CustomerID, int32(count+1), ref, now)
+		if e != nil {
+			return e
+		}
+		if e = b.IncrementIssued(tx, input.CouponID, now); e != nil {
+			return e
+		}
+		eventPayload, e := json.Marshal(struct {
+			CouponID couponport.ID `json:"coupon_id"`
+			ClaimRef string        `json:"claim_ref"`
+		}{input.CouponID, result.ClaimRef})
+		if e != nil {
+			return e
+		}
+		if _, e = s.events.Append(tx, eventport.Event{Type: eventport.EvCouponClaimed, CustomerID: eventport.CustomerID(input.CustomerID), Payload: eventPayload, OccurredAt: now, IdempotencyKey: "coupon.claim:" + hex.EncodeToString(key[:])}); e != nil {
+			return e
+		}
+		snapshot, e := json.Marshal(result)
+		if e != nil {
+			return e
+		}
+		completed, e := s.store.Complete(tx, receipt.ID, snapshot, now)
+		if e != nil || completed.State != "completed" || !jsonEquivalent(completed.ResultSnapshot, snapshot) {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return couponport.Claim{}, classify(err)
+	}
+	return result, nil
+}
+
+func validClaim(c couponport.Claim) bool {
+	return c.ID > 0 && c.CouponID > 0 && c.CustomerID > 0 && c.ClaimNumber > 0 && strings.HasPrefix(c.ClaimRef, "cp_") && c.Status == "claimed" && !c.ClaimedAt.IsZero()
+}
+
+func (s *Service) ListClaims(ctx context.Context, id couponport.ID, limit, offset int32) (couponport.ClaimPage, error) {
+	b, ok := s.store.(BoardStore)
+	if !ready(s) || !ok || id < 1 || limit < 1 || limit > MaximumLimit || offset < 0 {
+		return couponport.ClaimPage{}, ErrInvalidCoupon
+	}
+	p := couponport.ClaimPage{Limit: limit, Offset: offset}
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var e error
+		if _, e = s.store.Get(tx, id); e != nil {
+			return e
+		}
+		p.Items, e = b.ListClaims(tx, id, limit, offset)
+		if e == nil {
+			p.Total, e = b.CountClaims(tx, id)
+		}
+		return e
+	})
+	if err != nil {
+		return couponport.ClaimPage{}, classify(err)
+	}
+	return p, nil
+}
+
+func (s *Service) ListAvailable(ctx context.Context, target string, customerID int64) ([]couponport.Coupon, error) {
+	b, ok := s.store.(BoardStore)
+	target = strings.TrimSpace(target)
+	if !ready(s) || !ok || target == "" || len(target) > 200 || customerID < 1 {
+		return nil, ErrInvalidTarget
+	}
+	var items []couponport.Coupon
+	now := s.now().UTC()
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var e error
+		items, e = b.ListAvailable(tx, target, customerID, now, MaximumLimit)
+		return e
+	})
+	if err != nil {
+		return nil, classify(err)
+	}
+	for i := range items {
+		items[i] = withAvailability(items[i], now)
+	}
+	return items, nil
+}
+
+func (s *Service) ResolvePaymentIdentitySession(ctx context.Context, token string) (int64, error) {
+	b, ok := s.store.(BoardStore)
+	if !ready(s) || !ok || !validOpaqueBrowserToken(token) {
+		return 0, ErrNotClaimable
+	}
+	d := sha256.Sum256([]byte(token))
+	var customerID int64
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var e error
+		customerID, e = b.ResolvePaymentIdentitySession(tx, d, s.now().UTC())
+		return e
+	})
+	if err != nil || customerID < 1 {
+		return 0, ErrNotClaimable
+	}
+	return customerID, nil
+}
+
+func (s *Service) ResolveSidebarGrant(ctx context.Context, token string) (int64, error) {
+	b, ok := s.store.(BoardStore)
+	if !ready(s) || !ok || !validOpaqueBrowserToken(token) {
+		return 0, ErrNotClaimable
+	}
+	digest := sha256.Sum256([]byte(token))
+	var customerID int64
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var e error
+		customerID, e = b.ResolveSidebarGrant(tx, digest, s.now().UTC())
+		return e
+	})
+	if err != nil || customerID < 1 {
+		return 0, ErrNotClaimable
+	}
+	return customerID, nil
+}
+
+func (s *Service) ListSidebarCoupons(ctx context.Context, customerID int64) ([]couponport.SidebarCoupon, error) {
+	b, ok := s.store.(BoardStore)
+	if !ready(s) || !ok || customerID < 1 {
+		return nil, ErrInvalidCoupon
+	}
+	var result []couponport.SidebarCoupon
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var e error
+		result, e = b.ListSidebarClaims(tx, customerID, 100)
+		return e
+	})
+	if err != nil {
+		return nil, classify(err)
+	}
+	for _, item := range result {
+		if item.CouponID < 1 || strings.TrimSpace(item.CouponName) == "" || item.ClaimRef == "" || item.ClaimedAt.IsZero() {
+			return nil, ErrUnavailable
+		}
+	}
+	return result, nil
+}
+
+func validBoardKey(key string) bool {
+	return len(key) >= 16 && len(key) <= 128 && strings.TrimSpace(key) == key
+}
+
+func validOpaqueBrowserToken(token string) bool {
+	return len(token) == 43 && strings.TrimSpace(token) == token && validBase64URLToken(token)
+}
+
+func validBase64URLToken(token string) bool {
+	for _, r := range token {
+		if r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-' || r == '_' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func copiedCouponName(name string) string {
+	suffix := " 副本"
+	runes := []rune(strings.TrimSpace(name))
+	if len(runes) > 45-len([]rune(suffix)) {
+		runes = runes[:45-len([]rune(suffix))]
+	}
+	return string(runes) + suffix
+}
+func (s *Service) appendBoardEvent(ctx context.Context, operation string, item couponport.Coupon, actor int64, key string, now time.Time) error {
+	payload, e := json.Marshal(struct {
+		CouponID couponport.ID `json:"coupon_id"`
+		Actor    int64         `json:"actor"`
+		Status   string        `json:"status"`
+	}{item.ID, actor, item.Status})
+	if e != nil {
+		return e
+	}
+	d := sha256.Sum256([]byte("coupon." + operation + "\x00" + key))
+	_, e = s.events.Append(ctx, eventport.Event{Type: eventType(operation), Payload: payload, OccurredAt: now, IdempotencyKey: "coupon." + operation + ":" + hex.EncodeToString(d[:])})
+	return e
+}
+
 func (s *Service) mutate(ctx context.Context, operation string, input couponport.UpsertCommand, desired string) (couponport.Coupon, error) {
 	minimumKeyLength := 1
 	if operation == "create" || operation == "update" {
@@ -192,7 +541,7 @@ func (s *Service) mutate(ctx context.Context, operation string, input couponport
 		case "update":
 			var old couponport.Coupon
 			old, e = s.store.Lock(tx, command.ID)
-			if e == nil && old.Status != "draft" {
+			if e == nil && old.Status != "draft" && old.IssuedCount == 0 {
 				e = ErrConflict
 			}
 			if e == nil && old.IssuedCount > 0 && !claimedUpdateAllowed(old, command.Coupon) {
@@ -374,7 +723,7 @@ func jsonEquivalent(a, b []byte) bool {
 }
 func classify(e error) error {
 	switch {
-	case errors.Is(e, ErrInvalidCoupon), errors.Is(e, ErrInvalidTarget), errors.Is(e, ErrNotFound), errors.Is(e, ErrConflict), errors.Is(e, ErrRulesFrozen):
+	case errors.Is(e, ErrInvalidCoupon), errors.Is(e, ErrInvalidTarget), errors.Is(e, ErrNotFound), errors.Is(e, ErrConflict), errors.Is(e, ErrRulesFrozen), errors.Is(e, ErrNotClaimable):
 		return e
 	default:
 		return ErrUnavailable
@@ -390,6 +739,12 @@ func eventType(operation string) string {
 		return eventport.EvCouponPublished
 	case "stop":
 		return eventport.EvCouponStopped
+	case "archive":
+		return eventport.EvCouponArchived
+	case "delete":
+		return eventport.EvCouponDeleted
+	case "copy":
+		return eventport.EvCouponCopied
 	default:
 		return ""
 	}

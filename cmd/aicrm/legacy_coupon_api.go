@@ -206,8 +206,10 @@ func writeCouponError(w http.ResponseWriter, err error) {
 		status, code = http.StatusBadRequest, platformhttp.CodeMalformedRequest
 	case errors.Is(err, couponapp.ErrNotFound):
 		status, code = http.StatusNotFound, platformhttp.CodeNotFound
-	case errors.Is(err, couponapp.ErrConflict), errors.Is(err, couponapp.ErrRulesFrozen):
+	case errors.Is(err, couponapp.ErrConflict), errors.Is(err, couponapp.ErrRulesFrozen), errors.Is(err, couponapp.ErrNotClaimable):
 		status, code = http.StatusConflict, platformhttp.CodeConflict
+	case errors.Is(err, authport.ErrUnauthenticated):
+		status, code = http.StatusUnauthorized, platformhttp.CodeUnauthenticated
 	case errors.Is(err, authport.ErrUnauthorized):
 		status, code = http.StatusForbidden, platformhttp.CodeUnauthorized
 	}

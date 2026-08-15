@@ -47,6 +47,17 @@ func (q *Queries) CompleteCouponReceipt(ctx context.Context, arg CompleteCouponR
 	return i, err
 }
 
+const countCouponClaims = `-- name: CountCouponClaims :one
+SELECT count(*)::bigint FROM coupon_claims WHERE coupon_id=$1::bigint
+`
+
+func (q *Queries) CountCouponClaims(ctx context.Context, couponID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countCouponClaims, couponID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countCoupons = `-- name: CountCoupons :one
 SELECT CASE WHEN $1::text = '' AND $2::text = ''
   THEN (SELECT total_coupons FROM coupon_catalog_counters WHERE singleton=TRUE)
@@ -60,6 +71,22 @@ type CountCouponsParams struct {
 
 func (q *Queries) CountCoupons(ctx context.Context, arg CountCouponsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countCoupons, arg.Search, arg.StatusFilter)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const countCustomerCouponClaims = `-- name: CountCustomerCouponClaims :one
+SELECT count(*)::bigint FROM coupon_claims WHERE coupon_id=$1::bigint AND customer_id=$2::bigint
+`
+
+type CountCustomerCouponClaimsParams struct {
+	CouponID   int64 `json:"coupon_id"`
+	CustomerID int64 `json:"customer_id"`
+}
+
+func (q *Queries) CountCustomerCouponClaims(ctx context.Context, arg CountCustomerCouponClaimsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countCustomerCouponClaims, arg.CouponID, arg.CustomerID)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -108,6 +135,52 @@ func (q *Queries) CreateCoupon(ctx context.Context, arg CreateCouponParams) (int
 	return id, err
 }
 
+const createCouponClaim = `-- name: CreateCouponClaim :one
+INSERT INTO coupon_claims(coupon_id,customer_id,claim_number,claim_ref,claimed_at)
+VALUES($1::bigint,$2::bigint,$3::integer,$4::text,$5::timestamptz)
+RETURNING id,coupon_id,customer_id,claim_number,claim_ref,status,claimed_at
+`
+
+type CreateCouponClaimParams struct {
+	CouponID    int64              `json:"coupon_id"`
+	CustomerID  int64              `json:"customer_id"`
+	ClaimNumber int32              `json:"claim_number"`
+	ClaimRef    string             `json:"claim_ref"`
+	ClaimedAt   pgtype.Timestamptz `json:"claimed_at"`
+}
+
+func (q *Queries) CreateCouponClaim(ctx context.Context, arg CreateCouponClaimParams) (CouponClaim, error) {
+	row := q.db.QueryRow(ctx, createCouponClaim,
+		arg.CouponID,
+		arg.CustomerID,
+		arg.ClaimNumber,
+		arg.ClaimRef,
+		arg.ClaimedAt,
+	)
+	var i CouponClaim
+	err := row.Scan(
+		&i.ID,
+		&i.CouponID,
+		&i.CustomerID,
+		&i.ClaimNumber,
+		&i.ClaimRef,
+		&i.Status,
+		&i.ClaimedAt,
+	)
+	return i, err
+}
+
+const decrementCouponCount = `-- name: DecrementCouponCount :one
+UPDATE coupon_catalog_counters SET total_coupons=total_coupons-1 WHERE singleton=TRUE AND total_coupons > 0 RETURNING total_coupons
+`
+
+func (q *Queries) DecrementCouponCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, decrementCouponCount)
+	var total_coupons int64
+	err := row.Scan(&total_coupons)
+	return total_coupons, err
+}
+
 const deleteCouponTargets = `-- name: DeleteCouponTargets :exec
 DELETE FROM coupon_targets WHERE coupon_id=$1::bigint
 `
@@ -115,6 +188,17 @@ DELETE FROM coupon_targets WHERE coupon_id=$1::bigint
 func (q *Queries) DeleteCouponTargets(ctx context.Context, couponID int64) error {
 	_, err := q.db.Exec(ctx, deleteCouponTargets, couponID)
 	return err
+}
+
+const deleteDraftCoupon = `-- name: DeleteDraftCoupon :one
+DELETE FROM coupons WHERE id=$1::bigint AND status='draft' AND issued_count=0 RETURNING id
+`
+
+func (q *Queries) DeleteDraftCoupon(ctx context.Context, couponID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, deleteDraftCoupon, couponID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getCoupon = `-- name: GetCoupon :one
@@ -225,6 +309,24 @@ func (q *Queries) IncrementCouponCount(ctx context.Context) (int64, error) {
 	return total_coupons, err
 }
 
+const incrementCouponIssuedCount = `-- name: IncrementCouponIssuedCount :one
+UPDATE coupons SET issued_count=issued_count+1,first_claim_at=COALESCE(first_claim_at,$1::timestamptz),version=version+1,updated_at=$1::timestamptz
+WHERE id=$2::bigint AND issued_count < total_issue_limit
+RETURNING id
+`
+
+type IncrementCouponIssuedCountParams struct {
+	Now      pgtype.Timestamptz `json:"now"`
+	CouponID int64              `json:"coupon_id"`
+}
+
+func (q *Queries) IncrementCouponIssuedCount(ctx context.Context, arg IncrementCouponIssuedCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, incrementCouponIssuedCount, arg.Now, arg.CouponID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertCouponTarget = `-- name: InsertCouponTarget :exec
 INSERT INTO coupon_targets (coupon_id,position,target_ref,product_id) VALUES ($1::bigint,$2::integer,$3::text,$4::bigint)
 `
@@ -244,6 +346,183 @@ func (q *Queries) InsertCouponTarget(ctx context.Context, arg InsertCouponTarget
 		arg.ProductID,
 	)
 	return err
+}
+
+const listAvailableCoupons = `-- name: ListAvailableCoupons :many
+SELECT c.id, c.name, c.discount_amount_total, c.currency, c.status, c.total_issue_limit, c.per_user_issue_limit, c.issued_count, c.claim_starts_at, c.claim_ends_at, c.validity_mode, c.use_starts_at, c.use_ends_at, c.relative_validity_days, c.instructions, c.first_claim_at, c.created_by, c.updated_by, c.version, c.created_at, c.updated_at, COALESCE(t.refs, '[]'::jsonb) AS target_refs
+FROM coupons c
+JOIN coupon_targets target ON target.coupon_id=c.id AND target.target_ref=$1::text
+LEFT JOIN LATERAL (SELECT jsonb_agg(target_ref ORDER BY position) refs FROM coupon_targets WHERE coupon_id=c.id) t ON true
+WHERE c.status='published' AND c.issued_count < c.total_issue_limit AND c.claim_starts_at <= $2::timestamptz AND c.claim_ends_at > $2::timestamptz
+  AND (SELECT count(*) FROM coupon_claims claim WHERE claim.coupon_id=c.id AND claim.customer_id=$3::bigint) < c.per_user_issue_limit
+ORDER BY c.id LIMIT $4::integer
+`
+
+type ListAvailableCouponsParams struct {
+	TargetRef  string             `json:"target_ref"`
+	Now        pgtype.Timestamptz `json:"now"`
+	CustomerID int64              `json:"customer_id"`
+	RowLimit   int32              `json:"row_limit"`
+}
+
+type ListAvailableCouponsRow struct {
+	ID                   int64              `json:"id"`
+	Name                 string             `json:"name"`
+	DiscountAmountTotal  int64              `json:"discount_amount_total"`
+	Currency             string             `json:"currency"`
+	Status               string             `json:"status"`
+	TotalIssueLimit      int64              `json:"total_issue_limit"`
+	PerUserIssueLimit    int64              `json:"per_user_issue_limit"`
+	IssuedCount          int64              `json:"issued_count"`
+	ClaimStartsAt        pgtype.Timestamptz `json:"claim_starts_at"`
+	ClaimEndsAt          pgtype.Timestamptz `json:"claim_ends_at"`
+	ValidityMode         string             `json:"validity_mode"`
+	UseStartsAt          pgtype.Timestamptz `json:"use_starts_at"`
+	UseEndsAt            pgtype.Timestamptz `json:"use_ends_at"`
+	RelativeValidityDays pgtype.Int4        `json:"relative_validity_days"`
+	Instructions         string             `json:"instructions"`
+	FirstClaimAt         pgtype.Timestamptz `json:"first_claim_at"`
+	CreatedBy            int64              `json:"created_by"`
+	UpdatedBy            int64              `json:"updated_by"`
+	Version              int64              `json:"version"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	TargetRefs           []byte             `json:"target_refs"`
+}
+
+func (q *Queries) ListAvailableCoupons(ctx context.Context, arg ListAvailableCouponsParams) ([]ListAvailableCouponsRow, error) {
+	rows, err := q.db.Query(ctx, listAvailableCoupons,
+		arg.TargetRef,
+		arg.Now,
+		arg.CustomerID,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAvailableCouponsRow{}
+	for rows.Next() {
+		var i ListAvailableCouponsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.DiscountAmountTotal,
+			&i.Currency,
+			&i.Status,
+			&i.TotalIssueLimit,
+			&i.PerUserIssueLimit,
+			&i.IssuedCount,
+			&i.ClaimStartsAt,
+			&i.ClaimEndsAt,
+			&i.ValidityMode,
+			&i.UseStartsAt,
+			&i.UseEndsAt,
+			&i.RelativeValidityDays,
+			&i.Instructions,
+			&i.FirstClaimAt,
+			&i.CreatedBy,
+			&i.UpdatedBy,
+			&i.Version,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TargetRefs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCouponClaims = `-- name: ListCouponClaims :many
+SELECT id,coupon_id,customer_id,claim_number,claim_ref,status,claimed_at
+FROM coupon_claims WHERE coupon_id=$1::bigint
+ORDER BY id LIMIT $3::integer OFFSET $2::integer
+`
+
+type ListCouponClaimsParams struct {
+	CouponID  int64 `json:"coupon_id"`
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+func (q *Queries) ListCouponClaims(ctx context.Context, arg ListCouponClaimsParams) ([]CouponClaim, error) {
+	rows, err := q.db.Query(ctx, listCouponClaims, arg.CouponID, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CouponClaim{}
+	for rows.Next() {
+		var i CouponClaim
+		if err := rows.Scan(
+			&i.ID,
+			&i.CouponID,
+			&i.CustomerID,
+			&i.ClaimNumber,
+			&i.ClaimRef,
+			&i.Status,
+			&i.ClaimedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCouponSidebarClaims = `-- name: ListCouponSidebarClaims :many
+SELECT c.id AS coupon_id,c.name AS coupon_name,c.status AS coupon_status,claim.claim_ref,claim.claimed_at
+FROM coupon_claims claim
+JOIN coupons c ON c.id=claim.coupon_id
+WHERE claim.customer_id=$1::bigint
+ORDER BY claim.id DESC LIMIT $2::integer
+`
+
+type ListCouponSidebarClaimsParams struct {
+	CustomerID int64 `json:"customer_id"`
+	RowLimit   int32 `json:"row_limit"`
+}
+
+type ListCouponSidebarClaimsRow struct {
+	CouponID     int64              `json:"coupon_id"`
+	CouponName   string             `json:"coupon_name"`
+	CouponStatus string             `json:"coupon_status"`
+	ClaimRef     string             `json:"claim_ref"`
+	ClaimedAt    pgtype.Timestamptz `json:"claimed_at"`
+}
+
+func (q *Queries) ListCouponSidebarClaims(ctx context.Context, arg ListCouponSidebarClaimsParams) ([]ListCouponSidebarClaimsRow, error) {
+	rows, err := q.db.Query(ctx, listCouponSidebarClaims, arg.CustomerID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCouponSidebarClaimsRow{}
+	for rows.Next() {
+		var i ListCouponSidebarClaimsRow
+		if err := rows.Scan(
+			&i.CouponID,
+			&i.CouponName,
+			&i.CouponStatus,
+			&i.ClaimRef,
+			&i.ClaimedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listCoupons = `-- name: ListCoupons :many
@@ -412,6 +691,40 @@ func (q *Queries) ReserveCouponReceipt(ctx context.Context, arg ReserveCouponRec
 		&i.ResultSnapshot,
 	)
 	return i, err
+}
+
+const resolveCouponPaymentIdentitySession = `-- name: ResolveCouponPaymentIdentitySession :one
+SELECT customer_id FROM coupon_payment_identity_sessions
+WHERE token_digest=$1::bytea AND expires_at > $2::timestamptz AND revoked_at IS NULL AND replaced_at IS NULL
+`
+
+type ResolveCouponPaymentIdentitySessionParams struct {
+	TokenDigest []byte             `json:"token_digest"`
+	Now         pgtype.Timestamptz `json:"now"`
+}
+
+func (q *Queries) ResolveCouponPaymentIdentitySession(ctx context.Context, arg ResolveCouponPaymentIdentitySessionParams) (int64, error) {
+	row := q.db.QueryRow(ctx, resolveCouponPaymentIdentitySession, arg.TokenDigest, arg.Now)
+	var customer_id int64
+	err := row.Scan(&customer_id)
+	return customer_id, err
+}
+
+const resolveCouponSidebarGrant = `-- name: ResolveCouponSidebarGrant :one
+SELECT customer_id FROM coupon_sidebar_grants
+WHERE token_digest=$1::bytea AND expires_at > $2::timestamptz AND revoked_at IS NULL AND replaced_at IS NULL
+`
+
+type ResolveCouponSidebarGrantParams struct {
+	TokenDigest []byte             `json:"token_digest"`
+	Now         pgtype.Timestamptz `json:"now"`
+}
+
+func (q *Queries) ResolveCouponSidebarGrant(ctx context.Context, arg ResolveCouponSidebarGrantParams) (int64, error) {
+	row := q.db.QueryRow(ctx, resolveCouponSidebarGrant, arg.TokenDigest, arg.Now)
+	var customer_id int64
+	err := row.Scan(&customer_id)
+	return customer_id, err
 }
 
 const setCouponStatus = `-- name: SetCouponStatus :exec

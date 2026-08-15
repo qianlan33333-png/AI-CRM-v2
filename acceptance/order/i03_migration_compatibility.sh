@@ -29,7 +29,7 @@ history_snapshot() {
 baseline="$(history_snapshot)"
 [[ "$baseline" =~ ^[0-9]+\ [0-9a-f]{32}\ [0-9]+\ [0-9a-f]{32}\ [0-9]+\ [0-9a-f]{32}$ ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 35
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 36
 read -r waterline projections counters functions cross_fks <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT
   max(version_id),
   (to_regclass('public.order_list_projections') IS NOT NULL)::int,
@@ -37,7 +37,7 @@ read -r waterline projections counters functions cross_fks <<<"$(psql "$database
   ((to_regprocedure('public.aicrm_order_list_projection_count_insert()') IS NOT NULL AND to_regprocedure('public.aicrm_order_list_projection_count_delete()') IS NOT NULL))::int,
   (SELECT count(*) FROM pg_constraint WHERE conrelid='order_list_projections'::regclass AND contype='f')
   FROM goose_db_version WHERE is_applied")"
-[[ "$waterline" = "35" && "$projections" = "1" && "$counters" = "1" && "$functions" = "1" && "$cross_fks" = "0" ]]
+[[ "$waterline" = "36" && "$projections" = "1" && "$counters" = "1" && "$functions" = "1" && "$cross_fks" = "0" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -48,9 +48,9 @@ read -r waterline projections counters <<<"$(psql "$database_url" -X -q -v ON_ER
 [[ "$waterline" = "34" && "$projections" = "0" && "$counters" = "0" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 35
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 36
 read -r waterline projections counters <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT max(version_id),(to_regclass('public.order_list_projections') IS NOT NULL)::int,(to_regclass('public.order_list_projection_counters') IS NOT NULL)::int FROM goose_db_version WHERE is_applied")"
-[[ "$waterline" = "35" && "$projections" = "1" && "$counters" = "1" ]]
+[[ "$waterline" = "36" && "$projections" = "1" && "$counters" = "1" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
-printf 'P4-I03 migration compatibility: PASS (34/35/34/35, Event/Auth/session history preserved, no cross-domain FK)\n'
+printf 'P4-I03 migration compatibility: PASS (34/36/34/36, Event/Auth/session history preserved, no cross-domain FK)\n'

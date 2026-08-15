@@ -21,6 +21,7 @@ type Repository struct{}
 func NewRepository() *Repository { return &Repository{} }
 
 var _ couponapp.Store = (*Repository)(nil)
+var _ couponapp.BoardStore = (*Repository)(nil)
 
 func queries(ctx context.Context) (*coupondb.Queries, error) {
 	tx, e := platformstore.TxFromContext(ctx)
@@ -154,6 +155,139 @@ func (r *Repository) Complete(ctx context.Context, id int64, snapshot json.RawMe
 		return couponapp.Receipt{}, unavailable(e)
 	}
 	return receipt(row.ID, row.Operation, row.ActorScope, row.KeyDigest, row.PayloadDigest, row.State, row.ResultSnapshot), nil
+}
+
+func (r *Repository) DeleteDraft(ctx context.Context, id couponport.ID) error {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return unavailable(e)
+	}
+	if _, e = q.DeleteDraftCoupon(ctx, int64(id)); e != nil {
+		return unavailable(e)
+	}
+	if _, e = q.DecrementCouponCount(ctx); e != nil {
+		return unavailable(e)
+	}
+	return nil
+}
+func (r *Repository) ListClaims(ctx context.Context, id couponport.ID, limit, offset int32) ([]couponport.Claim, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return nil, unavailable(e)
+	}
+	rows, e := q.ListCouponClaims(ctx, coupondb.ListCouponClaimsParams{CouponID: int64(id), RowLimit: limit, RowOffset: offset})
+	if e != nil {
+		return nil, unavailable(e)
+	}
+	out := make([]couponport.Claim, len(rows))
+	for i, x := range rows {
+		if !x.ClaimedAt.Valid {
+			return nil, couponapp.ErrUnavailable
+		}
+		out[i] = couponport.Claim{ID: x.ID, CouponID: x.CouponID, CustomerID: x.CustomerID, ClaimNumber: x.ClaimNumber, ClaimRef: x.ClaimRef, Status: x.Status, ClaimedAt: x.ClaimedAt.Time}
+	}
+	return out, nil
+}
+func (r *Repository) CountClaims(ctx context.Context, id couponport.ID) (int64, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return 0, unavailable(e)
+	}
+	n, e := q.CountCouponClaims(ctx, int64(id))
+	if e != nil || n < 0 {
+		return 0, unavailable(e)
+	}
+	return n, nil
+}
+func (r *Repository) CountCustomerClaims(ctx context.Context, id couponport.ID, customerID int64) (int64, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return 0, unavailable(e)
+	}
+	n, e := q.CountCustomerCouponClaims(ctx, coupondb.CountCustomerCouponClaimsParams{CouponID: int64(id), CustomerID: customerID})
+	if e != nil || n < 0 {
+		return 0, unavailable(e)
+	}
+	return n, nil
+}
+func (r *Repository) CreateClaim(ctx context.Context, id couponport.ID, customerID int64, number int32, ref string, now time.Time) (couponport.Claim, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return couponport.Claim{}, unavailable(e)
+	}
+	x, e := q.CreateCouponClaim(ctx, coupondb.CreateCouponClaimParams{CouponID: int64(id), CustomerID: customerID, ClaimNumber: number, ClaimRef: ref, ClaimedAt: stamp(now)})
+	if e != nil || !x.ClaimedAt.Valid {
+		return couponport.Claim{}, unavailable(e)
+	}
+	return couponport.Claim{ID: x.ID, CouponID: x.CouponID, CustomerID: x.CustomerID, ClaimNumber: x.ClaimNumber, ClaimRef: x.ClaimRef, Status: x.Status, ClaimedAt: x.ClaimedAt.Time}, nil
+}
+func (r *Repository) IncrementIssued(ctx context.Context, id couponport.ID, now time.Time) error {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return unavailable(e)
+	}
+	if _, e = q.IncrementCouponIssuedCount(ctx, coupondb.IncrementCouponIssuedCountParams{CouponID: int64(id), Now: stamp(now)}); e != nil {
+		return unavailable(e)
+	}
+	return nil
+}
+func (r *Repository) ListAvailable(ctx context.Context, target string, customerID int64, now time.Time, limit int32) ([]couponport.Coupon, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return nil, unavailable(e)
+	}
+	rows, e := q.ListAvailableCoupons(ctx, coupondb.ListAvailableCouponsParams{TargetRef: target, CustomerID: customerID, Now: stamp(now), RowLimit: limit})
+	if e != nil {
+		return nil, unavailable(e)
+	}
+	out := make([]couponport.Coupon, len(rows))
+	for i, x := range rows {
+		out[i], e = mapCoupon(x.ID, x.Name, x.DiscountAmountTotal, x.Currency, x.Status, x.TotalIssueLimit, x.PerUserIssueLimit, x.IssuedCount, x.ClaimStartsAt, x.ClaimEndsAt, x.ValidityMode, x.UseStartsAt, x.UseEndsAt, x.RelativeValidityDays, x.Instructions, x.CreatedBy, x.UpdatedBy, x.Version, x.CreatedAt, x.UpdatedAt, x.TargetRefs)
+		if e != nil {
+			return nil, e
+		}
+	}
+	return out, nil
+}
+func (r *Repository) ResolvePaymentIdentitySession(ctx context.Context, digest [32]byte, now time.Time) (int64, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return 0, unavailable(e)
+	}
+	id, e := q.ResolveCouponPaymentIdentitySession(ctx, coupondb.ResolveCouponPaymentIdentitySessionParams{TokenDigest: digest[:], Now: stamp(now)})
+	if e != nil || id < 1 {
+		return 0, unavailable(e)
+	}
+	return id, nil
+}
+func (r *Repository) ResolveSidebarGrant(ctx context.Context, digest [32]byte, now time.Time) (int64, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return 0, unavailable(e)
+	}
+	id, e := q.ResolveCouponSidebarGrant(ctx, coupondb.ResolveCouponSidebarGrantParams{TokenDigest: digest[:], Now: stamp(now)})
+	if e != nil || id < 1 {
+		return 0, unavailable(e)
+	}
+	return id, nil
+}
+func (r *Repository) ListSidebarClaims(ctx context.Context, customerID int64, limit int32) ([]couponport.SidebarCoupon, error) {
+	q, e := queries(ctx)
+	if r == nil || e != nil {
+		return nil, unavailable(e)
+	}
+	rows, e := q.ListCouponSidebarClaims(ctx, coupondb.ListCouponSidebarClaimsParams{CustomerID: customerID, RowLimit: limit})
+	if e != nil {
+		return nil, unavailable(e)
+	}
+	out := make([]couponport.SidebarCoupon, len(rows))
+	for i, row := range rows {
+		if !row.ClaimedAt.Valid {
+			return nil, couponapp.ErrUnavailable
+		}
+		out[i] = couponport.SidebarCoupon{CouponID: couponport.ID(row.CouponID), CouponName: row.CouponName, CouponStatus: row.CouponStatus, ClaimRef: row.ClaimRef, ClaimedAt: row.ClaimedAt.Time}
+	}
+	return out, nil
 }
 
 func replaceTargets(ctx context.Context, q *coupondb.Queries, id int64, refs []string, ids []int64) error {

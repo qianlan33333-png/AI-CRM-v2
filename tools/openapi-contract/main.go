@@ -110,12 +110,54 @@ var p4TagLegacyMappings = map[string][]string{
 var p4CouponOperations = map[string]bool{
 	"listLegacyCoupons": true, "createLegacyCoupon": true, "getLegacyCoupon": true,
 	"updateLegacyCoupon": true, "publishLegacyCoupon": true, "stopLegacyCoupon": true,
+	"getLegacyCouponListPage": true, "getLegacyCouponNewPage": true,
+	"getLegacyCouponDataPage": true, "getLegacyCouponEditPage": true,
+	"listLegacyCouponProductOptions": true, "deleteLegacyCoupon": true,
+	"archiveLegacyCoupon": true, "listLegacyCouponClaims": true,
+	"copyLegacyCoupon": true, "getLegacyCouponShare": true,
+	"listH5AvailableCoupons": true, "getH5CouponState": true,
+	"claimH5Coupon": true, "listSidebarCoupons": true, "getPublicCouponPage": true,
 }
 
 var p4CouponLegacyMappings = map[string][]string{
 	"listLegacyCoupons": {"LEGACY-API-0285"}, "createLegacyCoupon": {"LEGACY-API-0286"},
 	"getLegacyCoupon": {"LEGACY-API-0289"}, "updateLegacyCoupon": {"LEGACY-API-0290"},
 	"publishLegacyCoupon": {"LEGACY-API-0294"}, "stopLegacyCoupon": {"LEGACY-API-0296"},
+	"getLegacyCouponListPage": {"LEGACY-API-0043"}, "getLegacyCouponNewPage": {"LEGACY-API-0044"},
+	"getLegacyCouponDataPage": {"LEGACY-API-0045"}, "getLegacyCouponEditPage": {"LEGACY-API-0046"},
+	"listLegacyCouponProductOptions": {"LEGACY-API-0287"}, "deleteLegacyCoupon": {"LEGACY-API-0288"},
+	"archiveLegacyCoupon": {"LEGACY-API-0291"}, "listLegacyCouponClaims": {"LEGACY-API-0292"},
+	"copyLegacyCoupon": {"LEGACY-API-0293"}, "getLegacyCouponShare": {"LEGACY-API-0295"},
+	"listH5AvailableCoupons": {"LEGACY-API-0642"}, "getH5CouponState": {"LEGACY-API-0643"},
+	"claimH5Coupon": {"LEGACY-API-0644"}, "listSidebarCoupons": {"LEGACY-API-0727"},
+	"getPublicCouponPage": {"LEGACY-API-0756"},
+}
+
+var p4CouponEvidence = map[string]string{
+	"listLegacyCoupons": p4CouponJ01DecisionEvidence, "createLegacyCoupon": p4CouponJ01DecisionEvidence,
+	"getLegacyCoupon": p4CouponJ01DecisionEvidence, "updateLegacyCoupon": p4CouponJ01DecisionEvidence,
+	"publishLegacyCoupon": p4CouponJ01DecisionEvidence, "stopLegacyCoupon": p4CouponJ01DecisionEvidence,
+	"getLegacyCouponListPage": p4CouponABDecisionEvidence, "getLegacyCouponNewPage": p4CouponABDecisionEvidence,
+	"getLegacyCouponDataPage": p4CouponABDecisionEvidence, "getLegacyCouponEditPage": p4CouponABDecisionEvidence,
+	"listLegacyCouponProductOptions": p4CouponABDecisionEvidence, "deleteLegacyCoupon": p4CouponABDecisionEvidence,
+	"archiveLegacyCoupon": p4CouponABDecisionEvidence, "listLegacyCouponClaims": p4CouponABDecisionEvidence,
+	"copyLegacyCoupon": p4CouponABDecisionEvidence, "getLegacyCouponShare": p4CouponABDecisionEvidence,
+	"listH5AvailableCoupons": p4CouponABDecisionEvidence, "getH5CouponState": p4CouponABDecisionEvidence,
+	"claimH5Coupon": p4CouponABDecisionEvidence, "listSidebarCoupons": p4CouponABDecisionEvidence,
+	"getPublicCouponPage": p4CouponABDecisionEvidence,
+}
+
+type couponPublicAccessContract struct {
+	authScheme  string
+	accessScope string
+}
+
+var couponPublicAccessContracts = map[string]couponPublicAccessContract{
+	"listH5AvailableCoupons": {authScheme: "payment_identity_session", accessScope: "self"},
+	"getH5CouponState":       {authScheme: "public"},
+	"claimH5Coupon":          {authScheme: "payment_identity_session", accessScope: "self"},
+	"listSidebarCoupons":     {authScheme: "sidebar_grant", accessScope: "owner"},
+	"getPublicCouponPage":    {authScheme: "public"},
 }
 
 var p4OrderOperations = map[string]bool{"listLegacyOrders": true}
@@ -223,6 +265,16 @@ var authorizationContracts = map[string]authorizationContract{
 	"updateLegacyCoupon":             {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"publishLegacyCoupon":            {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"stopLegacyCoupon":               {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyCouponListPage":        {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyCouponNewPage":         {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyCouponDataPage":        {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyCouponEditPage":        {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyCouponProductOptions": {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"deleteLegacyCoupon":             {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveLegacyCoupon":            {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyCouponClaims":         {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"copyLegacyCoupon":               {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyCouponShare":           {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyOrders":               {"order.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyCustomers":            {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getLegacyCustomer":              {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
@@ -243,7 +295,8 @@ const p4GroupInviteDecisionEvidence = "P4-H03-2026-08-15"
 const p4SurveyDecisionEvidence = "P4-F01A-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
-const p4CouponDecisionEvidence = "P4-J01-2026-08-15"
+const p4CouponJ01DecisionEvidence = "P4-J01-2026-08-15"
+const p4CouponABDecisionEvidence = "P4-COUPON-AB-2026-08-15"
 const p4OrderDecisionEvidence = "P4-I03-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
 const p4ConfigSettingsDecisionEvidence = "P4-A02-2026-08-15"
@@ -260,7 +313,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=49 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_order_operations=1 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=64 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=1 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -440,7 +493,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			} else if p4CouponOperations[op.OperationID] {
 				seenP4Coupon[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4CouponDecisionEvidence {
+				if !ok || evidence != p4CouponEvidence[op.OperationID] {
 					return fmt.Errorf("%s has missing or forged P4 Coupon evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
@@ -500,24 +553,40 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			contract := authorizationContracts[op.OperationID]
-			capability, ok := op.Extensions["x-aicrm-capability"].(string)
-			if !ok || capability != contract.capability {
-				return fmt.Errorf("%s capability=%q", op.OperationID, capability)
-			}
-			scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
-			if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
-				return fmt.Errorf("%s RBAC scopes=%v", op.OperationID, scopes)
-			}
-			if len(contract.scopes) < 3 && op.Responses.Value("403") == nil {
-				return fmt.Errorf("%s denies a role but lacks 403", op.OperationID)
+			if public, publicOperation := couponPublicAccessContracts[op.OperationID]; publicOperation {
+				authScheme, ok := op.Extensions["x-aicrm-auth-scheme"].(string)
+				if !ok || authScheme != public.authScheme {
+					return fmt.Errorf("%s public auth scheme=%q", op.OperationID, authScheme)
+				}
+				if public.accessScope != "" {
+					accessScope, ok := op.Extensions["x-aicrm-access-scope"].(string)
+					if !ok || accessScope != public.accessScope {
+						return fmt.Errorf("%s public access scope=%q", op.OperationID, accessScope)
+					}
+				}
+			} else {
+				contract, found := authorizationContracts[op.OperationID]
+				if !found {
+					return fmt.Errorf("%s lacks authorization contract", op.OperationID)
+				}
+				capability, ok := op.Extensions["x-aicrm-capability"].(string)
+				if !ok || capability != contract.capability {
+					return fmt.Errorf("%s capability=%q", op.OperationID, capability)
+				}
+				scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+				if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
+					return fmt.Errorf("%s RBAC scopes=%v", op.OperationID, scopes)
+				}
+				if len(contract.scopes) < 3 && op.Responses.Value("403") == nil {
+					return fmt.Errorf("%s denies a role but lacks 403", op.OperationID)
+				}
 			}
 			if op.OperationID == "listTags" && op.Responses.Value("503") == nil {
 				return fmt.Errorf("listTags lacks dependency unavailable response")
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 49 {
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 64 {
 		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), links)
 	}
 	for id := range p1CandidateOperations {
@@ -779,11 +848,27 @@ func validateCouponContract(doc *openapi3.T) error {
 	detail := doc.Paths.Value("/api/admin/coupons/{coupon_id}")
 	publish := doc.Paths.Value("/api/admin/coupons/{coupon_id}/publish")
 	stop := doc.Paths.Value("/api/admin/coupons/{coupon_id}/stop")
-	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil || detail.Put == nil || publish == nil || publish.Post == nil || stop == nil || stop.Post == nil {
-		return errors.New("P4-J01 Coupon compatibility operations are incomplete")
+	listPage := doc.Paths.Value("/admin/coupons")
+	newPage := doc.Paths.Value("/admin/coupons/new")
+	dataPage := doc.Paths.Value("/admin/coupons/{coupon_id}/data")
+	editPage := doc.Paths.Value("/admin/coupons/{coupon_id}/edit")
+	options := doc.Paths.Value("/api/admin/coupons/product-options")
+	archive := doc.Paths.Value("/api/admin/coupons/{coupon_id}/archive")
+	claims := doc.Paths.Value("/api/admin/coupons/{coupon_id}/claims")
+	copyPage := doc.Paths.Value("/api/admin/coupons/{coupon_id}/copy")
+	share := doc.Paths.Value("/api/admin/coupons/{coupon_id}/share")
+	h5Available := doc.Paths.Value("/api/h5/coupons/available")
+	h5Coupon := doc.Paths.Value("/api/h5/coupons/{public_slug}")
+	h5Claim := doc.Paths.Value("/api/h5/coupons/{public_slug}/claim")
+	sidebar := doc.Paths.Value("/api/sidebar/v2/coupons")
+	publicPage := doc.Paths.Value("/c/{public_slug}")
+	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil || detail.Put == nil || detail.Delete == nil || publish == nil || publish.Post == nil || stop == nil || stop.Post == nil ||
+		listPage == nil || listPage.Get == nil || newPage == nil || newPage.Get == nil || dataPage == nil || dataPage.Get == nil || editPage == nil || editPage.Get == nil || options == nil || options.Get == nil || archive == nil || archive.Post == nil || claims == nil || claims.Get == nil || copyPage == nil || copyPage.Post == nil || share == nil || share.Get == nil || h5Available == nil || h5Available.Get == nil || h5Coupon == nil || h5Coupon.Get == nil || h5Claim == nil || h5Claim.Post == nil || sidebar == nil || sidebar.Get == nil || publicPage == nil || publicPage.Get == nil {
+		return errors.New("P4 Coupon A+B compatibility operations are incomplete")
 	}
-	if !operationResponseUsesLocalSchema(collection.Get, "LegacyCouponListResponse") || !operationRequestUsesLocalSchema(collection.Post, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(collection.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(detail.Get, "LegacyCouponDetailResponse") || !operationRequestUsesLocalSchema(detail.Put, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(detail.Put, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(publish.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(stop.Post, "LegacyCouponMutationResponse") {
-		return errors.New("P4-J01 Coupon request or response schema drifted")
+	if !operationResponseUsesLocalSchema(collection.Get, "LegacyCouponListResponse") || !operationRequestUsesLocalSchema(collection.Post, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(collection.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(detail.Get, "LegacyCouponDetailResponse") || !operationRequestUsesLocalSchema(detail.Put, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(detail.Put, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(publish.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(stop.Post, "LegacyCouponMutationResponse") ||
+		!operationResponseUsesLocalSchema(detail.Delete, "LegacyCouponBoardMutationResponse") || !operationResponseUsesLocalSchema(options.Get, "LegacyCouponProductOptionsResponse") || !operationResponseUsesLocalSchema(archive.Post, "LegacyCouponBoardMutationResponse") || !operationResponseUsesLocalSchema(claims.Get, "LegacyCouponClaimListResponse") || !operationResponseUsesLocalSchema(copyPage.Post, "LegacyCouponBoardMutationResponse") || !operationResponseUsesLocalSchema(share.Get, "LegacyCouponShareResponse") || !operationResponseUsesLocalSchema(h5Available.Get, "H5CouponAvailableResponse") || !operationResponseUsesLocalSchema(h5Coupon.Get, "H5CouponDetailResponse") || !operationResponseUsesLocalSchema(h5Claim.Post, "H5CouponClaimResponse") || !operationResponseUsesLocalSchema(sidebar.Get, "SidebarCouponListResponse") {
+		return errors.New("P4 Coupon A+B request or response schema drifted")
 	}
 	for name, operation := range map[string]*openapi3.Operation{"createLegacyCoupon": collection.Post, "updateLegacyCoupon": detail.Put, "publishLegacyCoupon": publish.Post, "stopLegacyCoupon": stop.Post} {
 		if err := validateRequiredCSRF(operation); err != nil {
@@ -792,6 +877,23 @@ func validateCouponContract(doc *openapi3.T) error {
 		if operation.Responses.Value("400") == nil || operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
 			return fmt.Errorf("%s boundary or failure responses drifted", name)
 		}
+	}
+	for name, operation := range map[string]*openapi3.Operation{"deleteLegacyCoupon": detail.Delete, "archiveLegacyCoupon": archive.Post, "copyLegacyCoupon": copyPage.Post} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		if !hasRequiredHeader(operation, "Idempotency-Key") || operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s lacks required idempotency, conflict, or unavailable response", name)
+		}
+	}
+	if !hasRequiredHeader(h5Claim.Post, "Idempotency-Key") || h5Claim.Post.Responses.Value("401") == nil || h5Claim.Post.Responses.Value("409") == nil || h5Claim.Post.Responses.Value("503") == nil {
+		return errors.New("claimH5Coupon lacks frozen auth, idempotency, conflict, or unavailable response")
+	}
+	if csrf, ok := h5Claim.Post.Extensions["x-aicrm-csrf"].(string); !ok || csrf != "same_origin_empty_body" {
+		return errors.New("claimH5Coupon CSRF applicability drifted")
+	}
+	if h5Available.Get.Responses.Value("401") == nil || sidebar.Get.Responses.Value("401") == nil || h5Coupon.Get.Responses.Value("404") == nil || publicPage.Get.Responses.Value("404") == nil {
+		return errors.New("P4 Coupon public access failures drifted")
 	}
 	for _, parameter := range collection.Post.Parameters {
 		if parameter != nil && parameter.Value != nil && parameter.Value.Name == "Idempotency-Key" {
@@ -811,6 +913,17 @@ func validateCouponContract(doc *openapi3.T) error {
 	perUser, instructions := request.Value.Properties["per_user_issue_limit"], request.Value.Properties["instructions"]
 	if perUser == nil || perUser.Value == nil || fmt.Sprint(perUser.Value.Default) != "1" || instructions == nil || instructions.Value == nil || fmt.Sprint(instructions.Value.Default) != "" {
 		return errors.New("CouponUpsertRequest defaults drifted")
+	}
+	for _, name := range []string{"LegacyCouponProductOptionsResponse", "LegacyCouponClaimListResponse", "LegacyCouponShareResponse", "H5CouponAvailableResponse", "H5CouponDetailResponse", "H5CouponClaimResponse", "SidebarCouponListResponse"} {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil || schema.Value.AdditionalProperties.Has == nil || *schema.Value.AdditionalProperties.Has {
+			return fmt.Errorf("%s must remain closed", name)
+		}
+	}
+	claim := doc.Components.Schemas["LegacyCouponClaim"]
+	sidebarCoupon := doc.Components.Schemas["SidebarCoupon"]
+	if claim == nil || claim.Value == nil || claim.Value.Properties["customer_id"] != nil || sidebarCoupon == nil || sidebarCoupon.Value == nil || sidebarCoupon.Value.Properties["customer_id"] != nil {
+		return errors.New("Coupon claims and sidebar projections must not disclose customer IDs")
 	}
 	return nil
 }

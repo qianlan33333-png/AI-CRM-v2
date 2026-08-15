@@ -31,3 +31,13 @@ type Coupon struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
+
+type CouponClaim struct {
+	ID          int64              `json:"id"`
+	CouponID    int64              `json:"coupon_id"`
+	CustomerID  int64              `json:"customer_id"`
+	ClaimNumber int32              `json:"claim_number"`
+	ClaimRef    string             `json:"claim_ref"`
+	Status      string             `json:"status"`
+	ClaimedAt   pgtype.Timestamptz `json:"claimed_at"`
+}

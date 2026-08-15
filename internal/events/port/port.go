@@ -38,6 +38,10 @@ const (
 	EvCouponUpdated            = "coupon.updated"
 	EvCouponPublished          = "coupon.published"
 	EvCouponStopped            = "coupon.stopped"
+	EvCouponArchived           = "coupon.archived"
+	EvCouponDeleted            = "coupon.deleted"
+	EvCouponCopied             = "coupon.copied"
+	EvCouponClaimed            = "coupon.claimed"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied      = "stats.tag-applied.v1"

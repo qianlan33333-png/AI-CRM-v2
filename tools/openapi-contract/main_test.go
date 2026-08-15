@@ -269,6 +269,26 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Components.Schemas["LegacyChannelWriteRequest"].Value.AdditionalProperties.Has = &opened
 			reject(t, doc, ids)
 		},
+		"coupon A+B evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/h5/coupons/available").Get.Extensions["x-p4-decision-evidence"] = "P4-COUPON-AB-FORGED"
+			reject(t, doc, ids)
+		},
+		"coupon H5 claim lacks idempotency": func(t *testing.T) {
+			doc, ids := fresh(t)
+			removeRequiredHeader(t, doc.Paths.Value("/api/h5/coupons/{public_slug}/claim").Post, "Idempotency-Key")
+			reject(t, doc, ids)
+		},
+		"coupon H5 claim accepts public auth": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/h5/coupons/{public_slug}/claim").Post.Extensions["x-aicrm-auth-scheme"] = "public"
+			reject(t, doc, ids)
+		},
+		"coupon claim leaks customer ID": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyCouponClaim"].Value.Properties["customer_id"] = doc.Components.Schemas["HealthResponse"]
+			reject(t, doc, ids)
+		},
 		"offset pagination reintroduced": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Parameters[0].Value.Name = "offset"

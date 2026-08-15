@@ -33,7 +33,7 @@ read -r upgrade_waterline history_events delivery_table receipt_table delivery_i
             (to_regclass('public.automation_trigger_receipts_list_idx') IS NOT NULL)::int
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "35" && "$history_events" = "1" ]]
+[[ "$upgrade_waterline" = "36" && "$history_events" = "1" ]]
 [[ "$delivery_table" = "1" && "$receipt_table" = "1" && "$delivery_index" = "1" && "$receipt_index" = "1" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -77,7 +77,7 @@ read -r final_waterline history_events receipts deliveries jobs triggered_events
             (SELECT count(*) FROM event_log WHERE id=${triggered_event_id} AND event_type='automation.triggered')
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$final_waterline" = "35" && "$history_events" = "1" ]]
+[[ "$final_waterline" = "36" && "$history_events" = "1" ]]
 [[ "$receipts" = "1" && "$deliveries" = "1" && "$jobs" = "1" && "$triggered_events" = "1" ]]
 
 printf 'P4-W0-D01 migration compatibility: PASS (24/32/24/32, D01, L01, and current history preserved)\n'

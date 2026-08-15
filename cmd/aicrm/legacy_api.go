@@ -112,6 +112,7 @@ type Handler struct {
 	channels        legacyChannelApplication
 	legacyTags      legacyTagApplication
 	coupons         legacyCouponApplication
+	couponBoard     couponBoardApplication
 	settings        legacySettingsApplication
 	orders          legacyOrderApplication
 }
@@ -128,6 +129,18 @@ type legacyCouponApplication interface {
 	Update(context.Context, couponport.UpsertCommand) (couponport.Coupon, error)
 	Publish(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
 	Stop(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
+}
+
+type couponBoardApplication interface {
+	Archive(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
+	Delete(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
+	Copy(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
+	Claim(context.Context, couponport.ClaimCommand) (couponport.Claim, error)
+	ListClaims(context.Context, couponport.ID, int32, int32) (couponport.ClaimPage, error)
+	ListAvailable(context.Context, string, int64) ([]couponport.Coupon, error)
+	ResolvePaymentIdentitySession(context.Context, string) (int64, error)
+	ResolveSidebarGrant(context.Context, string) (int64, error)
+	ListSidebarCoupons(context.Context, int64) ([]couponport.SidebarCoupon, error)
 }
 
 func NewHandlerWithAll(
@@ -160,6 +173,9 @@ func NewHandlerWithAll(
 	handler.channels = channels
 	handler.groupInvites = groupInvites
 	handler.coupons = coupons
+	if board, ok := coupons.(couponBoardApplication); ok {
+		handler.couponBoard = board
+	}
 	handler.legacyTags = legacyTags
 	handler.settings = settings
 	return handler, nil
