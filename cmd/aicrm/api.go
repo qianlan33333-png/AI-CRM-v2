@@ -34,6 +34,8 @@ import (
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
+	operationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/app"
+	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
@@ -444,6 +446,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.couponBoard = couponService
 	legacyHandler.messageArchive = wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
 	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
+	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -778,8 +781,52 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/coupons/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponClaims)},
 			{http.MethodPost, "/api/admin/coupons/{coupon_id}/copy", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CouponCopy)},
 			{http.MethodGet, "/api/admin/coupons/{coupon_id}/share", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.CouponShare)},
+			{http.MethodGet, "/admin/operation-cycles", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.OperationCyclesPage)},
+			{http.MethodGet, "/admin/operation-cycles/{strategy_key}", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.OperationCycleStrategyPage)},
+			{http.MethodGet, "/admin/operation-cycles/{strategy_key}/runs/{run_key}", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.OperationCycleRunPage)},
+			{http.MethodGet, "/api/admin/operation-cycles/action-requests/{request_id}/result", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.GetOperationCycleActionResult)},
+			{http.MethodGet, "/api/admin/operation-cycles/runs/{run_key}", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.GetOperationCycleRun)},
+			{http.MethodGet, "/api/admin/operation-cycles/strategies", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ListOperationCycleStrategies)},
+			{http.MethodGet, "/api/admin/operation-cycles/strategies/{strategy_key}", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.GetOperationCycleStrategy)},
+			{http.MethodPost, "/api/admin/operation-cycles/strategies/{strategy_key}/actions/{action_key}/start", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.StartOperationCycleAction)},
+			{http.MethodGet, "/api/admin/operation-cycles/strategies/{strategy_key}/current-action", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.GetOperationCycleCurrentAction)},
+			{http.MethodGet, "/api/admin/operation-cycles/strategies/{strategy_key}/runs", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ListOperationCycleRuns)},
+			{http.MethodGet, "/api/admin/operation-cycles/strategies/{strategy_key}/strategy-change-proposals", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ListOperationCycleProposals)},
+			{http.MethodPost, "/api/admin/operation-cycles/strategy-change-proposals/{proposal_id}/decision", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.DecideOperationCycleProposal)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
+				return nil, err
+			}
+		}
+		registerOperation := func(method, pattern string, endpoint http.Handler) error {
+			tail, wrapErr := recovery(endpoint)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.TimeoutMiddleware(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			router.Method(method, pattern, tail)
+			return nil
+		}
+		for _, route := range []struct {
+			method, pattern string
+			endpoint        http.Handler
+		}{
+			{http.MethodPost, "/api/operation-cycles/action-requests/claim", http.HandlerFunc(legacy.ClaimOperationCycleAction)},
+			{http.MethodPost, "/api/operation-cycles/action-requests/{request_id}/events", http.HandlerFunc(legacy.RecordOperationCycleActionEvent)},
+			{http.MethodGet, "/api/operation-cycles/context-index", http.HandlerFunc(legacy.OperationCycleContextIndex)},
+			{http.MethodPost, "/api/operation-cycles/reports", http.HandlerFunc(legacy.ReportOperationCycle)},
+			{http.MethodPost, "/api/operation-cycles/runner/heartbeat", http.HandlerFunc(legacy.HeartbeatOperationCycleRunner)},
+			{http.MethodGet, "/api/operation-cycles/strategies/{strategy_key}/context", http.HandlerFunc(legacy.OperationCycleStrategyContext)},
+			{http.MethodPost, "/api/operation-cycles/strategy-change-proposals", http.HandlerFunc(legacy.CreateOperationCycleProposal)},
+		} {
+			if err = registerOperation(route.method, route.pattern, route.endpoint); err != nil {
 				return nil, err
 			}
 		}

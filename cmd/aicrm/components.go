@@ -13,6 +13,7 @@ import (
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
@@ -105,6 +106,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	deliveries, err := eventstore.NewRuntimeDeliveryRepository(pool, enqueuer, eventdispatcher.DefaultBatchSize, []eventport.DeliveryBinding{
 		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerAutomationTagTrigger},
 		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerStatsTagApplied},
+		{EventType: eventport.EvOperationCycleFact, Consumer: eventport.ConsumerOperationCycleFact},
 	})
 	if err != nil {
 		pool.Close()
@@ -130,6 +132,14 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	)
 	if err == nil {
 		err = router.RegisterDelivery(statsConsumer)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	operationCycleConsumer, err := operationstore.NewFactDeliveryConsumer(platformstore.NewUnitOfWork(pool), deliveries)
+	if err == nil {
+		err = router.RegisterDelivery(operationCycleConsumer)
 	}
 	if err != nil {
 		pool.Close()

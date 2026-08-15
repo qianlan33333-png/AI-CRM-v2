@@ -1,4 +1,5 @@
 # id|database environment (- when not needed)|Make target
+p0-s04|-|p0-s04-integration
 p3-c01a-migration|P3C01A_TEST_DATABASE_URL|p3-c01a-migration-acceptance
 p3-r4b-identity-storage|P3R4B_TEST_DATABASE_URL|p3-r4b-identity-storage-acceptance
 p3-c07c-r3b-storage|P3C07C_R3B_TEST_DATABASE_URL|p3-c07c-r3b-storage-acceptance
@@ -12,7 +13,6 @@ p3-c07a|P3C07A_TEST_DATABASE_URL|p3-c07a-acceptance
 p3-c07b2|P3C07B2_TEST_DATABASE_URL|p3-c07b2-acceptance
 p3-s05b|SEGMENT_CRUD_TEST_DATABASE_URL|p3-s05b-acceptance
 p3-w4|WECOM_SYNC_TEST_DATABASE_URL|p3-w4-acceptance
-p0-s04|-|p0-s04-integration
 p3-o2|P3O2_ENQUEUE_ONE_TEST_DATABASE_URL|p3-o2-enqueue-one-acceptance
 p3-o3|P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL|p3-o3-enqueue-batch-acceptance
 p3-o4|P3O4_SENDER_TEST_DATABASE_URL|p3-o4-sender-acceptance
@@ -36,3 +36,4 @@ p4-coupon-ab|P4COUPONAB_TEST_DATABASE_URL|p4-coupon-ab-acceptance
 p4-i03|P4I03_ORDER_TEST_DATABASE_URL|p4-i03-order-acceptance
 p4-message-archive-ab|P4MESSAGEARCHIVE_TEST_DATABASE_URL|p4-message-archive-ab-acceptance
 p4-order-ab|P4ORDERAB_TEST_DATABASE_URL|p4-order-ab-acceptance
+p4-operation-cycle-ab|P4OPERATIONCYCLE_TEST_DATABASE_URL|p4-operation-cycle-ab-acceptance
