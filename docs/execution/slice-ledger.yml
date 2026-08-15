@@ -4599,6 +4599,25 @@ slices:
     correction_notes: [slice:idempotency_payload_digest_excluded_system_time_and_actor_fields, slice:empty_PUT_fails_before_application_call, verification:test_helper_name_collision_was_renamed, verification:CSRF_negative_uses_cross_origin_to_respect_A01_same_origin_cookie_fallback, verification:first_direct_consumer_replay_registered_the_five_frozen_H03_OpenAPI_operations, verification:blind_review_expanded_four_fault_coverage_to_all_three_mutations_and_added_real_missing_cover_fail_closed_assertion, verification:OpenAPI_freezer_target_was_first_invoked_from_root_then_reran_from_tools_module, verification:fresh_worktree_pinned_Orval_path_was_restored_for_continuous_check, verification:blind_reviewer_first_direct_acceptance_command_omitted_database_url_flag_then_reran_the_public_runner, infra:first_affected_negative_fixture_command_used_rm_f_and_was_rejected_by_local_tool_policy_before_execution_then_reran_without_that_syntax, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-H03-R1
+    title: group-invite-library-pr-receipt
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING
+    base_sha: c0aa96caa3c6ee86e012bad3aae4d759de6677a3
+    dependency: P4_H03_PRE_PR_PASS
+    branch: codex/p4-h03-group-invite-release-68ac73f-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/216
+    scope: [PR_URL_and_exact_initial_SHA_receipt, append_only_ledger_release_checkpoint]
+    excluded_scope: [business_logic, API_DTO_or_schema_expansion, feature_matrix_or_T14_expansion, migration_DDL, tenant, provider, UI, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    correction_notes: [verification:first_PR_receipt_used_an_unverified_long_SHA_then_git_rev_parse_HEAD_corrected_it_before_receipt_commit, verification:first_receipt_update_tried_to_modify_committed_H03_ledger_then_append_only_gate_rejected_it_and_only_H03_R1_was_appended, redline:none]
+    cumulative_corrections: [slice_induced=2, verification_induced=9, infra_induced=1, scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

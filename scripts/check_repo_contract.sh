@@ -1778,7 +1778,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  db6968fbb0f8177e7e20ca9ab6bb6629be9ead35a3b8bf2b601cb95d1d4f4dce
+  f1aec614c790c4c5237070c22a254a4981cba117d0f6a88328bd16d79fad2346
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -2453,7 +2453,7 @@ verify_index_sha256 acceptance/media/h03_integration_test.go \
 verify_index_sha256 acceptance/media/h03_migration_compatibility.sh \
   61c90bb6fd9129752a125d1b3f7c78cbeaa14f55fe8482d39cc0b1fc514f3f48
 verify_index_sha256 docs/execution/slices/P4-H03.md \
-  9ff5e501acb5d11897cac0c67925b1f8de1632b3d3c2b601786ee70a698a3bf4
+  87d3b793dd3db3229e00112d2cc514aedd6ffb49ceadb761b136e2a25821f10d
 verify_index_sha256 internal/media/app/group_invite.go \
   7f8182526291c9836e08c8a1a8f9368f5ceb9f1e9c23d4bd52c4ad4363419d26
 verify_index_sha256 internal/media/app/group_invite_test.go \
@@ -6132,7 +6132,12 @@ for ledger_anchor in \
   '    status: SCOPE_FROZEN_REPAIR_ONLY_PRE_PR_PASS_PR_PENDING' \
   '    slice_induced_correction_count: 2' \
   '    infra_induced_correction_count: 1' \
-  '    verification_induced_correction_count: 7'; do
+  '    verification_induced_correction_count: 7' \
+  '  - slice_id: P4-H03-R1' \
+  '    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING' \
+  '    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/216' \
+  '    verification_induced_correction_count: 2' \
+  '    cumulative_corrections: [slice_induced=2, verification_induced=9, infra_induced=1, scope_induced=0, redline=0]'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-H03 ledger drifted: $ledger_anchor"
 done
 [[ "$(git show :docs/feature-matrix.csv | wc -l | tr -d ' ')" = "294" ]] ||
