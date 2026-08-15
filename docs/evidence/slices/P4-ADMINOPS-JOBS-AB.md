@@ -37,7 +37,7 @@
 ### 修正归因与冻结阈值
 
 - `slice_induced=1`：`0254` 是既有 Admin Config JSON 写入口的漏承接；本轮只新增该 route-bound PUT transport，并复用 A02 service。若这个**同一 JSON 写入子能力**再出现第 2 个 `slice_induced`，立即冻结该子能力，只允许严格 repair-only，不能扩展到配置框架、UI、权限、worker 或其他路由。
-- `verification_induced`（不计入上述阈值）：Automation Agents current waterline 默认值从 42 同步到 43；空库直接跑 manifest 时 `customers` 尚未由 migration runner 建立；dirty shared test DB 残留 event idempotency/River job 后，完整 manifest 需先收集 40 target 全部结果、重建指定 55431 的 `aicrm_test` 并在 `migration-integration` 的 43 前置条件后重跑。这些均没有改变业务语义或扩展能力。
+- `verification_induced`（不计入上述阈值）：Automation Agents current waterline 默认值从 42 同步到 43；空库直接跑 manifest 时 `customers` 尚未由 migration runner 建立；dirty shared test DB 残留 event idempotency/River job 后，完整 manifest 需先收集 40 target 全部结果、重建指定 55431 的 `aicrm_test` 并在 `migration-integration` 的 43 前置条件后重跑。PR #227 旧 head `03487dbcef6979bcd5e77a349c77077a3e0b04e4` 的唯一业务门失败是 frozen `tools/openapi-contract` 未登记 `saveLegacyAppSettingsResource`；293 feature matrix、316 migration mapping、781 reconciliation 与 repo-contract/web/security 均通过。修复只同步该 operation 的直接消费者、allowlist、证据映射和负例，未改变 `0254` 的请求/响应或业务语义，仍不计入 `slice_induced`。这些均没有改变业务语义或扩展能力。
 
 ## 11 条迁移映射重放
 
@@ -80,8 +80,8 @@
 
 ## 本地实际收据
 
-- 锁定候选 HEAD 为 `d9fba6bb536b5f898d35a3ab6a411e56fa15abd0`；同一 tree 的 focused `go test -race`、`go vet`、`scripts/check_repo_contract.sh`、`make generate-check` 与 `make orval-check` 均 PASS。
-- 同一 HEAD 的 `make ci-go` 在指定 PG16.14 `55431/aicrm_test` 上 PASS，未改动工作树。
+- 业务/契约修复锁定在 `aa00e6410fea88c7f98214a4ec3d11d879a0f591`：`make openapi-p1-contract`、`scripts/check_repo_contract.sh` 与 `scripts/test_repo_contract.sh`（含新 operation 缺失、action-token extension 缺失的负例）均 PASS；该修复只承接旧 head 的 OpenAPI 直接消费者/allowlist 漏同步。
+- 同一业务/契约 HEAD 的 `make ci-go` 在指定 PG16.14 `55431/aicrm_test` 上 PASS，包含 `feature-matrix=293`、`migration-mapping=316`、`p1-reconciliation=781` 与 `p4_config_settings_operations=4`；未改动工作树。
 - 经确认该指定测试库没有活跃连接后重建；`migration-integration` 实际完成 latest `43` 的 up/down/up。以该 43 前置条件，`p4-adminops-jobs-ab-acceptance` 实际 PASS：`42→43→42→43`，且保持 Auth/session/Event/Automation 历史与 secret/worker/provider 边界。
 - `ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 scripts/run_ci_acceptance_manifest.sh` 在同一 43 前置条件 PASS，汇总为 `ci-acceptance-manifest: PASS entries=40`。空库缺少 `customers` 的首次现象只作为 manifest 前置条件记录，未列为 slice 问题。
 - 本收据仅证明本地候选。尚未 push、PR、match-head squash、exact-main CLOSED、生产迁移、部署、worker、River、provider 或真实外效；因此不宣称上线或生产效果。

@@ -2734,7 +2734,7 @@ verify_index_sha256 cmd/aicrm/legacy_admin_ops_app_settings_resource.go \
 verify_index_sha256 cmd/aicrm/legacy_admin_ops_app_settings_resource_test.go \
   76be86e48c38f2b0c4fabc2c748e2451a7592269ab3611cfe4d4d0bf97c48233
 verify_index_sha256 docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md \
-  624383027a9ff3bf69e567c130e861c760bc558a8a820af0c264a4baeaae3de2
+  93663335f00ca98fb8773a6b5537b7d034a855e74066fa578de87daf893a7232
 verify_index_sha256 internal/adminops/app/service.go \
   6700466043f38a9cfb1972c56bf0c34b2ca91d580939e8a701367b4f676d5298
 verify_index_sha256 internal/adminops/port/port.go \
