@@ -1778,7 +1778,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  f1aec614c790c4c5237070c22a254a4981cba117d0f6a88328bd16d79fad2346
+  f9f6e3d0a8ebb69d19102258a08ed44d3d70abb9449af21ca28d719602ac2ab7
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -2138,7 +2138,7 @@ verify_index_sha256 acceptance/identity/storage_integration_test.go \
 verify_index_sha256 acceptance/identity/ingest_integration_test.go \
   2db7cd28bbb86dbbe7d3d3cb91b80cee4d49f42c3d8148ff11c50c71a7f1ef3f
 verify_index_sha256 acceptance/outbound/o1a_r3_integration_test.go \
-  91909f6bc9dc31dd40d287aea8ede792e6595ba3b2b9f80cf6b13f91dc280a73
+  5168386ed55ac714be74bbb4c1afc96590e27e099cc124574e29ba6666a62cea
 verify_index_sha256 migrations/00020_outbound_send_attempts.sql \
   f0e1c607b8fd91894ed9ca17c35dad540b41e9efca86f469e5a9131cdeb94e6f
 verify_index_sha256 migrations/00021_outbound_task_status.sql \
@@ -2168,7 +2168,7 @@ verify_index_sha256 migrations/00022_outbound_send_attempt_history.sql \
 verify_index_sha256 acceptance/outbound/o6a_retry_integration_test.go \
   8f2edb3f7c233eefa408ba0d3a496c68cf2a3b23ad4a5894a28b8efeffc670f5
 verify_index_sha256 acceptance/outbound/o6a_migration_compatibility.sh \
-  b52f61699df0f43b40d25a5defdd98a683b3ec5277632e2df9bfa0af4e76f21a
+  6edc21d0a17cc824b226a9cdd1c0ef2b5ad88b4c6decafa21b38d3f924be036f
 verify_index_sha256 docs/execution/slices/P3-O6A.md \
   45285f6d0764dd978eda613167dba6cb498cf796031664f4d0a72eb9474847be
 verify_index_sha256 acceptance/outbound/o3_integration_test.go \
@@ -2176,11 +2176,11 @@ verify_index_sha256 acceptance/outbound/o3_integration_test.go \
 verify_index_sha256 acceptance/outbound/o6b1_cancel_integration_test.go \
   27b8cf4f6103fe0f51750122ed471355d6d1e85a441c71d6e7b8ae298f29f315
 verify_index_sha256 acceptance/outbound/o6b1_migration_compatibility.sh \
-  89a6e15be95772018f088c1b1bccb13582a9ec181fa5106a8d38f9ddd8c2d2b2
+  565a685ccb56c3a66e6a20c7bbac574d8c80189181391609515dc8779a3dd78a
 verify_index_sha256 acceptance/outbound/o6b2_manual_retry_integration_test.go \
   248042036f6e91eaa03202b45dc5677cb2f2cbc26b74d1996a39d3993fa1f52a
 verify_index_sha256 acceptance/outbound/o6b2_migration_compatibility.sh \
-  f4004056471d00cc54464f80a74b0be8d18192c26b9723b8686ddf29cc2241bc
+  31e3e9460761e507b9bc69c45f01aa8681e28a02f8b7fd8bb5cfd9269e43efa0
 verify_index_sha256 docs/execution/slices/P3-O6B1.md \
   5036062b03bd5858c060fb3a2da4b11a73cf15201368fe471cbfb86067d5fc16
 verify_index_sha256 internal/outbound/app/control.go \
@@ -2300,9 +2300,9 @@ verify_index_sha256 internal/automation/store/generated/querier.go \
 verify_index_sha256 internal/automation/store/generated/tag_trigger.sql.go \
   e368abf5dab842a41a790315ca8437937056b2c9018a1db89935feeed433b73d
 verify_index_sha256 acceptance/automation/d01_integration_test.go \
-  49a577a98033bc39d8b6029906966d7eb30e542520886be3d229efa6493c524a
+  18787f91bdea435353266e3ebcbb86fdaec1bee0303fe8f8016e519fa85c2d35
 verify_index_sha256 acceptance/automation/d01_migration_compatibility.sh \
-  c8d605c105855a7f3c167194345d35528e4e22c4480e32d06775cdea413f09a3
+  17af7921997f750cbdbb515b43e4177fb636740dcbbc643c3d78f3da792ead58
 verify_index_sha256 cmd/aicrm/legacy_automation_api_test.go \
   99823a1e71fb137d2a6c3709199e7c5cc540ec003c45556d5ca3e2034cf1d91d
 verify_index_sha256 docs/execution/slices/P4-W0-D01.md \
@@ -2314,15 +2314,15 @@ verify_index_sha256 acceptance/auth/a01_migration_compatibility.sh \
 verify_index_sha256 acceptance/auth/postgres.go \
   97a91d32f1d192bdbd77269cfdb58088375a7033ae67bc13470122d8d070b072
 verify_index_sha256 acceptance/stats/l01_integration_test.go \
-  71f934d8535a4209ff9425d18bf2c566c242a4ae1d1a31c451a35978657ad55a
+  52de6b0d3d16cb9b4cf8bc5797e744bf60a9826c25bd13c0f88b1ce1593674bd
 verify_index_sha256 acceptance/stats/l01_migration_compatibility.sh \
-  1eebb740b9824b51c4b86adf5a1dfa6897920758bd4f044ecb5cb793c15999d3
+  d9fe60453d6d2a26070719602197fa7624348d0e9e662147b66befd0c1fdf74b
 verify_index_sha256 cmd/aicrm/legacy_auth.go \
   3475c768c2385ba02065f6ae11551279584a3fdfc6acbb8cf6cc357b1da8edbf
 verify_index_sha256 cmd/aicrm/legacy_auth_test.go \
   969990053fc5b736d8481a1794a055216fedb89a26004af6a527e11cf3836a61
 verify_index_sha256 acceptance/auth/si00b_migration_compatibility.sh \
-  6eaf9ac8e1ad2171feec4b290ba683ecbe25da6d52222e57bb7a7440c55da4a4
+  95174eff81a0db84802228abb22fe4f5750466b19a78d4a0fabc046f0bc2e5f2
 verify_index_sha256 docs/execution/slices/P4-SI00B.md \
   1391ffffb60cddcbaf04a2c49bbbbb85f9edc5fa159603210c98f05d01e14d59
 verify_index_sha256 migrations/00028_auth_wecom_corp_id.sql \
@@ -2453,7 +2453,7 @@ verify_index_sha256 acceptance/media/h03_integration_test.go \
 verify_index_sha256 acceptance/media/h03_migration_compatibility.sh \
   61c90bb6fd9129752a125d1b3f7c78cbeaa14f55fe8482d39cc0b1fc514f3f48
 verify_index_sha256 docs/execution/slices/P4-H03.md \
-  87d3b793dd3db3229e00112d2cc514aedd6ffb49ceadb761b136e2a25821f10d
+  2a266ce94bb91b24f556bbe4458d21bfb1eff41552b0b10fbcea798841a84321
 verify_index_sha256 internal/media/app/group_invite.go \
   7f8182526291c9836e08c8a1a8f9368f5ceb9f1e9c23d4bd52c4ad4363419d26
 verify_index_sha256 internal/media/app/group_invite_test.go \
@@ -4886,7 +4886,7 @@ for anchor in \
   "goose -dir migrations postgres \"\$database_url\" down" \
   'ON CONFLICT (river_job_id) DO UPDATE' \
   '[[ "$rollback_waterline" = "21" && "$rollback_history" = "2" ]]' \
-  '[[ "$upgrade_waterline" = "33" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]'; do
+  '[[ "$upgrade_waterline" = "34" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6a_compat" || fail "P3-O6A historical migration acceptance drifted: $anchor"
 done
 
@@ -4961,7 +4961,7 @@ done
 p3o6b1_compat="$(git show :acceptance/outbound/o6b1_migration_compatibility.sh)"
 for anchor in \
   '[[ "$rollback_waterline" = "22" && "$receipts" = "1" && "$links" = "1" ]]' \
-  '[[ "$upgrade_waterline" = "33" && "$receipts" = "1" && "$links" = "1" ]]' \
+  '[[ "$upgrade_waterline" = "34" && "$receipts" = "1" && "$links" = "1" ]]' \
   '[[ "$events" = "1" && "$jobs" = "0" && "$task_status" = "cancelled" ]]' \
   '[[ "$outbound_links" = "1" && "$river_foreign_keys" = "0" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6b1_compat" || fail "P3-O6B1 historical migration acceptance drifted: $anchor"
@@ -5030,7 +5030,7 @@ p3o6b2_compat="$(git show :acceptance/outbound/o6b2_migration_compatibility.sh)"
 for anchor in \
   'goose -dir migrations postgres "$database_url" down-to 23' \
   '[[ "$rollback_waterline" = "23" && "$receipts" = "1" && "$links" = "2" ]]' \
-  '[[ "$upgrade_waterline" = "33" && "$receipts" = "1" && "$links" = "2" ]]' \
+  '[[ "$upgrade_waterline" = "34" && "$receipts" = "1" && "$links" = "2" ]]' \
   '[[ "$events" = "1" && "$jobs" = "1" && "$task_status" = "pending" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6b2_compat" || fail "P3-O6B2 historical migration acceptance drifted: $anchor"
 done
@@ -5102,7 +5102,7 @@ p4d01_compat="$(git show :acceptance/automation/d01_migration_compatibility.sh)"
 for anchor in \
   'down-to 24' \
   '[[ "$rollback_waterline" = "24" && "$history_events" = "1" ]]' \
-  '[[ "$final_waterline" = "33" && "$history_events" = "1" ]]' \
+  '[[ "$final_waterline" = "34" && "$history_events" = "1" ]]' \
   'P4-W0-D01 migration compatibility: PASS (24/32/24/32, D01, L01, and current history preserved)'; do
   grep -Fq -- "$anchor" <<<"$p4d01_compat" || fail "P4-W0-D01 historical migration acceptance drifted: $anchor"
 done
@@ -5221,7 +5221,7 @@ for anchor in \
   'up-to 25' \
   'down-to 25' \
   '[[ "$rollback_waterline" = "25"' \
-  '[[ "$final_waterline" = "33"' \
+  '[[ "$final_waterline" = "34"' \
   'P4-W0-L01 migration compatibility: PASS (25/32/25/32, history preserved through current waterline)'; do
   grep -Fq -- "$anchor" <<<"$p4l01_compat" || fail "P4-W0-L01 historical migration acceptance drifted: $anchor"
 done
@@ -5419,9 +5419,9 @@ grep -Fq 'CorpID() string' <<<"$p4a01_handler" || fail "P4-SI00B removed the A01
 p4si00b_compat="$(git show :acceptance/auth/si00b_migration_compatibility.sh)"
 for anchor in \
   'down-to 27' \
-  '[[ "$upgrade_waterline" = "33"' \
+  '[[ "$upgrade_waterline" = "34"' \
   '[[ "$rollback_waterline" = "27"' \
-  '[[ "$final_waterline" = "33"' \
+  '[[ "$final_waterline" = "34"' \
   'ck_admin_users_wecom_corp_id' \
   'uq_admin_users_wecom_identity' \
   'count(DISTINCT wecom_corp_id)' \
@@ -6137,7 +6137,11 @@ for ledger_anchor in \
   '    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING' \
   '    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/216' \
   '    verification_induced_correction_count: 2' \
-  '    cumulative_corrections: [slice_induced=2, verification_induced=9, infra_induced=1, scope_induced=0, redline=0]'; do
+  '    cumulative_corrections: [slice_induced=2, verification_induced=9, infra_induced=1, scope_induced=0, redline=0]' \
+  '  - slice_id: P4-H03-R2' \
+  '    status: REPAIR_ONLY_PR_CI_RESTART_PENDING' \
+  '    verification_induced_correction_count: 2' \
+  '    cumulative_corrections: [slice_induced=2, verification_induced=11, infra_induced=1, scope_induced=0, redline=0]'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-H03 ledger drifted: $ledger_anchor"
 done
 [[ "$(git show :docs/feature-matrix.csv | wc -l | tr -d ' ')" = "294" ]] ||

@@ -4618,6 +4618,25 @@ slices:
     cumulative_corrections: [slice_induced=2, verification_induced=9, infra_induced=1, scope_induced=0, redline=0]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-H03-R2
+    title: group-invite-library-current-waterline-repair
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_CI_RESTART_PENDING
+    base_sha: 6855ccef09921c835938fc9d1fbfa369ad7dcba1
+    dependency: P4_H03_R1_PR_GO_GATE_FAILED_ON_STALE_DIRECT_CONSUMER_WATERLINE
+    branch: codex/p4-h03-group-invite-release-68ac73f-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/216
+    scope: [current_migration_waterline_34_in_direct_consumer_acceptance, affected_repo_contract_anchors]
+    excluded_scope: [business_logic, API_DTO_or_schema_expansion, feature_matrix_or_T14_expansion, migration_DDL, tenant, provider, UI, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    correction_notes: [verification:first_PR_Go_gate_found_direct_consumer_acceptance_still_asserted_pre_H03_waterline_33_then_synchronized_only_current_waterline_assertions_and_checker_anchors_to_34, verification:first_focused_waterline_replay_referenced_an_unexported_H03_DSN_variable_and_exited_before_tests_then_reran_with_the_public_pgctl_gate_DSN, redline:none]
+    cumulative_corrections: [slice_induced=2, verification_induced=11, infra_induced=1, scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
