@@ -4637,6 +4637,41 @@ slices:
     cumulative_corrections: [slice_induced=2, verification_induced=11, infra_induced=1, scope_induced=0, redline=0]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-A02
+    title: legacy-app-settings-html-json-compatibility
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_PRE_PR_REVIEW_PENDING
+    base_sha: b04afb9c27eb44190f6396752e9449f0b0896347
+    dependency: P4_H03_CLOSED_exact_green_main
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: PENDING
+    scope: [API_0026_0027_0253, S05_053, T14_024_mapping_status_only, twelve_key_catalog, four_non_secret_settings, eight_secret_boolean_snapshots, config_settings_manage_admin_only, A01_session_CSRF_plus_route_HMAC_action_token, Config_Manager_per_key_UoW]
+    excluded_scope: [A03_plus, tenant, new_UI_component_style_or_interaction, secret_read_store_or_port, legacy_value_secret_updated_at_import, migration_or_importer, River, provider, external_call, production_database_or_execution]
+    mapping_status: exact_plus_3_API_0026_0027_0253_plus_1_S05_053_plus_1_T14_024_MANUAL_REENTRY_NOT_STARTED_NOT_RUN_mapping_status_only
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    inherited_slice_induced_correction_count: 2
+    inherited_verification_induced_correction_count: 2
+    fresh_slice_induced_correction_count: 2
+    fresh_infra_induced_correction_count: 0
+    fresh_scope_induced_correction_count: 0
+    fresh_verification_induced_correction_count: 11
+    fresh_correction_notes:
+      - "slice:removed_the_old_readiness_receipt_audit_count_derivation_and_fixed_non_secret_version_to_empty_for_all_states_with_multi_audit_boundary_coverage"
+      - "slice:self_review_fixed_zero_result_rows_and_audit_entries_from_null_to_the_frozen_empty_arrays_with_permanent_JSON_boundary_coverage"
+      - "verification:fixed_action_token_known_vector_fixture"
+      - "verification:reran_openapi_freezer_from_its_tools_module"
+      - "verification:corrected_tools_relative_gofmt_path_before_test_execution"
+      - "verification:added_form_media_schema_checker_instead_of_JSON_only_helper"
+      - "verification:replaced_noncanonical_session_fixture_with_A01_canonical_43_character_token"
+      - "verification:avoided_source_policy_HTML_select_false_positive_without_changing_page_semantics"
+      - "verification:synchronized_the_existing_config_generated_querier_pin_after_sqlc_output_changed"
+      - "verification:first_release_round_used_a_worktree_relative_environment_path_then_replayed_with_the_canonical_absolute_activation_path"
+      - "verification:fixed_version_sqlc_regeneration_required_the_expected_generated_manifest_sync_then_the_pinned_manifest_was_updated"
+      - "verification:first_staged_repo_contract_rejected_the_new_unquoted_slice_note_then_the_evidence_scalar_was_quoted_without_contract_change"
+      - "verification:first_PRE_PR_blind_review_found_the_required_S05_053_feature_matrix_artifact_omission_then_the_single_row_was_advanced_only_to_IN_PROGRESS_NOT_RUN_without_forging_PR_or_SHA"
+      - "redline:none"
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

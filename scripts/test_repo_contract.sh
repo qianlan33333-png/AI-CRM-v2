@@ -3534,6 +3534,30 @@ if (cd "$h03_import_forgery" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P4-H03 historical import forgery was accepted"
 fi
 
+a02_route_disconnect="$(make_fixture p4-a02-route-disconnect)"
+sed -i.bak '/\/api\/admin\/config\/app-settings.*AppSettingsResource/d' "$a02_route_disconnect/cmd/aicrm/api.go"
+rm -f "$a02_route_disconnect/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$a02_route_disconnect" cmd/aicrm/api.go
+if (cd "$a02_route_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-A02 JSON resource route disconnect was accepted"
+fi
+
+a02_capability_widen="$(make_fixture p4-a02-capability-widen)"
+sed -i.bak '/CapabilityConfigSettingsManage:/,/},/s/admin: authport.ScopeGlobal/admin: authport.ScopeGlobal, ops: authport.ScopeGlobal/' "$a02_capability_widen/internal/auth/app/policy.go"
+rm -f "$a02_capability_widen/internal/auth/app/policy.go.bak"
+restage_p2s18_receipt "$a02_capability_widen" internal/auth/app/policy.go
+if (cd "$a02_capability_widen" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-A02 settings capability widening was accepted"
+fi
+
+a02_import_forgery="$(make_fixture p4-a02-import-forgery)"
+sed -i.bak '/"mapping_id":"LEGACY-T14-024"/s/"implementation":"NOT_STARTED"/"implementation":"IMPLEMENTED"/' "$a02_import_forgery/docs/migration-mapping.jsonl"
+rm -f "$a02_import_forgery/docs/migration-mapping.jsonl.bak"
+restage_p2s18_receipt "$a02_import_forgery" docs/migration-mapping.jsonl
+if (cd "$a02_import_forgery" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-A02 historical settings import forgery was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

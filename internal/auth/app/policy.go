@@ -44,6 +44,9 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityConfigOverviewRead: {
 		admin: authport.ScopeGlobal,
 	},
+	authport.CapabilityConfigSettingsManage: {
+		admin: authport.ScopeGlobal,
+	},
 	authport.CapabilityStagesRead: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal, sales: authport.ScopeGlobal,
 	},

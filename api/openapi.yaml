@@ -764,6 +764,64 @@ paths:
                 $ref: "#/components/schemas/AdminConfigOverviewResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/config/app-settings:
+    get:
+      tags: [p4-config-settings-compat]
+      operationId: getLegacyAppSettingsPage
+      summary: Render the frozen server-side app-settings page
+      x-legacy-mapping-ids: [LEGACY-API-0026]
+      x-p4-decision-evidence: P4-A02-2026-08-15
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200, default: "" } }
+        - { name: scope, in: query, required: false, schema: { type: string, enum: ["", editable, masked], default: "" } }
+      responses:
+        "200": { description: Server-rendered legacy app-settings page, content: { text/html: { schema: { type: string } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/app-settings/save:
+    post:
+      tags: [p4-config-settings-compat]
+      operationId: saveLegacyAppSettingsPage
+      summary: Validate and save non-secret app settings before redirecting to the page
+      x-legacy-mapping-ids: [LEGACY-API-0027]
+      x-p4-decision-evidence: P4-A02-2026-08-15
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { $ref: "#/components/schemas/LegacyAppSettingsSaveForm" }
+      responses:
+        "302": { description: Success redirects to saved=1; every accepted form failure redirects with a finite error code, headers: { Location: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/config/app-settings:
+    get:
+      tags: [p4-config-settings-compat]
+      operationId: getLegacyAppSettingsResource
+      summary: Read the frozen twelve-key compatibility projection
+      x-legacy-mapping-ids: [LEGACY-API-0253]
+      x-p4-decision-evidence: P4-A02-2026-08-15
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200, default: "" } }
+        - { name: scope, in: query, required: false, schema: { type: string, enum: ["", editable, masked], default: "" } }
+      responses:
+        "200": { description: Frozen resource compatibility envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/automation-conversion/agent-runs:
     get:
       tags: [p4-automation-compat]
@@ -2395,6 +2453,104 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/AdminConfigEntry" } }
+    LegacyAppSettingMetadata:
+      type: object
+      additionalProperties: false
+      required: [key, label, mode, input_type, description]
+      properties:
+        key: { type: string, enum: [wecom.corp_id, wecom.agent_id, outbound.rate_per_second, outbound.max_attempts, database.url, wecom.secret, wecom.callback_token, wecom.callback_aes_key, ai.api_key, auth.jwt_secret, extension.api_key_pepper, gateway.webhook_master_key] }
+        label: { type: string }
+        mode: { type: string, enum: [editable, masked] }
+        input_type: { type: string, enum: [text, number, password] }
+        description: { type: string, enum: [""] }
+    LegacyEditableAppSetting:
+      type: object
+      additionalProperties: false
+      required: [key, label, mode, input_type, description, value, display_value, configured, source, version, updated_at, last_modified_at, last_modified_by, last_action_type]
+      properties:
+        key: { type: string, enum: [wecom.corp_id, wecom.agent_id, outbound.rate_per_second, outbound.max_attempts] }
+        label: { type: string, enum: [wecom.corp_id, wecom.agent_id, outbound.rate_per_second, outbound.max_attempts] }
+        mode: { type: string, enum: [editable] }
+        input_type: { type: string, enum: [text, number] }
+        description: { type: string, enum: [""] }
+        value: { type: string }
+        display_value: { type: string }
+        configured: { type: boolean }
+        source: { type: string, enum: [app_settings, config] }
+        version: { type: string, enum: [""] }
+        updated_at: { type: string }
+        last_modified_at: { type: string }
+        last_modified_by: { type: string }
+        last_action_type: { type: string, enum: [create, update, empty] }
+    LegacyMaskedAppSetting:
+      type: object
+      additionalProperties: false
+      required: [key, label, mode, input_type, description, configured, masked]
+      properties:
+        key: { type: string, enum: [database.url, wecom.secret, wecom.callback_token, wecom.callback_aes_key, ai.api_key, auth.jwt_secret, extension.api_key_pepper, gateway.webhook_master_key] }
+        label: { type: string, enum: [database.url, wecom.secret, wecom.callback_token, wecom.callback_aes_key, ai.api_key, auth.jwt_secret, extension.api_key_pepper, gateway.webhook_master_key] }
+        mode: { type: string, enum: [masked] }
+        input_type: { type: string, enum: [password] }
+        description: { type: string, enum: [""] }
+        configured: { type: boolean }
+        masked: { type: boolean, enum: [true] }
+    LegacyAppSettingsSummaryCard:
+      type: object
+      additionalProperties: false
+      required: [label, value, description]
+      properties:
+        label: { type: string, enum: [可直接编辑, 敏感信息, 已配置] }
+        value: { type: integer, minimum: 0, maximum: 12 }
+        description: { type: string, enum: [可以直接修改的设置项, 只显示掩码的设置项, 当前已经配置完成的设置项] }
+    LegacyAppSettingsAuditEntry:
+      type: object
+      additionalProperties: false
+      required: [id, operator, action_type, target_id, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        operator: { type: string, minLength: 1, maxLength: 200 }
+        action_type: { type: string, enum: [create, update] }
+        target_id: { type: string, enum: [wecom.corp_id, wecom.agent_id, outbound.rate_per_second, outbound.max_attempts] }
+        created_at: { type: string, format: date-time }
+    LegacyAppSettingsProjection:
+      type: object
+      additionalProperties: false
+      required: [rows, metadata_map, summary_cards, audit_entries]
+      properties:
+        rows: { type: array, maxItems: 12, items: { oneOf: [{ $ref: "#/components/schemas/LegacyEditableAppSetting" }, { $ref: "#/components/schemas/LegacyMaskedAppSetting" }] } }
+        metadata_map: { type: object, minProperties: 12, maxProperties: 12, additionalProperties: { $ref: "#/components/schemas/LegacyAppSettingMetadata" } }
+        summary_cards: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/LegacyAppSettingsSummaryCard" } }
+        audit_entries: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/LegacyAppSettingsAuditEntry" } }
+    LegacyAppSettingsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, config, source_status, fallback_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        config: { $ref: "#/components/schemas/LegacyAppSettingsProjection" }
+        source_status: { type: string, enum: [next_read_model] }
+        fallback_used: { type: boolean, enum: [false] }
+    LegacyAppSettingsSaveForm:
+      type: object
+      additionalProperties: false
+      required: [csrf_token, admin_action_token, confirm]
+      properties:
+        csrf_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+        confirm: { type: string, enum: ["1"] }
+        operator: { type: string, description: Ignored; actor is always derived from the authenticated Principal. }
+        setting__wecom.corp_id: { type: string, minLength: 1, maxLength: 256 }
+        setting__wecom.agent_id: { type: string, pattern: '^[1-9][0-9]*$' }
+        setting__outbound.rate_per_second: { type: string, pattern: '^([1-9]|[1-4][0-9]|50)$' }
+        setting__outbound.max_attempts: { type: string, pattern: '^([1-9]|10)$' }
+        setting__database.url: { type: string, maxLength: 0, default: "" }
+        setting__wecom.secret: { type: string, maxLength: 0, default: "" }
+        setting__wecom.callback_token: { type: string, maxLength: 0, default: "" }
+        setting__wecom.callback_aes_key: { type: string, maxLength: 0, default: "" }
+        setting__ai.api_key: { type: string, maxLength: 0, default: "" }
+        setting__auth.jwt_secret: { type: string, maxLength: 0, default: "" }
+        setting__extension.api_key_pepper: { type: string, maxLength: 0, default: "" }
+        setting__gateway.webhook_master_key: { type: string, maxLength: 0, default: "" }
     AutomationTriggerRun:
       type: object
       additionalProperties: false

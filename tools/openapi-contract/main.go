@@ -127,6 +127,15 @@ var p4CustomerCompatLegacyMappings = map[string][]string{
 	"getLegacyCustomer":   {"LEGACY-API-0619"},
 }
 
+var p4ConfigSettingsOperations = map[string]bool{
+	"getLegacyAppSettingsPage": true, "saveLegacyAppSettingsPage": true, "getLegacyAppSettingsResource": true,
+}
+
+var p4ConfigSettingsLegacyMappings = map[string][]string{
+	"getLegacyAppSettingsPage": {"LEGACY-API-0026"}, "saveLegacyAppSettingsPage": {"LEGACY-API-0027"},
+	"getLegacyAppSettingsResource": {"LEGACY-API-0253"},
+}
+
 var identityOperations = map[string]bool{
 	"resolveIdentity": true, "bindIdentity": true, "ingestIdentityEvent": true,
 	"listIdentityMergeReviews": true, "approveIdentityMergeReview": true,
@@ -210,6 +219,9 @@ var authorizationContracts = map[string]authorizationContract{
 	"stopLegacyCoupon":               {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyCustomers":            {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getLegacyCustomer":              {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getLegacyAppSettingsPage":       {"config.settings.manage", map[string]string{"admin": "global"}},
+	"saveLegacyAppSettingsPage":      {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getLegacyAppSettingsResource":   {"config.settings.manage", map[string]string{"admin": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -226,6 +238,7 @@ const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
 const p4CouponDecisionEvidence = "P4-J01-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
+const p4ConfigSettingsDecisionEvidence = "P4-A02-2026-08-15"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -239,7 +252,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=45 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_customer_compat_operations=2)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=48 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -287,15 +300,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4CustomerCompat := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4CustomerCompat, seenP4ConfigSettings := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4CustomerCompat[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -427,7 +440,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 				links++
-			} else {
+			} else if p4CustomerCompatOperations[op.OperationID] {
 				seenP4CustomerCompat[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
 				if !ok || evidence != p4CustomerCompatDecisionEvidence {
@@ -435,6 +448,17 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4CustomerCompatLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				links++
+			} else {
+				seenP4ConfigSettings[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4ConfigSettingsDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Config Settings evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4ConfigSettingsLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 				links++
@@ -474,7 +498,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4CustomerCompat) != 2 || links != 45 {
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 48 {
 		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4CustomerCompat), links)
 	}
 	for id := range p1CandidateOperations {
@@ -547,6 +571,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			return fmt.Errorf("missing P4 Customer compatibility operation: %s", id)
 		}
 	}
+	for id := range p4ConfigSettingsOperations {
+		if !seenP4ConfigSettings[id] {
+			return fmt.Errorf("missing P4 Config Settings compatibility operation: %s", id)
+		}
+	}
 	customer := doc.Components.Schemas["Customer"]
 	if customer == nil || customer.Value == nil {
 		return errors.New("Customer schema missing")
@@ -615,7 +644,55 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if err := validateCustomerCompatContract(doc); err != nil {
 		return err
 	}
+	if err := validateConfigSettingsContract(doc); err != nil {
+		return err
+	}
 	return nil
+}
+
+func validateConfigSettingsContract(doc *openapi3.T) error {
+	page := doc.Paths.Value("/admin/config/app-settings")
+	save := doc.Paths.Value("/admin/config/app-settings/save")
+	resource := doc.Paths.Value("/api/admin/config/app-settings")
+	if page == nil || page.Get == nil || save == nil || save.Post == nil || resource == nil || resource.Get == nil {
+		return errors.New("P4-A02 Config Settings compatibility operations are incomplete")
+	}
+	if !operationResponseUsesLocalSchema(resource.Get, "LegacyAppSettingsResponse") || !operationFormUsesLocalSchema(save.Post, "LegacyAppSettingsSaveForm") {
+		return errors.New("P4-A02 Config Settings form or resource schema drifted")
+	}
+	form := doc.Components.Schemas["LegacyAppSettingsSaveForm"]
+	masked := doc.Components.Schemas["LegacyMaskedAppSetting"]
+	editable := doc.Components.Schemas["LegacyEditableAppSetting"]
+	if form == nil || form.Value == nil || form.Value.AdditionalProperties.Has == nil || *form.Value.AdditionalProperties.Has || len(form.Value.Properties) != 16 {
+		return errors.New("LegacyAppSettingsSaveForm must remain closed with four transport fields plus twelve settings")
+	}
+	if masked == nil || masked.Value == nil || masked.Value.AdditionalProperties.Has == nil || *masked.Value.AdditionalProperties.Has || len(masked.Value.Properties) != 7 {
+		return errors.New("LegacyMaskedAppSetting must remain boolean-only")
+	}
+	if editable == nil || editable.Value == nil || editable.Value.Properties["version"] == nil || editable.Value.Properties["version"].Value == nil || len(editable.Value.Properties["version"].Value.Enum) != 1 || editable.Value.Properties["version"].Value.Enum[0] != "" {
+		return errors.New("LegacyEditableAppSetting version must remain fixed empty")
+	}
+	for _, key := range []string{"database.url", "wecom.secret", "wecom.callback_token", "wecom.callback_aes_key", "ai.api_key", "auth.jwt_secret", "extension.api_key_pepper", "gateway.webhook_master_key"} {
+		property := form.Value.Properties["setting__"+key]
+		if property == nil || property.Value == nil || property.Value.MaxLength == nil || *property.Value.MaxLength != 0 {
+			return fmt.Errorf("secret form key %s must only accept blank preservation", key)
+		}
+	}
+	if save.Post.Responses.Value("302") == nil || save.Post.Responses.Value("200") != nil {
+		return errors.New("P4-A02 save redirect contract drifted")
+	}
+	if value, ok := save.Post.Extensions["x-aicrm-session-bound-csrf"].(string); !ok || value != "required" {
+		return errors.New("P4-A02 session-bound CSRF requirement drifted")
+	}
+	return nil
+}
+
+func operationFormUsesLocalSchema(operation *openapi3.Operation, schemaName string) bool {
+	if operation == nil || operation.RequestBody == nil || operation.RequestBody.Value == nil {
+		return false
+	}
+	media := operation.RequestBody.Value.Content["application/x-www-form-urlencoded"]
+	return media != nil && media.Schema != nil && media.Schema.Ref == "#/components/schemas/"+schemaName
 }
 
 func validateGroupInviteContract(doc *openapi3.T) error {

@@ -21,6 +21,8 @@ import (
 	authstore "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
+	configstore "github.com/qianlan33333-png/AI-CRM-v2/internal/config/store"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -401,6 +403,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundstore.NewTaskQueryRepository())
+	configRepository := configstore.NewRepository()
+	configManager := configapp.NewManager(uow, configRepository, eventstore.NewAppender())
+	settingsService := configapp.NewSettingsCompatibilityService(uow, configRepository, configManager, configapp.SecretConfiguredSnapshot{
+		DatabaseURL: true, WeComSecret: config.WeCom.OAuth.Enabled,
+		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
+	})
 	legacyHandler, err := NewHandlerWithAll(
 		service, customerService,
 		contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository()),
@@ -408,7 +416,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
-		productService, mediaService, groupInviteService, surveyService, channelService, couponService, legacyTagService,
+		productService, mediaService, groupInviteService, surveyService, channelService, couponService, legacyTagService, settingsService,
 	)
 	if err != nil {
 		pool.Close()
@@ -657,6 +665,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 		}{
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
+			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
+			{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)},
+			{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)},
 			{http.MethodGet, "/api/admin/automation-conversion/agent-runs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.ListAutomationTriggerRuns)},
 			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListCustomers)},
 			{http.MethodGet, "/api/customers/{external_userid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetCustomer)},

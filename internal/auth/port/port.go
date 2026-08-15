@@ -35,34 +35,35 @@ type Principal struct {
 type Capability string
 
 const (
-	CapabilityAuthSessionRead     Capability = "auth.session.read"
-	CapabilityAuthSessionLogout   Capability = "auth.session.logout"
-	CapabilityCustomersRead       Capability = "customers.read"
-	CapabilityCustomersWrite      Capability = "customers.write"
-	CapabilityCustomerEventsRead  Capability = "customer.events.read"
-	CapabilityIdentityResolve     Capability = "identity.resolve"
-	CapabilityIdentityBind        Capability = "identity.bind"
-	CapabilityIdentityIngest      Capability = "identity.ingest"
-	CapabilityIdentityReviewRead  Capability = "identity.review.read"
-	CapabilityIdentityReviewWrite Capability = "identity.review.write"
-	CapabilityConfigOverviewRead  Capability = "config.overview.read"
-	CapabilityStagesRead          Capability = "stages.read"
-	CapabilityStagesWrite         Capability = "stages.write"
-	CapabilitySegmentsRead        Capability = "segments.read"
-	CapabilitySegmentsWrite       Capability = "segments.write"
-	CapabilityOutboundRead        Capability = "outbound.read"
-	CapabilityOutboundControl     Capability = "outbound.control"
-	CapabilityProductsRead        Capability = "products.read"
-	CapabilityProductsWrite       Capability = "products.write"
-	CapabilityMediaImagesWrite    Capability = "media.images.write"
-	CapabilityMediaLibraryRead    Capability = "media.library.read"
-	CapabilityMediaLibraryWrite   Capability = "media.library.write"
-	CapabilityQuestionnairesRead  Capability = "questionnaires.read"
-	CapabilityQuestionnairesWrite Capability = "questionnaires.write"
-	CapabilityChannelsRead        Capability = "channels.read"
-	CapabilityChannelsWrite       Capability = "channels.write"
-	CapabilityCouponsRead         Capability = "coupons.read"
-	CapabilityCouponsWrite        Capability = "coupons.write"
+	CapabilityAuthSessionRead      Capability = "auth.session.read"
+	CapabilityAuthSessionLogout    Capability = "auth.session.logout"
+	CapabilityCustomersRead        Capability = "customers.read"
+	CapabilityCustomersWrite       Capability = "customers.write"
+	CapabilityCustomerEventsRead   Capability = "customer.events.read"
+	CapabilityIdentityResolve      Capability = "identity.resolve"
+	CapabilityIdentityBind         Capability = "identity.bind"
+	CapabilityIdentityIngest       Capability = "identity.ingest"
+	CapabilityIdentityReviewRead   Capability = "identity.review.read"
+	CapabilityIdentityReviewWrite  Capability = "identity.review.write"
+	CapabilityConfigOverviewRead   Capability = "config.overview.read"
+	CapabilityConfigSettingsManage Capability = "config.settings.manage"
+	CapabilityStagesRead           Capability = "stages.read"
+	CapabilityStagesWrite          Capability = "stages.write"
+	CapabilitySegmentsRead         Capability = "segments.read"
+	CapabilitySegmentsWrite        Capability = "segments.write"
+	CapabilityOutboundRead         Capability = "outbound.read"
+	CapabilityOutboundControl      Capability = "outbound.control"
+	CapabilityProductsRead         Capability = "products.read"
+	CapabilityProductsWrite        Capability = "products.write"
+	CapabilityMediaImagesWrite     Capability = "media.images.write"
+	CapabilityMediaLibraryRead     Capability = "media.library.read"
+	CapabilityMediaLibraryWrite    Capability = "media.library.write"
+	CapabilityQuestionnairesRead   Capability = "questionnaires.read"
+	CapabilityQuestionnairesWrite  Capability = "questionnaires.write"
+	CapabilityChannelsRead         Capability = "channels.read"
+	CapabilityChannelsWrite        Capability = "channels.write"
+	CapabilityCouponsRead          Capability = "coupons.read"
+	CapabilityCouponsWrite         Capability = "coupons.write"
 )
 
 func (capability Capability) Known() bool {
@@ -71,7 +72,7 @@ func (capability Capability) Known() bool {
 		CapabilityCustomersRead, CapabilityCustomersWrite, CapabilityCustomerEventsRead,
 		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
 		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite,
-		CapabilityConfigOverviewRead, CapabilityStagesRead, CapabilityStagesWrite,
+		CapabilityConfigOverviewRead, CapabilityConfigSettingsManage, CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
 		CapabilityOutboundRead, CapabilityOutboundControl,
 		CapabilityProductsRead, CapabilityProductsWrite,
@@ -203,7 +204,7 @@ func validAuthorization(authorization Authorization) bool {
 		}
 		return authorization.Scope == ScopeOwnerStaff && authorization.OwnerStaffID > 0
 	case CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
-		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite, CapabilityConfigOverviewRead,
+		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite, CapabilityConfigOverviewRead, CapabilityConfigSettingsManage,
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite, CapabilityOutboundControl,
 		CapabilityProductsRead, CapabilityProductsWrite,

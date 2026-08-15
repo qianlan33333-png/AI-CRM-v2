@@ -39,6 +39,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityIdentityResolve, CapabilityIdentityBind, CapabilityIdentityIngest,
 		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite,
 		CapabilityConfigOverviewRead,
+		CapabilityConfigSettingsManage,
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
 		CapabilityMediaImagesWrite,
