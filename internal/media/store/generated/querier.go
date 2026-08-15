@@ -9,11 +9,22 @@ import (
 )
 
 type Querier interface {
+	ArchiveMediaGroupInvite(ctx context.Context, arg ArchiveMediaGroupInviteParams) error
+	CompleteMediaGroupInviteReceipt(ctx context.Context, arg CompleteMediaGroupInviteReceiptParams) (CompleteMediaGroupInviteReceiptRow, error)
 	CompleteMediaImageUploadReceipt(ctx context.Context, arg CompleteMediaImageUploadReceiptParams) (CompleteMediaImageUploadReceiptRow, error)
+	CountMediaGroupInvites(ctx context.Context, arg CountMediaGroupInvitesParams) (int64, error)
+	CreateMediaGroupInvite(ctx context.Context, arg CreateMediaGroupInviteParams) (int64, error)
+	GetMediaGroupInvite(ctx context.Context, id int64) (MediaGroupInvite, error)
+	GetMediaGroupInviteReceipt(ctx context.Context, arg GetMediaGroupInviteReceiptParams) (GetMediaGroupInviteReceiptRow, error)
 	GetMediaImageUploadReceipt(ctx context.Context, arg GetMediaImageUploadReceiptParams) (GetMediaImageUploadReceiptRow, error)
 	InsertMediaImage(ctx context.Context, arg InsertMediaImageParams) (InsertMediaImageRow, error)
 	InsertMediaImageBlob(ctx context.Context, arg InsertMediaImageBlobParams) error
+	ListMediaGroupInvites(ctx context.Context, arg ListMediaGroupInvitesParams) ([]MediaGroupInvite, error)
+	LockMediaGroupInvite(ctx context.Context, id int64) (int64, error)
+	MediaImageExists(ctx context.Context, id int64) (bool, error)
+	ReserveMediaGroupInviteReceipt(ctx context.Context, arg ReserveMediaGroupInviteReceiptParams) (ReserveMediaGroupInviteReceiptRow, error)
 	ReserveMediaImageUploadReceipt(ctx context.Context, arg ReserveMediaImageUploadReceiptParams) (ReserveMediaImageUploadReceiptRow, error)
+	UpdateMediaGroupInvite(ctx context.Context, arg UpdateMediaGroupInviteParams) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -910,6 +910,112 @@ export interface LegacyImageUploadError {
   real_external_call_executed: boolean;
 }
 
+export interface LegacyGroupInviteFields {
+  /** @minLength 1 */
+  name?: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  title?: string;
+  /** @maxLength 512 */
+  description?: string;
+  /**
+   * @maxLength 2048
+   * @pattern ^https://work[.]weixin[.]qq[.]com/gm/[^?#]+$
+   */
+  join_url?: string;
+  /** @minimum 0 */
+  cover_image_id?: number;
+  enabled?: boolean;
+}
+
+export type LegacyGroupInviteCreateRequestAllOf = { [key: string]: unknown };
+
+export type LegacyGroupInviteCreateRequest = LegacyGroupInviteFields &
+  LegacyGroupInviteCreateRequestAllOf &
+  Required<
+    Pick<
+      LegacyGroupInviteFields & LegacyGroupInviteCreateRequestAllOf,
+      "title" | "join_url"
+    >
+  >;
+
+export type LegacyGroupInviteUpdateRequestAllOf = { [key: string]: unknown };
+
+export type LegacyGroupInviteUpdateRequest = LegacyGroupInviteFields &
+  LegacyGroupInviteUpdateRequestAllOf;
+
+export type LegacyGroupInviteAllOf = {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+  archived_at?: string;
+};
+
+export type LegacyGroupInvite = LegacyGroupInviteFields &
+  LegacyGroupInviteAllOf &
+  Required<
+    Pick<
+      LegacyGroupInviteFields & LegacyGroupInviteAllOf,
+      "name" | "title" | "description" | "join_url" | "enabled"
+    >
+  >;
+
+export interface LegacyGroupInviteListResponse {
+  ok: boolean;
+  items: LegacyGroupInvite[];
+  group_invites: LegacyGroupInvite[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  provider_call_executed: boolean;
+}
+
+export interface LegacyGroupInviteDetailResponse {
+  ok: boolean;
+  item: LegacyGroupInvite;
+  group_invite: LegacyGroupInvite;
+  provider_call_executed: boolean;
+}
+
+export interface LegacyGroupInviteMutationResponse {
+  ok: boolean;
+  item: LegacyGroupInvite;
+  group_invite: LegacyGroupInvite;
+  /** @minimum 1 */
+  item_id?: number;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+  [key: string]: unknown;
+}
+
+export interface LegacyGroupInviteArchiveResponse {
+  ok: boolean;
+  item: LegacyGroupInvite;
+  archived: boolean;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface Product {
   id: number;
   /**
@@ -2051,6 +2157,24 @@ export type UploadLegacyImageBody = {
   tags?: string;
   /** @maxLength 200 */
   category?: string;
+};
+
+export type ListLegacyGroupInvitesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  enabled_only?: boolean;
+  /**
+   * @maxLength 128
+   */
+  q?: string;
 };
 
 /**
@@ -6186,4 +6310,393 @@ export const uploadLegacyImage = async (
     status: res.status,
     headers: res.headers,
   } as uploadLegacyImageResponse;
+};
+
+/**
+ * @summary List local group-invite card metadata without a provider call
+ */
+export type listLegacyGroupInvitesResponse200 = {
+  data: LegacyGroupInviteListResponse;
+  status: 200;
+};
+
+export type listLegacyGroupInvitesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyGroupInvitesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyGroupInvitesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyGroupInvitesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyGroupInvitesResponseSuccess =
+  listLegacyGroupInvitesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyGroupInvitesResponseError = (
+  | listLegacyGroupInvitesResponse400
+  | listLegacyGroupInvitesResponse401
+  | listLegacyGroupInvitesResponse403
+  | listLegacyGroupInvitesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyGroupInvitesResponse =
+  listLegacyGroupInvitesResponseSuccess | listLegacyGroupInvitesResponseError;
+
+export const getListLegacyGroupInvitesUrl = (
+  params?: ListLegacyGroupInvitesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/group-invite-library?${stringifiedParams}`
+    : `/api/admin/group-invite-library`;
+};
+
+export const listLegacyGroupInvites = async (
+  params?: ListLegacyGroupInvitesParams,
+  options?: RequestInit,
+): Promise<listLegacyGroupInvitesResponse> => {
+  const res = await fetch(getListLegacyGroupInvitesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyGroupInvitesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyGroupInvitesResponse;
+};
+
+/**
+ * @summary Persist one local group-invite card without creating a WeCom join way
+ */
+export type createLegacyGroupInviteResponse200 = {
+  data: LegacyGroupInviteMutationResponse;
+  status: 200;
+};
+
+export type createLegacyGroupInviteResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyGroupInviteResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyGroupInviteResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyGroupInviteResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyGroupInviteResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyGroupInviteResponseSuccess =
+  createLegacyGroupInviteResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyGroupInviteResponseError = (
+  | createLegacyGroupInviteResponse400
+  | createLegacyGroupInviteResponse401
+  | createLegacyGroupInviteResponse403
+  | createLegacyGroupInviteResponse409
+  | createLegacyGroupInviteResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyGroupInviteResponse =
+  createLegacyGroupInviteResponseSuccess | createLegacyGroupInviteResponseError;
+
+export const getCreateLegacyGroupInviteUrl = () => {
+  return `/api/admin/group-invite-library`;
+};
+
+export const createLegacyGroupInvite = async (
+  legacyGroupInviteCreateRequest: LegacyGroupInviteCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyGroupInviteResponse> => {
+  const res = await fetch(getCreateLegacyGroupInviteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyGroupInviteCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyGroupInviteResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Get one active local group-invite card
+ */
+export type getLegacyGroupInviteResponse200 = {
+  data: LegacyGroupInviteDetailResponse;
+  status: 200;
+};
+
+export type getLegacyGroupInviteResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyGroupInviteResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyGroupInviteResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyGroupInviteResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyGroupInviteResponseSuccess =
+  getLegacyGroupInviteResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyGroupInviteResponseError = (
+  | getLegacyGroupInviteResponse401
+  | getLegacyGroupInviteResponse403
+  | getLegacyGroupInviteResponse404
+  | getLegacyGroupInviteResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyGroupInviteResponse =
+  getLegacyGroupInviteResponseSuccess | getLegacyGroupInviteResponseError;
+
+export const getGetLegacyGroupInviteUrl = (itemId: number) => {
+  return `/api/admin/group-invite-library/${itemId}`;
+};
+
+export const getLegacyGroupInvite = async (
+  itemId: number,
+  options?: RequestInit,
+): Promise<getLegacyGroupInviteResponse> => {
+  const res = await fetch(getGetLegacyGroupInviteUrl(itemId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyGroupInviteResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Update local group-invite card metadata without a provider call
+ */
+export type updateLegacyGroupInviteResponse200 = {
+  data: LegacyGroupInviteMutationResponse;
+  status: 200;
+};
+
+export type updateLegacyGroupInviteResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyGroupInviteResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyGroupInviteResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyGroupInviteResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyGroupInviteResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateLegacyGroupInviteResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyGroupInviteResponseSuccess =
+  updateLegacyGroupInviteResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyGroupInviteResponseError = (
+  | updateLegacyGroupInviteResponse400
+  | updateLegacyGroupInviteResponse401
+  | updateLegacyGroupInviteResponse403
+  | updateLegacyGroupInviteResponse404
+  | updateLegacyGroupInviteResponse409
+  | updateLegacyGroupInviteResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyGroupInviteResponse =
+  updateLegacyGroupInviteResponseSuccess | updateLegacyGroupInviteResponseError;
+
+export const getUpdateLegacyGroupInviteUrl = (itemId: number) => {
+  return `/api/admin/group-invite-library/${itemId}`;
+};
+
+export const updateLegacyGroupInvite = async (
+  itemId: number,
+  legacyGroupInviteUpdateRequest: LegacyGroupInviteUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyGroupInviteResponse> => {
+  const res = await fetch(getUpdateLegacyGroupInviteUrl(itemId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyGroupInviteUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyGroupInviteResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Archive one local group-invite card without deleting history or calling WeCom
+ */
+export type archiveLegacyGroupInviteResponse200 = {
+  data: LegacyGroupInviteArchiveResponse;
+  status: 200;
+};
+
+export type archiveLegacyGroupInviteResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyGroupInviteResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyGroupInviteResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveLegacyGroupInviteResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type archiveLegacyGroupInviteResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveLegacyGroupInviteResponseSuccess =
+  archiveLegacyGroupInviteResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyGroupInviteResponseError = (
+  | archiveLegacyGroupInviteResponse401
+  | archiveLegacyGroupInviteResponse403
+  | archiveLegacyGroupInviteResponse404
+  | archiveLegacyGroupInviteResponse409
+  | archiveLegacyGroupInviteResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyGroupInviteResponse =
+  | archiveLegacyGroupInviteResponseSuccess
+  | archiveLegacyGroupInviteResponseError;
+
+export const getArchiveLegacyGroupInviteUrl = (itemId: number) => {
+  return `/api/admin/group-invite-library/${itemId}`;
+};
+
+export const archiveLegacyGroupInvite = async (
+  itemId: number,
+  options?: RequestInit,
+): Promise<archiveLegacyGroupInviteResponse> => {
+  const res = await fetch(getArchiveLegacyGroupInviteUrl(itemId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyGroupInviteResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyGroupInviteResponse;
 };

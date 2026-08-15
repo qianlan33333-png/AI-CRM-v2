@@ -366,6 +366,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	productService := productapp.NewService(uow, productstore.NewCatalogRepository(), eventstore.NewAppender())
 	mediaService := mediaapp.NewService(uow, mediastore.NewUploadRepository(), eventstore.NewAppender())
+	groupInviteRepository := mediastore.NewGroupInviteRepository()
+	groupInviteService := mediaapp.NewGroupInviteService(uow, groupInviteRepository, groupInviteRepository, eventstore.NewAppender())
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	channelService := contactapp.NewChannelService(uow, contactstore.NewChannelRepository(), eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
@@ -406,7 +408,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
-		productService, mediaService, surveyService, channelService, couponService, legacyTagService,
+		productService, mediaService, groupInviteService, surveyService, channelService, couponService, legacyTagService,
 	)
 	if err != nil {
 		pool.Close()
@@ -667,6 +669,11 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
+			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
+			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},
+			{http.MethodGet, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetGroupInvite)},
+			{http.MethodPut, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateGroupInvite)},
+			{http.MethodDelete, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ArchiveGroupInvite)},
 			{http.MethodGet, "/api/admin/questionnaires", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaires)},
 			{http.MethodPost, "/api/admin/questionnaires", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.CreateQuestionnaire)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaire)},

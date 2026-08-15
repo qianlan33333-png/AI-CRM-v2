@@ -101,6 +101,7 @@ type Handler struct {
 	manualRetry     legacyRetryApplication
 	products        legacyProductApplication
 	media           legacyMediaApplication
+	groupInvites    groupInviteApplication
 	surveys         legacySurveyApplication
 	channels        legacyChannelApplication
 	legacyTags      legacyTagApplication
@@ -127,6 +128,7 @@ func NewHandlerWithAll(
 	manualRetry legacyRetryApplication,
 	products legacyProductApplication,
 	media legacyMediaApplication,
+	groupInvites groupInviteApplication,
 	surveys legacySurveyApplication,
 	channels legacyChannelApplication,
 	coupons legacyCouponApplication,
@@ -135,13 +137,14 @@ func NewHandlerWithAll(
 	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
 	)
-	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) {
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) || nilLegacyDependency(groupInvites) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.customerDetail = customerDetail
 	handler.identityResolve = identityResolve
 	handler.weComCorpID = strings.TrimSpace(weComCorpID)
 	handler.channels = channels
+	handler.groupInvites = groupInvites
 	handler.coupons = coupons
 	handler.legacyTags = legacyTags
 	return handler, nil

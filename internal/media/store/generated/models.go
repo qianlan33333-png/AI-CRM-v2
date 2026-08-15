@@ -3,3 +3,23 @@
 //   sqlc v1.28.0
 
 package mediadb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type MediaGroupInvite struct {
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	Title        string             `json:"title"`
+	Description  string             `json:"description"`
+	JoinUrl      string             `json:"join_url"`
+	CoverImageID pgtype.Int8        `json:"cover_image_id"`
+	Enabled      bool               `json:"enabled"`
+	CreatedBy    int64              `json:"created_by"`
+	UpdatedBy    int64              `json:"updated_by"`
+	Version      int64              `json:"version"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
+}

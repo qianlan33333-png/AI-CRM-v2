@@ -63,6 +63,17 @@ var p4MediaLegacyMappings = map[string][]string{
 	"uploadLegacyImage": {"LEGACY-API-0361"},
 }
 
+var p4GroupInviteOperations = map[string]bool{
+	"listLegacyGroupInvites": true, "createLegacyGroupInvite": true, "getLegacyGroupInvite": true,
+	"updateLegacyGroupInvite": true, "archiveLegacyGroupInvite": true,
+}
+
+var p4GroupInviteLegacyMappings = map[string][]string{
+	"listLegacyGroupInvites": {"LEGACY-API-0335"}, "createLegacyGroupInvite": {"LEGACY-API-0336"},
+	"getLegacyGroupInvite": {"LEGACY-API-0338"}, "updateLegacyGroupInvite": {"LEGACY-API-0339"},
+	"archiveLegacyGroupInvite": {"LEGACY-API-0337"},
+}
+
 var p4SurveyOperations = map[string]bool{
 	"listLegacyQuestionnaires": true, "createLegacyQuestionnaire": true, "getLegacyQuestionnaire": true,
 }
@@ -170,6 +181,11 @@ var authorizationContracts = map[string]authorizationContract{
 	"createProduct":                  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getProduct":                     {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"uploadLegacyImage":              {"media.images.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyGroupInvites":         {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createLegacyGroupInvite":        {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyGroupInvite":           {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
+	"updateLegacyGroupInvite":        {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveLegacyGroupInvite":       {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyQuestionnaires":       {"questionnaires.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createLegacyQuestionnaire":      {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyQuestionnaire":         {"questionnaires.read", map[string]string{"admin": "global", "ops": "global"}},
@@ -204,6 +220,7 @@ const p3SegmentDecisionEvidence = "P3-S00-2026-08-12"
 const p4AutomationDecisionEvidence = "P4-W0-D01-2026-08-14"
 const p4ProductDecisionEvidence = "P4-I01A-2026-08-14"
 const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
+const p4GroupInviteDecisionEvidence = "P4-H03-2026-08-15"
 const p4SurveyDecisionEvidence = "P4-F01A-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
@@ -222,7 +239,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=31 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_customer_compat_operations=2)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=45 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_customer_compat_operations=2)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -270,15 +287,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4CustomerCompat := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4CustomerCompat := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4CustomerCompat[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4CustomerCompat[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -355,6 +372,17 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4MediaLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
+			} else if p4GroupInviteOperations[op.OperationID] {
+				seenP4GroupInvite[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4GroupInviteDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Group Invite evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4GroupInviteLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				links++
 			} else if p4SurveyOperations[op.OperationID] {
 				seenP4Survey[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -446,7 +474,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4CustomerCompat) != 2 || links != 40 {
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4CustomerCompat) != 2 || links != 45 {
 		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4CustomerCompat), links)
 	}
 	for id := range p1CandidateOperations {
@@ -487,6 +515,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4MediaOperations {
 		if !seenP4Media[id] {
 			return fmt.Errorf("missing P4 Media operation: %s", id)
+		}
+	}
+	for id := range p4GroupInviteOperations {
+		if !seenP4GroupInvite[id] {
+			return fmt.Errorf("missing P4 Group Invite operation: %s", id)
 		}
 	}
 	for id := range p4SurveyOperations {
@@ -567,6 +600,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if err := validateAutomationContract(doc); err != nil {
 		return err
 	}
+	if err := validateGroupInviteContract(doc); err != nil {
+		return err
+	}
 	if err := validateSurveyContract(doc); err != nil {
 		return err
 	}
@@ -578,6 +614,32 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	if err := validateCustomerCompatContract(doc); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validateGroupInviteContract(doc *openapi3.T) error {
+	collection := doc.Paths.Value("/api/admin/group-invite-library")
+	detail := doc.Paths.Value("/api/admin/group-invite-library/{item_id}")
+	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil || detail.Put == nil || detail.Delete == nil {
+		return errors.New("P4-H03 Group Invite compatibility operations are incomplete")
+	}
+	if !operationResponseUsesLocalSchema(collection.Get, "LegacyGroupInviteListResponse") ||
+		!operationRequestUsesLocalSchema(collection.Post, "LegacyGroupInviteCreateRequest") ||
+		!operationResponseUsesLocalSchema(collection.Post, "LegacyGroupInviteMutationResponse") ||
+		!operationResponseUsesLocalSchema(detail.Get, "LegacyGroupInviteDetailResponse") ||
+		!operationRequestUsesLocalSchema(detail.Put, "LegacyGroupInviteUpdateRequest") ||
+		!operationResponseUsesLocalSchema(detail.Put, "LegacyGroupInviteMutationResponse") ||
+		!operationResponseUsesLocalSchema(detail.Delete, "LegacyGroupInviteArchiveResponse") {
+		return errors.New("P4-H03 Group Invite request or response schema drifted")
+	}
+	for name, operation := range map[string]*openapi3.Operation{"createLegacyGroupInvite": collection.Post, "updateLegacyGroupInvite": detail.Put, "archiveLegacyGroupInvite": detail.Delete} {
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		if operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s conflict or dependency response drifted", name)
+		}
 	}
 	return nil
 }
