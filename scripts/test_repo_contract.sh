@@ -3511,6 +3511,29 @@ if (cd "$j01_legacy_import_forgery" && scripts/check_repo_contract.sh >/dev/null
   fail "P4-J01 legacy migration completion forgery was accepted"
 fi
 
+h03_provider_scope="$(make_fixture p4-h03-provider-scope)"
+printf '%s\n' '-- provider add_join_way' >>"$h03_provider_scope/migrations/00034_media_group_invite_library.sql"
+restage_p2s18_receipt "$h03_provider_scope" migrations/00034_media_group_invite_library.sql
+if (cd "$h03_provider_scope" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-H03 provider scope expansion was accepted"
+fi
+
+h03_route_disconnect="$(make_fixture p4-h03-route-disconnect)"
+sed -i.bak '/\/api\/admin\/group-invite-library\/{item_id}.*ArchiveGroupInvite/d' "$h03_route_disconnect/cmd/aicrm/api.go"
+rm -f "$h03_route_disconnect/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$h03_route_disconnect" cmd/aicrm/api.go
+if (cd "$h03_route_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-H03 archive route disconnect was accepted"
+fi
+
+h03_import_forgery="$(make_fixture p4-h03-import-forgery)"
+sed -i.bak '/"mapping_id":"LEGACY-T14-183"/s/"implementation":"NOT_STARTED"/"implementation":"IMPLEMENTED"/' "$h03_import_forgery/docs/migration-mapping.jsonl"
+rm -f "$h03_import_forgery/docs/migration-mapping.jsonl.bak"
+restage_p2s18_receipt "$h03_import_forgery" docs/migration-mapping.jsonl
+if (cd "$h03_import_forgery" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-H03 historical import forgery was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

@@ -177,6 +177,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/admin/image-library/upload").Post.Extensions["x-aicrm-capability"] = "media.images.read"
 			reject(t, doc, ids)
 		},
+		"group invite evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/group-invite-library").Get.Extensions["x-p4-decision-evidence"] = "P4-H03-FORGED"
+			reject(t, doc, ids)
+		},
+		"group invite legacy mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/group-invite-library/{item_id}").Delete.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0338"}
+			reject(t, doc, ids)
+		},
+		"group invite capability widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/group-invite-library").Get.Extensions["x-aicrm-capability"] = "media.library.write"
+			reject(t, doc, ids)
+		},
 		"survey evidence forged": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/admin/questionnaires").Get.Extensions["x-p4-decision-evidence"] = "P4-F01A-FORGED"

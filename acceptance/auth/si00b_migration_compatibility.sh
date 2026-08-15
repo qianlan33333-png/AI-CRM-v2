@@ -78,7 +78,7 @@ read -r upgrade_waterline old_column new_column check_constraint unique_constrai
             (SELECT count(*) FROM admin_users WHERE auth_provider='wecom' AND wecom_corp_id='ww-si00b-corp-a' AND provider_subject_id='member-shared' AND id=${first_user_id})
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "33" && "$old_column" = "0" && "$new_column" = "1" &&
+[[ "$upgrade_waterline" = "34" && "$old_column" = "0" && "$new_column" = "1" &&
    "$check_constraint" = "1" && "$unique_constraint" = "1" && "$unique_index" = "1" &&
    "$accounts" = "2" && "$sessions" = "1" && "$located" = "1" ]]
 
@@ -114,7 +114,7 @@ read -r final_waterline old_column new_column accounts sessions distinct_corps <
             (SELECT count(DISTINCT wecom_corp_id) FROM admin_users WHERE id IN (${first_user_id}, ${second_user_id}))
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$final_waterline" = "33" && "$old_column" = "0" && "$new_column" = "1" &&
+[[ "$final_waterline" = "34" && "$old_column" = "0" && "$new_column" = "1" &&
    "$accounts" = "2" && "$sessions" = "1" && "$distinct_corps" = "2" ]]
 
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \

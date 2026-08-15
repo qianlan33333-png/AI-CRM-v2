@@ -127,11 +127,13 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_group_invites, media_group_invite_operation_receipts]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
       media_image_upload_receipts: actor_scoped_transactional_upload_idempotency_receipts
+      media_group_invites: local_only_group_invite_metadata_with_read_only_media_image_reference
+      media_group_invite_operation_receipts: actor_operation_business_key_scoped_transactional_mutation_receipts
 
   ops:
     package: internal/ops
