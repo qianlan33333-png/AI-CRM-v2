@@ -79,41 +79,11 @@ jobs:
         run: |
           test "$(docker exec "$POSTGRES_CONTAINER_ID" psql -U postgres -d aicrm_test -Atqc 'SHOW server_version_num')" = "160014"
           make migration-integration
-          P3C01A_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c01a-migration-acceptance
-          P3R4B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-r4b-identity-storage-acceptance
-          P3C07C_R3B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3b-storage-acceptance
-          P3C07C_R3C_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3c-behavior-acceptance
-          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02a-acceptance
-          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02b-acceptance
-          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02d-acceptance
-          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02e-acceptance
-          P3C03_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c03-migration-acceptance
-          P3C07A_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07a-acceptance
-          P3C07B2_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07b2-acceptance
-          SEGMENT_CRUD_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-s05b-acceptance
-          WECOM_SYNC_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-w4-acceptance
-          make p0-s04-integration
-          P3O2_ENQUEUE_ONE_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o2-enqueue-one-acceptance
-          P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o3-enqueue-batch-acceptance
-          P3O4_SENDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o4-sender-acceptance
-          P3O5_STATUS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o5-status-acceptance
-          P3O6A_RETRY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6a-retry-acceptance
-          P3O6B1_CANCEL_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6b1-cancel-acceptance
-          P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6b2-manual-retry-acceptance
-          P3O7_LEGACY_API_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o7-legacy-api-acceptance
-          P4W0D01_AUTOMATION_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-w0-d01-automation-acceptance
-          P4W0L01_STATS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-w0-l01-stats-acceptance
-          P4A01_AUTH_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-a01-auth-acceptance
-          P4SI00B_AUTH_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-si00b-auth-acceptance
-          P4I01A_PRODUCT_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-i01a-product-acceptance
-          P4H01A1_MEDIA_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-h01a1-media-acceptance
-          P4H03_MEDIA_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-h03-media-acceptance
-          P4F01A_SURVEY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-f01a-survey-acceptance
-          P4C01_CHANNEL_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-c01-channel-acceptance
-          P4J01_COUPON_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-j01-coupon-acceptance
-          P4I03_ORDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-i03-order-acceptance
+          CI_ACCEPTANCE_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" scripts/run_ci_acceptance_manifest.sh
       - name: Verify promotion fingerprints
         if: steps.promotion.outputs.mode == 'promotion'
+        env:
+          CI_PROMOTION_AFFECTED_MANIFEST: ${{ steps.promotion.outputs.affected_manifest }}
         run: scripts/check_ci_promotion_smoke.sh
   web:
     name: application / web
@@ -150,4 +120,6 @@ jobs:
           npm run ci
       - name: Verify promotion fingerprints
         if: steps.promotion.outputs.mode == 'promotion'
+        env:
+          CI_PROMOTION_AFFECTED_MANIFEST: ${{ steps.promotion.outputs.affected_manifest }}
         run: scripts/check_ci_promotion_smoke.sh
