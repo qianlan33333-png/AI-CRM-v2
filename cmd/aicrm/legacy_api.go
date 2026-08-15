@@ -142,6 +142,7 @@ type Handler struct {
 	orderBoard            legacyOrderBoardApplication
 	messageArchive        legacyMessageArchiveApplication
 	messageArchiveUnionID legacyMessageArchiveUnionResolver
+	adminOps              legacyAdminOps
 	operationCycles       legacyOperationCycleApplication
 	operationAuth         operationServiceAuthenticator
 }
