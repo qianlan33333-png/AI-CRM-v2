@@ -104,6 +104,15 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityOrderWrite: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityMessageArchiveRead: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
+	authport.CapabilityMessageArchiveExecute: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
+	authport.CapabilityMessageArchiveExternalRead: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
 }
 
 func authorize(principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {

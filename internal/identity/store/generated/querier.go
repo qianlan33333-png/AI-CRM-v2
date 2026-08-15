@@ -6,6 +6,8 @@ package identitydb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -34,6 +36,7 @@ type Querier interface {
 	LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error)
 	LockMergeReview(ctx context.Context, reviewID int64) (LockMergeReviewRow, error)
 	LockPendingReplayIdentities(ctx context.Context, identityIds []int64) ([]LockPendingReplayIdentitiesRow, error)
+	LookupMessageArchiveUnionIDCustomers(ctx context.Context, normalizedValue string) ([]pgtype.Int8, error)
 	LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error)
 	RebindIdentitiesForCustomerMerge(ctx context.Context, arg RebindIdentitiesForCustomerMergeParams) (int64, error)
 	ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error)
