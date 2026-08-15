@@ -156,6 +156,24 @@ owners:
       media_group_invites: local_only_group_invite_metadata_with_read_only_media_image_reference
       media_group_invite_operation_receipts: actor_operation_business_key_scoped_transactional_mutation_receipts
 
+  operationcycle:
+    package: internal/operationcycle
+    tables:
+      - operation_cycle_strategies
+      - operation_cycle_runs
+      - operation_cycle_report_receipts
+      - operation_cycle_runners
+      - operation_cycle_action_requests
+      - operation_cycle_action_request_events
+      - operation_cycle_strategy_proposals
+    constraints:
+      operation_cycle_strategies: single_instance_local_strategy_snapshot_without_tenant_or_provider_credentials
+      operation_cycle_report_receipts: actor_scoped_semantic_json_idempotency_receipts
+      operation_cycle_runners: service_authenticated_local_runner_compatibility_facts
+      operation_cycle_action_requests: queued_claimed_thread_bound_turn_started_terminal_state_machine_without_external_effect_execution
+      operation_cycle_action_request_events: immutable_idempotent_action_lifecycle_evidence
+      operation_cycle_strategy_proposals: local_pending_accepted_rejected_proposals_without_automatic_execution
+
   ops:
     package: internal/ops
     tables: []

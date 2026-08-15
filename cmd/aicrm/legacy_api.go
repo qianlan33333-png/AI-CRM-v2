@@ -28,6 +28,7 @@ import (
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
+	operationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/app"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
@@ -139,6 +140,43 @@ type Handler struct {
 	orderBoard            legacyOrderBoardApplication
 	messageArchive        legacyMessageArchiveApplication
 	messageArchiveUnionID legacyMessageArchiveUnionResolver
+	operationCycles       legacyOperationCycleApplication
+	operationAuth         operationServiceAuthenticator
+}
+
+// legacyOperationCycleApplication is the frozen A+B operation surface. Its
+// commands only create local facts or durable queue acceptance; it exposes no
+// provider or generic agent operation.
+type legacyOperationCycleApplication interface {
+	Report(context.Context, operationapp.ReportCommand) (map[string]any, error)
+	ListStrategies(context.Context, int32, int32) (map[string]any, error)
+	GetStrategy(context.Context, string) (map[string]any, error)
+	ListRuns(context.Context, string, int32, int32) (map[string]any, error)
+	GetRun(context.Context, string) (map[string]any, error)
+	Start(context.Context, operationapp.StartCommand) (map[string]any, error)
+	CurrentAction(context.Context, string) (map[string]any, error)
+	GetActionResult(context.Context, string) (map[string]any, error)
+	Claim(context.Context, string, string) (map[string]any, error)
+	RecordActionEvent(context.Context, operationapp.ActionEventCommand) (map[string]any, error)
+	Heartbeat(context.Context, operationapp.RunnerHeartbeatCommand) (map[string]any, error)
+	ContextIndex(context.Context, int32, int32) (map[string]any, error)
+	StrategyContext(context.Context, string, string, int32, int32, map[string]string) (map[string]any, error)
+	CreateProposal(context.Context, operationapp.ProposalCommand) (map[string]any, error)
+	ListProposals(context.Context, string, int32, int32) (map[string]any, error)
+	DecideProposal(context.Context, string, string, string) (map[string]any, error)
+}
+
+// operationServiceAuthenticator intentionally has no production wiring in
+// this slice. B routes therefore fail closed until the separately-owned
+// client credential/JWT lifecycle is supplied; they never fall back to a
+// browser cookie, anonymous request, or ad-hoc header.
+type operationServiceAuthenticator interface {
+	AuthenticateOperation(context.Context, *http.Request, string) (operationServicePrincipal, error)
+}
+
+type operationServicePrincipal struct {
+	ClientID    string
+	PrincipalID string
 }
 
 type legacySettingsApplication interface {

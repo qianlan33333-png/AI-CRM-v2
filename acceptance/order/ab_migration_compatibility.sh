@@ -29,7 +29,7 @@ history_snapshot() {
 }
 
 baseline="$(history_snapshot)"
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 39
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 40
 read -r waterline receipts exports effects refunds no_auto_retry outcome_unknown_fk <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT
   (SELECT max(version_id) FROM goose_db_version WHERE is_applied),
   (to_regclass('public.order_operation_receipts') IS NOT NULL)::int,
@@ -38,7 +38,7 @@ read -r waterline receipts exports effects refunds no_auto_retry outcome_unknown
   (to_regclass('public.order_refunds') IS NOT NULL)::int,
   (SELECT count(*) FROM pg_constraint WHERE conrelid='order_external_effects'::regclass AND conname='order_external_effects_no_auto_retry'),
   (SELECT count(*) FROM pg_constraint WHERE conrelid='order_external_effects'::regclass AND contype='f' AND confrelid='order_list_projections'::regclass)")"
-[[ "$waterline" = "39" && "$receipts" = "1" && "$exports" = "1" && "$effects" = "1" && "$refunds" = "1" && "$no_auto_retry" = "1" && "$outcome_unknown_fk" = "1" ]]
+[[ "$waterline" = "40" && "$receipts" = "1" && "$exports" = "1" && "$effects" = "1" && "$refunds" = "1" && "$no_auto_retry" = "1" && "$outcome_unknown_fk" = "1" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -55,13 +55,13 @@ read -r waterline receipts exports effects refunds <<<"$(psql "$database_url" -X
 [[ "$waterline" = "38" && "$receipts" = "0" && "$exports" = "0" && "$effects" = "0" && "$refunds" = "0" ]]
 [[ "$(history_snapshot)" = "$post_acceptance" ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 39
-[[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "39" ]]
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 40
+[[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "40" ]]
 [[ "$(history_snapshot)" = "$post_acceptance" ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 41
 current_waterline="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")"
-[[ "$current_waterline" = "40" ]]
+[[ "$current_waterline" = "41" ]]
 [[ "$(history_snapshot)" = "$post_acceptance" ]]
 
-printf 'P4 Order A+B migration compatibility: PASS (38/39/38/39/40, Event/Auth/session/order history preserved, no provider execution)\n'
+printf 'P4 Order A+B migration compatibility: PASS (38/40/38/40/41, Event/Auth/session/order history preserved, no provider execution)\n'

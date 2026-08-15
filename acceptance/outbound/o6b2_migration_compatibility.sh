@@ -49,5 +49,5 @@ read -r upgrade_waterline receipts links events jobs task_status <<<"$(
             (SELECT status FROM outbound_tasks WHERE id=${task_id})
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "40" && "$receipts" = "1" && "$links" = "2" ]]
+[[ "$upgrade_waterline" = "41" && "$receipts" = "1" && "$links" = "2" ]]
 [[ "$events" = "1" && "$jobs" = "1" && "$task_status" = "pending" ]]
