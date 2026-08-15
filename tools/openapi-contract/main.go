@@ -118,6 +118,12 @@ var p4CouponLegacyMappings = map[string][]string{
 	"publishLegacyCoupon": {"LEGACY-API-0294"}, "stopLegacyCoupon": {"LEGACY-API-0296"},
 }
 
+var p4OrderOperations = map[string]bool{"listLegacyOrders": true}
+
+var p4OrderLegacyMappings = map[string][]string{
+	"listLegacyOrders": {"LEGACY-API-0405"},
+}
+
 var p4CustomerCompatOperations = map[string]bool{
 	"listLegacyCustomers": true, "getLegacyCustomer": true,
 }
@@ -217,6 +223,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"updateLegacyCoupon":             {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"publishLegacyCoupon":            {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"stopLegacyCoupon":               {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyOrders":               {"order.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyCustomers":            {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getLegacyCustomer":              {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getLegacyAppSettingsPage":       {"config.settings.manage", map[string]string{"admin": "global"}},
@@ -237,6 +244,7 @@ const p4SurveyDecisionEvidence = "P4-F01A-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
 const p4CouponDecisionEvidence = "P4-J01-2026-08-15"
+const p4OrderDecisionEvidence = "P4-I03-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
 const p4ConfigSettingsDecisionEvidence = "P4-A02-2026-08-15"
 
@@ -252,7 +260,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=48 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=49 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=3 p4_channel_operations=4 p4_coupon_operations=6 p4_order_operations=1 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -300,15 +308,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4CustomerCompat, seenP4ConfigSettings := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -440,6 +448,17 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 				links++
+			} else if p4OrderOperations[op.OperationID] {
+				seenP4Order[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4OrderDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Order evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4OrderLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				links++
 			} else if p4CustomerCompatOperations[op.OperationID] {
 				seenP4CustomerCompat[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -498,8 +517,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 48 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4CustomerCompat), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 3 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 6 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 49 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -564,6 +583,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4CouponOperations {
 		if !seenP4Coupon[id] {
 			return fmt.Errorf("missing P4 Coupon operation: %s", id)
+		}
+	}
+	for id := range p4OrderOperations {
+		if !seenP4Order[id] {
+			return fmt.Errorf("missing P4 Order operation: %s", id)
 		}
 	}
 	for id := range p4CustomerCompatOperations {

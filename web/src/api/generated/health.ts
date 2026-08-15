@@ -563,6 +563,84 @@ export type CouponAllOf = {
 
 export type Coupon = CouponUpsertRequest & CouponAllOf;
 
+export type LegacyOrderListItemProvider =
+  (typeof LegacyOrderListItemProvider)[keyof typeof LegacyOrderListItemProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderListItemProvider = {
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export interface LegacyOrderListItem {
+  created_at: string;
+  /** @maxLength 200 */
+  merchant_order_no: string;
+  /** @maxLength 200 */
+  out_trade_no: string;
+  /** @maxLength 200 */
+  order_no: string;
+  /** @maxLength 200 */
+  platform_transaction_no: string;
+  /** @maxLength 200 */
+  transaction_id: string;
+  /** @maxLength 200 */
+  payer_name: string;
+  /** @maxLength 80 */
+  mobile: string;
+  /** @maxLength 200 */
+  userid?: string;
+  /** @maxLength 200 */
+  external_userid?: string;
+  /** @maxLength 200 */
+  unionid?: string;
+  /** @maxLength 200 */
+  product_code: string;
+  /** @maxLength 200 */
+  product_name: string;
+  /** @pattern ^[0-9]+\.[0-9]{2}$ */
+  amount_yuan: string;
+  /**
+   * @minLength 3
+   * @maxLength 3
+   */
+  currency: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  status: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  status_label: string;
+  provider: LegacyOrderListItemProvider;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  provider_label: string;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   */
+  detail_url: string;
+}
+
+export interface LegacyOrderListResponse {
+  items: LegacyOrderListItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  has_more: boolean;
+}
+
 export interface LegacyCouponListResponse {
   ok: boolean;
   coupons: Coupon[];
@@ -2500,6 +2578,49 @@ export const ListLegacyChannelsStatus = {
   active: "active",
   inactive: "inactive",
   archived: "archived",
+} as const;
+
+export type ListLegacyOrdersParams = {
+  provider?: ListLegacyOrdersProvider;
+  /**
+   * @maxLength 200
+   */
+  order_no?: string;
+  /**
+   * @maxLength 80
+   */
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  product_code?: string;
+  created_from?: string;
+  created_to?: string;
+  /**
+   * @maxLength 80
+   */
+  status?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyOrdersProvider =
+  (typeof ListLegacyOrdersProvider)[keyof typeof ListLegacyOrdersProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyOrdersProvider = {
+  all: "all",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
 } as const;
 
 export type ListLegacyCouponsParams = {
@@ -6268,6 +6389,96 @@ export const updateLegacyChannel = async (
     status: res.status,
     headers: res.headers,
   } as updateLegacyChannelResponse;
+};
+
+/**
+ * @summary List persisted order projections without payment, refund, callback, or provider execution
+ */
+export type listLegacyOrdersResponse200 = {
+  data: LegacyOrderListResponse;
+  status: 200;
+};
+
+export type listLegacyOrdersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyOrdersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyOrdersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyOrdersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyOrdersResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type listLegacyOrdersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyOrdersResponseSuccess = listLegacyOrdersResponse200 & {
+  headers: Headers;
+};
+export type listLegacyOrdersResponseError = (
+  | listLegacyOrdersResponse400
+  | listLegacyOrdersResponse401
+  | listLegacyOrdersResponse403
+  | listLegacyOrdersResponse404
+  | listLegacyOrdersResponse409
+  | listLegacyOrdersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyOrdersResponse =
+  listLegacyOrdersResponseSuccess | listLegacyOrdersResponseError;
+
+export const getListLegacyOrdersUrl = (params?: ListLegacyOrdersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/orders?${stringifiedParams}`
+    : `/api/admin/orders`;
+};
+
+export const listLegacyOrders = async (
+  params?: ListLegacyOrdersParams,
+  options?: RequestInit,
+): Promise<listLegacyOrdersResponse> => {
+  const res = await fetch(getListLegacyOrdersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyOrdersResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyOrdersResponse;
 };
 
 /**

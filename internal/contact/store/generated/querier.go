@@ -42,6 +42,7 @@ type Querier interface {
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
 	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
+	ReadCustomerProjection(ctx context.Context, customerID int64) (ReadCustomerProjectionRow, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error)
 	ReserveChannelOperationReceipt(ctx context.Context, arg ReserveChannelOperationReceiptParams) (ReserveChannelOperationReceiptRow, error)
