@@ -15,7 +15,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-c01-channel-acceptance
 .PHONY: p4-f01a-survey-acceptance
 .PHONY: p4-c01-channel-acceptance p4-b02ab-tag-acceptance
-.PHONY: p4-j01-coupon-acceptance p4-coupon-ab-acceptance p4-i03-order-acceptance p4-order-ab-acceptance p4-message-archive-ab-acceptance p4-operation-cycle-ab-acceptance
+.PHONY: p4-j01-coupon-acceptance p4-coupon-ab-acceptance p4-i03-order-acceptance p4-order-ab-acceptance p4-message-archive-ab-acceptance p4-operation-cycle-ab-acceptance p4-automation-agents-ab-acceptance
 .PHONY: p2-s04-acceptance
 .PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance p3-o7-legacy-api-acceptance p4-w0-d01-automation-acceptance p4-w0-l01-stats-acceptance p4-a01-auth-acceptance p4-si00b-auth-acceptance
 .PHONY: p2-s05-acceptance
@@ -562,7 +562,12 @@ p4-message-archive-ab-acceptance:
 p4-operation-cycle-ab-acceptance:
 	@test -n "$${P4OPERATIONCYCLE_TEST_DATABASE_URL:-}" || { echo "P4OPERATIONCYCLE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/operationcycle/... ./internal/events/store ./internal/auth/... ./cmd/aicrm
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./acceptance/operationcycle -args -database-url "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}" -expected-waterline 41
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./acceptance/operationcycle -args -database-url "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}" -expected-waterline 42
+
+p4-automation-agents-ab-acceptance:
+	@test -n "$${P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL:-}" || { echo "P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/automation/agents_ab_migration_compatibility.sh
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/automation/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }

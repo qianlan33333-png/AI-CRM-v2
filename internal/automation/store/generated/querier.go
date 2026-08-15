@@ -9,10 +9,19 @@ import (
 )
 
 type Querier interface {
+	CompleteAutomationAgentReceipt(ctx context.Context, arg CompleteAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
 	CompleteAutomationTriggerReceipt(ctx context.Context, arg CompleteAutomationTriggerReceiptParams) (AutomationTriggerReceipt, error)
 	CountAutomationTriggerReceipts(ctx context.Context, arg CountAutomationTriggerReceiptsParams) (int64, error)
+	CreateAutomationAgent(ctx context.Context, arg CreateAutomationAgentParams) (AutomationAgentConfiguration, error)
+	GetAutomationAgent(ctx context.Context, id int64) (AutomationAgentConfiguration, error)
+	GetAutomationAgentReceipt(ctx context.Context, arg GetAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
+	ListAutomationAgentCodesByCopyPrefix(ctx context.Context, copyPrefix string) ([]string, error)
+	ListAutomationAgents(ctx context.Context, automationType string) ([]AutomationAgentConfiguration, error)
 	ListAutomationTriggerReceipts(ctx context.Context, arg ListAutomationTriggerReceiptsParams) ([]AutomationTriggerReceipt, error)
+	LockAutomationAgent(ctx context.Context, id int64) (AutomationAgentConfiguration, error)
+	ReserveAutomationAgentReceipt(ctx context.Context, arg ReserveAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
 	ReserveAutomationTriggerReceipt(ctx context.Context, arg ReserveAutomationTriggerReceiptParams) (AutomationTriggerReceipt, error)
+	UpdateAutomationAgent(ctx context.Context, arg UpdateAutomationAgentParams) (AutomationAgentConfiguration, error)
 }
 
 var _ Querier = (*Queries)(nil)
