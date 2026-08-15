@@ -103,6 +103,17 @@ owners:
       settings: non_secret_only
       settings_audit: append_only_non_secret
 
+  adminops:
+    package: internal/adminops
+    tables: [admin_ops_credentials, admin_ops_config_categories, admin_ops_config_releases, admin_ops_jobs, admin_ops_action_receipts, admin_ops_notification_settings]
+    constraints:
+      admin_ops_credentials: secret_reference_and_mask_only_never_credential_material
+      admin_ops_config_categories: local_non_secret_runtime_controls_only
+      admin_ops_config_releases: local_non_secret_or_secret_reference_release_lifecycle
+      admin_ops_jobs: durable_local_intents_with_no_provider_execution_in_request_path
+      admin_ops_action_receipts: transaction_scoped_actor_idempotency_receipts
+      admin_ops_notification_settings: secret_reference_and_mask_only_no_webhook_url
+
   auth:
     package: internal/auth
     tables: [admin_users, admin_sessions, admin_oauth_states]

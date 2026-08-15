@@ -232,11 +232,17 @@ var p4CustomerCompatLegacyMappings = map[string][]string{
 
 var p4ConfigSettingsOperations = map[string]bool{
 	"getLegacyAppSettingsPage": true, "saveLegacyAppSettingsPage": true, "getLegacyAppSettingsResource": true,
+	"saveLegacyAppSettingsResource": true,
 }
 
 var p4ConfigSettingsLegacyMappings = map[string][]string{
 	"getLegacyAppSettingsPage": {"LEGACY-API-0026"}, "saveLegacyAppSettingsPage": {"LEGACY-API-0027"},
-	"getLegacyAppSettingsResource": {"LEGACY-API-0253"},
+	"getLegacyAppSettingsResource": {"LEGACY-API-0253"}, "saveLegacyAppSettingsResource": {"LEGACY-API-0254"},
+}
+
+var p4ConfigSettingsEvidence = map[string]string{
+	"getLegacyAppSettingsPage": "P4-A02-2026-08-15", "saveLegacyAppSettingsPage": "P4-A02-2026-08-15",
+	"getLegacyAppSettingsResource": "P4-A02-2026-08-15", "saveLegacyAppSettingsResource": "P4-ADMINOPS-JOBS-AB-2026-08-16",
 }
 
 var identityOperations = map[string]bool{
@@ -366,6 +372,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"getLegacyAppSettingsPage":                  {"config.settings.manage", map[string]string{"admin": "global"}},
 	"saveLegacyAppSettingsPage":                 {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAppSettingsResource":              {"config.settings.manage", map[string]string{"admin": "global"}},
+	"saveLegacyAppSettingsResource":             {"config.settings.manage", map[string]string{"admin": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -384,7 +391,6 @@ const p4CouponJ01DecisionEvidence = "P4-J01-2026-08-15"
 const p4CouponABDecisionEvidence = "P4-COUPON-AB-2026-08-15"
 const p4OrderDecisionEvidence = "P4-ORDER-AB-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
-const p4ConfigSettingsDecisionEvidence = "P4-A02-2026-08-15"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -398,7 +404,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=94 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=3)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=95 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=4)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -622,7 +628,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			} else {
 				seenP4ConfigSettings[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4ConfigSettingsDecisionEvidence {
+				if !ok || evidence != p4ConfigSettingsEvidence[op.OperationID] {
 					return fmt.Errorf("%s has missing or forged P4 Config Settings evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
@@ -682,7 +688,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 94 {
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || links != 95 {
 		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), links)
 	}
 	for id := range p1CandidateOperations {
@@ -936,10 +942,11 @@ func validateConfigSettingsContract(doc *openapi3.T) error {
 	page := doc.Paths.Value("/admin/config/app-settings")
 	save := doc.Paths.Value("/admin/config/app-settings/save")
 	resource := doc.Paths.Value("/api/admin/config/app-settings")
-	if page == nil || page.Get == nil || save == nil || save.Post == nil || resource == nil || resource.Get == nil {
+	if page == nil || page.Get == nil || save == nil || save.Post == nil || resource == nil || resource.Get == nil || resource.Put == nil {
 		return errors.New("P4-A02 Config Settings compatibility operations are incomplete")
 	}
-	if !operationResponseUsesLocalSchema(resource.Get, "LegacyAppSettingsResponse") || !operationFormUsesLocalSchema(save.Post, "LegacyAppSettingsSaveForm") {
+	if !operationResponseUsesLocalSchema(resource.Get, "LegacyAppSettingsResponse") || !operationFormUsesLocalSchema(save.Post, "LegacyAppSettingsSaveForm") ||
+		!operationRequestUsesLocalSchema(resource.Put, "LegacyAppSettingsResourceSaveRequest") || !operationResponseUsesLocalSchema(resource.Put, "LegacyAppSettingsResourceSaveResponse") {
 		return errors.New("P4-A02 Config Settings form or resource schema drifted")
 	}
 	form := doc.Components.Schemas["LegacyAppSettingsSaveForm"]
@@ -965,6 +972,15 @@ func validateConfigSettingsContract(doc *openapi3.T) error {
 	}
 	if value, ok := save.Post.Extensions["x-aicrm-session-bound-csrf"].(string); !ok || value != "required" {
 		return errors.New("P4-A02 session-bound CSRF requirement drifted")
+	}
+	if value, ok := resource.Put.Extensions["x-aicrm-session-bound-csrf"].(string); !ok || value != "required" {
+		return errors.New("P4 Admin Config JSON write lost session-bound CSRF")
+	}
+	if value, ok := resource.Put.Extensions["x-aicrm-route-bound-action-token"].(string); !ok || value != "required" {
+		return errors.New("P4 Admin Config JSON write lost exact action-token requirement")
+	}
+	if resource.Put.Responses.Value("400") == nil || resource.Put.Responses.Value("409") == nil || resource.Put.Responses.Value("503") == nil {
+		return errors.New("P4 Admin Config JSON write lost finite error responses")
 	}
 	return nil
 }

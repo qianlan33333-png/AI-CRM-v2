@@ -77,7 +77,7 @@ migrations                Codex 冻结并拥有的 Goose 迁移
 ```
 
 域模块为：`contact`、`identity`、`segment`、`automation`、`outbound`、`wecom`、
-`ai`、`survey`、`gateway`、`config`、`events`、`auth`、`stats`、`operationcycle`、`ops`。
+`ai`、`survey`、`gateway`、`config`、`adminops`、`events`、`auth`、`stats`、`operationcycle`、`ops`。
 `operationcycle` 只拥有本地运营周期事实、runner 接受态与策略提案；它不拥有
 凭据、tenant、外发能力或通用 Agent 产品语义。
 `ops` 不拥有业务表；它只通过 platform queue/log/health port 和各域公开健康
@@ -103,6 +103,7 @@ port 提供有界运维视图及已授权的 River 重试/取消操作，不得�
 | wecom | 企微读取、回调验签解密与同步游标 | 读取企微后把外部标识交给 identity；客户写入调 contact |
 | events | `event_log` 与 dispatcher | 在业务事务中调 events `Append` |
 | config | typed settings 与审计 | 通过强类型 config port；禁止散落 `os.Getenv` 或直查 settings |
+| adminops | 本地后台控制面、配置发布与运行任务意图 | 不保存原始 secret、不执行 provider 调用、不写入其他域表 |
 | operationcycle | 运营周期策略、运行、action request 与本地提案事实 | 仅 local fact/event delivery；不得调用 provider 或自动重试 `outcome_unknown` |
 
 额外铁律：

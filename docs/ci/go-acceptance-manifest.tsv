@@ -31,6 +31,7 @@ p4-h03|P4H03_MEDIA_TEST_DATABASE_URL|p4-h03-media-acceptance
 p4-f01a|P4F01A_SURVEY_TEST_DATABASE_URL|p4-f01a-survey-acceptance
 p4-f01ab|P4F01AB_SURVEY_TEST_DATABASE_URL|p4-f01ab-survey-acceptance
 p4-automation-agents-ab|P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL|p4-automation-agents-ab-acceptance
+p4-adminops-jobs-ab|P4ADMINOPS_TEST_DATABASE_URL|p4-adminops-jobs-ab-acceptance
 p4-c01|P4C01_CHANNEL_TEST_DATABASE_URL|p4-c01-channel-acceptance
 p4-j01|P4J01_COUPON_TEST_DATABASE_URL|p4-j01-coupon-acceptance
 p4-coupon-ab|P4COUPONAB_TEST_DATABASE_URL|p4-coupon-ab-acceptance

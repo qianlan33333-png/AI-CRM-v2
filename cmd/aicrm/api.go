@@ -13,6 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	adminopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/app"
+	adminopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/store"
 	api "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
 	healthapi "github.com/qianlan33333-png/AI-CRM-v2/internal/api/generated"
 	authapp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/app"
@@ -425,6 +427,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		DatabaseURL: true, WeComSecret: config.WeCom.OAuth.Enabled,
 		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
 	})
+	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
 	legacyHandler, err := NewHandlerWithAll(
 		service, customerService,
 		contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository()),
@@ -441,6 +444,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagSync = legacyTagSyncService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
+	legacyHandler.adminOps = adminOpsService
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),
 	)
@@ -696,6 +700,79 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
 			{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)},
 			{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)},
+			{http.MethodPut, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettingsResource)},
+			{http.MethodGet, "/admin/config", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/api-key", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/api-clients", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/api-clients/new", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/api-clients/{client_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/detail/{category_key}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/wecom-tags", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/releases", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/releases/new", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/admin/config/releases", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/releases/{release_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/admin/config/releases/{release_id}/validate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/admin/config/releases/{release_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/admin/config/releases/{release_id}/rollback", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/runtime-config", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/api-docs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/admin/config/checklist", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/setup/wizard", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/setup/wizard/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/api-key", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/api-key/generate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/api-key/rotate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPut, "/api/admin/config/api-key/enabled", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/api-clients", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/api-clients", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/api-clients/{client_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPut, "/api/admin/config/api-clients/{client_id}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/api-clients/{client_id}/activate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/api-clients/{client_id}/rotate-secret", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPut, "/api/admin/config/api-clients/{client_id}/enabled", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/categories", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/categories/{category_key}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPut, "/api/admin/config/categories/{category_key}/enabled", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPut, "/api/admin/config/categories/{category_key}/settings", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/categories/{category_key}/check", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/definitions", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/deployment-profile", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/releases", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/releases", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/releases/{release_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/releases/{release_id}/validate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/releases/{release_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/releases/{release_id}/rollback", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/releases/{release_id}/shadow-compare", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/push-capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPatch, "/api/admin/config/push-capabilities/scheduler", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPatch, "/api/admin/config/push-capabilities/{capability_key}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/routing", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/routing/owner-role", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/routing/rule", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/signup-tags", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/signup-tags", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/config/class-term-tags", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/config/class-term-tags", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/summary", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/archive-sync", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/jobs/archive-sync/run", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/callbacks", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/deferred-jobs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/webhook-deliveries", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/message-batches", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/jobs/message-batches/{batch_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/jobs/message-batches/{batch_id}/ack", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/jobs/order-identity-repair/run", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/broadcast-jobs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/broadcast-jobs/notification-settings/feishu", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPut, "/api/admin/broadcast-jobs/notification-settings/feishu", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/broadcast-jobs/notification-settings/feishu/validate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/broadcast-jobs/feishu-hourly-report/run", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, "/api/admin/broadcast-jobs/{job_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/broadcast-jobs/{job_id}/approve", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodPost, "/api/admin/broadcast-jobs/{job_id}/cancel", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/api/admin/automation-conversion/agent-runs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.ListAutomationTriggerRuns)},
 			{http.MethodGet, "/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentListPage)},
 			{http.MethodGet, "/admin/automation-agents/{agent_id}/edit", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentEditPage)},

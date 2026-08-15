@@ -2869,6 +2869,101 @@ export interface LegacyAppSettingsResponse {
   config: LegacyAppSettingsProjection;
   source_status: LegacyAppSettingsResponseSourceStatus;
   fallback_used: boolean;
+  /**
+   * Present only for an authenticated caller and bound to PUT /api/admin/config/app-settings.
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token?: string;
+}
+
+export type LegacyAppSettingsResourceSaveRequestSettings = {
+  [key: string]: string | number;
+};
+
+export interface LegacyAppSettingsResourceSaveRequest {
+  settings?: LegacyAppSettingsResourceSaveRequestSettings;
+  confirm: boolean;
+  /**
+   * Used only when the action-token header is absent.
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token?: string;
+  /** Ignored; actor is always derived from the authenticated Principal. */
+  operator?: string;
+  [key: string]: unknown;
+}
+
+export type LegacyAppSettingsResourceChangedEditableValue = string | number;
+
+export interface LegacyAppSettingsResourceChangedEditable {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  key: string;
+  value: LegacyAppSettingsResourceChangedEditableValue;
+}
+
+export interface LegacyAppSettingsResourceChangedMasked {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  key: string;
+  configured: boolean;
+  masked: boolean;
+}
+
+export type LegacyAppSettingsResourceSaveResponseChangedItem =
+  | LegacyAppSettingsResourceChangedEditable
+  | LegacyAppSettingsResourceChangedMasked;
+
+export type LegacyAppSettingsResourceSaveResponseSourceStatus =
+  (typeof LegacyAppSettingsResourceSaveResponseSourceStatus)[keyof typeof LegacyAppSettingsResourceSaveResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsResourceSaveResponseSourceStatus = {
+  next_command: "next_command",
+} as const;
+
+export interface LegacyAppSettingsResourceSaveResponse {
+  ok: boolean;
+  /** @maxItems 12 */
+  changed: LegacyAppSettingsResourceSaveResponseChangedItem[];
+  /**
+   * @minimum 0
+   * @maximum 12
+   */
+  changed_count: number;
+  config: LegacyAppSettingsProjection;
+  source_status: LegacyAppSettingsResourceSaveResponseSourceStatus;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyAppSettingsResourceSaveErrorError =
+  (typeof LegacyAppSettingsResourceSaveErrorError)[keyof typeof LegacyAppSettingsResourceSaveErrorError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsResourceSaveErrorError = {
+  payload_must_be_object: "payload_must_be_object",
+  confirmation_required: "confirmation_required",
+  settings_must_be_object: "settings_must_be_object",
+  invalid_setting_value: "invalid_setting_value",
+  invalid_action_token: "invalid_action_token",
+  secret_input_forbidden: "secret_input_forbidden",
+  settings_idempotency_conflict: "settings_idempotency_conflict",
+  invalid_setting: "invalid_setting",
+  settings_unavailable: "settings_unavailable",
+} as const;
+
+export interface LegacyAppSettingsResourceSaveError {
+  ok: boolean;
+  error: LegacyAppSettingsResourceSaveErrorError;
 }
 
 export type LegacyAppSettingsSaveFormConfirm =
@@ -6279,6 +6374,84 @@ export const getLegacyAppSettingsResource = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyAppSettingsResourceResponse;
+};
+
+/**
+ * @summary Save non-secret app settings through the frozen JSON compatibility transport
+ */
+export type saveLegacyAppSettingsResourceResponse200 = {
+  data: LegacyAppSettingsResourceSaveResponse;
+  status: 200;
+};
+
+export type saveLegacyAppSettingsResourceResponse400 = {
+  data: LegacyAppSettingsResourceSaveError;
+  status: 400;
+};
+
+export type saveLegacyAppSettingsResourceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveLegacyAppSettingsResourceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveLegacyAppSettingsResourceResponse409 = {
+  data: LegacyAppSettingsResourceSaveError;
+  status: 409;
+};
+
+export type saveLegacyAppSettingsResourceResponse503 = {
+  data: LegacyAppSettingsResourceSaveError;
+  status: 503;
+};
+
+export type saveLegacyAppSettingsResourceResponseSuccess =
+  saveLegacyAppSettingsResourceResponse200 & {
+    headers: Headers;
+  };
+export type saveLegacyAppSettingsResourceResponseError = (
+  | saveLegacyAppSettingsResourceResponse400
+  | saveLegacyAppSettingsResourceResponse401
+  | saveLegacyAppSettingsResourceResponse403
+  | saveLegacyAppSettingsResourceResponse409
+  | saveLegacyAppSettingsResourceResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveLegacyAppSettingsResourceResponse =
+  | saveLegacyAppSettingsResourceResponseSuccess
+  | saveLegacyAppSettingsResourceResponseError;
+
+export const getSaveLegacyAppSettingsResourceUrl = () => {
+  return `/api/admin/config/app-settings`;
+};
+
+export const saveLegacyAppSettingsResource = async (
+  legacyAppSettingsResourceSaveRequest: LegacyAppSettingsResourceSaveRequest,
+  options?: RequestInit,
+): Promise<saveLegacyAppSettingsResourceResponse> => {
+  const res = await fetch(getSaveLegacyAppSettingsResourceUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAppSettingsResourceSaveRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveLegacyAppSettingsResourceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveLegacyAppSettingsResourceResponse;
 };
 
 /**
