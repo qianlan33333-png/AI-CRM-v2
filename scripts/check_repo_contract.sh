@@ -1297,6 +1297,7 @@ done <<'EOF'
 100644 docs/spec/AI-CRM-v2-执行方案-v2-至P3.md
 100644 docs/spec/AI-CRM-v2-重构详细设计.md
 100644 docs/spec/SHA256SUMS
+100644 docs/evidence/slices/P4-AUTOMATION-AGENTS-AB.md
 EOF
 scripts/verify_repo_receipts.pl modes "${mode_arguments[@]}"
 
@@ -2431,6 +2432,8 @@ verify_index_sha256 cmd/aicrm/legacy_automation_agents_api.go \
   4ea3e03d1c085bef1fc6da3b717a0f077fa1817c1742812406a7f30234d74ae4
 verify_index_sha256 cmd/aicrm/legacy_automation_agents_api_test.go \
   3ade5d2befff9511a96b406fa592df05eee9078f2ce8c0bebf73717012562eda
+verify_index_sha256 docs/evidence/slices/P4-AUTOMATION-AGENTS-AB.md \
+  effbc23f35124f9e68bf6c5c6333806a5a084ed52dad65d47bc4c1316b0ee517
 verify_index_sha256 scripts/verify_repo_receipts.pl \
   d28a528cfc1aa8d8a5c6fa62b652699059bb632e8640fbd868ba0e3967881e27
 verify_index_sha256 acceptance/auth/a01_migration_compatibility.sh \
