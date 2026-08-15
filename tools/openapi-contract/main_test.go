@@ -87,6 +87,27 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			}
 			reject(t, doc, ids)
 		},
+		"settings manage granted to ops": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/config/app-settings").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global"}
+			reject(t, doc, ids)
+		},
+		"secret value exposed": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyMaskedAppSetting"].Value.Properties["value"] = doc.Components.Schemas["AdminConfigEntry"]
+			reject(t, doc, ids)
+		},
+		"secret form accepts replacement": func(t *testing.T) {
+			doc, ids := fresh(t)
+			maximum := uint64(100)
+			doc.Components.Schemas["LegacyAppSettingsSaveForm"].Value.Properties["setting__database.url"].Value.MaxLength = &maximum
+			reject(t, doc, ids)
+		},
+		"settings version derives audit state": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyEditableAppSetting"].Value.Properties["version"].Value.Enum = []any{"1"}
+			reject(t, doc, ids)
+		},
 		"role denial without forbidden response": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/identity/resolve").Post.Responses.Delete("403")

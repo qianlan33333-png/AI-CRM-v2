@@ -4637,6 +4637,117 @@ slices:
     cumulative_corrections: [slice_induced=2, verification_induced=11, infra_induced=1, scope_induced=0, redline=0]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_SEND_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-A02
+    title: legacy-app-settings-html-json-compatibility
+    owner: Codex-Sol
+    status: SCOPE_FROZEN_REPAIR_ONLY_PRE_PR_REVIEW_PENDING
+    base_sha: b04afb9c27eb44190f6396752e9449f0b0896347
+    dependency: P4_H03_CLOSED_exact_green_main
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: PENDING
+    scope: [API_0026_0027_0253, S05_053, T14_024_mapping_status_only, twelve_key_catalog, four_non_secret_settings, eight_secret_boolean_snapshots, config_settings_manage_admin_only, A01_session_CSRF_plus_route_HMAC_action_token, Config_Manager_per_key_UoW]
+    excluded_scope: [A03_plus, tenant, new_UI_component_style_or_interaction, secret_read_store_or_port, legacy_value_secret_updated_at_import, migration_or_importer, River, provider, external_call, production_database_or_execution]
+    mapping_status: exact_plus_3_API_0026_0027_0253_plus_1_S05_053_plus_1_T14_024_MANUAL_REENTRY_NOT_STARTED_NOT_RUN_mapping_status_only
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    inherited_slice_induced_correction_count: 2
+    inherited_verification_induced_correction_count: 2
+    fresh_slice_induced_correction_count: 2
+    fresh_infra_induced_correction_count: 0
+    fresh_scope_induced_correction_count: 0
+    fresh_verification_induced_correction_count: 11
+    fresh_correction_notes:
+      - "slice:removed_the_old_readiness_receipt_audit_count_derivation_and_fixed_non_secret_version_to_empty_for_all_states_with_multi_audit_boundary_coverage"
+      - "slice:self_review_fixed_zero_result_rows_and_audit_entries_from_null_to_the_frozen_empty_arrays_with_permanent_JSON_boundary_coverage"
+      - "verification:fixed_action_token_known_vector_fixture"
+      - "verification:reran_openapi_freezer_from_its_tools_module"
+      - "verification:corrected_tools_relative_gofmt_path_before_test_execution"
+      - "verification:added_form_media_schema_checker_instead_of_JSON_only_helper"
+      - "verification:replaced_noncanonical_session_fixture_with_A01_canonical_43_character_token"
+      - "verification:avoided_source_policy_HTML_select_false_positive_without_changing_page_semantics"
+      - "verification:synchronized_the_existing_config_generated_querier_pin_after_sqlc_output_changed"
+      - "verification:first_release_round_used_a_worktree_relative_environment_path_then_replayed_with_the_canonical_absolute_activation_path"
+      - "verification:fixed_version_sqlc_regeneration_required_the_expected_generated_manifest_sync_then_the_pinned_manifest_was_updated"
+      - "verification:first_staged_repo_contract_rejected_the_new_unquoted_slice_note_then_the_evidence_scalar_was_quoted_without_contract_change"
+      - "verification:first_PRE_PR_blind_review_found_the_required_S05_053_feature_matrix_artifact_omission_then_the_single_row_was_advanced_only_to_IN_PROGRESS_NOT_RUN_without_forging_PR_or_SHA"
+      - "redline:none"
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: P4-A02-R1
+    title: legacy-app-settings-pr-and-feature-receipt
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING
+    base_sha: 05541a6dfbedbec0797a2cca19a43f41512512f6
+    dependency: P4_A02_PRE_PR_BLIND_REVIEW_PASS
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217
+    scope: [PR_URL_and_exact_initial_SHA_receipt, LEGACY_S05_053_IMPLEMENTED_SYNTHETIC_PASS_with_real_local_evidence, append_only_ledger_release_checkpoint]
+    excluded_scope: [business_logic, Auth_DTO_or_OpenAPI_change, T14_expansion, migration_DDL, tenant, provider, UI, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [verification:first_feature_release_evidence_used_plural_commands_then_the_frozen_single_command_key_was_used, redline:none]
+    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=12, fresh_infra_induced=0, fresh_scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: P4-A02-R2
+    title: legacy-app-settings-orval-generated-repair
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_CI_RESTART_PENDING
+    base_sha: c435cdfc860f09ee8f5ffc52e03d727aac1a39b2
+    dependency: P4_A02_R1_PR_WEB_GATE_FAILED_ON_MISSING_ORVAL_OUTPUT
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217
+    scope: [generated_Orval_health_client_for_three_frozen_A02_operations, generated_hash_anchor, affected_feature_checker_and_append_only_ledger]
+    excluded_scope: [handwritten_web_UI_component_style_or_interaction, business_logic, Auth_DTO_or_OpenAPI_change, T14_expansion, migration_DDL, tenant, provider, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 3
+    correction_notes: [verification:first_PR_Web_gate_found_the_required_Orval_output_missing_from_the_A02_OpenAPI_change_then_only_the_frozen_generated_client_was_added, verification:bundled_CI_inspection_was_first_invoked_with_the_unavailable_python_alias_then_manual_GitHub_job_log_fallback_identified_the_failure, verification:first_local_Orval_generation_found_the_fresh_worktree_without_untracked_node_modules_then_repository_pinned_bootstrap_restored_Orval_7_21_0, infra:generic_gh_auth_status_returned_nonzero_for_one_inactive_stale_account_while_the_active_authorized_account_and_manual_API_calls_succeeded, redline:none]
+    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=15, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: P4-A02-R3
+    title: legacy-app-settings-pr-go-and-policy-repair
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_CI_RESTART_PENDING
+    base_sha: 1282a7146c461621a29611f76eb71a821fbf9c4a
+    dependency: P4_A02_R2_PR_GO_AND_REPO_CONTRACT_FAILED
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217
+    scope: [T14_024_mapping_status_note_without_mutating_G1_D02_signoff_evidence, P1_feature_completion_synthetic_count_25, directly_affected_checker_and_append_only_ledger]
+    excluded_scope: [business_logic, Auth_DTO_or_OpenAPI_change, T14_import_or_execution, migration_DDL, tenant, provider, UI, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 2
+    correction_notes: [verification:first_PR_Go_gate_found_T14_024_mapping_status_evidence_had_been_appended_to_the_immutable_G1_D02_decision_signature_then_preserved_the_mapping_only_evidence_in_notes, verification:first_PR_repo_contract_gate_found_P1_completion_expected_the_pre_A02_synthetic_count_24_then_synchronized_the_derived_count_to_25_for_the_real_S05_053_completion, redline:none]
+    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=17, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
+  - slice_id: P4-A02-R4
+    title: legacy-app-settings-feature-derived-fixture-repair
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_CI_RESTART_PENDING
+    base_sha: f0eeeb7ee8a5ab3fd89e97ec859fe1d63343882a
+    dependency: P4_A02_R3_PR_REPO_CONTRACT_DERIVED_FIXTURE_FAILED
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217
+    scope: [feature_completion_synthetic_staging_and_production_fixture_counts_derived_from_real_S05_053_completion, directly_affected_checker_and_append_only_ledger]
+    excluded_scope: [business_logic, Auth_DTO_or_OpenAPI_change, T14_change, migration_DDL, tenant, provider, UI, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [verification:R3_PR_repo_contract_negative_suite_found_synthetic_staging_and_production_feature_completion_fixtures_retained_pre_A02_derived_counts_then_synchronized_only_the_real_S05_053_plus_one_effect, redline:none]
+    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=18, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

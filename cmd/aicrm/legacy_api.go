@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
@@ -106,6 +107,12 @@ type Handler struct {
 	channels        legacyChannelApplication
 	legacyTags      legacyTagApplication
 	coupons         legacyCouponApplication
+	settings        legacySettingsApplication
+}
+
+type legacySettingsApplication interface {
+	List(context.Context, configapp.SettingsListInput) (configapp.SettingsProjection, error)
+	Save(context.Context, configapp.SaveSettingsInput) error
 }
 
 type legacyCouponApplication interface {
@@ -133,11 +140,12 @@ func NewHandlerWithAll(
 	channels legacyChannelApplication,
 	coupons legacyCouponApplication,
 	legacyTags legacyTagApplication,
+	settings legacySettingsApplication,
 ) (*Handler, error) {
 	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
 	)
-	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) || nilLegacyDependency(groupInvites) {
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) || nilLegacyDependency(groupInvites) || nilLegacyDependency(settings) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.customerDetail = customerDetail
@@ -147,6 +155,7 @@ func NewHandlerWithAll(
 	handler.groupInvites = groupInvites
 	handler.coupons = coupons
 	handler.legacyTags = legacyTags
+	handler.settings = settings
 	return handler, nil
 }
 

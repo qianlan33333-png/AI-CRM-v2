@@ -12,6 +12,8 @@ type Querier interface {
 	GetSetting(ctx context.Context, key string) (Setting, error)
 	GetSettingsAuditByRequestID(ctx context.Context, requestID string) (SettingsAudit, error)
 	InsertSettingsAudit(ctx context.Context, arg InsertSettingsAuditParams) (SettingsAudit, error)
+	ListAppSettingsAudit(ctx context.Context) ([]ListAppSettingsAuditRow, error)
+	ListAppSettingsProjection(ctx context.Context) ([]ListAppSettingsProjectionRow, error)
 	LockSettingKey(ctx context.Context, key string) error
 	UpsertSetting(ctx context.Context, arg UpsertSettingParams) (Setting, error)
 }
