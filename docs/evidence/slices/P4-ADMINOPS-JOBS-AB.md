@@ -78,6 +78,10 @@
 
 审计结论：唯一遗漏的 current 断言是 Automation Agents storage 的默认 42；它与其历史 42 fixture 已被明确拆分。未发现其他“latest/current=42”断言或把 43 视为未知的归一化分支。
 
-## 待执行收据
+## 本地实际收据
 
-同一锁定 staged tree 后执行：focused race/PG、`make ci-go`、真实 42→43→42→43、一次 `scripts/run_ci_acceptance_manifest.sh` 全 target 汇总、PR 四门、match-head squash 与 exact-main CLOSED。到这些事实存在前，本页不宣称上线或生产效果。
+- 锁定候选 HEAD 为 `d9fba6bb536b5f898d35a3ab6a411e56fa15abd0`；同一 tree 的 focused `go test -race`、`go vet`、`scripts/check_repo_contract.sh`、`make generate-check` 与 `make orval-check` 均 PASS。
+- 同一 HEAD 的 `make ci-go` 在指定 PG16.14 `55431/aicrm_test` 上 PASS，未改动工作树。
+- 经确认该指定测试库没有活跃连接后重建；`migration-integration` 实际完成 latest `43` 的 up/down/up。以该 43 前置条件，`p4-adminops-jobs-ab-acceptance` 实际 PASS：`42→43→42→43`，且保持 Auth/session/Event/Automation 历史与 secret/worker/provider 边界。
+- `ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 scripts/run_ci_acceptance_manifest.sh` 在同一 43 前置条件 PASS，汇总为 `ci-acceptance-manifest: PASS entries=40`。空库缺少 `customers` 的首次现象只作为 manifest 前置条件记录，未列为 slice 问题。
+- 本收据仅证明本地候选。尚未 push、PR、match-head squash、exact-main CLOSED、生产迁移、部署、worker、River、provider 或真实外效；因此不宣称上线或生产效果。

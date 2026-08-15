@@ -2734,7 +2734,7 @@ verify_index_sha256 cmd/aicrm/legacy_admin_ops_app_settings_resource.go \
 verify_index_sha256 cmd/aicrm/legacy_admin_ops_app_settings_resource_test.go \
   76be86e48c38f2b0c4fabc2c748e2451a7592269ab3611cfe4d4d0bf97c48233
 verify_index_sha256 docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md \
-  e1fc736dc6c8358417013f74234acaa4f89c2373696fa6ae047efcb470f1ce90
+  624383027a9ff3bf69e567c130e861c760bc558a8a820af0c264a4baeaae3de2
 verify_index_sha256 internal/adminops/app/service.go \
   6700466043f38a9cfb1972c56bf0c34b2ca91d580939e8a701367b4f676d5298
 verify_index_sha256 internal/adminops/port/port.go \
@@ -6874,7 +6874,7 @@ done
 	fail 'P4 AdminOps app-settings resource gained provider, River, or outbound execution'
 
 p4adminops_evidence="$(git show :docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md)"
-for anchor in '分母为 87' 'AdminOps/Jobs 72 + 漏承接的 Admin Config JSON 写入 `0254` 1' '10 条逐项销账' '87 = 73 新增（72 + `0254`）+ 5 复用 + 9 唯一移交' 'slice_induced=1' '11 条迁移映射重放' '真实 42→43→42→43'; do
+for anchor in '分母为 87' 'AdminOps/Jobs 72 + 漏承接的 Admin Config JSON 写入 `0254` 1' '10 条逐项销账' '87 = 73 新增（72 + `0254`）+ 5 复用 + 9 唯一移交' 'slice_induced=1' '11 条迁移映射重放' '42→43→42→43' '本地实际收据' 'ci-acceptance-manifest: PASS entries=40'; do
   grep -Fq -- "$anchor" <<<"$p4adminops_evidence" || fail "P4 AdminOps frozen denominator or migration evidence drifted: $anchor"
 done
 for mapping_id in LEGACY-API-0030 LEGACY-API-0031 LEGACY-API-0032 LEGACY-API-0033 LEGACY-API-0034 LEGACY-API-0254 LEGACY-API-0265 LEGACY-API-0266 LEGACY-API-0267 LEGACY-API-0268; do
