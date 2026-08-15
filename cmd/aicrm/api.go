@@ -438,6 +438,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),
 	)
+	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
@@ -696,7 +697,22 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/wechat-pay/products", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.ListProducts)},
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
-			{http.MethodGet, "/api/admin/orders", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListOrders)},
+			{http.MethodGet, "/api/admin/orders", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListOrderBoard)},
+			{http.MethodGet, "/api/admin/orders/{order_no}", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.GetOrderBoard)},
+			{http.MethodGet, "/api/admin/orders/{order_no}/items", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.GetOrderBoardItems)},
+			{http.MethodGet, "/api/admin/alipay/transactions", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListAlipayTransactions)},
+			{http.MethodGet, "/api/admin/alipay/transactions/{order_no}", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.GetAlipayTransaction)},
+			{http.MethodGet, "/api/admin/wechat-pay/orders", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListWechatTransactions)},
+			{http.MethodGet, "/api/admin/refunds", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListOrderBoardRefunds)},
+			{http.MethodPost, "/api/admin/exports", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateOrderBoardExport)},
+			{http.MethodGet, "/api/admin/exports/{job_id}", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.GetOrderBoardExport)},
+			{http.MethodPost, "/api/admin/wechat-pay/order-exports", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardExport)},
+			{http.MethodGet, "/api/admin/wechat-pay/order-exports/{job_id}", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.DeprecatedWechatOrderBoardExport)},
+			{http.MethodGet, "/api/admin/wechat-pay/order-exports/{job_id}/download", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.DeprecatedWechatOrderBoardExport)},
+			{http.MethodPost, "/api/admin/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateOrderBoardRefund)},
+			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardRefund)},
+			{http.MethodGet, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListWechatOrderExternalEffects)},
+			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},

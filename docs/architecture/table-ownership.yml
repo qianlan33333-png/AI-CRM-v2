@@ -137,10 +137,14 @@ owners:
 
   order:
     package: internal/order
-    tables: [order_list_projections, order_list_projection_counters]
+    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds]
     constraints:
       order_list_projections: read_only_unified_order_projection_without_payment_or_provider_execution
       order_list_projection_counters: exact_unfiltered_order_total_without_projection_scan
+      order_operation_receipts: actor_scoped_transactional_export_refund_and_review_idempotency_receipts
+      order_export_jobs: local_completed_csv_export_content_without_external_object_storage
+      order_external_effects: durable_provider_call_gate_with_outcome_unknown_never_auto_retried
+      order_refunds: durable_local_refund_intent_without_provider_execution
 
   media:
     package: internal/media

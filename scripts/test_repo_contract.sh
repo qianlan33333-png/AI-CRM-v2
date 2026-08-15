@@ -3595,7 +3595,10 @@ if (cd "$i03_statement_counter_drift" && scripts/check_repo_contract.sh >/dev/nu
 fi
 
 i03_route_disconnect="$(make_fixture p4-i03-route-disconnect)"
-sed -i.bak '/\/api\/admin\/orders.*ListOrders/d' "$i03_route_disconnect/cmd/aicrm/api.go"
+# P4-ORDER-AB-REPLAY composes the closed I03 list through ListOrderBoard.
+# Remove the live registration rather than the retired handler name so this
+# negative fixture continues to prove that the legacy list route cannot detach.
+sed -i.bak '/\/api\/admin\/orders.*ListOrderBoard/d' "$i03_route_disconnect/cmd/aicrm/api.go"
 rm -f "$i03_route_disconnect/cmd/aicrm/api.go.bak"
 restage_p2s18_receipt "$i03_route_disconnect" cmd/aicrm/api.go
 if (cd "$i03_route_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then

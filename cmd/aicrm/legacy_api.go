@@ -136,6 +136,7 @@ type Handler struct {
 	couponBoard     couponBoardApplication
 	settings        legacySettingsApplication
 	orders          legacyOrderApplication
+	orderBoard      legacyOrderBoardApplication
 }
 
 type legacySettingsApplication interface {

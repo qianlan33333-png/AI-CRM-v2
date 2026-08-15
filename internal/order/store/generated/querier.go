@@ -9,9 +9,28 @@ import (
 )
 
 type Querier interface {
+	CompleteOrderOperationReceipt(ctx context.Context, arg CompleteOrderOperationReceiptParams) (CompleteOrderOperationReceiptRow, error)
+	CountActiveRefundAmount(ctx context.Context, orderID int64) (int64, error)
 	CountAllOrderProjections(ctx context.Context) (int64, error)
+	CountBoardOrders(ctx context.Context, arg CountBoardOrdersParams) (int64, error)
 	CountFilteredOrderProjections(ctx context.Context, arg CountFilteredOrderProjectionsParams) (int64, error)
+	CountOrderExternalEffects(ctx context.Context, orderID int64) (int64, error)
+	CountOrderRefunds(ctx context.Context, arg CountOrderRefundsParams) (int64, error)
+	CreateOrderExportJob(ctx context.Context, arg CreateOrderExportJobParams) (CreateOrderExportJobRow, error)
+	CreateOrderExternalEffect(ctx context.Context, arg CreateOrderExternalEffectParams) (OrderExternalEffect, error)
+	CreateOrderRefund(ctx context.Context, arg CreateOrderRefundParams) (OrderRefund, error)
+	GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (OrderListProjection, error)
+	GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderForUpdateParams) (OrderListProjection, error)
+	GetOrderExportJob(ctx context.Context, jobID string) (GetOrderExportJobRow, error)
+	GetOrderExternalEffect(ctx context.Context, id int64) (OrderExternalEffect, error)
+	GetOrderExternalEffectForUpdate(ctx context.Context, id int64) (OrderExternalEffect, error)
+	GetOrderOperationReceipt(ctx context.Context, arg GetOrderOperationReceiptParams) (GetOrderOperationReceiptRow, error)
+	ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams) ([]OrderListProjection, error)
+	ListOrderExternalEffects(ctx context.Context, orderID int64) ([]OrderExternalEffect, error)
 	ListOrderProjections(ctx context.Context, arg ListOrderProjectionsParams) ([]OrderListProjection, error)
+	ListOrderRefunds(ctx context.Context, arg ListOrderRefundsParams) ([]ListOrderRefundsRow, error)
+	MarkOrderExternalEffectManualReview(ctx context.Context, arg MarkOrderExternalEffectManualReviewParams) (OrderExternalEffect, error)
+	ReserveOrderOperationReceipt(ctx context.Context, arg ReserveOrderOperationReceiptParams) (ReserveOrderOperationReceiptRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

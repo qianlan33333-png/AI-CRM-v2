@@ -4852,6 +4852,29 @@ slices:
     correction_notes: [slice:exported_Contact_receipt_state_types_so_the_public_app_store_contract_has_a_legal_cross_package_implementation_without_semantic_change, slice:receipt_transition_trigger_now_freezes_sync_kind_trace_and_live_operation_payload_trace_on_reservation_to_queued_transition, verification:current_replay_uses_assigned_gate_55433_only, verification:initial_generate_required_pinned_Orval_bootstrap_then_generated_manifest_was_synchronized, verification:staged_repo_contract_first_exposed_missing_P4_B02AB_fixed_receipt_coverage_then_required_modes_hashes_and_queued_only_negative_boundary_were_synchronized, infra:pinned_node_runtime_was_required_for_local_web_gate, redline:none]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_WECOM_NOT_EXECUTED, REAL_PROVIDER_OR_EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-ORDER-AB-REPLAY
+    title: order-A-B-complete-board-fresh-replay
+    owner: Codex
+    status: LOCAL_INTEGRATION_VALIDATING
+    base_sha: 52653d02f22ee8261f13590ec91fad6169288d91
+    dependency: P4_B02AB_exact_main_CLOSED
+    branch: codex/p4-order-ab-replay-52653d02
+    pr_url: PENDING_LOCAL_VALIDATION
+    scope: [LEGACY_API_0119_0120_0316_0317_0405_0406_0407_0463_0464_0518_0519_0520_0521_0522_0523_0524, LEGACY_S07_174_through_183, Order_owned_export_refund_intent_external_effect_review_receipts, existing_I03_list_regression, A01_human_session_RBAC_CSRF, OpenAPI_generated_matrix_mapping_ledger, local_PG16_14_up_down_up_and_blackbox]
+    excluded_scope: [new_UI_or_legacy_UI_copy, tenant_model_selector_column_index_permission_or_cross_tenant_test, legacy_data_import_or_T14_target_schema_change, production_or_live_migration, real_payment_refund_provider_or_external_effect, deployment]
+    reusable_base: [I03_order_projection, A01_human_session_RBAC_CSRF, platform_UnitOfWork, Events_Appender, Order_SQLC]
+    mapping_status: exact_plus_16_API_plus_10_matrix_rows_with_I03_inherited_plus_0_T14_changes
+    tests: [LOCAL_OpenAPI_registry_16_operations_PASS, LOCAL_PG16_14_38_39_38_39_history_preserved_PASS, LOCAL_normal_boundary_error_RBAC_CSRF_idempotency_and_race_PASS, LOCAL_generated_twice_PASS, LOCAL_race_vet_static_pending_full_gate]
+    correction_state: NORMAL_REPLAY_VALIDATION
+    slice_induced_correction_count: 0
+    slice_induced_threshold: 2
+    hard_stop: false
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [infra:assigned_local_55437_retained_orphaned_older_order_candidate_tables_under_a_new_main_migration_number_then_the_confirmed_local_test_schema_was_rebuilt_before_authoritative_00001_to_00039_up_down_up, verification:replayed_shell_script_required_executable_mode_before_its_first_local_acceptance_run, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_PAYMENT_NOT_EXECUTED, REAL_REFUND_NOT_EXECUTED, REAL_PROVIDER_OR_EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

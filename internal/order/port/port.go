@@ -1,9 +1,10 @@
-// Package port exposes the read-only Order list contract. It does not expose
-// order creation, payment, cancellation, refund, callback, or provider calls.
+// Package port exposes the Order compatibility contract. It records local
+// exports, refund intents, and external-effect review, but never provider calls.
 package port
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -70,4 +71,94 @@ type Page struct {
 
 type Query interface {
 	List(context.Context, Filter) (Page, error)
+}
+
+// BoardFilter is the frozen compatibility filter shared by the unified order
+// and provider transaction routes. All fields are optional unless documented
+// by the route that uses the filter.
+type BoardFilter struct {
+	Provider, Status, ProductCode, Mobile, Identity, TransactionID, OrderNo string
+	CreatedFrom, CreatedTo                                                  *time.Time
+	Limit, Offset                                                           int32
+}
+
+type Detail struct {
+	Item
+	ID                    ID    `json:"id"`
+	RefundableAmountMinor int64 `json:"refundable_amount_total"`
+}
+
+type RefundFilter struct {
+	Provider, OrderNo, TransactionID, RefundID, OutRefundNo, Status string
+	CreatedFrom, CreatedTo                                          *time.Time
+	Limit, Offset                                                   int32
+}
+
+type Refund struct {
+	ID                  int64     `json:"id"`
+	OrderID             ID        `json:"order_id"`
+	Provider            string    `json:"provider"`
+	OrderNo             string    `json:"order_no"`
+	TransactionID       string    `json:"transaction_id"`
+	RefundID            string    `json:"refund_id"`
+	OutRefundNo         string    `json:"out_refund_no"`
+	RefundAmountTotal   int64     `json:"refund_amount_total"`
+	Currency            string    `json:"currency"`
+	Reason              string    `json:"reason"`
+	Status              string    `json:"status"`
+	ExternalEffectID    int64     `json:"external_effect_id"`
+	ExternalEffectState string    `json:"external_effect_state"`
+	AutoRetryAllowed    bool      `json:"auto_retry_allowed"`
+	CreatedAt           time.Time `json:"created_at"`
+}
+
+type RefundPage struct {
+	Items   []Refund `json:"items"`
+	Total   int64    `json:"total"`
+	Limit   int32    `json:"limit"`
+	HasMore bool     `json:"has_more"`
+}
+
+type ExportJob struct {
+	JobID       string    `json:"job_id"`
+	Resource    string    `json:"resource"`
+	Format      string    `json:"format"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	Operator    int64     `json:"operator"`
+	DownloadURL string    `json:"download_url"`
+	ContentType string    `json:"content_type,omitempty"`
+	FileName    string    `json:"file_name,omitempty"`
+	ContentText string    `json:"content_text,omitempty"`
+}
+
+type ExternalEffect struct {
+	ID                    int64     `json:"id"`
+	OrderID               ID        `json:"order_id"`
+	Provider              string    `json:"provider"`
+	EffectKind            string    `json:"effect_kind"`
+	State                 string    `json:"state"`
+	AutoRetryAllowed      bool      `json:"auto_retry_allowed"`
+	ProviderReceipt       []byte    `json:"provider_receipt,omitempty"`
+	ManualReviewRequested time.Time `json:"manual_review_requested_at,omitempty"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
+}
+
+type ExternalEffectPage struct {
+	Items []ExternalEffect `json:"items"`
+	Total int64            `json:"total"`
+}
+
+type ExportCommand struct {
+	Resource, Format, IdempotencyKey string
+	Filters                          json.RawMessage
+	Actor                            int64
+}
+
+type RefundCommand struct {
+	Provider, OrderReference, TransactionIDConfirmation, Reason, IdempotencyKey string
+	RefundAmountTotal                                                           int64
+	Checked                                                                     bool
+	Actor                                                                       int64
 }
