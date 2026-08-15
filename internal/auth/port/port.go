@@ -35,37 +35,40 @@ type Principal struct {
 type Capability string
 
 const (
-	CapabilityAuthSessionRead      Capability = "auth.session.read"
-	CapabilityAuthSessionLogout    Capability = "auth.session.logout"
-	CapabilityCustomersRead        Capability = "customers.read"
-	CapabilityCustomersWrite       Capability = "customers.write"
-	CapabilityCustomerEventsRead   Capability = "customer.events.read"
-	CapabilityIdentityResolve      Capability = "identity.resolve"
-	CapabilityIdentityBind         Capability = "identity.bind"
-	CapabilityIdentityIngest       Capability = "identity.ingest"
-	CapabilityIdentityReviewRead   Capability = "identity.review.read"
-	CapabilityIdentityReviewWrite  Capability = "identity.review.write"
-	CapabilityConfigOverviewRead   Capability = "config.overview.read"
-	CapabilityConfigSettingsManage Capability = "config.settings.manage"
-	CapabilityStagesRead           Capability = "stages.read"
-	CapabilityStagesWrite          Capability = "stages.write"
-	CapabilitySegmentsRead         Capability = "segments.read"
-	CapabilitySegmentsWrite        Capability = "segments.write"
-	CapabilityOutboundRead         Capability = "outbound.read"
-	CapabilityOutboundControl      Capability = "outbound.control"
-	CapabilityProductsRead         Capability = "products.read"
-	CapabilityProductsWrite        Capability = "products.write"
-	CapabilityMediaImagesWrite     Capability = "media.images.write"
-	CapabilityMediaLibraryRead     Capability = "media.library.read"
-	CapabilityMediaLibraryWrite    Capability = "media.library.write"
-	CapabilityQuestionnairesRead   Capability = "questionnaires.read"
-	CapabilityQuestionnairesWrite  Capability = "questionnaires.write"
-	CapabilityChannelsRead         Capability = "channels.read"
-	CapabilityChannelsWrite        Capability = "channels.write"
-	CapabilityCouponsRead          Capability = "coupons.read"
-	CapabilityCouponsWrite         Capability = "coupons.write"
-	CapabilityOrderRead            Capability = "order.read"
-	CapabilityOrderWrite           Capability = "order.write"
+	CapabilityAuthSessionRead            Capability = "auth.session.read"
+	CapabilityAuthSessionLogout          Capability = "auth.session.logout"
+	CapabilityCustomersRead              Capability = "customers.read"
+	CapabilityCustomersWrite             Capability = "customers.write"
+	CapabilityCustomerEventsRead         Capability = "customer.events.read"
+	CapabilityIdentityResolve            Capability = "identity.resolve"
+	CapabilityIdentityBind               Capability = "identity.bind"
+	CapabilityIdentityIngest             Capability = "identity.ingest"
+	CapabilityIdentityReviewRead         Capability = "identity.review.read"
+	CapabilityIdentityReviewWrite        Capability = "identity.review.write"
+	CapabilityConfigOverviewRead         Capability = "config.overview.read"
+	CapabilityConfigSettingsManage       Capability = "config.settings.manage"
+	CapabilityStagesRead                 Capability = "stages.read"
+	CapabilityStagesWrite                Capability = "stages.write"
+	CapabilitySegmentsRead               Capability = "segments.read"
+	CapabilitySegmentsWrite              Capability = "segments.write"
+	CapabilityOutboundRead               Capability = "outbound.read"
+	CapabilityOutboundControl            Capability = "outbound.control"
+	CapabilityProductsRead               Capability = "products.read"
+	CapabilityProductsWrite              Capability = "products.write"
+	CapabilityMediaImagesWrite           Capability = "media.images.write"
+	CapabilityMediaLibraryRead           Capability = "media.library.read"
+	CapabilityMediaLibraryWrite          Capability = "media.library.write"
+	CapabilityQuestionnairesRead         Capability = "questionnaires.read"
+	CapabilityQuestionnairesWrite        Capability = "questionnaires.write"
+	CapabilityChannelsRead               Capability = "channels.read"
+	CapabilityChannelsWrite              Capability = "channels.write"
+	CapabilityCouponsRead                Capability = "coupons.read"
+	CapabilityCouponsWrite               Capability = "coupons.write"
+	CapabilityOrderRead                  Capability = "order.read"
+	CapabilityOrderWrite                 Capability = "order.write"
+	CapabilityMessageArchiveRead         Capability = "message.archive.read"
+	CapabilityMessageArchiveExecute      Capability = "message.archive.execute"
+	CapabilityMessageArchiveExternalRead Capability = "message.archive.external.read"
 )
 
 func (capability Capability) Known() bool {
@@ -81,7 +84,8 @@ func (capability Capability) Known() bool {
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
-		CapabilityOrderRead, CapabilityOrderWrite:
+		CapabilityOrderRead, CapabilityOrderWrite,
+		CapabilityMessageArchiveRead, CapabilityMessageArchiveExecute, CapabilityMessageArchiveExternalRead:
 		return true
 	default:
 		return false
@@ -214,7 +218,8 @@ func validAuthorization(authorization Authorization) bool {
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
-		CapabilityOrderRead, CapabilityOrderWrite:
+		CapabilityOrderRead, CapabilityOrderWrite,
+		CapabilityMessageArchiveRead, CapabilityMessageArchiveExecute, CapabilityMessageArchiveExternalRead:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:
 		return false

@@ -25,8 +25,31 @@ var _ identityapp.BindStore = (*Repository)(nil)
 var _ identityapp.IngestStore = (*Repository)(nil)
 var _ identityapp.PendingReplayStore = (*Repository)(nil)
 var _ identityapp.MergeReviewStore = (*Repository)(nil)
+var _ identityapp.MessageArchiveUnionIDStore = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) LookupMessageArchiveUnionIDCustomers(ctx context.Context, unionID string) ([]int64, error) {
+	if repository == nil || unionID == "" || strings.TrimSpace(unionID) != unionID {
+		return nil, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := identitydb.New(tx).LookupMessageArchiveUnionIDCustomers(ctx, unionID)
+	if err != nil {
+		return nil, err
+	}
+	customerIDs := make([]int64, 0, len(rows))
+	for _, row := range rows {
+		if !row.Valid {
+			return nil, identityapp.ErrInvalidIdentity
+		}
+		customerIDs = append(customerIDs, row.Int64)
+	}
+	return customerIDs, nil
+}
 
 func (repository *Repository) ListPendingMergeReviews(
 	ctx context.Context,

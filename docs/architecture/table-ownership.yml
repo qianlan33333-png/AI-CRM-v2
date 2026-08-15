@@ -164,7 +164,10 @@ owners:
 
   wecom:
     package: internal/wecom
-    tables: [wecom_sync_state]
+    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts]
+    constraints:
+      wecom_message_archive_records: local_redacted_message_projection_with_logical_OneID_customer_attribution_and_no_cross_domain_foreign_key
+      wecom_message_archive_sync_receipts: actor_scoped_accepted_only_sync_command_idempotency_without_provider_or_worker_execution
 
   gateway:
     package: internal/gateway

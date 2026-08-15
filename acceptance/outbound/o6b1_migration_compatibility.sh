@@ -59,7 +59,7 @@ read -r upgrade_waterline receipts links events jobs task_status <<<"$(
        FROM goose_db_version
       WHERE is_applied"
 )"
-[[ "$upgrade_waterline" = "39" && "$receipts" = "1" && "$links" = "1" ]]
+[[ "$upgrade_waterline" = "40" && "$receipts" = "1" && "$links" = "1" ]]
 [[ "$events" = "1" && "$jobs" = "0" && "$task_status" = "cancelled" ]]
 
 read -r outbound_links river_foreign_keys <<<"$(

@@ -6,11 +6,20 @@ package wecomdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	AcceptMessageArchiveSyncReceipt(ctx context.Context, arg AcceptMessageArchiveSyncReceiptParams) (AcceptMessageArchiveSyncReceiptRow, error)
 	AdvanceWeComSyncState(ctx context.Context, arg AdvanceWeComSyncStateParams) (AdvanceWeComSyncStateRow, error)
+	CountMessageArchiveExternalRecords(ctx context.Context, arg CountMessageArchiveExternalRecordsParams) (int64, error)
+	ListMessageArchiveExternalRecords(ctx context.Context, arg ListMessageArchiveExternalRecordsParams) ([]ListMessageArchiveExternalRecordsRow, error)
+	ListMessageArchiveLastAcceptedAt(ctx context.Context) ([]pgtype.Timestamptz, error)
+	ListMessageArchiveRecords(ctx context.Context, arg ListMessageArchiveRecordsParams) ([]ListMessageArchiveRecordsRow, error)
 	LoadWeComSyncState(ctx context.Context, syncKey string) (LoadWeComSyncStateRow, error)
+	MessageArchiveHealth(ctx context.Context) (MessageArchiveHealthRow, error)
+	ReserveMessageArchiveSyncReceipt(ctx context.Context, arg ReserveMessageArchiveSyncReceiptParams) (ReserveMessageArchiveSyncReceiptRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

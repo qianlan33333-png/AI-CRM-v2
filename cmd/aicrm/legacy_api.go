@@ -115,28 +115,30 @@ type legacyOrderApplication interface {
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
-	auth            authport.Service
-	customers       customerListApplication
-	customerDetail  customerDetailApplication
-	identityResolve identityResolveApplication
-	weComCorpID     string
-	outbound        legacyOutboundQueryApplication
-	cancel          legacyCancelApplication
-	manualRetry     legacyRetryApplication
-	products        legacyProductApplication
-	media           legacyMediaApplication
-	groupInvites    groupInviteApplication
-	surveys         legacySurveyApplication
-	channels        legacyChannelApplication
-	legacyTags      legacyTagApplication
-	legacyTagSync   legacyTagSyncApplication
-	legacyTagLive   legacyTagLiveMutationApplication
-	legacyTagStatus legacyTagExecutionStatusApplication
-	coupons         legacyCouponApplication
-	couponBoard     couponBoardApplication
-	settings        legacySettingsApplication
-	orders          legacyOrderApplication
-	orderBoard      legacyOrderBoardApplication
+	auth                  authport.Service
+	customers             customerListApplication
+	customerDetail        customerDetailApplication
+	identityResolve       identityResolveApplication
+	weComCorpID           string
+	outbound              legacyOutboundQueryApplication
+	cancel                legacyCancelApplication
+	manualRetry           legacyRetryApplication
+	products              legacyProductApplication
+	media                 legacyMediaApplication
+	groupInvites          groupInviteApplication
+	surveys               legacySurveyApplication
+	channels              legacyChannelApplication
+	legacyTags            legacyTagApplication
+	legacyTagSync         legacyTagSyncApplication
+	legacyTagLive         legacyTagLiveMutationApplication
+	legacyTagStatus       legacyTagExecutionStatusApplication
+	coupons               legacyCouponApplication
+	couponBoard           couponBoardApplication
+	settings              legacySettingsApplication
+	orders                legacyOrderApplication
+	orderBoard            legacyOrderBoardApplication
+	messageArchive        legacyMessageArchiveApplication
+	messageArchiveUnionID legacyMessageArchiveUnionResolver
 }
 
 type legacySettingsApplication interface {
@@ -960,6 +962,8 @@ func (handler *Handler) allowedCapabilities(ctx context.Context, principal authp
 		authport.CapabilityProductsRead, authport.CapabilityProductsWrite,
 		authport.CapabilityQuestionnairesRead, authport.CapabilityQuestionnairesWrite,
 		authport.CapabilityChannelsRead, authport.CapabilityChannelsWrite,
+		authport.CapabilityMessageArchiveRead, authport.CapabilityMessageArchiveExecute,
+		authport.CapabilityMessageArchiveExternalRead,
 	}
 	allowed := make([]string, 0, len(all))
 	for _, capability := range all {

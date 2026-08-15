@@ -881,6 +881,38 @@ func (q *Queries) LockPendingReplayIdentities(ctx context.Context, identityIds [
 	return items, nil
 }
 
+const lookupMessageArchiveUnionIDCustomers = `-- name: LookupMessageArchiveUnionIDCustomers :many
+SELECT DISTINCT i.customer_id
+FROM identities AS i
+JOIN customers AS c ON c.id = i.customer_id
+WHERE i.kind = 'unionid'
+  AND i.normalized_value = $1::text
+  AND i.customer_id IS NOT NULL
+  AND c.is_deleted = FALSE
+ORDER BY i.customer_id
+LIMIT 2
+`
+
+func (q *Queries) LookupMessageArchiveUnionIDCustomers(ctx context.Context, normalizedValue string) ([]pgtype.Int8, error) {
+	rows, err := q.db.Query(ctx, lookupMessageArchiveUnionIDCustomers, normalizedValue)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []pgtype.Int8{}
+	for rows.Next() {
+		var customer_id pgtype.Int8
+		if err := rows.Scan(&customer_id); err != nil {
+			return nil, err
+		}
+		items = append(items, customer_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lookupNormalizedIdentity = `-- name: LookupNormalizedIdentity :one
 SELECT
   i.customer_id AS identity_customer_id,

@@ -49,8 +49,10 @@ import (
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
+	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
+	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 )
 
 var errInvalidAPIComponent = errors.New("invalid API component")
@@ -440,6 +442,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	)
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
+	legacyHandler.messageArchive = wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
+	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -687,6 +691,14 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)},
 			{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)},
 			{http.MethodGet, "/api/admin/automation-conversion/agent-runs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.ListAutomationTriggerRuns)},
+			{http.MethodGet, "/api/archive/health", authport.CapabilityMessageArchiveRead, false, http.HandlerFunc(legacy.ArchiveHealth)},
+			{http.MethodPost, "/api/archive/sync", authport.CapabilityMessageArchiveExecute, true, http.HandlerFunc(legacy.RequestArchiveSync)},
+			{http.MethodGet, "/api/external/chat-records", authport.CapabilityMessageArchiveExternalRead, false, http.HandlerFunc(legacy.ListExternalChatRecords)},
+			{http.MethodGet, "/api/messages/search", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.SearchArchivedMessages)},
+			{http.MethodGet, "/api/messages/archive", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.DeprecatedMessageArchive)},
+			{http.MethodGet, "/api/messages/{external_userid}/archive", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.DeprecatedExternalMessageArchive)},
+			{http.MethodGet, "/api/messages/{external_userid}/history", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.DeprecatedExternalMessageHistory)},
+			{http.MethodGet, "/api/messages/{external_userid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListArchivedMessages)},
 			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListCustomers)},
 			{http.MethodGet, "/api/customers/{external_userid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetCustomer)},
 			{http.MethodGet, "/api/admin/push-center/jobs", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ListOutboundJobs)},
