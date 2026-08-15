@@ -8,6 +8,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type OrderExternalEffect struct {
+	ID                      int64              `json:"id"`
+	OrderID                 int64              `json:"order_id"`
+	Provider                string             `json:"provider"`
+	EffectKind              string             `json:"effect_kind"`
+	State                   string             `json:"state"`
+	AutoRetryAllowed        bool               `json:"auto_retry_allowed"`
+	ProviderReceipt         []byte             `json:"provider_receipt"`
+	ManualReviewRequestedAt pgtype.Timestamptz `json:"manual_review_requested_at"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
 type OrderListProjection struct {
 	ID                    int64              `json:"id"`
 	Provider              string             `json:"provider"`
@@ -29,4 +42,18 @@ type OrderListProjection struct {
 	DetailUrl             string             `json:"detail_url"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OrderRefund struct {
+	ID                int64              `json:"id"`
+	OrderID           int64              `json:"order_id"`
+	ExternalEffectID  int64              `json:"external_effect_id"`
+	Provider          string             `json:"provider"`
+	RefundID          string             `json:"refund_id"`
+	OutRefundNo       string             `json:"out_refund_no"`
+	RefundAmountTotal int64              `json:"refund_amount_total"`
+	Currency          string             `json:"currency"`
+	Reason            string             `json:"reason"`
+	Status            string             `json:"status"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }

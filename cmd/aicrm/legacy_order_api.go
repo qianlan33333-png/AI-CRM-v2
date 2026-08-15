@@ -105,7 +105,7 @@ func parseLegacyOrderTime(raw string) (*time.Time, error) {
 func writeOrderError(writer http.ResponseWriter, err error) {
 	status, code, compatibility := http.StatusServiceUnavailable, "unavailable", platformhttp.CodeDependencyUnavailable
 	switch {
-	case errors.Is(err, orderapp.ErrInvalidArgument):
+	case errors.Is(err, orderapp.ErrInvalidArgument), errors.Is(err, orderapp.ErrInvalidBoardCommand):
 		status, code, compatibility = http.StatusBadRequest, "invalid_argument", platformhttp.CodeMalformedRequest
 	case errors.Is(err, authport.ErrUnauthenticated):
 		status, code, compatibility = http.StatusUnauthorized, "unauthorized", platformhttp.CodeUnauthenticated
@@ -113,7 +113,7 @@ func writeOrderError(writer http.ResponseWriter, err error) {
 		status, code, compatibility = http.StatusForbidden, "forbidden", platformhttp.CodeUnauthorized
 	case errors.Is(err, orderapp.ErrNotFound):
 		status, code, compatibility = http.StatusNotFound, "not_found", platformhttp.CodeNotFound
-	case errors.Is(err, orderapp.ErrConflict):
+	case errors.Is(err, orderapp.ErrConflict), errors.Is(err, orderapp.ErrBoardConflict):
 		status, code, compatibility = http.StatusConflict, "conflict", platformhttp.CodeConflict
 	}
 	platformhttp.MarkCompatibilityError(writer, compatibility)

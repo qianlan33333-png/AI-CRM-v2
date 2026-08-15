@@ -11,6 +11,59 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeOrderOperationReceipt = `-- name: CompleteOrderOperationReceipt :one
+UPDATE order_operation_receipts
+SET state = 'completed', result_snapshot = $1::jsonb,
+    completed_at = $2::timestamptz
+WHERE id = $3::bigint AND state = 'in_progress'
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type CompleteOrderOperationReceiptParams struct {
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	ID             int64              `json:"id"`
+}
+
+type CompleteOrderOperationReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) CompleteOrderOperationReceipt(ctx context.Context, arg CompleteOrderOperationReceiptParams) (CompleteOrderOperationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeOrderOperationReceipt, arg.ResultSnapshot, arg.CompletedAt, arg.ID)
+	var i CompleteOrderOperationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
+const countActiveRefundAmount = `-- name: CountActiveRefundAmount :one
+SELECT COALESCE(sum(refund_amount_total), 0)::bigint
+FROM order_refunds
+WHERE order_id = $1::bigint
+  AND status IN ('pending_external_gate', 'outcome_unknown', 'completed')
+`
+
+func (q *Queries) CountActiveRefundAmount(ctx context.Context, orderID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countActiveRefundAmount, orderID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countAllOrderProjections = `-- name: CountAllOrderProjections :one
 SELECT total_orders FROM order_list_projection_counters WHERE singleton = TRUE
 `
@@ -20,6 +73,49 @@ func (q *Queries) CountAllOrderProjections(ctx context.Context) (int64, error) {
 	var total_orders int64
 	err := row.Scan(&total_orders)
 	return total_orders, err
+}
+
+const countBoardOrders = `-- name: CountBoardOrders :one
+SELECT count(*)
+FROM order_list_projections
+WHERE ($1::text IS NULL OR provider = $1::text)
+  AND ($2::text IS NULL OR status = $2::text)
+  AND ($3::text IS NULL OR product_code = $3::text)
+  AND ($4::text IS NULL OR mobile_snapshot ILIKE '%' || $4::text || '%')
+  AND ($5::text IS NULL OR identity_value ILIKE '%' || $5::text || '%')
+  AND ($6::text IS NULL OR platform_transaction_no ILIKE '%' || $6::text || '%')
+  AND ($7::text IS NULL OR merchant_order_no ILIKE '%' || $7::text || '%')
+  AND ($8::timestamptz IS NULL OR created_at >= $8::timestamptz)
+  AND ($9::timestamptz IS NULL OR created_at <= $9::timestamptz)
+`
+
+type CountBoardOrdersParams struct {
+	Provider      pgtype.Text        `json:"provider"`
+	Status        pgtype.Text        `json:"status"`
+	ProductCode   pgtype.Text        `json:"product_code"`
+	Mobile        pgtype.Text        `json:"mobile"`
+	Identity      pgtype.Text        `json:"identity"`
+	TransactionID pgtype.Text        `json:"transaction_id"`
+	OrderNo       pgtype.Text        `json:"order_no"`
+	CreatedFrom   pgtype.Timestamptz `json:"created_from"`
+	CreatedTo     pgtype.Timestamptz `json:"created_to"`
+}
+
+func (q *Queries) CountBoardOrders(ctx context.Context, arg CountBoardOrdersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countBoardOrders,
+		arg.Provider,
+		arg.Status,
+		arg.ProductCode,
+		arg.Mobile,
+		arg.Identity,
+		arg.TransactionID,
+		arg.OrderNo,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const countFilteredOrderProjections = `-- name: CountFilteredOrderProjections :one
@@ -57,6 +153,533 @@ func (q *Queries) CountFilteredOrderProjections(ctx context.Context, arg CountFi
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const countOrderExternalEffects = `-- name: CountOrderExternalEffects :one
+SELECT count(*) FROM order_external_effects WHERE order_id = $1::bigint
+`
+
+func (q *Queries) CountOrderExternalEffects(ctx context.Context, orderID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countOrderExternalEffects, orderID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countOrderRefunds = `-- name: CountOrderRefunds :one
+SELECT count(*)
+FROM order_refunds AS refund
+JOIN order_list_projections AS order_projection ON order_projection.id = refund.order_id
+WHERE ($1::text IS NULL OR refund.provider = $1::text)
+  AND ($2::text IS NULL OR order_projection.merchant_order_no ILIKE '%' || $2::text || '%')
+  AND ($3::text IS NULL OR order_projection.platform_transaction_no ILIKE '%' || $3::text || '%')
+  AND ($4::text IS NULL OR refund.refund_id ILIKE '%' || $4::text || '%')
+  AND ($5::text IS NULL OR refund.out_refund_no ILIKE '%' || $5::text || '%')
+  AND ($6::text IS NULL OR refund.status = $6::text)
+  AND ($7::timestamptz IS NULL OR refund.created_at >= $7::timestamptz)
+  AND ($8::timestamptz IS NULL OR refund.created_at <= $8::timestamptz)
+`
+
+type CountOrderRefundsParams struct {
+	Provider      pgtype.Text        `json:"provider"`
+	OrderNo       pgtype.Text        `json:"order_no"`
+	TransactionID pgtype.Text        `json:"transaction_id"`
+	RefundID      pgtype.Text        `json:"refund_id"`
+	OutRefundNo   pgtype.Text        `json:"out_refund_no"`
+	Status        pgtype.Text        `json:"status"`
+	CreatedFrom   pgtype.Timestamptz `json:"created_from"`
+	CreatedTo     pgtype.Timestamptz `json:"created_to"`
+}
+
+func (q *Queries) CountOrderRefunds(ctx context.Context, arg CountOrderRefundsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countOrderRefunds,
+		arg.Provider,
+		arg.OrderNo,
+		arg.TransactionID,
+		arg.RefundID,
+		arg.OutRefundNo,
+		arg.Status,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createOrderExportJob = `-- name: CreateOrderExportJob :one
+INSERT INTO order_export_jobs (job_id, resource, format, operator_id, content_text, created_at)
+VALUES ($1::text, $2::text, $3::text,
+        $4::bigint, $5::text, $6::timestamptz)
+RETURNING job_id, resource, format, operator_id, content_text, created_at
+`
+
+type CreateOrderExportJobParams struct {
+	JobID       string             `json:"job_id"`
+	Resource    string             `json:"resource"`
+	Format      string             `json:"format"`
+	OperatorID  int64              `json:"operator_id"`
+	ContentText string             `json:"content_text"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type CreateOrderExportJobRow struct {
+	JobID       string             `json:"job_id"`
+	Resource    string             `json:"resource"`
+	Format      string             `json:"format"`
+	OperatorID  int64              `json:"operator_id"`
+	ContentText string             `json:"content_text"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateOrderExportJob(ctx context.Context, arg CreateOrderExportJobParams) (CreateOrderExportJobRow, error) {
+	row := q.db.QueryRow(ctx, createOrderExportJob,
+		arg.JobID,
+		arg.Resource,
+		arg.Format,
+		arg.OperatorID,
+		arg.ContentText,
+		arg.CreatedAt,
+	)
+	var i CreateOrderExportJobRow
+	err := row.Scan(
+		&i.JobID,
+		&i.Resource,
+		&i.Format,
+		&i.OperatorID,
+		&i.ContentText,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createOrderExternalEffect = `-- name: CreateOrderExternalEffect :one
+INSERT INTO order_external_effects (order_id, provider, effect_kind, state, provider_receipt, created_at, updated_at)
+VALUES ($1::bigint, $2::text, $3::text,
+        $4::text, $5::jsonb,
+        $6::timestamptz, $7::timestamptz)
+RETURNING id, order_id, provider, effect_kind, state, auto_retry_allowed, provider_receipt,
+          manual_review_requested_at, created_at, updated_at
+`
+
+type CreateOrderExternalEffectParams struct {
+	OrderID         int64              `json:"order_id"`
+	Provider        string             `json:"provider"`
+	EffectKind      string             `json:"effect_kind"`
+	State           string             `json:"state"`
+	ProviderReceipt []byte             `json:"provider_receipt"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateOrderExternalEffect(ctx context.Context, arg CreateOrderExternalEffectParams) (OrderExternalEffect, error) {
+	row := q.db.QueryRow(ctx, createOrderExternalEffect,
+		arg.OrderID,
+		arg.Provider,
+		arg.EffectKind,
+		arg.State,
+		arg.ProviderReceipt,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i OrderExternalEffect
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Provider,
+		&i.EffectKind,
+		&i.State,
+		&i.AutoRetryAllowed,
+		&i.ProviderReceipt,
+		&i.ManualReviewRequestedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createOrderRefund = `-- name: CreateOrderRefund :one
+INSERT INTO order_refunds (order_id, external_effect_id, provider, refund_id, out_refund_no,
+                           refund_amount_total, currency, reason, status, created_at)
+VALUES ($1::bigint, $2::bigint, $3::text,
+        $4::text, $5::text, $6::bigint,
+        $7::text, $8::text, $9::text, $10::timestamptz)
+RETURNING id, order_id, external_effect_id, provider, refund_id, out_refund_no, refund_amount_total,
+          currency, reason, status, created_at
+`
+
+type CreateOrderRefundParams struct {
+	OrderID           int64              `json:"order_id"`
+	ExternalEffectID  int64              `json:"external_effect_id"`
+	Provider          string             `json:"provider"`
+	RefundID          string             `json:"refund_id"`
+	OutRefundNo       string             `json:"out_refund_no"`
+	RefundAmountTotal int64              `json:"refund_amount_total"`
+	Currency          string             `json:"currency"`
+	Reason            string             `json:"reason"`
+	Status            string             `json:"status"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateOrderRefund(ctx context.Context, arg CreateOrderRefundParams) (OrderRefund, error) {
+	row := q.db.QueryRow(ctx, createOrderRefund,
+		arg.OrderID,
+		arg.ExternalEffectID,
+		arg.Provider,
+		arg.RefundID,
+		arg.OutRefundNo,
+		arg.RefundAmountTotal,
+		arg.Currency,
+		arg.Reason,
+		arg.Status,
+		arg.CreatedAt,
+	)
+	var i OrderRefund
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ExternalEffectID,
+		&i.Provider,
+		&i.RefundID,
+		&i.OutRefundNo,
+		&i.RefundAmountTotal,
+		&i.Currency,
+		&i.Reason,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getBoardOrder = `-- name: GetBoardOrder :one
+SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+       customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
+       product_id, product_code, product_name_snapshot, amount_minor, currency,
+       status, status_label, detail_url, created_at, updated_at
+FROM order_list_projections
+WHERE ($1::text = 'auto' OR provider = $1::text)
+  AND (merchant_order_no = $2::text
+       OR platform_transaction_no = $2::text
+       OR id::text = $2::text)
+ORDER BY id DESC LIMIT 1
+`
+
+type GetBoardOrderParams struct {
+	Provider       string `json:"provider"`
+	OrderReference string `json:"order_reference"`
+}
+
+func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (OrderListProjection, error) {
+	row := q.db.QueryRow(ctx, getBoardOrder, arg.Provider, arg.OrderReference)
+	var i OrderListProjection
+	err := row.Scan(
+		&i.ID,
+		&i.Provider,
+		&i.ProviderLabel,
+		&i.MerchantOrderNo,
+		&i.PlatformTransactionNo,
+		&i.CustomerID,
+		&i.PayerNameSnapshot,
+		&i.MobileSnapshot,
+		&i.IdentityKind,
+		&i.IdentityValue,
+		&i.ProductID,
+		&i.ProductCode,
+		&i.ProductNameSnapshot,
+		&i.AmountMinor,
+		&i.Currency,
+		&i.Status,
+		&i.StatusLabel,
+		&i.DetailUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getBoardOrderForUpdate = `-- name: GetBoardOrderForUpdate :one
+SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+       customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
+       product_id, product_code, product_name_snapshot, amount_minor, currency,
+       status, status_label, detail_url, created_at, updated_at
+FROM order_list_projections
+WHERE ($1::text = 'auto' OR provider = $1::text)
+  AND (merchant_order_no = $2::text
+       OR platform_transaction_no = $2::text
+       OR id::text = $2::text)
+ORDER BY id DESC LIMIT 1 FOR UPDATE
+`
+
+type GetBoardOrderForUpdateParams struct {
+	Provider       string `json:"provider"`
+	OrderReference string `json:"order_reference"`
+}
+
+func (q *Queries) GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderForUpdateParams) (OrderListProjection, error) {
+	row := q.db.QueryRow(ctx, getBoardOrderForUpdate, arg.Provider, arg.OrderReference)
+	var i OrderListProjection
+	err := row.Scan(
+		&i.ID,
+		&i.Provider,
+		&i.ProviderLabel,
+		&i.MerchantOrderNo,
+		&i.PlatformTransactionNo,
+		&i.CustomerID,
+		&i.PayerNameSnapshot,
+		&i.MobileSnapshot,
+		&i.IdentityKind,
+		&i.IdentityValue,
+		&i.ProductID,
+		&i.ProductCode,
+		&i.ProductNameSnapshot,
+		&i.AmountMinor,
+		&i.Currency,
+		&i.Status,
+		&i.StatusLabel,
+		&i.DetailUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrderExportJob = `-- name: GetOrderExportJob :one
+SELECT job_id, resource, format, operator_id, content_text, created_at
+FROM order_export_jobs WHERE job_id = $1::text
+`
+
+type GetOrderExportJobRow struct {
+	JobID       string             `json:"job_id"`
+	Resource    string             `json:"resource"`
+	Format      string             `json:"format"`
+	OperatorID  int64              `json:"operator_id"`
+	ContentText string             `json:"content_text"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetOrderExportJob(ctx context.Context, jobID string) (GetOrderExportJobRow, error) {
+	row := q.db.QueryRow(ctx, getOrderExportJob, jobID)
+	var i GetOrderExportJobRow
+	err := row.Scan(
+		&i.JobID,
+		&i.Resource,
+		&i.Format,
+		&i.OperatorID,
+		&i.ContentText,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getOrderExternalEffect = `-- name: GetOrderExternalEffect :one
+SELECT id, order_id, provider, effect_kind, state, auto_retry_allowed, provider_receipt,
+       manual_review_requested_at, created_at, updated_at
+FROM order_external_effects WHERE id = $1::bigint
+`
+
+func (q *Queries) GetOrderExternalEffect(ctx context.Context, id int64) (OrderExternalEffect, error) {
+	row := q.db.QueryRow(ctx, getOrderExternalEffect, id)
+	var i OrderExternalEffect
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Provider,
+		&i.EffectKind,
+		&i.State,
+		&i.AutoRetryAllowed,
+		&i.ProviderReceipt,
+		&i.ManualReviewRequestedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrderExternalEffectForUpdate = `-- name: GetOrderExternalEffectForUpdate :one
+SELECT id, order_id, provider, effect_kind, state, auto_retry_allowed, provider_receipt,
+       manual_review_requested_at, created_at, updated_at
+FROM order_external_effects WHERE id = $1::bigint FOR UPDATE
+`
+
+func (q *Queries) GetOrderExternalEffectForUpdate(ctx context.Context, id int64) (OrderExternalEffect, error) {
+	row := q.db.QueryRow(ctx, getOrderExternalEffectForUpdate, id)
+	var i OrderExternalEffect
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Provider,
+		&i.EffectKind,
+		&i.State,
+		&i.AutoRetryAllowed,
+		&i.ProviderReceipt,
+		&i.ManualReviewRequestedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrderOperationReceipt = `-- name: GetOrderOperationReceipt :one
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+FROM order_operation_receipts
+WHERE operation = $1::text AND actor_scope = $2::text
+  AND key_digest = $3::bytea
+`
+
+type GetOrderOperationReceiptParams struct {
+	Operation  string `json:"operation"`
+	ActorScope string `json:"actor_scope"`
+	KeyDigest  []byte `json:"key_digest"`
+}
+
+type GetOrderOperationReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) GetOrderOperationReceipt(ctx context.Context, arg GetOrderOperationReceiptParams) (GetOrderOperationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getOrderOperationReceipt, arg.Operation, arg.ActorScope, arg.KeyDigest)
+	var i GetOrderOperationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
+const listBoardOrders = `-- name: ListBoardOrders :many
+SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+       customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
+       product_id, product_code, product_name_snapshot, amount_minor, currency,
+       status, status_label, detail_url, created_at, updated_at
+FROM order_list_projections
+WHERE ($1::text IS NULL OR provider = $1::text)
+  AND ($2::text IS NULL OR status = $2::text)
+  AND ($3::text IS NULL OR product_code = $3::text)
+  AND ($4::text IS NULL OR mobile_snapshot ILIKE '%' || $4::text || '%')
+  AND ($5::text IS NULL OR identity_value ILIKE '%' || $5::text || '%')
+  AND ($6::text IS NULL OR platform_transaction_no ILIKE '%' || $6::text || '%')
+  AND ($7::text IS NULL OR merchant_order_no ILIKE '%' || $7::text || '%')
+  AND ($8::timestamptz IS NULL OR created_at >= $8::timestamptz)
+  AND ($9::timestamptz IS NULL OR created_at <= $9::timestamptz)
+ORDER BY created_at DESC, id DESC
+LIMIT $11::integer OFFSET $10::integer
+`
+
+type ListBoardOrdersParams struct {
+	Provider      pgtype.Text        `json:"provider"`
+	Status        pgtype.Text        `json:"status"`
+	ProductCode   pgtype.Text        `json:"product_code"`
+	Mobile        pgtype.Text        `json:"mobile"`
+	Identity      pgtype.Text        `json:"identity"`
+	TransactionID pgtype.Text        `json:"transaction_id"`
+	OrderNo       pgtype.Text        `json:"order_no"`
+	CreatedFrom   pgtype.Timestamptz `json:"created_from"`
+	CreatedTo     pgtype.Timestamptz `json:"created_to"`
+	RowOffset     int32              `json:"row_offset"`
+	RowLimit      int32              `json:"row_limit"`
+}
+
+func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams) ([]OrderListProjection, error) {
+	rows, err := q.db.Query(ctx, listBoardOrders,
+		arg.Provider,
+		arg.Status,
+		arg.ProductCode,
+		arg.Mobile,
+		arg.Identity,
+		arg.TransactionID,
+		arg.OrderNo,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+		arg.RowOffset,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OrderListProjection{}
+	for rows.Next() {
+		var i OrderListProjection
+		if err := rows.Scan(
+			&i.ID,
+			&i.Provider,
+			&i.ProviderLabel,
+			&i.MerchantOrderNo,
+			&i.PlatformTransactionNo,
+			&i.CustomerID,
+			&i.PayerNameSnapshot,
+			&i.MobileSnapshot,
+			&i.IdentityKind,
+			&i.IdentityValue,
+			&i.ProductID,
+			&i.ProductCode,
+			&i.ProductNameSnapshot,
+			&i.AmountMinor,
+			&i.Currency,
+			&i.Status,
+			&i.StatusLabel,
+			&i.DetailUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOrderExternalEffects = `-- name: ListOrderExternalEffects :many
+SELECT id, order_id, provider, effect_kind, state, auto_retry_allowed, provider_receipt,
+       manual_review_requested_at, created_at, updated_at
+FROM order_external_effects
+WHERE order_id = $1::bigint
+ORDER BY created_at DESC, id DESC
+`
+
+func (q *Queries) ListOrderExternalEffects(ctx context.Context, orderID int64) ([]OrderExternalEffect, error) {
+	rows, err := q.db.Query(ctx, listOrderExternalEffects, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OrderExternalEffect{}
+	for rows.Next() {
+		var i OrderExternalEffect
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.Provider,
+			&i.EffectKind,
+			&i.State,
+			&i.AutoRetryAllowed,
+			&i.ProviderReceipt,
+			&i.ManualReviewRequestedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listOrderProjections = `-- name: ListOrderProjections :many
@@ -137,4 +760,181 @@ func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProject
 		return nil, err
 	}
 	return items, nil
+}
+
+const listOrderRefunds = `-- name: ListOrderRefunds :many
+SELECT refund.id, refund.order_id, refund.external_effect_id, refund.provider, refund.refund_id,
+       refund.out_refund_no, refund.refund_amount_total, refund.currency, refund.reason, refund.status,
+       refund.created_at, order_projection.merchant_order_no, order_projection.platform_transaction_no,
+       effect.state AS external_effect_state, effect.auto_retry_allowed
+FROM order_refunds AS refund
+JOIN order_list_projections AS order_projection ON order_projection.id = refund.order_id
+JOIN order_external_effects AS effect ON effect.id = refund.external_effect_id
+WHERE ($1::text IS NULL OR refund.provider = $1::text)
+  AND ($2::text IS NULL OR order_projection.merchant_order_no ILIKE '%' || $2::text || '%')
+  AND ($3::text IS NULL OR order_projection.platform_transaction_no ILIKE '%' || $3::text || '%')
+  AND ($4::text IS NULL OR refund.refund_id ILIKE '%' || $4::text || '%')
+  AND ($5::text IS NULL OR refund.out_refund_no ILIKE '%' || $5::text || '%')
+  AND ($6::text IS NULL OR refund.status = $6::text)
+  AND ($7::timestamptz IS NULL OR refund.created_at >= $7::timestamptz)
+  AND ($8::timestamptz IS NULL OR refund.created_at <= $8::timestamptz)
+ORDER BY refund.created_at DESC, refund.id DESC
+LIMIT $10::integer OFFSET $9::integer
+`
+
+type ListOrderRefundsParams struct {
+	Provider      pgtype.Text        `json:"provider"`
+	OrderNo       pgtype.Text        `json:"order_no"`
+	TransactionID pgtype.Text        `json:"transaction_id"`
+	RefundID      pgtype.Text        `json:"refund_id"`
+	OutRefundNo   pgtype.Text        `json:"out_refund_no"`
+	Status        pgtype.Text        `json:"status"`
+	CreatedFrom   pgtype.Timestamptz `json:"created_from"`
+	CreatedTo     pgtype.Timestamptz `json:"created_to"`
+	RowOffset     int32              `json:"row_offset"`
+	RowLimit      int32              `json:"row_limit"`
+}
+
+type ListOrderRefundsRow struct {
+	ID                    int64              `json:"id"`
+	OrderID               int64              `json:"order_id"`
+	ExternalEffectID      int64              `json:"external_effect_id"`
+	Provider              string             `json:"provider"`
+	RefundID              string             `json:"refund_id"`
+	OutRefundNo           string             `json:"out_refund_no"`
+	RefundAmountTotal     int64              `json:"refund_amount_total"`
+	Currency              string             `json:"currency"`
+	Reason                string             `json:"reason"`
+	Status                string             `json:"status"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	ExternalEffectState   string             `json:"external_effect_state"`
+	AutoRetryAllowed      bool               `json:"auto_retry_allowed"`
+}
+
+func (q *Queries) ListOrderRefunds(ctx context.Context, arg ListOrderRefundsParams) ([]ListOrderRefundsRow, error) {
+	rows, err := q.db.Query(ctx, listOrderRefunds,
+		arg.Provider,
+		arg.OrderNo,
+		arg.TransactionID,
+		arg.RefundID,
+		arg.OutRefundNo,
+		arg.Status,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+		arg.RowOffset,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOrderRefundsRow{}
+	for rows.Next() {
+		var i ListOrderRefundsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.ExternalEffectID,
+			&i.Provider,
+			&i.RefundID,
+			&i.OutRefundNo,
+			&i.RefundAmountTotal,
+			&i.Currency,
+			&i.Reason,
+			&i.Status,
+			&i.CreatedAt,
+			&i.MerchantOrderNo,
+			&i.PlatformTransactionNo,
+			&i.ExternalEffectState,
+			&i.AutoRetryAllowed,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markOrderExternalEffectManualReview = `-- name: MarkOrderExternalEffectManualReview :one
+UPDATE order_external_effects
+SET manual_review_requested_at = $1::timestamptz,
+    updated_at = $1::timestamptz
+WHERE id = $2::bigint
+RETURNING id, order_id, provider, effect_kind, state, auto_retry_allowed, provider_receipt,
+          manual_review_requested_at, created_at, updated_at
+`
+
+type MarkOrderExternalEffectManualReviewParams struct {
+	ReviewedAt pgtype.Timestamptz `json:"reviewed_at"`
+	ID         int64              `json:"id"`
+}
+
+func (q *Queries) MarkOrderExternalEffectManualReview(ctx context.Context, arg MarkOrderExternalEffectManualReviewParams) (OrderExternalEffect, error) {
+	row := q.db.QueryRow(ctx, markOrderExternalEffectManualReview, arg.ReviewedAt, arg.ID)
+	var i OrderExternalEffect
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Provider,
+		&i.EffectKind,
+		&i.State,
+		&i.AutoRetryAllowed,
+		&i.ProviderReceipt,
+		&i.ManualReviewRequestedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const reserveOrderOperationReceipt = `-- name: ReserveOrderOperationReceipt :one
+INSERT INTO order_operation_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
+VALUES ($1::text, $2::text, $3::bytea,
+        $4::bytea, $5::timestamptz)
+ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type ReserveOrderOperationReceiptParams struct {
+	Operation     string             `json:"operation"`
+	ActorScope    string             `json:"actor_scope"`
+	KeyDigest     []byte             `json:"key_digest"`
+	PayloadDigest []byte             `json:"payload_digest"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ReserveOrderOperationReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) ReserveOrderOperationReceipt(ctx context.Context, arg ReserveOrderOperationReceiptParams) (ReserveOrderOperationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveOrderOperationReceipt,
+		arg.Operation,
+		arg.ActorScope,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.CreatedAt,
+	)
+	var i ReserveOrderOperationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
 }

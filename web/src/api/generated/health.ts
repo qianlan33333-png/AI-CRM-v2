@@ -786,6 +786,398 @@ export interface LegacyOrderListResponse {
   has_more: boolean;
 }
 
+export type LegacyOrderDetailProvider =
+  (typeof LegacyOrderDetailProvider)[keyof typeof LegacyOrderDetailProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderDetailProvider = {
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export interface LegacyOrderDetail {
+  /** @minimum 1 */
+  id: number;
+  created_at: string;
+  /** @maxLength 200 */
+  merchant_order_no: string;
+  /** @maxLength 200 */
+  out_trade_no: string;
+  /** @maxLength 200 */
+  order_no: string;
+  /** @maxLength 200 */
+  platform_transaction_no: string;
+  /** @maxLength 200 */
+  transaction_id: string;
+  /** @maxLength 200 */
+  payer_name: string;
+  /** @maxLength 80 */
+  mobile: string;
+  /** @maxLength 200 */
+  userid?: string;
+  /** @maxLength 200 */
+  external_userid?: string;
+  /** @maxLength 200 */
+  unionid?: string;
+  /** @maxLength 200 */
+  product_code: string;
+  /** @maxLength 200 */
+  product_name: string;
+  /** @pattern ^[0-9]+\.[0-9]{2}$ */
+  amount_yuan: string;
+  /**
+   * @minLength 3
+   * @maxLength 3
+   */
+  currency: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  status: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  status_label: string;
+  provider: LegacyOrderDetailProvider;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  provider_label: string;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   */
+  detail_url: string;
+  /** @minimum 0 */
+  refundable_amount_total: number;
+}
+
+export interface LegacyOrderItemsResponse {
+  /**
+   * @minItems 1
+   * @maxItems 1
+   */
+  items: LegacyOrderListItem[];
+}
+
+export type LegacyOrderRefundRequestProvider =
+  (typeof LegacyOrderRefundRequestProvider)[keyof typeof LegacyOrderRefundRequestProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderRefundRequestProvider = {
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export interface LegacyOrderRefundRequest {
+  provider: LegacyOrderRefundRequestProvider;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  order_no: string;
+  /** @minimum 1 */
+  refund_amount_total: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  transaction_id_confirmation: string;
+  checked: boolean;
+  /**
+   * Legacy display field; authenticated admin identity remains authoritative.
+   * @maxLength 200
+   */
+  operator?: string;
+}
+
+export type LegacyWechatOrderRefundRequestProvider =
+  (typeof LegacyWechatOrderRefundRequestProvider)[keyof typeof LegacyWechatOrderRefundRequestProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderRefundRequestProvider = {
+  wechat: "wechat",
+} as const;
+
+export interface LegacyWechatOrderRefundRequest {
+  provider?: LegacyWechatOrderRefundRequestProvider;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  order_no?: string;
+  /** @minimum 1 */
+  refund_amount_total: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  transaction_id_confirmation: string;
+  checked: boolean;
+  /**
+   * Legacy display field; authenticated admin identity remains authoritative.
+   * @maxLength 200
+   */
+  operator?: string;
+}
+
+export type LegacyOrderRefundProvider =
+  (typeof LegacyOrderRefundProvider)[keyof typeof LegacyOrderRefundProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderRefundProvider = {
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type LegacyOrderRefundCurrency =
+  (typeof LegacyOrderRefundCurrency)[keyof typeof LegacyOrderRefundCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderRefundCurrency = {
+  CNY: "CNY",
+} as const;
+
+export type LegacyOrderRefundStatus =
+  (typeof LegacyOrderRefundStatus)[keyof typeof LegacyOrderRefundStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderRefundStatus = {
+  pending_external_gate: "pending_external_gate",
+  outcome_unknown: "outcome_unknown",
+  completed: "completed",
+  final_failed: "final_failed",
+} as const;
+
+export type LegacyOrderRefundExternalEffectState =
+  (typeof LegacyOrderRefundExternalEffectState)[keyof typeof LegacyOrderRefundExternalEffectState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderRefundExternalEffectState = {
+  pending_external_gate: "pending_external_gate",
+  outcome_unknown: "outcome_unknown",
+  completed: "completed",
+  final_failed: "final_failed",
+} as const;
+
+export interface LegacyOrderRefund {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  order_id: number;
+  provider: LegacyOrderRefundProvider;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  order_no: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  transaction_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  refund_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  out_refund_no: string;
+  /** @minimum 1 */
+  refund_amount_total: number;
+  currency: LegacyOrderRefundCurrency;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+  status: LegacyOrderRefundStatus;
+  /** @minimum 1 */
+  external_effect_id: number;
+  external_effect_state: LegacyOrderRefundExternalEffectState;
+  auto_retry_allowed: boolean;
+  created_at: string;
+}
+
+export interface LegacyOrderRefundPage {
+  items: LegacyOrderRefund[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  has_more: boolean;
+}
+
+export type LegacyOrderExportRequestResource =
+  (typeof LegacyOrderExportRequestResource)[keyof typeof LegacyOrderExportRequestResource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportRequestResource = {
+  orders: "orders",
+  payments: "payments",
+  refunds: "refunds",
+} as const;
+
+export type LegacyOrderExportRequestFormat =
+  (typeof LegacyOrderExportRequestFormat)[keyof typeof LegacyOrderExportRequestFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportRequestFormat = {
+  csv: "csv",
+} as const;
+
+export interface LegacyOrderExportRequest {
+  resource: LegacyOrderExportRequestResource;
+  format: LegacyOrderExportRequestFormat;
+}
+
+export type LegacyOrderExportResource =
+  (typeof LegacyOrderExportResource)[keyof typeof LegacyOrderExportResource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportResource = {
+  orders: "orders",
+  payments: "payments",
+  refunds: "refunds",
+} as const;
+
+export type LegacyOrderExportFormat =
+  (typeof LegacyOrderExportFormat)[keyof typeof LegacyOrderExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportFormat = {
+  csv: "csv",
+} as const;
+
+export type LegacyOrderExportStatus =
+  (typeof LegacyOrderExportStatus)[keyof typeof LegacyOrderExportStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportStatus = {
+  completed: "completed",
+} as const;
+
+export type LegacyOrderExportContentType =
+  (typeof LegacyOrderExportContentType)[keyof typeof LegacyOrderExportContentType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportContentType = {
+  "text/csv": "text/csv",
+} as const;
+
+export interface LegacyOrderExport {
+  /** @pattern ^exp_[A-Za-z0-9_-]{8,64}$ */
+  job_id: string;
+  resource: LegacyOrderExportResource;
+  format: LegacyOrderExportFormat;
+  status: LegacyOrderExportStatus;
+  created_at: string;
+  /** @minimum 1 */
+  operator: number;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   */
+  download_url: string;
+  content_type?: LegacyOrderExportContentType;
+  /** @maxLength 100 */
+  file_name?: string;
+  content_text?: string;
+}
+
+export type LegacyOrderExternalEffectProvider =
+  (typeof LegacyOrderExternalEffectProvider)[keyof typeof LegacyOrderExternalEffectProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExternalEffectProvider = {
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type LegacyOrderExternalEffectEffectKind =
+  (typeof LegacyOrderExternalEffectEffectKind)[keyof typeof LegacyOrderExternalEffectEffectKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExternalEffectEffectKind = {
+  refund: "refund",
+  external_push: "external_push",
+} as const;
+
+export type LegacyOrderExternalEffectState =
+  (typeof LegacyOrderExternalEffectState)[keyof typeof LegacyOrderExternalEffectState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExternalEffectState = {
+  pending_external_gate: "pending_external_gate",
+  outcome_unknown: "outcome_unknown",
+  completed: "completed",
+  final_failed: "final_failed",
+} as const;
+
+export interface LegacyOrderExternalEffect {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  order_id: number;
+  provider: LegacyOrderExternalEffectProvider;
+  effect_kind: LegacyOrderExternalEffectEffectKind;
+  state: LegacyOrderExternalEffectState;
+  auto_retry_allowed: boolean;
+  /** @nullable */
+  provider_receipt?: string | null;
+  /** @nullable */
+  manual_review_requested_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LegacyOrderExternalEffectPage {
+  items: LegacyOrderExternalEffect[];
+  /** @minimum 0 */
+  total: number;
+}
+
+export type LegacyDeprecatedResponseErrorCode =
+  (typeof LegacyDeprecatedResponseErrorCode)[keyof typeof LegacyDeprecatedResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeprecatedResponseErrorCode = {
+  deprecated: "deprecated",
+} as const;
+
+export interface LegacyDeprecatedResponse {
+  error_code: LegacyDeprecatedResponseErrorCode;
+  /** @minLength 1 */
+  message: string;
+}
+
+export interface EmptyObject {
+  [key: string]: unknown;
+}
+
 export interface LegacyCouponListResponse {
   ok: boolean;
   coupons: Coupon[];
@@ -2915,13 +3307,201 @@ export const ListLegacyChannelsStatus = {
 export type ListLegacyOrdersParams = {
   provider?: ListLegacyOrdersProvider;
   /**
+   * @maxLength 80
+   */
+  payment_status?: string;
+  /**
    * @maxLength 200
    */
   order_no?: string;
   /**
+   * @maxLength 200
+   */
+  out_trade_no?: string;
+  /**
    * @maxLength 80
    */
   mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  product_code?: string;
+  /**
+   * @maxLength 200
+   */
+  external_userid?: string;
+  /**
+   * @maxLength 200
+   */
+  identity?: string;
+  /**
+   * @maxLength 200
+   */
+  transaction_id?: string;
+  /**
+   * @maxLength 200
+   */
+  platform_transaction_no?: string;
+  created_from?: string;
+  created_to?: string;
+  date_from?: string;
+  date_to?: string;
+  /**
+   * @maxLength 80
+   */
+  status?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  /**
+   * Legacy opaque cursor; nonempty values fail closed until an evidence-backed codec is separately frozen.
+   */
+  cursor?: string;
+};
+
+export type ListLegacyOrdersProvider =
+  (typeof ListLegacyOrdersProvider)[keyof typeof ListLegacyOrdersProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyOrdersProvider = {
+  all: "all",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type GetLegacyOrderParams = {
+  provider?: GetLegacyOrderProvider;
+};
+
+export type GetLegacyOrderProvider =
+  (typeof GetLegacyOrderProvider)[keyof typeof GetLegacyOrderProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyOrderProvider = {
+  auto: "auto",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type GetLegacyOrderItemsParams = {
+  provider?: GetLegacyOrderItemsProvider;
+};
+
+export type GetLegacyOrderItemsProvider =
+  (typeof GetLegacyOrderItemsProvider)[keyof typeof GetLegacyOrderItemsProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyOrderItemsProvider = {
+  auto: "auto",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type ListLegacyAlipayTransactionsParams = {
+  /**
+   * @maxLength 80
+   */
+  payment_status?: string;
+  /**
+   * @maxLength 200
+   */
+  product_code?: string;
+  /**
+   * @maxLength 80
+   */
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  external_userid?: string;
+  date_from?: string;
+  date_to?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyRefundsParams = {
+  provider?: ListLegacyRefundsProvider;
+  /**
+   * @maxLength 200
+   */
+  order_no?: string;
+  /**
+   * @maxLength 200
+   */
+  out_trade_no?: string;
+  /**
+   * @maxLength 200
+   */
+  transaction_id?: string;
+  /**
+   * @maxLength 200
+   */
+  refund_id?: string;
+  /**
+   * @maxLength 200
+   */
+  out_refund_no?: string;
+  /**
+   * @maxLength 80
+   */
+  status?: string;
+  created_from?: string;
+  created_to?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyRefundsProvider =
+  (typeof ListLegacyRefundsProvider)[keyof typeof ListLegacyRefundsProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyRefundsProvider = {
+  all: "all",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type ListLegacyWechatTransactionsParams = {
+  /**
+   * @maxLength 80
+   */
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  identity?: string;
+  /**
+   * @maxLength 200
+   */
+  transaction_id?: string;
   /**
    * @maxLength 200
    */
@@ -2943,17 +3523,6 @@ export type ListLegacyOrdersParams = {
    */
   offset?: number;
 };
-
-export type ListLegacyOrdersProvider =
-  (typeof ListLegacyOrdersProvider)[keyof typeof ListLegacyOrdersProvider];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ListLegacyOrdersProvider = {
-  all: "all",
-  wechat: "wechat",
-  alipay: "alipay",
-  wechat_shop: "wechat_shop",
-} as const;
 
 export type ListLegacyCouponsParams = {
   /**
@@ -7398,7 +7967,7 @@ export const updateLegacyChannel = async (
 };
 
 /**
- * @summary List persisted order projections without payment, refund, callback, or provider execution
+ * @summary List persisted unified order projections without provider execution
  */
 export type listLegacyOrdersResponse200 = {
   data: LegacyOrderListResponse;
@@ -7485,6 +8054,1187 @@ export const listLegacyOrders = async (
     status: res.status,
     headers: res.headers,
   } as listLegacyOrdersResponse;
+};
+
+/**
+ * @summary Read one persisted unified order projection
+ */
+export type getLegacyOrderResponse200 = {
+  data: LegacyOrderDetail;
+  status: 200;
+};
+
+export type getLegacyOrderResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyOrderResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyOrderResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyOrderResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyOrderResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyOrderResponseSuccess = getLegacyOrderResponse200 & {
+  headers: Headers;
+};
+export type getLegacyOrderResponseError = (
+  | getLegacyOrderResponse400
+  | getLegacyOrderResponse401
+  | getLegacyOrderResponse403
+  | getLegacyOrderResponse404
+  | getLegacyOrderResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyOrderResponse =
+  getLegacyOrderResponseSuccess | getLegacyOrderResponseError;
+
+export const getGetLegacyOrderUrl = (
+  orderNo: string,
+  params?: GetLegacyOrderParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/orders/${orderNo}?${stringifiedParams}`
+    : `/api/admin/orders/${orderNo}`;
+};
+
+export const getLegacyOrder = async (
+  orderNo: string,
+  params?: GetLegacyOrderParams,
+  options?: RequestInit,
+): Promise<getLegacyOrderResponse> => {
+  const res = await fetch(getGetLegacyOrderUrl(orderNo, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyOrderResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyOrderResponse;
+};
+
+/**
+ * @summary Read the persisted purchased-product snapshot for one order
+ */
+export type getLegacyOrderItemsResponse200 = {
+  data: LegacyOrderItemsResponse;
+  status: 200;
+};
+
+export type getLegacyOrderItemsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyOrderItemsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyOrderItemsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyOrderItemsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyOrderItemsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyOrderItemsResponseSuccess =
+  getLegacyOrderItemsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyOrderItemsResponseError = (
+  | getLegacyOrderItemsResponse400
+  | getLegacyOrderItemsResponse401
+  | getLegacyOrderItemsResponse403
+  | getLegacyOrderItemsResponse404
+  | getLegacyOrderItemsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyOrderItemsResponse =
+  getLegacyOrderItemsResponseSuccess | getLegacyOrderItemsResponseError;
+
+export const getGetLegacyOrderItemsUrl = (
+  orderNo: string,
+  params?: GetLegacyOrderItemsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/orders/${orderNo}/items?${stringifiedParams}`
+    : `/api/admin/orders/${orderNo}/items`;
+};
+
+export const getLegacyOrderItems = async (
+  orderNo: string,
+  params?: GetLegacyOrderItemsParams,
+  options?: RequestInit,
+): Promise<getLegacyOrderItemsResponse> => {
+  const res = await fetch(getGetLegacyOrderItemsUrl(orderNo, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyOrderItemsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyOrderItemsResponse;
+};
+
+/**
+ * @summary List persisted Alipay transaction projections
+ */
+export type listLegacyAlipayTransactionsResponse200 = {
+  data: LegacyOrderListResponse;
+  status: 200;
+};
+
+export type listLegacyAlipayTransactionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyAlipayTransactionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyAlipayTransactionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyAlipayTransactionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyAlipayTransactionsResponseSuccess =
+  listLegacyAlipayTransactionsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyAlipayTransactionsResponseError = (
+  | listLegacyAlipayTransactionsResponse400
+  | listLegacyAlipayTransactionsResponse401
+  | listLegacyAlipayTransactionsResponse403
+  | listLegacyAlipayTransactionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyAlipayTransactionsResponse =
+  | listLegacyAlipayTransactionsResponseSuccess
+  | listLegacyAlipayTransactionsResponseError;
+
+export const getListLegacyAlipayTransactionsUrl = (
+  params?: ListLegacyAlipayTransactionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/alipay/transactions?${stringifiedParams}`
+    : `/api/admin/alipay/transactions`;
+};
+
+export const listLegacyAlipayTransactions = async (
+  params?: ListLegacyAlipayTransactionsParams,
+  options?: RequestInit,
+): Promise<listLegacyAlipayTransactionsResponse> => {
+  const res = await fetch(getListLegacyAlipayTransactionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyAlipayTransactionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyAlipayTransactionsResponse;
+};
+
+/**
+ * @summary Read one persisted Alipay transaction projection
+ */
+export type getLegacyAlipayTransactionResponse200 = {
+  data: LegacyOrderDetail;
+  status: 200;
+};
+
+export type getLegacyAlipayTransactionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyAlipayTransactionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAlipayTransactionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAlipayTransactionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyAlipayTransactionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAlipayTransactionResponseSuccess =
+  getLegacyAlipayTransactionResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAlipayTransactionResponseError = (
+  | getLegacyAlipayTransactionResponse400
+  | getLegacyAlipayTransactionResponse401
+  | getLegacyAlipayTransactionResponse403
+  | getLegacyAlipayTransactionResponse404
+  | getLegacyAlipayTransactionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAlipayTransactionResponse =
+  | getLegacyAlipayTransactionResponseSuccess
+  | getLegacyAlipayTransactionResponseError;
+
+export const getGetLegacyAlipayTransactionUrl = (orderNo: string) => {
+  return `/api/admin/alipay/transactions/${orderNo}`;
+};
+
+export const getLegacyAlipayTransaction = async (
+  orderNo: string,
+  options?: RequestInit,
+): Promise<getLegacyAlipayTransactionResponse> => {
+  const res = await fetch(getGetLegacyAlipayTransactionUrl(orderNo), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAlipayTransactionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAlipayTransactionResponse;
+};
+
+/**
+ * @summary List local refund intents and their external-effect state
+ */
+export type listLegacyRefundsResponse200 = {
+  data: LegacyOrderRefundPage;
+  status: 200;
+};
+
+export type listLegacyRefundsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyRefundsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyRefundsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyRefundsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyRefundsResponseSuccess = listLegacyRefundsResponse200 & {
+  headers: Headers;
+};
+export type listLegacyRefundsResponseError = (
+  | listLegacyRefundsResponse400
+  | listLegacyRefundsResponse401
+  | listLegacyRefundsResponse403
+  | listLegacyRefundsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyRefundsResponse =
+  listLegacyRefundsResponseSuccess | listLegacyRefundsResponseError;
+
+export const getListLegacyRefundsUrl = (params?: ListLegacyRefundsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/refunds?${stringifiedParams}`
+    : `/api/admin/refunds`;
+};
+
+export const listLegacyRefunds = async (
+  params?: ListLegacyRefundsParams,
+  options?: RequestInit,
+): Promise<listLegacyRefundsResponse> => {
+  const res = await fetch(getListLegacyRefundsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyRefundsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyRefundsResponse;
+};
+
+/**
+ * @summary Record one idempotent refund intent without calling a provider
+ */
+export type createLegacyRefundIntentResponse200 = {
+  data: LegacyOrderRefund;
+  status: 200;
+};
+
+export type createLegacyRefundIntentResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyRefundIntentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyRefundIntentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyRefundIntentResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createLegacyRefundIntentResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyRefundIntentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyRefundIntentResponseSuccess =
+  createLegacyRefundIntentResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyRefundIntentResponseError = (
+  | createLegacyRefundIntentResponse400
+  | createLegacyRefundIntentResponse401
+  | createLegacyRefundIntentResponse403
+  | createLegacyRefundIntentResponse404
+  | createLegacyRefundIntentResponse409
+  | createLegacyRefundIntentResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyRefundIntentResponse =
+  | createLegacyRefundIntentResponseSuccess
+  | createLegacyRefundIntentResponseError;
+
+export const getCreateLegacyRefundIntentUrl = () => {
+  return `/api/admin/refunds`;
+};
+
+export const createLegacyRefundIntent = async (
+  legacyOrderRefundRequest: LegacyOrderRefundRequest,
+  options?: RequestInit,
+): Promise<createLegacyRefundIntentResponse> => {
+  const res = await fetch(getCreateLegacyRefundIntentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyOrderRefundRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyRefundIntentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyRefundIntentResponse;
+};
+
+/**
+ * @summary Create one local idempotent CSV export
+ */
+export type createLegacyOrderExportResponse200 = {
+  data: LegacyOrderExport;
+  status: 200;
+};
+
+export type createLegacyOrderExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyOrderExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyOrderExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyOrderExportResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyOrderExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyOrderExportResponseSuccess =
+  createLegacyOrderExportResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyOrderExportResponseError = (
+  | createLegacyOrderExportResponse400
+  | createLegacyOrderExportResponse401
+  | createLegacyOrderExportResponse403
+  | createLegacyOrderExportResponse409
+  | createLegacyOrderExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyOrderExportResponse =
+  createLegacyOrderExportResponseSuccess | createLegacyOrderExportResponseError;
+
+export const getCreateLegacyOrderExportUrl = () => {
+  return `/api/admin/exports`;
+};
+
+export const createLegacyOrderExport = async (
+  legacyOrderExportRequest: LegacyOrderExportRequest,
+  options?: RequestInit,
+): Promise<createLegacyOrderExportResponse> => {
+  const res = await fetch(getCreateLegacyOrderExportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyOrderExportRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyOrderExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyOrderExportResponse;
+};
+
+/**
+ * @summary Read one local CSV export result
+ */
+export type getLegacyOrderExportResponse200 = {
+  data: LegacyOrderExport;
+  status: 200;
+};
+
+export type getLegacyOrderExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyOrderExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyOrderExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyOrderExportResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyOrderExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyOrderExportResponseSuccess =
+  getLegacyOrderExportResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyOrderExportResponseError = (
+  | getLegacyOrderExportResponse400
+  | getLegacyOrderExportResponse401
+  | getLegacyOrderExportResponse403
+  | getLegacyOrderExportResponse404
+  | getLegacyOrderExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyOrderExportResponse =
+  getLegacyOrderExportResponseSuccess | getLegacyOrderExportResponseError;
+
+export const getGetLegacyOrderExportUrl = (jobId: string) => {
+  return `/api/admin/exports/${jobId}`;
+};
+
+export const getLegacyOrderExport = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<getLegacyOrderExportResponse> => {
+  const res = await fetch(getGetLegacyOrderExportUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyOrderExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyOrderExportResponse;
+};
+
+/**
+ * @summary Create the local WeChat order CSV export
+ */
+export type createLegacyWechatOrderExportResponse200 = {
+  data: LegacyOrderExport;
+  status: 200;
+};
+
+export type createLegacyWechatOrderExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyWechatOrderExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyWechatOrderExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyWechatOrderExportResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyWechatOrderExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyWechatOrderExportResponseSuccess =
+  createLegacyWechatOrderExportResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyWechatOrderExportResponseError = (
+  | createLegacyWechatOrderExportResponse400
+  | createLegacyWechatOrderExportResponse401
+  | createLegacyWechatOrderExportResponse403
+  | createLegacyWechatOrderExportResponse409
+  | createLegacyWechatOrderExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyWechatOrderExportResponse =
+  | createLegacyWechatOrderExportResponseSuccess
+  | createLegacyWechatOrderExportResponseError;
+
+export const getCreateLegacyWechatOrderExportUrl = () => {
+  return `/api/admin/wechat-pay/order-exports`;
+};
+
+export const createLegacyWechatOrderExport = async (
+  emptyObject: EmptyObject,
+  options?: RequestInit,
+): Promise<createLegacyWechatOrderExportResponse> => {
+  const res = await fetch(getCreateLegacyWechatOrderExportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(emptyObject),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyWechatOrderExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyWechatOrderExportResponse;
+};
+
+/**
+ * @summary Preserve the deprecated WeChat export result route as a fail-closed response
+ */
+export type getDeprecatedLegacyWechatOrderExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getDeprecatedLegacyWechatOrderExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getDeprecatedLegacyWechatOrderExportResponse410 = {
+  data: LegacyDeprecatedResponse;
+  status: 410;
+};
+
+export type getDeprecatedLegacyWechatOrderExportResponseError = (
+  | getDeprecatedLegacyWechatOrderExportResponse401
+  | getDeprecatedLegacyWechatOrderExportResponse403
+  | getDeprecatedLegacyWechatOrderExportResponse410
+) & {
+  headers: Headers;
+};
+
+export type getDeprecatedLegacyWechatOrderExportResponse =
+  getDeprecatedLegacyWechatOrderExportResponseError;
+
+export const getGetDeprecatedLegacyWechatOrderExportUrl = (jobId: string) => {
+  return `/api/admin/wechat-pay/order-exports/${jobId}`;
+};
+
+export const getDeprecatedLegacyWechatOrderExport = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<getDeprecatedLegacyWechatOrderExportResponse> => {
+  const res = await fetch(getGetDeprecatedLegacyWechatOrderExportUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDeprecatedLegacyWechatOrderExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getDeprecatedLegacyWechatOrderExportResponse;
+};
+
+/**
+ * @summary Preserve the deprecated WeChat export download route as a fail-closed response
+ */
+export type downloadDeprecatedLegacyWechatOrderExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadDeprecatedLegacyWechatOrderExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadDeprecatedLegacyWechatOrderExportResponse410 = {
+  data: LegacyDeprecatedResponse;
+  status: 410;
+};
+
+export type downloadDeprecatedLegacyWechatOrderExportResponseError = (
+  | downloadDeprecatedLegacyWechatOrderExportResponse401
+  | downloadDeprecatedLegacyWechatOrderExportResponse403
+  | downloadDeprecatedLegacyWechatOrderExportResponse410
+) & {
+  headers: Headers;
+};
+
+export type downloadDeprecatedLegacyWechatOrderExportResponse =
+  downloadDeprecatedLegacyWechatOrderExportResponseError;
+
+export const getDownloadDeprecatedLegacyWechatOrderExportUrl = (
+  jobId: string,
+) => {
+  return `/api/admin/wechat-pay/order-exports/${jobId}/download`;
+};
+
+export const downloadDeprecatedLegacyWechatOrderExport = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<downloadDeprecatedLegacyWechatOrderExportResponse> => {
+  const res = await fetch(
+    getDownloadDeprecatedLegacyWechatOrderExportUrl(jobId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadDeprecatedLegacyWechatOrderExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadDeprecatedLegacyWechatOrderExportResponse;
+};
+
+/**
+ * @summary List persisted WeChat transaction projections
+ */
+export type listLegacyWechatTransactionsResponse200 = {
+  data: LegacyOrderListResponse;
+  status: 200;
+};
+
+export type listLegacyWechatTransactionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyWechatTransactionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyWechatTransactionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyWechatTransactionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyWechatTransactionsResponseSuccess =
+  listLegacyWechatTransactionsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyWechatTransactionsResponseError = (
+  | listLegacyWechatTransactionsResponse400
+  | listLegacyWechatTransactionsResponse401
+  | listLegacyWechatTransactionsResponse403
+  | listLegacyWechatTransactionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyWechatTransactionsResponse =
+  | listLegacyWechatTransactionsResponseSuccess
+  | listLegacyWechatTransactionsResponseError;
+
+export const getListLegacyWechatTransactionsUrl = (
+  params?: ListLegacyWechatTransactionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wechat-pay/orders?${stringifiedParams}`
+    : `/api/admin/wechat-pay/orders`;
+};
+
+export const listLegacyWechatTransactions = async (
+  params?: ListLegacyWechatTransactionsParams,
+  options?: RequestInit,
+): Promise<listLegacyWechatTransactionsResponse> => {
+  const res = await fetch(getListLegacyWechatTransactionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyWechatTransactionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyWechatTransactionsResponse;
+};
+
+/**
+ * @summary Read persisted external-effect state without a provider call
+ */
+export type listLegacyWechatOrderExternalEffectsResponse200 = {
+  data: LegacyOrderExternalEffectPage;
+  status: 200;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponseSuccess =
+  listLegacyWechatOrderExternalEffectsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyWechatOrderExternalEffectsResponseError = (
+  | listLegacyWechatOrderExternalEffectsResponse400
+  | listLegacyWechatOrderExternalEffectsResponse401
+  | listLegacyWechatOrderExternalEffectsResponse403
+  | listLegacyWechatOrderExternalEffectsResponse404
+  | listLegacyWechatOrderExternalEffectsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyWechatOrderExternalEffectsResponse =
+  | listLegacyWechatOrderExternalEffectsResponseSuccess
+  | listLegacyWechatOrderExternalEffectsResponseError;
+
+export const getListLegacyWechatOrderExternalEffectsUrl = (orderId: string) => {
+  return `/api/admin/wechat-pay/orders/${orderId}/external-push-deliveries`;
+};
+
+export const listLegacyWechatOrderExternalEffects = async (
+  orderId: string,
+  options?: RequestInit,
+): Promise<listLegacyWechatOrderExternalEffectsResponse> => {
+  const res = await fetch(getListLegacyWechatOrderExternalEffectsUrl(orderId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyWechatOrderExternalEffectsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyWechatOrderExternalEffectsResponse;
+};
+
+/**
+ * @summary Record manual review for an external effect; never retry outcome_unknown automatically
+ */
+export type reviewLegacyWechatOrderExternalEffectResponse200 = {
+  data: LegacyOrderExternalEffect;
+  status: 200;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponseSuccess =
+  reviewLegacyWechatOrderExternalEffectResponse200 & {
+    headers: Headers;
+  };
+export type reviewLegacyWechatOrderExternalEffectResponseError = (
+  | reviewLegacyWechatOrderExternalEffectResponse400
+  | reviewLegacyWechatOrderExternalEffectResponse401
+  | reviewLegacyWechatOrderExternalEffectResponse403
+  | reviewLegacyWechatOrderExternalEffectResponse404
+  | reviewLegacyWechatOrderExternalEffectResponse409
+  | reviewLegacyWechatOrderExternalEffectResponse503
+) & {
+  headers: Headers;
+};
+
+export type reviewLegacyWechatOrderExternalEffectResponse =
+  | reviewLegacyWechatOrderExternalEffectResponseSuccess
+  | reviewLegacyWechatOrderExternalEffectResponseError;
+
+export const getReviewLegacyWechatOrderExternalEffectUrl = (
+  orderId: string,
+  deliveryId: number,
+) => {
+  return `/api/admin/wechat-pay/orders/${orderId}/external-push-deliveries/${deliveryId}/retry`;
+};
+
+export const reviewLegacyWechatOrderExternalEffect = async (
+  orderId: string,
+  deliveryId: number,
+  emptyObject: EmptyObject,
+  options?: RequestInit,
+): Promise<reviewLegacyWechatOrderExternalEffectResponse> => {
+  const res = await fetch(
+    getReviewLegacyWechatOrderExternalEffectUrl(orderId, deliveryId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(emptyObject),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reviewLegacyWechatOrderExternalEffectResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reviewLegacyWechatOrderExternalEffectResponse;
+};
+
+/**
+ * @summary Record one local WeChat refund intent without calling WeChat
+ */
+export type createLegacyWechatRefundIntentResponse200 = {
+  data: LegacyOrderRefund;
+  status: 200;
+};
+
+export type createLegacyWechatRefundIntentResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyWechatRefundIntentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyWechatRefundIntentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyWechatRefundIntentResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createLegacyWechatRefundIntentResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyWechatRefundIntentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyWechatRefundIntentResponseSuccess =
+  createLegacyWechatRefundIntentResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyWechatRefundIntentResponseError = (
+  | createLegacyWechatRefundIntentResponse400
+  | createLegacyWechatRefundIntentResponse401
+  | createLegacyWechatRefundIntentResponse403
+  | createLegacyWechatRefundIntentResponse404
+  | createLegacyWechatRefundIntentResponse409
+  | createLegacyWechatRefundIntentResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyWechatRefundIntentResponse =
+  | createLegacyWechatRefundIntentResponseSuccess
+  | createLegacyWechatRefundIntentResponseError;
+
+export const getCreateLegacyWechatRefundIntentUrl = (orderId: string) => {
+  return `/api/admin/wechat-pay/orders/${orderId}/refunds`;
+};
+
+export const createLegacyWechatRefundIntent = async (
+  orderId: string,
+  legacyWechatOrderRefundRequest: LegacyWechatOrderRefundRequest,
+  options?: RequestInit,
+): Promise<createLegacyWechatRefundIntentResponse> => {
+  const res = await fetch(getCreateLegacyWechatRefundIntentUrl(orderId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyWechatOrderRefundRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyWechatRefundIntentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyWechatRefundIntentResponse;
 };
 
 /**
