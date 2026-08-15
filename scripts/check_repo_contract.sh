@@ -2453,9 +2453,9 @@ verify_index_sha256 internal/automation/store/queries/agents.sql \
 verify_index_sha256 internal/automation/store/generated/agents.sql.go \
   1d3d4ff53074e09286a789f052f718b7ec058ba7fe2c36b26f311599dad8f478
 verify_index_sha256 acceptance/automation/agents_ab_integration_test.go \
-  29c71e280e099d9fd50adcc4bdeb3a58bb5c9a4c379f2a55a116fe914160f960
+  d7a557268d4b8ddb3cb52daae78640e74a7d3db9132bf4717d071648e66b41a6
 verify_index_sha256 acceptance/automation/agents_ab_migration_compatibility.sh \
-  6be5b7d3e9aac50ca22b7caaa01c2d4cccbb82772da0647c5c5da25943f36217
+  54405955d1ef03e9dd5db8de9d885e0141f55f2672d22a9af90d505ac96954b6
 verify_index_sha256 cmd/aicrm/legacy_automation_agents_api.go \
   4ea3e03d1c085bef1fc6da3b717a0f077fa1817c1742812406a7f30234d74ae4
 verify_index_sha256 cmd/aicrm/legacy_automation_agents_api_test.go \
@@ -2726,7 +2726,7 @@ verify_index_sha256 cmd/aicrm/legacy_admin_ops.go \
 verify_index_sha256 cmd/aicrm/legacy_admin_ops_test.go \
   7f62415e1deee5c29c31adbfef86b7af92081200be1d2bf97fe174ca96100436
 verify_index_sha256 docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md \
-  e7889da53ac986a80fe31a91f806375f874606c7ea7daac58c9febb80f150eab
+  bd6973acd9057d155544689f6cb29252474ee65d6c4186513785f6512f6c3fe6
 verify_index_sha256 internal/adminops/app/service.go \
   6700466043f38a9cfb1972c56bf0c34b2ca91d580939e8a701367b4f676d5298
 verify_index_sha256 internal/adminops/port/port.go \
@@ -6769,6 +6769,21 @@ for ledger_anchor in \
   '    verification_induced_correction_count: 1' \
   '    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=18, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-A02 ledger drifted: $ledger_anchor"
+done
+
+p4automation_agents_compat="$(git show :acceptance/automation/agents_ab_migration_compatibility.sh)"
+for anchor in \
+  'if [[ "$waterline" = "42" || "$waterline" = "43" ]]; then' \
+  '-expected-waterline 42' \
+  'up-to 42' \
+  'down-to 41'; do
+  grep -Fq -- "$anchor" <<<"$p4automation_agents_compat" || fail "P4 Automation Agents current/historical waterline split drifted: $anchor"
+done
+p4automation_agents_acceptance="$(git show :acceptance/automation/agents_ab_integration_test.go)"
+for anchor in \
+  'flag.Int("expected-waterline", 43' \
+  'waterline != *p4AutomationAgentsExpectedWaterline'; do
+  grep -Fq -- "$anchor" <<<"$p4automation_agents_acceptance" || fail "P4 Automation Agents current waterline default drifted: $anchor"
 done
 
 p4adminops_migration="$(git show :migrations/00043_admin_ops_control_plane.sql)"

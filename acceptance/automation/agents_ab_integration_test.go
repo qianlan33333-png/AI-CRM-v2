@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"testing"
 	"time"
@@ -17,6 +18,8 @@ import (
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+var p4AutomationAgentsExpectedWaterline = flag.Int("expected-waterline", 43, "expected current migration waterline for the Automation Agents storage catalog")
 
 func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	pool, ctx := openPool(t)
@@ -138,7 +141,7 @@ func TestP4AutomationAgentsABStorageHasNoTenantOrCrossDomainOwnership(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != 42 || invalidConstraints != 0 || foreignKeys != 0 || tenantColumns != 0 || indexes != 6 {
+	if waterline != *p4AutomationAgentsExpectedWaterline || invalidConstraints != 0 || foreignKeys != 0 || tenantColumns != 0 || indexes != 6 {
 		t.Fatalf("waterline/invalid/fks/tenant/indexes=%d/%d/%d/%d/%d", waterline, invalidConstraints, foreignKeys, tenantColumns, indexes)
 	}
 }

@@ -56,6 +56,20 @@
 - release 状态严格为 `draft → validated → published`，rollback 创建新的 `rolled_back` 事实；Jobs 仅 `queued` local intent，cancel 有 expected-version，`outcome_unknown` 只可 worker-side 标记且不能自动重试。
 - API 端不发 provider、只返回 `real_external_call_executed=false`；所有跨域执行入口为 owner-required/retired/仅 local intent。
 
+## 43 水位消费者全量审计
+
+以 `waterline`、`expected-waterline`、`goose up`、`up-to/down-to` 和 manifest 顺序扫描 `acceptance/`、`Makefile`、`scripts/` 后，以下是与本候选相关的完整分类；没有作全局数值替换。
+
+| 类别 | 直接或间接消费者 | 处理 |
+| --- | --- | --- |
+| 直接 current | `P3-O6A/O6B1/O6B2`、`P4-W0-D01/L01`、`P4-SI00B` 的最终 `goose up` 与 waterline 断言 | 已统一断言 43。 |
+| 直接 current | `acceptance/automation/d01_integration_test.go`、`acceptance/stats/l01_integration_test.go`、`acceptance/operationcycle/ab_integration_test.go`、Agents storage 默认参数 | 已统一默认/断言 43；Operation target 先 `goose up`。 |
+| 间接 current | `P3-W4`、`P3-S05A`、`P4-A01` 的 Make `goose up`，以及本片 control-plane compatibility 最终 `up-to 43` | 无数字硬编码，天然使用 latest；本片最终明确验证 43。 |
+| 历史 target anchor | `agents_ab_migration_compatibility.sh` 的 41→42→41→42 fixture，以及它传入的 `-expected-waterline 42` | 保留 42，因为它证明 migration 42 本身；入口现在可从 43 正确先降到 41。运行在 D01 current 环境下的同一 storage 测试默认改验 43。 |
+| 历史 target anchor | `order/ab_migration_compatibility.sh` 的 38→40→38→40→42 和其他 `up-to N/down-to N` compatibility fixtures | 原样保留；这些不是 current consumer，且由后续显式 `goose up` /下一兼容 fixture 归一化。 |
+
+审计结论：唯一遗漏的 current 断言是 Automation Agents storage 的默认 42；它与其历史 42 fixture 已被明确拆分。未发现其他“latest/current=42”断言或把 43 视为未知的归一化分支。
+
 ## 待执行收据
 
 同一锁定 staged tree 后执行：focused race/PG、`make ci-go`、真实 42→43→42→43、一次 `scripts/run_ci_acceptance_manifest.sh` 全 target 汇总、PR 四门、match-head squash 与 exact-main CLOSED。到这些事实存在前，本页不宣称上线或生产效果。
