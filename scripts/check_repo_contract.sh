@@ -1778,7 +1778,7 @@ verify_index_sha256 docs/execution/slices/P3-S04B.md \
 verify_index_sha256 docs/architecture/port-contracts.md \
   4952f77f8fd461573c2b46f7cbddc0fcc80892debc2e9b9298a23e1012420cf4
 verify_index_sha256 docs/execution/slice-ledger.yml \
-  2e901e2c956fd4edc01239de9d31a60389fa8d683ad3eb9a48edd8c10119a173
+  ed4a2b587df16789aa35c7191dedd57d2ec9069d1098d322fe80cb4d22f73d05
 verify_index_sha256 docs/execution/slices/P3-S06.md \
   9acfa58b69a3ee8395a574023c7ad68049cfbb1f68d38cfb88a89e80ed9abda9
 verify_index_sha256 docs/execution/slices/P3-I8.md \
@@ -6218,7 +6218,7 @@ for mapping_id in LEGACY-API-0026 LEGACY-API-0027 LEGACY-API-0253; do
   [[ "$mapping_row" = *'"legacy_source_sha":"6cb989c071255437d75953dabb943318a74eb8f4"'* && "$mapping_row" = *'"disposition":"MIGRATE"'* && "$mapping_row" = *'"candidate_v2_operation_id":"PENDING_HUMAN_DESIGN"'* ]] || fail "P4-A02 forged or lost frozen route authority for $mapping_id"
 done
 p4a02_feature="$(git show :docs/feature-matrix.csv | grep -F '"LEGACY-S05-053"')"
-[[ "$p4a02_feature" = *'"MIGRATE","IN_PROGRESS","NOT_RUN","APPROVED"'* && "$p4a02_feature" = *'paths=cmd/aicrm/legacy_config_settings.go'* ]] || fail "P4-A02 feature matrix PRE-PR state drifted or forged completion"
+[[ "$p4a02_feature" = *'"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"'* && "$p4a02_feature" = *'sha=05541a6dfbedbec0797a2cca19a43f41512512f6;pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/217'* && "$p4a02_feature" = *'command=go_test_race+acceptance_p2s03+generate_check+repo_contract+gitleaks'* ]] || fail "P4-A02 feature matrix release evidence drifted or forged"
 p4a02_t14="$(git show :docs/migration-mapping.jsonl | grep -F '"mapping_id":"LEGACY-T14-024"')"
 [[ "$p4a02_t14" = *'"decision":"MANUAL_REENTRY"'* && "$p4a02_t14" = *'"implementation":"NOT_STARTED"'* && "$p4a02_t14" = *'"verification":"NOT_RUN"'* && "$p4a02_t14" = *'4_non_secret_keys'* && "$p4a02_t14" = *'legacy values imported=false'* && "$p4a02_t14" = *'legacy secrets imported=false'* && "$p4a02_t14" = *'legacy updated_at imported=false'* && "$p4a02_t14" = *'production_execution=false'* ]] || fail "P4-A02 T14 manual re-entry evidence drifted"
 for ledger_anchor in \
@@ -6227,7 +6227,10 @@ for ledger_anchor in \
   '    inherited_slice_induced_correction_count: 2' \
   '    inherited_verification_induced_correction_count: 2' \
   '    fresh_slice_induced_correction_count: 2' \
-  '    fresh_verification_induced_correction_count: 11'; do
+  '    fresh_verification_induced_correction_count: 11' \
+  '  - slice_id: P4-A02-R1' \
+  '    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217' \
+  '    verification_induced_correction_count: 1'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-A02 ledger drifted: $ledger_anchor"
 done
 

@@ -4672,6 +4672,25 @@ slices:
       - "redline:none"
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-A02-R1
+    title: legacy-app-settings-pr-and-feature-receipt
+    owner: Codex-Sol
+    status: REPAIR_ONLY_PR_OPEN_REQUIRED_CI_PENDING
+    base_sha: 05541a6dfbedbec0797a2cca19a43f41512512f6
+    dependency: P4_A02_PRE_PR_BLIND_REVIEW_PASS
+    branch: codex/p4-a02-settings-release-b04afb9c-20260815
+    pr_url: https://github.com/qianlan33333-png/AI-CRM-v2/pull/217
+    scope: [PR_URL_and_exact_initial_SHA_receipt, LEGACY_S05_053_IMPLEMENTED_SYNTHETIC_PASS_with_real_local_evidence, append_only_ledger_release_checkpoint]
+    excluded_scope: [business_logic, Auth_DTO_or_OpenAPI_change, T14_expansion, migration_DDL, tenant, provider, UI, production_or_external_effect]
+    correction_state: REPAIR_ONLY
+    slice_induced_correction_count: 0
+    infra_induced_correction_count: 0
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 1
+    correction_notes: [verification:first_feature_release_evidence_used_plural_commands_then_the_frozen_single_command_key_was_used, redline:none]
+    cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=12, fresh_infra_induced=0, fresh_scope_induced=0, redline=0]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00
