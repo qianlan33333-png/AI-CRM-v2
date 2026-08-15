@@ -13,11 +13,15 @@ output_file="${GITHUB_OUTPUT:-}"
 
 mode="full"
 reason="not-an-eligible-main-push"
+affected_manifest=""
 
 emit() {
   printf 'ci-promotion: mode=%s reason=%s\n' "$mode" "$reason"
   if [[ -n "$output_file" ]]; then
     printf 'mode=%s\nreason=%s\n' "$mode" "$reason" >>"$output_file"
+    if [[ -n "$affected_manifest" ]]; then
+      printf 'affected_manifest=%s\n' "$affected_manifest" >>"$output_file"
+    fi
   fi
 }
 
@@ -51,6 +55,26 @@ api_get() {
 }
 
 valid_json() { jq -e . >/dev/null 2>&1; }
+
+is_framework_risk_path() {
+  local candidate_path="$1"
+  if [[ "$candidate_path" = migrations/* && ! "$candidate_path" =~ ^migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql$ ]]; then
+    return 0
+  fi
+  [[ "$candidate_path" =~ ^(\.github/|scripts/|tools/|acceptance/fixtures/|internal/platform/|docs/(adr|architecture|governance|plans|spec|execution/slice-ledger\.yml|execution/implementation-plan\.md|evidence/phases/)|Makefile$|go\.(mod|sum)$|package(-lock)?\.json$|sqlc\.ya?ml$|\.gitleaks\.toml$|cmd/aicrm/main\.go$|cmd/aicrm/components\.go$) ]]
+}
+
+is_domain_artifact_path() {
+  local candidate_path="$1"
+  [[ "$candidate_path" =~ ^migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql$ ]] ||
+    [[ "$candidate_path" =~ ^api/[A-Za-z0-9._/-]+\.ya?ml$ ]] ||
+    [[ "$candidate_path" =~ ^(internal/api/(candidate/)?generated|web/src/api/generated)/[A-Za-z0-9._/-]+$ ]] ||
+    [[ "$candidate_path" =~ ^internal/(auth|automation|contact|coupon|identity|media|order|outbound|product|segment|stats|survey|wecom)/[A-Za-z0-9._/-]+$ ]] ||
+    [[ "$candidate_path" =~ ^acceptance/(auth|automation|contact|coupon|identity|media|order|outbound|product|segment|stats|survey|wecom)/[A-Za-z0-9._/-]+$ ]] ||
+    [[ "$candidate_path" =~ ^cmd/aicrm/legacy_[A-Za-z0-9._-]+\.go$ ]] ||
+    [[ "$candidate_path" =~ ^docs/(feature-matrix\.csv|migration-mapping\.jsonl|api-mapping\.jsonl|execution/slices/[A-Za-z0-9._-]+\.md|evidence/slices/[A-Za-z0-9._-]+\.md|ci/go-acceptance-manifest\.tsv)$ ]] ||
+    [[ "$candidate_path" = "scripts/generated-sources.sha256" ]]
+}
 
 commit_endpoint="/repos/${repository}/git/commits/${commit_sha}"
 pulls_endpoint="/repos/${repository}/commits/${commit_sha}/pulls?per_page=100"
@@ -113,9 +137,30 @@ files="$(api_get "$files_endpoint")" || fallback "api-failure-pull-files"
 valid_json <<<"$files" || fallback "api-invalid-pull-files"
 [[ "$(jq 'length' <<<"$files")" = "$changed_files" ]] || fallback "pull-files-count-mismatch"
 
-risk_pattern='^(\.github/|migrations/|acceptance/fixtures/|api/|tools/|internal/platform/|docs/adr/|docs/architecture/|docs/evidence/phases/|docs/feature-matrix\.csv$|Makefile$|go\.(mod|sum)$|package(-lock)?\.json$|sqlc\.ya?ml$|\.gitleaks\.toml$|scripts/(ci_promotion_decision|check_ci_promotion_smoke|check_|test_repo_contract|test_gitleaks_config|scan_sensitive_paths|build_slice_bundle|test_build_slice_bundle))'
-if jq -r '.[].filename' <<<"$files" | grep -Eq "$risk_pattern"; then
-  fallback "risk-change"
+affected_files="$(jq -ce '[.[] | {filename, status, sha}]' <<<"$files")" || fallback "api-invalid-pull-files"
+jq -e '
+  type == "array" and length > 0 and
+  all(.[];
+    (.filename | type == "string" and test("^[A-Za-z0-9._/-]+$") and (contains("..") | not)) and
+    (.status == "added" or .status == "modified") and
+    (.sha | type == "string" and test("^[0-9a-f]{40}$"))
+  )
+' <<<"$affected_files" >/dev/null || fallback "unsupported-domain-change-status"
+
+while IFS= read -r file_path; do
+  if is_framework_risk_path "$file_path"; then
+    fallback "framework-risk-change"
+  fi
+  is_domain_artifact_path "$file_path" || fallback "unclassified-change"
+done < <(jq -r '.[].filename' <<<"$affected_files")
+
+if [[ -n "$output_file" ]]; then
+  manifest_dir="${RUNNER_TEMP:-}"
+  [[ -n "$manifest_dir" && -d "$manifest_dir" && ! -L "$manifest_dir" ]] || fallback "invalid-runner-temp"
+  umask 077
+  affected_manifest="$(mktemp "$manifest_dir/aicrm-v2-promotion-affected.XXXXXX")" || fallback "affected-manifest-create-failure"
+  printf '%s\n' "$affected_files" >"$affected_manifest" || fallback "affected-manifest-write-failure"
+  chmod 600 "$affected_manifest" || fallback "affected-manifest-mode-failure"
 fi
 
 mode="promotion"

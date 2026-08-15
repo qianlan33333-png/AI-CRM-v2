@@ -602,6 +602,10 @@ required=(
   scripts/ci_promotion_decision.sh
   scripts/check_ci_promotion_smoke.sh
   scripts/test_ci_promotion_decision.sh
+  scripts/run_ci_acceptance_manifest.sh
+  scripts/test_ci_acceptance_manifest.sh
+  scripts/test_ci_promotion_smoke.sh
+  docs/ci/go-acceptance-manifest.tsv
   scripts/check_repo_contract.sh
   scripts/verify_repo_receipts.pl
   scripts/generated-sources.sha256
@@ -716,6 +720,10 @@ done <<'EOF'
 100755 scripts/ci_promotion_decision.sh
 100755 scripts/check_ci_promotion_smoke.sh
 100755 scripts/test_ci_promotion_decision.sh
+100755 scripts/run_ci_acceptance_manifest.sh
+100755 scripts/test_ci_acceptance_manifest.sh
+100755 scripts/test_ci_promotion_smoke.sh
+100644 docs/ci/go-acceptance-manifest.tsv
 100755 scripts/check_repo_contract.sh
 100755 scripts/verify_repo_receipts.pl
 100644 scripts/check_arch_imports.go
@@ -1264,17 +1272,23 @@ verify_index_sha256 package-lock.json \
 verify_index_sha256 web/src/api/generated/health.ts \
   57407569893f22b7c2a3c2ae3bfe5d79960611cbc2fc8b8ccbc0b1f86337779e
 verify_index_sha256 .github/workflows/application-go.yml \
-  0e5dbdf0b29208555fe89b5f3effdf67f2ebc0b47a2d5908af5676bc6c7004a1
+  33347cdc331a6ea44082116be69d0ac1c91cdd9e22d6a907c03c2135f05dfdb4
 verify_index_sha256 .github/workflows/repo-contract.yml \
-  d7ac507239228441b74d1cc8a71ea0f97d1edbdd5c0fdc0ab30b056287e705bf
+  872cff9b28bb896fce8a48b4a3a6b1db844edc93c95af68a9dde30a4d934f17e
 verify_index_sha256 .github/workflows/secret-scan.yml \
-  699a8058682b54611c3cccbf7cd230d647f5c4724d5165fb83f9c2c31b156056
+  95233c1c7bf27d9bb2ee70f3f475c728de7b2dddd7d3aa74ae77968be23b0a57
 verify_index_sha256 scripts/ci_promotion_decision.sh \
-  b6029b28956d4a65f377e8a8d6d1b5566d68b71e99e6106b85bc584e58083e78
+  b41ebbde85b30dc84a996026fa991de3aed224e1bd078783de56a0e95928d7dd
 verify_index_sha256 scripts/check_ci_promotion_smoke.sh \
-  72d48a5a0fbf73611f8030f102030176aeb9b95835def8dbc384a009bd1e9d2c
+  7608fb597fdf71325e0d0414d71447e85398e4804df40f055a0d1e6f120b0284
 verify_index_sha256 scripts/test_ci_promotion_decision.sh \
-  333ec5478f5aae4484aae400539b133275fec064f823ffdd2994965bcb2e9e0b
+  d03d390630f467bff805075210221438562da35d673fc1b7e8b8c1410b7619a5
+verify_index_sha256 scripts/run_ci_acceptance_manifest.sh \
+  7e01bea8632b2fd0368a00efac659a6c0337153aa8bb69d45842f08b25a687a3
+verify_index_sha256 scripts/test_ci_acceptance_manifest.sh \
+  5a80c161c6f9aa947a8c9f48cfb41d361e62e7c86ff64e8803d0eb4bc91399bb
+verify_index_sha256 scripts/test_ci_promotion_smoke.sh \
+  3d1fdd38a09a39386ed772ffe839482f26d9b6f6b30e8286cdf2650843421ff9
 verify_index_sha256 .gitleaks.toml \
   b220c3b1e00671ed5d45f796b341a586a533659b7eecadf4906516769414ff74
 verify_index_sha256 scripts/test_gitleaks_config.sh \
@@ -2278,7 +2292,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   37bf353ca92330154417d99f743328240878036f17d7454a942113b9d40f8407
 verify_index_sha256 scripts/test_repo_contract.sh \
-  76b5f672855ad07a228fcfcd64fc628721a47251ded9d07a1432f58104d661d7
+  2ed91d802402c2a5c1028ff10976d8ed2b0de5c78f04763d2b97337456f7a9c8
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
@@ -3078,6 +3092,49 @@ done
 [[ "$ci_go_target" =~ (^|[[:space:]])query-plan-gate-test($|[[:space:]]) ]] || fail "ci-go must depend on query-plan-gate-test"
 
 application_go_workflow="$(git show ':.github/workflows/application-go.yml')"
+ci_acceptance_manifest="$(git show ':docs/ci/go-acceptance-manifest.tsv')" ||
+  fail "CI acceptance manifest is missing from the staged index"
+require_acceptance_manifest_row() {
+  local row="$1"
+  grep -Fqx "$row" <<<"$ci_acceptance_manifest" ||
+    fail "CI acceptance manifest is missing required row: $row"
+}
+for acceptance_row in \
+  'p3-c01a-migration|P3C01A_TEST_DATABASE_URL|p3-c01a-migration-acceptance' \
+  'p3-r4b-identity-storage|P3R4B_TEST_DATABASE_URL|p3-r4b-identity-storage-acceptance' \
+  'p3-c07c-r3b-storage|P3C07C_R3B_TEST_DATABASE_URL|p3-c07c-r3b-storage-acceptance' \
+  'p3-c07c-r3c-behavior|P3C07C_R3C_TEST_DATABASE_URL|p3-c07c-r3c-behavior-acceptance' \
+  'p3-c02a|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02a-acceptance' \
+  'p3-c02b|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02b-acceptance' \
+  'p3-c02d|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02d-acceptance' \
+  'p3-c02e|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02e-acceptance' \
+  'p3-c03|P3C03_TEST_DATABASE_URL|p3-c03-migration-acceptance' \
+  'p3-c07a|P3C07A_TEST_DATABASE_URL|p3-c07a-acceptance' \
+  'p3-c07b2|P3C07B2_TEST_DATABASE_URL|p3-c07b2-acceptance' \
+  'p3-s05b|SEGMENT_CRUD_TEST_DATABASE_URL|p3-s05b-acceptance' \
+  'p3-w4|WECOM_SYNC_TEST_DATABASE_URL|p3-w4-acceptance' \
+  'p0-s04|-|p0-s04-integration' \
+  'p3-o2|P3O2_ENQUEUE_ONE_TEST_DATABASE_URL|p3-o2-enqueue-one-acceptance' \
+  'p3-o3|P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL|p3-o3-enqueue-batch-acceptance' \
+  'p3-o4|P3O4_SENDER_TEST_DATABASE_URL|p3-o4-sender-acceptance' \
+  'p3-o5|P3O5_STATUS_TEST_DATABASE_URL|p3-o5-status-acceptance' \
+  'p3-o6a|P3O6A_RETRY_TEST_DATABASE_URL|p3-o6a-retry-acceptance' \
+  'p3-o6b1|P3O6B1_CANCEL_TEST_DATABASE_URL|p3-o6b1-cancel-acceptance' \
+  'p3-o6b2|P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL|p3-o6b2-manual-retry-acceptance' \
+  'p3-o7|P3O7_LEGACY_API_TEST_DATABASE_URL|p3-o7-legacy-api-acceptance' \
+  'p4-w0-d01|P4W0D01_AUTOMATION_TEST_DATABASE_URL|p4-w0-d01-automation-acceptance' \
+  'p4-w0-l01|P4W0L01_STATS_TEST_DATABASE_URL|p4-w0-l01-stats-acceptance' \
+  'p4-a01|P4A01_AUTH_TEST_DATABASE_URL|p4-a01-auth-acceptance' \
+  'p4-si00b|P4SI00B_AUTH_TEST_DATABASE_URL|p4-si00b-auth-acceptance' \
+  'p4-i01a|P4I01A_PRODUCT_TEST_DATABASE_URL|p4-i01a-product-acceptance' \
+  'p4-h01a1|P4H01A1_MEDIA_TEST_DATABASE_URL|p4-h01a1-media-acceptance' \
+  'p4-h03|P4H03_MEDIA_TEST_DATABASE_URL|p4-h03-media-acceptance' \
+  'p4-f01a|P4F01A_SURVEY_TEST_DATABASE_URL|p4-f01a-survey-acceptance' \
+  'p4-c01|P4C01_CHANNEL_TEST_DATABASE_URL|p4-c01-channel-acceptance' \
+  'p4-j01|P4J01_COUPON_TEST_DATABASE_URL|p4-j01-coupon-acceptance' \
+  'p4-i03|P4I03_ORDER_TEST_DATABASE_URL|p4-i03-order-acceptance'; do
+  require_acceptance_manifest_row "$acceptance_row"
+done
 verify_postgres_step="$(
   awk '
     $0 == "      - name: Verify PostgreSQL version and migrations" { seen++; capture = 1; next }
@@ -3089,10 +3146,11 @@ verify_postgres_step="$(
 for line in \
   '          ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST: "1"' \
   '          make migration-integration' \
-  '          make p0-s04-integration'; do
+  '          CI_ACCEPTANCE_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" scripts/run_ci_acceptance_manifest.sh'; do
   [[ "$(printf '%s\n' "$verify_postgres_step" | grep -Fxc "$line" || true)" = "1" ]] ||
-    fail "application workflow lost the fixed P0-S04 integration environment or call"
+    fail "application workflow lost the fixed migration or manifest-runner call"
 done
+require_acceptance_manifest_row 'p0-s04|-|p0-s04-integration'
 for line in '      BASH_ENV: ""' '      ENV: ""'; do
   [[ "$(printf '%s\n' "$application_go_workflow" | grep -Fxc "$line" || true)" = "1" ]] ||
     fail "application workflow must clear BASH_ENV and ENV"
@@ -3470,8 +3528,7 @@ grep -Fq 'ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required' <<<"$p3c02a_make" |
 grep -Fq '$(GO) test -race -count=1 -timeout=45s ./acceptance/p3c02a' <<<"$p3c02a_make" ||
   fail "P3-C02A target must run the real PostgreSQL mutation acceptance"
 
-p3c02a_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02a-acceptance' <<<"$p3c02a_workflow" ||
+require_acceptance_manifest_row 'p3-c02a|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02a-acceptance' ||
   fail "application workflow must run P3-C02A against the migration database"
 
 p3c02a_api="$(git show :cmd/aicrm/api.go)"
@@ -3516,8 +3573,7 @@ p3c02b_make="$(git show :Makefile)"
 grep -Fq '$(GO) test -race -count=1 -timeout=45s ./acceptance/p3c02b' <<<"$p3c02b_make" ||
   fail "P3-C02B target must run real PostgreSQL customer-detail acceptance"
 
-p3c02b_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02b-acceptance' <<<"$p3c02b_workflow" ||
+require_acceptance_manifest_row 'p3-c02b|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02b-acceptance' ||
   fail "application workflow must run P3-C02B against the migration database"
 
 p3c02b_query="$(git show :internal/contact/store/queries/customer_detail.sql)"
@@ -3560,8 +3616,7 @@ p3c02d_make="$(git show :Makefile)"
 grep -Fq '$(GO) test -race -count=1 -timeout=90s ./acceptance/p3c02d' <<<"$p3c02d_make" ||
   fail "P3-C02D target must run real PostgreSQL customer-event acceptance"
 
-p3c02d_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02d-acceptance' <<<"$p3c02d_workflow" ||
+require_acceptance_manifest_row 'p3-c02d|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02d-acceptance' ||
   fail "application workflow must run P3-C02D against the migration database"
 
 p3c02d_query="$(git show :internal/contact/store/queries/customer_events.sql)"
@@ -3629,8 +3684,7 @@ p3c02e_make="$(git show :Makefile)"
 grep -Fq '$(GO) test -race -count=1 -timeout=90s ./acceptance/p3c02e' <<<"$p3c02e_make" ||
   fail "P3-C02E target must run real PostgreSQL tag-catalog acceptance"
 
-p3c02e_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fqx '          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c02e-acceptance' <<<"$p3c02e_workflow" ||
+require_acceptance_manifest_row 'p3-c02e|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02e-acceptance' ||
   fail "application workflow must run P3-C02E against the migration database"
 
 p3c02e_query="$(git show :internal/contact/store/queries/tags.sql)"
@@ -3870,8 +3924,7 @@ p3c03_make="$(git show :Makefile)"
 grep -Fq '$(GO) test -race -count=1 -timeout=45s ./acceptance/contact -args -database-url "$$P3C03_TEST_DATABASE_URL"' <<<"$p3c03_make" ||
   fail "P3-C03 target must run the real PostgreSQL partition acceptance"
 
-p3c03_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fqx '          P3C03_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c03-migration-acceptance' <<<"$p3c03_workflow" ||
+require_acceptance_manifest_row 'p3-c03|P3C03_TEST_DATABASE_URL|p3-c03-migration-acceptance' ||
   fail "application workflow must run P3-C03 after migration up/down/up"
 
 p3c03_migration="$(git show :migrations/00006_customer_events.sql)"
@@ -3953,8 +4006,7 @@ p3c07a_make="$(git show :Makefile)"
   fail "P3-C07A acceptance target must be declared exactly once"
 grep -Fq '$(GO) test -race -count=1 -timeout=90s ./acceptance/contact -args -database-url "$$P3C07A_TEST_DATABASE_URL"' <<<"$p3c07a_make" ||
   fail "P3-C07A target must run the real PostgreSQL lineage acceptance"
-p3c07a_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fqx '          P3C07A_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07a-acceptance' <<<"$p3c07a_workflow" ||
+require_acceptance_manifest_row 'p3-c07a|P3C07A_TEST_DATABASE_URL|p3-c07a-acceptance' ||
   fail "application workflow must run P3-C07A after migration up/down/up"
 
 p3c07a_ownership="$(git show :docs/architecture/table-ownership.yml)"
@@ -4078,8 +4130,7 @@ for line in \
   printf '%s\n' "$p3c07b2_recipe" | grep -Fqx "$line" ||
     fail "P3-C07B2 acceptance target lost its exact real PostgreSQL plan invocation"
 done
-p3c07b2_workflow="$(git show :.github/workflows/application-go.yml)"
-grep -Fq 'P3C07B2_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07b2-acceptance' <<<"$p3c07b2_workflow" ||
+require_acceptance_manifest_row 'p3-c07b2|P3C07B2_TEST_DATABASE_URL|p3-c07b2-acceptance' ||
   fail "P3-C07B2 acceptance is disconnected from application CI"
 
 p3c07b2_card="$(git show :docs/execution/slices/P3-C07B2.md)"
@@ -4462,8 +4513,7 @@ r4b_acceptance_recipe="$(make_target_recipe 'p3-r4b-identity-storage-acceptance:
 [[ "$r4b_acceptance_recipe" = *'P3R4B_TEST_DATABASE_URL is required'* &&
    "$r4b_acceptance_recipe" = *'./acceptance/identity -args -database-url "$$P3R4B_TEST_DATABASE_URL"'* ]] ||
   fail "P3-R4B acceptance target lost its explicit database contract"
-grep -Fq 'P3R4B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-r4b-identity-storage-acceptance' \
-  <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-r4b-identity-storage|P3R4B_TEST_DATABASE_URL|p3-r4b-identity-storage-acceptance' ||
   fail "P3-R4B acceptance is disconnected from application migration CI"
 
 r3b_migration="$(git show :migrations/00011_contact_external_event_idempotency.sql)"
@@ -4493,7 +4543,7 @@ done
 r3b_acceptance_recipe="$(make_target_recipe 'p3-c07c-r3b-storage-acceptance:')" || fail "P3-C07C-R3B acceptance target must be unique"
 [[ "$r3b_acceptance_recipe" = *'P3C07C_R3B_TEST_DATABASE_URL is required'* && "$r3b_acceptance_recipe" = *'./acceptance/contact -args -external-event-storage-database-url "$$P3C07C_R3B_TEST_DATABASE_URL"'* ]] ||
   fail "P3-C07C-R3B acceptance target lost its explicit database contract"
-grep -Fq 'P3C07C_R3B_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3b-storage-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-c07c-r3b-storage|P3C07C_R3B_TEST_DATABASE_URL|p3-c07c-r3b-storage-acceptance' ||
   fail "P3-C07C-R3B acceptance is disconnected from application migration CI"
 
 r3c_port="$(git show :internal/contact/port/port.go)"
@@ -4547,7 +4597,7 @@ r3c_acceptance_recipe="$(make_target_recipe 'p3-c07c-r3c-behavior-acceptance:')"
    "$r3c_acceptance_recipe" = *"-run '^TestExternalEvent'"* &&
    "$r3c_acceptance_recipe" = *'-args -database-url "$$P3C07C_R3C_TEST_DATABASE_URL"'* ]] ||
   fail "P3-C07C-R3C acceptance target lost its explicit database contract"
-grep -Fq 'P3C07C_R3C_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-c07c-r3c-behavior-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-c07c-r3c-behavior|P3C07C_R3C_TEST_DATABASE_URL|p3-c07c-r3c-behavior-acceptance' ||
   fail "P3-C07C-R3C acceptance is disconnected from application migration CI"
 
 p3s04a_app="$(git show :internal/segment/app/refresh.go)"
@@ -4741,7 +4791,7 @@ done
 w4_acceptance_recipe="$(make_target_recipe 'p3-w4-acceptance:')" || fail "P3-W4 acceptance target must be unique"
 [[ "$w4_acceptance_recipe" = *'WECOM_SYNC_TEST_DATABASE_URL is required'* && "$w4_acceptance_recipe" = *'./acceptance/wecom'* ]] ||
   fail "P3-W4 acceptance target lost its PostgreSQL contract"
-grep -Fq 'WECOM_SYNC_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-w4-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-w4|WECOM_SYNC_TEST_DATABASE_URL|p3-w4-acceptance' ||
   fail "P3-W4 acceptance is disconnected from application migration CI"
 
 w5_service="$(git show :internal/wecom/app/identity_contact.go)"
@@ -4852,7 +4902,7 @@ done
 p3s05b_acceptance_recipe="$(make_target_recipe 'p3-s05b-acceptance:')" || fail "P3-S05B-R2 acceptance target must be unique"
 [[ "$p3s05b_acceptance_recipe" = *'SEGMENT_CRUD_TEST_DATABASE_URL is required'* && "$p3s05b_acceptance_recipe" = *'TestSegmentCRUDReceiptAndRuntimeFlow'* ]] ||
   fail "P3-S05B-R2 acceptance target lost its PostgreSQL contract"
-grep -Fq 'SEGMENT_CRUD_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-s05b-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-s05b|SEGMENT_CRUD_TEST_DATABASE_URL|p3-s05b-acceptance' ||
   fail "P3-S05B-R2 PG behavior acceptance is disconnected from application CI"
 
 p3o4_migration="$(git show :migrations/00020_outbound_send_attempts.sql)"
@@ -4878,7 +4928,7 @@ for anchor in '00020' '测试 provider' '绝不执行真实外发' '不改 `outb
 done
 p3o4_recipe="$(make_target_recipe 'p3-o4-sender-acceptance:')" || fail "P3-O4 acceptance target must be unique"
 [[ "$p3o4_recipe" = *'P3O4_SENDER_TEST_DATABASE_URL is required'* && "$p3o4_recipe" = *'TestSender'* ]] || fail "P3-O4 acceptance target lost its PostgreSQL contract"
-grep -Fq 'P3O4_SENDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o4-sender-acceptance' <(git show :.github/workflows/application-go.yml) || fail "P3-O4 PG acceptance is disconnected from application CI"
+require_acceptance_manifest_row 'p3-o4|P3O4_SENDER_TEST_DATABASE_URL|p3-o4-sender-acceptance' || fail "P3-O4 PG acceptance is disconnected from application CI"
 grep -Fq 'outbound_send_attempts: stable_provider_attempt_receipts_owned_by_outbound' <(git show :docs/architecture/table-ownership.yml) || fail "P3-O4 receipt lost Outbound ownership"
 
 p3o5_migration="$(git show :migrations/00021_outbound_task_status.sql)"
@@ -4915,7 +4965,7 @@ for anchor in '00021' '不在 O5 创建任何 River 重试 job' '绝不执行真
 done
 p3o5_recipe="$(make_target_recipe 'p3-o5-status-acceptance:')" || fail "P3-O5 acceptance target must be unique"
 [[ "$p3o5_recipe" = *'P3O5_STATUS_TEST_DATABASE_URL is required'* && "$p3o5_recipe" = *'TestSender'* ]] || fail "P3-O5 acceptance target lost its PostgreSQL contract"
-grep -Fq 'P3O5_STATUS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o5-status-acceptance' <(git show :.github/workflows/application-go.yml) || fail "P3-O5 PG acceptance is disconnected from application CI"
+require_acceptance_manifest_row 'p3-o5|P3O5_STATUS_TEST_DATABASE_URL|p3-o5-status-acceptance' || fail "P3-O5 PG acceptance is disconnected from application CI"
 grep -Fq 'outbound_tasks: provider_result_driven_status_projection_without_retry_scheduling' <(git show :docs/architecture/table-ownership.yml) || fail "P3-O5 task status lost Outbound ownership"
 
 p3o6a_migration="$(git show :migrations/00022_outbound_send_attempt_history.sql)"
@@ -4969,7 +5019,7 @@ done
 p3o6a_recipe="$(make_target_recipe 'p3-o6a-retry-acceptance:')" || fail "P3-O6A acceptance target must be unique"
 [[ "$p3o6a_recipe" = *'P3O6A_RETRY_TEST_DATABASE_URL is required'* && "$p3o6a_recipe" = *'o6a_migration_compatibility.sh'* && "$p3o6a_recipe" = *'TestOutboundOutcomeUnknownIsNotRetriedByRealRiver'* ]] ||
   fail "P3-O6A acceptance target lost real retry, history compatibility, or unknown-outcome coverage"
-grep -Fq 'P3O6A_RETRY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6a-retry-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-o6a|P3O6A_RETRY_TEST_DATABASE_URL|p3-o6a-retry-acceptance' ||
   fail "P3-O6A PG/River acceptance is disconnected from application CI"
 grep -Fq 'outbound_send_attempt_history: river_attempt_lifecycle_history_without_business_retry_scheduling' <(git show :docs/architecture/table-ownership.yml) ||
   fail "P3-O6A attempt history lost Outbound ownership"
@@ -5046,7 +5096,7 @@ done
 p3o6b1_recipe="$(make_target_recipe 'p3-o6b1-cancel-acceptance:')" || fail "P3-O6B1 acceptance target must be unique"
 [[ "$p3o6b1_recipe" = *'P3O6B1_CANCEL_TEST_DATABASE_URL is required'* && "$p3o6b1_recipe" = *'o6b1_migration_compatibility.sh'* && "$p3o6b1_recipe" = *'TestCancel'* ]] ||
   fail "P3-O6B1 acceptance target lost cancellation, race, or migration coverage"
-grep -Fq 'P3O6B1_CANCEL_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6b1-cancel-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-o6b1|P3O6B1_CANCEL_TEST_DATABASE_URL|p3-o6b1-cancel-acceptance' ||
   fail "P3-O6B1 PG/River acceptance is disconnected from application CI"
 grep -Fq 'outbound_task_job_links: immutable_outbound_task_to_river_job_generation_link' <(git show :docs/architecture/table-ownership.yml) ||
   fail "P3-O6B1 task/job link lost Outbound ownership"
@@ -5114,7 +5164,7 @@ done
 p3o6b2_recipe="$(make_target_recipe 'p3-o6b2-manual-retry-acceptance:')" || fail "P3-O6B2 acceptance target must be unique"
 [[ "$p3o6b2_recipe" = *'P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL is required'* && "$p3o6b2_recipe" = *'o6b2_migration_compatibility.sh'* && "$p3o6b2_recipe" = *'TestManualRetry'* ]] ||
   fail "P3-O6B2 acceptance target lost retry, typed batch, rollback, or migration coverage"
-grep -Fq 'P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p3-o6b2-manual-retry-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p3-o6b2|P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL|p3-o6b2-manual-retry-acceptance' ||
   fail "P3-O6B2 PG/River acceptance is disconnected from application CI"
 
 p4d01_migration="$(git show :migrations/00025_automation_tag_trigger.sql)"
@@ -5221,7 +5271,7 @@ p4d01_recipe="$(make_target_recipe 'p4-w0-d01-automation-acceptance:')" ||
    "$p4d01_recipe" = *'d01_migration_compatibility.sh'* &&
    "$p4d01_recipe" = *'./acceptance/automation'* ]] ||
   fail "P4-W0-D01 acceptance target lost migration, River, or business coverage"
-grep -Fq 'P4W0D01_AUTOMATION_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-w0-d01-automation-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-w0-d01|P4W0D01_AUTOMATION_TEST_DATABASE_URL|p4-w0-d01-automation-acceptance' ||
   fail "P4-W0-D01 acceptance is disconnected from application CI"
 grep -Fq 'automation_trigger_receipts: unique_tag_trigger_receipt_per_source_event' <(git show :docs/architecture/table-ownership.yml) ||
   fail "P4-W0-D01 Automation receipt lost ownership"
@@ -5313,7 +5363,7 @@ p4l01_recipe="$(make_target_recipe 'p4-w0-l01-stats-acceptance:')" ||
    "$p4l01_recipe" = *'l01_migration_compatibility.sh'* &&
    "$p4l01_recipe" = *'./acceptance/stats'* ]] ||
   fail "P4-W0-L01 acceptance target lost migration, River, or Stats business coverage"
-grep -Fq 'P4W0L01_STATS_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-w0-l01-stats-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-w0-l01|P4W0L01_STATS_TEST_DATABASE_URL|p4-w0-l01-stats-acceptance' ||
   fail "P4-W0-L01 acceptance is disconnected from application CI"
 grep -Fq 'stats_event_receipts: unique_projection_receipt_per_source_event' <(git show :docs/architecture/table-ownership.yml) ||
   fail "P4-W0-L01 receipt lost Stats ownership"
@@ -5422,7 +5472,7 @@ p4a01_recipe="$(make_target_recipe 'p4-a01-auth-acceptance:')" ||
    "$p4a01_recipe" = *'a01_migration_compatibility.sh'* &&
    "$p4a01_recipe" = *"-run '^TestA01' ./cmd/aicrm -args -p4-a01-database-url"* ]] ||
   fail "P4-A01 acceptance target lost migration or human auth coverage"
-grep -Fq 'P4A01_AUTH_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-a01-auth-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-a01|P4A01_AUTH_TEST_DATABASE_URL|p4-a01-auth-acceptance' ||
   fail "P4-A01 acceptance is disconnected from application CI"
 grep -Fq 'admin_oauth_states: hashed_one_time_nonce_and_safe_internal_next_only' <(git show :docs/architecture/table-ownership.yml) ||
   fail "P4-A01 OAuth state lost Auth ownership"
@@ -5508,7 +5558,7 @@ p4si00b_recipe="$(make_target_recipe 'p4-si00b-auth-acceptance:')" ||
    "$p4si00b_recipe" = *'./acceptance/p2s09 ./acceptance/p2s16'* &&
    "$p4si00b_recipe" = *'TestA01|TestHumanOAuth|TestHumanAuth|TestFinalRouter'* ]] ||
   fail "P4-SI00B acceptance target lost the directly affected Auth chain"
-grep -Fq 'P4SI00B_AUTH_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-si00b-auth-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-si00b|P4SI00B_AUTH_TEST_DATABASE_URL|p4-si00b-auth-acceptance' ||
   fail "P4-SI00B acceptance is disconnected from application CI"
 grep -Fq 'goose -dir migrations postgres "$$P4A01_AUTH_TEST_DATABASE_URL" up' <<<"$p4a01_recipe" ||
   fail "P4-A01 acceptance does not return to current waterline after its frozen 26/27/26/27 proof"
@@ -5650,7 +5700,7 @@ p4i01a_recipe="$(make_target_recipe 'p4-i01a-product-acceptance:')" ||
    "$p4i01a_recipe" = *'i01a_migration_compatibility.sh'* &&
    "$p4i01a_recipe" = *'./internal/product/... ./cmd/aicrm'* ]] ||
   fail "P4-I01A acceptance target lost the directly affected Product chain"
-grep -Fq 'P4I01A_PRODUCT_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-i01a-product-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-i01a|P4I01A_PRODUCT_TEST_DATABASE_URL|p4-i01a-product-acceptance' ||
   fail "P4-I01A acceptance is disconnected from application CI"
 
 for ownership_anchor in \
@@ -5773,7 +5823,7 @@ p4f01a_recipe="$(make_target_recipe 'p4-f01a-survey-acceptance:')" ||
    "$p4f01a_recipe" = *'f01a_migration_compatibility.sh'* &&
    "$p4f01a_recipe" = *'./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm'* ]] ||
   fail "P4-F01A acceptance target lost its directly affected Survey/Auth/Event chain"
-grep -Fq 'P4F01A_SURVEY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-f01a-survey-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-f01a|P4F01A_SURVEY_TEST_DATABASE_URL|p4-f01a-survey-acceptance' ||
   fail "P4-F01A acceptance is disconnected from application CI"
 
 for ownership_anchor in \
@@ -5885,7 +5935,7 @@ p4c01_recipe="$(make_target_recipe 'p4-c01-channel-acceptance:')" ||
    "$p4c01_recipe" = *'./internal/contact/app ./internal/contact/store'* &&
    "$p4c01_recipe" = *'./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm'* ]] ||
   fail "P4-C01 acceptance target lost its directly affected Contact/Auth/Event chain"
-grep -Fq 'P4C01_CHANNEL_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-c01-channel-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-c01|P4C01_CHANNEL_TEST_DATABASE_URL|p4-c01-channel-acceptance' ||
   fail "P4-C01 acceptance is disconnected from application CI"
 
 p4c01_ownership="$(git show :docs/architecture/table-ownership.yml)"
@@ -6050,7 +6100,7 @@ p4j01_recipe="$(make_target_recipe 'p4-j01-coupon-acceptance:')" ||
    "$p4j01_recipe" = *'./internal/coupon/... ./internal/product/...'* &&
    "$p4j01_recipe" = *'./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm'* ]] ||
   fail "P4-J01 acceptance target lost its directly affected Coupon/Product/Auth/Event chain"
-grep -Fq 'P4J01_COUPON_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-j01-coupon-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-j01|P4J01_COUPON_TEST_DATABASE_URL|p4-j01-coupon-acceptance' ||
   fail "P4-J01 acceptance is disconnected from application CI"
 
 p4j01_ownership="$(git show :docs/architecture/table-ownership.yml)"
@@ -6164,7 +6214,7 @@ p4h03_recipe="$(make_target_recipe 'p4-h03-media-acceptance:')" ||
    "$p4h03_recipe" = *'./internal/media/...'* &&
    "$p4h03_recipe" = *'./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm'* ]] ||
   fail "P4-H03 acceptance target lost the directly affected Media/Auth/Event chain"
-grep -Fq 'P4H03_MEDIA_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-h03-media-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-h03|P4H03_MEDIA_TEST_DATABASE_URL|p4-h03-media-acceptance' ||
   fail "P4-H03 acceptance is disconnected from application CI"
 
 p4h03_ownership="$(git show :docs/architecture/table-ownership.yml)"
@@ -6382,7 +6432,7 @@ done
 p4i03_recipe="$(make_target_recipe 'p4-i03-order-acceptance:')" || fail "P4-I03 acceptance target must be unique"
 [[ "$p4i03_recipe" = *'P4I03_ORDER_TEST_DATABASE_URL is required'* && "$p4i03_recipe" = *'i03_migration_compatibility.sh'* && "$p4i03_recipe" = *'./internal/order/... ./internal/contact/store ./internal/product/store ./internal/auth/... ./cmd/aicrm'* ]] ||
   fail "P4-I03 acceptance target lost its directly affected Order/Contact/Product/Auth chain"
-grep -Fq 'P4I03_ORDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-i03-order-acceptance' <(git show :.github/workflows/application-go.yml) ||
+require_acceptance_manifest_row 'p4-i03|P4I03_ORDER_TEST_DATABASE_URL|p4-i03-order-acceptance' ||
   fail "P4-I03 acceptance is disconnected from application CI"
 
 for ledger_anchor in \

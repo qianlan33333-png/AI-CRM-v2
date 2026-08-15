@@ -9,6 +9,28 @@ fail() {
   exit 1
 }
 
+affected_manifest="${CI_PROMOTION_AFFECTED_MANIFEST:-}"
+[[ -n "$affected_manifest" ]] || fail "CI_PROMOTION_AFFECTED_MANIFEST is required"
+[[ -f "$affected_manifest" && ! -L "$affected_manifest" ]] || fail "affected manifest must be a regular file"
+jq -e '
+  type == "array" and length > 0 and
+  all(.[];
+    (.filename | type == "string" and test("^[A-Za-z0-9._/-]+$") and (contains("..") | not)) and
+    (.status == "added" or .status == "modified") and
+    (.sha | type == "string" and test("^[0-9a-f]{40}$"))
+  )
+' "$affected_manifest" >/dev/null || fail "affected manifest has an invalid entry"
+
+git rev-parse --verify --quiet HEAD^ >/dev/null || fail "HEAD must have exactly one parent"
+actual_paths="$(git diff --name-only --no-renames HEAD^ HEAD | LC_ALL=C sort)"
+manifest_paths="$(jq -r '.[].filename' "$affected_manifest" | LC_ALL=C sort)"
+[[ "$actual_paths" = "$manifest_paths" ]] || fail "affected manifest path set differs from HEAD"
+while IFS=$'\t' read -r file_path expected_blob; do
+  actual_blob="$(git rev-parse "HEAD:${file_path}")" || fail "affected path is absent from HEAD: $file_path"
+  [[ "$actual_blob" = "$expected_blob" ]] || fail "affected fingerprint mismatch: $file_path"
+  printf 'affected %s %s\n' "$file_path" "$actual_blob"
+done < <(jq -r '.[] | [.filename, .sha] | @tsv' "$affected_manifest")
+
 for startup_path in cmd/aicrm/main.go internal/platform/runtime/run.go; do
   [[ -f "$startup_path" && ! -L "$startup_path" ]] || fail "invalid startup path: $startup_path"
   git cat-file -e "HEAD:${startup_path}" || fail "startup path is absent from HEAD: $startup_path"

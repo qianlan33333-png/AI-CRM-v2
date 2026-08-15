@@ -34,7 +34,7 @@ make_valid_case() {
   write_fixture "$root" "/repos/$repository/commits/$head_sha/check-runs?per_page=100" \
     "$(jq -n --arg head "$head_sha" '{check_runs:["application / go","application / web","policy / repo-contract","security / secret-scan"] | map({name:.,status:"completed",conclusion:"success",head_sha:$head,completed_at:"2026-08-14T01:02:00Z",app:{slug:"github-actions"}})}')"
   write_fixture "$root" "/repos/$repository/pulls/7/files?per_page=100" \
-    '[{"filename":"internal/contact/app/service.go"}]'
+    "$(jq -n --arg sha "$head_sha" '[{filename:"internal/contact/app/service.go",status:"modified",sha:$sha}]')"
 }
 
 run_case() {
@@ -42,7 +42,7 @@ run_case() {
   local output
   output="$(CI_PROMOTION_TEST_MODE=1 CI_PROMOTION_FIXTURE_DIR="$root" \
     CI_PROMOTION_EVENT_NAME=push CI_PROMOTION_REF=refs/heads/main \
-    CI_PROMOTION_SHA="$merge_sha" GITHUB_REPOSITORY="$repository" \
+    CI_PROMOTION_SHA="$merge_sha" GITHUB_REPOSITORY="$repository" GITHUB_ACTIONS=false \
     scripts/ci_promotion_decision.sh)"
   grep -Fq "mode=$expected_mode reason=$expected_reason" <<<"$output" || {
     printf 'ci-promotion-tests: %s failed: %s\n' "$name" "$output" >&2
@@ -53,6 +53,22 @@ run_case() {
 valid="$test_root/valid"
 make_valid_case "$valid"
 run_case valid "$valid" promotion same-tree-squash-provenance-verified
+
+runtime_output="$test_root/promotion-output"
+CI_PROMOTION_TEST_MODE=1 CI_PROMOTION_FIXTURE_DIR="$valid" \
+  CI_PROMOTION_EVENT_NAME=push CI_PROMOTION_REF=refs/heads/main \
+  CI_PROMOTION_SHA="$merge_sha" GITHUB_REPOSITORY="$repository" GITHUB_ACTIONS=false \
+  GITHUB_OUTPUT="$runtime_output" RUNNER_TEMP="$valid" \
+  scripts/ci_promotion_decision.sh >/dev/null
+runtime_manifest="$(awk -F= '$1 == "affected_manifest" { print $2 }' "$runtime_output")"
+[[ -f "$runtime_manifest" && ! -L "$runtime_manifest" ]] || {
+  echo "ci-promotion-tests: affected manifest was not emitted" >&2
+  exit 1
+}
+jq -e --arg sha "$head_sha" 'length == 1 and .[0].filename == "internal/contact/app/service.go" and .[0].sha == $sha' "$runtime_manifest" >/dev/null || {
+  echo "ci-promotion-tests: affected manifest contents are invalid" >&2
+  exit 1
+}
 
 direct_push="$test_root/direct-push"
 make_valid_case "$direct_push"
@@ -115,7 +131,18 @@ api_failure="$test_root/api-failure"
 mkdir -p "$api_failure"
 run_case api-failure "$api_failure" full api-failure-current-commit
 
-for risk in workflow:.github/workflows/application-go.yml build:go.mod migration:migrations/00032_example.sql; do
+for promoted in migration:migrations/00032_example.sql openapi:api/openapi.yaml matrix:docs/feature-matrix.csv generated:internal/api/generated/server.gen.go; do
+  name="${promoted%%:*}"
+  path="${promoted#*:}"
+  root="$test_root/promoted-$name"
+  make_valid_case "$root"
+  files_file="$root/$(fixture_name "/repos/$repository/pulls/7/files?per_page=100").json"
+  jq --arg path "$path" '.[0].filename = $path' "$files_file" >"$files_file.tmp"
+  mv "$files_file.tmp" "$files_file"
+  run_case "promoted-$name" "$root" promotion same-tree-squash-provenance-verified
+done
+
+for risk in workflow:.github/workflows/application-go.yml checker:scripts/check_repo_contract.sh root-dep:go.mod migration-framework:migrations/README.md shared-global:internal/platform/runtime/run.go; do
   name="${risk%%:*}"
   path="${risk#*:}"
   root="$test_root/risk-$name"
@@ -123,7 +150,7 @@ for risk in workflow:.github/workflows/application-go.yml build:go.mod migration
   files_file="$root/$(fixture_name "/repos/$repository/pulls/7/files?per_page=100").json"
   jq --arg path "$path" '.[0].filename = $path' "$files_file" >"$files_file.tmp"
   mv "$files_file.tmp" "$files_file"
-  run_case "risk-$name" "$root" full risk-change
+  run_case "risk-$name" "$root" full framework-risk-change
 done
 
 echo "ci-promotion-tests: PASS"

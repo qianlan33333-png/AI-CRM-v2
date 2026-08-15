@@ -6,6 +6,10 @@ fail() {
   exit 1
 }
 
+scripts/test_ci_acceptance_manifest.sh
+scripts/test_ci_promotion_decision.sh
+scripts/test_ci_promotion_smoke.sh
+
 for forbidden_git_env in \
   GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
   GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_QUARANTINE_PATH; do
@@ -1720,13 +1724,13 @@ if (cd "$broken_p0s04_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2
   fail "ci-go without the P0-S04 acceptance dependency was accepted"
 fi
 
-missing_p0s04_workflow_fixture="$(make_fixture missing-p0s04-workflow-integration)"
-sed -i.bak '/^          make p0-s04-integration$/d' \
-  "$missing_p0s04_workflow_fixture/.github/workflows/application-go.yml"
-rm -f "$missing_p0s04_workflow_fixture/.github/workflows/application-go.yml.bak"
-git -C "$missing_p0s04_workflow_fixture" add .github/workflows/application-go.yml
+missing_p0s04_workflow_fixture="$(make_fixture missing-p0s04-manifest-entry)"
+sed -i.bak '/^p0-s04|-|p0-s04-integration$/d' \
+  "$missing_p0s04_workflow_fixture/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$missing_p0s04_workflow_fixture/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$missing_p0s04_workflow_fixture" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$missing_p0s04_workflow_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
-  fail "application workflow without P0-S04 integration was accepted"
+  fail "application acceptance manifest without P0-S04 integration was accepted"
 fi
 
 missing_orval_gate_fixture="$(make_fixture missing-orval-gate)"
@@ -2153,10 +2157,10 @@ if (cd "$missing_p3c02a_store" && scripts/check_repo_contract.sh >/dev/null 2>&1
 fi
 
 disconnected_p3c02a_workflow="$(make_fixture disconnected-p3-c02a-workflow)"
-sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02a-acceptance/d' \
-  "$disconnected_p3c02a_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c02a_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c02a_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c02a|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02a-acceptance$/d' \
+  "$disconnected_p3c02a_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c02a_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c02a_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c02a_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C02A real PostgreSQL acceptance disconnected from application CI was accepted"
 fi
@@ -2275,10 +2279,10 @@ for file_path in internal/contact/store/customer_detail_repository.go internal/c
 done
 
 disconnected_p3c02b_workflow="$(make_fixture disconnected-p3-c02b-workflow)"
-sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02b-acceptance/d' \
-  "$disconnected_p3c02b_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c02b_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c02b_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c02b|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02b-acceptance$/d' \
+  "$disconnected_p3c02b_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c02b_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c02b_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c02b_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C02B real PostgreSQL acceptance disconnected from application CI was accepted"
 fi
@@ -2361,10 +2365,10 @@ for file_path in \
 done
 
 disconnected_p3c02d_workflow="$(make_fixture disconnected-p3-c02d-workflow)"
-sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02d-acceptance/d' \
-  "$disconnected_p3c02d_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c02d_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c02d_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c02d|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02d-acceptance$/d' \
+  "$disconnected_p3c02d_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c02d_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c02d_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c02d_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C02D real PostgreSQL acceptance disconnected from application CI was accepted"
 fi
@@ -2502,10 +2506,10 @@ if (cd "$ungrouped_first_p3c02e" && scripts/check_repo_contract.sh >/dev/null 2>
 fi
 
 disconnected_p3c02e_workflow="$(make_fixture disconnected-p3-c02e-workflow)"
-sed -i.bak '/ACCEPTANCE_FIXTURES_TEST_DATABASE_URL=.*p3-c02e-acceptance/d' \
-  "$disconnected_p3c02e_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c02e_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c02e_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c02e|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02e-acceptance$/d' \
+  "$disconnected_p3c02e_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c02e_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c02e_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c02e_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C02E real PostgreSQL acceptance disconnected from CI was accepted"
 fi
@@ -2768,10 +2772,10 @@ for file_path in migrations/00006_customer_events.sql internal/contact/worker/ev
 done
 
 disconnected_p3c03_workflow="$(make_fixture disconnected-p3-c03-workflow)"
-sed -i.bak '/P3C03_TEST_DATABASE_URL=.*p3-c03-migration-acceptance/d' \
-  "$disconnected_p3c03_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c03_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c03_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c03|P3C03_TEST_DATABASE_URL|p3-c03-migration-acceptance$/d' \
+  "$disconnected_p3c03_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c03_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c03_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c03_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C03 migration acceptance disconnected from application CI was accepted"
 fi
@@ -2856,10 +2860,10 @@ if (cd "$p3c07a_replay" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
 fi
 
 disconnected_p3c07a_workflow="$(make_fixture disconnected-p3-c07a-workflow)"
-sed -i.bak '/P3C07A_TEST_DATABASE_URL=.*p3-c07a-acceptance/d' \
-  "$disconnected_p3c07a_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c07a_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c07a_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c07a|P3C07A_TEST_DATABASE_URL|p3-c07a-acceptance$/d' \
+  "$disconnected_p3c07a_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c07a_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c07a_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c07a_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C07A migration acceptance disconnected from application CI was accepted"
 fi
@@ -2989,10 +2993,10 @@ if (cd "$hollow_p3c07b2_target" && scripts/check_repo_contract.sh >/dev/null 2>&
 fi
 
 disconnected_p3c07b2_workflow="$(make_fixture disconnected-p3-c07b2-workflow)"
-sed -i.bak '/P3C07B2_TEST_DATABASE_URL=.*p3-c07b2-acceptance/d' \
-  "$disconnected_p3c07b2_workflow/.github/workflows/application-go.yml"
-rm -f "$disconnected_p3c07b2_workflow/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$disconnected_p3c07b2_workflow" .github/workflows/application-go.yml
+sed -i.bak '/^p3-c07b2|P3C07B2_TEST_DATABASE_URL|p3-c07b2-acceptance$/d' \
+  "$disconnected_p3c07b2_workflow/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$disconnected_p3c07b2_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$disconnected_p3c07b2_workflow" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$disconnected_p3c07b2_workflow" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-C07B2 real PostgreSQL plan acceptance disconnected from application CI was accepted"
 fi
@@ -3355,9 +3359,9 @@ if (cd "$s5b_route_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); th
 fi
 
 s5b_ci_disconnect="$(make_fixture p3-s05b-r2-ci-disconnect)"
-sed -i.bak '/SEGMENT_CRUD_TEST_DATABASE_URL=.*p3-s05b-acceptance/d' "$s5b_ci_disconnect/.github/workflows/application-go.yml"
-rm -f "$s5b_ci_disconnect/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$s5b_ci_disconnect" .github/workflows/application-go.yml
+sed -i.bak '/^p3-s05b|SEGMENT_CRUD_TEST_DATABASE_URL|p3-s05b-acceptance$/d' "$s5b_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$s5b_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$s5b_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$s5b_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-S05B-R2 PG behavior acceptance CI disconnect was accepted"
 fi
@@ -3386,9 +3390,9 @@ if (cd "$o6a_unknown_retry" && scripts/check_repo_contract.sh >/dev/null 2>&1); 
 fi
 
 o6a_ci_disconnect="$(make_fixture p3-o6a-ci-disconnect)"
-sed -i.bak '/P3O6A_RETRY_TEST_DATABASE_URL=.*p3-o6a-retry-acceptance/d' "$o6a_ci_disconnect/.github/workflows/application-go.yml"
-rm -f "$o6a_ci_disconnect/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$o6a_ci_disconnect" .github/workflows/application-go.yml
+sed -i.bak '/^p3-o6a|P3O6A_RETRY_TEST_DATABASE_URL|p3-o6a-retry-acceptance$/d' "$o6a_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$o6a_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$o6a_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$o6a_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-O6A PG/River acceptance CI disconnect was accepted"
 fi
@@ -3441,9 +3445,9 @@ if (cd "$o6b1_transition_weakened" && scripts/check_repo_contract.sh >/dev/null 
 fi
 
 o6b1_ci_disconnect="$(make_fixture p3-o6b1-ci-disconnect)"
-sed -i.bak '/P3O6B1_CANCEL_TEST_DATABASE_URL=.*p3-o6b1-cancel-acceptance/d' "$o6b1_ci_disconnect/.github/workflows/application-go.yml"
-rm -f "$o6b1_ci_disconnect/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$o6b1_ci_disconnect" .github/workflows/application-go.yml
+sed -i.bak '/^p3-o6b1|P3O6B1_CANCEL_TEST_DATABASE_URL|p3-o6b1-cancel-acceptance$/d' "$o6b1_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$o6b1_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$o6b1_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$o6b1_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-O6B1 PG/River acceptance CI disconnect was accepted"
 fi
@@ -3472,9 +3476,9 @@ if (cd "$o6b2_cross_catalog" && scripts/check_repo_contract.sh >/dev/null 2>&1);
 fi
 
 o6b2_ci_disconnect="$(make_fixture p3-o6b2-ci-disconnect)"
-sed -i.bak '/P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL=.*p3-o6b2-manual-retry-acceptance/d' "$o6b2_ci_disconnect/.github/workflows/application-go.yml"
-rm -f "$o6b2_ci_disconnect/.github/workflows/application-go.yml.bak"
-restage_p2s18_receipt "$o6b2_ci_disconnect" .github/workflows/application-go.yml
+sed -i.bak '/^p3-o6b2|P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL|p3-o6b2-manual-retry-acceptance$/d' "$o6b2_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$o6b2_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$o6b2_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$o6b2_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P3-O6B2 PG/River acceptance CI disconnect was accepted"
 fi

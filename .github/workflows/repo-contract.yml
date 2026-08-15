@@ -39,4 +39,6 @@ jobs:
         run: scripts/test_repo_contract.sh
       - name: Verify promotion fingerprints
         if: steps.promotion.outputs.mode == 'promotion'
+        env:
+          CI_PROMOTION_AFFECTED_MANIFEST: ${{ steps.promotion.outputs.affected_manifest }}
         run: scripts/check_ci_promotion_smoke.sh
