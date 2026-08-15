@@ -822,6 +822,35 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-config-settings-compat]
+      operationId: saveLegacyAppSettingsResource
+      summary: Save non-secret app settings through the frozen JSON compatibility transport
+      x-legacy-mapping-ids: [LEGACY-API-0254]
+      x-p4-decision-evidence: P4-ADMINOPS-JOBS-AB-2026-08-16
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-external-effect: none
+      parameters:
+        - name: X-Admin-Action-Token
+          in: header
+          required: false
+          description: Exact PUT-bound action token; it may instead be supplied in the JSON body.
+          schema: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveRequest" }
+      responses:
+        "200": { description: Local Config service write completed without any provider or worker execution., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveResponse" } } } }
+        "400": { description: "A finite malformed, confirmation, token, setting, or raw-secret error.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Reused request identifier conflicts with a different settings command., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
+        "503": { description: Config projection or command dependency is unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
   /api/admin/automation-conversion/agent-runs:
     get:
       tags: [p4-automation-compat]
@@ -3749,6 +3778,58 @@ components:
         config: { $ref: "#/components/schemas/LegacyAppSettingsProjection" }
         source_status: { type: string, enum: [next_read_model] }
         fallback_used: { type: boolean, enum: [false] }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$', description: Present only for an authenticated caller and bound to PUT /api/admin/config/app-settings. }
+    LegacyAppSettingsResourceSaveRequest:
+      type: object
+      additionalProperties: true
+      required: [confirm]
+      properties:
+        settings:
+          type: object
+          additionalProperties:
+            oneOf:
+              - { type: string, maxLength: 4096 }
+              - { type: number }
+        confirm: { type: boolean, enum: [true] }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$', description: Used only when the action-token header is absent. }
+        operator: { type: string, description: Ignored; actor is always derived from the authenticated Principal. }
+    LegacyAppSettingsResourceChangedEditable:
+      type: object
+      additionalProperties: false
+      required: [key, value]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 200 }
+        value:
+          oneOf:
+            - { type: string, maxLength: 4096 }
+            - { type: number }
+    LegacyAppSettingsResourceChangedMasked:
+      type: object
+      additionalProperties: false
+      required: [key, configured, masked]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 200 }
+        configured: { type: boolean, enum: [true] }
+        masked: { type: boolean, enum: [true] }
+    LegacyAppSettingsResourceSaveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, changed, changed_count, config, source_status, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        changed: { type: array, maxItems: 12, items: { oneOf: [{ $ref: "#/components/schemas/LegacyAppSettingsResourceChangedEditable" }, { $ref: "#/components/schemas/LegacyAppSettingsResourceChangedMasked" }] } }
+        changed_count: { type: integer, minimum: 0, maximum: 12 }
+        config: { $ref: "#/components/schemas/LegacyAppSettingsProjection" }
+        source_status: { type: string, enum: [next_command] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyAppSettingsResourceSaveError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [payload_must_be_object, confirmation_required, settings_must_be_object, invalid_setting_value, invalid_action_token, secret_input_forbidden, settings_idempotency_conflict, invalid_setting, settings_unavailable] }
     LegacyAppSettingsSaveForm:
       type: object
       additionalProperties: false

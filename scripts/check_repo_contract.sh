@@ -701,6 +701,8 @@ required=(
   acceptance/adminops/control_plane_migration_compatibility.sh
   cmd/aicrm/legacy_admin_ops.go
   cmd/aicrm/legacy_admin_ops_test.go
+	cmd/aicrm/legacy_admin_ops_app_settings_resource.go
+	cmd/aicrm/legacy_admin_ops_app_settings_resource_test.go
   docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md
   internal/adminops/app/service.go
   internal/adminops/port/port.go
@@ -1317,6 +1319,8 @@ done <<'EOF'
 100755 acceptance/adminops/control_plane_migration_compatibility.sh
 100644 cmd/aicrm/legacy_admin_ops.go
 100644 cmd/aicrm/legacy_admin_ops_test.go
+100644 cmd/aicrm/legacy_admin_ops_app_settings_resource.go
+100644 cmd/aicrm/legacy_admin_ops_app_settings_resource_test.go
 100644 docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md
 100644 internal/adminops/app/service.go
 100644 internal/adminops/port/port.go
@@ -1353,7 +1357,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  a3011a3c52f3a21d5a205c9e09013a7150957e180ea37ac7ceb01feb1010815d
+  32b5164ee6b8ec7afc96d799d3fcbad62b0fff365d08b2c90b0b89447a69da92
 verify_index_sha256 .github/workflows/application-go.yml \
   33347cdc331a6ea44082116be69d0ac1c91cdd9e22d6a907c03c2135f05dfdb4
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -1581,7 +1585,7 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  d322576ddec1d1f5f32aada1503477542bcaa2acb30b2df57d510c08768a8c4f
+  7ae0c11193e266bf51a60bba1d5c19b497658bfd0d8d0e90851822c72229c45f
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
@@ -2067,7 +2071,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  dbb34da9f3e9e72d437fba001f1796b384c22266031f60417f156ec64f331717
+  56e043dbdc66aa044f196b3a2354a0227948f397445259e80b80b9ed07424206
 verify_index_sha256 cmd/aicrm/api_test.go \
   c8e0ed59f3758867a869f08a7b4cf36f766cf24831da23a1ba3b137985244ab5
 verify_index_sha256 acceptance/p2s11/doc.go \
@@ -2725,8 +2729,12 @@ verify_index_sha256 cmd/aicrm/legacy_admin_ops.go \
   46e38f3f0c95ac4c047d35deb9a55457c53af45d4cfb7bb66c65335fd7e367de
 verify_index_sha256 cmd/aicrm/legacy_admin_ops_test.go \
   7f62415e1deee5c29c31adbfef86b7af92081200be1d2bf97fe174ca96100436
+verify_index_sha256 cmd/aicrm/legacy_admin_ops_app_settings_resource.go \
+  4fe48123c9f3f8e87ab4f338239d9d7ee8653a923786630411a8b040db589bc1
+verify_index_sha256 cmd/aicrm/legacy_admin_ops_app_settings_resource_test.go \
+  76be86e48c38f2b0c4fabc2c748e2451a7592269ab3611cfe4d4d0bf97c48233
 verify_index_sha256 docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md \
-  bd6973acd9057d155544689f6cb29252474ee65d6c4186513785f6512f6c3fe6
+  e1fc736dc6c8358417013f74234acaa4f89c2373696fa6ae047efcb470f1ce90
 verify_index_sha256 internal/adminops/app/service.go \
   6700466043f38a9cfb1972c56bf0c34b2ca91d580939e8a701367b4f676d5298
 verify_index_sha256 internal/adminops/port/port.go \
@@ -6676,7 +6684,7 @@ done
   fail "P4-H03 must preserve the exact 293-row feature matrix plus header"
 
 verify_index_sha256 cmd/aicrm/legacy_config_settings.go \
-  1c18fa75bee1073d353878b219d470a2294cce7fb174e76f02b5395d9efc1e8f
+  ca8ae7b42f76c74a7b0e20f450d7acb5df5167a22df0efa062accef70cfd24b8
 verify_index_sha256 cmd/aicrm/legacy_config_settings_test.go \
   98a5e37406274c4c4414ed5d0447e1209381b64722dba1103db0f05c84f41b30
 verify_index_sha256 docs/execution/slices/P4-A02.md \
@@ -6694,7 +6702,8 @@ p4a02_routes="$(git show :cmd/aicrm/api.go)"
 for anchor in \
   '{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)}' \
   '{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)}' \
-  '{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)}'; do
+	'{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)}' \
+	'{http.MethodPut, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettingsResource)}'; do
   grep -Fq -- "$anchor" <<<"$p4a02_routes" || fail "P4-A02 route registration drifted: $anchor"
 done
 p4a02_auth="$(git show :internal/auth/app/policy.go)"
@@ -6734,10 +6743,15 @@ for anchor in \
   'operationId: getLegacyAppSettingsPage' \
   'operationId: saveLegacyAppSettingsPage' \
   'operationId: getLegacyAppSettingsResource' \
+  'operationId: saveLegacyAppSettingsResource' \
+  'x-legacy-mapping-ids: [LEGACY-API-0254]' \
   'x-aicrm-capability: config.settings.manage' \
   'x-aicrm-session-bound-csrf: required' \
+  'x-aicrm-route-bound-action-token: required' \
   'version: { type: string, enum: [""] }' \
-  'source_status: { type: string, enum: [next_read_model] }'; do
+  'source_status: { type: string, enum: [next_read_model] }' \
+  'source_status: { type: string, enum: [next_command] }' \
+  'real_external_call_executed: { type: boolean, enum: [false] }'; do
   grep -Fq -- "$anchor" <<<"$p4a02_openapi" || fail "P4-A02 OpenAPI drifted: $anchor"
 done
 
@@ -6841,12 +6855,26 @@ for anchor in \
   '{http.MethodPost, "/api/admin/config/api-key/generate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)}' \
   '{http.MethodPost, "/api/admin/jobs/archive-sync/run", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)}' \
   '{http.MethodPost, "/api/admin/broadcast-jobs/{job_id}/cancel", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)}' \
+	'{http.MethodPut, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettingsResource)}' \
   'legacyHandler.adminOps = adminOpsService'; do
   grep -Fq -- "$anchor" <<<"$p4adminops_routes" || fail "P4 AdminOps route Session/Capability/CSRF registration drifted: $anchor"
 done
 
+p4adminops_app_settings_resource="$(git show :cmd/aicrm/legacy_admin_ops_app_settings_resource.go)"
+for anchor in \
+	'func (handler *Handler) SaveAppSettingsResource' \
+	'adminOpsActionToken(session, request.Method, appSettingsResourcePath)' \
+	'hmac.Equal' \
+	'configapp.SaveSettingsInput' \
+	'appSettingsResourceHasRawSecret' \
+	'"real_external_call_executed": false'; do
+	grep -Fq -- "$anchor" <<<"$p4adminops_app_settings_resource" || fail "P4 AdminOps app-settings resource lost token, actor, secret, or no-effect contract: $anchor"
+done
+! grep -Eiq 'http[.]Client|NewRequest|/cgi-bin/|river[.]|provider' <<<"$p4adminops_app_settings_resource" ||
+	fail 'P4 AdminOps app-settings resource gained provider, River, or outbound execution'
+
 p4adminops_evidence="$(git show :docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md)"
-for anchor in '分母为 87' '已落点：77' '余下 10 条' '上述 10 条均有 immutable source line' '11 条迁移映射重放' '真实 42→43→42→43'; do
+for anchor in '分母为 87' 'AdminOps/Jobs 72 + 漏承接的 Admin Config JSON 写入 `0254` 1' '10 条逐项销账' '87 = 73 新增（72 + `0254`）+ 5 复用 + 9 唯一移交' 'slice_induced=1' '11 条迁移映射重放' '真实 42→43→42→43'; do
   grep -Fq -- "$anchor" <<<"$p4adminops_evidence" || fail "P4 AdminOps frozen denominator or migration evidence drifted: $anchor"
 done
 for mapping_id in LEGACY-API-0030 LEGACY-API-0031 LEGACY-API-0032 LEGACY-API-0033 LEGACY-API-0034 LEGACY-API-0254 LEGACY-API-0265 LEGACY-API-0266 LEGACY-API-0267 LEGACY-API-0268; do

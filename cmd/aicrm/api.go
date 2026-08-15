@@ -700,6 +700,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
 			{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)},
 			{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)},
+			{http.MethodPut, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettingsResource)},
 			{http.MethodGet, "/admin/config", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/admin/config/api-key", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/admin/config/api-clients", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},

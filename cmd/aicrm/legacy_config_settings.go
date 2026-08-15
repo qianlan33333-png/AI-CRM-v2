@@ -87,7 +87,11 @@ func (handler *Handler) AppSettingsResource(writer http.ResponseWriter, request 
 		return
 	}
 	writer.Header().Set("Cache-Control", "no-store")
-	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "config": projection, "source_status": "next_read_model", "fallback_used": false})
+	response := map[string]any{"ok": true, "config": projection, "source_status": "next_read_model", "fallback_used": false}
+	if session, present := authport.SessionFromContext(request.Context()); present {
+		response["admin_action_token"] = appSettingsResourceActionToken(session)
+	}
+	writeJSON(writer, http.StatusOK, response)
 }
 
 func (handler *Handler) appSettingsProjection(writer http.ResponseWriter, request *http.Request) (configapp.SettingsProjection, bool) {

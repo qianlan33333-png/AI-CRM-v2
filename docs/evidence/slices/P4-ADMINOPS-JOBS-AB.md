@@ -10,26 +10,34 @@
 
 范围从 `aicrm_next/platform/admin_config/api.py`（65 条）、`direct_api_key_api.py`（4 条）与 `admin_jobs/routes.py`（18 条）逐条读取 `docs/api-mapping.jsonl`，分母为 87。
 
-- 已落点：77 = 已存在复用 5（`LEGACY-API-0026/0027/0253/0028/0029`）+ 本候选新增 72。新增路由复用现有 Session → Actor → Capability、CSRF、route-bound action token 与 UoW；写 API 仅以 secret reference/mask、local receipt 与 local job intent 处理。
+- 完整销账：87 = 新增 73（原 AdminOps/Jobs 72 + 漏承接的 Admin Config JSON 写入 `0254` 1）+ 已上线能力复用 5（`LEGACY-API-0026/0027/0253/0028/0029`）+ 唯一移交 9（Auth 3、Integration Gateway 4、Automation Engine 2）。三组互斥，逐项 route ID 如下；`0254` 新增的是窄 PUT transport，业务/存储仍只复用已上线 A02 Config service，不构成第二个配置域。
+- 原 72 条新增路由及 `0254` 均复用现有 Session → Actor → Capability、CSRF、route-bound action token 与 UoW；写 API 仅以 secret reference/mask、local receipt 与 local job intent 处理。没有把新增、复用或移交任一组重复相加。
 - 本片的 26 个矩阵动作为 `LEGACY-S05-038/039/041..052/054..061/063..066`，均被迁移为 `IN_PROGRESS/NOT_RUN`；这反映已在本地候选完成，不把未 CLOSED 的工作记为 `IMPLEMENTED`。
 - 无 tenant 列、复合 tenant 索引、跨域 foreign key、第二套 RBAC/配置框架、worker/River/provider/真实外发或新 UI。
 
-### 余下 10 条（逐条事实、归属与不实施理由）
+### 10 条逐项销账（权威契约、处置与唯一归属）
 
-| mapping | 路由与权威输入/输出 | actor/CSRF/所有权 | 本片归属与边界 |
+2026-08-15 的全量 A+B 裁定覆盖早期的 post-launch 分类。本表只使用 immutable source `6cb989c…` 的静态路由/DTO/actor 事实，以及同一冻结源的 handler 业务语义；没有以页面存在替代能力，也没有把旧分类作为排除依据。
+
+| mapping | 当前权威请求、响应与业务语义 | actor / RBAC / CSRF | 处置与唯一计数 |
 | --- | --- | --- | --- |
-| `0030` | `GET /admin/config/login-access`；`api.py:1427`，Request → HTML（静态声明） | human_session、`manage_config`、CSRF=false | 登录访问页属于已 CLOSED 的 Auth/Session/RBAC transport；本片仅复用其 Session→Actor→Capability，不能新建 Auth page。`LEGACY-S05-040` 已有独立 owner。 |
-| `0031` | `POST /admin/config/login-access/directory/refresh`；`api.py:1432`，Request → HTML | human_session、`manage_admin`、CSRF=true | Auth 目录刷新合同，映射为 `DEFERRED_POST_LAUNCH`；不创建目录/权限读写。 |
-| `0032` | `POST /admin/config/login-access/save`；`api.py:1440`，Request → HTML | human_session、`manage_admin`、CSRF=true | Auth 管理权限写入，复用已关闭 Auth/RBAC owner；无本片 table/DTO 写入。 |
-| `0033` | `GET /admin/config/mcp-tools`；`api.py:1294`，Request → HTML | human_session、`manage_config`、CSRF=false、external=`staging_disabled` | Integration Gateway owner；不建立 MCP 配置页或 adapter。 |
-| `0034` | `POST /admin/config/mcp-tools/save`；`api.py:1299`，Request → HTML | human_session、`manage_config`、CSRF=true、external=`staging_disabled` | Integration Gateway owner，且映射标记高风险配置授权；禁止转写 secret 或执行 adapter。 |
-| `0254` | `PUT /api/admin/config/app-settings`；`api.py:1398`，Request → JSON | human_session、`manage_config`、CSRF=true | Config owner 的 `A02` 已复用 page/save/GET resource；本 raw PUT 为 `DEFERRED_POST_LAUNCH`，不绕过现有 secret/mask/action-token 合同。 |
-| `0265` | `GET /api/admin/config/marketing-automation/signup-conversion`；`api.py:1335`，无 input → `dict` | human_session、`manage_config`、CSRF=false | Automation schema owner；`LEGACY-T14-201/202` 为 `PENDING_TARGET_SCHEMA`，不能由 adminops 伪造读模型。 |
-| `0266` | `PUT /api/admin/config/marketing-automation/signup-conversion`；`api.py:1345`，Request → JSON | human_session、`manage_config`、CSRF=true | Automation owner，标记高风险配置授权；同样等待完整 schema/ownership，禁止本片写入。 |
-| `0267` | `GET /api/admin/config/mcp-tools`；`api.py:1304`，Request → `dict` | human_session、`manage_config`、CSRF=false、external=`staging_disabled` | Integration Gateway owner；`DEFERRED_POST_LAUNCH`，不复用 staging-only adapter。 |
-| `0268` | `POST /api/admin/config/mcp-tools`；`api.py:1317`，Request → JSON | human_session、`manage_config`、CSRF=true、external=`staging_disabled` | Integration Gateway owner，标记高风险；本片不接收 secret/manager payload，也不发外部调用。 |
+| `0030` | `GET /admin/config/login-access`，保留非空 query，`302` 到 `/admin/config/detail/admin_access`；该详情读取管理员、角色与登录审计。 | human session，`manage_config`，读请求无 CSRF。 | **移交 Auth A+B**：`admin_users/admin_user_roles/admin_login_audit` 与 `LEGACY-S05-040` 的唯一 owner；Admin87 只计 1 次 Auth 移交。 |
+| `0031` | `POST /admin/config/login-access/directory/refresh`，form 的 action token 无效时 `302 detail?error=…`；有效时 `302 detail?notice=通讯录刷新已跳过…`，绝不触发真实企微外呼。 | human session，`manage_admin`，CSRF + route action token。 | **移交 Auth A+B**：该受控 no-op 是管理员目录链的一部分；不在 AdminOps 建目录或任何外部调用。 |
+| `0032` | `POST /admin/config/login-access/save`，form 需 `wecom_userid`，规范化 `admin_level/role_codes/login_enabled`，写管理员与角色后 `302 detail?saved=1&edit_id=…`。 | human session，`manage_admin`，CSRF + route action token；operator 来自 actor。 | **移交 Auth A+B**：管理员/角色/审计写模型唯一归 Auth，不复制 RBAC 或表。 |
+| `0033` | `GET /admin/config/mcp-tools` 返回 HTML redirect 到 `/admin/api-docs`，没有 MCP 设置读写。 | human session，`manage_config`，读请求无 CSRF。 | **移交 Integration Gateway A+B**：仅计 1 次 Gateway 移交；MCP adapter 与 secret 处理不进入 AdminOps。 |
+| `0034` | `POST /admin/config/mcp-tools/save` 返回 HTML redirect 到 `/admin/api-docs`，不接收或执行 adapter 配置。 | human session，`manage_config`，CSRF；高风险配置写。 | **移交 Integration Gateway A+B**：唯一 Gateway owner，禁止 secret 转写和外效。 |
+| `0254` | `PUT /api/admin/config/app-settings` 接收 JSON object：`settings` object（缺省视为 `{}`）、`confirm=true`、header/body action token；成功返回 `{ok,changed,changed_count,config,source_status,fallback_used,real_external_call_executed}`，错误为有限 JSON code。 | human session，`config.settings.manage`，现有 CSRF middleware + 精确 PUT route token；actor 只能为 `admin:<id>`。 | **本板块新增**：Admin Config JSON 写入子能力的漏承接修复（`slice_induced #1`）；新增窄 PUT transport，复用 A02 Config Manager/UoW；raw secret 在 service 前拒绝，响应只含 mask/配置状态，无第二设置表。 |
+| `0265` | `GET /api/admin/config/marketing-automation/signup-conversion` 无 body，返回 `{ok,config,source_status=next_read_model,fallback_used=false}`；config 是 signup-conversion、问卷/规则、阈值、时区的 Automation read model。 | human session，`manage_config`，读请求无 CSRF。 | **移交 Automation Engine A+B**：`marketing_automation_configs/question_rules` 与其问卷关系为 Automation 唯一 schema；Admin87 只计 1 次移交。 |
+| `0266` | `PUT /api/admin/config/marketing-automation/signup-conversion` 接收 JSON；校验 questionnaire、choice rules、threshold/timezone，成功返回 `{ok,config,source_status=next_command,fallback_used=false,real_external_call_executed=false}`。 | human session，`manage_config`，CSRF + action token；高风险配置写。 | **移交 Automation Engine A+B**：保持其 schema、问卷关系和本地 command 的唯一 ownership；AdminOps 不伪造 read model 或写入。 |
+| `0267` | `GET /api/admin/config/mcp-tools?q=&enabled_only=` 返回 `{ok,config,source_status=next_read_model,fallback_used=false}`；只读 MCP tool setting projection。 | human session，`manage_config`，读请求无 CSRF。 | **移交 Integration Gateway A+B**：同一 MCP contract 的唯一 Gateway 移交，不与 `0033` 合并计数。 |
+| `0268` | `POST /api/admin/config/mcp-tools` 接收 JSON tool identity/display/enable/visibility/sample/sort fields，成功返回 `{ok,item,source_status=next_command,fallback_used=false,real_external_call_executed=false}`。 | human session，`manage_config`，CSRF + action token；高风险配置写。 | **移交 Integration Gateway A+B**：唯一 Gateway owner，禁止在本片保存 secret 或执行 adapter/provider。 |
 
-上述 10 条均有 immutable source line、静态 DTO/响应声明、actor/CSRF 与 owner 事实；未把 77 误写为完整 87，也没有以页面存在替代能力。`0030/0032` 的可见登录访问语义仍由 Auth owner 负责；`0033/0034/0267/0268` 的可见 MCP 语义由 Integration Gateway owner 负责；`0254/0265/0266` 的继承页面或目标 schema 由其现有 owner 负责。
+闭合等式为 **87 = 73 新增（72 + `0254`）+ 5 复用 + 9 唯一移交**。Auth `{0030,0031,0032}`、Integration Gateway `{0033,0034,0267,0268}`、Automation Engine `{0265,0266}` 与本片 `{0254}` 两两不交；每个 route ID 恰好落入其中一组。移交的 9 条仍须由其唯一 A+B 板块取得各自的上线/CLOSED 收据；它们不因 Admin Config 与 Jobs 的关闭而被重复宣告上线，也不会从 769 总分母消失。
+
+### 修正归因与冻结阈值
+
+- `slice_induced=1`：`0254` 是既有 Admin Config JSON 写入口的漏承接；本轮只新增该 route-bound PUT transport，并复用 A02 service。若这个**同一 JSON 写入子能力**再出现第 2 个 `slice_induced`，立即冻结该子能力，只允许严格 repair-only，不能扩展到配置框架、UI、权限、worker 或其他路由。
+- `verification_induced`（不计入上述阈值）：Automation Agents current waterline 默认值从 42 同步到 43；空库直接跑 manifest 时 `customers` 尚未由 migration runner 建立；dirty shared test DB 残留 event idempotency/River job 后，完整 manifest 需先收集 40 target 全部结果、重建指定 55431 的 `aicrm_test` 并在 `migration-integration` 的 43 前置条件后重跑。这些均没有改变业务语义或扩展能力。
 
 ## 11 条迁移映射重放
 
