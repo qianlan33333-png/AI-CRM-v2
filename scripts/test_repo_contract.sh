@@ -3515,6 +3515,30 @@ if (cd "$j01_legacy_import_forgery" && scripts/check_repo_contract.sh >/dev/null
   fail "P4-J01 legacy migration completion forgery was accepted"
 fi
 
+p4couponab_route_disconnect="$(make_fixture p4-coupon-ab-route-disconnect)"
+sed -i.bak '/\/api\/h5\/coupons\/{public_slug}\/claim/d' "$p4couponab_route_disconnect/cmd/aicrm/api.go"
+rm -f "$p4couponab_route_disconnect/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$p4couponab_route_disconnect" cmd/aicrm/api.go
+if (cd "$p4couponab_route_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4 Coupon A+B H5 claim route disconnect was accepted"
+fi
+
+p4couponab_customer_fk="$(make_fixture p4-coupon-ab-customer-fk)"
+sed -i.bak 's/customer_id BIGINT NOT NULL,/customer_id BIGINT NOT NULL REFERENCES public.customers(id),/' "$p4couponab_customer_fk/migrations/00036_coupon_claims_and_public_access.sql"
+rm -f "$p4couponab_customer_fk/migrations/00036_coupon_claims_and_public_access.sql.bak"
+restage_p2s18_receipt "$p4couponab_customer_fk" migrations/00036_coupon_claims_and_public_access.sql
+if (cd "$p4couponab_customer_fk" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4 Coupon A+B cross-domain Customer foreign key was accepted"
+fi
+
+p4couponab_ci_disconnect="$(make_fixture p4-coupon-ab-ci-disconnect)"
+sed -i.bak '/^p4-coupon-ab|P4COUPONAB_TEST_DATABASE_URL|p4-coupon-ab-acceptance$/d' "$p4couponab_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+rm -f "$p4couponab_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
+git -C "$p4couponab_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
+if (cd "$p4couponab_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4 Coupon A+B PG acceptance CI disconnect was accepted"
+fi
+
 h03_provider_scope="$(make_fixture p4-h03-provider-scope)"
 printf '%s\n' '-- provider add_join_way' >>"$h03_provider_scope/migrations/00034_media_group_invite_library.sql"
 restage_p2s18_receipt "$h03_provider_scope" migrations/00034_media_group_invite_library.sql

@@ -1142,6 +1142,23 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-coupon-compat]
+      operationId: deleteLegacyCoupon
+      summary: Delete an unclaimed local draft coupon
+      x-legacy-mapping-ids: [LEGACY-API-0288]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Deleted draft receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponBoardMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/coupons/{coupon_id}/publish:
     post:
       tags: [p4-coupon-compat]
@@ -1179,6 +1196,238 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponListPage
+      summary: Render the frozen legacy coupon list page
+      x-legacy-mapping-ids: [LEGACY-API-0043]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Legacy compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons/new:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponNewPage
+      summary: Render the frozen legacy new-coupon form
+      x-legacy-mapping-ids: [LEGACY-API-0044]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Legacy compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons/{coupon_id}/data:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponDataPage
+      summary: Render the frozen legacy coupon claim-data page
+      x-legacy-mapping-ids: [LEGACY-API-0045]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Legacy compatibility HTML with opaque claim references, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons/{coupon_id}/edit:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponEditPage
+      summary: Render the frozen legacy coupon edit form
+      x-legacy-mapping-ids: [LEGACY-API-0046]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Legacy compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/product-options:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listLegacyCouponProductOptions
+      summary: List allowlisted ordinary-product options for a coupon rule
+      x-legacy-mapping-ids: [LEGACY-API-0287]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 80, default: "" } }
+        - { name: product_type, in: query, schema: { type: string, enum: [all, standard_product, service_period], default: all } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Ordinary product option page; service-period options are deliberately empty, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponProductOptionsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/archive:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: archiveLegacyCoupon
+      summary: Archive a coupon without modifying its claims
+      x-legacy-mapping-ids: [LEGACY-API-0291]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Archived local coupon and receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponBoardMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/claims:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listLegacyCouponClaims
+      summary: List opaque local coupon claim facts for an administrator
+      x-legacy-mapping-ids: [LEGACY-API-0292]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Claim page without customer identifiers, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponClaimListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/copy:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: copyLegacyCoupon
+      summary: Copy a coupon rule into a fresh local draft
+      x-legacy-mapping-ids: [LEGACY-API-0293]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Copied local draft and receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponBoardMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/share:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponShare
+      summary: Return the deterministic local public coupon URL for a published rule
+      x-legacy-mapping-ids: [LEGACY-API-0295]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local public share location, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponShareResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/coupons/available:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listH5AvailableCoupons
+      summary: List coupons the payment-identity session may claim for one target
+      security: [{ PaymentIdentitySession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0642]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: payment_identity_session
+      x-aicrm-access-scope: self
+      parameters: [{ name: target_ref, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }]
+      responses:
+        "200": { description: Customer-scoped available coupon list, content: { application/json: { schema: { $ref: "#/components/schemas/H5CouponAvailableResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/coupons/{public_slug}:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getH5CouponState
+      summary: Read one published local coupon through its public slug
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0643]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: public
+      parameters: [{ name: public_slug, in: path, required: true, schema: { type: string, pattern: '^c-[1-9][0-9]*$' } }]
+      responses:
+        "200": { description: Published local coupon state, content: { application/json: { schema: { $ref: "#/components/schemas/H5CouponDetailResponse" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/coupons/{public_slug}/claim:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: claimH5Coupon
+      summary: Claim one published coupon using a resolved payment-identity session
+      security: [{ PaymentIdentitySession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0644]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: payment_identity_session
+      x-aicrm-access-scope: self
+      x-aicrm-csrf: same_origin_empty_body
+      parameters:
+        - { name: public_slug, in: path, required: true, schema: { type: string, pattern: '^c-[1-9][0-9]*$' } }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      responses:
+        "200": { description: Durable local claim and transactional event, content: { application/json: { schema: { $ref: "#/components/schemas/H5CouponClaimResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/sidebar/v2/coupons:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listSidebarCoupons
+      summary: Read owner-scoped coupon claim projection through a sidebar grant
+      security: [{ SidebarGrant: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0727]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: sidebar_grant
+      x-aicrm-access-scope: owner
+      responses:
+        "200": { description: Owner-scoped sidebar coupons without customer identifiers, content: { application/json: { schema: { $ref: "#/components/schemas/SidebarCouponListResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /c/{public_slug}:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getPublicCouponPage
+      summary: Render the public compatibility coupon page
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0756]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: public
+      parameters: [{ name: public_slug, in: path, required: true, schema: { type: string, pattern: '^c-[1-9][0-9]*$' } }]
+      responses:
+        "200": { description: Public compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/questionnaires:
     get:
@@ -1417,6 +1666,16 @@ components:
       type: apiKey
       in: cookie
       name: aicrm_session
+    PaymentIdentitySession:
+      type: apiKey
+      in: cookie
+      name: aicrm_payment_identity
+      description: Opaque trusted payment-identity session; the server resolves its digest to a customer and never accepts caller-supplied customer identity.
+    SidebarGrant:
+      type: apiKey
+      in: cookie
+      name: aicrm_sidebar_grant
+      description: Opaque owner-scoped sidebar grant; it is not interchangeable with a payment-identity session.
   parameters:
     ProductID:
       name: product_id
@@ -1749,8 +2008,8 @@ components:
           properties:
             id: { type: integer, format: int64, minimum: 1 }
             currency: { type: string, enum: [CNY] }
-            status: { type: string, enum: [draft, published, stopped] }
-            availability_status: { type: string, enum: [draft, stopped, scheduled, active, sold_out, ended] }
+            status: { type: string, enum: [draft, published, stopped, archived, deleted] }
+            availability_status: { type: string, enum: [draft, stopped, archived, deleted, scheduled, active, sold_out, ended] }
             issued_count: { type: integer, format: int64, minimum: 0 }
             created_by: { type: integer, format: int64, minimum: 1 }
             updated_by: { type: integer, format: int64, minimum: 1 }
@@ -1820,6 +2079,100 @@ components:
         real_external_call_executed: { type: boolean, enum: [false] }
         create_replay_safe: { type: boolean, enum: [false] }
         idempotent_same_state: { type: boolean, enum: [true] }
+    LegacyCouponBoardMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+    LegacyCouponProductOption:
+      type: object
+      additionalProperties: false
+      required: [id, target_ref, name, price_minor, currency]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        target_ref: { type: string, pattern: '^standard_product:[1-9][0-9]*$' }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        price_minor: { type: integer, format: int64, minimum: 0 }
+        currency: { type: string, enum: [CNY] }
+    LegacyCouponProductOptionsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyCouponProductOption" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    LegacyCouponClaim:
+      type: object
+      additionalProperties: false
+      required: [id, claim_ref, status, claimed_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        claim_ref: { type: string, pattern: '^cp_[A-Za-z0-9_-]{16,64}$' }
+        status: { type: string, enum: [claimed] }
+        claimed_at: { type: string, format: date-time }
+    LegacyCouponClaimListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyCouponClaim" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    LegacyCouponShareResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, public_slug, url]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        public_slug: { type: string, pattern: '^c-[1-9][0-9]*$' }
+        url: { type: string, pattern: '^/c/c-[1-9][0-9]*$' }
+    H5CouponAvailableResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/Coupon" } }
+    H5CouponDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+    H5CouponClaimResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, claim_ref, status, claimed_at]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        claim_ref: { type: string, pattern: '^cp_[A-Za-z0-9_-]{16,64}$' }
+        status: { type: string, enum: [claimed] }
+        claimed_at: { type: string, format: date-time }
+    SidebarCoupon:
+      type: object
+      additionalProperties: false
+      required: [coupon_id, coupon_name, coupon_status, claim_ref, claimed_at]
+      properties:
+        coupon_id: { type: integer, format: int64, minimum: 1 }
+        coupon_name: { type: string, minLength: 1, maxLength: 45 }
+        coupon_status: { type: string, enum: [draft, published, stopped, archived] }
+        claim_ref: { type: string, pattern: '^cp_[A-Za-z0-9_-]{16,64}$' }
+        claimed_at: { type: string, format: date-time }
+    SidebarCouponListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/SidebarCoupon" } }
     LegacyQuestionnaireValidation:
       type: object
       additionalProperties: false

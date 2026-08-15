@@ -118,12 +118,15 @@ owners:
 
   coupon:
     package: internal/coupon
-    tables: [coupons, coupon_targets, coupon_catalog_counters, coupon_operation_receipts]
+    tables: [coupons, coupon_targets, coupon_catalog_counters, coupon_operation_receipts, coupon_claims, coupon_payment_identity_sessions, coupon_sidebar_grants]
     constraints:
       coupons: single_instance_coupon_rule_and_lifecycle_facts
       coupon_targets: typed_standard_product_references_validated_through_product_read_port
       coupon_catalog_counters: exact_unfiltered_legacy_total_without_coupon_scan
       coupon_operation_receipts: transaction_scoped_mutation_receipts_without_create_replay_claim
+      coupon_claims: durable_local_claim_facts_with_opaque_transport_reference_and_no_customer_foreign_key
+      coupon_payment_identity_sessions: opaque_digest_to_trusted_OneID_resolution_for_self_scoped_coupon_claim
+      coupon_sidebar_grants: opaque_digest_to_owner_scoped_sidebar_coupon_read_and_not_a_claim_credential
 
   order:
     package: internal/order

@@ -48,3 +48,35 @@ type Page struct {
 	Limit  int32    `json:"limit"`
 	Offset int32    `json:"offset"`
 }
+
+// Claim is a durable local coupon fact. CustomerID is internal-only; legacy
+// transports expose the opaque ClaimRef instead of a customer identifier.
+type Claim struct {
+	ID, CouponID, CustomerID int64
+	ClaimNumber              int32
+	ClaimRef, Status         string
+	ClaimedAt                time.Time
+}
+
+type ClaimPage struct {
+	Items  []Claim `json:"items"`
+	Total  int64   `json:"total"`
+	Limit  int32   `json:"limit"`
+	Offset int32   `json:"offset"`
+}
+
+type ClaimCommand struct {
+	CouponID       ID
+	CustomerID     int64
+	IdempotencyKey string
+}
+
+// SidebarCoupon is an owner-scoped projection. It intentionally carries no
+// customer identifier: the sidebar grant has already selected the owner.
+type SidebarCoupon struct {
+	CouponID     ID        `json:"coupon_id"`
+	CouponName   string    `json:"coupon_name"`
+	ClaimRef     string    `json:"claim_ref"`
+	ClaimedAt    time.Time `json:"claimed_at"`
+	CouponStatus string    `json:"coupon_status"`
+}

@@ -31,6 +31,12 @@ UPDATE coupons SET name=sqlc.arg(name)::text,discount_amount_total=sqlc.arg(disc
 -- name: SetCouponStatus :exec
 UPDATE coupons SET status=sqlc.arg(status)::text,updated_by=sqlc.arg(actor)::bigint,version=version+1,updated_at=sqlc.arg(now)::timestamptz WHERE id=sqlc.arg(coupon_id)::bigint;
 
+-- name: DeleteDraftCoupon :one
+DELETE FROM coupons WHERE id=sqlc.arg(coupon_id)::bigint AND status='draft' AND issued_count=0 RETURNING id;
+
+-- name: DecrementCouponCount :one
+UPDATE coupon_catalog_counters SET total_coupons=total_coupons-1 WHERE singleton=TRUE AND total_coupons > 0 RETURNING total_coupons;
+
 -- name: DeleteCouponTargets :exec
 DELETE FROM coupon_targets WHERE coupon_id=sqlc.arg(coupon_id)::bigint;
 -- name: InsertCouponTarget :exec
@@ -48,3 +54,48 @@ SELECT id,operation,actor_scope,key_digest,payload_digest,state,result_snapshot 
 -- name: CompleteCouponReceipt :one
 UPDATE coupon_operation_receipts SET state='completed',result_snapshot=sqlc.arg(result_snapshot)::jsonb,completed_at=sqlc.arg(completed_at)::timestamptz WHERE id=sqlc.arg(id)::bigint AND state='in_progress'
 RETURNING id,operation,actor_scope,key_digest,payload_digest,state,result_snapshot;
+
+-- name: ListCouponClaims :many
+SELECT id,coupon_id,customer_id,claim_number,claim_ref,status,claimed_at
+FROM coupon_claims WHERE coupon_id=sqlc.arg(coupon_id)::bigint
+ORDER BY id LIMIT sqlc.arg(row_limit)::integer OFFSET sqlc.arg(row_offset)::integer;
+
+-- name: CountCouponClaims :one
+SELECT count(*)::bigint FROM coupon_claims WHERE coupon_id=sqlc.arg(coupon_id)::bigint;
+
+-- name: CountCustomerCouponClaims :one
+SELECT count(*)::bigint FROM coupon_claims WHERE coupon_id=sqlc.arg(coupon_id)::bigint AND customer_id=sqlc.arg(customer_id)::bigint;
+
+-- name: CreateCouponClaim :one
+INSERT INTO coupon_claims(coupon_id,customer_id,claim_number,claim_ref,claimed_at)
+VALUES(sqlc.arg(coupon_id)::bigint,sqlc.arg(customer_id)::bigint,sqlc.arg(claim_number)::integer,sqlc.arg(claim_ref)::text,sqlc.arg(claimed_at)::timestamptz)
+RETURNING id,coupon_id,customer_id,claim_number,claim_ref,status,claimed_at;
+
+-- name: IncrementCouponIssuedCount :one
+UPDATE coupons SET issued_count=issued_count+1,first_claim_at=COALESCE(first_claim_at,sqlc.arg(now)::timestamptz),version=version+1,updated_at=sqlc.arg(now)::timestamptz
+WHERE id=sqlc.arg(coupon_id)::bigint AND issued_count < total_issue_limit
+RETURNING id;
+
+-- name: ListAvailableCoupons :many
+SELECT c.*, COALESCE(t.refs, '[]'::jsonb) AS target_refs
+FROM coupons c
+JOIN coupon_targets target ON target.coupon_id=c.id AND target.target_ref=sqlc.arg(target_ref)::text
+LEFT JOIN LATERAL (SELECT jsonb_agg(target_ref ORDER BY position) refs FROM coupon_targets WHERE coupon_id=c.id) t ON true
+WHERE c.status='published' AND c.issued_count < c.total_issue_limit AND c.claim_starts_at <= sqlc.arg(now)::timestamptz AND c.claim_ends_at > sqlc.arg(now)::timestamptz
+  AND (SELECT count(*) FROM coupon_claims claim WHERE claim.coupon_id=c.id AND claim.customer_id=sqlc.arg(customer_id)::bigint) < c.per_user_issue_limit
+ORDER BY c.id LIMIT sqlc.arg(row_limit)::integer;
+
+-- name: ResolveCouponPaymentIdentitySession :one
+SELECT customer_id FROM coupon_payment_identity_sessions
+WHERE token_digest=sqlc.arg(token_digest)::bytea AND expires_at > sqlc.arg(now)::timestamptz AND revoked_at IS NULL AND replaced_at IS NULL;
+
+-- name: ResolveCouponSidebarGrant :one
+SELECT customer_id FROM coupon_sidebar_grants
+WHERE token_digest=sqlc.arg(token_digest)::bytea AND expires_at > sqlc.arg(now)::timestamptz AND revoked_at IS NULL AND replaced_at IS NULL;
+
+-- name: ListCouponSidebarClaims :many
+SELECT c.id AS coupon_id,c.name AS coupon_name,c.status AS coupon_status,claim.claim_ref,claim.claimed_at
+FROM coupon_claims claim
+JOIN coupons c ON c.id=claim.coupon_id
+WHERE claim.customer_id=sqlc.arg(customer_id)::bigint
+ORDER BY claim.id DESC LIMIT sqlc.arg(row_limit)::integer;

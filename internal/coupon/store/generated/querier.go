@@ -10,16 +10,27 @@ import (
 
 type Querier interface {
 	CompleteCouponReceipt(ctx context.Context, arg CompleteCouponReceiptParams) (CompleteCouponReceiptRow, error)
+	CountCouponClaims(ctx context.Context, couponID int64) (int64, error)
 	CountCoupons(ctx context.Context, arg CountCouponsParams) (int64, error)
+	CountCustomerCouponClaims(ctx context.Context, arg CountCustomerCouponClaimsParams) (int64, error)
 	CreateCoupon(ctx context.Context, arg CreateCouponParams) (int64, error)
+	CreateCouponClaim(ctx context.Context, arg CreateCouponClaimParams) (CouponClaim, error)
+	DecrementCouponCount(ctx context.Context) (int64, error)
 	DeleteCouponTargets(ctx context.Context, couponID int64) error
+	DeleteDraftCoupon(ctx context.Context, couponID int64) (int64, error)
 	GetCoupon(ctx context.Context, couponID int64) (GetCouponRow, error)
 	GetCouponReceipt(ctx context.Context, arg GetCouponReceiptParams) (GetCouponReceiptRow, error)
 	IncrementCouponCount(ctx context.Context) (int64, error)
+	IncrementCouponIssuedCount(ctx context.Context, arg IncrementCouponIssuedCountParams) (int64, error)
 	InsertCouponTarget(ctx context.Context, arg InsertCouponTargetParams) error
+	ListAvailableCoupons(ctx context.Context, arg ListAvailableCouponsParams) ([]ListAvailableCouponsRow, error)
+	ListCouponClaims(ctx context.Context, arg ListCouponClaimsParams) ([]CouponClaim, error)
+	ListCouponSidebarClaims(ctx context.Context, arg ListCouponSidebarClaimsParams) ([]ListCouponSidebarClaimsRow, error)
 	ListCoupons(ctx context.Context, arg ListCouponsParams) ([]ListCouponsRow, error)
 	LockCoupon(ctx context.Context, couponID int64) (Coupon, error)
 	ReserveCouponReceipt(ctx context.Context, arg ReserveCouponReceiptParams) (ReserveCouponReceiptRow, error)
+	ResolveCouponPaymentIdentitySession(ctx context.Context, arg ResolveCouponPaymentIdentitySessionParams) (int64, error)
+	ResolveCouponSidebarGrant(ctx context.Context, arg ResolveCouponSidebarGrantParams) (int64, error)
 	SetCouponStatus(ctx context.Context, arg SetCouponStatusParams) error
 	UpdateCoupon(ctx context.Context, arg UpdateCouponParams) error
 }
