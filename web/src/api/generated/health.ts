@@ -137,6 +137,147 @@ export interface LegacyTagCatalogResponse {
   [key: string]: unknown;
 }
 
+export interface LegacyTagGroup {
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export interface LegacyTag {
+  /** @minimum 1 */
+  tag_id: number;
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tag_name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export type LegacyTagGroupsResponseSourceStatus =
+  (typeof LegacyTagGroupsResponseSourceStatus)[keyof typeof LegacyTagGroupsResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupsResponseSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export interface LegacyTagGroupsResponse {
+  ok: boolean;
+  groups: LegacyTagGroup[];
+  items: LegacyTagGroup[];
+  /** @minimum 0 */
+  count: number;
+  source_status: LegacyTagGroupsResponseSourceStatus;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+}
+
+export type LegacyTagGroupResponseSourceStatus =
+  (typeof LegacyTagGroupResponseSourceStatus)[keyof typeof LegacyTagGroupResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupResponseSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export interface LegacyTagGroupResponse {
+  ok: boolean;
+  group: LegacyTagGroup;
+  source_status: LegacyTagGroupResponseSourceStatus;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+}
+
+export type LegacyTagResponseSourceStatus =
+  (typeof LegacyTagResponseSourceStatus)[keyof typeof LegacyTagResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagResponseSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export interface LegacyTagResponse {
+  ok: boolean;
+  tag: LegacyTag;
+  source_status: LegacyTagResponseSourceStatus;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+}
+
+export interface LegacyTagExecutionGate {
+  accepted: boolean;
+  queued: boolean;
+  attempted: boolean;
+  executed: boolean;
+  outcome_unknown: boolean;
+  reconciled: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  [key: string]: unknown;
+}
+
+export interface LegacyTagSyncRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Opaque legacy body retained for a later public WeCom port; this endpoint only queues it locally.
+ */
+export interface LegacyTagOpaqueLiveMutationRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotency_key?: string;
+  /** @maxLength 200 */
+  trace_id?: string;
+  [key: string]: unknown;
+}
+
+export type LegacyTagQueuedAcceptanceState =
+  (typeof LegacyTagQueuedAcceptanceState)[keyof typeof LegacyTagQueuedAcceptanceState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagQueuedAcceptanceState = {
+  queued: "queued",
+} as const;
+
+export interface LegacyTagQueuedAcceptance {
+  ok: boolean;
+  accepted: boolean;
+  /** @minimum 1 */
+  receipt_id: number;
+  /** @minimum 1 */
+  event_id: number;
+  /** @minimum 1 */
+  river_job_id: number;
+  state: LegacyTagQueuedAcceptanceState;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+}
+
 export type LegacyChannelWriteRequestChannelType =
   (typeof LegacyChannelWriteRequestChannelType)[keyof typeof LegacyChannelWriteRequestChannelType];
 
@@ -5788,6 +5929,122 @@ export const createLegacyWecomTag = async (
 };
 
 /**
+ * @summary Delegate the legacy tag page to the existing generic admin shell
+ */
+export type legacyWecomTagsAdminShellResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type legacyWecomTagsAdminShellResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type legacyWecomTagsAdminShellResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type legacyWecomTagsAdminShellResponseError = (
+  | legacyWecomTagsAdminShellResponse302
+  | legacyWecomTagsAdminShellResponse401
+  | legacyWecomTagsAdminShellResponse403
+) & {
+  headers: Headers;
+};
+
+export type legacyWecomTagsAdminShellResponse =
+  legacyWecomTagsAdminShellResponseError;
+
+export const getLegacyWecomTagsAdminShellUrl = () => {
+  return `/admin/wecom-tags`;
+};
+
+export const legacyWecomTagsAdminShell = async (
+  options?: RequestInit,
+): Promise<legacyWecomTagsAdminShellResponse> => {
+  const res = await fetch(getLegacyWecomTagsAdminShellUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: legacyWecomTagsAdminShellResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as legacyWecomTagsAdminShellResponse;
+};
+
+/**
+ * @summary List local tag groups without executing WeCom
+ */
+export type listLegacyWecomTagGroupsResponse200 = {
+  data: LegacyTagGroupsResponse;
+  status: 200;
+};
+
+export type listLegacyWecomTagGroupsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyWecomTagGroupsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyWecomTagGroupsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyWecomTagGroupsResponseSuccess =
+  listLegacyWecomTagGroupsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyWecomTagGroupsResponseError = (
+  | listLegacyWecomTagGroupsResponse401
+  | listLegacyWecomTagGroupsResponse403
+  | listLegacyWecomTagGroupsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyWecomTagGroupsResponse =
+  | listLegacyWecomTagGroupsResponseSuccess
+  | listLegacyWecomTagGroupsResponseError;
+
+export const getListLegacyWecomTagGroupsUrl = () => {
+  return `/api/admin/wecom/tag-groups`;
+};
+
+export const listLegacyWecomTagGroups = async (
+  options?: RequestInit,
+): Promise<listLegacyWecomTagGroupsResponse> => {
+  const res = await fetch(getListLegacyWecomTagGroupsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyWecomTagGroupsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyWecomTagGroupsResponse;
+};
+
+/**
  * @summary Create one local tag group and its required first tag
  */
 export type createLegacyWecomTagGroupResponse200 = {
@@ -5857,6 +6114,75 @@ export const createLegacyWecomTagGroup = async (
     status: res.status,
     headers: res.headers,
   } as createLegacyWecomTagGroupResponse;
+};
+
+/**
+ * @summary Get one local tag group without executing WeCom
+ */
+export type getLegacyWecomTagGroupResponse200 = {
+  data: LegacyTagGroupResponse;
+  status: 200;
+};
+
+export type getLegacyWecomTagGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyWecomTagGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyWecomTagGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyWecomTagGroupResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyWecomTagGroupResponseSuccess =
+  getLegacyWecomTagGroupResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyWecomTagGroupResponseError = (
+  | getLegacyWecomTagGroupResponse401
+  | getLegacyWecomTagGroupResponse403
+  | getLegacyWecomTagGroupResponse404
+  | getLegacyWecomTagGroupResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyWecomTagGroupResponse =
+  getLegacyWecomTagGroupResponseSuccess | getLegacyWecomTagGroupResponseError;
+
+export const getGetLegacyWecomTagGroupUrl = (groupId: number) => {
+  return `/api/admin/wecom/tag-groups/${groupId}`;
+};
+
+export const getLegacyWecomTagGroup = async (
+  groupId: number,
+  options?: RequestInit,
+): Promise<getLegacyWecomTagGroupResponse> => {
+  const res = await fetch(getGetLegacyWecomTagGroupUrl(groupId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyWecomTagGroupResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyWecomTagGroupResponse;
 };
 
 /**
@@ -6094,6 +6420,72 @@ export const archiveLegacyWecomTagGroup = async (
 };
 
 /**
+ * @summary Get one local tag without executing WeCom
+ */
+export type getLegacyWecomTagResponse200 = {
+  data: LegacyTagResponse;
+  status: 200;
+};
+
+export type getLegacyWecomTagResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyWecomTagResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyWecomTagResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyWecomTagResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyWecomTagResponseSuccess = getLegacyWecomTagResponse200 & {
+  headers: Headers;
+};
+export type getLegacyWecomTagResponseError = (
+  | getLegacyWecomTagResponse401
+  | getLegacyWecomTagResponse403
+  | getLegacyWecomTagResponse404
+  | getLegacyWecomTagResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyWecomTagResponse =
+  getLegacyWecomTagResponseSuccess | getLegacyWecomTagResponseError;
+
+export const getGetLegacyWecomTagUrl = (tagId: number) => {
+  return `/api/admin/wecom/tags/${tagId}`;
+};
+
+export const getLegacyWecomTag = async (
+  tagId: number,
+  options?: RequestInit,
+): Promise<getLegacyWecomTagResponse> => {
+  const res = await fetch(getGetLegacyWecomTagUrl(tagId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyWecomTagResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyWecomTagResponse;
+};
+
+/**
  * @summary Update one local tag name using the frozen PUT compatibility method
  */
 export type updateLegacyWecomTagPutResponse200 = {
@@ -6323,6 +6715,380 @@ export const archiveLegacyWecomTag = async (
     status: res.status,
     headers: res.headers,
   } as archiveLegacyWecomTagResponse;
+};
+
+/**
+ * @summary Read the local fail-closed tag execution gate
+ */
+export type getLegacyWecomTagExecutionGateResponse200 = {
+  data: LegacyTagExecutionGate;
+  status: 200;
+};
+
+export type getLegacyWecomTagExecutionGateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyWecomTagExecutionGateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyWecomTagExecutionGateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyWecomTagExecutionGateResponseSuccess =
+  getLegacyWecomTagExecutionGateResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyWecomTagExecutionGateResponseError = (
+  | getLegacyWecomTagExecutionGateResponse401
+  | getLegacyWecomTagExecutionGateResponse403
+  | getLegacyWecomTagExecutionGateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyWecomTagExecutionGateResponse =
+  | getLegacyWecomTagExecutionGateResponseSuccess
+  | getLegacyWecomTagExecutionGateResponseError;
+
+export const getGetLegacyWecomTagExecutionGateUrl = () => {
+  return `/api/admin/wecom/tags/live/gate`;
+};
+
+export const getLegacyWecomTagExecutionGate = async (
+  options?: RequestInit,
+): Promise<getLegacyWecomTagExecutionGateResponse> => {
+  const res = await fetch(getGetLegacyWecomTagExecutionGateUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyWecomTagExecutionGateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyWecomTagExecutionGateResponse;
+};
+
+/**
+ * @summary Accept a legacy live-mark request for local queueing only
+ */
+export type queueLegacyWecomTagLiveMarkResponse202 = {
+  data: LegacyTagQueuedAcceptance;
+  status: 202;
+};
+
+export type queueLegacyWecomTagLiveMarkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queueLegacyWecomTagLiveMarkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueLegacyWecomTagLiveMarkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueLegacyWecomTagLiveMarkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type queueLegacyWecomTagLiveMarkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queueLegacyWecomTagLiveMarkResponseSuccess =
+  queueLegacyWecomTagLiveMarkResponse202 & {
+    headers: Headers;
+  };
+export type queueLegacyWecomTagLiveMarkResponseError = (
+  | queueLegacyWecomTagLiveMarkResponse400
+  | queueLegacyWecomTagLiveMarkResponse401
+  | queueLegacyWecomTagLiveMarkResponse403
+  | queueLegacyWecomTagLiveMarkResponse409
+  | queueLegacyWecomTagLiveMarkResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueLegacyWecomTagLiveMarkResponse =
+  | queueLegacyWecomTagLiveMarkResponseSuccess
+  | queueLegacyWecomTagLiveMarkResponseError;
+
+export const getQueueLegacyWecomTagLiveMarkUrl = () => {
+  return `/api/admin/wecom/tags/live/mark`;
+};
+
+export const queueLegacyWecomTagLiveMark = async (
+  legacyTagOpaqueLiveMutationRequest: LegacyTagOpaqueLiveMutationRequest,
+  options?: RequestInit,
+): Promise<queueLegacyWecomTagLiveMarkResponse> => {
+  const res = await fetch(getQueueLegacyWecomTagLiveMarkUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagOpaqueLiveMutationRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueLegacyWecomTagLiveMarkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueLegacyWecomTagLiveMarkResponse;
+};
+
+/**
+ * @summary Accept a legacy live-unmark request for local queueing only
+ */
+export type queueLegacyWecomTagLiveUnmarkResponse202 = {
+  data: LegacyTagQueuedAcceptance;
+  status: 202;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponseSuccess =
+  queueLegacyWecomTagLiveUnmarkResponse202 & {
+    headers: Headers;
+  };
+export type queueLegacyWecomTagLiveUnmarkResponseError = (
+  | queueLegacyWecomTagLiveUnmarkResponse400
+  | queueLegacyWecomTagLiveUnmarkResponse401
+  | queueLegacyWecomTagLiveUnmarkResponse403
+  | queueLegacyWecomTagLiveUnmarkResponse409
+  | queueLegacyWecomTagLiveUnmarkResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueLegacyWecomTagLiveUnmarkResponse =
+  | queueLegacyWecomTagLiveUnmarkResponseSuccess
+  | queueLegacyWecomTagLiveUnmarkResponseError;
+
+export const getQueueLegacyWecomTagLiveUnmarkUrl = () => {
+  return `/api/admin/wecom/tags/live/unmark`;
+};
+
+export const queueLegacyWecomTagLiveUnmark = async (
+  legacyTagOpaqueLiveMutationRequest: LegacyTagOpaqueLiveMutationRequest,
+  options?: RequestInit,
+): Promise<queueLegacyWecomTagLiveUnmarkResponse> => {
+  const res = await fetch(getQueueLegacyWecomTagLiveUnmarkUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagOpaqueLiveMutationRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueLegacyWecomTagLiveUnmarkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueLegacyWecomTagLiveUnmarkResponse;
+};
+
+/**
+ * @summary Accept a manual tag catalog sync for local queueing only
+ */
+export type queueLegacyWecomTagSyncResponse202 = {
+  data: LegacyTagQueuedAcceptance;
+  status: 202;
+};
+
+export type queueLegacyWecomTagSyncResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queueLegacyWecomTagSyncResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueLegacyWecomTagSyncResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueLegacyWecomTagSyncResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type queueLegacyWecomTagSyncResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queueLegacyWecomTagSyncResponseSuccess =
+  queueLegacyWecomTagSyncResponse202 & {
+    headers: Headers;
+  };
+export type queueLegacyWecomTagSyncResponseError = (
+  | queueLegacyWecomTagSyncResponse400
+  | queueLegacyWecomTagSyncResponse401
+  | queueLegacyWecomTagSyncResponse403
+  | queueLegacyWecomTagSyncResponse409
+  | queueLegacyWecomTagSyncResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueLegacyWecomTagSyncResponse =
+  queueLegacyWecomTagSyncResponseSuccess | queueLegacyWecomTagSyncResponseError;
+
+export const getQueueLegacyWecomTagSyncUrl = () => {
+  return `/api/admin/wecom/tags/sync`;
+};
+
+export const queueLegacyWecomTagSync = async (
+  legacyTagSyncRequest?: LegacyTagSyncRequest,
+  options?: RequestInit,
+): Promise<queueLegacyWecomTagSyncResponse> => {
+  const res = await fetch(getQueueLegacyWecomTagSyncUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagSyncRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueLegacyWecomTagSyncResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueLegacyWecomTagSyncResponse;
+};
+
+/**
+ * @summary Accept a due tag catalog sync for local queueing only
+ */
+export type queueLegacyWecomTagSyncDueResponse202 = {
+  data: LegacyTagQueuedAcceptance;
+  status: 202;
+};
+
+export type queueLegacyWecomTagSyncDueResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queueLegacyWecomTagSyncDueResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueLegacyWecomTagSyncDueResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueLegacyWecomTagSyncDueResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type queueLegacyWecomTagSyncDueResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queueLegacyWecomTagSyncDueResponseSuccess =
+  queueLegacyWecomTagSyncDueResponse202 & {
+    headers: Headers;
+  };
+export type queueLegacyWecomTagSyncDueResponseError = (
+  | queueLegacyWecomTagSyncDueResponse400
+  | queueLegacyWecomTagSyncDueResponse401
+  | queueLegacyWecomTagSyncDueResponse403
+  | queueLegacyWecomTagSyncDueResponse409
+  | queueLegacyWecomTagSyncDueResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueLegacyWecomTagSyncDueResponse =
+  | queueLegacyWecomTagSyncDueResponseSuccess
+  | queueLegacyWecomTagSyncDueResponseError;
+
+export const getQueueLegacyWecomTagSyncDueUrl = () => {
+  return `/api/admin/wecom/tags/sync-due`;
+};
+
+export const queueLegacyWecomTagSyncDue = async (
+  legacyTagSyncRequest?: LegacyTagSyncRequest,
+  options?: RequestInit,
+): Promise<queueLegacyWecomTagSyncDueResponse> => {
+  const res = await fetch(getQueueLegacyWecomTagSyncDueUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagSyncRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueLegacyWecomTagSyncDueResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueLegacyWecomTagSyncDueResponse;
 };
 
 /**

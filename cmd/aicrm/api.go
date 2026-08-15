@@ -375,6 +375,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	channelService := contactapp.NewChannelService(uow, contactstore.NewChannelRepository(), eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
+	legacyTagExecutionRepository, err := contactstore.NewLegacyTagExecutionRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyTagSyncService := contactapp.NewLegacyTagSyncService(uow, legacyTagExecutionRepository, eventstore.NewAppender(), legacyTagExecutionRepository)
+	legacyTagLiveService := contactapp.NewLegacyTagLiveMutationService(uow, legacyTagExecutionRepository, eventstore.NewAppender(), legacyTagExecutionRepository)
+	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
@@ -424,6 +432,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	legacyHandler.legacyTagSync = legacyTagSyncService
+	legacyHandler.legacyTagLive = legacyTagLiveService
+	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),
 	)
@@ -706,7 +717,10 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/channels/{channel_id}", authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.GetChannel)},
 			{http.MethodPatch, "/api/admin/channels/{channel_id}", authport.CapabilityChannelsWrite, true, http.HandlerFunc(legacy.UpdateChannel)},
 			{http.MethodGet, "/api/admin/wecom/tags", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListLegacyTags)},
+			{http.MethodGet, "/admin/wecom-tags", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.LegacyWecomTagsPage)},
+			{http.MethodGet, "/api/admin/wecom/tag-groups", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListLegacyTagGroups)},
 			{http.MethodPost, "/api/admin/wecom/tag-groups", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.CreateLegacyTagGroup)},
+			{http.MethodGet, "/api/admin/wecom/tag-groups/{group_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTagGroup)},
 			{http.MethodPut, "/api/admin/wecom/tag-groups/{group_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MutateLegacyTagGroup)},
 			{http.MethodPatch, "/api/admin/wecom/tag-groups/{group_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MutateLegacyTagGroup)},
 			{http.MethodDelete, "/api/admin/wecom/tag-groups/{group_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MutateLegacyTagGroup)},
@@ -714,6 +728,12 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPut, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MutateLegacyTag)},
 			{http.MethodPatch, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MutateLegacyTag)},
 			{http.MethodDelete, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MutateLegacyTag)},
+			{http.MethodGet, "/api/admin/wecom/tags/live/gate", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTagExecutionStatus)},
+			{http.MethodPost, "/api/admin/wecom/tags/live/mark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.MarkLegacyTagLive)},
+			{http.MethodPost, "/api/admin/wecom/tags/live/unmark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.UnmarkLegacyTagLive)},
+			{http.MethodPost, "/api/admin/wecom/tags/sync", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.SyncLegacyTags)},
+			{http.MethodPost, "/api/admin/wecom/tags/sync-due", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.SyncLegacyTagsDue)},
+			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
 			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},
 			{http.MethodPost, "/api/admin/coupons", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CreateCoupon)},
 			{http.MethodGet, "/api/admin/coupons/{coupon_id}", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.GetCoupon)},

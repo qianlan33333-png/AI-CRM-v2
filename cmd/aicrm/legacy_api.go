@@ -87,12 +87,26 @@ type legacyChannelApplication interface {
 
 type legacyTagApplication interface {
 	List(context.Context) (contactapp.LegacyTagCatalog, error)
+	GetGroup(context.Context, int64) (contactapp.LegacyTagGroup, error)
+	GetTag(context.Context, int64) (contactapp.LegacyTag, error)
 	CreateGroup(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, contactapp.LegacyTag, error)
 	UpdateGroup(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, error)
 	ArchiveGroup(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTagGroup, error)
 	CreateTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
 	UpdateTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
 	ArchiveTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
+}
+
+type legacyTagSyncApplication interface {
+	Request(context.Context, contactapp.LegacyTagSyncCommand) (contactapp.LegacyTagSyncAcceptance, error)
+}
+
+type legacyTagLiveMutationApplication interface {
+	Request(context.Context, contactapp.LegacyTagLiveMutationCommand) (contactapp.LegacyTagLiveMutationAcceptance, error)
+}
+
+type legacyTagExecutionStatusApplication interface {
+	Get(context.Context) (contactapp.LegacyTagExecutionStatus, error)
 }
 
 type legacyOrderApplication interface {
@@ -115,6 +129,9 @@ type Handler struct {
 	surveys         legacySurveyApplication
 	channels        legacyChannelApplication
 	legacyTags      legacyTagApplication
+	legacyTagSync   legacyTagSyncApplication
+	legacyTagLive   legacyTagLiveMutationApplication
+	legacyTagStatus legacyTagExecutionStatusApplication
 	coupons         legacyCouponApplication
 	couponBoard     couponBoardApplication
 	settings        legacySettingsApplication

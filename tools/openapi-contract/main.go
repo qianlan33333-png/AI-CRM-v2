@@ -128,6 +128,24 @@ var p4TagLegacyMappings = map[string][]string{
 	"createLegacyWecomTag": {"LEGACY-API-0556"}, "updateLegacyWecomTagPut": {"LEGACY-API-0562"}, "updateLegacyWecomTagPatch": {"LEGACY-API-0562"}, "archiveLegacyWecomTag": {"LEGACY-API-0562"},
 }
 
+var p4TagABOperations = map[string]bool{
+	"legacyWecomTagsAdminShell": true, "listLegacyWecomTagGroups": true, "getLegacyWecomTagGroup": true,
+	"getLegacyWecomTagExecutionGate": true, "queueLegacyWecomTagLiveMark": true, "queueLegacyWecomTagLiveUnmark": true,
+	"queueLegacyWecomTagSync": true, "queueLegacyWecomTagSyncDue": true, "getLegacyWecomTag": true,
+}
+
+var p4TagABLegacyMappings = map[string][]string{
+	"legacyWecomTagsAdminShell":      {"LEGACY-API-0086"},
+	"listLegacyWecomTagGroups":       {"LEGACY-API-0551"},
+	"getLegacyWecomTagGroup":         {"LEGACY-API-0554"},
+	"getLegacyWecomTagExecutionGate": {"LEGACY-API-0557"},
+	"queueLegacyWecomTagLiveMark":    {"LEGACY-API-0558"},
+	"queueLegacyWecomTagLiveUnmark":  {"LEGACY-API-0559"},
+	"queueLegacyWecomTagSync":        {"LEGACY-API-0560"},
+	"queueLegacyWecomTagSyncDue":     {"LEGACY-API-0561"},
+	"getLegacyWecomTag":              {"LEGACY-API-0563"},
+}
+
 var p4CouponOperations = map[string]bool{
 	"listLegacyCoupons": true, "createLegacyCoupon": true, "getLegacyCoupon": true,
 	"updateLegacyCoupon": true, "publishLegacyCoupon": true, "stopLegacyCoupon": true,
@@ -286,6 +304,15 @@ var authorizationContracts = map[string]authorizationContract{
 	"updateLegacyWecomTagPut":        {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateLegacyWecomTagPatch":      {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveLegacyWecomTag":          {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
+	"legacyWecomTagsAdminShell":      {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyWecomTagGroups":       {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyWecomTagGroup":         {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyWecomTagExecutionGate": {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
+	"queueLegacyWecomTagLiveMark":    {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
+	"queueLegacyWecomTagLiveUnmark":  {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
+	"queueLegacyWecomTagSync":        {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
+	"queueLegacyWecomTagSyncDue":     {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyWecomTag":              {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyCoupons":              {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createLegacyCoupon":             {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyCoupon":                {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
@@ -321,6 +348,7 @@ const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
 const p4GroupInviteDecisionEvidence = "P4-H03-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
+const p4TagABDecisionEvidence = "P4-B02AB-2026-08-15"
 const p4CouponJ01DecisionEvidence = "P4-J01-2026-08-15"
 const p4CouponABDecisionEvidence = "P4-COUPON-AB-2026-08-15"
 const p4OrderDecisionEvidence = "P4-I03-2026-08-15"
@@ -387,15 +415,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -502,6 +530,17 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ChannelLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				links++
+			} else if p4TagABOperations[op.OperationID] {
+				seenP4TagAB[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4TagABDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Tag A+B evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4TagABLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 				links++
@@ -612,8 +651,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 70 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_survey=%d p4_channel=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4Survey), len(seenP4Channel), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 1 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 3 || links != 79 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -673,6 +712,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4TagOperations {
 		if !seenP4Tag[id] {
 			return fmt.Errorf("missing P4 Tag operation: %s", id)
+		}
+	}
+	for id := range p4TagABOperations {
+		if !seenP4TagAB[id] {
+			return fmt.Errorf("missing P4 Tag A+B operation: %s", id)
 		}
 	}
 	for id := range p4CouponOperations {
@@ -757,6 +801,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	if err := validateChannelContract(doc); err != nil {
 		return err
 	}
+	if err := validateTagABContract(doc); err != nil {
+		return err
+	}
 	if err := validateCouponContract(doc); err != nil {
 		return err
 	}
@@ -767,6 +814,91 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 		return err
 	}
 	return nil
+}
+
+func validateTagABContract(doc *openapi3.T) error {
+	shell := doc.Paths.Value("/admin/wecom-tags")
+	groups := doc.Paths.Value("/api/admin/wecom/tag-groups")
+	group := doc.Paths.Value("/api/admin/wecom/tag-groups/{group_id}")
+	tag := doc.Paths.Value("/api/admin/wecom/tags/{tag_id}")
+	gate := doc.Paths.Value("/api/admin/wecom/tags/live/gate")
+	mark := doc.Paths.Value("/api/admin/wecom/tags/live/mark")
+	unmark := doc.Paths.Value("/api/admin/wecom/tags/live/unmark")
+	sync := doc.Paths.Value("/api/admin/wecom/tags/sync")
+	syncDue := doc.Paths.Value("/api/admin/wecom/tags/sync-due")
+	if shell == nil || shell.Get == nil || shell.Get.Responses.Value("302") == nil || shell.Get.Responses.Value("200") != nil ||
+		groups == nil || groups.Get == nil || group == nil || group.Get == nil || tag == nil || tag.Get == nil ||
+		gate == nil || gate.Get == nil || mark == nil || mark.Post == nil || unmark == nil || unmark.Post == nil ||
+		sync == nil || sync.Post == nil || syncDue == nil || syncDue.Post == nil {
+		return errors.New("P4-B02AB Tag A+B compatibility operations are incomplete")
+	}
+	for _, contract := range []struct {
+		operation *openapi3.Operation
+		schema    string
+	}{
+		{groups.Get, "LegacyTagGroupsResponse"}, {group.Get, "LegacyTagGroupResponse"},
+		{tag.Get, "LegacyTagResponse"}, {gate.Get, "LegacyTagExecutionGate"},
+	} {
+		if !operationResponseUsesLocalSchema(contract.operation, contract.schema) {
+			return fmt.Errorf("%s response schema ref drifted", contract.operation.OperationID)
+		}
+	}
+	for name, operation := range map[string]*openapi3.Operation{
+		"queueLegacyWecomTagLiveMark": mark.Post, "queueLegacyWecomTagLiveUnmark": unmark.Post,
+		"queueLegacyWecomTagSync": sync.Post, "queueLegacyWecomTagSyncDue": syncDue.Post,
+	} {
+		if !operationResponseUsesStatusLocalSchema(operation, "202", "LegacyTagQueuedAcceptance") {
+			return fmt.Errorf("%s must remain accepted-only local queueing", name)
+		}
+		if err := validateRequiredCSRF(operation); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		if !hasRequiredHeader(operation, "Idempotency-Key") || operation.Responses.Value("409") == nil || operation.Responses.Value("503") == nil {
+			return fmt.Errorf("%s lacks replay, conflict, or unavailable contract", name)
+		}
+	}
+	for name, operation := range map[string]*openapi3.Operation{
+		"queueLegacyWecomTagLiveMark": mark.Post, "queueLegacyWecomTagLiveUnmark": unmark.Post,
+	} {
+		if !operationRequestUsesLocalSchema(operation, "LegacyTagOpaqueLiveMutationRequest") {
+			return fmt.Errorf("%s opaque legacy request drifted", name)
+		}
+	}
+	for name, operation := range map[string]*openapi3.Operation{
+		"queueLegacyWecomTagSync": sync.Post, "queueLegacyWecomTagSyncDue": syncDue.Post,
+	} {
+		if !operationRequestUsesLocalSchema(operation, "LegacyTagSyncRequest") {
+			return fmt.Errorf("%s sync request drifted", name)
+		}
+	}
+	acceptance := doc.Components.Schemas["LegacyTagQueuedAcceptance"]
+	gateSchema := doc.Components.Schemas["LegacyTagExecutionGate"]
+	if acceptance == nil || acceptance.Value == nil || gateSchema == nil || gateSchema.Value == nil ||
+		!legacyTagBooleanEnum(acceptance.Value, "accepted", true) ||
+		!legacyTagBooleanEnum(acceptance.Value, "real_external_call_executed", false) ||
+		!legacyTagBooleanEnum(acceptance.Value, "sync_executed", false) ||
+		!legacyTagStringEnum(acceptance.Value, "state", "queued") ||
+		!legacyTagBooleanEnum(gateSchema.Value, "accepted", true) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "queued", true) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "attempted", false) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "executed", false) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "outcome_unknown", false) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "reconciled", false) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "real_external_call_executed", false) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "sync_executed", false) {
+		return errors.New("P4-B02AB Tag A+B execution state must remain fail-closed")
+	}
+	return nil
+}
+
+func legacyTagBooleanEnum(schema *openapi3.Schema, name string, want bool) bool {
+	property := schema.Properties[name]
+	return property != nil && property.Value != nil && reflect.DeepEqual(property.Value.Enum, []any{want})
+}
+
+func legacyTagStringEnum(schema *openapi3.Schema, name, want string) bool {
+	property := schema.Properties[name]
+	return property != nil && property.Value != nil && reflect.DeepEqual(property.Value.Enum, []any{want})
 }
 
 func validateConfigSettingsContract(doc *openapi3.T) error {

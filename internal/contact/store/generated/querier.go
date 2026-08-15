@@ -9,6 +9,8 @@ import (
 )
 
 type Querier interface {
+	AcceptLegacyTagLiveMutationReceipt(ctx context.Context, arg AcceptLegacyTagLiveMutationReceiptParams) (AcceptLegacyTagLiveMutationReceiptRow, error)
+	AcceptLegacyTagSyncReceipt(ctx context.Context, arg AcceptLegacyTagSyncReceiptParams) (AcceptLegacyTagSyncReceiptRow, error)
 	AddCustomerTag(ctx context.Context, arg AddCustomerTagParams) (int64, error)
 	AppendCustomerEvent(ctx context.Context, arg AppendCustomerEventParams) (int64, error)
 	ArchiveLegacyTag(ctx context.Context, id int64) (ArchiveLegacyTagRow, error)
@@ -27,6 +29,9 @@ type Querier interface {
 	GetCustomerMergeLineage(ctx context.Context, mergedCustomerID int64) (int64, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
 	GetExternalEventIdempotency(ctx context.Context, idempotencyKey string) (GetExternalEventIdempotencyRow, error)
+	GetLegacyTagExecutionStatus(ctx context.Context) ([]byte, error)
+	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
+	GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error)
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)
 	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
@@ -46,6 +51,8 @@ type Querier interface {
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error)
 	ReserveChannelOperationReceipt(ctx context.Context, arg ReserveChannelOperationReceiptParams) (ReserveChannelOperationReceiptRow, error)
+	ReserveLegacyTagLiveMutationReceipt(ctx context.Context, arg ReserveLegacyTagLiveMutationReceiptParams) (ReserveLegacyTagLiveMutationReceiptRow, error)
+	ReserveLegacyTagSyncReceipt(ctx context.Context, arg ReserveLegacyTagSyncReceiptParams) (ReserveLegacyTagSyncReceiptRow, error)
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
 	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)

@@ -879,7 +879,33 @@ paths:
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagCreateRequest" } } } }
       responses: { "200": { description: Local tag mutation envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /admin/wecom-tags:
+    get:
+      tags: [p4-tag-compat]
+      operationId: legacyWecomTagsAdminShell
+      summary: Delegate the legacy tag page to the existing generic admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0086]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "302": { description: Existing generic admin shell location; no tag page body is invented. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /api/admin/wecom/tag-groups:
+    get:
+      tags: [p4-tag-compat]
+      operationId: listLegacyWecomTagGroups
+      summary: List local tag groups without executing WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0551]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Local tag groups, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupsResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
     post:
       tags: [p4-tag-compat]
       operationId: createLegacyWecomTagGroup
@@ -893,6 +919,20 @@ paths:
       responses: { "200": { description: Local group mutation envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/wecom/tag-groups/{group_id}:
     parameters: [{ name: group_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-tag-compat]
+      operationId: getLegacyWecomTagGroup
+      summary: Get one local tag group without executing WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0554]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Local tag group, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
     put:
       tags: [p4-tag-compat]
       operationId: updateLegacyWecomTagGroupPut
@@ -927,6 +967,20 @@ paths:
       responses: { "200": { description: Local group archive envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/wecom/tags/{tag_id}:
     parameters: [{ name: tag_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-tag-compat]
+      operationId: getLegacyWecomTag
+      summary: Get one local tag without executing WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0563]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Local tag, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
     put:
       tags: [p4-tag-compat]
       operationId: updateLegacyWecomTagPut
@@ -959,6 +1013,70 @@ paths:
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       responses: { "200": { description: Local tag archive envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/live/gate:
+    get:
+      tags: [p4-tag-compat]
+      operationId: getLegacyWecomTagExecutionGate
+      summary: Read the local fail-closed tag execution gate
+      x-legacy-mapping-ids: [LEGACY-API-0557]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200":
+          description: Local execution-state projection, not a provider receipt.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagExecutionGate" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wecom/tags/live/mark:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagLiveMark
+      summary: Accept a legacy live-mark request for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0558]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagOpaqueLiveMutationRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no provider operation was attempted, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/live/unmark:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagLiveUnmark
+      summary: Accept a legacy live-unmark request for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0559]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagOpaqueLiveMutationRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no provider operation was attempted, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/sync:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagSync
+      summary: Accept a manual tag catalog sync for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0560]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: false, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagSyncRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no WeCom sync was executed, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/sync-due:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagSyncDue
+      summary: Accept a due tag catalog sync for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0561]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: false, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagSyncRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no WeCom sync was executed, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/channels:
     get:
       tags: [p4-channel-compat]
@@ -1985,6 +2103,89 @@ components:
         real_external_call_executed: { type: boolean, enum: [false] }
         sync_executed: { type: boolean, enum: [false] }
         fixture_used: { type: boolean, enum: [false] }
+    LegacyTagGroup:
+      type: object
+      required: [group_id, group_name, sort_order]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTag:
+      type: object
+      required: [tag_id, group_id, group_name, tag_name, sort_order]
+      properties:
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        tag_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupsResponse:
+      type: object
+      required: [ok, groups, items, count, source_status, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        groups: { type: array, items: { $ref: "#/components/schemas/LegacyTagGroup" } }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyTagGroup" } }
+        count: { type: integer, minimum: 0 }
+        source_status: { type: string, enum: [local_catalog] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagGroupResponse:
+      type: object
+      required: [ok, group, source_status, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        group: { $ref: "#/components/schemas/LegacyTagGroup" }
+        source_status: { type: string, enum: [local_catalog] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagResponse:
+      type: object
+      required: [ok, tag, source_status, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        tag: { $ref: "#/components/schemas/LegacyTag" }
+        source_status: { type: string, enum: [local_catalog] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagExecutionGate:
+      type: object
+      additionalProperties: true
+      required: [accepted, queued, attempted, executed, outcome_unknown, reconciled, real_external_call_executed, sync_executed]
+      properties:
+        accepted: { type: boolean, enum: [true] }
+        queued: { type: boolean, enum: [true] }
+        attempted: { type: boolean, enum: [false] }
+        executed: { type: boolean, enum: [false] }
+        outcome_unknown: { type: boolean, enum: [false] }
+        reconciled: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagSyncRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        idempotency_key: { type: string, minLength: 1, maxLength: 200 }
+        trace_id: { type: string, maxLength: 200 }
+    LegacyTagOpaqueLiveMutationRequest:
+      type: object
+      additionalProperties: true
+      description: Opaque legacy body retained for a later public WeCom port; this endpoint only queues it locally.
+      properties:
+        idempotency_key: { type: string, minLength: 1, maxLength: 200 }
+        trace_id: { type: string, maxLength: 200 }
+    LegacyTagQueuedAcceptance:
+      type: object
+      required: [ok, accepted, receipt_id, event_id, river_job_id, state, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        accepted: { type: boolean, enum: [true] }
+        receipt_id: { type: integer, format: int64, minimum: 1 }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        state: { type: string, enum: [queued] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
     LegacyChannelWriteRequest:
       type: object
       additionalProperties: false

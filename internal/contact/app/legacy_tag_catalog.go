@@ -89,6 +89,44 @@ func (s *LegacyTagCatalogService) List(ctx context.Context) (LegacyTagCatalog, e
 	return result, nil
 }
 
+// GetGroup projects one active local tag group from the same bounded catalog
+// snapshot used by the legacy management page. The HTTP route remains a
+// shared-composition concern; this method deliberately performs no provider
+// read or write.
+func (s *LegacyTagCatalogService) GetGroup(ctx context.Context, groupID int64) (LegacyTagGroup, error) {
+	if groupID < 1 {
+		return LegacyTagGroup{}, ErrLegacyTagNotFound
+	}
+	catalog, err := s.List(ctx)
+	if err != nil {
+		return LegacyTagGroup{}, err
+	}
+	for _, group := range catalog.Groups {
+		if group.ID == groupID {
+			return group, nil
+		}
+	}
+	return LegacyTagGroup{}, ErrLegacyTagNotFound
+}
+
+// GetTag projects one active local tag from the same bounded catalog snapshot
+// as List. WeCom provider identifiers stay outside this Contact-owned DTO.
+func (s *LegacyTagCatalogService) GetTag(ctx context.Context, tagID int64) (LegacyTag, error) {
+	if tagID < 1 {
+		return LegacyTag{}, ErrLegacyTagNotFound
+	}
+	catalog, err := s.List(ctx)
+	if err != nil {
+		return LegacyTag{}, err
+	}
+	for _, tag := range catalog.Tags {
+		if tag.ID == tagID {
+			return tag, nil
+		}
+	}
+	return LegacyTag{}, ErrLegacyTagNotFound
+}
+
 func (s *LegacyTagCatalogService) CreateGroup(ctx context.Context, c LegacyTagCommand) (LegacyTagGroup, LegacyTag, error) {
 	if err := validLegacyCommand(c, c.GroupName, c.FirstTagName); err != nil {
 		return LegacyTagGroup{}, LegacyTag{}, err

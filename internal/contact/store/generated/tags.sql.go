@@ -11,6 +11,88 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const acceptLegacyTagLiveMutationReceipt = `-- name: AcceptLegacyTagLiveMutationReceipt :one
+UPDATE legacy_tag_live_mutation_receipts
+SET state = 'queued', event_id = $1, river_job_id = $2, accepted_at = now()
+WHERE id = $3 AND state = 'reserved'
+RETURNING id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id
+`
+
+type AcceptLegacyTagLiveMutationReceiptParams struct {
+	EventID    pgtype.Int8 `json:"event_id"`
+	RiverJobID pgtype.Int8 `json:"river_job_id"`
+	ID         int64       `json:"id"`
+}
+
+type AcceptLegacyTagLiveMutationReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	IdempotencyKey string      `json:"idempotency_key"`
+	Operation      string      `json:"operation"`
+	Payload        []byte      `json:"payload"`
+	TraceID        string      `json:"trace_id"`
+	State          string      `json:"state"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	RiverJobID     pgtype.Int8 `json:"river_job_id"`
+}
+
+func (q *Queries) AcceptLegacyTagLiveMutationReceipt(ctx context.Context, arg AcceptLegacyTagLiveMutationReceiptParams) (AcceptLegacyTagLiveMutationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, acceptLegacyTagLiveMutationReceipt, arg.EventID, arg.RiverJobID, arg.ID)
+	var i AcceptLegacyTagLiveMutationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.IdempotencyKey,
+		&i.Operation,
+		&i.Payload,
+		&i.TraceID,
+		&i.State,
+		&i.EventID,
+		&i.RiverJobID,
+	)
+	return i, err
+}
+
+const acceptLegacyTagSyncReceipt = `-- name: AcceptLegacyTagSyncReceipt :one
+UPDATE legacy_tag_sync_receipts
+SET state = 'queued', event_id = $1, river_job_id = $2, accepted_at = now()
+WHERE id = $3 AND state = 'reserved'
+RETURNING id, actor_id, idempotency_key, kind, trace_id, state, event_id, river_job_id
+`
+
+type AcceptLegacyTagSyncReceiptParams struct {
+	EventID    pgtype.Int8 `json:"event_id"`
+	RiverJobID pgtype.Int8 `json:"river_job_id"`
+	ID         int64       `json:"id"`
+}
+
+type AcceptLegacyTagSyncReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	IdempotencyKey string      `json:"idempotency_key"`
+	Kind           string      `json:"kind"`
+	TraceID        string      `json:"trace_id"`
+	State          string      `json:"state"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	RiverJobID     pgtype.Int8 `json:"river_job_id"`
+}
+
+func (q *Queries) AcceptLegacyTagSyncReceipt(ctx context.Context, arg AcceptLegacyTagSyncReceiptParams) (AcceptLegacyTagSyncReceiptRow, error) {
+	row := q.db.QueryRow(ctx, acceptLegacyTagSyncReceipt, arg.EventID, arg.RiverJobID, arg.ID)
+	var i AcceptLegacyTagSyncReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.IdempotencyKey,
+		&i.Kind,
+		&i.TraceID,
+		&i.State,
+		&i.EventID,
+		&i.RiverJobID,
+	)
+	return i, err
+}
+
 const archiveLegacyTag = `-- name: ArchiveLegacyTag :one
 UPDATE tags SET name='archived:'||id::text WHERE id=$1 AND name NOT LIKE 'archived:%' RETURNING id,group_id,name,sort_order
 `
@@ -91,6 +173,95 @@ func (q *Queries) CreateLegacyTagGroup(ctx context.Context, name string) (TagGro
 	row := q.db.QueryRow(ctx, createLegacyTagGroup, name)
 	var i TagGroup
 	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
+	return i, err
+}
+
+const getLegacyTagExecutionStatus = `-- name: GetLegacyTagExecutionStatus :one
+SELECT payload FROM legacy_tag_execution_status WHERE singleton = true
+`
+
+func (q *Queries) GetLegacyTagExecutionStatus(ctx context.Context) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getLegacyTagExecutionStatus)
+	var payload []byte
+	err := row.Scan(&payload)
+	return payload, err
+}
+
+const getLegacyTagLiveMutationReceipt = `-- name: GetLegacyTagLiveMutationReceipt :one
+SELECT id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id
+FROM legacy_tag_live_mutation_receipts
+WHERE actor_id = $1 AND key_digest = $2
+`
+
+type GetLegacyTagLiveMutationReceiptParams struct {
+	ActorID   int64  `json:"actor_id"`
+	KeyDigest []byte `json:"key_digest"`
+}
+
+type GetLegacyTagLiveMutationReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	IdempotencyKey string      `json:"idempotency_key"`
+	Operation      string      `json:"operation"`
+	Payload        []byte      `json:"payload"`
+	TraceID        string      `json:"trace_id"`
+	State          string      `json:"state"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	RiverJobID     pgtype.Int8 `json:"river_job_id"`
+}
+
+func (q *Queries) GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getLegacyTagLiveMutationReceipt, arg.ActorID, arg.KeyDigest)
+	var i GetLegacyTagLiveMutationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.IdempotencyKey,
+		&i.Operation,
+		&i.Payload,
+		&i.TraceID,
+		&i.State,
+		&i.EventID,
+		&i.RiverJobID,
+	)
+	return i, err
+}
+
+const getLegacyTagSyncReceipt = `-- name: GetLegacyTagSyncReceipt :one
+SELECT id, actor_id, idempotency_key, kind, trace_id, state, event_id, river_job_id
+FROM legacy_tag_sync_receipts
+WHERE actor_id = $1 AND key_digest = $2
+`
+
+type GetLegacyTagSyncReceiptParams struct {
+	ActorID   int64  `json:"actor_id"`
+	KeyDigest []byte `json:"key_digest"`
+}
+
+type GetLegacyTagSyncReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	IdempotencyKey string      `json:"idempotency_key"`
+	Kind           string      `json:"kind"`
+	TraceID        string      `json:"trace_id"`
+	State          string      `json:"state"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	RiverJobID     pgtype.Int8 `json:"river_job_id"`
+}
+
+func (q *Queries) GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getLegacyTagSyncReceipt, arg.ActorID, arg.KeyDigest)
+	var i GetLegacyTagSyncReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.IdempotencyKey,
+		&i.Kind,
+		&i.TraceID,
+		&i.State,
+		&i.EventID,
+		&i.RiverJobID,
+	)
 	return i, err
 }
 
@@ -210,6 +381,106 @@ func (q *Queries) ListTags(ctx context.Context) ([]ListTagsRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const reserveLegacyTagLiveMutationReceipt = `-- name: ReserveLegacyTagLiveMutationReceipt :one
+INSERT INTO legacy_tag_live_mutation_receipts(actor_id, idempotency_key, key_digest, operation, payload, trace_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id
+`
+
+type ReserveLegacyTagLiveMutationReceiptParams struct {
+	ActorID        int64  `json:"actor_id"`
+	IdempotencyKey string `json:"idempotency_key"`
+	KeyDigest      []byte `json:"key_digest"`
+	Operation      string `json:"operation"`
+	Payload        []byte `json:"payload"`
+	TraceID        string `json:"trace_id"`
+}
+
+type ReserveLegacyTagLiveMutationReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	IdempotencyKey string      `json:"idempotency_key"`
+	Operation      string      `json:"operation"`
+	Payload        []byte      `json:"payload"`
+	TraceID        string      `json:"trace_id"`
+	State          string      `json:"state"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	RiverJobID     pgtype.Int8 `json:"river_job_id"`
+}
+
+func (q *Queries) ReserveLegacyTagLiveMutationReceipt(ctx context.Context, arg ReserveLegacyTagLiveMutationReceiptParams) (ReserveLegacyTagLiveMutationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveLegacyTagLiveMutationReceipt,
+		arg.ActorID,
+		arg.IdempotencyKey,
+		arg.KeyDigest,
+		arg.Operation,
+		arg.Payload,
+		arg.TraceID,
+	)
+	var i ReserveLegacyTagLiveMutationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.IdempotencyKey,
+		&i.Operation,
+		&i.Payload,
+		&i.TraceID,
+		&i.State,
+		&i.EventID,
+		&i.RiverJobID,
+	)
+	return i, err
+}
+
+const reserveLegacyTagSyncReceipt = `-- name: ReserveLegacyTagSyncReceipt :one
+INSERT INTO legacy_tag_sync_receipts(actor_id, idempotency_key, key_digest, kind, trace_id)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, idempotency_key, kind, trace_id, state, event_id, river_job_id
+`
+
+type ReserveLegacyTagSyncReceiptParams struct {
+	ActorID        int64  `json:"actor_id"`
+	IdempotencyKey string `json:"idempotency_key"`
+	KeyDigest      []byte `json:"key_digest"`
+	Kind           string `json:"kind"`
+	TraceID        string `json:"trace_id"`
+}
+
+type ReserveLegacyTagSyncReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	IdempotencyKey string      `json:"idempotency_key"`
+	Kind           string      `json:"kind"`
+	TraceID        string      `json:"trace_id"`
+	State          string      `json:"state"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	RiverJobID     pgtype.Int8 `json:"river_job_id"`
+}
+
+func (q *Queries) ReserveLegacyTagSyncReceipt(ctx context.Context, arg ReserveLegacyTagSyncReceiptParams) (ReserveLegacyTagSyncReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveLegacyTagSyncReceipt,
+		arg.ActorID,
+		arg.IdempotencyKey,
+		arg.KeyDigest,
+		arg.Kind,
+		arg.TraceID,
+	)
+	var i ReserveLegacyTagSyncReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.IdempotencyKey,
+		&i.Kind,
+		&i.TraceID,
+		&i.State,
+		&i.EventID,
+		&i.RiverJobID,
+	)
+	return i, err
 }
 
 const updateLegacyTag = `-- name: UpdateLegacyTag :one
