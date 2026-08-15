@@ -111,6 +111,7 @@ jobs:
           P4F01A_SURVEY_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-f01a-survey-acceptance
           P4C01_CHANNEL_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-c01-channel-acceptance
           P4J01_COUPON_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-j01-coupon-acceptance
+          P4I03_ORDER_TEST_DATABASE_URL="$MIGRATION_TEST_DATABASE_URL" make p4-i03-order-acceptance
       - name: Verify promotion fingerprints
         if: steps.promotion.outputs.mode == 'promotion'
         run: scripts/check_ci_promotion_smoke.sh

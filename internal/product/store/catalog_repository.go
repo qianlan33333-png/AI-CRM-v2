@@ -18,8 +18,21 @@ import (
 type CatalogRepository struct{}
 
 var _ productapp.Store = (*CatalogRepository)(nil)
+var _ productport.Reader = (*CatalogRepository)(nil)
 
 func NewCatalogRepository() *CatalogRepository { return &CatalogRepository{} }
+
+func (r *CatalogRepository) ReadProduct(ctx context.Context, id productport.ID) (productport.Product, error) {
+	product, err := r.Get(ctx, id)
+	switch {
+	case errors.Is(err, productapp.ErrNotFound):
+		return productport.Product{}, productport.ErrProductReadNotFound
+	case err != nil:
+		return productport.Product{}, errors.Join(productport.ErrProductReadUnavailable, err)
+	default:
+		return product, nil
+	}
+}
 func queries(ctx context.Context) (*productdb.Queries, error) {
 	tx, e := platformstore.TxFromContext(ctx)
 	if e != nil {

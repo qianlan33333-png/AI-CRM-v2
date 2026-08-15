@@ -64,6 +64,7 @@ const (
 	CapabilityChannelsWrite        Capability = "channels.write"
 	CapabilityCouponsRead          Capability = "coupons.read"
 	CapabilityCouponsWrite         Capability = "coupons.write"
+	CapabilityOrderRead            Capability = "order.read"
 )
 
 func (capability Capability) Known() bool {
@@ -78,7 +79,8 @@ func (capability Capability) Known() bool {
 		CapabilityProductsRead, CapabilityProductsWrite,
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
-		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite:
+		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
+		CapabilityOrderRead:
 		return true
 	default:
 		return false
@@ -210,7 +212,8 @@ func validAuthorization(authorization Authorization) bool {
 		CapabilityProductsRead, CapabilityProductsWrite,
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
-		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite:
+		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
+		CapabilityOrderRead:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:
 		return false

@@ -1,8 +1,15 @@
 package port
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"time"
+)
+
+var (
+	ErrProductReadNotFound    = errors.New("product read projection not found")
+	ErrProductReadUnavailable = errors.New("product read projection unavailable")
 )
 
 type ID int64
@@ -41,4 +48,8 @@ type LegacyPage struct {
 	Total  int64
 	Limit  int32
 	Offset int32
+}
+
+type Reader interface {
+	ReadProduct(context.Context, ID) (Product, error)
 }

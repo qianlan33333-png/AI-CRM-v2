@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgx/v5"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
@@ -14,9 +16,28 @@ import (
 type CustomerDetailRepository struct{}
 
 var _ contactapp.CustomerDetailStore = (*CustomerDetailRepository)(nil)
+var _ contactport.CustomerReader = (*CustomerDetailRepository)(nil)
 
 func NewCustomerDetailRepository() *CustomerDetailRepository {
 	return &CustomerDetailRepository{}
+}
+
+func (*CustomerDetailRepository) ReadCustomer(ctx context.Context, id contactport.CustomerID) (contactport.CustomerProjection, error) {
+	if id < 1 {
+		return contactport.CustomerProjection{}, contactport.ErrCustomerReadNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactport.CustomerProjection{}, errors.Join(contactport.ErrCustomerReadUnavailable, err)
+	}
+	row, err := contactdb.New(tx).ReadCustomerProjection(ctx, int64(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactport.CustomerProjection{}, contactport.ErrCustomerReadNotFound
+	}
+	if err != nil {
+		return contactport.CustomerProjection{}, errors.Join(contactport.ErrCustomerReadUnavailable, err)
+	}
+	return contactport.CustomerProjection{ID: contactport.CustomerID(row.ID), Name: row.Name}, nil
 }
 
 func (*CustomerDetailRepository) GetCustomerDetail(

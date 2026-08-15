@@ -28,6 +28,7 @@ import (
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
+	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -90,6 +91,10 @@ type legacyTagApplication interface {
 	ArchiveTag(context.Context, contactapp.LegacyTagCommand) (contactapp.LegacyTag, error)
 }
 
+type legacyOrderApplication interface {
+	List(context.Context, orderport.Filter) (orderport.Page, error)
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth            authport.Service
@@ -108,6 +113,7 @@ type Handler struct {
 	legacyTags      legacyTagApplication
 	coupons         legacyCouponApplication
 	settings        legacySettingsApplication
+	orders          legacyOrderApplication
 }
 
 type legacySettingsApplication interface {

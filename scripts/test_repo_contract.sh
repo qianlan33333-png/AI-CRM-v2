@@ -3558,6 +3558,38 @@ if (cd "$a02_import_forgery" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P4-A02 historical settings import forgery was accepted"
 fi
 
+i03_statement_counter_drift="$(make_fixture p4-i03-statement-counter-drift)"
+sed -i.bak '/REFERENCING NEW TABLE AS inserted_rows/d' "$i03_statement_counter_drift/migrations/00035_order_list_projection.sql"
+rm -f "$i03_statement_counter_drift/migrations/00035_order_list_projection.sql.bak"
+restage_p2s18_receipt "$i03_statement_counter_drift" migrations/00035_order_list_projection.sql
+if (cd "$i03_statement_counter_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-I03 statement counter drift was accepted"
+fi
+
+i03_route_disconnect="$(make_fixture p4-i03-route-disconnect)"
+sed -i.bak '/\/api\/admin\/orders.*ListOrders/d' "$i03_route_disconnect/cmd/aicrm/api.go"
+rm -f "$i03_route_disconnect/cmd/aicrm/api.go.bak"
+restage_p2s18_receipt "$i03_route_disconnect" cmd/aicrm/api.go
+if (cd "$i03_route_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-I03 order-list route disconnect was accepted"
+fi
+
+i03_capability_widen="$(make_fixture p4-i03-capability-widen)"
+sed -i.bak '/operationId: listLegacyOrders/,/responses:/s/x-aicrm-capability: order.read/x-aicrm-capability: order.write/' "$i03_capability_widen/api/openapi.yaml"
+rm -f "$i03_capability_widen/api/openapi.yaml.bak"
+restage_p2s18_receipt "$i03_capability_widen" api/openapi.yaml
+if (cd "$i03_capability_widen" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-I03 order capability widening was accepted"
+fi
+
+i03_cross_domain_query="$(make_fixture p4-i03-cross-domain-query)"
+sed -i.bak 's/FROM order_list_projections/FROM order_list_projections JOIN products ON products.product_code=order_list_projections.product_code/' "$i03_cross_domain_query/internal/order/store/queries/orders.sql"
+rm -f "$i03_cross_domain_query/internal/order/store/queries/orders.sql.bak"
+restage_p2s18_receipt "$i03_cross_domain_query" internal/order/store/queries/orders.sql
+if (cd "$i03_cross_domain_query" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-I03 cross-domain Product table read was accepted"
+fi
+
 envrc_fixture="$(make_fixture envrc-file_path)"
 touch "$envrc_fixture/.envrc"
 git -C "$envrc_fixture" add -f .envrc

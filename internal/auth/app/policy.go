@@ -98,6 +98,9 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityCouponsWrite: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityOrderRead: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
 }
 
 func authorize(principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {

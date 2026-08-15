@@ -125,6 +125,13 @@ owners:
       coupon_catalog_counters: exact_unfiltered_legacy_total_without_coupon_scan
       coupon_operation_receipts: transaction_scoped_mutation_receipts_without_create_replay_claim
 
+  order:
+    package: internal/order
+    tables: [order_list_projections, order_list_projection_counters]
+    constraints:
+      order_list_projections: read_only_unified_order_projection_without_payment_or_provider_execution
+      order_list_projection_counters: exact_unfiltered_order_total_without_projection_scan
+
   media:
     package: internal/media
     tables: [media_images, media_image_blobs, media_image_upload_receipts, media_group_invites, media_group_invite_operation_receipts]

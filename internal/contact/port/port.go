@@ -24,6 +24,22 @@ var (
 	ErrExternalEventConflict = errors.New("external customer event conflict")
 )
 
+var (
+	ErrCustomerReadNotFound    = errors.New("customer read projection not found")
+	ErrCustomerReadUnavailable = errors.New("customer read projection unavailable")
+)
+
+// CustomerProjection is deliberately channel neutral. Phone numbers and
+// external identifiers remain snapshots owned by the consuming business fact.
+type CustomerProjection struct {
+	ID   CustomerID
+	Name string
+}
+
+type CustomerReader interface {
+	ReadCustomer(context.Context, CustomerID) (CustomerProjection, error)
+}
+
 type Stage struct {
 	ID        StageID
 	Name      string

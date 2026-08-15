@@ -4748,6 +4748,32 @@ slices:
     cumulative_corrections: [inherited_slice_induced=2, inherited_verification_induced=2, fresh_slice_induced=2, fresh_verification_induced=18, fresh_infra_induced=1, fresh_scope_induced=0, redline=0]
     external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, LEGACY_VALUE_SECRET_UPDATED_AT_IMPORT_NOT_EXECUTED, REAL_PROVIDER_NOT_EXECUTED, EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
 
+  - slice_id: P4-I03
+    title: legacy-order-read-only-list
+    owner: Codex
+    status: SCOPE_FROZEN_REPAIR_ONLY_PRE_PR_BLIND_REVIEW_PASS
+    base_sha: 6ec82a0122a21f36aadee7b5e8368daa50377588
+    dependency: P4_A02_CLOSED_exact_green_main
+    branch: codex/p4-i03-orders-list-release-20260815
+    pr_url: PENDING
+    scope: [LEGACY_API_0405_GET_api_admin_orders, LEGACY_S07_174, T14_plus_0, Order_owned_read_projection, Customer_Product_read_ports, order_read_A01_session, exact_four_key_envelope, focused_PG16_14_S200K]
+    excluded_scope: [detail, customer_or_public_create, payment, cancel, refund, provider, callback, export, sidebar, UI, tenant_model_column_index_permission_or_test, external_effect, production_or_live_migration, I04]
+    handwritten_file_budget: focused_I03_business_transport_acceptance_and_governance_only
+    reusable_base: [A01_human_session_RBAC, platform_UnitOfWork, Contact_CustomerReader, Product_Reader, SQLC, OpenAPI_registry]
+    mapping_status: exact_plus_1_API_0405_plus_1_matrix_S07_174_plus_0_T14
+    tests: [LOCAL_focused_Go_normal_boundary_error_PASS, LOCAL_HTTP_root_A01_RBAC_envelope_alias_error_PASS, LOCAL_OpenAPI_registry_negative_PASS, LOCAL_PG16_14_34_35_34_35_Event_Auth_session_history_PASS, LOCAL_S200K_no_illegal_order_projection_seq_scan_PASS, PRE_PR_independent_migration_blind_review_PASS]
+    correction_state: SCOPE_FROZEN_REPAIR_ONLY
+    frozen_capability_scope: [original_I03_DoD, API_0405, S07_174, generated_registry_matrix_ledger_receipts, required_CI_PR_merge_promotion_exact_main_CLOSED]
+    slice_induced_correction_count: 2
+    slice_induced_threshold: 2
+    hard_stop: false
+    migration_correction_attribution: [slice_induced=1, verification_induced=0, infra_induced=0, scope_induced=0, redline=0, first_S200K_load_exceeded_180_seconds, repaired_S200K_load_4_6_seconds]
+    infra_induced_correction_count: 1
+    scope_induced_correction_count: 0
+    verification_induced_correction_count: 12
+    correction_notes: [slice:HTTP_transport_enforced_frozen_query_bounds_before_application_stub, slice:S200K_replaced_row_hot_counter_with_statement_transition_table_counter, verification:fresh_worktree_used_repository_pinned_Orval_7_21_0_path, verification:OpenAPI_registry_synchronized_one_operation_and_one_link_derived_inventory, verification:direct_psql_used_for_same_gate_loopback_when_sandbox_denied_goose_and_pgx_TCP_without_escalation, verification:first_ledger_append_anchor_was_after_phase_closeouts_then_moved_to_the_legal_slices_tail_before_staging, verification:first_migration_attribution_anchor_matched_historical_P1_S11_then_append_only_gate_rejected_it_and_historical_bytes_were_restored_before_commit, verification:repo_contract_rejected_a_tenant_column_negative_acceptance_and_it_was_deleted_under_single_instance_contract, verification:Contact_read_port_SQL_was_split_from_the_C02B_single_snapshot_source_to_preserve_its_one_statement_contract, verification:new_Contact_read_errors_moved_to_a_separate_var_block_to_preserve_the_existing_public_error_byte_anchor_after_gofmt, verification:current_waterline_35_direct_consumers_and_their_checker_anchors_were_synchronized_together, verification:full_repo_contract_negative_runner_was_stopped_before_unrelated_replay_and_replaced_with_four_touched_I03_fixtures, verification:OpenAPI_contract_commands_were_rerouted_through_the_tools_module, verification:ownership_checker_command_was_rerouted_to_scripts_ownership_main_go, infra:preallocated_slot_wrapper_misreported_stopped_while_its_owned_Postgres_process_was_listening, scope:none, redline:none]
+    external_gates: [PRODUCTION_DATABASE_NOT_EXECUTED, LIVE_MIGRATION_NOT_EXECUTED, REAL_PAYMENT_NOT_EXECUTED, REAL_REFUND_NOT_EXECUTED, REAL_PROVIDER_OR_CALLBACK_NOT_EXECUTED, REAL_EXTERNAL_EFFECT_NOT_EXECUTED, DEPLOYMENT_NOT_EXECUTED]
+
 phase_closeouts:
   P2:
     as_of: 2026-08-11T23:00:00+08:00

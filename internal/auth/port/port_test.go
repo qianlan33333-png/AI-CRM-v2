@@ -46,6 +46,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite,
 		CapabilityCouponsRead, CapabilityCouponsWrite,
+		CapabilityOrderRead,
 	} {
 		if !capability.Known() {
 			t.Fatalf("capability %q is not known", capability)
@@ -53,6 +54,19 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 	}
 	if Capability("customers.delete").Known() {
 		t.Fatal("unknown capability became known")
+	}
+}
+
+func TestOrderReadCapabilityStaysGlobal(t *testing.T) {
+	if string(CapabilityOrderRead) != "order.read" || !CapabilityOrderRead.Known() {
+		t.Fatal("order read capability drifted")
+	}
+	ctx, err := WithAuthorization(context.Background(), Authorization{Capability: CapabilityOrderRead, Scope: ScopeGlobal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := AuthorizationFromContext(ctx); !ok || got != (Authorization{Capability: CapabilityOrderRead, Scope: ScopeGlobal}) {
+		t.Fatalf("authorization=%#v/%v", got, ok)
 	}
 }
 

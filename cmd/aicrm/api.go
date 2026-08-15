@@ -34,6 +34,8 @@ import (
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
+	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
+	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
@@ -422,6 +424,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	legacyHandler.orders = orderapp.NewService(
+		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),
+	)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -679,6 +684,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/wechat-pay/products", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.ListProducts)},
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
+			{http.MethodGet, "/api/admin/orders", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListOrders)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},

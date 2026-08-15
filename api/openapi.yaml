@@ -1046,6 +1046,33 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/orders:
+    get:
+      tags: [p4-order-compat]
+      operationId: listLegacyOrders
+      summary: List persisted order projections without payment, refund, callback, or provider execution
+      x-legacy-mapping-ids: [LEGACY-API-0405]
+      x-p4-decision-evidence: P4-I03-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: provider, in: query, schema: { type: string, enum: [all, wechat, alipay, wechat_shop], default: all } }
+        - { name: order_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: mobile, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: product_code, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: created_from, in: query, schema: { type: string, format: date-time } }
+        - { name: created_to, in: query, schema: { type: string, format: date-time } }
+        - { name: status, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Frozen legacy order-list envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/coupons:
     get:
       tags: [p4-coupon-compat]
@@ -1730,6 +1757,40 @@ components:
             version: { type: integer, format: int64, minimum: 1 }
             created_at: { type: string, format: date-time }
             updated_at: { type: string, format: date-time }
+    LegacyOrderListItem:
+      type: object
+      additionalProperties: false
+      required: [created_at, merchant_order_no, out_trade_no, order_no, platform_transaction_no, transaction_id, payer_name, mobile, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url]
+      properties:
+        created_at: { type: string, format: date-time }
+        merchant_order_no: { type: string, maxLength: 200 }
+        out_trade_no: { type: string, maxLength: 200 }
+        order_no: { type: string, maxLength: 200 }
+        platform_transaction_no: { type: string, maxLength: 200 }
+        transaction_id: { type: string, maxLength: 200 }
+        payer_name: { type: string, maxLength: 200 }
+        mobile: { type: string, maxLength: 80 }
+        userid: { type: string, maxLength: 200 }
+        external_userid: { type: string, maxLength: 200 }
+        unionid: { type: string, maxLength: 200 }
+        product_code: { type: string, maxLength: 200 }
+        product_name: { type: string, maxLength: 200 }
+        amount_yuan: { type: string, pattern: '^[0-9]+\.[0-9]{2}$' }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string, minLength: 1, maxLength: 80 }
+        status_label: { type: string, minLength: 1, maxLength: 80 }
+        provider: { type: string, enum: [wechat, alipay, wechat_shop] }
+        provider_label: { type: string, minLength: 1, maxLength: 80 }
+        detail_url: { type: string, minLength: 1, maxLength: 2048 }
+    LegacyOrderListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, has_more]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyOrderListItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        has_more: { type: boolean }
     LegacyCouponListResponse:
       type: object
       additionalProperties: true
