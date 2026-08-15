@@ -83,6 +83,20 @@ type CreateCommand struct {
 	IdempotencyKey string
 }
 
+// UpdateCommand deliberately uses the same frozen questionnaire schema as
+// create. The legacy editor sends the definition itself, rather than a new
+// DTO or patch envelope.
+type UpdateCommand struct {
+	Questionnaire
+	Actor          int64
+	IdempotencyKey string
+}
+
+type DeleteResult struct {
+	Questionnaire Questionnaire
+	Deleted       bool
+}
+
 type LegacyPage struct {
 	Items  []Questionnaire
 	Total  int64

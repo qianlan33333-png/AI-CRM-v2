@@ -81,6 +81,43 @@ func TestQuestionnaireIdempotencyIsActorScopedAndPayloadBound(t *testing.T) {
 	}
 }
 
+func TestQuestionnaireManagementUpdateEnableDisableDeleteAndDuplicate(t *testing.T) {
+	service, _, events := testService()
+	created, err := service.Create(context.Background(), testCommand(7, "questionnaire-create-management-0001"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	update := surveyport.UpdateCommand{Questionnaire: created, Actor: 7, IdempotencyKey: "questionnaire-update-management-0001"}
+	update.Title = "更新后的标题"
+	updated, err := service.Update(context.Background(), created.ID, update)
+	if err != nil || updated.Title != "更新后的标题" || updated.Version != 2 || len(events.items) != 2 || events.items[1].Type != eventport.EvSurveyUpdated {
+		t.Fatalf("Update()=%#v events=%#v err=%v", updated, events.items, err)
+	}
+	replay, err := service.Update(context.Background(), created.ID, update)
+	if err != nil || replay.ID != updated.ID || len(events.items) != 2 {
+		t.Fatalf("revision replay=%#v events=%d err=%v", replay, len(events.items), err)
+	}
+	disabled, err := service.SetDisabled(context.Background(), created.ID, true, 7, "questionnaire-disable-management-0001")
+	if err != nil || !disabled.IsDisabled {
+		t.Fatalf("disable=%#v err=%v", disabled, err)
+	}
+	if _, err = service.Delete(context.Background(), created.ID, 7, "questionnaire-delete-management-0001"); err != nil {
+		t.Fatalf("Delete() err=%v", err)
+	}
+	if _, err = service.Get(context.Background(), created.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("Get after delete err=%v", err)
+	}
+
+	second, err := service.Create(context.Background(), testCommand(7, "questionnaire-create-management-0002"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	copy, err := service.Duplicate(context.Background(), second.ID, 7, "questionnaire-duplicate-management-0001", "", "")
+	if err != nil || copy.ID == second.ID || !copy.IsDisabled || copy.Title != second.Title+" Copy" {
+		t.Fatalf("duplicate=%#v err=%v", copy, err)
+	}
+}
+
 func TestQuestionnaireReadFailsClosedForUnorderedStoreRows(t *testing.T) {
 	service, store, _ := testService()
 	for i := 0; i < 2; i++ {
@@ -165,12 +202,55 @@ func (s *testStore) Create(_ context.Context, command surveyport.CreateCommand, 
 	s.items = append(s.items, item)
 	return item, nil
 }
-func (s *testStore) Reserve(_ context.Context, value Reservation) (Receipt, bool, error) {
-	key := value.ActorScope + ":" + fmt.Sprintf("%x", value.KeyDigest)
+func (s *testStore) Update(_ context.Context, id surveyport.ID, command surveyport.UpdateCommand, now time.Time) (surveyport.Questionnaire, error) {
+	for index, item := range s.items {
+		if item.ID != id {
+			continue
+		}
+		next := command.Questionnaire
+		next.ID, next.CreatedBy, next.Version = id, item.CreatedBy, item.Version+1
+		next.CreatedAt, next.UpdatedAt, next.SubmissionCount, next.ScoreRules = item.CreatedAt, now, item.SubmissionCount, []surveyport.ScoreRule{}
+		nextID := surveyport.ID(300)
+		for questionIndex := range next.Questions {
+			next.Questions[questionIndex].ID = nextID
+			nextID++
+			for optionIndex := range next.Questions[questionIndex].Options {
+				next.Questions[questionIndex].Options[optionIndex].ID = nextID
+				nextID++
+			}
+		}
+		s.items[index] = next
+		return next, nil
+	}
+	return surveyport.Questionnaire{}, ErrNotFound
+}
+func (s *testStore) SetDisabled(_ context.Context, id surveyport.ID, disabled bool, now time.Time) (surveyport.Questionnaire, error) {
+	for index := range s.items {
+		if s.items[index].ID == id {
+			s.items[index].IsDisabled, s.items[index].Version, s.items[index].UpdatedAt = disabled, s.items[index].Version+1, now
+			return s.items[index], nil
+		}
+	}
+	return surveyport.Questionnaire{}, ErrNotFound
+}
+func (s *testStore) Delete(_ context.Context, id surveyport.ID) (surveyport.Questionnaire, error) {
+	for index, item := range s.items {
+		if item.ID == id {
+			if !item.IsDisabled {
+				return surveyport.Questionnaire{}, ErrInvalidQuestionnaire
+			}
+			s.items = append(s.items[:index], s.items[index+1:]...)
+			return item, nil
+		}
+	}
+	return surveyport.Questionnaire{}, ErrNotFound
+}
+func (s *testStore) Reserve(_ context.Context, operation string, value Reservation) (Receipt, bool, error) {
+	key := operation + ":" + value.ActorScope + ":" + fmt.Sprintf("%x", value.KeyDigest)
 	if old, ok := s.receipts[key]; ok {
 		return old, false, nil
 	}
-	receipt := Receipt{ID: int64(len(s.receipts) + 1), ActorScope: value.ActorScope, KeyDigest: value.KeyDigest, PayloadDigest: value.PayloadDigest, State: "in_progress"}
+	receipt := Receipt{ID: int64(len(s.receipts) + 1), Operation: operation, ActorScope: value.ActorScope, KeyDigest: value.KeyDigest, PayloadDigest: value.PayloadDigest, State: "in_progress"}
 	s.receipts[key] = receipt
 	return receipt, true, nil
 }
@@ -183,6 +263,14 @@ func (s *testStore) Complete(_ context.Context, id int64, snapshot json.RawMessa
 		}
 	}
 	return Receipt{}, ErrUnavailable
+}
+
+func (s *testStore) ReserveManagement(ctx context.Context, operation string, value Reservation) (Receipt, bool, error) {
+	return s.Reserve(ctx, operation, value)
+}
+
+func (s *testStore) CompleteManagement(ctx context.Context, id int64, snapshot json.RawMessage, now time.Time) (Receipt, error) {
+	return s.Complete(ctx, id, snapshot, now)
 }
 
 type testEvents struct{ items []eventport.Event }

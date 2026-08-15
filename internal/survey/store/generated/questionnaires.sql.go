@@ -11,12 +11,51 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeQuestionnaireManagementReceipt = `-- name: CompleteQuestionnaireManagementReceipt :one
+UPDATE questionnaire_management_receipts
+SET state = 'completed', result_snapshot = $1::jsonb,
+    completed_at = $2::timestamptz
+WHERE id = $3::bigint AND state = 'in_progress'
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type CompleteQuestionnaireManagementReceiptParams struct {
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	ID             int64              `json:"id"`
+}
+
+type CompleteQuestionnaireManagementReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) CompleteQuestionnaireManagementReceipt(ctx context.Context, arg CompleteQuestionnaireManagementReceiptParams) (CompleteQuestionnaireManagementReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeQuestionnaireManagementReceipt, arg.ResultSnapshot, arg.CompletedAt, arg.ID)
+	var i CompleteQuestionnaireManagementReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const completeQuestionnaireOperationReceipt = `-- name: CompleteQuestionnaireOperationReceipt :one
 UPDATE questionnaire_operation_receipts
 SET state = 'completed', result_snapshot = $1::jsonb,
     completed_at = $2::timestamptz
 WHERE id = $3::bigint AND state = 'in_progress'
-RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 `
 
 type CompleteQuestionnaireOperationReceiptParams struct {
@@ -27,6 +66,7 @@ type CompleteQuestionnaireOperationReceiptParams struct {
 
 type CompleteQuestionnaireOperationReceiptRow struct {
 	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
 	ActorScope     string `json:"actor_scope"`
 	KeyDigest      []byte `json:"key_digest"`
 	PayloadDigest  []byte `json:"payload_digest"`
@@ -39,6 +79,7 @@ func (q *Queries) CompleteQuestionnaireOperationReceipt(ctx context.Context, arg
 	var i CompleteQuestionnaireOperationReceiptRow
 	err := row.Scan(
 		&i.ID,
+		&i.Operation,
 		&i.ActorScope,
 		&i.KeyDigest,
 		&i.PayloadDigest,
@@ -94,6 +135,39 @@ func (q *Queries) CreateQuestionnaire(ctx context.Context, arg CreateQuestionnai
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const decrementQuestionnaireCount = `-- name: DecrementQuestionnaireCount :one
+UPDATE questionnaire_catalog_counters SET total_questionnaires = total_questionnaires - 1
+WHERE singleton = TRUE AND total_questionnaires > 0 RETURNING total_questionnaires
+`
+
+func (q *Queries) DecrementQuestionnaireCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, decrementQuestionnaireCount)
+	var total_questionnaires int64
+	err := row.Scan(&total_questionnaires)
+	return total_questionnaires, err
+}
+
+const deleteDisabledQuestionnaire = `-- name: DeleteDisabledQuestionnaire :one
+DELETE FROM questionnaires WHERE id = $1::bigint AND is_disabled = TRUE
+RETURNING id
+`
+
+func (q *Queries) DeleteDisabledQuestionnaire(ctx context.Context, questionnaireID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, deleteDisabledQuestionnaire, questionnaireID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const deleteQuestionnaireChildren = `-- name: DeleteQuestionnaireChildren :exec
+DELETE FROM questionnaire_questions WHERE questionnaire_id = $1::bigint
+`
+
+func (q *Queries) DeleteQuestionnaireChildren(ctx context.Context, questionnaireID int64) error {
+	_, err := q.db.Exec(ctx, deleteQuestionnaireChildren, questionnaireID)
+	return err
 }
 
 const finalizeQuestionnaireSlug = `-- name: FinalizeQuestionnaireSlug :one
@@ -168,20 +242,60 @@ func (q *Queries) GetQuestionnaire(ctx context.Context, questionnaireID int64) (
 	return i, err
 }
 
+const getQuestionnaireManagementReceipt = `-- name: GetQuestionnaireManagementReceipt :one
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+FROM questionnaire_management_receipts
+WHERE operation = $1::text AND actor_scope = $2::text
+  AND key_digest = $3::bytea
+`
+
+type GetQuestionnaireManagementReceiptParams struct {
+	Operation  string `json:"operation"`
+	ActorScope string `json:"actor_scope"`
+	KeyDigest  []byte `json:"key_digest"`
+}
+
+type GetQuestionnaireManagementReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) GetQuestionnaireManagementReceipt(ctx context.Context, arg GetQuestionnaireManagementReceiptParams) (GetQuestionnaireManagementReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getQuestionnaireManagementReceipt, arg.Operation, arg.ActorScope, arg.KeyDigest)
+	var i GetQuestionnaireManagementReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const getQuestionnaireOperationReceipt = `-- name: GetQuestionnaireOperationReceipt :one
-SELECT id, actor_scope, key_digest, payload_digest, state, result_snapshot
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 FROM questionnaire_operation_receipts
-WHERE operation = 'create' AND actor_scope = $1::text
-  AND key_digest = $2::bytea
+WHERE operation = $1::text AND actor_scope = $2::text
+  AND key_digest = $3::bytea
 `
 
 type GetQuestionnaireOperationReceiptParams struct {
+	Operation  string `json:"operation"`
 	ActorScope string `json:"actor_scope"`
 	KeyDigest  []byte `json:"key_digest"`
 }
 
 type GetQuestionnaireOperationReceiptRow struct {
 	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
 	ActorScope     string `json:"actor_scope"`
 	KeyDigest      []byte `json:"key_digest"`
 	PayloadDigest  []byte `json:"payload_digest"`
@@ -190,10 +304,11 @@ type GetQuestionnaireOperationReceiptRow struct {
 }
 
 func (q *Queries) GetQuestionnaireOperationReceipt(ctx context.Context, arg GetQuestionnaireOperationReceiptParams) (GetQuestionnaireOperationReceiptRow, error) {
-	row := q.db.QueryRow(ctx, getQuestionnaireOperationReceipt, arg.ActorScope, arg.KeyDigest)
+	row := q.db.QueryRow(ctx, getQuestionnaireOperationReceipt, arg.Operation, arg.ActorScope, arg.KeyDigest)
 	var i GetQuestionnaireOperationReceiptRow
 	err := row.Scan(
 		&i.ID,
+		&i.Operation,
 		&i.ActorScope,
 		&i.KeyDigest,
 		&i.PayloadDigest,
@@ -376,15 +491,63 @@ func (q *Queries) ListQuestionnairesOffset(ctx context.Context, arg ListQuestion
 	return items, nil
 }
 
+const reserveQuestionnaireManagementReceipt = `-- name: ReserveQuestionnaireManagementReceipt :one
+INSERT INTO questionnaire_management_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
+VALUES ($1::text, $2::text, $3::bytea,
+  $4::bytea, $5::timestamptz)
+ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type ReserveQuestionnaireManagementReceiptParams struct {
+	Operation     string             `json:"operation"`
+	ActorScope    string             `json:"actor_scope"`
+	KeyDigest     []byte             `json:"key_digest"`
+	PayloadDigest []byte             `json:"payload_digest"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ReserveQuestionnaireManagementReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) ReserveQuestionnaireManagementReceipt(ctx context.Context, arg ReserveQuestionnaireManagementReceiptParams) (ReserveQuestionnaireManagementReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveQuestionnaireManagementReceipt,
+		arg.Operation,
+		arg.ActorScope,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.CreatedAt,
+	)
+	var i ReserveQuestionnaireManagementReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const reserveQuestionnaireOperationReceipt = `-- name: ReserveQuestionnaireOperationReceipt :one
 INSERT INTO questionnaire_operation_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
-VALUES ('create', $1::text, $2::bytea,
-  $3::bytea, $4::timestamptz)
+VALUES ($1::text, $2::text, $3::bytea,
+  $4::bytea, $5::timestamptz)
 ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
-RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 `
 
 type ReserveQuestionnaireOperationReceiptParams struct {
+	Operation     string             `json:"operation"`
 	ActorScope    string             `json:"actor_scope"`
 	KeyDigest     []byte             `json:"key_digest"`
 	PayloadDigest []byte             `json:"payload_digest"`
@@ -393,6 +556,7 @@ type ReserveQuestionnaireOperationReceiptParams struct {
 
 type ReserveQuestionnaireOperationReceiptRow struct {
 	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
 	ActorScope     string `json:"actor_scope"`
 	KeyDigest      []byte `json:"key_digest"`
 	PayloadDigest  []byte `json:"payload_digest"`
@@ -402,6 +566,7 @@ type ReserveQuestionnaireOperationReceiptRow struct {
 
 func (q *Queries) ReserveQuestionnaireOperationReceipt(ctx context.Context, arg ReserveQuestionnaireOperationReceiptParams) (ReserveQuestionnaireOperationReceiptRow, error) {
 	row := q.db.QueryRow(ctx, reserveQuestionnaireOperationReceipt,
+		arg.Operation,
 		arg.ActorScope,
 		arg.KeyDigest,
 		arg.PayloadDigest,
@@ -410,6 +575,7 @@ func (q *Queries) ReserveQuestionnaireOperationReceipt(ctx context.Context, arg 
 	var i ReserveQuestionnaireOperationReceiptRow
 	err := row.Scan(
 		&i.ID,
+		&i.Operation,
 		&i.ActorScope,
 		&i.KeyDigest,
 		&i.PayloadDigest,
@@ -417,4 +583,65 @@ func (q *Queries) ReserveQuestionnaireOperationReceipt(ctx context.Context, arg 
 		&i.ResultSnapshot,
 	)
 	return i, err
+}
+
+const setQuestionnaireDisabled = `-- name: SetQuestionnaireDisabled :one
+UPDATE questionnaires SET is_disabled = $1::boolean,
+  version = version + 1, updated_at = $2::timestamptz
+WHERE id = $3::bigint
+RETURNING id
+`
+
+type SetQuestionnaireDisabledParams struct {
+	IsDisabled      bool               `json:"is_disabled"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	QuestionnaireID int64              `json:"questionnaire_id"`
+}
+
+func (q *Queries) SetQuestionnaireDisabled(ctx context.Context, arg SetQuestionnaireDisabledParams) (int64, error) {
+	row := q.db.QueryRow(ctx, setQuestionnaireDisabled, arg.IsDisabled, arg.UpdatedAt, arg.QuestionnaireID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateQuestionnaire = `-- name: UpdateQuestionnaire :one
+UPDATE questionnaires
+SET slug = $1::text,
+    name = $2::text,
+    title = $3::text,
+    description = $4::text,
+    answer_display_mode = $5::text,
+    is_disabled = $6::boolean,
+    version = version + 1,
+    updated_at = $7::timestamptz
+WHERE id = $8::bigint
+RETURNING id
+`
+
+type UpdateQuestionnaireParams struct {
+	Slug              string             `json:"slug"`
+	Name              string             `json:"name"`
+	Title             string             `json:"title"`
+	Description       string             `json:"description"`
+	AnswerDisplayMode string             `json:"answer_display_mode"`
+	IsDisabled        bool               `json:"is_disabled"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	QuestionnaireID   int64              `json:"questionnaire_id"`
+}
+
+func (q *Queries) UpdateQuestionnaire(ctx context.Context, arg UpdateQuestionnaireParams) (int64, error) {
+	row := q.db.QueryRow(ctx, updateQuestionnaire,
+		arg.Slug,
+		arg.Name,
+		arg.Title,
+		arg.Description,
+		arg.AnswerDisplayMode,
+		arg.IsDisabled,
+		arg.UpdatedAt,
+		arg.QuestionnaireID,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

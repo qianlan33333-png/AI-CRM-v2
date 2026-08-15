@@ -32,6 +32,8 @@ const (
 	EvMediaGroupInviteUpdated  = "media.group_invite_updated"
 	EvMediaGroupInviteArchived = "media.group_invite_archived"
 	EvSurveyCreated            = "survey.created"
+	EvSurveyUpdated            = "survey.updated"
+	EvSurveyDeleted            = "survey.deleted"
 	EvChannelCreated           = "channel.created"
 	EvChannelUpdated           = "channel.updated"
 	EvCouponCreated            = "coupon.created"

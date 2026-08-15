@@ -20,6 +20,7 @@ import (
 )
 
 var i03DatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 I03 database")
+var i03ExpectedWaterline = flag.Int("expected-waterline", 37, "expected migration waterline for the isolated I03 database")
 
 type snapshotCustomers struct{}
 
@@ -102,7 +103,7 @@ func TestI03StorageCatalogAndNoCrossDomainFK(t *testing.T) {
       (SELECT count(*) FROM pg_index WHERE indrelid IN ('order_list_projections'::regclass,'order_list_projection_counters'::regclass)),
       (SELECT count(*) FROM pg_index WHERE indrelid IN ('order_list_projections'::regclass,'order_list_projection_counters'::regclass) AND (NOT indisvalid OR NOT indisready OR NOT indislive)),
 	      (SELECT count(*) FROM pg_constraint WHERE conrelid='order_list_projections'::regclass AND contype='f')`).Scan(&waterline, &constraints, &invalidConstraints, &indexes, &invalidIndexes, &crossDomainFK)
-	if err != nil || waterline != 36 || constraints < 18 || invalidConstraints != 0 || indexes < 9 || invalidIndexes != 0 || crossDomainFK != 0 {
+	if err != nil || waterline != *i03ExpectedWaterline || constraints < 18 || invalidConstraints != 0 || indexes < 9 || invalidIndexes != 0 || crossDomainFK != 0 {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/fk/error=%d/%d/%d/%d/%d/%d/%v", waterline, constraints, invalidConstraints, indexes, invalidIndexes, crossDomainFK, err)
 	}
 }

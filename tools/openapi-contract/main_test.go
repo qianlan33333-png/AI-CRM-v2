@@ -248,6 +248,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Components.Schemas["LegacyQuestionnaireCreateRequest"].Value.Properties["assessment_enabled"].Value.Enum = nil
 			reject(t, doc, ids)
 		},
+		"survey F01B evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}").Patch.Extensions["x-p4-decision-evidence"] = "P4-F01AB-FORGED"
+			reject(t, doc, ids)
+		},
+		"survey F01B legacy mapping forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/duplicate").Post.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0430"}
+			reject(t, doc, ids)
+		},
+		"survey F01B CSRF removed": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/enable").Post.Parameters = nil
+			reject(t, doc, ids)
+		},
 		"channel evidence forged": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/admin/channels").Get.Extensions["x-p4-decision-evidence"] = "P4-C01-FORGED"

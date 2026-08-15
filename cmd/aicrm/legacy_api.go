@@ -72,6 +72,10 @@ type legacySurveyApplication interface {
 	ListLegacy(context.Context, int32, int32) (surveyport.LegacyPage, error)
 	Get(context.Context, surveyport.ID) (surveyport.Questionnaire, error)
 	Create(context.Context, surveyport.CreateCommand) (surveyport.Questionnaire, error)
+	Update(context.Context, surveyport.ID, surveyport.UpdateCommand) (surveyport.Questionnaire, error)
+	SetDisabled(context.Context, surveyport.ID, bool, int64, string) (surveyport.Questionnaire, error)
+	Delete(context.Context, surveyport.ID, int64, string) (surveyport.DeleteResult, error)
+	Duplicate(context.Context, surveyport.ID, int64, string, string, string) (surveyport.Questionnaire, error)
 }
 
 type legacyChannelApplication interface {

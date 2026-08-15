@@ -144,6 +144,56 @@ func TestF01AStorageCatalogSingleInstanceAndOwnership(t *testing.T) {
 	}
 }
 
+func TestF01BManagementUpdateDisableDeleteAndDuplicateShareRealUoW(t *testing.T) {
+	pool, ctx := openPool(t)
+	service := realService(pool)
+	actor := int64(5401)
+	created, err := service.Create(ctx, questionnaireCommand(actor, unique("f01b-create"), unique("f01b-name")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	update := surveyport.UpdateCommand{Questionnaire: created, Actor: actor, IdempotencyKey: unique("f01b-update")}
+	update.Title = "F01B 更新"
+	updated, err := service.Update(ctx, created.ID, update)
+	if err != nil || updated.ID != created.ID || updated.Version != created.Version+1 || updated.Title != update.Title {
+		t.Fatalf("update=%#v err=%v", updated, err)
+	}
+	replay, err := service.Update(ctx, created.ID, update)
+	if err != nil || replay.ID != updated.ID || replay.Version != updated.Version {
+		t.Fatalf("replay=%#v err=%v", replay, err)
+	}
+	disabled, err := service.SetDisabled(ctx, created.ID, true, actor, unique("f01b-disable"))
+	if err != nil || !disabled.IsDisabled {
+		t.Fatalf("disabled=%#v err=%v", disabled, err)
+	}
+	deleted, err := service.Delete(ctx, created.ID, actor, unique("f01b-delete"))
+	if err != nil || !deleted.Deleted || deleted.Questionnaire.ID != created.ID {
+		t.Fatalf("deleted=%#v err=%v", deleted, err)
+	}
+	if _, err = service.Get(ctx, created.ID); !errors.Is(err, surveyapp.ErrNotFound) {
+		t.Fatalf("deleted definition still readable: %v", err)
+	}
+
+	source, err := service.Create(ctx, questionnaireCommand(actor, unique("f01b-copy-source"), unique("f01b-copy-name")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	copy, err := service.Duplicate(ctx, source.ID, actor, unique("f01b-copy"), "", "")
+	if err != nil || copy.ID == source.ID || !copy.IsDisabled || copy.Title != source.Title+" Copy" || len(copy.Questions) != len(source.Questions) {
+		t.Fatalf("copy=%#v source=%#v err=%v", copy, source, err)
+	}
+	var updateReceipts, disableReceipts, deleteReceipts, updateEvents, deleteEvents int
+	err = pool.QueryRow(ctx, `SELECT
+	  (SELECT count(*) FROM questionnaire_management_receipts WHERE operation='update'),
+	  (SELECT count(*) FROM questionnaire_management_receipts WHERE operation='disable'),
+	  (SELECT count(*) FROM questionnaire_management_receipts WHERE operation='delete'),
+      (SELECT count(*) FROM event_log WHERE event_type='survey.updated'),
+      (SELECT count(*) FROM event_log WHERE event_type='survey.deleted')`).Scan(&updateReceipts, &disableReceipts, &deleteReceipts, &updateEvents, &deleteEvents)
+	if err != nil || updateReceipts < 1 || disableReceipts < 1 || deleteReceipts < 1 || updateEvents < 2 || deleteEvents < 1 {
+		t.Fatalf("management facts=%d/%d/%d/%d/%d err=%v", updateReceipts, disableReceipts, deleteReceipts, updateEvents, deleteEvents, err)
+	}
+}
+
 func questionnaireCommand(actor int64, key, name string) surveyport.CreateCommand {
 	return surveyport.CreateCommand{Questionnaire: surveyport.Questionnaire{
 		Name: name, Title: name, Description: "F01A", Slug: unique("slug"), AnswerDisplayMode: surveyport.AllInOne,

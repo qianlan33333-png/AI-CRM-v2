@@ -40,6 +40,7 @@ var (
 
 type Receipt struct {
 	ID             int64
+	Operation      string
 	ActorScope     string
 	KeyDigest      [32]byte
 	PayloadDigest  [32]byte
@@ -59,8 +60,13 @@ type Store interface {
 	Count(context.Context) (int64, error)
 	Get(context.Context, surveyport.ID) (surveyport.Questionnaire, error)
 	Create(context.Context, surveyport.CreateCommand, time.Time) (surveyport.Questionnaire, error)
-	Reserve(context.Context, Reservation) (Receipt, bool, error)
+	Update(context.Context, surveyport.ID, surveyport.UpdateCommand, time.Time) (surveyport.Questionnaire, error)
+	SetDisabled(context.Context, surveyport.ID, bool, time.Time) (surveyport.Questionnaire, error)
+	Delete(context.Context, surveyport.ID) (surveyport.Questionnaire, error)
+	Reserve(context.Context, string, Reservation) (Receipt, bool, error)
 	Complete(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
+	ReserveManagement(context.Context, string, Reservation) (Receipt, bool, error)
+	CompleteManagement(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
 }
 
 type Service struct {
@@ -138,11 +144,11 @@ func (s *Service) Create(ctx context.Context, input surveyport.CreateCommand) (s
 	reservation := Reservation{ActorScope: actorScope, KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
 	var result surveyport.Questionnaire
 	err = s.uow.Within(ctx, func(tx context.Context) error {
-		receipt, owned, err := s.store.Reserve(tx, reservation)
+		receipt, owned, err := s.store.Reserve(tx, "create", reservation)
 		if err != nil {
 			return err
 		}
-		if !receiptMatches(receipt, reservation) {
+		if !receiptMatches(receipt, "create", reservation) {
 			return ErrUnavailable
 		}
 		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:]) != 1 {
@@ -184,7 +190,7 @@ func (s *Service) Create(ctx context.Context, input surveyport.CreateCommand) (s
 			return err
 		}
 		completed, err := s.store.Complete(tx, receipt.ID, snapshot, now)
-		if err != nil || !receiptMatches(completed, reservation) || completed.State != "completed" || !jsonEquivalent(completed.ResultSnapshot, snapshot) {
+		if err != nil || !receiptMatches(completed, "create", reservation) || completed.State != "completed" || !jsonEquivalent(completed.ResultSnapshot, snapshot) {
 			return ErrUnavailable
 		}
 		return nil
@@ -195,6 +201,214 @@ func (s *Service) Create(ctx context.Context, input surveyport.CreateCommand) (s
 	return cloneQuestionnaire(result), nil
 }
 
+// Update replaces a questionnaire definition atomically. This is intentionally
+// a full-definition write: the legacy editor posts the nested schema it has
+// just loaded, so accepting a partial patch would invent a new contract.
+func (s *Service) Update(ctx context.Context, id surveyport.ID, input surveyport.UpdateCommand) (surveyport.Questionnaire, error) {
+	if id < 1 {
+		return surveyport.Questionnaire{}, ErrNotFound
+	}
+	command, err := normalizeUpdate(input)
+	if err != nil {
+		return surveyport.Questionnaire{}, err
+	}
+	if !ready(s) {
+		return surveyport.Questionnaire{}, ErrUnavailable
+	}
+	now := s.now().UTC()
+	digest, err := updatePayloadDigest(id, command)
+	if err != nil {
+		return surveyport.Questionnaire{}, ErrInvalidQuestionnaire
+	}
+	reservation := Reservation{ActorScope: fmt.Sprintf("admin:%d", command.Actor), KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
+	var result surveyport.Questionnaire
+	err = s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, reserveErr := s.store.ReserveManagement(tx, "update", reservation)
+		if reserveErr != nil {
+			return reserveErr
+		}
+		if !receiptMatches(receipt, "update", reservation) {
+			return ErrUnavailable
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || !decodeSnapshot(receipt.ResultSnapshot, &result) || result.ID != id || !validStored(result) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		result, reserveErr = s.store.Update(tx, id, command, now)
+		if reserveErr != nil {
+			return reserveErr
+		}
+		if result.ID != id || !validStored(result) {
+			return ErrUnavailable
+		}
+		if reserveErr = appendSurveyEvent(tx, s.events, eventport.EvSurveyUpdated, id, command.Actor, command.IdempotencyKey, now, "update"); reserveErr != nil {
+			return reserveErr
+		}
+		snapshot, marshalErr := json.Marshal(result)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		completed, completeErr := s.store.CompleteManagement(tx, receipt.ID, snapshot, now)
+		if completeErr != nil {
+			return completeErr
+		}
+		if !receiptMatches(completed, "update", reservation) || completed.State != "completed" {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return surveyport.Questionnaire{}, classify(err)
+	}
+	return cloneQuestionnaire(result), nil
+}
+
+func (s *Service) SetDisabled(ctx context.Context, id surveyport.ID, disabled bool, actor int64, key string) (surveyport.Questionnaire, error) {
+	if id < 1 {
+		return surveyport.Questionnaire{}, ErrNotFound
+	}
+	if !ready(s) || actor < 1 || !validKey(key) {
+		return surveyport.Questionnaire{}, ErrInvalidQuestionnaire
+	}
+	now := s.now().UTC()
+	payload := fmt.Sprintf("%d:%t", id, disabled)
+	reservation := Reservation{ActorScope: fmt.Sprintf("admin:%d", actor), KeyDigest: sha256.Sum256([]byte(key)), PayloadDigest: sha256.Sum256([]byte(payload)), CreatedAt: now}
+	operation := "enable"
+	if disabled {
+		operation = "disable"
+	}
+	var result surveyport.Questionnaire
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, reserveErr := s.store.ReserveManagement(tx, operation, reservation)
+		if reserveErr != nil {
+			return reserveErr
+		}
+		if !receiptMatches(receipt, operation, reservation) {
+			return ErrUnavailable
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], reservation.PayloadDigest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || !decodeSnapshot(receipt.ResultSnapshot, &result) || result.ID != id || !validStored(result) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		result, reserveErr = s.store.SetDisabled(tx, id, disabled, now)
+		if reserveErr != nil {
+			return reserveErr
+		}
+		if result.ID != id || result.IsDisabled != disabled || !validStored(result) {
+			return ErrUnavailable
+		}
+		if reserveErr = appendSurveyEvent(tx, s.events, eventport.EvSurveyUpdated, id, actor, key, now, operation); reserveErr != nil {
+			return reserveErr
+		}
+		snapshot, marshalErr := json.Marshal(result)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		completed, completeErr := s.store.CompleteManagement(tx, receipt.ID, snapshot, now)
+		if completeErr != nil {
+			return completeErr
+		}
+		if !receiptMatches(completed, operation, reservation) || completed.State != "completed" {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return surveyport.Questionnaire{}, classify(err)
+	}
+	return cloneQuestionnaire(result), nil
+}
+
+func (s *Service) Delete(ctx context.Context, id surveyport.ID, actor int64, key string) (surveyport.DeleteResult, error) {
+	if id < 1 {
+		return surveyport.DeleteResult{}, ErrNotFound
+	}
+	if !ready(s) || actor < 1 || !validKey(key) {
+		return surveyport.DeleteResult{}, ErrInvalidQuestionnaire
+	}
+	now := s.now().UTC()
+	reservation := Reservation{ActorScope: fmt.Sprintf("admin:%d", actor), KeyDigest: sha256.Sum256([]byte(key)), PayloadDigest: sha256.Sum256([]byte(fmt.Sprintf("%d", id))), CreatedAt: now}
+	var result surveyport.DeleteResult
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, reserveErr := s.store.ReserveManagement(tx, "delete", reservation)
+		if reserveErr != nil {
+			return reserveErr
+		}
+		if !receiptMatches(receipt, "delete", reservation) {
+			return ErrUnavailable
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], reservation.PayloadDigest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || !decodeDeleteSnapshot(receipt.ResultSnapshot, &result) || !result.Deleted || result.Questionnaire.ID != id || !validStored(result.Questionnaire) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		item, deleteErr := s.store.Delete(tx, id)
+		if deleteErr != nil {
+			return deleteErr
+		}
+		if item.ID != id || !item.IsDisabled || !validStored(item) {
+			return ErrUnavailable
+		}
+		result = surveyport.DeleteResult{Questionnaire: item, Deleted: true}
+		if deleteErr = appendSurveyEvent(tx, s.events, eventport.EvSurveyDeleted, id, actor, key, now, "delete"); deleteErr != nil {
+			return deleteErr
+		}
+		snapshot, marshalErr := json.Marshal(result)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		completed, completeErr := s.store.CompleteManagement(tx, receipt.ID, snapshot, now)
+		if completeErr != nil {
+			return completeErr
+		}
+		if !receiptMatches(completed, "delete", reservation) || completed.State != "completed" {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return surveyport.DeleteResult{}, classify(err)
+	}
+	result.Questionnaire = cloneQuestionnaire(result.Questionnaire)
+	return result, nil
+}
+
+func (s *Service) Duplicate(ctx context.Context, id surveyport.ID, actor int64, key, title, slug string) (surveyport.Questionnaire, error) {
+	source, err := s.Get(ctx, id)
+	if err != nil {
+		return surveyport.Questionnaire{}, err
+	}
+	if title == "" {
+		title = source.Title + " Copy"
+	}
+	if slug == "" {
+		digest := sha256.Sum256([]byte(key))
+		slug = fmt.Sprintf("%s-copy-%x", source.Slug, digest[:3])
+	}
+	questions := cloneQuestions(source.Questions)
+	for questionIndex := range questions {
+		questions[questionIndex].ID = 0
+		for optionIndex := range questions[questionIndex].Options {
+			questions[questionIndex].Options[optionIndex].ID = 0
+		}
+	}
+	return s.Create(ctx, surveyport.CreateCommand{Questionnaire: surveyport.Questionnaire{Name: source.Name, Title: title, Description: source.Description, AnswerDisplayMode: source.AnswerDisplayMode, AssessmentConfig: source.AssessmentConfig, Slug: slug, IsDisabled: true, Questions: questions, ScoreRules: source.ScoreRules}, Actor: actor, IdempotencyKey: key})
+}
+
 func normalize(input surveyport.CreateCommand) (surveyport.CreateCommand, error) {
 	config, empty, err := emptyConfig(input.AssessmentConfig)
 	if err != nil {
@@ -203,7 +417,7 @@ func normalize(input surveyport.CreateCommand) (surveyport.CreateCommand, error)
 	if input.AssessmentEnabled || !empty || len(input.ScoreRules) != 0 {
 		return surveyport.CreateCommand{}, ErrAssessmentUnavailable
 	}
-	if input.Actor < 1 || len(input.IdempotencyKey) < 16 || len(input.IdempotencyKey) > 128 || strings.TrimSpace(input.IdempotencyKey) != input.IdempotencyKey || !utf8.ValidString(input.IdempotencyKey) {
+	if input.Actor < 1 || !validKey(input.IdempotencyKey) {
 		return surveyport.CreateCommand{}, ErrInvalidQuestionnaire
 	}
 	input.Name = strings.TrimSpace(input.Name)
@@ -221,6 +435,23 @@ func normalize(input surveyport.CreateCommand) (surveyport.CreateCommand, error)
 	input.CreatedAt, input.UpdatedAt = time.Time{}, time.Time{}
 	input.AssessmentConfig, input.ScoreRules, input.Questions = config, []surveyport.ScoreRule{}, questions
 	return input, nil
+}
+
+func normalizeUpdate(input surveyport.UpdateCommand) (surveyport.UpdateCommand, error) {
+	command := surveyport.CreateCommand{Questionnaire: input.Questionnaire, Actor: input.Actor, IdempotencyKey: input.IdempotencyKey}
+	command.ID, command.CreatedBy, command.Version, command.SubmissionCount = 0, 0, 0, 0
+	command.CreatedAt, command.UpdatedAt = time.Time{}, time.Time{}
+	for index := range command.Questions {
+		command.Questions[index].ID = 0
+		for optionIndex := range command.Questions[index].Options {
+			command.Questions[index].Options[optionIndex].ID = 0
+		}
+	}
+	normalized, err := normalize(command)
+	if err != nil {
+		return surveyport.UpdateCommand{}, err
+	}
+	return surveyport.UpdateCommand{Questionnaire: normalized.Questionnaire, Actor: normalized.Actor, IdempotencyKey: normalized.IdempotencyKey}, nil
 }
 
 func normalizeQuestions(source []surveyport.Question, stored bool) ([]surveyport.Question, error) {
@@ -396,6 +627,14 @@ func payloadDigest(command surveyport.CreateCommand) ([32]byte, error) {
 	return sha256.Sum256(encoded), err
 }
 
+func updatePayloadDigest(id surveyport.ID, command surveyport.UpdateCommand) ([32]byte, error) {
+	encoded, err := json.Marshal(struct {
+		ID      surveyport.ID
+		Command surveyport.UpdateCommand
+	}{id, command})
+	return sha256.Sum256(encoded), err
+}
+
 func emptyConfig(raw json.RawMessage) (json.RawMessage, bool, error) {
 	trimmed := strings.TrimSpace(string(raw))
 	if trimmed == "" || trimmed == "null" {
@@ -418,13 +657,31 @@ func emptyConfig(raw json.RawMessage) (json.RawMessage, bool, error) {
 	return json.RawMessage(trimmed), false, nil
 }
 
-func receiptMatches(receipt Receipt, reservation Reservation) bool {
-	return receipt.ID > 0 && receipt.ActorScope == reservation.ActorScope && subtle.ConstantTimeCompare(receipt.KeyDigest[:], reservation.KeyDigest[:]) == 1 && (receipt.State == "in_progress" || receipt.State == "completed")
+func receiptMatches(receipt Receipt, operation string, reservation Reservation) bool {
+	return receipt.ID > 0 && receipt.Operation == operation && receipt.ActorScope == reservation.ActorScope && subtle.ConstantTimeCompare(receipt.KeyDigest[:], reservation.KeyDigest[:]) == 1 && (receipt.State == "in_progress" || receipt.State == "completed")
 }
 
 func decodeSnapshot(raw json.RawMessage, destination *surveyport.Questionnaire) bool {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	return decoder.Decode(destination) == nil && errors.Is(decoder.Decode(&struct{}{}), io.EOF)
+}
+func decodeDeleteSnapshot(raw json.RawMessage, destination *surveyport.DeleteResult) bool {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	return decoder.Decode(destination) == nil && errors.Is(decoder.Decode(&struct{}{}), io.EOF)
+}
+
+func appendSurveyEvent(ctx context.Context, events eventport.Appender, eventType string, id surveyport.ID, actor int64, key string, occurredAt time.Time, operation string) error {
+	payload, err := json.Marshal(struct {
+		QuestionnaireID surveyport.ID `json:"questionnaire_id"`
+		Actor           int64         `json:"actor"`
+		Operation       string        `json:"operation"`
+	}{id, actor, operation})
+	if err != nil {
+		return err
+	}
+	digest := sha256.Sum256([]byte(fmt.Sprintf("admin:%d\x00%s\x00%s", actor, operation, key)))
+	_, err = events.Append(ctx, eventport.Event{Type: eventType, Payload: payload, OccurredAt: occurredAt, IdempotencyKey: "survey." + operation + ":" + hex.EncodeToString(digest[:])})
+	return err
 }
 
 func jsonEquivalent(left, right []byte) bool {
@@ -460,6 +717,9 @@ func classify(err error) error {
 func required(value string, maximum int) bool { return value != "" && optional(value, maximum) }
 func optional(value string, maximum int) bool {
 	return utf8.ValidString(value) && utf8.RuneCountInString(value) <= maximum
+}
+func validKey(value string) bool {
+	return len(value) >= 16 && len(value) <= 128 && strings.TrimSpace(value) == value && utf8.ValidString(value)
 }
 func intRef(value int) *int { return &value }
 func clonePage(page surveyport.LegacyPage) surveyport.LegacyPage {
