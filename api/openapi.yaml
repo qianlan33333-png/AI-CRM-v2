@@ -66,6 +66,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /{filename}:
+    get:
+      tags: [p4-domain-verification]
+      operationId: getDomainVerificationFile
+      summary: Read one WeChat or WeCom domain verification file
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0781]
+      x-p4-decision-evidence: P4-S04-DOMAIN-VERIFICATION-2026-08-16
+      x-aicrm-capability: domain_verification.read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema: { type: string, pattern: "^(?:WW|MP)_verify_[A-Za-z0-9_-]+\\.txt$" }
+      responses:
+        "200":
+          description: UTF-8 verification text without surrounding whitespace
+          headers:
+            Cache-Control:
+              required: true
+              schema: { type: string, enum: [no-store] }
+          content:
+            text/plain:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/customers:
     get:
       tags: [p4-customer-compat]

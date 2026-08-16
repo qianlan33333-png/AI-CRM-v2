@@ -9,6 +9,7 @@ require (
 	github.com/riverqueue/river v0.24.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.24.0
 	github.com/riverqueue/river/rivertype v0.24.0
+	golang.org/x/sys v0.29.0
 )
 
 require (

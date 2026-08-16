@@ -3979,6 +3979,57 @@ export const getHealthz = async (
 };
 
 /**
+ * @summary Read one WeChat or WeCom domain verification file
+ */
+export type getDomainVerificationFileResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getDomainVerificationFileResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getDomainVerificationFileResponseSuccess =
+  getDomainVerificationFileResponse200 & {
+    headers: Headers;
+  };
+export type getDomainVerificationFileResponseError =
+  getDomainVerificationFileResponse404 & {
+    headers: Headers;
+  };
+
+export type getDomainVerificationFileResponse =
+  | getDomainVerificationFileResponseSuccess
+  | getDomainVerificationFileResponseError;
+
+export const getGetDomainVerificationFileUrl = (filename: string) => {
+  return `/${filename}`;
+};
+
+export const getDomainVerificationFile = async (
+  filename: string,
+  options?: RequestInit,
+): Promise<getDomainVerificationFileResponse> => {
+  const res = await fetch(getGetDomainVerificationFileUrl(filename), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDomainVerificationFileResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getDomainVerificationFileResponse;
+};
+
+/**
  * @summary List the channel-neutral customer projection for the frozen old UI
  */
 export type listLegacyCustomersResponse200 = {
