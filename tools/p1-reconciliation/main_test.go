@@ -16,7 +16,7 @@ func TestFrozenReconciliation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 migrate_routes=501 deferred_post_launch_routes=268 not_migrated_routes=12 tables=316 fields=3313 pending_routes=0 pending_tables=0)"
+	want := "p1-reconciliation: PASS (routes=781 s02=156 s03=184 s04=441 migrate_routes=502 deferred_post_launch_routes=267 not_migrated_routes=12 tables=316 fields=3313 pending_routes=0 pending_tables=0)"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -57,6 +57,15 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 			for _, row := range *r {
 				if row["mapping_id"] == "LEGACY-API-0421" {
 					row["target_mapping_id"] = "P4-PUSH-CENTER-FORGED"
+					return
+				}
+			}
+		}},
+		{"integrated tier B decision forged", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["mapping_id"] == "LEGACY-API-0053" {
+					row["decision_evidence"] = []any{map[string]any{"decision_id": "P4-AB-ALL-2026-08-16", "approved_by": "repository_owner", "approved_at": "2026-08-16", "decision": "DEFERRED_POST_LAUNCH"}}
 					return
 				}
 			}

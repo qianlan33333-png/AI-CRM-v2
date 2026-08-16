@@ -920,6 +920,42 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 				return nil, err
 			}
 		}
+		adminShell, err := newAdminShellHandler(legacy.auth)
+		if err != nil {
+			return nil, err
+		}
+		registerAdminShell := func(pattern string, endpoint http.Handler) error {
+			tail, wrapErr := recovery(endpoint)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.TimeoutMiddleware(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail, wrapErr = gateway.AccountBudgetMiddleware(tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			tail = adminShell.Authenticate(tail)
+			tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+			if wrapErr != nil {
+				return wrapErr
+			}
+			router.Method(http.MethodGet, pattern, tail)
+			return nil
+		}
+		for _, route := range []struct {
+			pattern  string
+			endpoint http.Handler
+		}{
+			{"/admin", http.HandlerFunc(adminShell.Page)},
+			{"/admin/logout", http.HandlerFunc(adminShell.LogoutAlias)},
+		} {
+			if err = registerAdminShell(route.pattern, route.endpoint); err != nil {
+				return nil, err
+			}
+		}
 		registerOperation := func(method, pattern string, endpoint http.Handler) error {
 			tail, wrapErr := recovery(endpoint)
 			if wrapErr != nil {

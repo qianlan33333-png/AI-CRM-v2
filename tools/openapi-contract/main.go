@@ -243,9 +243,17 @@ var p4PushCenterOperations = map[string]bool{
 	"getLegacyPushCenterSections": true, "getLegacyPushCenterStats": true,
 }
 
+var p4AdminShellOperations = map[string]bool{
+	"getLegacyAdminShell": true, "getLegacyAdminLogoutCompat": true,
+}
+
 var p4PushCenterLegacyMappings = map[string][]string{
 	"getLegacyPushCenterSections": {"LEGACY-API-0421"},
 	"getLegacyPushCenterStats":    {"LEGACY-API-0422"},
+}
+
+var p4AdminShellLegacyMappings = map[string][]string{
+	"getLegacyAdminShell": {"LEGACY-API-0001"}, "getLegacyAdminLogoutCompat": {"LEGACY-API-0053"},
 }
 
 var p4ConfigSettingsLegacyMappings = map[string][]string{
@@ -388,6 +396,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"saveLegacyAppSettingsPage":                 {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAppSettingsResource":              {"config.settings.manage", map[string]string{"admin": "global"}},
 	"saveLegacyAppSettingsResource":             {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getLegacyAdminShell":                       {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyAdminLogoutCompat":                {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -408,6 +418,7 @@ const p4OrderDecisionEvidence = "P4-ORDER-AB-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
 const p4DomainVerificationDecisionEvidence = "P4-S04-DOMAIN-VERIFICATION-2026-08-16"
 const p4PushCenterDecisionEvidence = "P4-PUSH-CENTER-0421-0422-2026-08-16"
+const p4AdminShellDecisionEvidence = "P4-ADMIN-SHELL-AB-2026-08-16"
 
 func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
@@ -421,7 +432,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=96 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=4 p4_domain_verification_operations=1)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=98 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=4 p4_admin_shell_operations=2 p4_domain_verification_operations=1)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -469,15 +480,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4AdminShell := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4DomainVerification[op.OperationID] || seenP4PushCenter[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4DomainVerification[op.OperationID] || seenP4PushCenter[op.OperationID] || seenP4AdminShell[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID] && !p4PushCenterOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID] && !p4PushCenterOperations[op.OperationID] && !p4AdminShellOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -667,6 +678,20 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s Push Center read contract drifted", op.OperationID)
 				}
 				links++
+			} else if p4AdminShellOperations[op.OperationID] {
+				seenP4AdminShell[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4AdminShellDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Admin Shell evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4AdminShellLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				if op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != "none" || op.Extensions["x-aicrm-data-source"] != "static" || op.Extensions["x-aicrm-external-effect"] != "none" {
+					return fmt.Errorf("%s Admin Shell security or effect contract drifted", op.OperationID)
+				}
+				links++
 			} else {
 				seenP4DomainVerification[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -744,8 +769,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4DomainVerification) != 1 || len(seenP4PushCenter) != 2 || links != 98 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d p4_domain_verification=%d p4_push_center=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), len(seenP4DomainVerification), len(seenP4PushCenter), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4DomainVerification) != 1 || len(seenP4PushCenter) != 2 || len(seenP4AdminShell) != 2 || links != 100 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d p4_domain_verification=%d p4_push_center=%d p4_admin_shell=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), len(seenP4DomainVerification), len(seenP4PushCenter), len(seenP4AdminShell), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -842,6 +867,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			return fmt.Errorf("missing P4 Push Center operation: %s", id)
 		}
 	}
+	for id := range p4AdminShellOperations {
+		if !seenP4AdminShell[id] {
+			return fmt.Errorf("missing P4 Admin Shell operation: %s", id)
+		}
+	}
 	customer := doc.Components.Schemas["Customer"]
 	if customer == nil || customer.Value == nil {
 		return errors.New("Customer schema missing")
@@ -915,6 +945,45 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	if err := validateConfigSettingsContract(doc); err != nil {
 		return err
+	}
+	if err := validateAdminShellContract(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateAdminShellContract(doc *openapi3.T) error {
+	page := doc.Paths.Value("/admin")
+	logout := doc.Paths.Value("/admin/logout")
+	if page == nil || page.Get == nil || logout == nil || logout.Get == nil {
+		return errors.New("P4 Admin Shell compatibility operations are incomplete")
+	}
+	if page.Get.Responses.Value("200") == nil || page.Get.Responses.Value("200").Value.Content["text/html"] == nil ||
+		page.Get.Responses.Value("302") == nil || page.Get.Responses.Value("403") == nil || page.Get.Responses.Value("503") == nil ||
+		logout.Get.Responses.Value("302") == nil || logout.Get.Responses.Value("403") == nil || logout.Get.Responses.Value("503") == nil {
+		return errors.New("P4 Admin Shell response boundaries are incomplete")
+	}
+	for name, operation := range map[string]*openapi3.Operation{"page": page.Get, "logout": logout.Get} {
+		if operation.Security != nil || operation.RequestBody != nil || operation.Responses.Value("302").Value.Headers["Location"] == nil {
+			return fmt.Errorf("P4 Admin Shell %s transport contract drifted", name)
+		}
+	}
+	denied := doc.Components.Schemas["AdminShellAccessDenied"]
+	denialPropertyEnum := func(name string, want []any) bool {
+		if denied == nil || denied.Value == nil {
+			return false
+		}
+		property := denied.Value.Properties[name]
+		return property != nil && property.Value != nil && reflect.DeepEqual(property.Value.Enum, want)
+	}
+	if denied == nil || denied.Value == nil || denied.Value.AdditionalProperties.Has == nil || *denied.Value.AdditionalProperties.Has ||
+		!reflect.DeepEqual(denied.Value.Required, []string{"ok", "error", "required_capability", "route_owner", "real_external_call_executed"}) ||
+		!denialPropertyEnum("ok", []any{false}) ||
+		!denialPropertyEnum("error", []any{"admin_capability_required", "principal_type_forbidden"}) ||
+		!denialPropertyEnum("required_capability", []any{"admin_read"}) ||
+		!denialPropertyEnum("route_owner", []any{"ai_crm_next"}) ||
+		!denialPropertyEnum("real_external_call_executed", []any{false}) {
+		return errors.New("P4 Admin Shell denial payload must remain fail-closed")
 	}
 	return nil
 }

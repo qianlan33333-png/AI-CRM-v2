@@ -379,6 +379,9 @@ func (stub *legacyAuthStub) Authorize(_ context.Context, principal authport.Prin
 	if principal.AdminUserID < 1 {
 		return authport.Authorization{}, authport.ErrUnauthorized
 	}
+	if capability == authport.CapabilityAdminShellRead && (principal.Role == authport.RoleAdmin || principal.Role == authport.RoleOps) {
+		return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
+	}
 	if principal.Role == authport.RoleAdmin {
 		if capability == authport.CapabilityAuthSessionRead || capability == authport.CapabilityAuthSessionLogout {
 			return authport.Authorization{Capability: capability, Scope: authport.ScopeSelf}, nil

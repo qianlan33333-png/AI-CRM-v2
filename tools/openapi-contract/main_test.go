@@ -122,6 +122,26 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/admin/config/app-settings").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global"}
 			reject(t, doc, ids)
 		},
+		"admin shell evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/admin").Get.Extensions["x-p4-decision-evidence"] = "P4-ADMIN-SHELL-FORGED"
+			reject(t, doc, ids)
+		},
+		"admin shell grants sales": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/admin").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global", "sales": "global"}
+			reject(t, doc, ids)
+		},
+		"admin shell logout loses redirect": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/admin/logout").Get.Responses.Delete("302")
+			reject(t, doc, ids)
+		},
+		"admin shell denial claims external success": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["AdminShellAccessDenied"].Value.Properties["real_external_call_executed"].Value.Enum = []any{true}
+			reject(t, doc, ids)
+		},
 		"JSON settings resource write missing": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/admin/config/app-settings").Put = nil

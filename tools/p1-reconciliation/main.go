@@ -80,16 +80,29 @@ type apiDecisionEvidence struct {
 
 type integratedRoute struct {
 	Operation, Method, Path, TargetMapping, Reason string
+	Evidence                                       apiDecisionEvidence
 }
 
 var integratedRoutes = map[string]integratedRoute{
 	"LEGACY-API-0421": {
 		Operation: "getLegacyPushCenterSections", Method: "GET", Path: "/api/admin/push-center/sections", TargetMapping: "P4-PUSH-CENTER-0421",
-		Reason: "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
+		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
+		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
 	},
 	"LEGACY-API-0422": {
 		Operation: "getLegacyPushCenterStats", Method: "GET", Path: "/api/admin/push-center/stats", TargetMapping: "P4-PUSH-CENTER-0422",
-		Reason: "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
+		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
+		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
+	},
+	"LEGACY-API-0001": {
+		Operation: "getLegacyAdminShell", Method: "GET", Path: "/admin", TargetMapping: "P4-ADMIN-SHELL-0001",
+		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Admin Shell navigation is wired to the existing human-session and capability boundary.",
+		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
+	},
+	"LEGACY-API-0053": {
+		Operation: "getLegacyAdminLogoutCompat", Method: "GET", Path: "/admin/logout", TargetMapping: "P4-ADMIN-SHELL-0053",
+		Reason:   "Repository owner superseded the prior tier B deferral on 2026-08-16; the authenticated Admin Shell alias redirects to the existing session-bound logout flow.",
+		Evidence: apiDecisionEvidence{"P4-AB-ALL-2026-08-16", "repository_owner", "2026-08-16", "MIGRATE"},
 	},
 }
 
@@ -291,7 +304,7 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 		case "A":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"}
 			if integrated, ok := integratedRoutes[id]; ok {
-				if disposition != "MIGRATE" || signoff != "APPROVED" || operation != integrated.Operation || method != integrated.Method || candidatePath != integrated.Path || targetMapping != integrated.TargetMapping || reason != integrated.Reason || len(evidence) != 1 || evidence[0] != expectedEvidence {
+				if disposition != "MIGRATE" || signoff != "APPROVED" || operation != integrated.Operation || method != integrated.Method || candidatePath != integrated.Path || targetMapping != integrated.TargetMapping || reason != integrated.Reason || len(evidence) != 1 || evidence[0] != integrated.Evidence {
 					return counts, decisions, fmt.Errorf("%s has forged integrated tier A disposition", id)
 				}
 			} else if disposition != "MIGRATE" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 approved tier A route for 1:1 legacy semantic migration; target v2 operation remains domain-contract work." || len(evidence) != 1 || evidence[0] != expectedEvidence {
@@ -300,10 +313,16 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 			decisions[0]++
 		case "B":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "DEFERRED_POST_LAUNCH"}
-			if disposition != "DEFERRED_POST_LAUNCH" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 deferred tier B route until post-launch reassessment; this is not deprecation or NOT_MIGRATED." || len(evidence) != 1 || evidence[0] != expectedEvidence {
+			if integrated, ok := integratedRoutes[id]; ok {
+				if disposition != "MIGRATE" || signoff != "APPROVED" || operation != integrated.Operation || method != integrated.Method || candidatePath != integrated.Path || targetMapping != integrated.TargetMapping || reason != integrated.Reason || len(evidence) != 1 || evidence[0] != integrated.Evidence {
+					return counts, decisions, fmt.Errorf("%s has forged integrated tier B disposition", id)
+				}
+				decisions[0]++
+			} else if disposition != "DEFERRED_POST_LAUNCH" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 deferred tier B route until post-launch reassessment; this is not deprecation or NOT_MIGRATED." || len(evidence) != 1 || evidence[0] != expectedEvidence {
 				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier B disposition", id)
+			} else {
+				decisions[1]++
 			}
-			decisions[1]++
 		case "C":
 			if !approvedNotMigratedRoutes[id] || disposition != "NOT_MIGRATED" || signoff != "APPROVED" || operation != "NOT_APPLICABLE" || method != "NOT_APPLICABLE" || candidatePath != "NOT_APPLICABLE" || targetMapping != "" || reason != "G1-D01 approved tier C route as not migrated." || len(evidence) != 1 || evidence[0] != (apiDecisionEvidence{"G1-D01", "repository_owner", "2026-08-10", "NOT_MIGRATED"}) {
 				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier C disposition", id)
@@ -316,7 +335,7 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 	if err := scanner.Err(); err != nil {
 		return counts, decisions, err
 	}
-	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} || decisions != [3]int{501, 268, 12} {
+	if line != 781 || len(seen) != len(routes) || counts != [3]int{156, 184, 441} || decisions != [3]int{502, 267, 12} {
 		return counts, decisions, fmt.Errorf("route partition or decision mismatch: rows=%d seen=%d partitions=%v decisions=%v", line, len(seen), counts, decisions)
 	}
 	return counts, decisions, nil
