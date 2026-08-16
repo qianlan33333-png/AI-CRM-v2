@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -63,7 +65,7 @@ type migrationFact struct {
 	Evidence                                                                                                            []string
 }
 
-type paths struct{ routes, api, triage, lifecycle, migration, openapi, generated, generatorConfig string }
+type paths struct{ routes, api, triage, triageAuthority, lifecycle, migration, openapi, generated, generatorConfig string }
 
 var identity = regexp.MustCompile(`(?i)(external_?userid|unionid|openid|mobile|phone)`)
 var operationID = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
@@ -95,13 +97,14 @@ func main() {
 	routes := flag.String("routes", "../docs/evidence/p1/legacy-routes-6cb989c.json", "P1-S01 route manifest")
 	api := flag.String("api", "../docs/api-mapping.jsonl", "API candidate mapping")
 	triage := flag.String("triage", "../docs/evidence/p1/route-triage.csv", "G1 route triage decisions")
+	triageAuthority := flag.String("triage-authority", "../docs/evidence/p1/route-triage.csv", "parent-indexed G1 route triage authority")
 	lifecycle := flag.String("lifecycle", "../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "legacy lifecycle index")
 	migration := flag.String("migration", "../docs/migration-mapping.jsonl", "migration mapping")
 	openapi := flag.String("openapi", "../api/openapi.yaml", "canonical OpenAPI document")
 	generated := flag.String("generated", "../internal/api/candidate/generated/server.gen.go", "canonical generated server")
 	generatorConfig := flag.String("generator-config", "../api/oapi-codegen-p1-candidate.yaml", "candidate generated server declaration")
 	flag.Parse()
-	result, err := reconcile(paths{*routes, *api, *triage, *lifecycle, *migration, *openapi, *generated, *generatorConfig})
+	result, err := reconcile(paths{routes: *routes, api: *api, triage: *triage, triageAuthority: *triageAuthority, lifecycle: *lifecycle, migration: *migration, openapi: *openapi, generated: *generated, generatorConfig: *generatorConfig})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "p1-reconciliation:", err)
 		os.Exit(1)
@@ -110,15 +113,22 @@ func main() {
 }
 
 func reconcile(p paths) (string, error) {
+	facts, err := loadIntegrationFacts(p.openapi, p.generated, p.generatorConfig)
+	if err != nil {
+		return "", err
+	}
+	return reconcileWithIntegrationFacts(p, facts)
+}
+
+// reconcileWithIntegrationFacts keeps mutation tests independent from the
+// cost of repeatedly loading the same canonical OpenAPI/generated evidence.
+// The production entry point above still loads that evidence for every run.
+func reconcileWithIntegrationFacts(p paths, facts integrationFacts) (string, error) {
 	routes, err := loadRoutes(p.routes)
 	if err != nil {
 		return "", err
 	}
-	tiers, err := loadTriage(p.triage)
-	if err != nil {
-		return "", err
-	}
-	facts, err := loadIntegrationFacts(p.openapi, p.generated, p.generatorConfig)
+	tiers, err := loadTriage(p.triage, p.triageAuthority)
 	if err != nil {
 		return "", err
 	}
@@ -137,13 +147,12 @@ func reconcile(p paths) (string, error) {
 	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d migrate_routes=%d deferred_post_launch_routes=%d not_migrated_routes=%d tables=316 fields=%d pending_routes=0 pending_tables=%d)", counts[0], counts[1], counts[2], decisions[0], decisions[1], decisions[2], fields, pending), nil
 }
 
-func loadTriage(path string) (map[string]string, error) {
-	file, err := os.Open(path)
+func loadTriage(path, authorityPath string) (map[string]string, error) {
+	data, err := stagedOrFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-	reader := csv.NewReader(file)
+	reader := csv.NewReader(bytes.NewReader(data))
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, fmt.Errorf("route triage: %w", err)
@@ -176,7 +185,106 @@ func loadTriage(path string) (map[string]string, error) {
 	if counts["A"] != 501 || counts["B"] != 268 || counts["C"] != 12 {
 		return nil, fmt.Errorf("route triage tier mismatch: A=%d B=%d C=%d", counts["A"], counts["B"], counts["C"])
 	}
+	authority, err := parentTiers(authorityPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyTierAuthority(tiers, authority); err != nil {
+		return nil, err
+	}
 	return tiers, nil
+}
+
+// stagedOrFile binds repository declarations to their staged object. Temporary
+// fixture files remain readable so the same validation can exercise negative
+// and append-only cases without weakening the repository path.
+func stagedOrFile(path string) ([]byte, error) {
+	root, relative, ok := repositoryPath(path)
+	if !ok {
+		return os.ReadFile(path)
+	}
+	output, err := exec.Command("git", "-C", root, "show", ":"+relative).Output()
+	if err != nil {
+		return nil, fmt.Errorf("read staged route triage: %w", err)
+	}
+	return output, nil
+}
+
+// parentTiers reads the first parent rather than a candidate-controlled
+// declaration. On PR merge refs this is the base branch; after squash it is
+// the prior main tree. Existing tier assignments are therefore append-only.
+func parentTiers(path string) (map[string]string, error) {
+	root, relative, ok := repositoryPath(path)
+	if !ok {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		return extractTiers(data)
+	}
+	output, err := exec.Command("git", "-C", root, "show", "HEAD^:"+relative).Output()
+	if err != nil {
+		return nil, fmt.Errorf("read parent route triage authority: %w", err)
+	}
+	return extractTiers(output)
+}
+
+func repositoryPath(path string) (string, string, bool) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", "", false
+	}
+	root, err := exec.Command("git", "-C", filepath.Dir(absolute), "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return "", "", false
+	}
+	repository := strings.TrimSpace(string(root))
+	relative, err := filepath.Rel(repository, absolute)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", "", false
+	}
+	return repository, filepath.ToSlash(relative), true
+}
+
+func extractTiers(data []byte) (map[string]string, error) {
+	records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("route triage authority: %w", err)
+	}
+	if len(records) < 2 {
+		return nil, errors.New("route triage authority is empty")
+	}
+	columns := map[string]int{}
+	for index, name := range records[0] {
+		columns[name] = index
+	}
+	for _, required := range []string{"mapping_id", "recommended_tier", "human_signoff"} {
+		if _, ok := columns[required]; !ok {
+			return nil, fmt.Errorf("route triage authority lacks %s", required)
+		}
+	}
+	tiers := make(map[string]string, len(records)-1)
+	for line, record := range records[1:] {
+		if len(record) != len(records[0]) {
+			return nil, fmt.Errorf("route triage authority line %d has an invalid column count", line+2)
+		}
+		id, tier := record[columns["mapping_id"]], record[columns["recommended_tier"]]
+		if !regexp.MustCompile(`^LEGACY-API-[0-9]{4}$`).MatchString(id) || tiers[id] != "" || !oneOf(tier, "A", "B", "C") || record[columns["human_signoff"]] != "APPROVED" {
+			return nil, fmt.Errorf("route triage authority line %d is invalid", line+2)
+		}
+		tiers[id] = tier
+	}
+	return tiers, nil
+}
+
+func verifyTierAuthority(tiers, authority map[string]string) error {
+	for id, expected := range authority {
+		actual, ok := tiers[id]
+		if !ok || actual != expected {
+			return fmt.Errorf("%s differs from the parent route tier authority", id)
+		}
+	}
+	return nil
 }
 
 func loadRoutes(path string) (map[string]routeFact, error) {

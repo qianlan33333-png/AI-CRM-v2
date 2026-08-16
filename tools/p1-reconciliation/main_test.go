@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
 func frozenPaths() paths {
-	return paths{"../../docs/evidence/p1/legacy-routes-6cb989c.json", "../../docs/api-mapping.jsonl", "../../docs/evidence/p1/route-triage.csv", "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "../../docs/migration-mapping.jsonl", "../../api/openapi.yaml", "../../internal/api/candidate/generated/server.gen.go", "../../api/oapi-codegen-p1-candidate.yaml"}
+	return paths{routes: "../../docs/evidence/p1/legacy-routes-6cb989c.json", api: "../../docs/api-mapping.jsonl", triage: "../../docs/evidence/p1/route-triage.csv", triageAuthority: "../../docs/evidence/p1/route-triage.csv", lifecycle: "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", migration: "../../docs/migration-mapping.jsonl", openapi: "../../api/openapi.yaml", generated: "../../internal/api/candidate/generated/server.gen.go", generatorConfig: "../../api/oapi-codegen-p1-candidate.yaml"}
 }
 
 func TestFrozenReconciliation(t *testing.T) {
@@ -23,6 +26,11 @@ func TestFrozenReconciliation(t *testing.T) {
 }
 
 func TestRejectsUnsafeMutations(t *testing.T) {
+	frozen := frozenPaths()
+	facts, err := loadIntegrationFacts(frozen.openapi, frozen.generated, frozen.generatorConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tc := range []struct {
 		name, file string
 		mutate     func(any)
@@ -78,6 +86,27 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 					return
 				}
 			}
+		}},
+		{"triage A B swap preserves counts", "triage", func(v any) {
+			records := v.(*[][]string)
+			columns := map[string]int{}
+			for index, name := range (*records)[0] {
+				columns[name] = index
+			}
+			first, second := -1, -1
+			for index, record := range (*records)[1:] {
+				switch record[columns["mapping_id"]] {
+				case "LEGACY-API-0421":
+					first = index + 1
+				case "LEGACY-API-0053":
+					second = index + 1
+				}
+			}
+			if first < 0 || second < 0 {
+				t.Fatal("frozen A/B triage rows are missing")
+			}
+			(*records)[first][columns["recommended_tier"]] = "B"
+			(*records)[second][columns["recommended_tier"]] = "A"
 		}},
 		{"tier B mislabeled not migrated", "api", func(v any) {
 			r := v.(*[]map[string]any)
@@ -138,10 +167,90 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := mutatedFixture(t, tc.file, tc.mutate)
-			if _, err := reconcile(p); err == nil {
+			if _, err := reconcileWithIntegrationFacts(p, facts); err == nil {
 				t.Fatal("mutation was accepted")
 			}
 		})
+	}
+}
+
+func TestTierAuthorityAllowsDeclarationAppendWithoutCheckerChange(t *testing.T) {
+	authority := map[string]string{"LEGACY-API-9001": "A"}
+	declared := map[string]string{"LEGACY-API-9001": "A", "LEGACY-API-9002": "B"}
+	if err := verifyTierAuthority(declared, authority); err != nil {
+		t.Fatalf("append-only tier declaration was rejected: %v", err)
+	}
+}
+
+func TestTierAuthorityRejectsEqualCountSwap(t *testing.T) {
+	authority := map[string]string{"LEGACY-API-9001": "A", "LEGACY-API-9002": "B"}
+	forged := map[string]string{"LEGACY-API-9001": "B", "LEGACY-API-9002": "A"}
+	if err := verifyTierAuthority(forged, authority); err == nil {
+		t.Fatal("equal-count A/B tier swap was accepted")
+	}
+}
+
+func TestTierAuthorityUsesParentIndexedDeclaration(t *testing.T) {
+	repository := t.TempDir()
+	triage := filepath.Join(repository, "facts", "route-triage.csv")
+	if err := os.MkdirAll(filepath.Dir(triage), 0700); err != nil {
+		t.Fatal(err)
+	}
+	writeTriage := func(rows string) {
+		t.Helper()
+		if err := os.WriteFile(triage, []byte("mapping_id,recommended_tier,human_signoff\n"+rows), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	git := func(arguments ...string) {
+		t.Helper()
+		command := exec.Command("git", append([]string{"-C", repository}, arguments...)...)
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", arguments, err, output)
+		}
+	}
+	writeTriage("LEGACY-API-9001,A,APPROVED\n")
+	git("init", "-q", "-b", "main")
+	git("config", "user.name", "p1-test")
+	git("config", "user.email", "p1-test@example.invalid")
+	git("add", ".")
+	git("commit", "-q", "-m", "base authority")
+	if err := os.WriteFile(filepath.Join(repository, "candidate"), []byte("base\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "candidate")
+	git("commit", "-q", "-m", "candidate parent")
+
+	writeTriage("LEGACY-API-9001,A,APPROVED\nLEGACY-API-9002,B,APPROVED\n")
+	git("add", "facts/route-triage.csv")
+	current, err := stagedOrFile(triage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declared, err := extractTiers(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	authority, err := parentTiers(triage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyTierAuthority(declared, authority); err != nil {
+		t.Fatalf("append-only staged declaration was rejected: %v", err)
+	}
+
+	writeTriage("LEGACY-API-9001,B,APPROVED\nLEGACY-API-9002,A,APPROVED\n")
+	git("add", "facts/route-triage.csv")
+	current, err = stagedOrFile(triage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declared, err = extractTiers(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyTierAuthority(declared, authority); err == nil {
+		t.Fatal("candidate-controlled authority and equal-count tier swap self-certified")
 	}
 }
 
@@ -247,8 +356,8 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 	t.Helper()
 	dir := t.TempDir()
 	source := frozenPaths()
-	result := paths{}
-	files := map[string]string{"routes": source.routes, "api": source.api, "triage": source.triage, "lifecycle": source.lifecycle, "migration": source.migration, "openapi": source.openapi, "generated": source.generated, "generatorConfig": source.generatorConfig}
+	result := source
+	files := map[string]string{"routes": source.routes, "api": source.api, "triage": source.triage, "lifecycle": source.lifecycle, "migration": source.migration}
 	for name, path := range files {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -272,6 +381,19 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 					data = append(data, encoded...)
 					data = append(data, '\n')
 				}
+			} else if name == "triage" {
+				records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
+				if err != nil {
+					t.Fatal(err)
+				}
+				mutate(&records)
+				var rendered bytes.Buffer
+				writer := csv.NewWriter(&rendered)
+				writer.WriteAll(records)
+				if err := writer.Error(); err != nil {
+					t.Fatal(err)
+				}
+				data = rendered.Bytes()
 			} else {
 				var doc map[string]any
 				if err := json.Unmarshal(data, &doc); err != nil {
@@ -295,12 +417,6 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 			result.lifecycle = out
 		case "migration":
 			result.migration = out
-		case "openapi":
-			result.openapi = out
-		case "generated":
-			result.generated = out
-		case "generatorConfig":
-			result.generatorConfig = out
 		}
 	}
 	return result
