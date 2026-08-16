@@ -25,14 +25,14 @@ make_valid_case() {
   local root="$1"
   mkdir -p "$root"
   write_fixture "$root" "/repos/$repository/git/commits/$merge_sha" \
-    "$(jq -n --arg base "$base_sha" '{tree:{sha:"same-tree"},parents:[{sha:$base}]}')"
+    "$(jq -n --arg sha "$merge_sha" --arg base "$base_sha" '{sha:$sha,tree:{sha:"same-tree"},parents:[{sha:$base}]}')"
   write_fixture "$root" "/repos/$repository/commits/$merge_sha/pulls?per_page=100" '[{"number":7}]'
   write_fixture "$root" "/repos/$repository/pulls/7" \
     "$(jq -n --arg merge "$merge_sha" --arg base "$base_sha" --arg head "$head_sha" '{state:"closed",merged_at:"2026-08-14T01:03:00Z",merge_commit_sha:$merge,base:{ref:"main",sha:$base},head:{sha:$head},changed_files:1}')"
   write_fixture "$root" "/repos/$repository/git/commits/$head_sha" \
-    '{"tree":{"sha":"same-tree"},"committer":{"date":"2026-08-14T01:00:00Z"}}'
+    "$(jq -n --arg sha "$head_sha" '{sha:$sha,tree:{sha:"same-tree"},committer:{date:"2026-08-14T01:00:00Z"}}')"
   write_fixture "$root" "/repos/$repository/commits/$head_sha/check-runs?per_page=100" \
-    "$(jq -n --arg head "$head_sha" '{check_runs:["application / go","application / web","policy / repo-contract","security / secret-scan"] | map({name:.,status:"completed",conclusion:"success",head_sha:$head,completed_at:"2026-08-14T01:02:00Z",app:{slug:"github-actions"}})}')"
+    "$(jq -n --arg head "$head_sha" '{check_runs:["application / go","application / web","policy / repo-contract","security / secret-scan"] | map({name:.,status:"completed",conclusion:"success",head_sha:$head,started_at:"2026-08-14T01:01:00Z",completed_at:"2026-08-14T01:02:00Z",app:{slug:"github-actions"}})}')"
   write_fixture "$root" "/repos/$repository/pulls/7/files?per_page=100" \
     "$(jq -n --arg sha "$head_sha" '[{filename:"internal/contact/app/service.go",status:"modified",sha:$sha}]')"
 }
@@ -131,7 +131,16 @@ api_failure="$test_root/api-failure"
 mkdir -p "$api_failure"
 run_case api-failure "$api_failure" full api-failure-current-commit
 
-for promoted in migration:migrations/00032_example.sql openapi:api/openapi.yaml matrix:docs/feature-matrix.csv generated:internal/api/generated/server.gen.go; do
+for promoted in \
+  migration:migrations/00032_example.sql \
+  openapi:api/openapi.yaml \
+  matrix:docs/feature-matrix.csv \
+  api-mapping:docs/api-mapping.jsonl \
+  migration-mapping:docs/migration-mapping.jsonl \
+  acceptance-manifest:docs/ci/go-acceptance-manifest.tsv \
+  repo-fingerprint:docs/ci/repo-contract-fingerprints.tsv \
+  generated:internal/api/generated/server.gen.go \
+  generated-fingerprint:scripts/generated-sources.sha256; do
   name="${promoted%%:*}"
   path="${promoted#*:}"
   root="$test_root/promoted-$name"
@@ -142,7 +151,26 @@ for promoted in migration:migrations/00032_example.sql openapi:api/openapi.yaml 
   run_case "promoted-$name" "$root" promotion same-tree-squash-provenance-verified
 done
 
-for risk in workflow:.github/workflows/application-go.yml checker:scripts/check_repo_contract.sh root-dep:go.mod migration-framework:migrations/README.md shared-global:internal/platform/runtime/run.go; do
+for risk in \
+  workflow:.github/workflows/application-go.yml \
+  checker:scripts/check_repo_contract.sh \
+  fingerprint-checker:scripts/check_repo_fingerprints.sh \
+  matrix-checker:scripts/check_feature_matrix_contract.sh \
+  merge-guard:scripts/check_candidate_merge_guard.sh \
+  openapi-checker:tools/openapi-contract/main.go \
+  acceptance-runner:scripts/run_ci_acceptance_manifest.sh \
+  root-dep:go.mod \
+  security-config:.gitleaks.toml \
+  generator-config:api/oapi-codegen.yaml \
+  auth-security-runtime:internal/auth/app/service.go \
+  config-security-runtime:internal/config/registry.go \
+  adminops-security-runtime:internal/adminops/app/service.go \
+  gateway-security-runtime:internal/gateway/auth.go \
+  auth-composition:cmd/aicrm/legacy_auth.go \
+  config-composition:cmd/aicrm/legacy_config_settings.go \
+  admin-composition:cmd/aicrm/legacy_admin_ops.go \
+  migration-framework:migrations/README.md \
+  shared-global:internal/platform/runtime/run.go; do
   name="${risk%%:*}"
   path="${risk#*:}"
   root="$test_root/risk-$name"
@@ -152,5 +180,59 @@ for risk in workflow:.github/workflows/application-go.yml checker:scripts/check_
   mv "$files_file.tmp" "$files_file"
   run_case "risk-$name" "$root" full framework-risk-change
 done
+
+for unsupported_status in removed renamed copied; do
+  root="$test_root/status-$unsupported_status"
+  make_valid_case "$root"
+  files_file="$root/$(fixture_name "/repos/$repository/pulls/7/files?per_page=100").json"
+  jq --arg status "$unsupported_status" '.[0].status = $status' "$files_file" >"$files_file.tmp"
+  mv "$files_file.tmp" "$files_file"
+  run_case "status-$unsupported_status" "$root" full unsupported-domain-change-status
+done
+
+unclassified="$test_root/unclassified"
+make_valid_case "$unclassified"
+files_file="$unclassified/$(fixture_name "/repos/$repository/pulls/7/files?per_page=100").json"
+jq '.[0].filename = "unknown/business.txt"' "$files_file" >"$files_file.tmp"
+mv "$files_file.tmp" "$files_file"
+run_case unclassified "$unclassified" full unclassified-change
+
+duplicate_path="$test_root/duplicate-path"
+make_valid_case "$duplicate_path"
+pr_file="$duplicate_path/$(fixture_name "/repos/$repository/pulls/7").json"
+jq '.changed_files = 2' "$pr_file" >"$pr_file.tmp"
+mv "$pr_file.tmp" "$pr_file"
+files_file="$duplicate_path/$(fixture_name "/repos/$repository/pulls/7/files?per_page=100").json"
+jq '.[1] = .[0]' "$files_file" >"$files_file.tmp"
+mv "$files_file.tmp" "$files_file"
+run_case duplicate-path "$duplicate_path" full unsupported-domain-change-status
+
+untrusted_check="$test_root/untrusted-check"
+make_valid_case "$untrusted_check"
+checks_file="$untrusted_check/$(fixture_name "/repos/$repository/commits/$head_sha/check-runs?per_page=100").json"
+jq '(.check_runs[] | select(.name == "application / go")).app.slug = "foreign-app"' "$checks_file" >"$checks_file.tmp"
+mv "$checks_file.tmp" "$checks_file"
+run_case untrusted-check "$untrusted_check" full untrusted-check-app
+
+incomplete_check="$test_root/incomplete-check"
+make_valid_case "$incomplete_check"
+checks_file="$incomplete_check/$(fixture_name "/repos/$repository/commits/$head_sha/check-runs?per_page=100").json"
+jq '(.check_runs[] | select(.name == "application / go")).status = "in_progress"' "$checks_file" >"$checks_file.tmp"
+mv "$checks_file.tmp" "$checks_file"
+run_case incomplete-check "$incomplete_check" full incomplete-required-check
+
+current_sha_mismatch="$test_root/current-sha-mismatch"
+make_valid_case "$current_sha_mismatch"
+commit_file="$current_sha_mismatch/$(fixture_name "/repos/$repository/git/commits/$merge_sha").json"
+jq '.sha = "dddddddddddddddddddddddddddddddddddddddd"' "$commit_file" >"$commit_file.tmp"
+mv "$commit_file.tmp" "$commit_file"
+run_case current-sha-mismatch "$current_sha_mismatch" full current-commit-sha-mismatch
+
+head_sha_mismatch="$test_root/head-sha-mismatch"
+make_valid_case "$head_sha_mismatch"
+head_file="$head_sha_mismatch/$(fixture_name "/repos/$repository/git/commits/$head_sha").json"
+jq '.sha = "dddddddddddddddddddddddddddddddddddddddd"' "$head_file" >"$head_file.tmp"
+mv "$head_file.tmp" "$head_file"
+run_case head-sha-mismatch "$head_sha_mismatch" full pr-head-sha-mismatch
 
 echo "ci-promotion-tests: PASS"

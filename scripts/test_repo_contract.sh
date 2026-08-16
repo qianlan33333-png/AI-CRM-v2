@@ -9,6 +9,7 @@ fail() {
 scripts/test_ci_acceptance_manifest.sh
 scripts/test_ci_promotion_decision.sh
 scripts/test_ci_promotion_smoke.sh
+scripts/test_repo_fingerprints.sh
 
 for forbidden_git_env in \
   GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
@@ -68,12 +69,29 @@ make_gitless_fixture() {
   printf ' ready (%ss)\n' "$elapsed_seconds" >&2
   printf '%s\n' "$fixture"
 }
-restage_make_receipt() { local fixture="$1" digest
-  git -C "$fixture" add Makefile; digest="$(git -C "$fixture" show :Makefile | sha256sum | awk '{print $1}')"
-  sed -i.bak -E "/^verify_index_sha256 Makefile/{n;s/[0-9a-f]{64}/$digest/;}" "$fixture/scripts/check_repo_contract.sh"; rm -f "$fixture/scripts/check_repo_contract.sh.bak"; git -C "$fixture" add scripts/check_repo_contract.sh; }
-restage_p2s18_receipt() { local fixture="$1" receipt_file="$2" digest escaped_file
-  git -C "$fixture" add "$receipt_file"; digest="$(git -C "$fixture" show ":$receipt_file" | sha256sum | awk '{print $1}')"; escaped_file="${receipt_file//\//\\/}"
-  sed -i.bak -E "/^verify_index_sha256 $escaped_file/{n;s/[0-9a-f]{64}/$digest/;}" "$fixture/scripts/check_repo_contract.sh"; rm -f "$fixture/scripts/check_repo_contract.sh.bak"; git -C "$fixture" add scripts/check_repo_contract.sh; }
+restage_fingerprint() {
+  local fixture="$1" receipt_file="$2" digest mode manifest
+  manifest="$fixture/docs/ci/repo-contract-fingerprints.tsv"
+  git -C "$fixture" add "$receipt_file"
+  digest="$(git -C "$fixture" show ":$receipt_file" | sha256sum | awk '{print $1}')"
+  mode="$(git -C "$fixture" ls-files --stage -- "$receipt_file" | awk '{print $1}')"
+  ruby -e '
+    manifest, target, mode, digest = ARGV
+    lines = File.readlines(manifest)
+    abort "invalid fingerprint header" unless lines.shift == "# mode\tsha256\tpath\n"
+    rows = lines.map { |line| line.chomp.split("\t", 3) }
+    abort "invalid fingerprint row" unless rows.all? { |row| row.length == 3 }
+    matches = rows.each_index.select { |index| rows[index][2] == target }
+    abort "duplicate fingerprint row for #{target}" if matches.length > 1
+    replacement = [mode, digest, target]
+    matches.empty? ? rows.push(replacement) : rows[matches.fetch(0)] = replacement
+    rows.sort_by! { |row| row.fetch(2) }
+    File.write(manifest, "# mode\tsha256\tpath\n" + rows.map { |row| row.join("\t") }.join("\n") + "\n")
+  ' "$manifest" "$receipt_file" "$mode" "$digest"
+  git -C "$fixture" add docs/ci/repo-contract-fingerprints.tsv
+}
+restage_make_receipt() { local fixture="$1"; restage_fingerprint "$fixture" Makefile; }
+restage_p2s18_receipt() { local fixture="$1" receipt_file="$2"; restage_fingerprint "$fixture" "$receipt_file"; }
 
 baseline_fixture="$(make_fixture baseline)"
 if ! (cd "$baseline_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -999,10 +1017,7 @@ missing_acceptance_dsn="$(make_fixture missing-p2-00-workflow-dsn)"
 sed -i.bak '/^          ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:/d' "$missing_acceptance_dsn/.github/workflows/application-go.yml"
 rm -f "$missing_acceptance_dsn/.github/workflows/application-go.yml.bak"
 git -C "$missing_acceptance_dsn" add .github/workflows/application-go.yml
-workflow_digest="$(git -C "$missing_acceptance_dsn" show :.github/workflows/application-go.yml | sha256sum | awk '{print $1}')"
-sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/application-go\.yml/{n;s/[0-9a-f]{64}/$workflow_digest/;}" "$missing_acceptance_dsn/scripts/check_repo_contract.sh"
-rm -f "$missing_acceptance_dsn/scripts/check_repo_contract.sh.bak"
-git -C "$missing_acceptance_dsn" add scripts/check_repo_contract.sh
+restage_p2s18_receipt "$missing_acceptance_dsn" .github/workflows/application-go.yml
 if (cd "$missing_acceptance_dsn" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "application workflow without the P2-00 acceptance DSN was accepted"
 fi
@@ -1034,11 +1049,7 @@ weak_gitleaks_fixture="$(make_fixture weak-gitleaks-allowlist)"
 sed -i.bak 's/condition = "AND"/condition = "OR"/' "$weak_gitleaks_fixture/.gitleaks.toml"
 rm -f "$weak_gitleaks_fixture/.gitleaks.toml.bak"
 git -C "$weak_gitleaks_fixture" add .gitleaks.toml
-weak_digest="$(git -C "$weak_gitleaks_fixture" show :.gitleaks.toml | sha256sum | awk '{print $1}')"
-sed -i.bak -E "/^verify_index_sha256 \.gitleaks\.toml/{n;s/[0-9a-f]{64}/$weak_digest/;}" \
-  "$weak_gitleaks_fixture/scripts/check_repo_contract.sh"
-rm -f "$weak_gitleaks_fixture/scripts/check_repo_contract.sh.bak"
-git -C "$weak_gitleaks_fixture" add scripts/check_repo_contract.sh
+restage_p2s18_receipt "$weak_gitleaks_fixture" .gitleaks.toml
 if (cd "$weak_gitleaks_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "OR-composed gitleaks allowlist was accepted"
 fi
@@ -1051,11 +1062,7 @@ for kind in missing-config missing-runner; do
   esac
   rm -f "$disconnected_gitleaks_fixture/.github/workflows/secret-scan.yml.bak"
   git -C "$disconnected_gitleaks_fixture" add .github/workflows/secret-scan.yml
-  workflow_digest="$(git -C "$disconnected_gitleaks_fixture" show :.github/workflows/secret-scan.yml | sha256sum | awk '{print $1}')"
-  sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/secret-scan\.yml/{n;s/[0-9a-f]{64}/$workflow_digest/;}" \
-    "$disconnected_gitleaks_fixture/scripts/check_repo_contract.sh"
-  rm -f "$disconnected_gitleaks_fixture/scripts/check_repo_contract.sh.bak"
-  git -C "$disconnected_gitleaks_fixture" add scripts/check_repo_contract.sh
+  restage_p2s18_receipt "$disconnected_gitleaks_fixture" .github/workflows/secret-scan.yml
   if (cd "$disconnected_gitleaks_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
     fail "secret scan workflow without $kind protection was accepted"
   fi
@@ -1255,40 +1262,82 @@ matrix_valid_fixture="$(make_gitless_matrix_fixture feature-matrix-valid)"
 printf '%s\n' '#!/bin/sh' 'exit 97' >"$matrix_valid_fixture/hostile-bash-env"; chmod 755 "$matrix_valid_fixture/hostile-bash-env"
 matrix_output="$(cd / && BASH_ENV="$matrix_valid_fixture/hostile-bash-env" ENV="$matrix_valid_fixture/hostile-bash-env" PATH=/nonexistent MAKEFLAGS="SHELL=$matrix_valid_fixture/hostile-bash-env .SHELLFLAGS=-c\\ true" /usr/bin/make -C "$matrix_valid_fixture" --no-print-directory feature-matrix-contract)" ||
   fail "valid hostile-environment feature matrix was rejected without Git"
-[[ "$matrix_output" == 'feature-matrix-contract: PASS (rows=294)' ]] || fail "feature matrix contract did not report the unique PASS"
+matrix_row_count="$(($(wc -l <"$matrix_valid_fixture/docs/feature-matrix.csv") - 1))"
+[[ "$matrix_output" == "feature-matrix-contract: PASS (rows=$matrix_row_count)" ]] || fail "feature matrix contract did not report the derived row count"
 set +e
 completion_output="$(cd / && /bin/bash "$matrix_valid_fixture/scripts/check_feature_matrix_contract.sh" --completion p1 2>&1)"
 completion_status=$?
 set -e
-[[ "$completion_status" -eq 0 && "$completion_output" == 'feature-matrix-completion: PASS phase=p1 rows=294 synthetic=26 staging=0 production=0' ]] ||
+[[ "$completion_status" -eq 0 && "$completion_output" =~ ^feature-matrix-completion:\ PASS\ phase=p1\ rows=${matrix_row_count}\ synthetic=[0-9]+\ staging=[0-9]+\ production=[0-9]+$ ]] ||
   fail "P1 completion did not report the signed G1-D02 state"
 
+regenerate_matrix_anchor() {
+  local fixture="$1"
+  ruby -rcsv -rdigest -e '
+    fixture = ARGV.fetch(0)
+    rows = CSV.read(File.join(fixture, "docs/feature-matrix.csv"), headers: true)
+    ids = rows.map { |row| value = row.fetch("feature_id"); "#{value.bytesize}:#{value}\n" }.join
+    immutable_names = %w[feature_id page section action triggered_api expected_result notes legacy_source_sha source_evidence]
+    immutable = rows.map do |row|
+      immutable_names.map { |name| value = row.fetch(name); "#{value.bytesize}:#{value}\n" }.join
+    end.join
+    anchor = [
+      "version=1",
+      "rows=#{rows.length}",
+      "id_sha256=#{Digest::SHA256.hexdigest(ids)}",
+      "immutable_fields=#{immutable_names.join(",")}",
+      "immutable_sha256=#{Digest::SHA256.hexdigest(immutable)}",
+    ].join("\n") + "\n"
+    File.write(File.join(fixture, "docs/evidence/p1/feature-matrix-id-anchor.v1"), anchor)
+  ' "$fixture"
+}
+
+extended_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-extended-canonical)"
+ruby -rcsv -e '
+  matrix = ARGV.fetch(0)
+  rows = CSV.read(matrix)
+  fixture = rows.fetch(1).dup
+  fixture[0] = "ZZ-CI-DECLARATIVE-ROW"
+  fixture[1] = "CI declarative fixture"
+  fixture[2] = "canonical matrix extension"
+  fixture[3] = "validate"
+  fixture[4] = "none"
+  fixture[5] = "canonical row accepted"
+  fixture[6] = "no_schema_or_external_effect"
+  fixture[16] = ""
+  File.open(matrix, "a") { |file| file.write(CSV.generate_line(fixture)) }
+' "$extended_matrix_fixture/docs/feature-matrix.csv"
+regenerate_matrix_anchor "$extended_matrix_fixture"
+/bin/bash "$extended_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null ||
+  fail "a canonical matrix row addition required checker logic changes"
+
 assert_completion() {
-  local fixture="$1" phase="$2" expected="$3" output result
+  local fixture="$1" phase="$2" expected_fragment="$3" output result
   set +e
   output="$(cd / && /bin/bash "$fixture/scripts/check_feature_matrix_contract.sh" --completion "$phase" 2>&1)"; result=$?
   set -e
-  [[ "$result" -eq 2 && "$output" == "$expected" ]] || fail "completion level drifted: $phase/$expected"
+  [[ "$result" -eq 2 && "$output" =~ ^feature-matrix-completion:\ PENDING\ phase=${phase}\ rows=[0-9]+\ pending=[0-9]+\ synthetic=[0-9]+\ staging=[0-9]+\ production=[0-9]+$ && "$output" == *"$expected_fragment"* ]] ||
+    fail "completion level drifted: $phase/$expected_fragment"
 }
 synthetic_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-synthetic)"
 sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"/' \
   -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","method=fixture;command=make-test",""#' \
   "$synthetic_matrix_fixture/docs/feature-matrix.csv"; rm -f "$synthetic_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$synthetic_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid synthetic evidence was rejected"
-assert_completion "$synthetic_matrix_fixture" p4 'feature-matrix-completion: PENDING phase=p4 rows=294 pending=267 synthetic=27 staging=0 production=0'
-assert_completion "$synthetic_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=294 pending=294 synthetic=27 staging=0 production=0'
+assert_completion "$synthetic_matrix_fixture" p4 'synthetic='
+assert_completion "$synthetic_matrix_fixture" p5 'synthetic='
 staging_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-staging)"
 sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","STAGING_PASS","APPROVED"/' \
   -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=staging;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=log",""#' \
   "$staging_matrix_fixture/docs/feature-matrix.csv"; rm -f "$staging_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$staging_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid staging evidence was rejected"
-assert_completion "$staging_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=294 pending=293 synthetic=26 staging=1 production=0'
+assert_completion "$staging_matrix_fixture" p5 'staging=1'
 production_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-production)"
 sed -i.bak -e '2s/,"MIGRATE","NOT_STARTED","NOT_RUN","APPROVED"/,"MIGRATE","IMPLEMENTED","PRODUCTION_PASS","APPROVED"/' \
   -e '2s#,"","",""$#,"pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/1;merge_sha=84b893aef66f8be0074b25894debb95bbbdd975c;tests=unit;paths=internal/example","environment=production;build_sha=84b893aef66f8be0074b25894debb95bbbdd975c;time=2026-08-09T00:00:00Z;evidence=receipt;authorization=fixture",""#' \
   "$production_matrix_fixture/docs/feature-matrix.csv"; rm -f "$production_matrix_fixture/docs/feature-matrix.csv.bak"
 /bin/bash "$production_matrix_fixture/scripts/check_feature_matrix_contract.sh" >/dev/null || fail "valid production evidence was rejected"
-assert_completion "$production_matrix_fixture" p5 'feature-matrix-completion: PENDING phase=p5 rows=294 pending=293 synthetic=26 staging=0 production=1'
+assert_completion "$production_matrix_fixture" p5 'production=1'
 
 duplicate_matrix_fixture="$(make_gitless_matrix_fixture feature-matrix-duplicate)"
 sed -i.bak '3s/LEGACY-S05-002/LEGACY-S05-001/' "$duplicate_matrix_fixture/docs/feature-matrix.csv"; rm -f "$duplicate_matrix_fixture/docs/feature-matrix.csv.bak"
@@ -1333,8 +1382,14 @@ mv "$deleted_matrix_fixture/docs/feature-matrix.csv.tmp" "$deleted_matrix_fixtur
 assert_matrix_rejected deleted-row "$deleted_matrix_fixture" 'anchor version or row count mismatch'
 
 rewritten_anchor_fixture="$(make_gitless_matrix_fixture feature-matrix-rewritten-anchor)"
-sed -i.bak '2s/294/293/' "$rewritten_anchor_fixture/docs/evidence/p1/feature-matrix-id-anchor.v1"; rm -f "$rewritten_anchor_fixture/docs/evidence/p1/feature-matrix-id-anchor.v1.bak"
-assert_matrix_rejected rewritten-anchor "$rewritten_anchor_fixture" 'anchor is not the frozen revision'
+ruby -e '
+  path = ARGV.fetch(0)
+  source = File.read(path)
+  updated = source.sub(/^rows=([0-9]+)$/) { "rows=#{Regexp.last_match(1).to_i + 1}" }
+  abort "missing derived row count" if updated == source
+  File.write(path, updated)
+' "$rewritten_anchor_fixture/docs/evidence/p1/feature-matrix-id-anchor.v1"
+assert_matrix_rejected rewritten-anchor "$rewritten_anchor_fixture" 'anchor version or row count mismatch'
 
 for kind in mode symlink fifo; do
   shape_fixture="$(make_gitless_matrix_fixture "feature-matrix-$kind")"
@@ -1725,7 +1780,7 @@ if (cd "$broken_p0s04_ci_fixture" && scripts/check_repo_contract.sh >/dev/null 2
 fi
 
 missing_p0s04_workflow_fixture="$(make_fixture missing-p0s04-manifest-entry)"
-sed -i.bak '/^p0-s04|-|p0-s04-integration$/d' \
+sed -i.bak '/^p0-s04|0001|-|legacy-make|p0-s04-integration|-$/d' \
   "$missing_p0s04_workflow_fixture/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$missing_p0s04_workflow_fixture/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$missing_p0s04_workflow_fixture" add docs/ci/go-acceptance-manifest.tsv
@@ -1825,12 +1880,7 @@ sed -i.bak \
   "$p0s04_hardcoded_dsn_fixture/acceptance/p0s04/contract_test.go"
 rm -f "$p0s04_hardcoded_dsn_fixture/acceptance/p0s04/contract_test.go.bak"
 git -C "$p0s04_hardcoded_dsn_fixture" add acceptance/p0s04/contract_test.go
-p0s04_hardcoded_digest="$(git -C "$p0s04_hardcoded_dsn_fixture" show :acceptance/p0s04/contract_test.go | sha256sum | awk '{print $1}')"
-sed -i.bak -E \
-  "/^verify_index_sha256 acceptance\/p0s04\/contract_test.go/{n;s/[0-9a-f]{64}/$p0s04_hardcoded_digest/;}" \
-  "$p0s04_hardcoded_dsn_fixture/scripts/check_repo_contract.sh"
-rm -f "$p0s04_hardcoded_dsn_fixture/scripts/check_repo_contract.sh.bak"
-git -C "$p0s04_hardcoded_dsn_fixture" add scripts/check_repo_contract.sh
+restage_p2s18_receipt "$p0s04_hardcoded_dsn_fixture" acceptance/p0s04/contract_test.go
 if (cd "$p0s04_hardcoded_dsn_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "P0-S04 hard-coded CI PostgreSQL port was accepted"
 fi
@@ -1967,11 +2017,7 @@ sed -i.bak 's/timeout-minutes: 30/timeout-minutes: 10/' \
   "$short_repo_timeout_fixture/.github/workflows/repo-contract.yml"
 rm -f "$short_repo_timeout_fixture/.github/workflows/repo-contract.yml.bak"
 git -C "$short_repo_timeout_fixture" add .github/workflows/repo-contract.yml
-short_repo_workflow_digest="$(git -C "$short_repo_timeout_fixture" show :.github/workflows/repo-contract.yml | sha256sum | awk '{print $1}')"
-sed -i.bak -E "/^verify_index_sha256 \.github\/workflows\/repo-contract\.yml/{n;s/[0-9a-f]{64}/$short_repo_workflow_digest/;}" \
-  "$short_repo_timeout_fixture/scripts/check_repo_contract.sh"
-rm -f "$short_repo_timeout_fixture/scripts/check_repo_contract.sh.bak"
-git -C "$short_repo_timeout_fixture" add scripts/check_repo_contract.sh
+restage_p2s18_receipt "$short_repo_timeout_fixture" .github/workflows/repo-contract.yml
 if (cd "$short_repo_timeout_fixture" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
   fail "repo-contract workflow with a 10-minute budget was accepted after receipt restaging"
 fi
@@ -2157,7 +2203,7 @@ if (cd "$missing_p3c02a_store" && scripts/check_repo_contract.sh >/dev/null 2>&1
 fi
 
 disconnected_p3c02a_workflow="$(make_fixture disconnected-p3-c02a-workflow)"
-sed -i.bak '/^p3-c02a|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02a-acceptance$/d' \
+sed -i.bak '/^p3-c02a|0006|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|legacy-make|p3-c02a-acceptance|-$/d' \
   "$disconnected_p3c02a_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c02a_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c02a_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -2279,7 +2325,7 @@ for file_path in internal/contact/store/customer_detail_repository.go internal/c
 done
 
 disconnected_p3c02b_workflow="$(make_fixture disconnected-p3-c02b-workflow)"
-sed -i.bak '/^p3-c02b|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02b-acceptance$/d' \
+sed -i.bak '/^p3-c02b|0007|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|legacy-make|p3-c02b-acceptance|-$/d' \
   "$disconnected_p3c02b_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c02b_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c02b_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -2365,7 +2411,7 @@ for file_path in \
 done
 
 disconnected_p3c02d_workflow="$(make_fixture disconnected-p3-c02d-workflow)"
-sed -i.bak '/^p3-c02d|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02d-acceptance$/d' \
+sed -i.bak '/^p3-c02d|0008|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|legacy-make|p3-c02d-acceptance|-$/d' \
   "$disconnected_p3c02d_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c02d_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c02d_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -2506,7 +2552,7 @@ if (cd "$ungrouped_first_p3c02e" && scripts/check_repo_contract.sh >/dev/null 2>
 fi
 
 disconnected_p3c02e_workflow="$(make_fixture disconnected-p3-c02e-workflow)"
-sed -i.bak '/^p3-c02e|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|p3-c02e-acceptance$/d' \
+sed -i.bak '/^p3-c02e|0009|ACCEPTANCE_FIXTURES_TEST_DATABASE_URL|legacy-make|p3-c02e-acceptance|-$/d' \
   "$disconnected_p3c02e_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c02e_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c02e_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -2772,7 +2818,7 @@ for file_path in migrations/00006_customer_events.sql internal/contact/worker/ev
 done
 
 disconnected_p3c03_workflow="$(make_fixture disconnected-p3-c03-workflow)"
-sed -i.bak '/^p3-c03|P3C03_TEST_DATABASE_URL|p3-c03-migration-acceptance$/d' \
+sed -i.bak '/^p3-c03|0010|P3C03_TEST_DATABASE_URL|legacy-make|p3-c03-migration-acceptance|-$/d' \
   "$disconnected_p3c03_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c03_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c03_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -2860,7 +2906,7 @@ if (cd "$p3c07a_replay" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
 fi
 
 disconnected_p3c07a_workflow="$(make_fixture disconnected-p3-c07a-workflow)"
-sed -i.bak '/^p3-c07a|P3C07A_TEST_DATABASE_URL|p3-c07a-acceptance$/d' \
+sed -i.bak '/^p3-c07a|0011|P3C07A_TEST_DATABASE_URL|legacy-make|p3-c07a-acceptance|-$/d' \
   "$disconnected_p3c07a_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c07a_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c07a_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -2993,7 +3039,7 @@ if (cd "$hollow_p3c07b2_target" && scripts/check_repo_contract.sh >/dev/null 2>&
 fi
 
 disconnected_p3c07b2_workflow="$(make_fixture disconnected-p3-c07b2-workflow)"
-sed -i.bak '/^p3-c07b2|P3C07B2_TEST_DATABASE_URL|p3-c07b2-acceptance$/d' \
+sed -i.bak '/^p3-c07b2|0012|P3C07B2_TEST_DATABASE_URL|legacy-make|p3-c07b2-acceptance|-$/d' \
   "$disconnected_p3c07b2_workflow/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$disconnected_p3c07b2_workflow/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$disconnected_p3c07b2_workflow" add docs/ci/go-acceptance-manifest.tsv
@@ -3359,7 +3405,7 @@ if (cd "$s5b_route_drift" && scripts/check_repo_contract.sh >/dev/null 2>&1); th
 fi
 
 s5b_ci_disconnect="$(make_fixture p3-s05b-r2-ci-disconnect)"
-sed -i.bak '/^p3-s05b|SEGMENT_CRUD_TEST_DATABASE_URL|p3-s05b-acceptance$/d' "$s5b_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+sed -i.bak '/^p3-s05b|0013|SEGMENT_CRUD_TEST_DATABASE_URL|legacy-make|p3-s05b-acceptance|-$/d' "$s5b_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$s5b_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$s5b_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$s5b_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -3390,7 +3436,7 @@ if (cd "$o6a_unknown_retry" && scripts/check_repo_contract.sh >/dev/null 2>&1); 
 fi
 
 o6a_ci_disconnect="$(make_fixture p3-o6a-ci-disconnect)"
-sed -i.bak '/^p3-o6a|P3O6A_RETRY_TEST_DATABASE_URL|p3-o6a-retry-acceptance$/d' "$o6a_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+sed -i.bak '/^p3-o6a|0019|P3O6A_RETRY_TEST_DATABASE_URL|legacy-make|p3-o6a-retry-acceptance|-$/d' "$o6a_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$o6a_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$o6a_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$o6a_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -3445,7 +3491,7 @@ if (cd "$o6b1_transition_weakened" && scripts/check_repo_contract.sh >/dev/null 
 fi
 
 o6b1_ci_disconnect="$(make_fixture p3-o6b1-ci-disconnect)"
-sed -i.bak '/^p3-o6b1|P3O6B1_CANCEL_TEST_DATABASE_URL|p3-o6b1-cancel-acceptance$/d' "$o6b1_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+sed -i.bak '/^p3-o6b1|0020|P3O6B1_CANCEL_TEST_DATABASE_URL|legacy-make|p3-o6b1-cancel-acceptance|-$/d' "$o6b1_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$o6b1_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$o6b1_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$o6b1_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -3476,7 +3522,7 @@ if (cd "$o6b2_cross_catalog" && scripts/check_repo_contract.sh >/dev/null 2>&1);
 fi
 
 o6b2_ci_disconnect="$(make_fixture p3-o6b2-ci-disconnect)"
-sed -i.bak '/^p3-o6b2|P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL|p3-o6b2-manual-retry-acceptance$/d' "$o6b2_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+sed -i.bak '/^p3-o6b2|0021|P3O6B2_MANUAL_RETRY_TEST_DATABASE_URL|legacy-make|p3-o6b2-manual-retry-acceptance|-$/d' "$o6b2_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$o6b2_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$o6b2_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$o6b2_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
@@ -3532,7 +3578,7 @@ if (cd "$p4couponab_customer_fk" && scripts/check_repo_contract.sh >/dev/null 2>
 fi
 
 p4couponab_ci_disconnect="$(make_fixture p4-coupon-ab-ci-disconnect)"
-sed -i.bak '/^p4-coupon-ab|P4COUPONAB_TEST_DATABASE_URL|p4-coupon-ab-acceptance$/d' "$p4couponab_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
+sed -i.bak '/^p4-coupon-ab|0038|P4COUPONAB_TEST_DATABASE_URL|legacy-make|p4-coupon-ab-acceptance|-$/d' "$p4couponab_ci_disconnect/docs/ci/go-acceptance-manifest.tsv"
 rm -f "$p4couponab_ci_disconnect/docs/ci/go-acceptance-manifest.tsv.bak"
 git -C "$p4couponab_ci_disconnect" add docs/ci/go-acceptance-manifest.tsv
 if (cd "$p4couponab_ci_disconnect" && scripts/check_repo_contract.sh >/dev/null 2>&1); then

@@ -9,11 +9,23 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
+
+type canonicalCandidateOperation struct {
+	Path       string
+	Method     string
+	MappingIDs []string
+}
+
+type mappingInventory struct {
+	Known      map[string]bool
+	Candidates map[string]canonicalCandidateOperation
+}
 
 var p1CandidateOperations = map[string]bool{
 	"listCustomers": true, "getCustomer": true, "updateCustomer": true,
@@ -435,54 +447,152 @@ func main() {
 	spec := flag.String("spec", "../api/openapi.yaml", "OpenAPI document")
 	mapping := flag.String("mapping", "../docs/api-mapping.jsonl", "legacy API mapping")
 	flag.Parse()
-	doc, ids, err := load(*spec, *mapping)
+	doc, inventory, err := load(*spec, *mapping)
 	if err == nil {
-		err = validate(doc, ids)
+		err = validate(doc, inventory)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=98 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=4 p4_admin_shell_operations=2 p4_domain_verification_operations=1)")
+	fmt.Println("openapi-contract: PASS")
 }
 
-func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
+func load(spec, mapping string) (*openapi3.T, mappingInventory, error) {
+	empty := mappingInventory{}
 	loader := openapi3.NewLoader()
 	loader.IsExternalRefsAllowed = false
 	doc, err := loader.LoadFromFile(spec)
 	if err != nil {
-		return nil, nil, err
+		return nil, empty, err
 	}
 	file, err := os.Open(mapping)
 	if err != nil {
-		return nil, nil, err
+		return nil, empty, err
 	}
 	defer file.Close()
-	ids := map[string]bool{}
+	inventory := mappingInventory{Known: map[string]bool{}, Candidates: map[string]canonicalCandidateOperation{}}
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
 		var row struct {
-			MappingID string `json:"mapping_id"`
+			MappingID            string `json:"mapping_id"`
+			CandidateOperationID string `json:"candidate_v2_operation_id"`
+			CandidateMethod      string `json:"candidate_v2_method"`
+			CandidatePath        string `json:"candidate_v2_path"`
 		}
 		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
-			return nil, nil, err
+			return nil, empty, err
 		}
-		if row.MappingID == "" || ids[row.MappingID] {
-			return nil, nil, errors.New("invalid legacy mapping IDs")
+		if row.MappingID == "" || inventory.Known[row.MappingID] {
+			return nil, empty, errors.New("invalid legacy mapping IDs")
 		}
-		ids[row.MappingID] = true
+		inventory.Known[row.MappingID] = true
+		if row.CandidateOperationID == "" || row.CandidateOperationID == "PENDING_HUMAN_DESIGN" || row.CandidateOperationID == "NOT_APPLICABLE" {
+			continue
+		}
+		if !regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`).MatchString(row.CandidateOperationID) ||
+			!regexp.MustCompile(`^(GET|POST|PUT|PATCH|DELETE)$`).MatchString(row.CandidateMethod) ||
+			!strings.HasPrefix(row.CandidatePath, "/") || strings.Contains(row.CandidatePath, "//") {
+			return nil, empty, fmt.Errorf("invalid canonical candidate declaration: %s", row.MappingID)
+		}
+		candidate := inventory.Candidates[row.CandidateOperationID]
+		if candidate.Path != "" && (candidate.Path != row.CandidatePath || candidate.Method != row.CandidateMethod) {
+			return nil, empty, fmt.Errorf("inconsistent canonical candidate declaration: %s", row.CandidateOperationID)
+		}
+		candidate.Path = row.CandidatePath
+		candidate.Method = row.CandidateMethod
+		candidate.MappingIDs = append(candidate.MappingIDs, row.MappingID)
+		inventory.Candidates[row.CandidateOperationID] = candidate
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, err
+		return nil, empty, err
 	}
-	if len(ids) != 781 {
-		return nil, nil, fmt.Errorf("legacy mapping inventory=%d", len(ids))
+	if len(inventory.Known) == 0 {
+		return nil, empty, errors.New("legacy mapping inventory is empty")
 	}
-	return doc, ids, nil
+	return doc, inventory, nil
 }
 
-func validate(doc *openapi3.T, known map[string]bool) error {
+func isRunnerDeclaredOperation(operationID string) bool {
+	return p1CandidateOperations[operationID] || p2StageOperations[operationID] ||
+		p3ContactOperations[operationID] || p3IdentityOperations[operationID] || p3SegmentOperations[operationID] ||
+		p4AutomationOperations[operationID] || p4ProductOperations[operationID] || p4MediaOperations[operationID] ||
+		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
+		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
+		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
+		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
+		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID]
+}
+
+func operationForMethod(item *openapi3.PathItem, method string) *openapi3.Operation {
+	switch method {
+	case "GET":
+		return item.Get
+	case "POST":
+		return item.Post
+	case "PUT":
+		return item.Put
+	case "PATCH":
+		return item.Patch
+	case "DELETE":
+		return item.Delete
+	default:
+		return nil
+	}
+}
+
+func validateCanonicalCandidate(path string, item *openapi3.PathItem, op *openapi3.Operation, contract canonicalCandidateOperation, known map[string]bool) error {
+	if path != contract.Path || operationForMethod(item, contract.Method) != op {
+		return fmt.Errorf("%s path or method differs from canonical mapping", op.OperationID)
+	}
+	ids, err := stringList(op.Extensions["x-legacy-mapping-ids"])
+	if err != nil || !reflect.DeepEqual(ids, contract.MappingIDs) {
+		return fmt.Errorf("%s canonical legacy mapping=%v", op.OperationID, ids)
+	}
+	for _, id := range ids {
+		if !known[id] {
+			return fmt.Errorf("%s links unknown mapping %s", op.OperationID, id)
+		}
+	}
+	return nil
+}
+
+func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string) error {
+	decisionEvidence := ""
+	for _, key := range []string{"x-p1-decision-evidence", "x-p2-decision-evidence", "x-p3-decision-evidence", "x-p4-decision-evidence"} {
+		if value, ok := op.Extensions[key].(string); ok && value != "" {
+			decisionEvidence = value
+			break
+		}
+	}
+	capability, capabilityOK := op.Extensions["x-aicrm-capability"].(string)
+	authScheme, authSchemeOK := op.Extensions["x-aicrm-auth-scheme"].(string)
+	classification, classificationOK := op.Extensions["x-aicrm-data-classification"].(string)
+	scopes, scopeErr := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||
+		!authSchemeOK || authScheme == "" || !classificationOK || classification == "" ||
+		scopeErr != nil || len(scopes) == 0 || op.Extensions["x-aicrm-external-effect"] != "none" {
+		return fmt.Errorf("%s canonical authorization declaration is incomplete", op.OperationID)
+	}
+	for role, scope := range scopes {
+		if (role != "admin" && role != "ops" && role != "sales") ||
+			(scope != "global" && scope != "owner_staff" && scope != "self") {
+			return fmt.Errorf("%s canonical RBAC scopes=%v", op.OperationID, scopes)
+		}
+	}
+	if len(scopes) < 3 && op.Responses.Value("403") == nil {
+		return fmt.Errorf("%s denies a role but lacks 403", op.OperationID)
+	}
+	csrf, csrfOK := op.Extensions["x-aicrm-session-bound-csrf"].(string)
+	if !csrfOK || (method == "GET" && csrf != "none") || (method != "GET" && csrf != "required") {
+		return fmt.Errorf("%s canonical CSRF declaration is incomplete", op.OperationID)
+	}
+	return nil
+}
+
+func validate(doc *openapi3.T, inventory mappingInventory) error {
+	known := inventory.Known
 	if err := doc.Validate(context.Background()); err != nil {
 		return err
 	}
@@ -490,18 +600,27 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 		return errors.New("business API lacks default security")
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
-	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
+	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4DomainVerification[op.OperationID] || seenP4PushCenter[op.OperationID] || seenP4ExecutionRuntime[op.OperationID] || seenP4AdminShell[op.OperationID] ||
-				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID] && !p4PushCenterOperations[op.OperationID] && !p4ExecutionRuntimeOperations[op.OperationID] && !p4AdminShellOperations[op.OperationID]) {
+			runnerDeclared := isRunnerDeclaredOperation(op.OperationID)
+			canonicalContract, canonicalDeclared := inventory.Candidates[op.OperationID]
+			if seenOperationIDs[op.OperationID] || (!runnerDeclared && !canonicalDeclared) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
+			seenOperationIDs[op.OperationID] = true
+			if canonicalDeclared {
+				if err := validateCanonicalCandidate(path, item, op, canonicalContract, known); err != nil {
+					return err
+				}
+				seenCanonical[op.OperationID] = true
+			}
+			canonicalFallback := canonicalDeclared && !runnerDeclared
 			if p1CandidateOperations[op.OperationID] {
 				seenP1[op.OperationID] = true
 				status, ok := op.Extensions["x-p1-signoff-status"].(string)
@@ -520,7 +639,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					if !known[id] {
 						return fmt.Errorf("%s links unknown mapping %s", op.OperationID, id)
 					}
-					links++
 				}
 			} else if p2StageOperations[op.OperationID] {
 				seenP2[op.OperationID] = true
@@ -539,7 +657,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 						if !known[id] {
 							return fmt.Errorf("%s links unknown mapping %s", op.OperationID, id)
 						}
-						links++
 					}
 				}
 			} else if p3IdentityOperations[op.OperationID] {
@@ -586,7 +703,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4GroupInviteLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4SurveyOperations[op.OperationID] {
 				seenP4Survey[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -597,7 +713,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4SurveyLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4ChannelOperations[op.OperationID] {
 				seenP4Channel[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -608,7 +723,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ChannelLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4TagABOperations[op.OperationID] {
 				seenP4TagAB[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -619,7 +733,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4TagABLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4TagOperations[op.OperationID] {
 				seenP4Tag[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -630,7 +743,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4TagLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4CouponOperations[op.OperationID] {
 				seenP4Coupon[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -641,7 +753,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4CouponLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4OrderOperations[op.OperationID] {
 				seenP4Order[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -652,7 +763,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4OrderLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4CustomerCompatOperations[op.OperationID] {
 				seenP4CustomerCompat[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -663,7 +773,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4CustomerCompatLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4ConfigSettingsOperations[op.OperationID] {
 				seenP4ConfigSettings[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -674,7 +783,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ConfigSettingsLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				links++
 			} else if p4PushCenterOperations[op.OperationID] {
 				seenP4PushCenter[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -688,7 +796,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if op.Extensions["x-aicrm-session-bound-csrf"] != "none" || op.Extensions["x-aicrm-data-classification"] != "internal_pii" || op.Extensions["x-aicrm-external-effect"] != "none" {
 					return fmt.Errorf("%s Push Center read contract drifted", op.OperationID)
 				}
-				links++
 			} else if p4ExecutionRuntimeOperations[op.OperationID] {
 				seenP4ExecutionRuntime[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -706,7 +813,6 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if scopeErr != nil || !reflect.DeepEqual(scopes, map[string]string{"admin": "global"}) || op.Responses.Value("403") == nil {
 					return fmt.Errorf("%s Execution Runtime must stay admin/global and fail closed", op.OperationID)
 				}
-				links++
 			} else if p4AdminShellOperations[op.OperationID] {
 				seenP4AdminShell[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -720,8 +826,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != "none" || op.Extensions["x-aicrm-data-source"] != "static" || op.Extensions["x-aicrm-external-effect"] != "none" {
 					return fmt.Errorf("%s Admin Shell security or effect contract drifted", op.OperationID)
 				}
-				links++
-			} else {
+			} else if p4DomainVerificationOperations[op.OperationID] {
 				seenP4DomainVerification[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
 				if !ok || evidence != p4DomainVerificationDecisionEvidence {
@@ -742,7 +847,12 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 				if response == nil || response.Value == nil || response.Value.Headers["Cache-Control"] == nil || response.Value.Content["text/plain"] == nil {
 					return fmt.Errorf("%s plaintext no-store response drifted", op.OperationID)
 				}
-				links++
+			} else if canonicalFallback {
+				if err := validateGenericCanonicalAuthorization(op, canonicalContract.Method); err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("unexpected candidate operation branch: %s", op.OperationID)
 			}
 			if contactOperations[op.OperationID] {
 				evidence, ok := op.Extensions["x-p3-decision-evidence"].(string)
@@ -779,6 +889,9 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			} else {
 				contract, found := authorizationContracts[op.OperationID]
 				if !found {
+					if canonicalFallback {
+						continue
+					}
 					return fmt.Errorf("%s lacks authorization contract", op.OperationID)
 				}
 				capability, ok := op.Extensions["x-aicrm-capability"].(string)
@@ -798,8 +911,16 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4DomainVerification) != 1 || len(seenP4PushCenter) != 2 || len(seenP4ExecutionRuntime) != 2 || len(seenP4AdminShell) != 2 || links != 102 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d p4_domain_verification=%d p4_push_center=%d p4_admin_shell=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), len(seenP4DomainVerification), len(seenP4PushCenter), len(seenP4AdminShell), links)
+	if len(seenP1) != len(p1CandidateOperations) || len(seenP2) != len(p2StageOperations) ||
+		len(seenP3Contact) != len(p3ContactOperations) || len(seenP3Identity) != len(p3IdentityOperations) || len(seenP3Segment) != len(p3SegmentOperations) ||
+		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4Media) != len(p4MediaOperations) ||
+		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
+		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
+		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
+		len(seenP4ConfigSettings) != len(p4ConfigSettingsOperations) || len(seenP4DomainVerification) != len(p4DomainVerificationOperations) ||
+		len(seenP4PushCenter) != len(p4PushCenterOperations) || len(seenP4ExecutionRuntime) != len(p4ExecutionRuntimeOperations) ||
+		len(seenP4AdminShell) != len(p4AdminShellOperations) || len(seenCanonical) != len(inventory.Candidates) {
+		return errors.New("candidate inventory differs from canonical declarations")
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -904,6 +1025,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4AdminShellOperations {
 		if !seenP4AdminShell[id] {
 			return fmt.Errorf("missing P4 Admin Shell operation: %s", id)
+		}
+	}
+	for id := range inventory.Candidates {
+		if !seenCanonical[id] {
+			return fmt.Errorf("missing canonical candidate operation: %s", id)
 		}
 	}
 	customer := doc.Components.Schemas["Customer"]

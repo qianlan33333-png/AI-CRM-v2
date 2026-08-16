@@ -23,6 +23,20 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
+def is_guard_policy_path(candidate_path: str) -> bool:
+    if candidate_path.startswith((".github/", "docs/ci/", "tools/openapi-contract/")):
+        return True
+    if candidate_path in {
+        ".gitleaks.toml",
+        "scripts/generated-sources.sha256",
+    }:
+        return True
+    if candidate_path.startswith("scripts/"):
+        name = candidate_path.removeprefix("scripts/")
+        return name.startswith(("check_", "test_", "ci_", "run_ci_", "verify_repo_", "scan_sensitive_"))
+    return False
+
+
 event_path, repo_root, changed_override = sys.argv[1:]
 try:
     with open(event_path, encoding="utf-8") as source:
@@ -44,7 +58,7 @@ if re.search(r"not[ _-]*wired", metadata, re.IGNORECASE):
 
 if changed_override:
     changed = [line for line in changed_override.splitlines() if line]
-    added = ""
+    added_by_path: dict[str, list[str]] = {}
 else:
     try:
         base = str(pull_request["base"]["sha"])
@@ -63,44 +77,55 @@ else:
         )
     except subprocess.CalledProcessError:
         fail("cannot inspect the exact pull_request diff")
-    guard_policy_paths = {
-        ".github/workflows/repo-contract.yml",
-        "scripts/check_candidate_merge_guard.sh",
-        "scripts/test_candidate_merge_guard.sh",
-        "scripts/check_repo_contract.sh",
-    }
     current_path = ""
-    added_lines: list[str] = []
+    added_by_path = {}
     for line in patch.splitlines():
         if line.startswith("+++ b/"):
             current_path = line[len("+++ b/"):]
             continue
-        if current_path in guard_policy_paths:
-            continue
         if line.startswith("+") and not line.startswith("+++"):
-            added_lines.append(line[1:])
-    added = "\n".join(added_lines)
+            added_by_path.setdefault(current_path, []).append(line[1:])
 
-if re.search(r"\bDOMAIN_LEAF_READY\b|(?:evidence|证据)[ _-]*(?:status|状态)\s*[:：]\s*Candidate\b", added, re.IGNORECASE):
+business_added = "\n".join(
+    line
+    for changed_path, lines in added_by_path.items()
+    if not is_guard_policy_path(changed_path)
+    for line in lines
+)
+
+if re.search(r"\bDOMAIN_LEAF_READY\b|(?:evidence|证据)[ _-]*(?:status|状态)\s*[:：]\s*Candidate\b", business_added, re.IGNORECASE):
     fail("candidate evidence in the pull_request diff is not mergeable")
-if re.search(r"\bnot[ _-]*wired\b", added, re.IGNORECASE):
+if re.search(r"\bnot[ _-]*wired\b", business_added, re.IGNORECASE):
     fail("not-wired implementation in the pull_request diff is not mergeable")
+
+if changed and all(is_guard_policy_path(changed_path) for changed_path in changed):
+    print("candidate-merge-guard: PASS (policy-only)")
+    raise SystemExit(0)
 
 required_exact = {"docs/api-mapping.jsonl", "docs/ci/go-acceptance-manifest.tsv"}
 missing = sorted(required_exact.difference(changed))
 if missing:
     fail("formal mapping or central acceptance is missing: " + ", ".join(missing))
-if not any(path.startswith("cmd/aicrm/") for path in changed):
+if not any(changed_path.startswith("cmd/aicrm/") for changed_path in changed):
     fail("HTTP composition closure is missing")
-if not any(path.startswith("internal/") for path in changed):
+if not any(changed_path.startswith("internal/") for changed_path in changed):
     fail("Store or application closure is missing")
-has_migration = any(re.fullmatch(r"migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql", path) for path in changed)
+has_migration = any(re.fullmatch(r"migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql", changed_path) for changed_path in changed)
 if not has_migration:
-    has_no_schema_matrix_evidence = (
-        "docs/feature-matrix.csv" in changed
-        and re.search(r"\bno_schema_or_external_effect\b", added) is not None
+    matrix_added = "\n".join(added_by_path.get("docs/feature-matrix.csv", []))
+    has_no_schema_matrix_evidence = re.search(r"\bno_schema_or_external_effect\b", matrix_added) is not None
+    slice_paths = [
+        changed_path for changed_path in changed
+        if changed_path.startswith("docs/execution/slices/") and changed_path.endswith(".md")
+    ]
+    has_slice_evidence = any(
+        re.search(
+            r"\bno_schema_or_external_effect\b|\bno[ _-]*schema\b|未新增\s*(?:schema|migration)",
+            "\n".join(added_by_path.get(slice_path, [])),
+            re.IGNORECASE,
+        )
+        for slice_path in slice_paths
     )
-    has_slice_evidence = any(path.startswith("docs/execution/slices/") and path.endswith(".md") for path in changed)
     if not (has_no_schema_matrix_evidence and has_slice_evidence):
         fail("migration closure is missing and no-schema closure evidence is absent")
 

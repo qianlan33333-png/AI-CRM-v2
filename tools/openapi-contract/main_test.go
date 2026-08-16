@@ -20,6 +20,56 @@ func TestFrozenOpenAPI(t *testing.T) {
 	}
 }
 
+func TestCanonicalCandidateDeclarationDoesNotRequireRunnerRegistryChanges(t *testing.T) {
+	build := func(t *testing.T) (*openapi3.T, mappingInventory) {
+		t.Helper()
+		doc, inventory := fresh(t)
+		template := doc.Paths.Value("/api/admin/execution-runtime").Get
+		if template == nil {
+			t.Fatal("canonical fixture template is missing")
+		}
+		operation := *template
+		operation.OperationID = "getCanonicalFixture"
+		operation.Extensions = make(map[string]any, len(template.Extensions))
+		for key, value := range template.Extensions {
+			operation.Extensions[key] = value
+		}
+		operation.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-9998"}
+		doc.Paths.Set("/api/admin/canonical-fixture", &openapi3.PathItem{Get: &operation})
+		inventory.Known["LEGACY-API-9998"] = true
+		inventory.Candidates[operation.OperationID] = canonicalCandidateOperation{
+			Path:       "/api/admin/canonical-fixture",
+			Method:     "GET",
+			MappingIDs: []string{"LEGACY-API-9998"},
+		}
+		return doc, inventory
+	}
+
+	t.Run("canonical declaration accepted", func(t *testing.T) {
+		doc, inventory := build(t)
+		if err := validate(doc, inventory); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("missing canonical declaration rejected", func(t *testing.T) {
+		doc, inventory := build(t)
+		delete(inventory.Candidates, "getCanonicalFixture")
+		reject(t, doc, inventory)
+	})
+	t.Run("canonical path mismatch rejected", func(t *testing.T) {
+		doc, inventory := build(t)
+		contract := inventory.Candidates["getCanonicalFixture"]
+		contract.Path = "/api/admin/forged"
+		inventory.Candidates["getCanonicalFixture"] = contract
+		reject(t, doc, inventory)
+	})
+	t.Run("canonical link mismatch rejected", func(t *testing.T) {
+		doc, inventory := build(t)
+		doc.Paths.Value("/api/admin/canonical-fixture").Get.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0314"}
+		reject(t, doc, inventory)
+	})
+}
+
 func TestRejectsUnsafeContractMutations(t *testing.T) {
 	tests := map[string]func(*testing.T){
 		"signoff regression": func(t *testing.T) {
@@ -762,7 +812,7 @@ func TestRejectsP3IdentityStatusFieldMatrixMutations(t *testing.T) {
 	}
 }
 
-func fresh(t *testing.T) (*openapi3.T, map[string]bool) {
+func fresh(t *testing.T) (*openapi3.T, mappingInventory) {
 	t.Helper()
 	doc, ids, err := load(specPath, mappingPath)
 	if err != nil {
@@ -770,7 +820,7 @@ func fresh(t *testing.T) (*openapi3.T, map[string]bool) {
 	}
 	return doc, ids
 }
-func reject(t *testing.T, doc *openapi3.T, ids map[string]bool) {
+func reject(t *testing.T, doc *openapi3.T, ids mappingInventory) {
 	t.Helper()
 	if err := validate(doc, ids); err == nil {
 		t.Fatal("mutation was accepted")
