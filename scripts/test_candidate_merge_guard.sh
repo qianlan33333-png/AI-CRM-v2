@@ -78,7 +78,7 @@ run_diff_case() {
 }
 
 run_no_schema_diff_case() {
-  local name="$1" expected="$2" include_slice="$3"
+  local name="$1" expected="$2" include_slice="$3" matrix_evidence="${4:-yes}" slice_evidence="${5:-yes}" forged_business_evidence="${6:-no}"
   local fixture_repo="$test_root/$name-repo" event_path base head
   mkdir -p "$fixture_repo"
   git init -q "$fixture_repo"
@@ -95,11 +95,22 @@ run_no_schema_diff_case() {
   base="$(git -C "$fixture_repo" rev-parse HEAD)"
   printf '%s\n' 'route mapping' >> "$fixture_repo/docs/api-mapping.jsonl"
   printf '%s\n' 'acceptance' >> "$fixture_repo/docs/ci/go-acceptance-manifest.tsv"
-  printf '%s\n' 'no_schema_or_external_effect' >> "$fixture_repo/docs/feature-matrix.csv"
+  if [[ "$matrix_evidence" = yes ]]; then
+    printf '%s\n' 'no_schema_or_external_effect' >> "$fixture_repo/docs/feature-matrix.csv"
+  else
+    printf '%s\n' 'ordinary business row without schema evidence' >> "$fixture_repo/docs/feature-matrix.csv"
+  fi
   printf '%s\n' 'package main' >> "$fixture_repo/cmd/aicrm/legacy_admin_shell.go"
   printf '%s\n' 'package adminshell' >> "$fixture_repo/internal/adminshell/service.go"
+  if [[ "$forged_business_evidence" = yes ]]; then
+    printf '%s\n' '// no_schema_or_external_effect' >> "$fixture_repo/internal/adminshell/service.go"
+  fi
   if [[ "$include_slice" = yes ]]; then
-    printf '%s\n' 'no schema closure' > "$fixture_repo/docs/execution/slices/P4-NO-SCHEMA.md"
+    if [[ "$slice_evidence" = yes ]]; then
+      printf '%s\n' 'no_schema_or_external_effect' > "$fixture_repo/docs/execution/slices/P4-NO-SCHEMA.md"
+    else
+      printf '%s\n' 'scope evidence without schema declaration' > "$fixture_repo/docs/execution/slices/P4-NO-SCHEMA.md"
+    fi
   fi
   git -C "$fixture_repo" add .
   git -C "$fixture_repo" commit -qm 'formal no-schema integration'
@@ -126,7 +137,13 @@ run_case missing-store fail 'feat: Push Center' '正式业务集成。' $'docs/a
 run_case missing-migration fail 'feat: Push Center' '正式业务集成。' $'docs/api-mapping.jsonl\ndocs/ci/go-acceptance-manifest.tsv\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go'
 run_no_schema_diff_case formal-no-schema pass yes
 run_no_schema_diff_case no-schema-without-slice fail no
+run_no_schema_diff_case no-schema-forged-business-text fail yes no yes yes
+run_no_schema_diff_case no-schema-without-slice-declaration fail yes yes no
+run_case policy-only pass 'infra: CI policy' '仅修改 CI 策略。' $'scripts/check_repo_contract.sh\ndocs/ci/repo-contract-fingerprints.tsv'
 run_diff_case policy-self-description pass 'scripts/check_repo_contract.sh' 'not-wired implementation in the pull_request diff is not mergeable'
+run_diff_case policy-test-self-description pass 'scripts/test_repo_fingerprints.sh' 'not-wired implementation in the pull_request diff is not mergeable'
+run_diff_case policy-receipt-self-description pass 'docs/ci/repo-contract-fingerprints.tsv' 'not-wired implementation in the pull_request diff is not mergeable'
+run_diff_case openapi-checker-self-description pass 'tools/openapi-contract/main_test.go' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case implementation-not-wired fail 'internal/pushcenter/candidate.go' '// not-wired candidate implementation'
 
 echo 'candidate-merge-guard-tests: PASS'

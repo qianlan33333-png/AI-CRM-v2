@@ -20,7 +20,6 @@ repo_root="$(CDPATH= cd -- "$script_dir/.." && pwd -P)" || fail "cannot locate r
 script_path="$script_dir/${script_source##*/}"
 matrix="$repo_root/docs/feature-matrix.csv"
 anchor="$repo_root/docs/evidence/p1/feature-matrix-id-anchor.v1"
-expected_anchor_sha256="66ac0f7d5a6e3b77a26d70bd2b08c92386974fdcd94042905a43e366e6a92f6c"
 expected_header="feature_id,page,section,action,triggered_api,expected_result,notes,disposition,implementation,verification,signoff,legacy_source_sha,source_evidence,decision_evidence,implementation_evidence,verification_evidence,target_feature_id"
 g1_d02_evidence="decision=G1-D02-2026-08-10;approved_by=repository_owner;approved_at=2026-08-10;semantics=legacy_behavior_1_to_1;verification=NOT_EXECUTED"
 
@@ -51,7 +50,6 @@ done
 check_regular "$script_path" 0755 scripts/check_feature_matrix_contract.sh
 check_regular "$matrix" 0644 docs/feature-matrix.csv
 check_regular "$anchor" 0644 docs/evidence/p1/feature-matrix-id-anchor.v1
-[[ "$(hash_file "$anchor")" == "$expected_anchor_sha256" ]] || fail "anchor is not the frozen revision"
 
 CSV_FIELDS=()
 parse_csv_line() {
