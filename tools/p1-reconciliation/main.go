@@ -78,6 +78,21 @@ type apiDecisionEvidence struct {
 	Decision   string `json:"decision"`
 }
 
+type integratedRoute struct {
+	Operation, Method, Path, TargetMapping, Reason string
+}
+
+var integratedRoutes = map[string]integratedRoute{
+	"LEGACY-API-0421": {
+		Operation: "getLegacyPushCenterSections", Method: "GET", Path: "/api/admin/push-center/sections", TargetMapping: "P4-PUSH-CENTER-0421",
+		Reason: "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
+	},
+	"LEGACY-API-0422": {
+		Operation: "getLegacyPushCenterStats", Method: "GET", Path: "/api/admin/push-center/stats", TargetMapping: "P4-PUSH-CENTER-0422",
+		Reason: "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
+	},
+}
+
 func main() {
 	routes := flag.String("routes", "../docs/evidence/p1/legacy-routes-6cb989c.json", "P1-S01 route manifest")
 	api := flag.String("api", "../docs/api-mapping.jsonl", "API candidate mapping")
@@ -275,7 +290,11 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 		switch tier {
 		case "A":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"}
-			if disposition != "MIGRATE" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 approved tier A route for 1:1 legacy semantic migration; target v2 operation remains domain-contract work." || len(evidence) != 1 || evidence[0] != expectedEvidence {
+			if integrated, ok := integratedRoutes[id]; ok {
+				if disposition != "MIGRATE" || signoff != "APPROVED" || operation != integrated.Operation || method != integrated.Method || candidatePath != integrated.Path || targetMapping != integrated.TargetMapping || reason != integrated.Reason || len(evidence) != 1 || evidence[0] != expectedEvidence {
+					return counts, decisions, fmt.Errorf("%s has forged integrated tier A disposition", id)
+				}
+			} else if disposition != "MIGRATE" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 approved tier A route for 1:1 legacy semantic migration; target v2 operation remains domain-contract work." || len(evidence) != 1 || evidence[0] != expectedEvidence {
 				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier A disposition", id)
 			}
 			decisions[0]++

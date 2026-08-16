@@ -144,6 +144,7 @@ type Handler struct {
 	messageArchiveUnionID legacyMessageArchiveUnionResolver
 	adminOps              legacyAdminOps
 	operationCycles       legacyOperationCycleApplication
+	pushCenter            legacyPushCenterApplication
 	operationAuth         operationServiceAuthenticator
 }
 

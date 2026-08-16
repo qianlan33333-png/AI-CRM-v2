@@ -19,7 +19,7 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
-var p4AutomationAgentsExpectedWaterline = flag.Int("expected-waterline", 43, "expected current migration waterline for the Automation Agents storage catalog")
+var p4AutomationAgentsExpectedWaterline = flag.Int("expected-waterline", 44, "expected current migration waterline for the Automation Agents storage catalog")
 
 func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	pool, ctx := openPool(t)

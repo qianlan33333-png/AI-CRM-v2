@@ -67,6 +67,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			delete(doc.Paths.Value("/{filename}").Get.Responses.Value("200").Value.Headers, "Cache-Control")
 			reject(t, doc, ids)
 		},
+		"push center evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/stats").Get.Extensions["x-p4-decision-evidence"] = "P4-PUSH-CENTER-FORGED"
+			reject(t, doc, ids)
+		},
+		"push center scope widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/sections").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global"}
+			reject(t, doc, ids)
+		},
+		"push center external effect injected": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/sections").Get.Extensions["x-aicrm-external-effect"] = "provider"
+			reject(t, doc, ids)
+		},
 		"browser JWT substitution": func(t *testing.T) {
 			doc, ids := fresh(t)
 			scheme := doc.Components.SecuritySchemes["AdminSession"].Value

@@ -2272,6 +2272,70 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/push-center/sections:
+    get:
+      tags: [p4-push-center-compat]
+      operationId: getLegacyPushCenterSections
+      summary: Read the frozen global Push Center section aggregation without touching a worker or provider
+      x-legacy-mapping-ids: [LEGACY-API-0421]
+      x-p4-decision-evidence: P4-PUSH-CENTER-0421-0422-2026-08-16
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/PushCenterSectionFilter"
+        - $ref: "#/components/parameters/PushCenterEffectTypeFilter"
+        - $ref: "#/components/parameters/PushCenterStatusFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessTypeFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessIDFilter"
+        - $ref: "#/components/parameters/PushCenterTargetTypeFilter"
+        - $ref: "#/components/parameters/PushCenterTargetIDFilter"
+        - $ref: "#/components/parameters/PushCenterExternalUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterOwnerUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterTraceIDFilter"
+        - $ref: "#/components/parameters/PushCenterIdempotencyKeyFilter"
+        - $ref: "#/components/parameters/PushCenterSourceModuleFilter"
+        - $ref: "#/components/parameters/PushCenterSourceRouteFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedFromFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedToFilter"
+      responses:
+        "200": { description: Normal aggregation or explicit production-read degradation, content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyPushCenterSectionsResponse" }, { $ref: "#/components/schemas/LegacyPushCenterSectionsDegradedResponse" }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/push-center/stats:
+    get:
+      tags: [p4-push-center-compat]
+      operationId: getLegacyPushCenterStats
+      summary: Read the frozen global Push Center statistics without accepting, sending, or retrying work
+      x-legacy-mapping-ids: [LEGACY-API-0422]
+      x-p4-decision-evidence: P4-PUSH-CENTER-0421-0422-2026-08-16
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/PushCenterSectionFilter"
+        - $ref: "#/components/parameters/PushCenterEffectTypeFilter"
+        - $ref: "#/components/parameters/PushCenterStatusFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessTypeFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessIDFilter"
+        - $ref: "#/components/parameters/PushCenterTargetTypeFilter"
+        - $ref: "#/components/parameters/PushCenterTargetIDFilter"
+        - $ref: "#/components/parameters/PushCenterExternalUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterOwnerUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterTraceIDFilter"
+        - $ref: "#/components/parameters/PushCenterIdempotencyKeyFilter"
+        - $ref: "#/components/parameters/PushCenterSourceModuleFilter"
+        - $ref: "#/components/parameters/PushCenterSourceRouteFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedFromFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedToFilter"
+      responses:
+        "200": { description: Normal aggregation or explicit production-read degradation, content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyPushCenterStatsResponse" }, { $ref: "#/components/schemas/LegacyPushCenterStatsDegradedResponse" }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 components:
   securitySchemes:
     AdminSession:
@@ -2396,6 +2460,21 @@ components:
       in: query
       required: false
       schema: { type: string, format: date-time }
+    PushCenterSectionFilter: { name: section, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterEffectTypeFilter: { name: effect_type, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterStatusFilter: { name: status, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterBusinessTypeFilter: { name: business_type, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterBusinessIDFilter: { name: business_id, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterTargetTypeFilter: { name: target_type, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterTargetIDFilter: { name: target_id, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterExternalUserIDFilter: { name: external_userid, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterOwnerUserIDFilter: { name: owner_userid, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterTraceIDFilter: { name: trace_id, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterIdempotencyKeyFilter: { name: idempotency_key, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterSourceModuleFilter: { name: source_module, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterSourceRouteFilter: { name: source_route, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterCreatedFromFilter: { name: created_from, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterCreatedToFilter: { name: created_to, in: query, required: false, schema: { type: string, default: "" } }
   responses:
     BadRequest:
       description: Request validation failed.
@@ -3880,6 +3959,211 @@ components:
         setting__auth.jwt_secret: { type: string, maxLength: 0, default: "" }
         setting__extension.api_key_pepper: { type: string, maxLength: 0, default: "" }
         setting__gateway.webhook_master_key: { type: string, maxLength: 0, default: "" }
+    LegacyPushCenterSection:
+      type: object
+      additionalProperties: false
+      required: [key, label, effect_types, capability_key, count]
+      properties:
+        key: { type: string, enum: [questionnaire, order, ai_assist, private_broadcast, group_ops, group_broadcast, customer_webhook, tags, welcome, payment, integrations, test_receiver, other] }
+        label: { type: string }
+        effect_types: { type: array, items: { type: string } }
+        capability_key: { type: string }
+        count: { type: integer, format: int64, minimum: 0 }
+    LegacyPushCenterStatusDefinition:
+      type: object
+      additionalProperties: false
+      required: [key, label, definition]
+      properties:
+        key: { type: string, enum: [pending, running, succeeded, sent, simulated, unknown_after_dispatch, failed, sent_with_shadow_warning, shadow_failed_not_business_failed] }
+        label: { type: string }
+        definition: { type: string }
+    LegacyPushCenterFilters:
+      type: object
+      additionalProperties: false
+      description: Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+      properties:
+        section: { type: string }
+        effect_type: { type: string }
+        status: { type: string }
+        business_type: { type: string }
+        business_id: { type: string }
+        target_type: { type: string }
+        target_id: { type: string }
+        external_userid: { type: string }
+        owner_userid: { type: string }
+        trace_id: { type: string }
+        idempotency_key: { type: string }
+        source_module: { type: string }
+        source_route: { type: string }
+        created_from: { type: string }
+        created_to: { type: string }
+    LegacyPushCenterCounts:
+      type: object
+      additionalProperties: false
+      required: [total, by_effective_status, by_status, by_section, pending, running, succeeded, sent, failed, shadow_warning]
+      properties:
+        total: { type: integer, format: int64, minimum: 0 }
+        by_effective_status: { type: object, additionalProperties: { type: integer, format: int64, minimum: 0 } }
+        by_status: { type: object, additionalProperties: { type: integer, format: int64, minimum: 0 } }
+        by_section: { type: object, additionalProperties: { type: integer, format: int64, minimum: 0 } }
+        pending: { type: integer, format: int64, minimum: 0 }
+        running: { type: integer, format: int64, minimum: 0 }
+        succeeded: { type: integer, format: int64, minimum: 0 }
+        sent: { type: integer, format: int64, minimum: 0 }
+        failed: { type: integer, format: int64, minimum: 0 }
+        shadow_warning: { type: integer, format: int64, minimum: 0 }
+    LegacyPushCenterDegradedCounts:
+      type: object
+      additionalProperties: false
+      required: [total, by_effective_status, by_status, by_section, pending, running, sent, failed]
+      properties:
+        total: { type: integer, format: int64, enum: [0] }
+        by_effective_status: { type: object, additionalProperties: false }
+        by_status: { type: object, additionalProperties: false }
+        by_section: { type: object, additionalProperties: false }
+        pending: { type: integer, format: int64, enum: [0] }
+        running: { type: integer, format: int64, enum: [0] }
+        sent: { type: integer, format: int64, enum: [0] }
+        failed: { type: integer, format: int64, enum: [0] }
+    LegacyPushCenterInternalEventSummary:
+      type: object
+      additionalProperties: false
+      required: [raw_open, raw_due, eligible, failed_retryable, failed_terminal, blocked]
+      properties:
+        raw_open: {}
+        raw_due: {}
+        eligible: {}
+        failed_retryable: {}
+        failed_terminal: {}
+        blocked: {}
+    LegacyPushCenterLaneSummary:
+      type: object
+      additionalProperties: false
+      required: [lane, max_in_flight, enabled, rollout_mode, blocked_until, policy_version, raw_open, held, eligible, policy_gated, scheduled, retry_wait, rate_limited, in_flight, unknown, dlq, oldest_eligible_age_seconds, internal_event, throughput_last_minute, accepted_last_minute, p95_queue_wait_ms, p95_provider_call_ms, estimated_drain_seconds, rate_limit_count_last_hour, task_acceptance_rate_1m]
+      properties:
+        lane: { type: string, enum: [ai_generation, outbound_webhook, wecom_ai_assistant_bulk, wecom_bulk, wecom_interactive, wecom_media] }
+        max_in_flight: {}
+        enabled: {}
+        rollout_mode: {}
+        blocked_until: {}
+        policy_version: {}
+        raw_open: {}
+        held: {}
+        eligible: {}
+        policy_gated: {}
+        scheduled: {}
+        retry_wait: {}
+        rate_limited: {}
+        in_flight: {}
+        unknown: {}
+        dlq: {}
+        oldest_eligible_age_seconds: {}
+        internal_event: { $ref: "#/components/schemas/LegacyPushCenterInternalEventSummary" }
+        throughput_last_minute: {}
+        accepted_last_minute: {}
+        p95_queue_wait_ms: {}
+        p95_provider_call_ms: {}
+        estimated_drain_seconds: {}
+        rate_limit_count_last_hour: {}
+        task_acceptance_rate_1m: {}
+    LegacyPushCenterRuntimeQueue:
+      type: object
+      additionalProperties: false
+      required: [policy_version, active_generation, claim_enabled, rollout_mode, lanes, raw_open, held, eligible, policy_gated, scheduled, retry_wait, rate_limited, in_flight, unknown, dlq, internal_event]
+      properties:
+        policy_version: {}
+        active_generation: {}
+        claim_enabled: {}
+        rollout_mode: {}
+        lanes: { type: array, items: { $ref: "#/components/schemas/LegacyPushCenterLaneSummary" } }
+        raw_open: {}
+        held: {}
+        eligible: {}
+        policy_gated: {}
+        scheduled: {}
+        retry_wait: {}
+        rate_limited: {}
+        in_flight: {}
+        unknown: {}
+        dlq: {}
+        internal_event: { $ref: "#/components/schemas/LegacyPushCenterInternalEventSummary" }
+    LegacyPushCenterSectionsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, sections, status_definitions, filters, route_owner]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        sections: { type: array, minItems: 13, maxItems: 13, items: { $ref: "#/components/schemas/LegacyPushCenterSection" } }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        route_owner: { type: string, enum: [ai_crm_next] }
+    LegacyPushCenterStatsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, counts, sections, status_definitions, filters, route_owner, real_external_call_executed, runtime_queue, capability_owner]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        counts: { $ref: "#/components/schemas/LegacyPushCenterCounts" }
+        sections: { type: array, minItems: 13, maxItems: 13, items: { $ref: "#/components/schemas/LegacyPushCenterSection" } }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        runtime_queue: { oneOf: [{ type: object, additionalProperties: false, maxProperties: 0 }, { $ref: "#/components/schemas/LegacyPushCenterRuntimeQueue" }] }
+        capability_owner: { type: string, enum: [ai_crm_next/platform_foundation/push_center] }
+    LegacyPushCenterSectionsDegradedResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, degraded, error, error_code, source_status, read_model_status, capability_owner, page_error, diagnostics, route_owner, fallback_used, real_external_call_executed, status_code, items, total, counts, status_definitions, filters, limit, offset, sections]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        degraded: { type: boolean, enum: [true] }
+        error: { type: string, enum: [""] }
+        error_code: { type: string, enum: [production_read_unavailable] }
+        source_status: { type: string, enum: [production_unavailable] }
+        read_model_status: { type: string, enum: [unavailable] }
+        capability_owner: { type: string, enum: [ai_crm_next/platform_foundation/push_center] }
+        page_error: { type: string, enum: [推送中心读模型暂不可用，请稍后重试。] }
+        diagnostics: { type: object, additionalProperties: false, required: [production_data_ready, fixture_mode, allow_fixture_repo_in_prod, error_class], properties: { production_data_ready: { type: boolean, enum: [false] }, fixture_mode: { type: boolean, enum: [false] }, allow_fixture_repo_in_prod: { type: boolean, enum: [false] }, error_class: { type: string } } }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [200] }
+        items: { type: array, maxItems: 0, items: {} }
+        total: { type: integer, enum: [0] }
+        counts: { $ref: "#/components/schemas/LegacyPushCenterDegradedCounts" }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        limit: { type: integer, enum: [50] }
+        offset: { type: integer, enum: [0] }
+        sections: { type: array, maxItems: 0, items: {} }
+    LegacyPushCenterStatsDegradedResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, degraded, error, error_code, source_status, read_model_status, capability_owner, page_error, diagnostics, route_owner, fallback_used, real_external_call_executed, status_code, items, total, counts, status_definitions, filters, limit, offset, sections, runtime_queue]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        degraded: { type: boolean, enum: [true] }
+        error: { type: string, enum: [""] }
+        error_code: { type: string, enum: [production_read_unavailable] }
+        source_status: { type: string, enum: [production_unavailable] }
+        read_model_status: { type: string, enum: [unavailable] }
+        capability_owner: { type: string, enum: [ai_crm_next/platform_foundation/push_center] }
+        page_error: { type: string, enum: [推送中心读模型暂不可用，请稍后重试。] }
+        diagnostics: { type: object, additionalProperties: false, required: [production_data_ready, fixture_mode, allow_fixture_repo_in_prod, error_class], properties: { production_data_ready: { type: boolean, enum: [false] }, fixture_mode: { type: boolean, enum: [false] }, allow_fixture_repo_in_prod: { type: boolean, enum: [false] }, error_class: { type: string } } }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [200] }
+        items: { type: array, maxItems: 0, items: {} }
+        total: { type: integer, enum: [0] }
+        counts: { $ref: "#/components/schemas/LegacyPushCenterDegradedCounts" }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        limit: { type: integer, enum: [50] }
+        offset: { type: integer, enum: [0] }
+        sections: { type: array, maxItems: 0, items: {} }
+        runtime_queue: { oneOf: [{ type: object, additionalProperties: false, maxProperties: 0 }, { $ref: "#/components/schemas/LegacyPushCenterRuntimeQueue" }] }
     AutomationTriggerRun:
       type: object
       additionalProperties: false
