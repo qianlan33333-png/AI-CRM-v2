@@ -95,6 +95,41 @@ paths:
             text/plain:
               schema: { type: string }
         "404": { $ref: "#/components/responses/NotFound" }
+  /admin:
+    get:
+      tags: [p4-admin-shell-compat]
+      operationId: getLegacyAdminShell
+      summary: Render the frozen server-side Admin Shell shortcut page
+      x-legacy-mapping-ids: [LEGACY-API-0001]
+      x-p4-decision-evidence: P4-ADMIN-SHELL-AB-2026-08-16
+      x-aicrm-capability: admin.shell.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Frozen server-rendered Admin Shell shortcut page, content: { text/html: { schema: { type: string } } } }
+        "302": { description: "Missing, expired, malformed, or ambiguous browser session redirects to the local login path with next=/admin", headers: { Location: { required: true, schema: { type: string } } } }
+        "403": { description: "Sales, unknown identity, bearer principal, or non-global grant is denied", content: { application/json: { schema: { $ref: "#/components/schemas/AdminShellAccessDenied" } } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/logout:
+    get:
+      tags: [p4-admin-shell-compat]
+      operationId: getLegacyAdminLogoutCompat
+      summary: Redirect an authenticated Admin Shell browser to the existing logout owner
+      x-legacy-mapping-ids: [LEGACY-API-0053]
+      x-p4-decision-evidence: P4-ADMIN-SHELL-AB-2026-08-16
+      x-aicrm-capability: admin.shell.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: "Authenticated browser redirects exactly to /logout; a missing, expired, malformed, or ambiguous browser session redirects to the local login path with next=/admin/logout", headers: { Location: { required: true, schema: { type: string } } } }
+        "403": { description: "Sales, unknown identity, bearer principal, or non-global grant is denied", content: { application/json: { schema: { $ref: "#/components/schemas/AdminShellAccessDenied" } } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/customers:
     get:
       tags: [p4-customer-compat]
@@ -3877,6 +3912,16 @@ components:
         metadata_map: { type: object, minProperties: 12, maxProperties: 12, additionalProperties: { $ref: "#/components/schemas/LegacyAppSettingMetadata" } }
         summary_cards: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/LegacyAppSettingsSummaryCard" } }
         audit_entries: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/LegacyAppSettingsAuditEntry" } }
+    AdminShellAccessDenied:
+      type: object
+      additionalProperties: false
+      required: [ok, error, required_capability, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [admin_capability_required, principal_type_forbidden] }
+        required_capability: { type: string, enum: [admin_read] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyAppSettingsResponse:
       type: object
       additionalProperties: false

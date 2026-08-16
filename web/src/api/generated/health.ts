@@ -2856,6 +2856,39 @@ export interface LegacyAppSettingsProjection {
   audit_entries: LegacyAppSettingsAuditEntry[];
 }
 
+export type AdminShellAccessDeniedError =
+  (typeof AdminShellAccessDeniedError)[keyof typeof AdminShellAccessDeniedError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminShellAccessDeniedError = {
+  admin_capability_required: "admin_capability_required",
+  principal_type_forbidden: "principal_type_forbidden",
+} as const;
+
+export type AdminShellAccessDeniedRequiredCapability =
+  (typeof AdminShellAccessDeniedRequiredCapability)[keyof typeof AdminShellAccessDeniedRequiredCapability];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminShellAccessDeniedRequiredCapability = {
+  admin_read: "admin_read",
+} as const;
+
+export type AdminShellAccessDeniedRouteOwner =
+  (typeof AdminShellAccessDeniedRouteOwner)[keyof typeof AdminShellAccessDeniedRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminShellAccessDeniedRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface AdminShellAccessDenied {
+  ok: boolean;
+  error: AdminShellAccessDeniedError;
+  required_capability: AdminShellAccessDeniedRequiredCapability;
+  route_owner: AdminShellAccessDeniedRouteOwner;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyAppSettingsResponseSourceStatus =
   (typeof LegacyAppSettingsResponseSourceStatus)[keyof typeof LegacyAppSettingsResponseSourceStatus];
 
@@ -4658,6 +4691,121 @@ export const getDomainVerificationFile = async (
     status: res.status,
     headers: res.headers,
   } as getDomainVerificationFileResponse;
+};
+
+/**
+ * @summary Render the frozen server-side Admin Shell shortcut page
+ */
+export type getLegacyAdminShellResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyAdminShellResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyAdminShellResponse403 = {
+  data: AdminShellAccessDenied;
+  status: 403;
+};
+
+export type getLegacyAdminShellResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAdminShellResponseSuccess =
+  getLegacyAdminShellResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAdminShellResponseError = (
+  | getLegacyAdminShellResponse302
+  | getLegacyAdminShellResponse403
+  | getLegacyAdminShellResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAdminShellResponse =
+  getLegacyAdminShellResponseSuccess | getLegacyAdminShellResponseError;
+
+export const getGetLegacyAdminShellUrl = () => {
+  return `/admin`;
+};
+
+export const getLegacyAdminShell = async (
+  options?: RequestInit,
+): Promise<getLegacyAdminShellResponse> => {
+  const res = await fetch(getGetLegacyAdminShellUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAdminShellResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAdminShellResponse;
+};
+
+/**
+ * @summary Redirect an authenticated Admin Shell browser to the existing logout owner
+ */
+export type getLegacyAdminLogoutCompatResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyAdminLogoutCompatResponse403 = {
+  data: AdminShellAccessDenied;
+  status: 403;
+};
+
+export type getLegacyAdminLogoutCompatResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAdminLogoutCompatResponseError = (
+  | getLegacyAdminLogoutCompatResponse302
+  | getLegacyAdminLogoutCompatResponse403
+  | getLegacyAdminLogoutCompatResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAdminLogoutCompatResponse =
+  getLegacyAdminLogoutCompatResponseError;
+
+export const getGetLegacyAdminLogoutCompatUrl = () => {
+  return `/admin/logout`;
+};
+
+export const getLegacyAdminLogoutCompat = async (
+  options?: RequestInit,
+): Promise<getLegacyAdminLogoutCompatResponse> => {
+  const res = await fetch(getGetLegacyAdminLogoutCompatUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAdminLogoutCompatResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAdminLogoutCompatResponse;
 };
 
 /**

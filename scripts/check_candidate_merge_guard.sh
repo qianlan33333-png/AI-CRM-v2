@@ -94,8 +94,15 @@ if not any(path.startswith("cmd/aicrm/") for path in changed):
     fail("HTTP composition closure is missing")
 if not any(path.startswith("internal/") for path in changed):
     fail("Store or application closure is missing")
-if not any(re.fullmatch(r"migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql", path) for path in changed):
-    fail("migration closure is missing")
+has_migration = any(re.fullmatch(r"migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql", path) for path in changed)
+if not has_migration:
+    has_no_schema_matrix_evidence = (
+        "docs/feature-matrix.csv" in changed
+        and re.search(r"\bno_schema_or_external_effect\b", added) is not None
+    )
+    has_slice_evidence = any(path.startswith("docs/execution/slices/") and path.endswith(".md") for path in changed)
+    if not (has_no_schema_matrix_evidence and has_slice_evidence):
+        fail("migration closure is missing and no-schema closure evidence is absent")
 
 print("candidate-merge-guard: PASS")
 PY

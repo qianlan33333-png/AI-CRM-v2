@@ -1353,7 +1353,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  536963a67a9ba1f606b40f8e21d08fb5ec2638a3f0fb8150e2927d193ce4278a
+  67c3f040b9c9f28639799745b3d57dd910352045390dd10e7ec030ed5d4455ab
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1379,7 +1379,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  cb0b47b509d5db3ec2698a5afb042ce4eba54c1816821d6dac03c2fe7a55189a
+  af394b225d85e344a0dafb27eea4117de68e98bc72b39b2e32cdf62d1c6219b4
 verify_index_sha256 .github/workflows/application-go.yml \
   33347cdc331a6ea44082116be69d0ac1c91cdd9e22d6a907c03c2135f05dfdb4
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -1583,7 +1583,7 @@ verify_index_sha256 tools/migration-mapping/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C02.md \
   c7b8c7236f20279d244286f0f3facaab28ba831a64e7f662755a6b9700abac43
 verify_index_sha256 docs/api-mapping.jsonl \
-  5ef8b160748975d7b84f3959389583826620ca97b2b4fe9280ee584a19d6eedd
+  3fe8ce0b2eb8e7044fd8e36919a0338ea35c3f466544554006debe0486b3d00c
 verify_index_sha256 docs/evidence/p1/route-triage.csv \
   ccd7708b12481add3af74c0d6442e5f4333ee076e28110aa4b330e7181f00da4
 verify_index_sha256 docs/evidence/p1/g1-decisions.md \
@@ -1601,13 +1601,13 @@ verify_index_sha256 docs/execution/slices/G1-D02.md \
 verify_index_sha256 docs/spec/AI-CRM-v2-P2P3执行计划.md \
   28273beaca7c626b86d6553ac43342c58b73056438b64d209b5b8273d4a35ef4
 verify_index_sha256 tools/p1-reconciliation/main.go \
-  0967c903e137d69230c2e8f4fb73d7a7038ed76e6b3dd00c8c05d2d6edd44919
+  f9ee3bf3af9d4081114ccc0b87bcffb52cf917ba7b93661d7dc4fa1dec30b7c0
 verify_index_sha256 tools/p1-reconciliation/main_test.go \
-  250e13a8f378f79de8a310cd502b7d518fdd3cb659ef03e84c93ceada3c61626
+  d672164e07825234cf4651f7d73c42b6f5994453625a5a2f87a3e87531e26820
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  553cb926ec5b49fcceea904ec55806741a52b8891f6af2b23cbb18c757519d54
+  c9914d601dad2b259ad49100784546279365788516a61e9d4e9176a9af239e86
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
@@ -1617,9 +1617,9 @@ verify_index_sha256 internal/api/generated/server.gen.go \
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
   088ee1b2001a0bbc087d43b766a25ad0e32f76a82f061ee05e99a488632f4793
 verify_index_sha256 tools/openapi-contract/main.go \
-  c747517607e36cd9813a402bc5e18c6d4655b98036724877c4c33ef5e2ff284c
+  25bc84c5bf350b9187931f92405ffae66aae7bd842e409eca97ac0ed27a6fa6f
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  5f1073efa5301248a3b9ab00f960d864607ffe4d48576d218235251fcc59039c
+  64dcfd8c885a16fe3cf7d014f213992c5c213f4993fc8950ff01c8a7281e7d8f
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
 	277b19af1a6a58d4d083be4148edfc3f97dfbe6295eeb66b7e6e6773decc7179
 verify_index_sha256 acceptance/p1s11/doc.go \
@@ -1969,7 +1969,7 @@ verify_index_sha256 web/scripts/identity-reviews-browser-smoke.mjs \
 verify_index_sha256 docs/execution/slices/P1-S11.md \
   5866fe52a0039f310c10add3d8cfa77eaba9d748dcf518d71df04dac2354a872
 verify_index_sha256 internal/auth/port/port.go \
-  fb0bcd228cd4d9e17ed784fca6ddada56f856cd8afb588d1479892aa79a0a85b
+  9dc82f8ce0f5add8651d88aac8b16903585aba0e4ca46ad064d887d99c1d9793
 verify_index_sha256 internal/contact/port/port.go \
   181f4ea2ab9c140314dda3e110eb9616a678fe4872d8e8c956750aa4673da9e5
 verify_index_sha256 internal/identity/port/port.go \
@@ -2077,11 +2077,11 @@ verify_index_sha256 docs/execution/slices/P2-09.md \
 verify_index_sha256 docs/evidence/slices/P2-09-auth-service-tests.md \
   5edbbf1d8c4d10761a4a91bf2e2c8cf7206be786226fdb889ce481e049199f36
 verify_index_sha256 internal/auth/port/port_test.go \
-  bfba3ef08acf908737a3dd0b8f3d4624d8deb78148e55f0a53629ba17c03cc9d
+  c38cfe8da8638d77de7cc7172bea72f5f3219521515110e5f49e1558fc376d52
 verify_index_sha256 internal/auth/app/policy.go \
-  6c91bde508eeeaa7836ef14356352db07bbceebd1b023a1e46343325298f5dda
+  8f49f3f2114f17d5cb537d6b062b4c4038b710d7f81cffa2298d5a6a0a7923bd
 verify_index_sha256 internal/auth/app/policy_test.go \
-  c93d5c39850384f2b267aa3d8243f160992b9d6847e04186657ffc158bc0c488
+  0c54b9a9430fb0e10eed8d52cf2a6eba021075ed773bc0407113861c22aeab80
 verify_index_sha256 internal/auth/http/authorization.go \
   acd3c1c15a5361c1023115ea339be68636c15911832a13f711765e4b0768452f
 verify_index_sha256 acceptance/p2s10/doc.go \
@@ -2093,7 +2093,7 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  b7a93e3d70e24304aa011c4525c20638e059194591ce16724de7f5ee51c8e5b4
+  94001efc68d5117984c6b5c5987d77dd18d4cbe763e6ff7d0f27fa89544de962
 verify_index_sha256 cmd/aicrm/api_test.go \
   c8e0ed59f3758867a869f08a7b4cf36f766cf24831da23a1ba3b137985244ab5
 verify_index_sha256 cmd/aicrm/domain_verification_api_test.go \
@@ -3423,11 +3423,11 @@ for anchor in \
   'formal mapping or central acceptance is missing' \
   'HTTP composition closure is missing' \
   'Store or application closure is missing' \
-  'migration closure is missing'; do
+  'migration closure is missing and no-schema closure evidence is absent'; do
   grep -Fq -- "$anchor" <<<"$candidate_merge_guard" ||
     fail "Candidate Merge Guard lost fail-closed boundary: $anchor"
 done
-for anchor in 'candidate-title' 'prohibited-merge' 'candidate-evidence' 'missing-mapping' 'missing-acceptance' 'missing-http' 'missing-store' 'missing-migration'; do
+for anchor in 'candidate-title' 'prohibited-merge' 'candidate-evidence' 'missing-mapping' 'missing-acceptance' 'missing-http' 'missing-store' 'missing-migration' 'formal-no-schema' 'no-schema-without-slice'; do
   grep -Fq -- "$anchor" <<<"$candidate_merge_guard_test" ||
     fail "Candidate Merge Guard tests lost negative case: $anchor"
 done

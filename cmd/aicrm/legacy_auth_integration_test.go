@@ -109,9 +109,13 @@ func TestA01HumanOAuthSessionRBACCSRFFullChainOnPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	legacy, err := NewHandler(service, &legacyCustomerStub{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	router, err := newAPIHandlerWithAll(
 		slog.New(slog.NewJSONHandler(io.Discard, nil)),
-		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), authHandler, authHandler, nil, human,
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), authHandler, authHandler, legacy, human,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -176,6 +180,27 @@ func TestA01HumanOAuthSessionRBACCSRFFullChainOnPostgreSQL(t *testing.T) {
 		t.Fatalf("logged-in login status/location=%d/%q", loggedIn.Code, loggedIn.Header().Get("Location"))
 	}
 
+	adminPageRequest := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	adminPageRequest.AddCookie(sessionCookie)
+	adminPage := httptest.NewRecorder()
+	router.ServeHTTP(adminPage, adminPageRequest)
+	if adminPage.Code != http.StatusOK || !strings.Contains(adminPage.Body.String(), "快捷入口") ||
+		!strings.Contains(adminPage.Body.String(), `href="/admin/customers"`) || !strings.Contains(adminPage.Body.String(), `href="/admin/cloud-orchestrator/plans"`) {
+		t.Fatalf("admin page status/body=%d/%s", adminPage.Code, adminPage.Body.String())
+	}
+
+	adminLogoutRequest := httptest.NewRequest(http.MethodGet, "/admin/logout", nil)
+	adminLogoutRequest.AddCookie(sessionCookie)
+	adminLogout := httptest.NewRecorder()
+	router.ServeHTTP(adminLogout, adminLogoutRequest)
+	if adminLogout.Code != http.StatusFound || adminLogout.Header().Get("Location") != "/logout" || len(adminLogout.Result().Cookies()) != 0 {
+		t.Fatalf("admin logout alias status/location/cookies=%d/%q/%#v", adminLogout.Code, adminLogout.Header().Get("Location"), adminLogout.Result().Cookies())
+	}
+	revoked, err := fixture.SessionRevoked(ctx, userID)
+	if err != nil || revoked {
+		t.Fatalf("session revoked by admin logout alias=%v err=%v", revoked, err)
+	}
+
 	wrongCSRF := *csrfCookie
 	wrongCSRF.Value = browserToken(0xee)
 	badLogoutRequest := httptest.NewRequest(http.MethodGet, "/logout", nil)
@@ -186,7 +211,7 @@ func TestA01HumanOAuthSessionRBACCSRFFullChainOnPostgreSQL(t *testing.T) {
 	if badLogout.Code != http.StatusForbidden {
 		t.Fatalf("bad logout status=%d body=%s", badLogout.Code, badLogout.Body.String())
 	}
-	revoked, err := fixture.SessionRevoked(ctx, userID)
+	revoked, err = fixture.SessionRevoked(ctx, userID)
 	if err != nil || revoked {
 		t.Fatalf("session revoked after wrong CSRF=%v err=%v", revoked, err)
 	}
