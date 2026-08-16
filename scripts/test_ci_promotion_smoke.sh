@@ -55,6 +55,12 @@ run_smoke() {
     scripts/check_ci_promotion_smoke.sh)
 }
 
+commit_fixture() {
+  local fixture="$1" message="$2"
+  git -C "$fixture" -c user.name=ci-fixture -c user.email=ci@example.invalid \
+    commit --quiet --no-gpg-sign -m "$message"
+}
+
 fixture="$test_root/repo"
 mkdir -p \
   "$fixture/cmd/aicrm" \
@@ -86,16 +92,14 @@ printf '%s  %s\n' \
   'internal/api/generated/server.gen.go' >"$fixture/scripts/generated-sources.sha256"
 
 git -C "$fixture" init --quiet -b main
-git -C "$fixture" config user.email ci@example.invalid
-git -C "$fixture" config user.name ci-fixture
 git -C "$fixture" add .
 refresh_repo_fingerprints "$fixture"
-git -C "$fixture" commit --quiet -m base
+commit_fixture "$fixture" base
 
 printf '%s\n' 'package app // changed' >"$fixture/internal/contact/app/service.go"
 git -C "$fixture" add internal/contact/app/service.go
 refresh_repo_fingerprints "$fixture"
-git -C "$fixture" commit --quiet -m changed
+commit_fixture "$fixture" changed
 
 affected="$test_root/affected.json"
 write_affected_manifest "$fixture" "$affected" \
@@ -116,7 +120,7 @@ fingerprint_drift="$test_root/fingerprint-drift"
 git clone --quiet "$fixture" "$fingerprint_drift"
 printf '%s\n' 'package app // drift without fingerprint' >"$fingerprint_drift/internal/contact/app/service.go"
 git -C "$fingerprint_drift" add internal/contact/app/service.go
-git -C "$fingerprint_drift" commit --quiet -m drift
+commit_fixture "$fingerprint_drift" drift
 write_affected_manifest "$fingerprint_drift" "$test_root/fingerprint-drift.json" internal/contact/app/service.go
 if run_smoke "$fingerprint_drift" "$test_root/fingerprint-drift.json" >/dev/null 2>&1; then
   fail "business drift without a repo fingerprint update was accepted"
@@ -127,7 +131,7 @@ git clone --quiet "$fixture" "$generated_drift"
 printf '%s\n' 'package generated // drift' >"$generated_drift/internal/api/generated/server.gen.go"
 git -C "$generated_drift" add internal/api/generated/server.gen.go
 refresh_repo_fingerprints "$generated_drift"
-git -C "$generated_drift" commit --quiet -m generated-drift
+commit_fixture "$generated_drift" generated-drift
 write_affected_manifest "$generated_drift" "$test_root/generated-drift.json" \
   docs/ci/repo-contract-fingerprints.tsv internal/api/generated/server.gen.go
 if run_smoke "$generated_drift" "$test_root/generated-drift.json" >/dev/null 2>&1; then
@@ -139,7 +143,7 @@ git clone --quiet "$fixture" "$symlink_fixture"
 ln -s service.go "$symlink_fixture/internal/contact/app/service_link.go"
 git -C "$symlink_fixture" add internal/contact/app/service_link.go
 refresh_repo_fingerprints "$symlink_fixture"
-git -C "$symlink_fixture" commit --quiet -m symlink
+commit_fixture "$symlink_fixture" symlink
 write_affected_manifest "$symlink_fixture" "$test_root/symlink.json" \
   docs/ci/repo-contract-fingerprints.tsv internal/contact/app/service_link.go
 if run_smoke "$symlink_fixture" "$test_root/symlink.json" >/dev/null 2>&1; then
@@ -150,7 +154,7 @@ delete_fixture="$test_root/delete"
 git clone --quiet "$fixture" "$delete_fixture"
 git -C "$delete_fixture" rm --quiet internal/contact/app/service.go
 refresh_repo_fingerprints "$delete_fixture"
-git -C "$delete_fixture" commit --quiet -m delete
+commit_fixture "$delete_fixture" delete
 delete_manifest="$test_root/delete.json"
 printf '%s\n' '[{"filename":"internal/contact/app/service.go","status":"removed","sha":"0000000000000000000000000000000000000000"}]' >"$delete_manifest"
 if run_smoke "$delete_fixture" "$delete_manifest" >/dev/null 2>&1; then
