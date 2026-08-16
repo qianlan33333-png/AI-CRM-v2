@@ -1617,7 +1617,7 @@ verify_index_sha256 internal/api/generated/server.gen.go \
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
   4e6b0216f488962a43289b0bfcb71b6be28dcf423b4ef036dd29a743564a06dd
 verify_index_sha256 tools/openapi-contract/main.go \
-  25bc84c5bf350b9187931f92405ffae66aae7bd842e409eca97ac0ed27a6fa6f
+  62cb6b67e37b44365ec95caef9b41d118c682fb0910f8a6f127293a0851a684f
 verify_index_sha256 tools/openapi-contract/main_test.go \
   64dcfd8c885a16fe3cf7d014f213992c5c213f4993fc8950ff01c8a7281e7d8f
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
@@ -2403,7 +2403,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   e2b2b8b1f13cf822beb1123df6c71bbe5770b81563e08a1d084bf7f35fbc6149
 verify_index_sha256 scripts/test_repo_contract.sh \
-  5a2c1c9bd8acdc2c70d6f2f2b619cfbfb027969b7cc1083fb581e05687d74cfd
+  2e777641e0826a4e29486cb99fb133cc7c6f0301e9ebd6115b135774ada8ec78
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
