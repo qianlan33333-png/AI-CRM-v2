@@ -243,6 +243,10 @@ var p4PushCenterOperations = map[string]bool{
 	"getLegacyPushCenterSections": true, "getLegacyPushCenterStats": true,
 }
 
+var p4ExecutionRuntimeOperations = map[string]bool{
+	"getLegacyExecutionRuntime": true, "getLegacyExecutionTimeline": true,
+}
+
 var p4AdminShellOperations = map[string]bool{
 	"getLegacyAdminShell": true, "getLegacyAdminLogoutCompat": true,
 }
@@ -250,6 +254,10 @@ var p4AdminShellOperations = map[string]bool{
 var p4PushCenterLegacyMappings = map[string][]string{
 	"getLegacyPushCenterSections": {"LEGACY-API-0421"},
 	"getLegacyPushCenterStats":    {"LEGACY-API-0422"},
+}
+
+var p4ExecutionRuntimeLegacyMappings = map[string][]string{
+	"getLegacyExecutionRuntime": {"LEGACY-API-0314"}, "getLegacyExecutionTimeline": {"LEGACY-API-0315"},
 }
 
 var p4AdminShellLegacyMappings = map[string][]string{
@@ -341,6 +349,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"listLegacyWecomTags":                       {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyPushCenterSections":               {"operations.read", map[string]string{"admin": "global"}},
 	"getLegacyPushCenterStats":                  {"operations.read", map[string]string{"admin": "global"}},
+	"getLegacyExecutionRuntime":                 {"admin.read", map[string]string{"admin": "global"}},
+	"getLegacyExecutionTimeline":                {"admin.read", map[string]string{"admin": "global"}},
 	"createLegacyWecomTagGroup":                 {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateLegacyWecomTagGroupPut":              {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateLegacyWecomTagGroupPatch":            {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -418,6 +428,7 @@ const p4OrderDecisionEvidence = "P4-ORDER-AB-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
 const p4DomainVerificationDecisionEvidence = "P4-S04-DOMAIN-VERIFICATION-2026-08-16"
 const p4PushCenterDecisionEvidence = "P4-PUSH-CENTER-0421-0422-2026-08-16"
+const p4ExecutionRuntimeDecisionEvidence = "P4-EXECUTION-RUNTIME-AB-2026-08-16"
 const p4AdminShellDecisionEvidence = "P4-ADMIN-SHELL-AB-2026-08-16"
 
 func main() {
@@ -480,15 +491,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4AdminShell := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4DomainVerification[op.OperationID] || seenP4PushCenter[op.OperationID] || seenP4AdminShell[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4DomainVerification[op.OperationID] || seenP4PushCenter[op.OperationID] || seenP4ExecutionRuntime[op.OperationID] || seenP4AdminShell[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID] && !p4PushCenterOperations[op.OperationID] && !p4AdminShellOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID] && !p4PushCenterOperations[op.OperationID] && !p4ExecutionRuntimeOperations[op.OperationID] && !p4AdminShellOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -678,6 +689,24 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s Push Center read contract drifted", op.OperationID)
 				}
 				links++
+			} else if p4ExecutionRuntimeOperations[op.OperationID] {
+				seenP4ExecutionRuntime[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4ExecutionRuntimeDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Execution Runtime evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4ExecutionRuntimeLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				if op.Extensions["x-aicrm-capability"] != "admin.read" || op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != "none" || op.Extensions["x-aicrm-data-classification"] != "internal_pii" || op.Extensions["x-aicrm-external-effect"] != "none" {
+					return fmt.Errorf("%s Execution Runtime authorization or observation contract drifted", op.OperationID)
+				}
+				scopes, scopeErr := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+				if scopeErr != nil || !reflect.DeepEqual(scopes, map[string]string{"admin": "global"}) || op.Responses.Value("403") == nil {
+					return fmt.Errorf("%s Execution Runtime must stay admin/global and fail closed", op.OperationID)
+				}
+				links++
 			} else if p4AdminShellOperations[op.OperationID] {
 				seenP4AdminShell[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -769,7 +798,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4DomainVerification) != 1 || len(seenP4PushCenter) != 2 || len(seenP4AdminShell) != 2 || links != 100 {
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4DomainVerification) != 1 || len(seenP4PushCenter) != 2 || len(seenP4ExecutionRuntime) != 2 || len(seenP4AdminShell) != 2 || links != 102 {
 		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d p4_domain_verification=%d p4_push_center=%d p4_admin_shell=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), len(seenP4DomainVerification), len(seenP4PushCenter), len(seenP4AdminShell), links)
 	}
 	for id := range p1CandidateOperations {
@@ -865,6 +894,11 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	for id := range p4PushCenterOperations {
 		if !seenP4PushCenter[id] {
 			return fmt.Errorf("missing P4 Push Center operation: %s", id)
+		}
+	}
+	for id := range p4ExecutionRuntimeOperations {
+		if !seenP4ExecutionRuntime[id] {
+			return fmt.Errorf("missing P4 Execution Runtime operation: %s", id)
 		}
 	}
 	for id := range p4AdminShellOperations {

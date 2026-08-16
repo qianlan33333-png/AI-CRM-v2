@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	adminopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/app"
+	adminopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/port"
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
@@ -115,6 +117,11 @@ type legacyOrderApplication interface {
 	List(context.Context, orderport.Filter) (orderport.Page, error)
 }
 
+type legacyExecutionRuntimeApplication interface {
+	Runtime(context.Context) (adminopsapp.ExecutionRuntime, error)
+	Timeline(context.Context, string) (adminopsport.ExecutionTimeline, error)
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth                  authport.Service
@@ -145,6 +152,7 @@ type Handler struct {
 	adminOps              legacyAdminOps
 	operationCycles       legacyOperationCycleApplication
 	pushCenter            legacyPushCenterApplication
+	executionRuntime      legacyExecutionRuntimeApplication
 	operationAuth         operationServiceAuthenticator
 }
 

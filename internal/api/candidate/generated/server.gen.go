@@ -347,6 +347,201 @@ func (e IngestIdentityEventPendingStatus) Valid() bool {
 	}
 }
 
+// Defines values for LegacyExecutionNotFoundError.
+const (
+	ExecutionNotFound LegacyExecutionNotFoundError = "execution_not_found"
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionNotFoundError enum.
+func (e LegacyExecutionNotFoundError) Valid() bool {
+	switch e {
+	case ExecutionNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionNotFoundOk.
+const (
+	LegacyExecutionNotFoundOkFalse LegacyExecutionNotFoundOk = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionNotFoundOk enum.
+func (e LegacyExecutionNotFoundOk) Valid() bool {
+	switch e {
+	case LegacyExecutionNotFoundOkFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionNotFoundRealExternalCallExecuted.
+const (
+	LegacyExecutionNotFoundRealExternalCallExecutedFalse LegacyExecutionNotFoundRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionNotFoundRealExternalCallExecuted enum.
+func (e LegacyExecutionNotFoundRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyExecutionNotFoundRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionRuntimeResponseObservedOnly.
+const (
+	LegacyExecutionRuntimeResponseObservedOnlyTrue LegacyExecutionRuntimeResponseObservedOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionRuntimeResponseObservedOnly enum.
+func (e LegacyExecutionRuntimeResponseObservedOnly) Valid() bool {
+	switch e {
+	case LegacyExecutionRuntimeResponseObservedOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionRuntimeResponseRealExternalCallExecuted.
+const (
+	LegacyExecutionRuntimeResponseRealExternalCallExecutedFalse LegacyExecutionRuntimeResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionRuntimeResponseRealExternalCallExecuted enum.
+func (e LegacyExecutionRuntimeResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyExecutionRuntimeResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionRuntimeUnavailableError.
+const (
+	ExecutionRuntimeUnavailable LegacyExecutionRuntimeUnavailableError = "execution_runtime_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionRuntimeUnavailableError enum.
+func (e LegacyExecutionRuntimeUnavailableError) Valid() bool {
+	switch e {
+	case ExecutionRuntimeUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionRuntimeUnavailableOk.
+const (
+	LegacyExecutionRuntimeUnavailableOkFalse LegacyExecutionRuntimeUnavailableOk = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionRuntimeUnavailableOk enum.
+func (e LegacyExecutionRuntimeUnavailableOk) Valid() bool {
+	switch e {
+	case LegacyExecutionRuntimeUnavailableOkFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionRuntimeUnavailableRealExternalCallExecuted.
+const (
+	LegacyExecutionRuntimeUnavailableRealExternalCallExecutedFalse LegacyExecutionRuntimeUnavailableRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionRuntimeUnavailableRealExternalCallExecuted enum.
+func (e LegacyExecutionRuntimeUnavailableRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyExecutionRuntimeUnavailableRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionTimelineResponseObservedOnly.
+const (
+	LegacyExecutionTimelineResponseObservedOnlyTrue LegacyExecutionTimelineResponseObservedOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionTimelineResponseObservedOnly enum.
+func (e LegacyExecutionTimelineResponseObservedOnly) Valid() bool {
+	switch e {
+	case LegacyExecutionTimelineResponseObservedOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionTimelineResponseRealExternalCallExecuted.
+const (
+	LegacyExecutionTimelineResponseRealExternalCallExecutedFalse LegacyExecutionTimelineResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionTimelineResponseRealExternalCallExecuted enum.
+func (e LegacyExecutionTimelineResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyExecutionTimelineResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionTimelineUnavailableError.
+const (
+	ExecutionTimelineUnavailable LegacyExecutionTimelineUnavailableError = "execution_timeline_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionTimelineUnavailableError enum.
+func (e LegacyExecutionTimelineUnavailableError) Valid() bool {
+	switch e {
+	case ExecutionTimelineUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionTimelineUnavailableOk.
+const (
+	LegacyExecutionTimelineUnavailableOkFalse LegacyExecutionTimelineUnavailableOk = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionTimelineUnavailableOk enum.
+func (e LegacyExecutionTimelineUnavailableOk) Valid() bool {
+	switch e {
+	case LegacyExecutionTimelineUnavailableOkFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyExecutionTimelineUnavailableRealExternalCallExecuted.
+const (
+	LegacyExecutionTimelineUnavailableRealExternalCallExecutedFalse LegacyExecutionTimelineUnavailableRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyExecutionTimelineUnavailableRealExternalCallExecuted enum.
+func (e LegacyExecutionTimelineUnavailableRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyExecutionTimelineUnavailableRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyPushCenterDegradedCountsFailed.
 const (
 	LegacyPushCenterDegradedCountsFailedN0 LegacyPushCenterDegradedCountsFailed = 0
@@ -1675,6 +1870,148 @@ type IngestIdentityEventRequest struct {
 type IngestIdentityEventResponse struct {
 	union json.RawMessage
 }
+
+// LegacyExecutionGraph defines model for LegacyExecutionGraph.
+type LegacyExecutionGraph struct {
+	Items []LegacyExecutionRuntimeObservation `json:"items"`
+	Roots []LegacyExecutionGraphNode          `json:"roots"`
+
+	// Truncated True when the 12-depth, 256-node, 1024-item, or 1024-string bound truncated an observation.
+	Truncated bool `json:"truncated"`
+}
+
+// LegacyExecutionGraphNode defines model for LegacyExecutionGraphNode.
+type LegacyExecutionGraphNode struct {
+	Children []LegacyExecutionGraphNode `json:"children"`
+	Details  map[string]string          `json:"details"`
+	Id       string                     `json:"id"`
+	Kind     string                     `json:"kind"`
+
+	// Message Fixed-redacted diagnostic text.
+	Message string `json:"message"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// Status Observed status, not a provider receipt or executed-success assertion.
+	Status string `json:"status"`
+}
+
+// LegacyExecutionNotFound defines model for LegacyExecutionNotFound.
+type LegacyExecutionNotFound struct {
+	Error                    LegacyExecutionNotFoundError                    `json:"error"`
+	Ok                       LegacyExecutionNotFoundOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionNotFoundRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionNotFoundError defines model for LegacyExecutionNotFound.Error.
+type LegacyExecutionNotFoundError string
+
+// LegacyExecutionNotFoundOk defines model for LegacyExecutionNotFound.Ok.
+type LegacyExecutionNotFoundOk bool
+
+// LegacyExecutionNotFoundRealExternalCallExecuted defines model for LegacyExecutionNotFound.RealExternalCallExecuted.
+type LegacyExecutionNotFoundRealExternalCallExecuted bool
+
+// LegacyExecutionRuntimeControl defines model for LegacyExecutionRuntimeControl.
+type LegacyExecutionRuntimeControl struct {
+	Details map[string]string `json:"details"`
+	Name    string            `json:"name"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// State Observed local state; never a provider success claim.
+	State string `json:"state"`
+}
+
+// LegacyExecutionRuntimeObservation defines model for LegacyExecutionRuntimeObservation.
+type LegacyExecutionRuntimeObservation struct {
+	// Attempt Observed attempt count, not a delivery result.
+	Attempt int               `json:"attempt"`
+	Details map[string]string `json:"details"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// Queue Observed queue name, not an execution or receipt result.
+	Queue  string `json:"queue"`
+	Source string `json:"source"`
+
+	// Status Observed status, not a provider receipt or executed-success assertion.
+	Status    string `json:"status"`
+	StatusUrl string `json:"status_url"`
+}
+
+// LegacyExecutionRuntimeResponse defines model for LegacyExecutionRuntimeResponse.
+type LegacyExecutionRuntimeResponse struct {
+	Control      *LegacyExecutionRuntimeControl      `json:"control"`
+	Observations []LegacyExecutionRuntimeObservation `json:"observations"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt   time.Time                                  `json:"observed_at"`
+	ObservedOnly LegacyExecutionRuntimeResponseObservedOnly `json:"observed_only"`
+
+	// Ok False with HTTP 200 when the local control plane is absent.
+	Ok                       bool                                                   `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionRuntimeResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Truncated                bool                                                   `json:"truncated"`
+}
+
+// LegacyExecutionRuntimeResponseObservedOnly defines model for LegacyExecutionRuntimeResponse.ObservedOnly.
+type LegacyExecutionRuntimeResponseObservedOnly bool
+
+// LegacyExecutionRuntimeResponseRealExternalCallExecuted defines model for LegacyExecutionRuntimeResponse.RealExternalCallExecuted.
+type LegacyExecutionRuntimeResponseRealExternalCallExecuted bool
+
+// LegacyExecutionRuntimeUnavailable defines model for LegacyExecutionRuntimeUnavailable.
+type LegacyExecutionRuntimeUnavailable struct {
+	Error                    LegacyExecutionRuntimeUnavailableError                    `json:"error"`
+	Ok                       LegacyExecutionRuntimeUnavailableOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionRuntimeUnavailableRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionRuntimeUnavailableError defines model for LegacyExecutionRuntimeUnavailable.Error.
+type LegacyExecutionRuntimeUnavailableError string
+
+// LegacyExecutionRuntimeUnavailableOk defines model for LegacyExecutionRuntimeUnavailable.Ok.
+type LegacyExecutionRuntimeUnavailableOk bool
+
+// LegacyExecutionRuntimeUnavailableRealExternalCallExecuted defines model for LegacyExecutionRuntimeUnavailable.RealExternalCallExecuted.
+type LegacyExecutionRuntimeUnavailableRealExternalCallExecuted bool
+
+// LegacyExecutionTimelineResponse defines model for LegacyExecutionTimelineResponse.
+type LegacyExecutionTimelineResponse struct {
+	ExecutionId string               `json:"execution_id"`
+	Graph       LegacyExecutionGraph `json:"graph"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt               time.Time                                               `json:"observed_at"`
+	ObservedOnly             LegacyExecutionTimelineResponseObservedOnly             `json:"observed_only"`
+	RealExternalCallExecuted LegacyExecutionTimelineResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionTimelineResponseObservedOnly defines model for LegacyExecutionTimelineResponse.ObservedOnly.
+type LegacyExecutionTimelineResponseObservedOnly bool
+
+// LegacyExecutionTimelineResponseRealExternalCallExecuted defines model for LegacyExecutionTimelineResponse.RealExternalCallExecuted.
+type LegacyExecutionTimelineResponseRealExternalCallExecuted bool
+
+// LegacyExecutionTimelineUnavailable defines model for LegacyExecutionTimelineUnavailable.
+type LegacyExecutionTimelineUnavailable struct {
+	Error                    LegacyExecutionTimelineUnavailableError                    `json:"error"`
+	Ok                       LegacyExecutionTimelineUnavailableOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionTimelineUnavailableRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionTimelineUnavailableError defines model for LegacyExecutionTimelineUnavailable.Error.
+type LegacyExecutionTimelineUnavailableError string
+
+// LegacyExecutionTimelineUnavailableOk defines model for LegacyExecutionTimelineUnavailable.Ok.
+type LegacyExecutionTimelineUnavailableOk bool
+
+// LegacyExecutionTimelineUnavailableRealExternalCallExecuted defines model for LegacyExecutionTimelineUnavailable.RealExternalCallExecuted.
+type LegacyExecutionTimelineUnavailableRealExternalCallExecuted bool
 
 // LegacyPushCenterCounts defines model for LegacyPushCenterCounts.
 type LegacyPushCenterCounts struct {
@@ -3252,6 +3589,12 @@ type ServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
+	// Read the frozen observed execution runtime without invoking a worker or provider
+	// (GET /api/admin/execution-runtime)
+	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
+	// Read one frozen observed execution timeline without asserting a provider receipt
+	// (GET /api/admin/executions/{execution_id})
+	GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string)
 	// Read the frozen global Push Center section aggregation without touching a worker or provider
 	// (GET /api/admin/push-center/sections)
 	GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams)
@@ -3357,6 +3700,18 @@ type Unimplemented struct{}
 // List real D01 Automation trigger receipts through the frozen legacy path
 // (GET /api/admin/automation-conversion/agent-runs)
 func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the frozen observed execution runtime without invoking a worker or provider
+// (GET /api/admin/execution-runtime)
+func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one frozen observed execution timeline without asserting a provider receipt
+// (GET /api/admin/executions/{execution_id})
+func (_ Unimplemented) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3681,6 +4036,57 @@ func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyExecutionRuntime operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyExecutionRuntime(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyExecutionTimeline operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "execution_id" -------------
+	var executionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "execution_id", chi.URLParam(r, "execution_id"), &executionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "execution_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyExecutionTimeline(w, r, executionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5692,6 +6098,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/execution-runtime", wrapper.GetLegacyExecutionRuntime)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/executions/{execution_id}", wrapper.GetLegacyExecutionTimeline)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/push-center/sections", wrapper.GetLegacyPushCenterSections)
 	})
 	r.Group(func(r chi.Router) {
@@ -5852,6 +6264,102 @@ func (response ListAutomationTriggerRuns403JSONResponse) VisitListAutomationTrig
 type ListAutomationTriggerRuns503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAutomationTriggerRuns503JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionRuntimeRequestObject struct {
+}
+
+type GetLegacyExecutionRuntimeResponseObject interface {
+	VisitGetLegacyExecutionRuntimeResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyExecutionRuntime200JSONResponse LegacyExecutionRuntimeResponse
+
+func (response GetLegacyExecutionRuntime200JSONResponse) VisitGetLegacyExecutionRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionRuntime401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyExecutionRuntime401JSONResponse) VisitGetLegacyExecutionRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionRuntime403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyExecutionRuntime403JSONResponse) VisitGetLegacyExecutionRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionRuntime503JSONResponse LegacyExecutionRuntimeUnavailable
+
+func (response GetLegacyExecutionRuntime503JSONResponse) VisitGetLegacyExecutionRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionTimelineRequestObject struct {
+	ExecutionId string `json:"execution_id"`
+}
+
+type GetLegacyExecutionTimelineResponseObject interface {
+	VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyExecutionTimeline200JSONResponse LegacyExecutionTimelineResponse
+
+func (response GetLegacyExecutionTimeline200JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionTimeline401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyExecutionTimeline401JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionTimeline403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyExecutionTimeline403JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionTimeline404JSONResponse LegacyExecutionNotFound
+
+func (response GetLegacyExecutionTimeline404JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionTimeline503JSONResponse LegacyExecutionTimelineUnavailable
+
+func (response GetLegacyExecutionTimeline503JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -7701,6 +8209,12 @@ type StrictServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
+	// Read the frozen observed execution runtime without invoking a worker or provider
+	// (GET /api/admin/execution-runtime)
+	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
+	// Read one frozen observed execution timeline without asserting a provider receipt
+	// (GET /api/admin/executions/{execution_id})
+	GetLegacyExecutionTimeline(ctx context.Context, request GetLegacyExecutionTimelineRequestObject) (GetLegacyExecutionTimelineResponseObject, error)
 	// Read the frozen global Push Center section aggregation without touching a worker or provider
 	// (GET /api/admin/push-center/sections)
 	GetLegacyPushCenterSections(ctx context.Context, request GetLegacyPushCenterSectionsRequestObject) (GetLegacyPushCenterSectionsResponseObject, error)
@@ -7847,6 +8361,56 @@ func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
 		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyExecutionRuntime operation middleware
+func (sh *strictHandler) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
+	var request GetLegacyExecutionRuntimeRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyExecutionRuntime(ctx, request.(GetLegacyExecutionRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyExecutionRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyExecutionRuntimeResponseObject); ok {
+		if err := validResponse.VisitGetLegacyExecutionRuntimeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyExecutionTimeline operation middleware
+func (sh *strictHandler) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
+	var request GetLegacyExecutionTimelineRequestObject
+
+	request.ExecutionId = executionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyExecutionTimeline(ctx, request.(GetLegacyExecutionTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyExecutionTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyExecutionTimelineResponseObject); ok {
+		if err := validResponse.VisitGetLegacyExecutionTimelineResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

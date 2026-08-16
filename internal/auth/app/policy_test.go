@@ -48,6 +48,10 @@ func TestAuthorizeFrozenCapabilityMatrix(t *testing.T) {
 		{authport.CapabilityCouponsWrite, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 		{authport.CapabilityOperationsRead, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 		{authport.CapabilityOperationsManage, authport.ScopeGlobal, authport.ScopeGlobal, ""},
+		// Immutable LEGACY-API-0314/0315 contract: external admin_read is a
+		// separate internal admin.read grant.  It is deliberately not the
+		// Admin Shell grant, so ops must remain denied.
+		{authport.CapabilityAdminRead, authport.ScopeGlobal, "", ""},
 		{authport.CapabilityAdminShellRead, authport.ScopeGlobal, authport.ScopeGlobal, ""},
 	}
 	principals := []struct {

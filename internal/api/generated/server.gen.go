@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
@@ -96,6 +97,23 @@ type HealthResponse struct {
 
 // HealthResponseStatus defines model for HealthResponse.Status.
 type HealthResponseStatus string
+
+// LegacyExecutionGraphNode defines model for LegacyExecutionGraphNode.
+type LegacyExecutionGraphNode struct {
+	Children []LegacyExecutionGraphNode `json:"children"`
+	Details  map[string]string          `json:"details"`
+	Id       string                     `json:"id"`
+	Kind     string                     `json:"kind"`
+
+	// Message Fixed-redacted diagnostic text.
+	Message string `json:"message"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// Status Observed status, not a provider receipt or executed-success assertion.
+	Status string `json:"status"`
+}
 
 // SegmentDefinition defines model for SegmentDefinition.
 type SegmentDefinition struct {
