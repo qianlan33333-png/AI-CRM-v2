@@ -1379,7 +1379,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  cb0b47b509d5db3ec2698a5afb042ce4eba54c1816821d6dac03c2fe7a55189a
+  af394b225d85e344a0dafb27eea4117de68e98bc72b39b2e32cdf62d1c6219b4
 verify_index_sha256 .github/workflows/application-go.yml \
   33347cdc331a6ea44082116be69d0ac1c91cdd9e22d6a907c03c2135f05dfdb4
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -3423,11 +3423,11 @@ for anchor in \
   'formal mapping or central acceptance is missing' \
   'HTTP composition closure is missing' \
   'Store or application closure is missing' \
-  'migration closure is missing'; do
+  'migration closure is missing and no-schema closure evidence is absent'; do
   grep -Fq -- "$anchor" <<<"$candidate_merge_guard" ||
     fail "Candidate Merge Guard lost fail-closed boundary: $anchor"
 done
-for anchor in 'candidate-title' 'prohibited-merge' 'candidate-evidence' 'missing-mapping' 'missing-acceptance' 'missing-http' 'missing-store' 'missing-migration'; do
+for anchor in 'candidate-title' 'prohibited-merge' 'candidate-evidence' 'missing-mapping' 'missing-acceptance' 'missing-http' 'missing-store' 'missing-migration' 'formal-no-schema' 'no-schema-without-slice'; do
   grep -Fq -- "$anchor" <<<"$candidate_merge_guard_test" ||
     fail "Candidate Merge Guard tests lost negative case: $anchor"
 done

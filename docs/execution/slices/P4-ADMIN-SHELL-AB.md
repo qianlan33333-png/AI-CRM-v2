@@ -6,7 +6,7 @@
   `LEGACY-API-0001 GET /admin` 与 `LEGACY-API-0053 GET /admin/logout`；A、B 路由作为同一个
   后台壳业务包，不拆分、不重复计数。
 - 完整可观察行为必须同时收口 transport、Session/Actor/capability、OpenAPI、mapping、matrix、验收 manifest
-  和受影响的仓库指纹守卫，共 13 个手写文件、412 行变更（测试与生成物除外）。这超过 P4 常规 12 文件
+  和受影响的仓库指纹守卫，共 14 个手写文件、433 行变更（测试与生成物除外）。这超过 P4 常规 12 文件
   预算但低于 15 文件/1500 行硬顶；为保持两条路由一个可验收业务包而不伪拆为半成品。
 - 用户已裁定：后台管理员和运营人员可使用该入口；销售、未知、缺失或歧义身份一律拒绝。`/admin`
   仅提供既有后台的静态快捷入口，不创建新 UI，也不承诺下游链接已部署。
@@ -34,3 +34,7 @@
 - `feature-matrix-contract`、`p1-reconciliation`、`openapi-contract` 与 `generate-check` 已在锁 tree 前通过；
   API mapping 的 A/B 分母仍为 `501/268/12`，其中已承接 migrate 为 `502`、保留 historical deferred 为 `267`、
   稳定退役为 `12`。本收据不声明 MERGED、EDGE、STAGING、RELEASE 或 DEPLOYED。
+- `verification_induced=2`：首个正式 PR 的 Web gate 发现 Orval 生成物漏同步。以 `make generate-orval`
+  重建唯一生成文件后，`npm run ci` 通过 Orval contract、lint、strict typecheck、226 个 Web 测试、生产 build
+  和 high-severity audit；随后发现 Candidate Merge Guard 对所有正式业务 PR 无条件要求 migration，现改为
+  仅在 matrix 和 slice 同时声明 `no_schema_or_external_effect` 时允许无 migration，并以正反例覆盖。两者均未改变产品合同或扩大业务范围。
