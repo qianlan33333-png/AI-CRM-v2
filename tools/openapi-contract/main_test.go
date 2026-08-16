@@ -52,6 +52,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Delete("/api/v1/admin/config/overview")
 			reject(t, doc, ids)
 		},
+		"domain verification becomes authenticated": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/{filename}").Get.Security = &openapi3.SecurityRequirements{{"AdminSession": []string{}}}
+			reject(t, doc, ids)
+		},
+		"domain verification filename widens": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/{filename}").Get.Parameters[0].Value.Schema.Value.Pattern = ".*"
+			reject(t, doc, ids)
+		},
+		"domain verification loses no-store": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Paths.Value("/{filename}").Get.Responses.Value("200").Value.Headers, "Cache-Control")
+			reject(t, doc, ids)
+		},
 		"browser JWT substitution": func(t *testing.T) {
 			doc, ids := fresh(t)
 			scheme := doc.Components.SecuritySchemes["AdminSession"].Value

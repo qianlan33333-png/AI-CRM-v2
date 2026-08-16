@@ -43,6 +43,7 @@ import (
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
+	domainverification "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/domainverification"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -83,6 +84,9 @@ type candidateHandler struct {
 	identityReviews *identityhttp.ReviewHandler
 	automationRuns  interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
+	}
+	domainVerification interface {
+		Read(string) (string, error)
 	}
 }
 
@@ -254,6 +258,21 @@ func parseLegacyRunID(value, prefix string) (*int64, error) {
 
 func nonempty(value *string) bool { return value != nil && strings.TrimSpace(*value) != "" }
 
+func (handler *candidateHandler) GetDomainVerificationFile(writer http.ResponseWriter, request *http.Request, filename string) {
+	if handler == nil || handler.domainVerification == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeNotFound, nil))
+		return
+	}
+	content, err := handler.domainVerification.Read(filename)
+	if err != nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeNotFound, nil))
+		return
+	}
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = writer.Write([]byte(content))
+}
+
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
 	if err != nil || poolConfig.ConnConfig.DescriptionCacheCapacity < 1 || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
@@ -405,15 +424,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	domainVerification, err := domainverification.New(config.DomainVerification.Directory)
+	if err != nil {
+		pool.Close()
+		return nil, errInvalidAPIComponent
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
-		segments:        segmentCRUDHandler,
-		products:        productHandler,
-		segmentRefresh:  segmentRefreshHandler,
-		identityReviews: identityReviewHandler,
-		automationRuns:  automationstore.NewRepository(pool),
+		segments:           segmentCRUDHandler,
+		products:           productHandler,
+		segmentRefresh:     segmentRefreshHandler,
+		identityReviews:    identityReviewHandler,
+		automationRuns:     automationstore.NewRepository(pool),
+		domainVerification: domainVerification,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -967,6 +992,22 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			router.Method(route.method, route.pattern, tail)
 		}
 	}
+	domainVerificationRoute, err := recovery(http.HandlerFunc(wrapper.GetDomainVerificationFile))
+	if err != nil {
+		return nil, err
+	}
+	domainVerificationRoute, err = gateway.TimeoutMiddleware(domainVerificationRoute)
+	if err != nil {
+		return nil, err
+	}
+	domainVerificationRoute, err = gateway.RoutePatternMiddleware("/{filename}", domainVerificationRoute)
+	if err != nil {
+		return nil, err
+	}
+	// Register the root-only compatibility route after every concrete route.
+	// Chi keeps concrete /healthz, auth, admin, API, OAuth, and callback paths
+	// ahead of this one-segment pattern.
+	router.Method(http.MethodGet, "/{filename}", domainVerificationRoute)
 	notFound, err := recovery(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeNotFound, nil))
 	}))

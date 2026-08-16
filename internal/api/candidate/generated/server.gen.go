@@ -1931,6 +1931,9 @@ type ServerInterface interface {
 	// List the local tag catalog in deterministic order
 	// (GET /api/v1/tags)
 	ListTags(w http.ResponseWriter, r *http.Request)
+	// Read one WeChat or WeCom domain verification file
+	// (GET /{filename})
+	GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -2114,6 +2117,12 @@ func (_ Unimplemented) RenameStage(w http.ResponseWriter, r *http.Request, stage
 // List the local tag catalog in deterministic order
 // (GET /api/v1/tags)
 func (_ Unimplemented) ListTags(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one WeChat or WeCom domain verification file
+// (GET /{filename})
+func (_ Unimplemented) GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3825,6 +3834,31 @@ func (siw *ServerInterfaceWrapper) ListTags(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// GetDomainVerificationFile operation middleware
+func (siw *ServerInterfaceWrapper) GetDomainVerificationFile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "filename" -------------
+	var filename string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "filename", chi.URLParam(r, "filename"), &filename, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filename", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDomainVerificationFile(w, r, filename)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -4027,6 +4061,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/tags", wrapper.ListTags)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/{filename}", wrapper.GetDomainVerificationFile)
 	})
 
 	return r
@@ -5828,6 +5865,41 @@ func (response ListTags503JSONResponse) VisitListTagsResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetDomainVerificationFileRequestObject struct {
+	Filename string `json:"filename"`
+}
+
+type GetDomainVerificationFileResponseObject interface {
+	VisitGetDomainVerificationFileResponse(w http.ResponseWriter) error
+}
+
+type GetDomainVerificationFile200ResponseHeaders struct {
+	CacheControl string
+}
+
+type GetDomainVerificationFile200TextResponse struct {
+	Body    string
+	Headers GetDomainVerificationFile200ResponseHeaders
+}
+
+func (response GetDomainVerificationFile200TextResponse) VisitGetDomainVerificationFileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.WriteHeader(200)
+
+	_, err := w.Write([]byte(response.Body))
+	return err
+}
+
+type GetDomainVerificationFile404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetDomainVerificationFile404JSONResponse) VisitGetDomainVerificationFileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
@@ -5920,6 +5992,9 @@ type StrictServerInterface interface {
 	// List the local tag catalog in deterministic order
 	// (GET /api/v1/tags)
 	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
+	// Read one WeChat or WeCom domain verification file
+	// (GET /{filename})
+	GetDomainVerificationFile(ctx context.Context, request GetDomainVerificationFileRequestObject) (GetDomainVerificationFileResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -6811,6 +6886,32 @@ func (sh *strictHandler) ListTags(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListTagsResponseObject); ok {
 		if err := validResponse.VisitListTagsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDomainVerificationFile operation middleware
+func (sh *strictHandler) GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string) {
+	var request GetDomainVerificationFileRequestObject
+
+	request.Filename = filename
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDomainVerificationFile(ctx, request.(GetDomainVerificationFileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDomainVerificationFile")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDomainVerificationFileResponseObject); ok {
+		if err := validResponse.VisitGetDomainVerificationFileResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

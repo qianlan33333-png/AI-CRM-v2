@@ -14,23 +14,24 @@ import (
 )
 
 const (
-	databaseURLEnv         = "AICRM_DATABASE_URL"
-	apiListenAddressEnv    = "AICRM_HTTP_LISTEN_ADDRESS"
-	apiPoolMaxConnsEnv     = "AICRM_API_PGX_MAX_CONNS"
-	workerPoolMaxConnsEnv  = "AICRM_WORKER_PGX_MAX_CONNS"
-	criticalWorkersEnv     = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
-	eventWorkersEnv        = "AICRM_RIVER_EVENT_MAX_WORKERS"
-	outboundWorkersEnv     = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
-	syncWorkersEnv         = "AICRM_RIVER_SYNC_MAX_WORKERS"
-	heavyWorkersEnv        = "AICRM_RIVER_HEAVY_MAX_WORKERS"
-	aiWorkersEnv           = "AICRM_RIVER_AI_MAX_WORKERS"
-	weComCallbackCorpIDEnv = "AICRM_WECOM_CALLBACK_CORP_ID"
-	weComCallbackTokenEnv  = "AICRM_WECOM_CALLBACK_TOKEN"
-	weComCallbackAESKeyEnv = "AICRM_WECOM_CALLBACK_AES_KEY"
-	weComOAuthCorpIDEnv    = "AICRM_WECOM_OAUTH_CORP_ID"
-	weComOAuthSecretEnv    = "AICRM_WECOM_OAUTH_SECRET"
-	weComOAuthCallbackEnv  = "AICRM_WECOM_OAUTH_CALLBACK_URL"
-	identityHMACKeyEnv     = "AICRM_IDENTITY_HMAC_KEY"
+	databaseURLEnv           = "AICRM_DATABASE_URL"
+	apiListenAddressEnv      = "AICRM_HTTP_LISTEN_ADDRESS"
+	apiPoolMaxConnsEnv       = "AICRM_API_PGX_MAX_CONNS"
+	workerPoolMaxConnsEnv    = "AICRM_WORKER_PGX_MAX_CONNS"
+	criticalWorkersEnv       = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
+	eventWorkersEnv          = "AICRM_RIVER_EVENT_MAX_WORKERS"
+	outboundWorkersEnv       = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
+	syncWorkersEnv           = "AICRM_RIVER_SYNC_MAX_WORKERS"
+	heavyWorkersEnv          = "AICRM_RIVER_HEAVY_MAX_WORKERS"
+	aiWorkersEnv             = "AICRM_RIVER_AI_MAX_WORKERS"
+	weComCallbackCorpIDEnv   = "AICRM_WECOM_CALLBACK_CORP_ID"
+	weComCallbackTokenEnv    = "AICRM_WECOM_CALLBACK_TOKEN"
+	weComCallbackAESKeyEnv   = "AICRM_WECOM_CALLBACK_AES_KEY"
+	weComOAuthCorpIDEnv      = "AICRM_WECOM_OAUTH_CORP_ID"
+	weComOAuthSecretEnv      = "AICRM_WECOM_OAUTH_SECRET"
+	weComOAuthCallbackEnv    = "AICRM_WECOM_OAUTH_CALLBACK_URL"
+	identityHMACKeyEnv       = "AICRM_IDENTITY_HMAC_KEY"
+	domainVerificationDirEnv = "AICRM_DOMAIN_VERIFICATION_DIR"
 )
 
 var ErrInvalid = errors.New("invalid startup configuration")
@@ -51,6 +52,12 @@ type Database struct {
 type API struct {
 	ListenAddress string
 	PoolMaxConns  int32
+}
+
+// DomainVerification is optional startup configuration for the public,
+// filesystem-backed verification reader. The reader owns path safety checks.
+type DomainVerification struct {
+	Directory string
 }
 
 // CallbackSecret is opaque to keep callback credentials out of generic logs
@@ -127,11 +134,12 @@ func (queues QueueConcurrency) valid() bool {
 // Root contains only startup infrastructure settings. Persisted business settings
 // and credentials are deliberately outside this slice.
 type Root struct {
-	Database Database
-	API      API
-	Worker   Worker
-	WeCom    WeCom
-	Identity Identity
+	Database           Database
+	API                API
+	Worker             Worker
+	WeCom              WeCom
+	Identity           Identity
+	DomainVerification DomainVerification
 }
 
 type validationError struct {
@@ -176,6 +184,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
+		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
