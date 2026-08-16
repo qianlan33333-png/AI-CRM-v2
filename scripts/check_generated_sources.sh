@@ -8,7 +8,7 @@ cd "$repo_root"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
 expected_manifest="scripts/generated-sources.sha256"
-expected_manifest_sha256="1b4c7dfda3f5a853beb75202f4521a9da02f112ede2b333f43a8ec2501a3c0f8"
+fingerprint_manifest="docs/ci/repo-contract-fingerprints.tsv"
 
 fail() {
   echo "generated-check: $*" >&2
@@ -34,6 +34,41 @@ hash_file() {
     fail "sha256sum or shasum is required"
   fi
 }
+
+canonical_receipt() {
+  local manifest_source="$1" receipt
+  receipt="$(awk -F $'\t' -v path="$expected_manifest" '
+    NR == 1 { next }
+    $3 == path {
+      if ($1 != "100644" || $2 !~ /^[0-9a-f]{64}$/ || ++count > 1) exit 1
+      digest = $2
+    }
+    END { if (count != 1) exit 1; print digest }
+  ' "$manifest_source")" || fail "canonical fingerprint has no valid generated-source receipt"
+  printf '%s\n' "$receipt"
+}
+
+receipt_source=""
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  [[ -f "$fingerprint_manifest" && ! -L "$fingerprint_manifest" ]] ||
+    fail "canonical fingerprint must be a regular non-symlink file"
+  git diff --quiet -- "$expected_manifest" "$fingerprint_manifest" ||
+    fail "generated source receipt must be staged before verification"
+  fingerprint_entry="$(git -c core.quotePath=false ls-files --stage -- "$fingerprint_manifest")"
+  [[ "$(printf '%s\n' "$fingerprint_entry" | wc -l | tr -d ' ')" = "1" ]] ||
+    fail "canonical fingerprint must have exactly one staged entry"
+  read -r fingerprint_mode fingerprint_blob fingerprint_stage <<<"${fingerprint_entry%%$'\t'*}"
+  [[ "$fingerprint_mode" = "100644" && "$fingerprint_stage" = "0" ]] ||
+    fail "canonical fingerprint must be a staged 100644 regular file"
+  receipt_source="$(mktemp -t aicrm-v2-generated-receipt.XXXXXX)"
+  trap 'rm -f "$receipt_source"' EXIT
+  git cat-file blob "$fingerprint_blob" >"$receipt_source" ||
+    fail "could not read canonical staged fingerprint"
+else
+  [[ -f "$fingerprint_manifest" && ! -L "$fingerprint_manifest" ]] ||
+    fail "canonical fingerprint must be a regular non-symlink file"
+  receipt_source="$fingerprint_manifest"
+fi
 
 write_actual_manifest() {
   local root file_path
@@ -88,8 +123,9 @@ run_generators() {
 [[ -f "$expected_manifest" && ! -L "$expected_manifest" ]] ||
   fail "manifest must be a regular non-symlink file: $expected_manifest"
 actual_manifest_sha256="$(hash_file "$expected_manifest" | awk '{print $1}')"
+expected_manifest_sha256="$(canonical_receipt "$receipt_source")"
 [[ "$actual_manifest_sha256" = "$expected_manifest_sha256" ]] ||
-  fail "generated source manifest is not the Codex-frozen revision"
+  fail "generated source manifest disagrees with the canonical fingerprint receipt"
 
 verify_manifest "the initial tree"
 run_generators

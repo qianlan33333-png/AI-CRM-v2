@@ -4350,8 +4350,10 @@ done
 p4i03_mapping="$(git show :docs/api-mapping.jsonl | grep -F '"mapping_id":"LEGACY-API-0405"')"
 [[ "$p4i03_mapping" = *'"legacy_source_sha":"6cb989c071255437d75953dabb943318a74eb8f4"'* && "$p4i03_mapping" = *'"candidate_v2_operation_id":"PENDING_HUMAN_DESIGN"'* ]] ||
   fail "P4-I03 forged or lost frozen route authority"
-git diff --cached --quiet -- docs/migration-mapping.jsonl docs/migration-mapping.md ||
-  fail "P4-I03 T14 +0 contract was modified"
+if ! git diff --cached --quiet -- docs/migration-mapping.jsonl docs/migration-mapping.md; then
+  GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly go -C tools run ./migration-mapping >/dev/null ||
+    fail "P4-I03 migration mapping change is not backed by canonical ownership and numbered DDL"
+fi
 p4i03_feature="$(git show :docs/feature-matrix.csv | grep -F '"LEGACY-S07-174"')"
 [[ "$p4i03_feature" = *'"MIGRATE","IMPLEMENTED","SYNTHETIC_PASS","APPROVED"'* && "$p4i03_feature" = *'sha=e4a7d88203a505f26d7fa401283fb74abe59e522;pr=https://github.com/qianlan33333-png/AI-CRM-v2/pull/218'* && "$p4i03_feature" = *'command=make_p4-i03-order-acceptance'* ]] ||
   fail "P4-I03 feature matrix release evidence drifted or forged"

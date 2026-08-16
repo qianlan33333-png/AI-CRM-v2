@@ -8,7 +8,7 @@ import (
 )
 
 func frozenPaths() paths {
-	return paths{"../../docs/evidence/p1/legacy-routes-6cb989c.json", "../../docs/api-mapping.jsonl", "../../docs/evidence/p1/route-triage.csv", "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "../../docs/migration-mapping.jsonl"}
+	return paths{"../../docs/evidence/p1/legacy-routes-6cb989c.json", "../../docs/api-mapping.jsonl", "../../docs/evidence/p1/route-triage.csv", "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "../../docs/migration-mapping.jsonl", "../../api/openapi.yaml", "../../internal/api/candidate/generated/server.gen.go", "../../api/oapi-codegen-p1-candidate.yaml"}
 }
 
 func TestFrozenReconciliation(t *testing.T) {
@@ -52,11 +52,20 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 				}
 			}
 		}},
-		{"integrated route mapping forged", "api", func(v any) {
+		{"integrated route operation forged", "api", func(v any) {
 			r := v.(*[]map[string]any)
 			for _, row := range *r {
 				if row["mapping_id"] == "LEGACY-API-0421" {
-					row["target_mapping_id"] = "P4-PUSH-CENTER-FORGED"
+					row["candidate_v2_operation_id"] = "getLegacyPushCenterForged"
+					return
+				}
+			}
+		}},
+		{"integrated route missing target mapping", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["mapping_id"] == "LEGACY-API-0422" {
+					row["target_mapping_id"] = ""
 					return
 				}
 			}
@@ -136,6 +145,94 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 	}
 }
 
+func TestIntegratedRoutesAreDerivedFromCanonicalFacts(t *testing.T) {
+	dir := t.TempDir()
+	openapi := `openapi: 3.0.3
+info:
+  title: future package fixture
+  version: 1.0.0
+paths:
+  /api/admin/media-fixtures:
+    get:
+      operationId: listLegacyMediaFixtures
+      tags: [p1-core-candidate]
+      x-legacy-mapping-ids: [LEGACY-API-9001]
+      responses:
+        "200": {description: ok}
+  /api/admin/order-fixtures:
+    get:
+      operationId: listLegacyOrderFixtures
+      tags: [p1-core-candidate]
+      x-legacy-mapping-ids: [LEGACY-API-9002]
+      responses:
+        "200": {description: ok}
+`
+	generated := `package generated
+func (siw *ServerInterfaceWrapper) ListLegacyMediaFixtures() {}
+func (siw *ServerInterfaceWrapper) ListLegacyOrderFixtures() {}
+func register(r router, options options, wrapper *ServerInterfaceWrapper) {
+  r.Get(options.BaseURL+"/api/admin/media-fixtures", wrapper.ListLegacyMediaFixtures)
+  r.Get(options.BaseURL+"/api/admin/order-fixtures", wrapper.ListLegacyOrderFixtures)
+}
+`
+	config := `output-options:
+  include-tags:
+    - p1-core-candidate
+`
+	write := func(name, data string) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	facts, err := loadIntegrationFacts(write("openapi.yaml", openapi), write("server.gen.go", generated), write("oapi.yaml", config))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ id, operation, path, owner string }{
+		{"LEGACY-API-9001", "listLegacyMediaFixtures", "/api/admin/media-fixtures", "media"},
+		{"LEGACY-API-9002", "listLegacyOrderFixtures", "/api/admin/order-fixtures", "order"},
+	} {
+		t.Run(tc.id, func(t *testing.T) {
+			authority := routeFact{Path: tc.path, Owner: tc.owner, Methods: []string{"GET"}}
+			evidence := []apiDecisionEvidence{{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"}}
+			if err := validateIntegratedRoute(tc.id, authority, tc.operation, "GET", tc.path, "P5-DECLARATIVE-"+tc.id[len(tc.id)-4:], "MIGRATE", "APPROVED", "declarative canonical route", evidence, facts); err != nil {
+				t.Fatalf("future declarative route was rejected: %v", err)
+			}
+		})
+	}
+}
+
+func TestIntegratedRouteValidationFailsClosed(t *testing.T) {
+	id := "LEGACY-API-9001"
+	authority := routeFact{Path: "/api/admin/media-fixtures", Owner: "media", Methods: []string{"GET"}}
+	evidence := []apiDecisionEvidence{{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"}}
+	valid := integrationFacts{
+		openAPI:           map[string][]openAPIRoute{id: {{Operation: "listLegacyMediaFixtures", Method: "GET", Path: authority.Path}}},
+		requiresGenerated: map[string]bool{integrationKey("listLegacyMediaFixtures", "GET", authority.Path): true},
+		generated:         map[string]bool{integrationKey("listLegacyMediaFixtures", "GET", authority.Path): true},
+	}
+	for _, tc := range []struct {
+		name      string
+		authority routeFact
+		operation string
+		facts     integrationFacts
+	}{
+		{"missing openapi", authority, "listLegacyMediaFixtures", integrationFacts{openAPI: map[string][]openAPIRoute{}, requiresGenerated: valid.requiresGenerated, generated: valid.generated}},
+		{"duplicate openapi", authority, "listLegacyMediaFixtures", integrationFacts{openAPI: map[string][]openAPIRoute{id: {valid.openAPI[id][0], valid.openAPI[id][0]}}, requiresGenerated: valid.requiresGenerated, generated: valid.generated}},
+		{"missing generated", authority, "listLegacyMediaFixtures", integrationFacts{openAPI: valid.openAPI, requiresGenerated: valid.requiresGenerated, generated: map[string]bool{}}},
+		{"missing owner", routeFact{Path: authority.Path, Methods: authority.Methods}, "listLegacyMediaFixtures", valid},
+		{"forged operation", authority, "listLegacyMediaForged", valid},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := validateIntegratedRoute(id, tc.authority, tc.operation, "GET", authority.Path, "P5-DECLARATIVE-9001", "MIGRATE", "APPROVED", "declarative canonical route", evidence, tc.facts); err == nil {
+				t.Fatal("unsafe integrated route was accepted")
+			}
+		})
+	}
+}
+
 func approveRoute(row map[string]any) {
 	row["candidate_v2_operation_id"] = "NOT_APPLICABLE"
 	row["candidate_v2_method"] = "NOT_APPLICABLE"
@@ -151,7 +248,7 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 	dir := t.TempDir()
 	source := frozenPaths()
 	result := paths{}
-	files := map[string]string{"routes": source.routes, "api": source.api, "triage": source.triage, "lifecycle": source.lifecycle, "migration": source.migration}
+	files := map[string]string{"routes": source.routes, "api": source.api, "triage": source.triage, "lifecycle": source.lifecycle, "migration": source.migration, "openapi": source.openapi, "generated": source.generated, "generatorConfig": source.generatorConfig}
 	for name, path := range files {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -198,6 +295,12 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 			result.lifecycle = out
 		case "migration":
 			result.migration = out
+		case "openapi":
+			result.openapi = out
+		case "generated":
+			result.generated = out
+		case "generatorConfig":
+			result.generatorConfig = out
 		}
 	}
 	return result

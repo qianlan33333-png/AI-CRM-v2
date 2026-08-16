@@ -3632,6 +3632,20 @@ if (cd "$a02_import_forgery" && scripts/check_repo_contract.sh >/dev/null 2>&1);
   fail "P4-A02 historical settings import forgery was accepted"
 fi
 
+i03_unrelated_mapping="$(make_fixture p4-i03-unrelated-legal-mapping)"
+ruby -e '
+  path = ARGV.fetch(0)
+  source = File.read(path)
+  before = "\"notes\":\"candidate mapping only; target business DDL is not yet physical\""
+  after = "\"notes\":\"candidate mapping only; target business DDL is not yet physical; canonical review retained\""
+  abort "missing legal mapping notes" unless source.include?(before)
+  File.write(path, source.sub(before, after))
+' "$i03_unrelated_mapping/docs/migration-mapping.jsonl"
+restage_p2s18_receipt "$i03_unrelated_mapping" docs/migration-mapping.jsonl
+if ! (cd "$i03_unrelated_mapping" && scripts/check_repo_contract.sh >/dev/null 2>&1); then
+  fail "P4-I03 globally rejected an otherwise legal unrelated migration mapping change"
+fi
+
 i03_statement_counter_drift="$(make_fixture p4-i03-statement-counter-drift)"
 sed -i.bak '/REFERENCING NEW TABLE AS inserted_rows/d' "$i03_statement_counter_drift/migrations/00035_order_list_projection.sql"
 rm -f "$i03_statement_counter_drift/migrations/00035_order_list_projection.sql.bak"

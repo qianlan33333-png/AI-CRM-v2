@@ -111,14 +111,18 @@ GO="$fake_go" \
 scripts/run_ci_acceptance_manifest.sh >/dev/null
 
 current_entries="$(awk -F'|' '$0 !~ /^#/ && NF { count++ } END { print count + 0 }' docs/ci/go-acceptance-manifest.tsv)"
-(( current_entries >= 43 )) && grep -Fq 'p4-execution-runtime-ab|0027|-|legacy-make|p4-execution-runtime-ab-acceptance|-' docs/ci/go-acceptance-manifest.tsv || {
-  echo "ci-acceptance-manifest-tests: latest-main legacy entries were not preserved" >&2
+(( current_entries > 0 )) || {
+  echo "ci-acceptance-manifest-tests: canonical acceptance manifest has no entries" >&2
   exit 1
 }
+printf -v next_sequence '%04d' "$((current_entries + 1))"
+printf -v following_sequence '%04d' "$((current_entries + 2))"
 
 expanded_manifest="$test_root/expanded-manifest.tsv"
 cp docs/ci/go-acceptance-manifest.tsv "$expanded_manifest"
-printf '%s\n' "zz-generic-fixture|0044|-|go-test|./$fixture_dir|-" >>"$expanded_manifest"
+printf '%s\n' \
+  "zz-generic-fixture-one|$next_sequence|-|go-test|./$fixture_dir|-" \
+  "zz-generic-fixture-two|$following_sequence|-|go-test|./$fixture_dir|-" >>"$expanded_manifest"
 CI_ACCEPTANCE_MANIFEST="$expanded_manifest" \
 CI_ACCEPTANCE_VALIDATE_ONLY=1 \
 CI_ACCEPTANCE_BASE_REF=HEAD \
@@ -127,6 +131,24 @@ scripts/run_ci_acceptance_manifest.sh >/dev/null || {
   echo "ci-acceptance-manifest-tests: a new declarative acceptance entry required runner changes" >&2
   exit 1
 }
+
+semantic_drift_manifest="$test_root/semantic-drift-manifest.tsv"
+ruby -e '
+  source = File.read(ARGV.fetch(0)).lines
+  fields = source.fetch(1).chomp.split("|", 6)
+  abort "invalid canonical acceptance row" unless fields.length == 6
+  fields[2] = fields[2] == "-" ? "MUTATED_DATABASE_URL" : "-"
+  source[1] = fields.join("|") + "\n"
+  File.write(ARGV.fetch(1), source.join)
+' docs/ci/go-acceptance-manifest.tsv "$semantic_drift_manifest"
+if CI_ACCEPTANCE_MANIFEST="$semantic_drift_manifest" \
+  CI_ACCEPTANCE_VALIDATE_ONLY=1 \
+  CI_ACCEPTANCE_BASE_REF=HEAD \
+  CI_ACCEPTANCE_BASE_MANIFEST_PATH=docs/ci/go-acceptance-manifest.tsv \
+  scripts/run_ci_acceptance_manifest.sh >/dev/null 2>&1; then
+  echo "ci-acceptance-manifest-tests: base acceptance row semantics were silently changed" >&2
+  exit 1
+fi
 
 reordered_manifest="$test_root/reordered-manifest.tsv"
 awk -F'|' 'BEGIN { OFS = "|" }
