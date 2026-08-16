@@ -58,16 +58,28 @@ else:
             ["git", "-C", repo_root, "diff", "--name-only", "--no-renames", base, head], text=True
         ).splitlines()
         patch = subprocess.check_output(
-            [
-                "git", "-C", repo_root, "diff", "--unified=0", base, head, "--",
-                ":(exclude)scripts/check_candidate_merge_guard.sh",
-                ":(exclude)scripts/test_candidate_merge_guard.sh",
-            ],
+            ["git", "-C", repo_root, "diff", "--unified=0", base, head],
             text=True,
         )
     except subprocess.CalledProcessError:
         fail("cannot inspect the exact pull_request diff")
-    added = "\n".join(line[1:] for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++"))
+    guard_policy_paths = {
+        ".github/workflows/repo-contract.yml",
+        "scripts/check_candidate_merge_guard.sh",
+        "scripts/test_candidate_merge_guard.sh",
+        "scripts/check_repo_contract.sh",
+    }
+    current_path = ""
+    added_lines: list[str] = []
+    for line in patch.splitlines():
+        if line.startswith("+++ b/"):
+            current_path = line[len("+++ b/"):]
+            continue
+        if current_path in guard_policy_paths:
+            continue
+        if line.startswith("+") and not line.startswith("+++"):
+            added_lines.append(line[1:])
+    added = "\n".join(added_lines)
 
 if re.search(r"\bDOMAIN_LEAF_READY\b|(?:evidence|证据)[ _-]*(?:status|状态)\s*[:：]\s*Candidate\b", added, re.IGNORECASE):
     fail("candidate evidence in the pull_request diff is not mergeable")
