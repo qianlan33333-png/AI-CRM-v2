@@ -119,6 +119,9 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityOperationsManage: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityAdminRead: {
+		admin: authport.ScopeGlobal,
+	},
 	authport.CapabilityAdminShellRead: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},

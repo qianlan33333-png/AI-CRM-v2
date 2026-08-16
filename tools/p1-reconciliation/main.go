@@ -84,6 +84,16 @@ type integratedRoute struct {
 }
 
 var integratedRoutes = map[string]integratedRoute{
+	"LEGACY-API-0314": {
+		Operation: "getLegacyExecutionRuntime", Method: "GET", Path: "/api/admin/execution-runtime", TargetMapping: "P4-EXECUTION-RUNTIME-0314",
+		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Execution Runtime observation read is wired to the immutable human-session administrator capability without provider or receipt claims.",
+		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
+	},
+	"LEGACY-API-0315": {
+		Operation: "getLegacyExecutionTimeline", Method: "GET", Path: "/api/admin/executions/{execution_id}", TargetMapping: "P4-EXECUTION-RUNTIME-0315",
+		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Execution Runtime observation read is wired to the immutable human-session administrator capability without provider or receipt claims.",
+		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
+	},
 	"LEGACY-API-0421": {
 		Operation: "getLegacyPushCenterSections", Method: "GET", Path: "/api/admin/push-center/sections", TargetMapping: "P4-PUSH-CENTER-0421",
 		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",

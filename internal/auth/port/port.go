@@ -71,6 +71,7 @@ const (
 	CapabilityMessageArchiveExternalRead Capability = "message.archive.external.read"
 	CapabilityOperationsRead             Capability = "operations.read"
 	CapabilityOperationsManage           Capability = "operations.manage"
+	CapabilityAdminRead                  Capability = "admin.read"
 	CapabilityAdminShellRead             Capability = "admin.shell.read"
 )
 
@@ -90,6 +91,7 @@ func (capability Capability) Known() bool {
 		CapabilityOrderRead, CapabilityOrderWrite,
 		CapabilityMessageArchiveRead, CapabilityMessageArchiveExecute, CapabilityMessageArchiveExternalRead,
 		CapabilityOperationsRead, CapabilityOperationsManage,
+		CapabilityAdminRead,
 		CapabilityAdminShellRead:
 		return true
 	default:
@@ -228,7 +230,7 @@ func validAuthorization(authorization Authorization) bool {
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	case CapabilityOperationsRead, CapabilityOperationsManage:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
-	case CapabilityAdminShellRead:
+	case CapabilityAdminRead, CapabilityAdminShellRead:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:
 		return false

@@ -482,6 +482,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
+	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -831,6 +832,8 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/push-center/jobs/{job_id}/retry", authport.CapabilityOutboundControl, true, http.HandlerFunc(legacy.RetryOutboundJob)},
 			{http.MethodGet, "/api/admin/push-center/sections", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.PushCenterSections)},
 			{http.MethodGet, "/api/admin/push-center/stats", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.PushCenterStats)},
+			{http.MethodGet, "/api/admin/execution-runtime", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionRuntime)},
+			{http.MethodGet, "/api/admin/executions/{execution_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionTimeline)},
 			{http.MethodGet, "/api/admin/wechat-pay/products", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.ListProducts)},
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},

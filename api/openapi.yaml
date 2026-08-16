@@ -2307,6 +2307,48 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/execution-runtime:
+    get:
+      tags: [p4-execution-runtime-compat]
+      operationId: getLegacyExecutionRuntime
+      summary: Read the frozen observed execution runtime without invoking a worker or provider
+      x-legacy-mapping-ids: [LEGACY-API-0314]
+      x-p4-decision-evidence: P4-EXECUTION-RUNTIME-AB-2026-08-16
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Observed runtime or an explicit missing local control plane, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionRuntimeResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Execution Runtime read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionRuntimeUnavailable" } } } }
+  /api/admin/executions/{execution_id}:
+    get:
+      tags: [p4-execution-runtime-compat]
+      operationId: getLegacyExecutionTimeline
+      summary: Read one frozen observed execution timeline without asserting a provider receipt
+      x-legacy-mapping-ids: [LEGACY-API-0315]
+      x-p4-decision-evidence: P4-EXECUTION-RUNTIME-AB-2026-08-16
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - name: execution_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        "200": { description: Observed execution timeline, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionTimelineResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Missing or invalid execution identifier, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionNotFound" } } } }
+        "503": { description: Execution timeline read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionTimelineUnavailable" } } } }
   /api/admin/push-center/sections:
     get:
       tags: [p4-push-center-compat]
@@ -2533,6 +2575,93 @@ components:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
+    LegacyExecutionRuntimeControl:
+      type: object
+      additionalProperties: false
+      required: [name, state, details, observed_at]
+      properties:
+        name: { type: string, maxLength: 1024 }
+        state: { type: string, maxLength: 1024, description: "Observed local state; never a provider success claim." }
+        details: { type: object, additionalProperties: { type: string, maxLength: 1024 } }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+    LegacyExecutionRuntimeObservation:
+      type: object
+      additionalProperties: false
+      required: [source, queue, status, attempt, status_url, details, observed_at]
+      properties:
+        source: { type: string, maxLength: 1024 }
+        queue: { type: string, maxLength: 1024, description: "Observed queue name, not an execution or receipt result." }
+        status: { type: string, maxLength: 1024, description: "Observed status, not a provider receipt or executed-success assertion." }
+        attempt: { type: integer, minimum: 0, description: "Observed attempt count, not a delivery result." }
+        status_url: { type: string, maxLength: 1024 }
+        details: { type: object, additionalProperties: { type: string, maxLength: 1024 } }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+    LegacyExecutionGraphNode:
+      type: object
+      additionalProperties: false
+      required: [id, kind, status, message, details, observed_at, children]
+      properties:
+        id: { type: string, maxLength: 1024 }
+        kind: { type: string, maxLength: 1024 }
+        status: { type: string, maxLength: 1024, description: "Observed status, not a provider receipt or executed-success assertion." }
+        message: { type: string, maxLength: 1024, description: "Fixed-redacted diagnostic text." }
+        details: { type: object, additionalProperties: { type: string, maxLength: 1024 } }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+        children: { type: array, maxItems: 256, items: { $ref: "#/components/schemas/LegacyExecutionGraphNode" } }
+    LegacyExecutionGraph:
+      type: object
+      additionalProperties: false
+      required: [roots, items, truncated]
+      properties:
+        roots: { type: array, maxItems: 256, items: { $ref: "#/components/schemas/LegacyExecutionGraphNode" } }
+        items: { type: array, maxItems: 1024, items: { $ref: "#/components/schemas/LegacyExecutionRuntimeObservation" } }
+        truncated: { type: boolean, description: "True when the 12-depth, 256-node, 1024-item, or 1024-string bound truncated an observation." }
+    LegacyExecutionRuntimeResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, control, observations, truncated, observed_at, observed_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, description: "False with HTTP 200 when the local control plane is absent." }
+        control: { allOf: [{ $ref: "#/components/schemas/LegacyExecutionRuntimeControl" }], nullable: true }
+        observations: { type: array, maxItems: 1024, items: { $ref: "#/components/schemas/LegacyExecutionRuntimeObservation" } }
+        truncated: { type: boolean }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+        observed_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionTimelineResponse:
+      type: object
+      additionalProperties: false
+      required: [execution_id, graph, observed_at, observed_only, real_external_call_executed]
+      properties:
+        execution_id: { type: string, minLength: 5, maxLength: 100, pattern: '^exe_.+' }
+        graph: { $ref: "#/components/schemas/LegacyExecutionGraph" }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+        observed_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionRuntimeUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, error, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [execution_runtime_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionTimelineUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, error, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [execution_timeline_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionNotFound:
+      type: object
+      additionalProperties: false
+      required: [ok, error, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [execution_not_found] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyWriteMetadata:
       type: object
       properties:

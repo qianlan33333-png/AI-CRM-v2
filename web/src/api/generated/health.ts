@@ -5,6 +5,159 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type LegacyExecutionRuntimeControlDetails = { [key: string]: string };
+
+export interface LegacyExecutionRuntimeControl {
+  /** @maxLength 1024 */
+  name: string;
+  /**
+   * Observed local state; never a provider success claim.
+   * @maxLength 1024
+   */
+  state: string;
+  details: LegacyExecutionRuntimeControlDetails;
+  /** UTC Z timestamp. */
+  observed_at: string;
+}
+
+export type LegacyExecutionRuntimeObservationDetails = {
+  [key: string]: string;
+};
+
+export interface LegacyExecutionRuntimeObservation {
+  /** @maxLength 1024 */
+  source: string;
+  /**
+   * Observed queue name, not an execution or receipt result.
+   * @maxLength 1024
+   */
+  queue: string;
+  /**
+   * Observed status, not a provider receipt or executed-success assertion.
+   * @maxLength 1024
+   */
+  status: string;
+  /**
+   * Observed attempt count, not a delivery result.
+   * @minimum 0
+   */
+  attempt: number;
+  /** @maxLength 1024 */
+  status_url: string;
+  details: LegacyExecutionRuntimeObservationDetails;
+  /** UTC Z timestamp. */
+  observed_at: string;
+}
+
+export type LegacyExecutionGraphNodeDetails = { [key: string]: string };
+
+export interface LegacyExecutionGraphNode {
+  /** @maxLength 1024 */
+  id: string;
+  /** @maxLength 1024 */
+  kind: string;
+  /**
+   * Observed status, not a provider receipt or executed-success assertion.
+   * @maxLength 1024
+   */
+  status: string;
+  /**
+   * Fixed-redacted diagnostic text.
+   * @maxLength 1024
+   */
+  message: string;
+  details: LegacyExecutionGraphNodeDetails;
+  /** UTC Z timestamp. */
+  observed_at: string;
+  /** @maxItems 256 */
+  children: LegacyExecutionGraphNode[];
+}
+
+export interface LegacyExecutionGraph {
+  /** @maxItems 256 */
+  roots: LegacyExecutionGraphNode[];
+  /** @maxItems 1024 */
+  items: LegacyExecutionRuntimeObservation[];
+  /** True when the 12-depth, 256-node, 1024-item, or 1024-string bound truncated an observation. */
+  truncated: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type LegacyExecutionRuntimeResponseControl =
+  LegacyExecutionRuntimeControl | null;
+
+export interface LegacyExecutionRuntimeResponse {
+  /** False with HTTP 200 when the local control plane is absent. */
+  ok: boolean;
+  /** @nullable */
+  control: LegacyExecutionRuntimeResponseControl;
+  /** @maxItems 1024 */
+  observations: LegacyExecutionRuntimeObservation[];
+  truncated: boolean;
+  /** UTC Z timestamp. */
+  observed_at: string;
+  observed_only: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyExecutionTimelineResponse {
+  /**
+   * @minLength 5
+   * @maxLength 100
+   * @pattern ^exe_.+
+   */
+  execution_id: string;
+  graph: LegacyExecutionGraph;
+  /** UTC Z timestamp. */
+  observed_at: string;
+  observed_only: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyExecutionRuntimeUnavailableError =
+  (typeof LegacyExecutionRuntimeUnavailableError)[keyof typeof LegacyExecutionRuntimeUnavailableError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyExecutionRuntimeUnavailableError = {
+  execution_runtime_unavailable: "execution_runtime_unavailable",
+} as const;
+
+export interface LegacyExecutionRuntimeUnavailable {
+  ok: boolean;
+  error: LegacyExecutionRuntimeUnavailableError;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyExecutionTimelineUnavailableError =
+  (typeof LegacyExecutionTimelineUnavailableError)[keyof typeof LegacyExecutionTimelineUnavailableError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyExecutionTimelineUnavailableError = {
+  execution_timeline_unavailable: "execution_timeline_unavailable",
+} as const;
+
+export interface LegacyExecutionTimelineUnavailable {
+  ok: boolean;
+  error: LegacyExecutionTimelineUnavailableError;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyExecutionNotFoundError =
+  (typeof LegacyExecutionNotFoundError)[keyof typeof LegacyExecutionNotFoundError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyExecutionNotFoundError = {
+  execution_not_found: "execution_not_found",
+} as const;
+
+export interface LegacyExecutionNotFound {
+  ok: boolean;
+  error: LegacyExecutionNotFoundError;
+  real_external_call_executed: boolean;
+}
+
 export interface LegacyWriteMetadata {
   actor?: unknown;
   /** @maxLength 200 */
@@ -12953,6 +13106,139 @@ export const archiveLegacyGroupInvite = async (
     status: res.status,
     headers: res.headers,
   } as archiveLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Read the frozen observed execution runtime without invoking a worker or provider
+ */
+export type getLegacyExecutionRuntimeResponse200 = {
+  data: LegacyExecutionRuntimeResponse;
+  status: 200;
+};
+
+export type getLegacyExecutionRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyExecutionRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyExecutionRuntimeResponse503 = {
+  data: LegacyExecutionRuntimeUnavailable;
+  status: 503;
+};
+
+export type getLegacyExecutionRuntimeResponseSuccess =
+  getLegacyExecutionRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyExecutionRuntimeResponseError = (
+  | getLegacyExecutionRuntimeResponse401
+  | getLegacyExecutionRuntimeResponse403
+  | getLegacyExecutionRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyExecutionRuntimeResponse =
+  | getLegacyExecutionRuntimeResponseSuccess
+  | getLegacyExecutionRuntimeResponseError;
+
+export const getGetLegacyExecutionRuntimeUrl = () => {
+  return `/api/admin/execution-runtime`;
+};
+
+export const getLegacyExecutionRuntime = async (
+  options?: RequestInit,
+): Promise<getLegacyExecutionRuntimeResponse> => {
+  const res = await fetch(getGetLegacyExecutionRuntimeUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyExecutionRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyExecutionRuntimeResponse;
+};
+
+/**
+ * @summary Read one frozen observed execution timeline without asserting a provider receipt
+ */
+export type getLegacyExecutionTimelineResponse200 = {
+  data: LegacyExecutionTimelineResponse;
+  status: 200;
+};
+
+export type getLegacyExecutionTimelineResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyExecutionTimelineResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyExecutionTimelineResponse404 = {
+  data: LegacyExecutionNotFound;
+  status: 404;
+};
+
+export type getLegacyExecutionTimelineResponse503 = {
+  data: LegacyExecutionTimelineUnavailable;
+  status: 503;
+};
+
+export type getLegacyExecutionTimelineResponseSuccess =
+  getLegacyExecutionTimelineResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyExecutionTimelineResponseError = (
+  | getLegacyExecutionTimelineResponse401
+  | getLegacyExecutionTimelineResponse403
+  | getLegacyExecutionTimelineResponse404
+  | getLegacyExecutionTimelineResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyExecutionTimelineResponse =
+  | getLegacyExecutionTimelineResponseSuccess
+  | getLegacyExecutionTimelineResponseError;
+
+export const getGetLegacyExecutionTimelineUrl = (executionId: string) => {
+  return `/api/admin/executions/${executionId}`;
+};
+
+export const getLegacyExecutionTimeline = async (
+  executionId: string,
+  options?: RequestInit,
+): Promise<getLegacyExecutionTimelineResponse> => {
+  const res = await fetch(getGetLegacyExecutionTimelineUrl(executionId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyExecutionTimelineResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyExecutionTimelineResponse;
 };
 
 /**
