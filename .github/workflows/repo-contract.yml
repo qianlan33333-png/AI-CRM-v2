@@ -37,6 +37,11 @@ jobs:
       - name: Verify repository contract negative cases
         if: steps.promotion.outputs.mode == 'full'
         run: scripts/test_repo_contract.sh
+      - name: Verify Candidate Merge Guard
+        if: steps.promotion.outputs.mode == 'full'
+        run: |
+          scripts/test_candidate_merge_guard.sh
+          scripts/check_candidate_merge_guard.sh
       - name: Verify promotion fingerprints
         if: steps.promotion.outputs.mode == 'promotion'
         env:

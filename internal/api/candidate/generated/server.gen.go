@@ -79,13 +79,13 @@ func (e AutomationTriggerRunAgentCode) Valid() bool {
 
 // Defines values for AutomationTriggerRunHasError.
 const (
-	False AutomationTriggerRunHasError = false
+	AutomationTriggerRunHasErrorFalse AutomationTriggerRunHasError = false
 )
 
 // Valid indicates whether the value is a known member of the AutomationTriggerRunHasError enum.
 func (e AutomationTriggerRunHasError) Valid() bool {
 	switch e {
-	case False:
+	case AutomationTriggerRunHasErrorFalse:
 		return true
 	default:
 		return false
@@ -334,13 +334,838 @@ func (e IngestIdentityEventConflictStatus) Valid() bool {
 
 // Defines values for IngestIdentityEventPendingStatus.
 const (
-	Pending IngestIdentityEventPendingStatus = "pending"
+	IngestIdentityEventPendingStatusPending IngestIdentityEventPendingStatus = "pending"
 )
 
 // Valid indicates whether the value is a known member of the IngestIdentityEventPendingStatus enum.
 func (e IngestIdentityEventPendingStatus) Valid() bool {
 	switch e {
-	case Pending:
+	case IngestIdentityEventPendingStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterDegradedCountsFailed.
+const (
+	LegacyPushCenterDegradedCountsFailedN0 LegacyPushCenterDegradedCountsFailed = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterDegradedCountsFailed enum.
+func (e LegacyPushCenterDegradedCountsFailed) Valid() bool {
+	switch e {
+	case LegacyPushCenterDegradedCountsFailedN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterDegradedCountsPending.
+const (
+	LegacyPushCenterDegradedCountsPendingN0 LegacyPushCenterDegradedCountsPending = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterDegradedCountsPending enum.
+func (e LegacyPushCenterDegradedCountsPending) Valid() bool {
+	switch e {
+	case LegacyPushCenterDegradedCountsPendingN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterDegradedCountsRunning.
+const (
+	LegacyPushCenterDegradedCountsRunningN0 LegacyPushCenterDegradedCountsRunning = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterDegradedCountsRunning enum.
+func (e LegacyPushCenterDegradedCountsRunning) Valid() bool {
+	switch e {
+	case LegacyPushCenterDegradedCountsRunningN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterDegradedCountsSent.
+const (
+	LegacyPushCenterDegradedCountsSentN0 LegacyPushCenterDegradedCountsSent = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterDegradedCountsSent enum.
+func (e LegacyPushCenterDegradedCountsSent) Valid() bool {
+	switch e {
+	case LegacyPushCenterDegradedCountsSentN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterDegradedCountsTotal.
+const (
+	LegacyPushCenterDegradedCountsTotalN0 LegacyPushCenterDegradedCountsTotal = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterDegradedCountsTotal enum.
+func (e LegacyPushCenterDegradedCountsTotal) Valid() bool {
+	switch e {
+	case LegacyPushCenterDegradedCountsTotalN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterLaneSummaryLane.
+const (
+	AiGeneration         LegacyPushCenterLaneSummaryLane = "ai_generation"
+	OutboundWebhook      LegacyPushCenterLaneSummaryLane = "outbound_webhook"
+	WecomAiAssistantBulk LegacyPushCenterLaneSummaryLane = "wecom_ai_assistant_bulk"
+	WecomBulk            LegacyPushCenterLaneSummaryLane = "wecom_bulk"
+	WecomInteractive     LegacyPushCenterLaneSummaryLane = "wecom_interactive"
+	WecomMedia           LegacyPushCenterLaneSummaryLane = "wecom_media"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterLaneSummaryLane enum.
+func (e LegacyPushCenterLaneSummaryLane) Valid() bool {
+	switch e {
+	case AiGeneration:
+		return true
+	case OutboundWebhook:
+		return true
+	case WecomAiAssistantBulk:
+		return true
+	case WecomBulk:
+		return true
+	case WecomInteractive:
+		return true
+	case WecomMedia:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionKey.
+const (
+	AiAssist         LegacyPushCenterSectionKey = "ai_assist"
+	CustomerWebhook  LegacyPushCenterSectionKey = "customer_webhook"
+	GroupBroadcast   LegacyPushCenterSectionKey = "group_broadcast"
+	GroupOps         LegacyPushCenterSectionKey = "group_ops"
+	Integrations     LegacyPushCenterSectionKey = "integrations"
+	Order            LegacyPushCenterSectionKey = "order"
+	Other            LegacyPushCenterSectionKey = "other"
+	Payment          LegacyPushCenterSectionKey = "payment"
+	PrivateBroadcast LegacyPushCenterSectionKey = "private_broadcast"
+	Questionnaire    LegacyPushCenterSectionKey = "questionnaire"
+	Tags             LegacyPushCenterSectionKey = "tags"
+	TestReceiver     LegacyPushCenterSectionKey = "test_receiver"
+	Welcome          LegacyPushCenterSectionKey = "welcome"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionKey enum.
+func (e LegacyPushCenterSectionKey) Valid() bool {
+	switch e {
+	case AiAssist:
+		return true
+	case CustomerWebhook:
+		return true
+	case GroupBroadcast:
+		return true
+	case GroupOps:
+		return true
+	case Integrations:
+		return true
+	case Order:
+		return true
+	case Other:
+		return true
+	case Payment:
+		return true
+	case PrivateBroadcast:
+		return true
+	case Questionnaire:
+		return true
+	case Tags:
+		return true
+	case TestReceiver:
+		return true
+	case Welcome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseCapabilityOwner.
+const (
+	LegacyPushCenterSectionsDegradedResponseCapabilityOwnerAiCrmNextplatformFoundationpushCenter LegacyPushCenterSectionsDegradedResponseCapabilityOwner = "ai_crm_next/platform_foundation/push_center"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseCapabilityOwner enum.
+func (e LegacyPushCenterSectionsDegradedResponseCapabilityOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseCapabilityOwnerAiCrmNextplatformFoundationpushCenter:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseDegraded.
+const (
+	LegacyPushCenterSectionsDegradedResponseDegradedTrue LegacyPushCenterSectionsDegradedResponseDegraded = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseDegraded enum.
+func (e LegacyPushCenterSectionsDegradedResponseDegraded) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseDegradedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd.
+const (
+	LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProdFalse LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd enum.
+func (e LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProdFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode.
+const (
+	LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureModeFalse LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode enum.
+func (e LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureModeFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady.
+const (
+	LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReadyFalse LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady enum.
+func (e LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReadyFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseError.
+const (
+	LegacyPushCenterSectionsDegradedResponseErrorEmpty LegacyPushCenterSectionsDegradedResponseError = ""
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseError enum.
+func (e LegacyPushCenterSectionsDegradedResponseError) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseErrorEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseErrorCode.
+const (
+	LegacyPushCenterSectionsDegradedResponseErrorCodeProductionReadUnavailable LegacyPushCenterSectionsDegradedResponseErrorCode = "production_read_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseErrorCode enum.
+func (e LegacyPushCenterSectionsDegradedResponseErrorCode) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseErrorCodeProductionReadUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseFallbackUsed.
+const (
+	LegacyPushCenterSectionsDegradedResponseFallbackUsedFalse LegacyPushCenterSectionsDegradedResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseFallbackUsed enum.
+func (e LegacyPushCenterSectionsDegradedResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseLimit.
+const (
+	LegacyPushCenterSectionsDegradedResponseLimitN50 LegacyPushCenterSectionsDegradedResponseLimit = 50
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseLimit enum.
+func (e LegacyPushCenterSectionsDegradedResponseLimit) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseLimitN50:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseOffset.
+const (
+	LegacyPushCenterSectionsDegradedResponseOffsetN0 LegacyPushCenterSectionsDegradedResponseOffset = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseOffset enum.
+func (e LegacyPushCenterSectionsDegradedResponseOffset) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseOffsetN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseOk.
+const (
+	LegacyPushCenterSectionsDegradedResponseOkTrue LegacyPushCenterSectionsDegradedResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseOk enum.
+func (e LegacyPushCenterSectionsDegradedResponseOk) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponsePageError.
+const (
+	LegacyPushCenterSectionsDegradedResponsePageErrorEmpty LegacyPushCenterSectionsDegradedResponsePageError = "推送中心读模型暂不可用，请稍后重试。"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponsePageError enum.
+func (e LegacyPushCenterSectionsDegradedResponsePageError) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponsePageErrorEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseReadModelStatus.
+const (
+	LegacyPushCenterSectionsDegradedResponseReadModelStatusUnavailable LegacyPushCenterSectionsDegradedResponseReadModelStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseReadModelStatus enum.
+func (e LegacyPushCenterSectionsDegradedResponseReadModelStatus) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseReadModelStatusUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted.
+const (
+	LegacyPushCenterSectionsDegradedResponseRealExternalCallExecutedFalse LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted enum.
+func (e LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseRouteOwner.
+const (
+	LegacyPushCenterSectionsDegradedResponseRouteOwnerAiCrmNext LegacyPushCenterSectionsDegradedResponseRouteOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseRouteOwner enum.
+func (e LegacyPushCenterSectionsDegradedResponseRouteOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseRouteOwnerAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseSourceStatus.
+const (
+	LegacyPushCenterSectionsDegradedResponseSourceStatusProductionUnavailable LegacyPushCenterSectionsDegradedResponseSourceStatus = "production_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseSourceStatus enum.
+func (e LegacyPushCenterSectionsDegradedResponseSourceStatus) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseSourceStatusProductionUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseStatusCode.
+const (
+	LegacyPushCenterSectionsDegradedResponseStatusCodeN200 LegacyPushCenterSectionsDegradedResponseStatusCode = 200
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseStatusCode enum.
+func (e LegacyPushCenterSectionsDegradedResponseStatusCode) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseStatusCodeN200:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsDegradedResponseTotal.
+const (
+	LegacyPushCenterSectionsDegradedResponseTotalN0 LegacyPushCenterSectionsDegradedResponseTotal = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsDegradedResponseTotal enum.
+func (e LegacyPushCenterSectionsDegradedResponseTotal) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsDegradedResponseTotalN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsResponseOk.
+const (
+	LegacyPushCenterSectionsResponseOkTrue LegacyPushCenterSectionsResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsResponseOk enum.
+func (e LegacyPushCenterSectionsResponseOk) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterSectionsResponseRouteOwner.
+const (
+	LegacyPushCenterSectionsResponseRouteOwnerAiCrmNext LegacyPushCenterSectionsResponseRouteOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterSectionsResponseRouteOwner enum.
+func (e LegacyPushCenterSectionsResponseRouteOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterSectionsResponseRouteOwnerAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseCapabilityOwner.
+const (
+	LegacyPushCenterStatsDegradedResponseCapabilityOwnerAiCrmNextplatformFoundationpushCenter LegacyPushCenterStatsDegradedResponseCapabilityOwner = "ai_crm_next/platform_foundation/push_center"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseCapabilityOwner enum.
+func (e LegacyPushCenterStatsDegradedResponseCapabilityOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseCapabilityOwnerAiCrmNextplatformFoundationpushCenter:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseDegraded.
+const (
+	LegacyPushCenterStatsDegradedResponseDegradedTrue LegacyPushCenterStatsDegradedResponseDegraded = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseDegraded enum.
+func (e LegacyPushCenterStatsDegradedResponseDegraded) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseDegradedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd.
+const (
+	LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProdFalse LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd enum.
+func (e LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProdFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode.
+const (
+	LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureModeFalse LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode enum.
+func (e LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureModeFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady.
+const (
+	LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReadyFalse LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady enum.
+func (e LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReadyFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseError.
+const (
+	LegacyPushCenterStatsDegradedResponseErrorEmpty LegacyPushCenterStatsDegradedResponseError = ""
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseError enum.
+func (e LegacyPushCenterStatsDegradedResponseError) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseErrorEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseErrorCode.
+const (
+	LegacyPushCenterStatsDegradedResponseErrorCodeProductionReadUnavailable LegacyPushCenterStatsDegradedResponseErrorCode = "production_read_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseErrorCode enum.
+func (e LegacyPushCenterStatsDegradedResponseErrorCode) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseErrorCodeProductionReadUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseFallbackUsed.
+const (
+	LegacyPushCenterStatsDegradedResponseFallbackUsedFalse LegacyPushCenterStatsDegradedResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseFallbackUsed enum.
+func (e LegacyPushCenterStatsDegradedResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseLimit.
+const (
+	LegacyPushCenterStatsDegradedResponseLimitN50 LegacyPushCenterStatsDegradedResponseLimit = 50
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseLimit enum.
+func (e LegacyPushCenterStatsDegradedResponseLimit) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseLimitN50:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseOffset.
+const (
+	LegacyPushCenterStatsDegradedResponseOffsetN0 LegacyPushCenterStatsDegradedResponseOffset = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseOffset enum.
+func (e LegacyPushCenterStatsDegradedResponseOffset) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseOffsetN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseOk.
+const (
+	LegacyPushCenterStatsDegradedResponseOkTrue LegacyPushCenterStatsDegradedResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseOk enum.
+func (e LegacyPushCenterStatsDegradedResponseOk) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponsePageError.
+const (
+	LegacyPushCenterStatsDegradedResponsePageErrorEmpty LegacyPushCenterStatsDegradedResponsePageError = "推送中心读模型暂不可用，请稍后重试。"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponsePageError enum.
+func (e LegacyPushCenterStatsDegradedResponsePageError) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponsePageErrorEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseReadModelStatus.
+const (
+	LegacyPushCenterStatsDegradedResponseReadModelStatusUnavailable LegacyPushCenterStatsDegradedResponseReadModelStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseReadModelStatus enum.
+func (e LegacyPushCenterStatsDegradedResponseReadModelStatus) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseReadModelStatusUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted.
+const (
+	LegacyPushCenterStatsDegradedResponseRealExternalCallExecutedFalse LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted enum.
+func (e LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseRouteOwner.
+const (
+	LegacyPushCenterStatsDegradedResponseRouteOwnerAiCrmNext LegacyPushCenterStatsDegradedResponseRouteOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseRouteOwner enum.
+func (e LegacyPushCenterStatsDegradedResponseRouteOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseRouteOwnerAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseSourceStatus.
+const (
+	LegacyPushCenterStatsDegradedResponseSourceStatusProductionUnavailable LegacyPushCenterStatsDegradedResponseSourceStatus = "production_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseSourceStatus enum.
+func (e LegacyPushCenterStatsDegradedResponseSourceStatus) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseSourceStatusProductionUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseStatusCode.
+const (
+	LegacyPushCenterStatsDegradedResponseStatusCodeN200 LegacyPushCenterStatsDegradedResponseStatusCode = 200
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseStatusCode enum.
+func (e LegacyPushCenterStatsDegradedResponseStatusCode) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseStatusCodeN200:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseTotal.
+const (
+	N0 LegacyPushCenterStatsDegradedResponseTotal = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseTotal enum.
+func (e LegacyPushCenterStatsDegradedResponseTotal) Valid() bool {
+	switch e {
+	case N0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseCapabilityOwner.
+const (
+	AiCrmNextplatformFoundationpushCenter LegacyPushCenterStatsResponseCapabilityOwner = "ai_crm_next/platform_foundation/push_center"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseCapabilityOwner enum.
+func (e LegacyPushCenterStatsResponseCapabilityOwner) Valid() bool {
+	switch e {
+	case AiCrmNextplatformFoundationpushCenter:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseOk.
+const (
+	LegacyPushCenterStatsResponseOkTrue LegacyPushCenterStatsResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseOk enum.
+func (e LegacyPushCenterStatsResponseOk) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseRealExternalCallExecuted.
+const (
+	LegacyPushCenterStatsResponseRealExternalCallExecutedFalse LegacyPushCenterStatsResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseRealExternalCallExecuted enum.
+func (e LegacyPushCenterStatsResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseRouteOwner.
+const (
+	LegacyPushCenterStatsResponseRouteOwnerAiCrmNext LegacyPushCenterStatsResponseRouteOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseRouteOwner enum.
+func (e LegacyPushCenterStatsResponseRouteOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsResponseRouteOwnerAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatusDefinitionKey.
+const (
+	LegacyPushCenterStatusDefinitionKeyFailed                        LegacyPushCenterStatusDefinitionKey = "failed"
+	LegacyPushCenterStatusDefinitionKeyPending                       LegacyPushCenterStatusDefinitionKey = "pending"
+	LegacyPushCenterStatusDefinitionKeyRunning                       LegacyPushCenterStatusDefinitionKey = "running"
+	LegacyPushCenterStatusDefinitionKeySent                          LegacyPushCenterStatusDefinitionKey = "sent"
+	LegacyPushCenterStatusDefinitionKeySentWithShadowWarning         LegacyPushCenterStatusDefinitionKey = "sent_with_shadow_warning"
+	LegacyPushCenterStatusDefinitionKeyShadowFailedNotBusinessFailed LegacyPushCenterStatusDefinitionKey = "shadow_failed_not_business_failed"
+	LegacyPushCenterStatusDefinitionKeySimulated                     LegacyPushCenterStatusDefinitionKey = "simulated"
+	LegacyPushCenterStatusDefinitionKeySucceeded                     LegacyPushCenterStatusDefinitionKey = "succeeded"
+	LegacyPushCenterStatusDefinitionKeyUnknownAfterDispatch          LegacyPushCenterStatusDefinitionKey = "unknown_after_dispatch"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatusDefinitionKey enum.
+func (e LegacyPushCenterStatusDefinitionKey) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatusDefinitionKeyFailed:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyPending:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyRunning:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySent:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySentWithShadowWarning:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyShadowFailedNotBusinessFailed:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySimulated:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySucceeded:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyUnknownAfterDispatch:
 		return true
 	default:
 		return false
@@ -851,6 +1676,382 @@ type IngestIdentityEventResponse struct {
 	union json.RawMessage
 }
 
+// LegacyPushCenterCounts defines model for LegacyPushCenterCounts.
+type LegacyPushCenterCounts struct {
+	ByEffectiveStatus map[string]int64 `json:"by_effective_status"`
+	BySection         map[string]int64 `json:"by_section"`
+	ByStatus          map[string]int64 `json:"by_status"`
+	Failed            int64            `json:"failed"`
+	Pending           int64            `json:"pending"`
+	Running           int64            `json:"running"`
+	Sent              int64            `json:"sent"`
+	ShadowWarning     int64            `json:"shadow_warning"`
+	Succeeded         int64            `json:"succeeded"`
+	Total             int64            `json:"total"`
+}
+
+// LegacyPushCenterDegradedCounts defines model for LegacyPushCenterDegradedCounts.
+type LegacyPushCenterDegradedCounts struct {
+	ByEffectiveStatus map[string]interface{}                `json:"by_effective_status"`
+	BySection         map[string]interface{}                `json:"by_section"`
+	ByStatus          map[string]interface{}                `json:"by_status"`
+	Failed            LegacyPushCenterDegradedCountsFailed  `json:"failed"`
+	Pending           LegacyPushCenterDegradedCountsPending `json:"pending"`
+	Running           LegacyPushCenterDegradedCountsRunning `json:"running"`
+	Sent              LegacyPushCenterDegradedCountsSent    `json:"sent"`
+	Total             LegacyPushCenterDegradedCountsTotal   `json:"total"`
+}
+
+// LegacyPushCenterDegradedCountsFailed defines model for LegacyPushCenterDegradedCounts.Failed.
+type LegacyPushCenterDegradedCountsFailed int64
+
+// LegacyPushCenterDegradedCountsPending defines model for LegacyPushCenterDegradedCounts.Pending.
+type LegacyPushCenterDegradedCountsPending int64
+
+// LegacyPushCenterDegradedCountsRunning defines model for LegacyPushCenterDegradedCounts.Running.
+type LegacyPushCenterDegradedCountsRunning int64
+
+// LegacyPushCenterDegradedCountsSent defines model for LegacyPushCenterDegradedCounts.Sent.
+type LegacyPushCenterDegradedCountsSent int64
+
+// LegacyPushCenterDegradedCountsTotal defines model for LegacyPushCenterDegradedCounts.Total.
+type LegacyPushCenterDegradedCountsTotal int64
+
+// LegacyPushCenterFilters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+type LegacyPushCenterFilters struct {
+	BusinessId     *string `json:"business_id,omitempty"`
+	BusinessType   *string `json:"business_type,omitempty"`
+	CreatedFrom    *string `json:"created_from,omitempty"`
+	CreatedTo      *string `json:"created_to,omitempty"`
+	EffectType     *string `json:"effect_type,omitempty"`
+	ExternalUserid *string `json:"external_userid,omitempty"`
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+	OwnerUserid    *string `json:"owner_userid,omitempty"`
+	Section        *string `json:"section,omitempty"`
+	SourceModule   *string `json:"source_module,omitempty"`
+	SourceRoute    *string `json:"source_route,omitempty"`
+	Status         *string `json:"status,omitempty"`
+	TargetId       *string `json:"target_id,omitempty"`
+	TargetType     *string `json:"target_type,omitempty"`
+	TraceId        *string `json:"trace_id,omitempty"`
+}
+
+// LegacyPushCenterInternalEventSummary defines model for LegacyPushCenterInternalEventSummary.
+type LegacyPushCenterInternalEventSummary struct {
+	Blocked         interface{} `json:"blocked"`
+	Eligible        interface{} `json:"eligible"`
+	FailedRetryable interface{} `json:"failed_retryable"`
+	FailedTerminal  interface{} `json:"failed_terminal"`
+	RawDue          interface{} `json:"raw_due"`
+	RawOpen         interface{} `json:"raw_open"`
+}
+
+// LegacyPushCenterLaneSummary defines model for LegacyPushCenterLaneSummary.
+type LegacyPushCenterLaneSummary struct {
+	AcceptedLastMinute       interface{}                          `json:"accepted_last_minute"`
+	BlockedUntil             interface{}                          `json:"blocked_until"`
+	Dlq                      interface{}                          `json:"dlq"`
+	Eligible                 interface{}                          `json:"eligible"`
+	Enabled                  interface{}                          `json:"enabled"`
+	EstimatedDrainSeconds    interface{}                          `json:"estimated_drain_seconds"`
+	Held                     interface{}                          `json:"held"`
+	InFlight                 interface{}                          `json:"in_flight"`
+	InternalEvent            LegacyPushCenterInternalEventSummary `json:"internal_event"`
+	Lane                     LegacyPushCenterLaneSummaryLane      `json:"lane"`
+	MaxInFlight              interface{}                          `json:"max_in_flight"`
+	OldestEligibleAgeSeconds interface{}                          `json:"oldest_eligible_age_seconds"`
+	P95ProviderCallMs        interface{}                          `json:"p95_provider_call_ms"`
+	P95QueueWaitMs           interface{}                          `json:"p95_queue_wait_ms"`
+	PolicyGated              interface{}                          `json:"policy_gated"`
+	PolicyVersion            interface{}                          `json:"policy_version"`
+	RateLimitCountLastHour   interface{}                          `json:"rate_limit_count_last_hour"`
+	RateLimited              interface{}                          `json:"rate_limited"`
+	RawOpen                  interface{}                          `json:"raw_open"`
+	RetryWait                interface{}                          `json:"retry_wait"`
+	RolloutMode              interface{}                          `json:"rollout_mode"`
+	Scheduled                interface{}                          `json:"scheduled"`
+	TaskAcceptanceRate1m     interface{}                          `json:"task_acceptance_rate_1m"`
+	ThroughputLastMinute     interface{}                          `json:"throughput_last_minute"`
+	Unknown                  interface{}                          `json:"unknown"`
+}
+
+// LegacyPushCenterLaneSummaryLane defines model for LegacyPushCenterLaneSummary.Lane.
+type LegacyPushCenterLaneSummaryLane string
+
+// LegacyPushCenterRuntimeQueue defines model for LegacyPushCenterRuntimeQueue.
+type LegacyPushCenterRuntimeQueue struct {
+	ActiveGeneration interface{}                          `json:"active_generation"`
+	ClaimEnabled     interface{}                          `json:"claim_enabled"`
+	Dlq              interface{}                          `json:"dlq"`
+	Eligible         interface{}                          `json:"eligible"`
+	Held             interface{}                          `json:"held"`
+	InFlight         interface{}                          `json:"in_flight"`
+	InternalEvent    LegacyPushCenterInternalEventSummary `json:"internal_event"`
+	Lanes            []LegacyPushCenterLaneSummary        `json:"lanes"`
+	PolicyGated      interface{}                          `json:"policy_gated"`
+	PolicyVersion    interface{}                          `json:"policy_version"`
+	RateLimited      interface{}                          `json:"rate_limited"`
+	RawOpen          interface{}                          `json:"raw_open"`
+	RetryWait        interface{}                          `json:"retry_wait"`
+	RolloutMode      interface{}                          `json:"rollout_mode"`
+	Scheduled        interface{}                          `json:"scheduled"`
+	Unknown          interface{}                          `json:"unknown"`
+}
+
+// LegacyPushCenterSection defines model for LegacyPushCenterSection.
+type LegacyPushCenterSection struct {
+	CapabilityKey string                     `json:"capability_key"`
+	Count         int64                      `json:"count"`
+	EffectTypes   []string                   `json:"effect_types"`
+	Key           LegacyPushCenterSectionKey `json:"key"`
+	Label         string                     `json:"label"`
+}
+
+// LegacyPushCenterSectionKey defines model for LegacyPushCenterSection.Key.
+type LegacyPushCenterSectionKey string
+
+// LegacyPushCenterSectionsDegradedResponse defines model for LegacyPushCenterSectionsDegradedResponse.
+type LegacyPushCenterSectionsDegradedResponse struct {
+	CapabilityOwner LegacyPushCenterSectionsDegradedResponseCapabilityOwner `json:"capability_owner"`
+	Counts          LegacyPushCenterDegradedCounts                          `json:"counts"`
+	Degraded        LegacyPushCenterSectionsDegradedResponseDegraded        `json:"degraded"`
+	Diagnostics     struct {
+		AllowFixtureRepoInProd LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd `json:"allow_fixture_repo_in_prod"`
+		ErrorClass             string                                                                    `json:"error_class"`
+		FixtureMode            LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode            `json:"fixture_mode"`
+		ProductionDataReady    LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady    `json:"production_data_ready"`
+	} `json:"diagnostics"`
+	Error        LegacyPushCenterSectionsDegradedResponseError        `json:"error"`
+	ErrorCode    LegacyPushCenterSectionsDegradedResponseErrorCode    `json:"error_code"`
+	FallbackUsed LegacyPushCenterSectionsDegradedResponseFallbackUsed `json:"fallback_used"`
+
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters                  LegacyPushCenterFilters                                          `json:"filters"`
+	Items                    []interface{}                                                    `json:"items"`
+	Limit                    LegacyPushCenterSectionsDegradedResponseLimit                    `json:"limit"`
+	Offset                   LegacyPushCenterSectionsDegradedResponseOffset                   `json:"offset"`
+	Ok                       LegacyPushCenterSectionsDegradedResponseOk                       `json:"ok"`
+	PageError                LegacyPushCenterSectionsDegradedResponsePageError                `json:"page_error"`
+	ReadModelStatus          LegacyPushCenterSectionsDegradedResponseReadModelStatus          `json:"read_model_status"`
+	RealExternalCallExecuted LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RouteOwner               LegacyPushCenterSectionsDegradedResponseRouteOwner               `json:"route_owner"`
+	Sections                 []interface{}                                                    `json:"sections"`
+	SourceStatus             LegacyPushCenterSectionsDegradedResponseSourceStatus             `json:"source_status"`
+	StatusCode               LegacyPushCenterSectionsDegradedResponseStatusCode               `json:"status_code"`
+	StatusDefinitions        []LegacyPushCenterStatusDefinition                               `json:"status_definitions"`
+	Total                    LegacyPushCenterSectionsDegradedResponseTotal                    `json:"total"`
+}
+
+// LegacyPushCenterSectionsDegradedResponseCapabilityOwner defines model for LegacyPushCenterSectionsDegradedResponse.CapabilityOwner.
+type LegacyPushCenterSectionsDegradedResponseCapabilityOwner string
+
+// LegacyPushCenterSectionsDegradedResponseDegraded defines model for LegacyPushCenterSectionsDegradedResponse.Degraded.
+type LegacyPushCenterSectionsDegradedResponseDegraded bool
+
+// LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd defines model for LegacyPushCenterSectionsDegradedResponse.Diagnostics.AllowFixtureRepoInProd.
+type LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd bool
+
+// LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode defines model for LegacyPushCenterSectionsDegradedResponse.Diagnostics.FixtureMode.
+type LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode bool
+
+// LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady defines model for LegacyPushCenterSectionsDegradedResponse.Diagnostics.ProductionDataReady.
+type LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady bool
+
+// LegacyPushCenterSectionsDegradedResponseError defines model for LegacyPushCenterSectionsDegradedResponse.Error.
+type LegacyPushCenterSectionsDegradedResponseError string
+
+// LegacyPushCenterSectionsDegradedResponseErrorCode defines model for LegacyPushCenterSectionsDegradedResponse.ErrorCode.
+type LegacyPushCenterSectionsDegradedResponseErrorCode string
+
+// LegacyPushCenterSectionsDegradedResponseFallbackUsed defines model for LegacyPushCenterSectionsDegradedResponse.FallbackUsed.
+type LegacyPushCenterSectionsDegradedResponseFallbackUsed bool
+
+// LegacyPushCenterSectionsDegradedResponseLimit defines model for LegacyPushCenterSectionsDegradedResponse.Limit.
+type LegacyPushCenterSectionsDegradedResponseLimit int
+
+// LegacyPushCenterSectionsDegradedResponseOffset defines model for LegacyPushCenterSectionsDegradedResponse.Offset.
+type LegacyPushCenterSectionsDegradedResponseOffset int
+
+// LegacyPushCenterSectionsDegradedResponseOk defines model for LegacyPushCenterSectionsDegradedResponse.Ok.
+type LegacyPushCenterSectionsDegradedResponseOk bool
+
+// LegacyPushCenterSectionsDegradedResponsePageError defines model for LegacyPushCenterSectionsDegradedResponse.PageError.
+type LegacyPushCenterSectionsDegradedResponsePageError string
+
+// LegacyPushCenterSectionsDegradedResponseReadModelStatus defines model for LegacyPushCenterSectionsDegradedResponse.ReadModelStatus.
+type LegacyPushCenterSectionsDegradedResponseReadModelStatus string
+
+// LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted defines model for LegacyPushCenterSectionsDegradedResponse.RealExternalCallExecuted.
+type LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted bool
+
+// LegacyPushCenterSectionsDegradedResponseRouteOwner defines model for LegacyPushCenterSectionsDegradedResponse.RouteOwner.
+type LegacyPushCenterSectionsDegradedResponseRouteOwner string
+
+// LegacyPushCenterSectionsDegradedResponseSourceStatus defines model for LegacyPushCenterSectionsDegradedResponse.SourceStatus.
+type LegacyPushCenterSectionsDegradedResponseSourceStatus string
+
+// LegacyPushCenterSectionsDegradedResponseStatusCode defines model for LegacyPushCenterSectionsDegradedResponse.StatusCode.
+type LegacyPushCenterSectionsDegradedResponseStatusCode int
+
+// LegacyPushCenterSectionsDegradedResponseTotal defines model for LegacyPushCenterSectionsDegradedResponse.Total.
+type LegacyPushCenterSectionsDegradedResponseTotal int
+
+// LegacyPushCenterSectionsResponse defines model for LegacyPushCenterSectionsResponse.
+type LegacyPushCenterSectionsResponse struct {
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters           LegacyPushCenterFilters                    `json:"filters"`
+	Ok                LegacyPushCenterSectionsResponseOk         `json:"ok"`
+	RouteOwner        LegacyPushCenterSectionsResponseRouteOwner `json:"route_owner"`
+	Sections          []LegacyPushCenterSection                  `json:"sections"`
+	StatusDefinitions []LegacyPushCenterStatusDefinition         `json:"status_definitions"`
+}
+
+// LegacyPushCenterSectionsResponseOk defines model for LegacyPushCenterSectionsResponse.Ok.
+type LegacyPushCenterSectionsResponseOk bool
+
+// LegacyPushCenterSectionsResponseRouteOwner defines model for LegacyPushCenterSectionsResponse.RouteOwner.
+type LegacyPushCenterSectionsResponseRouteOwner string
+
+// LegacyPushCenterStatsDegradedResponse defines model for LegacyPushCenterStatsDegradedResponse.
+type LegacyPushCenterStatsDegradedResponse struct {
+	CapabilityOwner LegacyPushCenterStatsDegradedResponseCapabilityOwner `json:"capability_owner"`
+	Counts          LegacyPushCenterDegradedCounts                       `json:"counts"`
+	Degraded        LegacyPushCenterStatsDegradedResponseDegraded        `json:"degraded"`
+	Diagnostics     struct {
+		AllowFixtureRepoInProd LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd `json:"allow_fixture_repo_in_prod"`
+		ErrorClass             string                                                                 `json:"error_class"`
+		FixtureMode            LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode            `json:"fixture_mode"`
+		ProductionDataReady    LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady    `json:"production_data_ready"`
+	} `json:"diagnostics"`
+	Error        LegacyPushCenterStatsDegradedResponseError        `json:"error"`
+	ErrorCode    LegacyPushCenterStatsDegradedResponseErrorCode    `json:"error_code"`
+	FallbackUsed LegacyPushCenterStatsDegradedResponseFallbackUsed `json:"fallback_used"`
+
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters                  LegacyPushCenterFilters                                       `json:"filters"`
+	Items                    []interface{}                                                 `json:"items"`
+	Limit                    LegacyPushCenterStatsDegradedResponseLimit                    `json:"limit"`
+	Offset                   LegacyPushCenterStatsDegradedResponseOffset                   `json:"offset"`
+	Ok                       LegacyPushCenterStatsDegradedResponseOk                       `json:"ok"`
+	PageError                LegacyPushCenterStatsDegradedResponsePageError                `json:"page_error"`
+	ReadModelStatus          LegacyPushCenterStatsDegradedResponseReadModelStatus          `json:"read_model_status"`
+	RealExternalCallExecuted LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RouteOwner               LegacyPushCenterStatsDegradedResponseRouteOwner               `json:"route_owner"`
+	RuntimeQueue             LegacyPushCenterStatsDegradedResponse_RuntimeQueue            `json:"runtime_queue"`
+	Sections                 []interface{}                                                 `json:"sections"`
+	SourceStatus             LegacyPushCenterStatsDegradedResponseSourceStatus             `json:"source_status"`
+	StatusCode               LegacyPushCenterStatsDegradedResponseStatusCode               `json:"status_code"`
+	StatusDefinitions        []LegacyPushCenterStatusDefinition                            `json:"status_definitions"`
+	Total                    LegacyPushCenterStatsDegradedResponseTotal                    `json:"total"`
+}
+
+// LegacyPushCenterStatsDegradedResponseCapabilityOwner defines model for LegacyPushCenterStatsDegradedResponse.CapabilityOwner.
+type LegacyPushCenterStatsDegradedResponseCapabilityOwner string
+
+// LegacyPushCenterStatsDegradedResponseDegraded defines model for LegacyPushCenterStatsDegradedResponse.Degraded.
+type LegacyPushCenterStatsDegradedResponseDegraded bool
+
+// LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd defines model for LegacyPushCenterStatsDegradedResponse.Diagnostics.AllowFixtureRepoInProd.
+type LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd bool
+
+// LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode defines model for LegacyPushCenterStatsDegradedResponse.Diagnostics.FixtureMode.
+type LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode bool
+
+// LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady defines model for LegacyPushCenterStatsDegradedResponse.Diagnostics.ProductionDataReady.
+type LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady bool
+
+// LegacyPushCenterStatsDegradedResponseError defines model for LegacyPushCenterStatsDegradedResponse.Error.
+type LegacyPushCenterStatsDegradedResponseError string
+
+// LegacyPushCenterStatsDegradedResponseErrorCode defines model for LegacyPushCenterStatsDegradedResponse.ErrorCode.
+type LegacyPushCenterStatsDegradedResponseErrorCode string
+
+// LegacyPushCenterStatsDegradedResponseFallbackUsed defines model for LegacyPushCenterStatsDegradedResponse.FallbackUsed.
+type LegacyPushCenterStatsDegradedResponseFallbackUsed bool
+
+// LegacyPushCenterStatsDegradedResponseLimit defines model for LegacyPushCenterStatsDegradedResponse.Limit.
+type LegacyPushCenterStatsDegradedResponseLimit int
+
+// LegacyPushCenterStatsDegradedResponseOffset defines model for LegacyPushCenterStatsDegradedResponse.Offset.
+type LegacyPushCenterStatsDegradedResponseOffset int
+
+// LegacyPushCenterStatsDegradedResponseOk defines model for LegacyPushCenterStatsDegradedResponse.Ok.
+type LegacyPushCenterStatsDegradedResponseOk bool
+
+// LegacyPushCenterStatsDegradedResponsePageError defines model for LegacyPushCenterStatsDegradedResponse.PageError.
+type LegacyPushCenterStatsDegradedResponsePageError string
+
+// LegacyPushCenterStatsDegradedResponseReadModelStatus defines model for LegacyPushCenterStatsDegradedResponse.ReadModelStatus.
+type LegacyPushCenterStatsDegradedResponseReadModelStatus string
+
+// LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted defines model for LegacyPushCenterStatsDegradedResponse.RealExternalCallExecuted.
+type LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted bool
+
+// LegacyPushCenterStatsDegradedResponseRouteOwner defines model for LegacyPushCenterStatsDegradedResponse.RouteOwner.
+type LegacyPushCenterStatsDegradedResponseRouteOwner string
+
+// LegacyPushCenterStatsDegradedResponseRuntimeQueue0 defines model for .
+type LegacyPushCenterStatsDegradedResponseRuntimeQueue0 = map[string]interface{}
+
+// LegacyPushCenterStatsDegradedResponse_RuntimeQueue defines model for LegacyPushCenterStatsDegradedResponse.RuntimeQueue.
+type LegacyPushCenterStatsDegradedResponse_RuntimeQueue struct {
+	union json.RawMessage
+}
+
+// LegacyPushCenterStatsDegradedResponseSourceStatus defines model for LegacyPushCenterStatsDegradedResponse.SourceStatus.
+type LegacyPushCenterStatsDegradedResponseSourceStatus string
+
+// LegacyPushCenterStatsDegradedResponseStatusCode defines model for LegacyPushCenterStatsDegradedResponse.StatusCode.
+type LegacyPushCenterStatsDegradedResponseStatusCode int
+
+// LegacyPushCenterStatsDegradedResponseTotal defines model for LegacyPushCenterStatsDegradedResponse.Total.
+type LegacyPushCenterStatsDegradedResponseTotal int
+
+// LegacyPushCenterStatsResponse defines model for LegacyPushCenterStatsResponse.
+type LegacyPushCenterStatsResponse struct {
+	CapabilityOwner LegacyPushCenterStatsResponseCapabilityOwner `json:"capability_owner"`
+	Counts          LegacyPushCenterCounts                       `json:"counts"`
+
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters                  LegacyPushCenterFilters                               `json:"filters"`
+	Ok                       LegacyPushCenterStatsResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyPushCenterStatsResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RouteOwner               LegacyPushCenterStatsResponseRouteOwner               `json:"route_owner"`
+	RuntimeQueue             LegacyPushCenterStatsResponse_RuntimeQueue            `json:"runtime_queue"`
+	Sections                 []LegacyPushCenterSection                             `json:"sections"`
+	StatusDefinitions        []LegacyPushCenterStatusDefinition                    `json:"status_definitions"`
+}
+
+// LegacyPushCenterStatsResponseCapabilityOwner defines model for LegacyPushCenterStatsResponse.CapabilityOwner.
+type LegacyPushCenterStatsResponseCapabilityOwner string
+
+// LegacyPushCenterStatsResponseOk defines model for LegacyPushCenterStatsResponse.Ok.
+type LegacyPushCenterStatsResponseOk bool
+
+// LegacyPushCenterStatsResponseRealExternalCallExecuted defines model for LegacyPushCenterStatsResponse.RealExternalCallExecuted.
+type LegacyPushCenterStatsResponseRealExternalCallExecuted bool
+
+// LegacyPushCenterStatsResponseRouteOwner defines model for LegacyPushCenterStatsResponse.RouteOwner.
+type LegacyPushCenterStatsResponseRouteOwner string
+
+// LegacyPushCenterStatsResponseRuntimeQueue0 defines model for .
+type LegacyPushCenterStatsResponseRuntimeQueue0 = map[string]interface{}
+
+// LegacyPushCenterStatsResponse_RuntimeQueue defines model for LegacyPushCenterStatsResponse.RuntimeQueue.
+type LegacyPushCenterStatsResponse_RuntimeQueue struct {
+	union json.RawMessage
+}
+
+// LegacyPushCenterStatusDefinition defines model for LegacyPushCenterStatusDefinition.
+type LegacyPushCenterStatusDefinition struct {
+	Definition string                              `json:"definition"`
+	Key        LegacyPushCenterStatusDefinitionKey `json:"key"`
+	Label      string                              `json:"label"`
+}
+
+// LegacyPushCenterStatusDefinitionKey defines model for LegacyPushCenterStatusDefinition.Key.
+type LegacyPushCenterStatusDefinitionKey string
+
 // Product defines model for Product.
 type Product struct {
 	CreatedAt     time.Time `json:"created_at"`
@@ -1076,6 +2277,51 @@ type OwnerStaffIDFilter = int64
 // ProductID defines model for ProductID.
 type ProductID = int64
 
+// PushCenterBusinessIDFilter defines model for PushCenterBusinessIDFilter.
+type PushCenterBusinessIDFilter = string
+
+// PushCenterBusinessTypeFilter defines model for PushCenterBusinessTypeFilter.
+type PushCenterBusinessTypeFilter = string
+
+// PushCenterCreatedFromFilter defines model for PushCenterCreatedFromFilter.
+type PushCenterCreatedFromFilter = string
+
+// PushCenterCreatedToFilter defines model for PushCenterCreatedToFilter.
+type PushCenterCreatedToFilter = string
+
+// PushCenterEffectTypeFilter defines model for PushCenterEffectTypeFilter.
+type PushCenterEffectTypeFilter = string
+
+// PushCenterExternalUserIDFilter defines model for PushCenterExternalUserIDFilter.
+type PushCenterExternalUserIDFilter = string
+
+// PushCenterIdempotencyKeyFilter defines model for PushCenterIdempotencyKeyFilter.
+type PushCenterIdempotencyKeyFilter = string
+
+// PushCenterOwnerUserIDFilter defines model for PushCenterOwnerUserIDFilter.
+type PushCenterOwnerUserIDFilter = string
+
+// PushCenterSectionFilter defines model for PushCenterSectionFilter.
+type PushCenterSectionFilter = string
+
+// PushCenterSourceModuleFilter defines model for PushCenterSourceModuleFilter.
+type PushCenterSourceModuleFilter = string
+
+// PushCenterSourceRouteFilter defines model for PushCenterSourceRouteFilter.
+type PushCenterSourceRouteFilter = string
+
+// PushCenterStatusFilter defines model for PushCenterStatusFilter.
+type PushCenterStatusFilter = string
+
+// PushCenterTargetIDFilter defines model for PushCenterTargetIDFilter.
+type PushCenterTargetIDFilter = string
+
+// PushCenterTargetTypeFilter defines model for PushCenterTargetTypeFilter.
+type PushCenterTargetTypeFilter = string
+
+// PushCenterTraceIDFilter defines model for PushCenterTraceIDFilter.
+type PushCenterTraceIDFilter = string
+
 // SegmentID defines model for SegmentID.
 type SegmentID = int64
 
@@ -1131,6 +2377,44 @@ type ListAutomationTriggerRunsParams struct {
 
 // ListAutomationTriggerRunsParamsVisibility defines parameters for ListAutomationTriggerRuns.
 type ListAutomationTriggerRunsParamsVisibility string
+
+// GetLegacyPushCenterSectionsParams defines parameters for GetLegacyPushCenterSections.
+type GetLegacyPushCenterSectionsParams struct {
+	Section        *PushCenterSectionFilter        `form:"section,omitempty" json:"section,omitempty"`
+	EffectType     *PushCenterEffectTypeFilter     `form:"effect_type,omitempty" json:"effect_type,omitempty"`
+	Status         *PushCenterStatusFilter         `form:"status,omitempty" json:"status,omitempty"`
+	BusinessType   *PushCenterBusinessTypeFilter   `form:"business_type,omitempty" json:"business_type,omitempty"`
+	BusinessId     *PushCenterBusinessIDFilter     `form:"business_id,omitempty" json:"business_id,omitempty"`
+	TargetType     *PushCenterTargetTypeFilter     `form:"target_type,omitempty" json:"target_type,omitempty"`
+	TargetId       *PushCenterTargetIDFilter       `form:"target_id,omitempty" json:"target_id,omitempty"`
+	ExternalUserid *PushCenterExternalUserIDFilter `form:"external_userid,omitempty" json:"external_userid,omitempty"`
+	OwnerUserid    *PushCenterOwnerUserIDFilter    `form:"owner_userid,omitempty" json:"owner_userid,omitempty"`
+	TraceId        *PushCenterTraceIDFilter        `form:"trace_id,omitempty" json:"trace_id,omitempty"`
+	IdempotencyKey *PushCenterIdempotencyKeyFilter `form:"idempotency_key,omitempty" json:"idempotency_key,omitempty"`
+	SourceModule   *PushCenterSourceModuleFilter   `form:"source_module,omitempty" json:"source_module,omitempty"`
+	SourceRoute    *PushCenterSourceRouteFilter    `form:"source_route,omitempty" json:"source_route,omitempty"`
+	CreatedFrom    *PushCenterCreatedFromFilter    `form:"created_from,omitempty" json:"created_from,omitempty"`
+	CreatedTo      *PushCenterCreatedToFilter      `form:"created_to,omitempty" json:"created_to,omitempty"`
+}
+
+// GetLegacyPushCenterStatsParams defines parameters for GetLegacyPushCenterStats.
+type GetLegacyPushCenterStatsParams struct {
+	Section        *PushCenterSectionFilter        `form:"section,omitempty" json:"section,omitempty"`
+	EffectType     *PushCenterEffectTypeFilter     `form:"effect_type,omitempty" json:"effect_type,omitempty"`
+	Status         *PushCenterStatusFilter         `form:"status,omitempty" json:"status,omitempty"`
+	BusinessType   *PushCenterBusinessTypeFilter   `form:"business_type,omitempty" json:"business_type,omitempty"`
+	BusinessId     *PushCenterBusinessIDFilter     `form:"business_id,omitempty" json:"business_id,omitempty"`
+	TargetType     *PushCenterTargetTypeFilter     `form:"target_type,omitempty" json:"target_type,omitempty"`
+	TargetId       *PushCenterTargetIDFilter       `form:"target_id,omitempty" json:"target_id,omitempty"`
+	ExternalUserid *PushCenterExternalUserIDFilter `form:"external_userid,omitempty" json:"external_userid,omitempty"`
+	OwnerUserid    *PushCenterOwnerUserIDFilter    `form:"owner_userid,omitempty" json:"owner_userid,omitempty"`
+	TraceId        *PushCenterTraceIDFilter        `form:"trace_id,omitempty" json:"trace_id,omitempty"`
+	IdempotencyKey *PushCenterIdempotencyKeyFilter `form:"idempotency_key,omitempty" json:"idempotency_key,omitempty"`
+	SourceModule   *PushCenterSourceModuleFilter   `form:"source_module,omitempty" json:"source_module,omitempty"`
+	SourceRoute    *PushCenterSourceRouteFilter    `form:"source_route,omitempty" json:"source_route,omitempty"`
+	CreatedFrom    *PushCenterCreatedFromFilter    `form:"created_from,omitempty" json:"created_from,omitempty"`
+	CreatedTo      *PushCenterCreatedToFilter      `form:"created_to,omitempty" json:"created_to,omitempty"`
+}
 
 // LogoutAdminParams defines parameters for LogoutAdmin.
 type LogoutAdminParams struct {
@@ -1632,6 +2916,130 @@ func (t *IngestIdentityEventResponse) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsLegacyPushCenterStatsDegradedResponseRuntimeQueue0 returns the union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as a LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+func (t LegacyPushCenterStatsDegradedResponse_RuntimeQueue) AsLegacyPushCenterStatsDegradedResponseRuntimeQueue0() (LegacyPushCenterStatsDegradedResponseRuntimeQueue0, error) {
+	var body LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterStatsDegradedResponseRuntimeQueue0 overwrites any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as the provided LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) FromLegacyPushCenterStatsDegradedResponseRuntimeQueue0(v LegacyPushCenterStatsDegradedResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterStatsDegradedResponseRuntimeQueue0 performs a merge with any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue, using the provided LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) MergeLegacyPushCenterStatsDegradedResponseRuntimeQueue0(v LegacyPushCenterStatsDegradedResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLegacyPushCenterRuntimeQueue returns the union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as a LegacyPushCenterRuntimeQueue
+func (t LegacyPushCenterStatsDegradedResponse_RuntimeQueue) AsLegacyPushCenterRuntimeQueue() (LegacyPushCenterRuntimeQueue, error) {
+	var body LegacyPushCenterRuntimeQueue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterRuntimeQueue overwrites any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) FromLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterRuntimeQueue performs a merge with any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue, using the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) MergeLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LegacyPushCenterStatsDegradedResponse_RuntimeQueue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLegacyPushCenterStatsResponseRuntimeQueue0 returns the union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as a LegacyPushCenterStatsResponseRuntimeQueue0
+func (t LegacyPushCenterStatsResponse_RuntimeQueue) AsLegacyPushCenterStatsResponseRuntimeQueue0() (LegacyPushCenterStatsResponseRuntimeQueue0, error) {
+	var body LegacyPushCenterStatsResponseRuntimeQueue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterStatsResponseRuntimeQueue0 overwrites any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as the provided LegacyPushCenterStatsResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) FromLegacyPushCenterStatsResponseRuntimeQueue0(v LegacyPushCenterStatsResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterStatsResponseRuntimeQueue0 performs a merge with any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue, using the provided LegacyPushCenterStatsResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) MergeLegacyPushCenterStatsResponseRuntimeQueue0(v LegacyPushCenterStatsResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLegacyPushCenterRuntimeQueue returns the union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as a LegacyPushCenterRuntimeQueue
+func (t LegacyPushCenterStatsResponse_RuntimeQueue) AsLegacyPushCenterRuntimeQueue() (LegacyPushCenterRuntimeQueue, error) {
+	var body LegacyPushCenterRuntimeQueue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterRuntimeQueue overwrites any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) FromLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterRuntimeQueue performs a merge with any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue, using the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) MergeLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LegacyPushCenterStatsResponse_RuntimeQueue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsResolveIdentityFound returns the union data inside the ResolveIdentityResponse as a ResolveIdentityFound
 func (t ResolveIdentityResponse) AsResolveIdentityFound() (ResolveIdentityFound, error) {
 	var body ResolveIdentityFound
@@ -1844,6 +3252,12 @@ type ServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
+	// Read the frozen global Push Center section aggregation without touching a worker or provider
+	// (GET /api/admin/push-center/sections)
+	GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams)
+	// Read the frozen global Push Center statistics without accepting, sending, or retrying work
+	// (GET /api/admin/push-center/stats)
+	GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams)
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(w http.ResponseWriter, r *http.Request)
@@ -1943,6 +3357,18 @@ type Unimplemented struct{}
 // List real D01 Automation trigger receipts through the frozen legacy path
 // (GET /api/admin/automation-conversion/agent-runs)
 func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the frozen global Push Center section aggregation without touching a worker or provider
+// (GET /api/admin/push-center/sections)
+func (_ Unimplemented) GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the frozen global Push Center statistics without accepting, sending, or retrying work
+// (GET /api/admin/push-center/stats)
+func (_ Unimplemented) GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2255,6 +3681,296 @@ func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyPushCenterSections operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLegacyPushCenterSectionsParams
+
+	// ------------- Optional query parameter "section" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "section", r.URL.Query(), &params.Section, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "section", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "effect_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "effect_type", r.URL.Query(), &params.EffectType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_type", r.URL.Query(), &params.BusinessType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_id", r.URL.Query(), &params.BusinessId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "target_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_type", r.URL.Query(), &params.TargetType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "target_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_id", r.URL.Query(), &params.TargetId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "external_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_userid", r.URL.Query(), &params.ExternalUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "owner_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_userid", r.URL.Query(), &params.OwnerUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "trace_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "trace_id", r.URL.Query(), &params.TraceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trace_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "idempotency_key" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "idempotency_key", r.URL.Query(), &params.IdempotencyKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "idempotency_key", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_module" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_module", r.URL.Query(), &params.SourceModule, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_module", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_route" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_route", r.URL.Query(), &params.SourceRoute, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_route", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "created_from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_from", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_from", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "created_to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_to", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_to", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyPushCenterSections(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyPushCenterStats operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLegacyPushCenterStatsParams
+
+	// ------------- Optional query parameter "section" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "section", r.URL.Query(), &params.Section, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "section", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "effect_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "effect_type", r.URL.Query(), &params.EffectType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_type", r.URL.Query(), &params.BusinessType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_id", r.URL.Query(), &params.BusinessId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "target_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_type", r.URL.Query(), &params.TargetType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "target_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_id", r.URL.Query(), &params.TargetId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "external_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_userid", r.URL.Query(), &params.ExternalUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "owner_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_userid", r.URL.Query(), &params.OwnerUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "trace_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "trace_id", r.URL.Query(), &params.TraceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trace_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "idempotency_key" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "idempotency_key", r.URL.Query(), &params.IdempotencyKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "idempotency_key", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_module" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_module", r.URL.Query(), &params.SourceModule, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_module", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_route" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_route", r.URL.Query(), &params.SourceRoute, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_route", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "created_from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_from", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_from", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "created_to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_to", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_to", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyPushCenterStats(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3976,6 +5692,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/push-center/sections", wrapper.GetLegacyPushCenterSections)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/push-center/stats", wrapper.GetLegacyPushCenterStats)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/config/overview", wrapper.GetAdminConfigOverview)
 	})
 	r.Group(func(r chi.Router) {
@@ -4132,6 +5854,80 @@ type ListAutomationTriggerRuns503JSONResponse struct{ ServiceUnavailableJSONResp
 func (response ListAutomationTriggerRuns503JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyPushCenterSectionsRequestObject struct {
+	Params GetLegacyPushCenterSectionsParams
+}
+
+type GetLegacyPushCenterSectionsResponseObject interface {
+	VisitGetLegacyPushCenterSectionsResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyPushCenterSections200JSONResponse struct {
+	union json.RawMessage
+}
+
+func (response GetLegacyPushCenterSections200JSONResponse) VisitGetLegacyPushCenterSectionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.union)
+}
+
+type GetLegacyPushCenterSections401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyPushCenterSections401JSONResponse) VisitGetLegacyPushCenterSectionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyPushCenterSections403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyPushCenterSections403JSONResponse) VisitGetLegacyPushCenterSectionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyPushCenterStatsRequestObject struct {
+	Params GetLegacyPushCenterStatsParams
+}
+
+type GetLegacyPushCenterStatsResponseObject interface {
+	VisitGetLegacyPushCenterStatsResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyPushCenterStats200JSONResponse struct {
+	union json.RawMessage
+}
+
+func (response GetLegacyPushCenterStats200JSONResponse) VisitGetLegacyPushCenterStatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.union)
+}
+
+type GetLegacyPushCenterStats401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyPushCenterStats401JSONResponse) VisitGetLegacyPushCenterStatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyPushCenterStats403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyPushCenterStats403JSONResponse) VisitGetLegacyPushCenterStatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -5905,6 +7701,12 @@ type StrictServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
+	// Read the frozen global Push Center section aggregation without touching a worker or provider
+	// (GET /api/admin/push-center/sections)
+	GetLegacyPushCenterSections(ctx context.Context, request GetLegacyPushCenterSectionsRequestObject) (GetLegacyPushCenterSectionsResponseObject, error)
+	// Read the frozen global Push Center statistics without accepting, sending, or retrying work
+	// (GET /api/admin/push-center/stats)
+	GetLegacyPushCenterStats(ctx context.Context, request GetLegacyPushCenterStatsRequestObject) (GetLegacyPushCenterStatsResponseObject, error)
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(ctx context.Context, request GetAdminConfigOverviewRequestObject) (GetAdminConfigOverviewResponseObject, error)
@@ -6045,6 +7847,58 @@ func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
 		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyPushCenterSections operation middleware
+func (sh *strictHandler) GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams) {
+	var request GetLegacyPushCenterSectionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyPushCenterSections(ctx, request.(GetLegacyPushCenterSectionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyPushCenterSections")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyPushCenterSectionsResponseObject); ok {
+		if err := validResponse.VisitGetLegacyPushCenterSectionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyPushCenterStats operation middleware
+func (sh *strictHandler) GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams) {
+	var request GetLegacyPushCenterStatsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyPushCenterStats(ctx, request.(GetLegacyPushCenterStatsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyPushCenterStats")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyPushCenterStatsResponseObject); ok {
+		if err := validResponse.VisitGetLegacyPushCenterStatsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -69,8 +69,8 @@ is_domain_artifact_path() {
   [[ "$candidate_path" =~ ^migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql$ ]] ||
     [[ "$candidate_path" =~ ^api/[A-Za-z0-9._/-]+\.ya?ml$ ]] ||
     [[ "$candidate_path" =~ ^(internal/api/(candidate/)?generated|web/src/api/generated)/[A-Za-z0-9._/-]+$ ]] ||
-    [[ "$candidate_path" =~ ^internal/(auth|automation|contact|coupon|identity|media|order|outbound|product|segment|stats|survey|wecom)/[A-Za-z0-9._/-]+$ ]] ||
-    [[ "$candidate_path" =~ ^acceptance/(auth|automation|contact|coupon|identity|media|order|outbound|product|segment|stats|survey|wecom)/[A-Za-z0-9._/-]+$ ]] ||
+    [[ "$candidate_path" =~ ^internal/(auth|automation|contact|coupon|identity|media|order|outbound|product|pushcenter|segment|stats|survey|wecom)/[A-Za-z0-9._/-]+$ ]] ||
+    [[ "$candidate_path" =~ ^acceptance/(auth|automation|contact|coupon|identity|media|order|outbound|product|pushcenter|segment|stats|survey|wecom)/[A-Za-z0-9._/-]+$ ]] ||
     [[ "$candidate_path" =~ ^cmd/aicrm/legacy_[A-Za-z0-9._-]+\.go$ ]] ||
     [[ "$candidate_path" =~ ^docs/(feature-matrix\.csv|migration-mapping\.jsonl|api-mapping\.jsonl|execution/slices/[A-Za-z0-9._-]+\.md|evidence/slices/[A-Za-z0-9._-]+\.md|ci/go-acceptance-manifest\.tsv)$ ]] ||
     [[ "$candidate_path" = "scripts/generated-sources.sha256" ]]

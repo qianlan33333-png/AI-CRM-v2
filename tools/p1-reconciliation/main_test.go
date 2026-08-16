@@ -52,6 +52,15 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 				}
 			}
 		}},
+		{"integrated route mapping forged", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["mapping_id"] == "LEGACY-API-0421" {
+					row["target_mapping_id"] = "P4-PUSH-CENTER-FORGED"
+					return
+				}
+			}
+		}},
 		{"tier B mislabeled not migrated", "api", func(v any) {
 			r := v.(*[]map[string]any)
 			for _, row := range *r {

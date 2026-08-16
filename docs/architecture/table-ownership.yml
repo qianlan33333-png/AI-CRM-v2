@@ -187,6 +187,13 @@ owners:
       operation_cycle_action_request_events: immutable_idempotent_action_lifecycle_evidence
       operation_cycle_strategy_proposals: local_pending_accepted_rejected_proposals_without_automatic_execution
 
+  pushcenter:
+    package: internal/pushcenter
+    tables: [push_center_read_model_state, push_center_read_model_entries]
+    constraints:
+      push_center_read_model_state: global_fail_closed_readiness_only_without_worker_or_provider_execution
+      push_center_read_model_entries: global_internal_push_status_projection_without_tenant_or_cross_domain_foreign_key
+
   ops:
     package: internal/ops
     tables: []

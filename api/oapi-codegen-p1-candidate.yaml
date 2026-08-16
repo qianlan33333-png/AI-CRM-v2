@@ -14,3 +14,4 @@ output-options:
     - p4-automation-compat
     - p4-product
     - p4-domain-verification
+    - p4-push-center-compat

@@ -3019,6 +3019,565 @@ export interface LegacyAppSettingsSaveForm {
   "setting__gateway.webhook_master_key"?: string;
 }
 
+export type LegacyPushCenterSectionKey =
+  (typeof LegacyPushCenterSectionKey)[keyof typeof LegacyPushCenterSectionKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionKey = {
+  questionnaire: "questionnaire",
+  order: "order",
+  ai_assist: "ai_assist",
+  private_broadcast: "private_broadcast",
+  group_ops: "group_ops",
+  group_broadcast: "group_broadcast",
+  customer_webhook: "customer_webhook",
+  tags: "tags",
+  welcome: "welcome",
+  payment: "payment",
+  integrations: "integrations",
+  test_receiver: "test_receiver",
+  other: "other",
+} as const;
+
+export interface LegacyPushCenterSection {
+  key: LegacyPushCenterSectionKey;
+  label: string;
+  effect_types: string[];
+  capability_key: string;
+  /** @minimum 0 */
+  count: number;
+}
+
+export type LegacyPushCenterStatusDefinitionKey =
+  (typeof LegacyPushCenterStatusDefinitionKey)[keyof typeof LegacyPushCenterStatusDefinitionKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatusDefinitionKey = {
+  pending: "pending",
+  running: "running",
+  succeeded: "succeeded",
+  sent: "sent",
+  simulated: "simulated",
+  unknown_after_dispatch: "unknown_after_dispatch",
+  failed: "failed",
+  sent_with_shadow_warning: "sent_with_shadow_warning",
+  shadow_failed_not_business_failed: "shadow_failed_not_business_failed",
+} as const;
+
+export interface LegacyPushCenterStatusDefinition {
+  key: LegacyPushCenterStatusDefinitionKey;
+  label: string;
+  definition: string;
+}
+
+/**
+ * Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+ */
+export interface LegacyPushCenterFilters {
+  section?: string;
+  effect_type?: string;
+  status?: string;
+  business_type?: string;
+  business_id?: string;
+  target_type?: string;
+  target_id?: string;
+  external_userid?: string;
+  owner_userid?: string;
+  trace_id?: string;
+  idempotency_key?: string;
+  source_module?: string;
+  source_route?: string;
+  created_from?: string;
+  created_to?: string;
+}
+
+export type LegacyPushCenterCountsByEffectiveStatus = { [key: string]: number };
+
+export type LegacyPushCenterCountsByStatus = { [key: string]: number };
+
+export type LegacyPushCenterCountsBySection = { [key: string]: number };
+
+export interface LegacyPushCenterCounts {
+  /** @minimum 0 */
+  total: number;
+  by_effective_status: LegacyPushCenterCountsByEffectiveStatus;
+  by_status: LegacyPushCenterCountsByStatus;
+  by_section: LegacyPushCenterCountsBySection;
+  /** @minimum 0 */
+  pending: number;
+  /** @minimum 0 */
+  running: number;
+  /** @minimum 0 */
+  succeeded: number;
+  /** @minimum 0 */
+  sent: number;
+  /** @minimum 0 */
+  failed: number;
+  /** @minimum 0 */
+  shadow_warning: number;
+}
+
+export type LegacyPushCenterDegradedCountsTotal =
+  (typeof LegacyPushCenterDegradedCountsTotal)[keyof typeof LegacyPushCenterDegradedCountsTotal];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsTotal = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsByEffectiveStatus = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterDegradedCountsByStatus = { [key: string]: unknown };
+
+export type LegacyPushCenterDegradedCountsBySection = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterDegradedCountsPending =
+  (typeof LegacyPushCenterDegradedCountsPending)[keyof typeof LegacyPushCenterDegradedCountsPending];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsPending = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsRunning =
+  (typeof LegacyPushCenterDegradedCountsRunning)[keyof typeof LegacyPushCenterDegradedCountsRunning];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsRunning = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsSent =
+  (typeof LegacyPushCenterDegradedCountsSent)[keyof typeof LegacyPushCenterDegradedCountsSent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsSent = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsFailed =
+  (typeof LegacyPushCenterDegradedCountsFailed)[keyof typeof LegacyPushCenterDegradedCountsFailed];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsFailed = {
+  NUMBER_0: 0,
+} as const;
+
+export interface LegacyPushCenterDegradedCounts {
+  total: LegacyPushCenterDegradedCountsTotal;
+  by_effective_status: LegacyPushCenterDegradedCountsByEffectiveStatus;
+  by_status: LegacyPushCenterDegradedCountsByStatus;
+  by_section: LegacyPushCenterDegradedCountsBySection;
+  pending: LegacyPushCenterDegradedCountsPending;
+  running: LegacyPushCenterDegradedCountsRunning;
+  sent: LegacyPushCenterDegradedCountsSent;
+  failed: LegacyPushCenterDegradedCountsFailed;
+}
+
+export interface LegacyPushCenterInternalEventSummary {
+  raw_open: unknown;
+  raw_due: unknown;
+  eligible: unknown;
+  failed_retryable: unknown;
+  failed_terminal: unknown;
+  blocked: unknown;
+}
+
+export type LegacyPushCenterLaneSummaryLane =
+  (typeof LegacyPushCenterLaneSummaryLane)[keyof typeof LegacyPushCenterLaneSummaryLane];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterLaneSummaryLane = {
+  ai_generation: "ai_generation",
+  outbound_webhook: "outbound_webhook",
+  wecom_ai_assistant_bulk: "wecom_ai_assistant_bulk",
+  wecom_bulk: "wecom_bulk",
+  wecom_interactive: "wecom_interactive",
+  wecom_media: "wecom_media",
+} as const;
+
+export interface LegacyPushCenterLaneSummary {
+  lane: LegacyPushCenterLaneSummaryLane;
+  max_in_flight: unknown;
+  enabled: unknown;
+  rollout_mode: unknown;
+  blocked_until: unknown;
+  policy_version: unknown;
+  raw_open: unknown;
+  held: unknown;
+  eligible: unknown;
+  policy_gated: unknown;
+  scheduled: unknown;
+  retry_wait: unknown;
+  rate_limited: unknown;
+  in_flight: unknown;
+  unknown: unknown;
+  dlq: unknown;
+  oldest_eligible_age_seconds: unknown;
+  internal_event: LegacyPushCenterInternalEventSummary;
+  throughput_last_minute: unknown;
+  accepted_last_minute: unknown;
+  p95_queue_wait_ms: unknown;
+  p95_provider_call_ms: unknown;
+  estimated_drain_seconds: unknown;
+  rate_limit_count_last_hour: unknown;
+  task_acceptance_rate_1m: unknown;
+}
+
+export interface LegacyPushCenterRuntimeQueue {
+  policy_version: unknown;
+  active_generation: unknown;
+  claim_enabled: unknown;
+  rollout_mode: unknown;
+  lanes: LegacyPushCenterLaneSummary[];
+  raw_open: unknown;
+  held: unknown;
+  eligible: unknown;
+  policy_gated: unknown;
+  scheduled: unknown;
+  retry_wait: unknown;
+  rate_limited: unknown;
+  in_flight: unknown;
+  unknown: unknown;
+  dlq: unknown;
+  internal_event: LegacyPushCenterInternalEventSummary;
+}
+
+export type LegacyPushCenterSectionsResponseRouteOwner =
+  (typeof LegacyPushCenterSectionsResponseRouteOwner)[keyof typeof LegacyPushCenterSectionsResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyPushCenterSectionsResponse {
+  ok: boolean;
+  /**
+   * @minItems 13
+   * @maxItems 13
+   */
+  sections: LegacyPushCenterSection[];
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  route_owner: LegacyPushCenterSectionsResponseRouteOwner;
+}
+
+export type LegacyPushCenterStatsResponseRouteOwner =
+  (typeof LegacyPushCenterStatsResponseRouteOwner)[keyof typeof LegacyPushCenterStatsResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyPushCenterStatsResponseRuntimeQueueOneOf = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterStatsResponseRuntimeQueue =
+  LegacyPushCenterStatsResponseRuntimeQueueOneOf | LegacyPushCenterRuntimeQueue;
+
+export type LegacyPushCenterStatsResponseCapabilityOwner =
+  (typeof LegacyPushCenterStatsResponseCapabilityOwner)[keyof typeof LegacyPushCenterStatsResponseCapabilityOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsResponseCapabilityOwner = {
+  "ai_crm_next/platform_foundation/push_center":
+    "ai_crm_next/platform_foundation/push_center",
+} as const;
+
+export interface LegacyPushCenterStatsResponse {
+  ok: boolean;
+  counts: LegacyPushCenterCounts;
+  /**
+   * @minItems 13
+   * @maxItems 13
+   */
+  sections: LegacyPushCenterSection[];
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  route_owner: LegacyPushCenterStatsResponseRouteOwner;
+  real_external_call_executed: boolean;
+  runtime_queue: LegacyPushCenterStatsResponseRuntimeQueue;
+  capability_owner: LegacyPushCenterStatsResponseCapabilityOwner;
+}
+
+export type LegacyPushCenterSectionsDegradedResponseError =
+  (typeof LegacyPushCenterSectionsDegradedResponseError)[keyof typeof LegacyPushCenterSectionsDegradedResponseError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseError = {
+  "": "",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseErrorCode =
+  (typeof LegacyPushCenterSectionsDegradedResponseErrorCode)[keyof typeof LegacyPushCenterSectionsDegradedResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseErrorCode = {
+  production_read_unavailable: "production_read_unavailable",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseSourceStatus =
+  (typeof LegacyPushCenterSectionsDegradedResponseSourceStatus)[keyof typeof LegacyPushCenterSectionsDegradedResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseSourceStatus = {
+  production_unavailable: "production_unavailable",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseReadModelStatus =
+  (typeof LegacyPushCenterSectionsDegradedResponseReadModelStatus)[keyof typeof LegacyPushCenterSectionsDegradedResponseReadModelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseReadModelStatus = {
+  unavailable: "unavailable",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseCapabilityOwner =
+  (typeof LegacyPushCenterSectionsDegradedResponseCapabilityOwner)[keyof typeof LegacyPushCenterSectionsDegradedResponseCapabilityOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseCapabilityOwner = {
+  "ai_crm_next/platform_foundation/push_center":
+    "ai_crm_next/platform_foundation/push_center",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponsePageError =
+  (typeof LegacyPushCenterSectionsDegradedResponsePageError)[keyof typeof LegacyPushCenterSectionsDegradedResponsePageError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponsePageError = {
+  "推送中心读模型暂不可用，请稍后重试。":
+    "推送中心读模型暂不可用，请稍后重试。",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseDiagnostics = {
+  production_data_ready: boolean;
+  fixture_mode: boolean;
+  allow_fixture_repo_in_prod: boolean;
+  error_class: string;
+};
+
+export type LegacyPushCenterSectionsDegradedResponseRouteOwner =
+  (typeof LegacyPushCenterSectionsDegradedResponseRouteOwner)[keyof typeof LegacyPushCenterSectionsDegradedResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseStatusCode =
+  (typeof LegacyPushCenterSectionsDegradedResponseStatusCode)[keyof typeof LegacyPushCenterSectionsDegradedResponseStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseStatusCode = {
+  NUMBER_200: 200,
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseTotal =
+  (typeof LegacyPushCenterSectionsDegradedResponseTotal)[keyof typeof LegacyPushCenterSectionsDegradedResponseTotal];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseTotal = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseLimit =
+  (typeof LegacyPushCenterSectionsDegradedResponseLimit)[keyof typeof LegacyPushCenterSectionsDegradedResponseLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseLimit = {
+  NUMBER_50: 50,
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseOffset =
+  (typeof LegacyPushCenterSectionsDegradedResponseOffset)[keyof typeof LegacyPushCenterSectionsDegradedResponseOffset];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseOffset = {
+  NUMBER_0: 0,
+} as const;
+
+export interface LegacyPushCenterSectionsDegradedResponse {
+  ok: boolean;
+  degraded: boolean;
+  error: LegacyPushCenterSectionsDegradedResponseError;
+  error_code: LegacyPushCenterSectionsDegradedResponseErrorCode;
+  source_status: LegacyPushCenterSectionsDegradedResponseSourceStatus;
+  read_model_status: LegacyPushCenterSectionsDegradedResponseReadModelStatus;
+  capability_owner: LegacyPushCenterSectionsDegradedResponseCapabilityOwner;
+  page_error: LegacyPushCenterSectionsDegradedResponsePageError;
+  diagnostics: LegacyPushCenterSectionsDegradedResponseDiagnostics;
+  route_owner: LegacyPushCenterSectionsDegradedResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  status_code: LegacyPushCenterSectionsDegradedResponseStatusCode;
+  /** @maxItems 0 */
+  items: unknown[];
+  total: LegacyPushCenterSectionsDegradedResponseTotal;
+  counts: LegacyPushCenterDegradedCounts;
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  limit: LegacyPushCenterSectionsDegradedResponseLimit;
+  offset: LegacyPushCenterSectionsDegradedResponseOffset;
+  /** @maxItems 0 */
+  sections: unknown[];
+}
+
+export type LegacyPushCenterStatsDegradedResponseError =
+  (typeof LegacyPushCenterStatsDegradedResponseError)[keyof typeof LegacyPushCenterStatsDegradedResponseError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseError = {
+  "": "",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseErrorCode =
+  (typeof LegacyPushCenterStatsDegradedResponseErrorCode)[keyof typeof LegacyPushCenterStatsDegradedResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseErrorCode = {
+  production_read_unavailable: "production_read_unavailable",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseSourceStatus =
+  (typeof LegacyPushCenterStatsDegradedResponseSourceStatus)[keyof typeof LegacyPushCenterStatsDegradedResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseSourceStatus = {
+  production_unavailable: "production_unavailable",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseReadModelStatus =
+  (typeof LegacyPushCenterStatsDegradedResponseReadModelStatus)[keyof typeof LegacyPushCenterStatsDegradedResponseReadModelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseReadModelStatus = {
+  unavailable: "unavailable",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseCapabilityOwner =
+  (typeof LegacyPushCenterStatsDegradedResponseCapabilityOwner)[keyof typeof LegacyPushCenterStatsDegradedResponseCapabilityOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseCapabilityOwner = {
+  "ai_crm_next/platform_foundation/push_center":
+    "ai_crm_next/platform_foundation/push_center",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponsePageError =
+  (typeof LegacyPushCenterStatsDegradedResponsePageError)[keyof typeof LegacyPushCenterStatsDegradedResponsePageError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponsePageError = {
+  "推送中心读模型暂不可用，请稍后重试。":
+    "推送中心读模型暂不可用，请稍后重试。",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseDiagnostics = {
+  production_data_ready: boolean;
+  fixture_mode: boolean;
+  allow_fixture_repo_in_prod: boolean;
+  error_class: string;
+};
+
+export type LegacyPushCenterStatsDegradedResponseRouteOwner =
+  (typeof LegacyPushCenterStatsDegradedResponseRouteOwner)[keyof typeof LegacyPushCenterStatsDegradedResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseStatusCode =
+  (typeof LegacyPushCenterStatsDegradedResponseStatusCode)[keyof typeof LegacyPushCenterStatsDegradedResponseStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseStatusCode = {
+  NUMBER_200: 200,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseTotal =
+  (typeof LegacyPushCenterStatsDegradedResponseTotal)[keyof typeof LegacyPushCenterStatsDegradedResponseTotal];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseTotal = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseLimit =
+  (typeof LegacyPushCenterStatsDegradedResponseLimit)[keyof typeof LegacyPushCenterStatsDegradedResponseLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseLimit = {
+  NUMBER_50: 50,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseOffset =
+  (typeof LegacyPushCenterStatsDegradedResponseOffset)[keyof typeof LegacyPushCenterStatsDegradedResponseOffset];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseOffset = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseRuntimeQueueOneOf = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterStatsDegradedResponseRuntimeQueue =
+  | LegacyPushCenterStatsDegradedResponseRuntimeQueueOneOf
+  | LegacyPushCenterRuntimeQueue;
+
+export interface LegacyPushCenterStatsDegradedResponse {
+  ok: boolean;
+  degraded: boolean;
+  error: LegacyPushCenterStatsDegradedResponseError;
+  error_code: LegacyPushCenterStatsDegradedResponseErrorCode;
+  source_status: LegacyPushCenterStatsDegradedResponseSourceStatus;
+  read_model_status: LegacyPushCenterStatsDegradedResponseReadModelStatus;
+  capability_owner: LegacyPushCenterStatsDegradedResponseCapabilityOwner;
+  page_error: LegacyPushCenterStatsDegradedResponsePageError;
+  diagnostics: LegacyPushCenterStatsDegradedResponseDiagnostics;
+  route_owner: LegacyPushCenterStatsDegradedResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  status_code: LegacyPushCenterStatsDegradedResponseStatusCode;
+  /** @maxItems 0 */
+  items: unknown[];
+  total: LegacyPushCenterStatsDegradedResponseTotal;
+  counts: LegacyPushCenterDegradedCounts;
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  limit: LegacyPushCenterStatsDegradedResponseLimit;
+  offset: LegacyPushCenterStatsDegradedResponseOffset;
+  /** @maxItems 0 */
+  sections: unknown[];
+  runtime_queue: LegacyPushCenterStatsDegradedResponseRuntimeQueue;
+}
+
 export type AutomationTriggerRunAgentCode =
   (typeof AutomationTriggerRunAgentCode)[keyof typeof AutomationTriggerRunAgentCode];
 
@@ -3157,6 +3716,36 @@ export type AddedBeforeFilterParameter = string;
 export type LastInteractAfterFilterParameter = string;
 
 export type LastInteractBeforeFilterParameter = string;
+
+export type PushCenterSectionFilterParameter = string;
+
+export type PushCenterEffectTypeFilterParameter = string;
+
+export type PushCenterStatusFilterParameter = string;
+
+export type PushCenterBusinessTypeFilterParameter = string;
+
+export type PushCenterBusinessIDFilterParameter = string;
+
+export type PushCenterTargetTypeFilterParameter = string;
+
+export type PushCenterTargetIDFilterParameter = string;
+
+export type PushCenterExternalUserIDFilterParameter = string;
+
+export type PushCenterOwnerUserIDFilterParameter = string;
+
+export type PushCenterTraceIDFilterParameter = string;
+
+export type PushCenterIdempotencyKeyFilterParameter = string;
+
+export type PushCenterSourceModuleFilterParameter = string;
+
+export type PushCenterSourceRouteFilterParameter = string;
+
+export type PushCenterCreatedFromFilterParameter = string;
+
+export type PushCenterCreatedToFilterParameter = string;
 
 export type ListProductsParams = {
   /**
@@ -3738,6 +4327,48 @@ export type ListLegacyGroupInvitesParams = {
    */
   q?: string;
 };
+
+export type GetLegacyPushCenterSectionsParams = {
+  section?: PushCenterSectionFilterParameter;
+  effect_type?: PushCenterEffectTypeFilterParameter;
+  status?: PushCenterStatusFilterParameter;
+  business_type?: PushCenterBusinessTypeFilterParameter;
+  business_id?: PushCenterBusinessIDFilterParameter;
+  target_type?: PushCenterTargetTypeFilterParameter;
+  target_id?: PushCenterTargetIDFilterParameter;
+  external_userid?: PushCenterExternalUserIDFilterParameter;
+  owner_userid?: PushCenterOwnerUserIDFilterParameter;
+  trace_id?: PushCenterTraceIDFilterParameter;
+  idempotency_key?: PushCenterIdempotencyKeyFilterParameter;
+  source_module?: PushCenterSourceModuleFilterParameter;
+  source_route?: PushCenterSourceRouteFilterParameter;
+  created_from?: PushCenterCreatedFromFilterParameter;
+  created_to?: PushCenterCreatedToFilterParameter;
+};
+
+export type GetLegacyPushCenterSections200 =
+  LegacyPushCenterSectionsResponse | LegacyPushCenterSectionsDegradedResponse;
+
+export type GetLegacyPushCenterStatsParams = {
+  section?: PushCenterSectionFilterParameter;
+  effect_type?: PushCenterEffectTypeFilterParameter;
+  status?: PushCenterStatusFilterParameter;
+  business_type?: PushCenterBusinessTypeFilterParameter;
+  business_id?: PushCenterBusinessIDFilterParameter;
+  target_type?: PushCenterTargetTypeFilterParameter;
+  target_id?: PushCenterTargetIDFilterParameter;
+  external_userid?: PushCenterExternalUserIDFilterParameter;
+  owner_userid?: PushCenterOwnerUserIDFilterParameter;
+  trace_id?: PushCenterTraceIDFilterParameter;
+  idempotency_key?: PushCenterIdempotencyKeyFilterParameter;
+  source_module?: PushCenterSourceModuleFilterParameter;
+  source_route?: PushCenterSourceRouteFilterParameter;
+  created_from?: PushCenterCreatedFromFilterParameter;
+  created_to?: PushCenterCreatedToFilterParameter;
+};
+
+export type GetLegacyPushCenterStats200 =
+  LegacyPushCenterStatsResponse | LegacyPushCenterStatsDegradedResponse;
 
 /**
  * @summary List ordinary products using a keyset cursor
@@ -12174,4 +12805,147 @@ export const archiveLegacyGroupInvite = async (
     status: res.status,
     headers: res.headers,
   } as archiveLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Read the frozen global Push Center section aggregation without touching a worker or provider
+ */
+export type getLegacyPushCenterSectionsResponse200 = {
+  data: GetLegacyPushCenterSections200;
+  status: 200;
+};
+
+export type getLegacyPushCenterSectionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyPushCenterSectionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyPushCenterSectionsResponseSuccess =
+  getLegacyPushCenterSectionsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyPushCenterSectionsResponseError = (
+  | getLegacyPushCenterSectionsResponse401
+  | getLegacyPushCenterSectionsResponse403
+) & {
+  headers: Headers;
+};
+
+export type getLegacyPushCenterSectionsResponse =
+  | getLegacyPushCenterSectionsResponseSuccess
+  | getLegacyPushCenterSectionsResponseError;
+
+export const getGetLegacyPushCenterSectionsUrl = (
+  params?: GetLegacyPushCenterSectionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/push-center/sections?${stringifiedParams}`
+    : `/api/admin/push-center/sections`;
+};
+
+export const getLegacyPushCenterSections = async (
+  params?: GetLegacyPushCenterSectionsParams,
+  options?: RequestInit,
+): Promise<getLegacyPushCenterSectionsResponse> => {
+  const res = await fetch(getGetLegacyPushCenterSectionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyPushCenterSectionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyPushCenterSectionsResponse;
+};
+
+/**
+ * @summary Read the frozen global Push Center statistics without accepting, sending, or retrying work
+ */
+export type getLegacyPushCenterStatsResponse200 = {
+  data: GetLegacyPushCenterStats200;
+  status: 200;
+};
+
+export type getLegacyPushCenterStatsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyPushCenterStatsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyPushCenterStatsResponseSuccess =
+  getLegacyPushCenterStatsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyPushCenterStatsResponseError = (
+  getLegacyPushCenterStatsResponse401 | getLegacyPushCenterStatsResponse403
+) & {
+  headers: Headers;
+};
+
+export type getLegacyPushCenterStatsResponse =
+  | getLegacyPushCenterStatsResponseSuccess
+  | getLegacyPushCenterStatsResponseError;
+
+export const getGetLegacyPushCenterStatsUrl = (
+  params?: GetLegacyPushCenterStatsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/push-center/stats?${stringifiedParams}`
+    : `/api/admin/push-center/stats`;
+};
+
+export const getLegacyPushCenterStats = async (
+  params?: GetLegacyPushCenterStatsParams,
+  options?: RequestInit,
+): Promise<getLegacyPushCenterStatsResponse> => {
+  const res = await fetch(getGetLegacyPushCenterStatsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyPushCenterStatsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyPushCenterStatsResponse;
 };
