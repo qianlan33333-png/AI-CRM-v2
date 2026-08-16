@@ -2403,7 +2403,7 @@ verify_index_sha256 docs/architecture/canonical.md \
 verify_index_sha256 docs/architecture/table-ownership.yml \
   e2b2b8b1f13cf822beb1123df6c71bbe5770b81563e08a1d084bf7f35fbc6149
 verify_index_sha256 scripts/test_repo_contract.sh \
-  2e777641e0826a4e29486cb99fb133cc7c6f0301e9ebd6115b135774ada8ec78
+  9f4e9e2a95565274740496b8047039f29534841fd89d829f594eb50fef9a9049
 verify_index_sha256 migrations/00018_segment_crud_receipts.sql \
   da96a6be5c431220d4f117405839f2d69ba682a34df14c2dc7f5a41b7b1fb5e0
 verify_index_sha256 internal/segment/app/crud.go \
