@@ -1869,6 +1869,76 @@ export interface HealthResponse {
   status: HealthResponseStatus;
 }
 
+export type LegacyHealthResponseStatus =
+  (typeof LegacyHealthResponseStatus)[keyof typeof LegacyHealthResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthResponseStatus = {
+  ok: "ok",
+  degraded: "degraded",
+} as const;
+
+export type LegacyHealthResponseService =
+  (typeof LegacyHealthResponseService)[keyof typeof LegacyHealthResponseService];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthResponseService = {
+  "aicrm-next": "aicrm-next",
+} as const;
+
+export type LegacyHealthResponseDatabase =
+  (typeof LegacyHealthResponseDatabase)[keyof typeof LegacyHealthResponseDatabase];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthResponseDatabase = {
+  postgres: "postgres",
+  fixture: "fixture",
+} as const;
+
+export type LegacyHealthResponseDatabaseMode =
+  (typeof LegacyHealthResponseDatabaseMode)[keyof typeof LegacyHealthResponseDatabaseMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthResponseDatabaseMode = {
+  postgres: "postgres",
+  fixture: "fixture",
+} as const;
+
+export type LegacyHealthResponseRepositoryPolicy =
+  (typeof LegacyHealthResponseRepositoryPolicy)[keyof typeof LegacyHealthResponseRepositoryPolicy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthResponseRepositoryPolicy = {
+  production_repositories_required: "production_repositories_required",
+  fixture_repositories_allowed: "fixture_repositories_allowed",
+} as const;
+
+export type LegacyHealthResponseRuntimeOwner =
+  (typeof LegacyHealthResponseRuntimeOwner)[keyof typeof LegacyHealthResponseRuntimeOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthResponseRuntimeOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyHealthResponse {
+  ok: boolean;
+  status: LegacyHealthResponseStatus;
+  service: LegacyHealthResponseService;
+  secret_key_present: boolean;
+  wechat_shop_callback_token_present: boolean;
+  wechat_shop_callback_token_required: boolean;
+  database: LegacyHealthResponseDatabase;
+  database_mode: LegacyHealthResponseDatabaseMode;
+  fixture_mode: boolean;
+  production_data_ready: boolean;
+  production_data_mode: boolean;
+  repository_policy: LegacyHealthResponseRepositoryPolicy;
+  runtime_owner: LegacyHealthResponseRuntimeOwner;
+  legacy_runtime_enabled: boolean;
+  warning: string;
+}
+
 export interface ErrorResponse {
   /** @minLength 1 */
   code: string;
@@ -3976,6 +4046,41 @@ export const getHealthz = async (
     status: res.status,
     headers: res.headers,
   } as getHealthzResponse;
+};
+
+/**
+ * @summary Read the frozen legacy runtime-mode snapshot
+ */
+export type getLegacyHealthResponse200 = {
+  data: LegacyHealthResponse;
+  status: 200;
+};
+
+export type getLegacyHealthResponseSuccess = getLegacyHealthResponse200 & {
+  headers: Headers;
+};
+export type getLegacyHealthResponse = getLegacyHealthResponseSuccess;
+
+export const getGetLegacyHealthUrl = () => {
+  return `/health`;
+};
+
+export const getLegacyHealth = async (
+  options?: RequestInit,
+): Promise<getLegacyHealthResponse> => {
+  const res = await fetch(getGetLegacyHealthUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyHealthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyHealthResponse;
 };
 
 /**

@@ -205,6 +205,41 @@ func TestLoadWeComOAuthIsAtomicAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLegacyHealthConfigurationCapturesOnlyFrozenPresenceAndModeFacts(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                         "postgres://db/aicrm",
+		apiListenAddressEnv:                    "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:                     "1",
+		identityHMACKeyEnv:                     strings.Repeat("A", 43),
+		"AICRM_NEXT_ENV":                       "production",
+		legacySecretKeyEnv:                     "legacy-secret-sentinel",
+		legacyShopCallbackTokenEnv:             "legacy-shop-token-sentinel",
+		legacyAllowMissingShopCallbackTokenEnv: "yes",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := LegacyHealth{
+		ProductionEnvironment: true, SecretKeyPresent: true,
+		WeChatShopCallbackTokenPresent: true, AllowMissingWeChatShopCallbackToken: true,
+	}
+	if root.LegacyHealth != want {
+		t.Fatalf("legacy health = %#v, want %#v", root.LegacyHealth, want)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[legacySecretKeyEnv]) || strings.Contains(formatted, values[legacyShopCallbackTokenEnv]) {
+			t.Fatalf("Root formatting leaked legacy health secret: %q", formatted)
+		}
+	}
+	values["AICRM_NEXT_ENV"] = "test"
+	values[legacyAllowMissingShopCallbackTokenEnv] = "not-enabled"
+	root, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || root.LegacyHealth.ProductionEnvironment || root.LegacyHealth.AllowMissingWeChatShopCallbackToken {
+		t.Fatalf("non-production legacy health configuration = %#v, %v", root.LegacyHealth, err)
+	}
+}
+
 func TestDatabaseURLFormattingIsRedacted(t *testing.T) {
 	value := DatabaseURL{value: "postgres://user:secret@db/aicrm"}
 	root := Root{Database: Database{URL: value}}

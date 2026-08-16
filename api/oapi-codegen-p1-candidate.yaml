@@ -13,4 +13,5 @@ output-options:
     - p3-segment
     - p4-automation-compat
     - p4-product
+    - p4-legacy-health
     - p4-domain-verification

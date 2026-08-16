@@ -1,6 +1,6 @@
-# LEGACY-API-0757 `/health` R0 candidate receipt
+# LEGACY-API-0757 `/health` central integration receipt
 
-Status: `CANDIDATE_READY` (not wired, not merged, not deployed)
+Status: `INTEGRATION_CANDIDATE` (central route wired locally; not yet PR-merged or deployed)
 
 ## Frozen legacy product facts
 
@@ -14,15 +14,24 @@ Authority is immutable legacy commit `6cb989c071255437d75953dabb943318a74eb8f4`:
 
 This is not `/healthz` (strict process liveness with only `{status:"ok"}`) and does not include the separate `LEGACY-API-0741 GET /api/system/health` readiness payload.
 
-## R0 candidate contents
+## Reviewed leaf dependency
 
 - `internal/platform/legacyhealth/health.go` contains a pure runtime snapshot query and a stand-alone `http.Handler` for the legacy JSON and method semantics. It accepts presence/mode booleans only, never raw configuration or secret strings.
 - `internal/platform/legacyhealth/health_test.go` covers normal PostgreSQL, fixture, production-fixture degradation, missing configuration, no sensitive value serialization, exact JSON content type, absent cache policy, and non-GET `405`.
 
-## Deliberately remaining central replay
+The reviewed `internal/platform/legacyhealth` leaf remains the only owner of
+the 15-field payload and its pure query. This integration adds neither a
+database probe, queue/worker probe, provider call, cache nor new storage.
 
-The future M clean replay must, from a fresh exact-green main, decide and make the coordinated changes to: `cmd/aicrm/api.go` (public route construction and mount), `api/openapi.yaml`, generated bindings, `scripts/check_repo_contract.sh`, feature matrix, API/migration mapping, migration waterline, and acceptance manifest. It must also resolve route precedence with existing `/healthz`, preserve public unauthenticated access, and prove the complete HTTP surface under the real router. None of those files is touched by this candidate.
+## Central integration candidate
+
+- Fresh base: `e5d6ffbde0d4fcdf1423aad97c218c2b54c2cd13`, the exact-main CLOSED squash for LEGACY-API-0781. Historical WIP was not copied or cherry-picked.
+- `cmd/aicrm/api.go` constructs the leaf query from a typed, presence-only startup adapter and mounts only public `GET /health` through the normal recovery, timeout and route-pattern middleware. The concrete route is registered before the final `/{filename}` compatibility catch-all; `/healthz`, login/logout, admin/API and OAuth/callback routes retain their own handlers.
+- `internal/config` records only booleans from the frozen legacy environment aliases and setting-presence rules. It does not retain, log, return or serialize a secret value. The existing validated PostgreSQL URL supplies the database-mode fact; fixture and production-fixture boundaries remain exercised through the pure leaf query and black-box router.
+- `api/openapi.yaml`, Go candidate bindings, Orval client and `tools/openapi-contract` bind operation `getLegacyHealth` to `LEGACY-API-0757`. The OpenAPI checker rejects authentication, additional response codes and any loss of the closed 15-field JSON schema.
+- `docs/api-mapping.jsonl` now maps this route to `getLegacyHealth` / `GET` / `/health` under target `P4-S04-LEGACY-HEALTH`. The 293-row UI feature matrix is intentionally unchanged: this public machine endpoint has no legacy page action, matching the repository's API-only matrix policy. There is no migration/table ownership change or waterline update.
+- The CI acceptance manifest gains a no-database target for the real-router normal/boundary/error suite. It is deliberately not an up/down/up migration target.
 
 ## Operational meaning today
 
-Once centrally mounted, `/health` gives a load balancer or operator a configuration-derived runtime-mode snapshot: whether the process is on PostgreSQL or fixture data, whether it is dangerously running production against fixtures, and whether the named configuration values are present. It is not readiness: it does not prove a live DB connection, River/worker health, provider reachability, or deploy success. This R0 branch does not mount it, so current load balancers and operators cannot obtain that snapshot from v2 yet.
+Once merged, `/health` gives a load balancer or operator a configuration-derived runtime-mode snapshot: whether the process is on PostgreSQL or fixture data, whether it is dangerously running production against fixtures, and whether the named configuration values are present. It is not readiness: it does not prove a live DB connection, River/worker health, provider reachability, or deploy success. This receipt does not claim a deployment, provider call, production database action or real external effect.

@@ -235,6 +235,10 @@ var p4ConfigSettingsOperations = map[string]bool{
 	"saveLegacyAppSettingsResource": true,
 }
 
+var p4LegacyHealthOperations = map[string]bool{
+	"getLegacyHealth": true,
+}
+
 var p4DomainVerificationOperations = map[string]bool{
 	"getDomainVerificationFile": true,
 }
@@ -395,6 +399,7 @@ const p4CouponJ01DecisionEvidence = "P4-J01-2026-08-15"
 const p4CouponABDecisionEvidence = "P4-COUPON-AB-2026-08-15"
 const p4OrderDecisionEvidence = "P4-ORDER-AB-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
+const p4LegacyHealthDecisionEvidence = "P4-S04-LEGACY-HEALTH-2026-08-16"
 const p4DomainVerificationDecisionEvidence = "P4-S04-DOMAIN-VERIFICATION-2026-08-16"
 
 func main() {
@@ -409,7 +414,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "openapi-contract:", err)
 		os.Exit(1)
 	}
-	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=96 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=4 p4_domain_verification_operations=1)")
+	fmt.Println("openapi-contract: PASS (p1_operations=10 approved=10 legacy_links=96 p2_stage_operations=3 p3_contact_operations=4 p3_identity_operations=3 p3_segment_operations=6 p4_automation_operations=1 p4_product_operations=3 p4_media_operations=1 p4_group_invite_operations=5 p4_survey_operations=9 p4_channel_operations=4 p4_coupon_operations=21 p4_order_operations=16 p4_customer_compat_operations=2 p4_config_settings_operations=4 p4_legacy_health_operations=1 p4_domain_verification_operations=1)")
 }
 
 func load(spec, mapping string) (*openapi3.T, map[string]bool, error) {
@@ -457,15 +462,15 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment, links := map[string]bool{}, map[string]bool{}, map[string]bool{}, 0
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4LegacyHealth, seenP4DomainVerification := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
 			if path == "/healthz" {
 				continue
 			}
-			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4DomainVerification[op.OperationID] ||
+			if seenP1[op.OperationID] || seenP2[op.OperationID] || seenP3Contact[op.OperationID] || seenP3Identity[op.OperationID] || seenP3Segment[op.OperationID] || seenP4Automation[op.OperationID] || seenP4Product[op.OperationID] || seenP4Media[op.OperationID] || seenP4GroupInvite[op.OperationID] || seenP4Survey[op.OperationID] || seenP4Channel[op.OperationID] || seenP4Tag[op.OperationID] || seenP4TagAB[op.OperationID] || seenP4Coupon[op.OperationID] || seenP4Order[op.OperationID] || seenP4CustomerCompat[op.OperationID] || seenP4ConfigSettings[op.OperationID] || seenP4LegacyHealth[op.OperationID] || seenP4DomainVerification[op.OperationID] ||
 				(!p1CandidateOperations[op.OperationID] && !p2StageOperations[op.OperationID] &&
-					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID]) {
+					!p3ContactOperations[op.OperationID] && !p3IdentityOperations[op.OperationID] && !p3SegmentOperations[op.OperationID] && !p4AutomationOperations[op.OperationID] && !p4ProductOperations[op.OperationID] && !p4MediaOperations[op.OperationID] && !p4GroupInviteOperations[op.OperationID] && !p4SurveyOperations[op.OperationID] && !p4ChannelOperations[op.OperationID] && !p4TagOperations[op.OperationID] && !p4TagABOperations[op.OperationID] && !p4CouponOperations[op.OperationID] && !p4OrderOperations[op.OperationID] && !p4CustomerCompatOperations[op.OperationID] && !p4ConfigSettingsOperations[op.OperationID] && !p4LegacyHealthOperations[op.OperationID] && !p4DomainVerificationOperations[op.OperationID]) {
 				return fmt.Errorf("unexpected or duplicate candidate operation: %s", op.OperationID)
 			}
 			if p1CandidateOperations[op.OperationID] {
@@ -641,6 +646,25 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 				links++
+			} else if p4LegacyHealthOperations[op.OperationID] {
+				seenP4LegacyHealth[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4LegacyHealthDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 legacy health evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, []string{"LEGACY-API-0757"}) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-auth-scheme"] != "public" || op.Extensions["x-aicrm-csrf"] != "none" || op.Extensions["x-aicrm-data-source"] != "runtime_snapshot" || op.Extensions["x-aicrm-external-effect"] != "none" {
+					return fmt.Errorf("%s public runtime snapshot contract drifted", op.OperationID)
+				}
+				response := op.Responses.Value("200")
+				content := response
+				if len(op.Responses.Map()) != 1 || content == nil || content.Value == nil || content.Value.Content["application/json"] == nil || content.Value.Content["application/json"].Schema == nil || content.Value.Content["application/json"].Schema.Ref != "#/components/schemas/LegacyHealthResponse" {
+					return fmt.Errorf("%s fixed 200 JSON response drifted", op.OperationID)
+				}
+				links++
 			} else {
 				seenP4DomainVerification[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -682,7 +706,7 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] {
+			if p4LegacyHealthOperations[op.OperationID] || p4DomainVerificationOperations[op.OperationID] {
 				// The public static route is fully constrained in its dedicated
 				// branch above and intentionally has no RBAC capability map.
 			} else if public, publicOperation := couponPublicAccessContracts[op.OperationID]; publicOperation {
@@ -718,8 +742,8 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			}
 		}
 	}
-	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4DomainVerification) != 1 || links != 96 {
-		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d p4_domain_verification=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), len(seenP4DomainVerification), links)
+	if len(seenP1) != 10 || len(seenP2) != 3 || len(seenP3Contact) != 4 || len(seenP3Identity) != 3 || len(seenP3Segment) != 6 || len(seenP4Automation) != 1 || len(seenP4Product) != 3 || len(seenP4Media) != 1 || len(seenP4GroupInvite) != 5 || len(seenP4Survey) != 9 || len(seenP4Channel) != 4 || len(seenP4Tag) != 9 || len(seenP4TagAB) != 9 || len(seenP4Coupon) != 21 || len(seenP4Order) != 16 || len(seenP4CustomerCompat) != 2 || len(seenP4ConfigSettings) != 4 || len(seenP4LegacyHealth) != 1 || len(seenP4DomainVerification) != 1 || links != 97 {
+		return fmt.Errorf("candidate inventory mismatch: p1=%d p2_stages=%d p3_contact=%d p3_identity=%d p3_segment=%d p4_automation=%d p4_product=%d p4_media=%d p4_group_invite=%d p4_survey=%d p4_channel=%d p4_tag=%d p4_tag_ab=%d p4_coupon=%d p4_order=%d p4_customer_compat=%d p4_config_settings=%d p4_legacy_health=%d p4_domain_verification=%d links=%d", len(seenP1), len(seenP2), len(seenP3Contact), len(seenP3Identity), len(seenP3Segment), len(seenP4Automation), len(seenP4Product), len(seenP4Media), len(seenP4GroupInvite), len(seenP4Survey), len(seenP4Channel), len(seenP4Tag), len(seenP4TagAB), len(seenP4Coupon), len(seenP4Order), len(seenP4CustomerCompat), len(seenP4ConfigSettings), len(seenP4LegacyHealth), len(seenP4DomainVerification), links)
 	}
 	for id := range p1CandidateOperations {
 		if !seenP1[id] {
@@ -806,10 +830,18 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 			return fmt.Errorf("missing P4 Config Settings compatibility operation: %s", id)
 		}
 	}
+	for id := range p4LegacyHealthOperations {
+		if !seenP4LegacyHealth[id] {
+			return fmt.Errorf("missing P4 legacy health operation: %s", id)
+		}
+	}
 	for id := range p4DomainVerificationOperations {
 		if !seenP4DomainVerification[id] {
 			return fmt.Errorf("missing P4 domain verification operation: %s", id)
 		}
+	}
+	if err := validateLegacyHealthResponse(doc); err != nil {
+		return err
 	}
 	customer := doc.Components.Schemas["Customer"]
 	if customer == nil || customer.Value == nil {
@@ -884,6 +916,34 @@ func validate(doc *openapi3.T, known map[string]bool) error {
 	}
 	if err := validateConfigSettingsContract(doc); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validateLegacyHealthResponse(doc *openapi3.T) error {
+	response := doc.Components.Schemas["LegacyHealthResponse"]
+	if response == nil || response.Value == nil || response.Value.AdditionalProperties.Has == nil || *response.Value.AdditionalProperties.Has {
+		return errors.New("legacy health response schema is not closed")
+	}
+	required := append([]string(nil), response.Value.Required...)
+	sort.Strings(required)
+	wantRequired := []string{
+		"database", "database_mode", "fixture_mode", "legacy_runtime_enabled", "ok", "production_data_mode", "production_data_ready", "repository_policy", "runtime_owner", "secret_key_present", "service", "status", "warning", "wechat_shop_callback_token_present", "wechat_shop_callback_token_required",
+	}
+	if !reflect.DeepEqual(required, wantRequired) || len(response.Value.Properties) != len(wantRequired) {
+		return errors.New("legacy health response fields drifted")
+	}
+	for _, name := range []string{"ok", "secret_key_present", "wechat_shop_callback_token_present", "wechat_shop_callback_token_required", "fixture_mode", "production_data_ready", "production_data_mode", "legacy_runtime_enabled"} {
+		property := response.Value.Properties[name]
+		if property == nil || property.Value == nil || !property.Value.Type.Is("boolean") {
+			return fmt.Errorf("legacy health %s must be boolean", name)
+		}
+	}
+	for _, name := range []string{"status", "service", "database", "database_mode", "repository_policy", "runtime_owner", "warning"} {
+		property := response.Value.Properties[name]
+		if property == nil || property.Value == nil || !property.Value.Type.Is("string") {
+			return fmt.Errorf("legacy health %s must be string", name)
+		}
 	}
 	return nil
 }

@@ -66,6 +66,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /health:
+    get:
+      tags: [p4-legacy-health]
+      operationId: getLegacyHealth
+      summary: Read the frozen legacy runtime-mode snapshot
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0757]
+      x-p4-decision-evidence: P4-S04-LEGACY-HEALTH-2026-08-16
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-source: runtime_snapshot
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Frozen legacy runtime-mode snapshot; this is not readiness.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegacyHealthResponse"
   /{filename}:
     get:
       tags: [p4-domain-verification]
@@ -3293,6 +3312,26 @@ components:
       required: [status]
       properties:
         status: { type: string, enum: [ok] }
+    LegacyHealthResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, status, service, secret_key_present, wechat_shop_callback_token_present, wechat_shop_callback_token_required, database, database_mode, fixture_mode, production_data_ready, production_data_mode, repository_policy, runtime_owner, legacy_runtime_enabled, warning]
+      properties:
+        ok: {type: boolean}
+        status: {type: string, enum: [ok, degraded]}
+        service: {type: string, enum: [aicrm-next]}
+        secret_key_present: {type: boolean}
+        wechat_shop_callback_token_present: {type: boolean}
+        wechat_shop_callback_token_required: {type: boolean}
+        database: {type: string, enum: [postgres, fixture]}
+        database_mode: {type: string, enum: [postgres, fixture]}
+        fixture_mode: {type: boolean}
+        production_data_ready: {type: boolean}
+        production_data_mode: {type: boolean}
+        repository_policy: {type: string, enum: [production_repositories_required, fixture_repositories_allowed]}
+        runtime_owner: {type: string, enum: [ai_crm_next]}
+        legacy_runtime_enabled: {type: boolean}
+        warning: {type: string}
     ErrorResponse:
       type: object
       additionalProperties: false

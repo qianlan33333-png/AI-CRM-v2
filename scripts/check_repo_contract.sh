@@ -1353,7 +1353,7 @@ verify_index_sha256() {
 }
 
 verify_index_sha256 Makefile \
-  d198755ec16fe7193347524987902634432202da7266c58825aae234e3b84fe3
+  03fe35771203372fdc89fb7152ebb11ce9cdcf8e29c542fb5a6ed27571c9be74
 verify_index_sha256 CONTRIBUTING.md \
   851670c7ae917f3e7a3b03d9bec30d687afcb61ccf868fe26f6b547fc8a6273f
 verify_index_sha256 .github/CODEOWNERS \
@@ -1379,7 +1379,7 @@ verify_index_sha256 package.json \
 verify_index_sha256 package-lock.json \
   64f32f2bc22dbde74f3e0e82fbfa91c1160621fc1a771832a0a0b06fb11e2892
 verify_index_sha256 web/src/api/generated/health.ts \
-  b5fd7557069308289358f47ff5bafb8aaa000030d984cd08261de58c58f4c079
+  bd8fed9f4aff134ceeca5f6cdadd3e6b34ee2ab1e2d5b5f485187c6a44be1610
 verify_index_sha256 .github/workflows/application-go.yml \
   33347cdc331a6ea44082116be69d0ac1c91cdd9e22d6a907c03c2135f05dfdb4
 verify_index_sha256 .github/workflows/repo-contract.yml \
@@ -1405,11 +1405,11 @@ verify_index_sha256 scripts/test_gitleaks_config.sh \
 verify_index_sha256 docs/execution/slices/M0-7.md \
   0b9cd7cbd3ae679b57b54361d8d7d9f0ff34e1568f55bf118505a048c9e229a4
 verify_index_sha256 scripts/check_generated_sources.sh \
-  6d000efce99f52a9f7f42d2d2195ef3340dcfba261c5b6cd2e7e0321d7eea84e
+  7c60b73e640b5571726178e4d3c4268ddc2862cda5945645e208c6f1811f0400
 verify_index_sha256 scripts/test_gitless_generated_check.sh \
   a1c2ecdbad13520ff52d1cc5219363621529c4c74fd2ba8cd53cb3dbb6c6c9ca
 verify_index_sha256 scripts/generated-sources.sha256 \
-  a5db0c599fd38c7f5e79a93ef9bd90d6a416a328d3666c4baf66b3784258b06d
+  0c7e6f4070d1dd780c02199603b1ebfa86e2ff04e302bb438f94e037a585e761
 verify_index_sha256 scripts/test_orval_generated_check.sh \
   1b6690d6af1d554ccabd167cd0f7ce6d80b740015768bf2a35ca8425072d7e27
 verify_index_sha256 scripts/package_release_archive.sh \
@@ -1583,7 +1583,7 @@ verify_index_sha256 tools/migration-mapping/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C02.md \
   c7b8c7236f20279d244286f0f3facaab28ba831a64e7f662755a6b9700abac43
 verify_index_sha256 docs/api-mapping.jsonl \
-  6e2e3cc5122a12d121bcc5be41d716c40e57338a7bb92a53b0b6b9d0a1254e02
+  5d6df87541f2d919674f69bb7c83a6b9d3efee6544c460978e9c890fea10d305
 verify_index_sha256 docs/evidence/p1/route-triage.csv \
   ccd7708b12481add3af74c0d6442e5f4333ee076e28110aa4b330e7181f00da4
 verify_index_sha256 docs/evidence/p1/g1-decisions.md \
@@ -1607,21 +1607,21 @@ verify_index_sha256 tools/p1-reconciliation/main_test.go \
 verify_index_sha256 docs/execution/slices/P1-C03.md \
   cd9e0441d79b9e1887030087bb4dd800a0a3ca3529275008083d00c577572ffc
 verify_index_sha256 api/openapi.yaml \
-  8ece9a0dd85b561c6424381812c7da97eba1e6f82d7861b2b45d8ceb91b4e9a4
+  d7da29b5e6531a3ce4e709f0bdaf707c3235a68a34a431826bb4659858e58db6
 verify_index_sha256 api/oapi-codegen.yaml \
   78abf754fe91788d5cbdab2286ba66dc32d5e13ed1735ffeee9119e473fd4a2b
 verify_index_sha256 api/oapi-codegen-p1-candidate.yaml \
-  ffebf75e56f8d6bef925ab763bf51b70f2dad5356a5abfe230e47f6bd6b6ff22
+  ecad64bf6c681242f57095a0819d742b2d040fe73d57bc4976bdcfc91235571e
 verify_index_sha256 internal/api/generated/server.gen.go \
   f1e66b50f9ba6722b663967ec1da44cf6bda718246d66a82aef9179c670f2e38
 verify_index_sha256 internal/api/candidate/generated/server.gen.go \
-  b784e6a04da3fd5264567d2dc64109ce9b3763f991982ce9ca1e769a4e1cde81
+  40cd7bb45dd2bacda7b39a3a9e29bddcfcd0a10ede58a9cff5d3c96e688adf12
 verify_index_sha256 tools/openapi-contract/main.go \
-  2199d42f41edc194ca60ddc12e38856f7a4ea8dada6f1fb9e80a10b5a535536e
+  7255ab34ca094b7ae1ed7b2bae71f844424d90bfdfac34b5d1a790287358f6a0
 verify_index_sha256 tools/openapi-contract/main_test.go \
-  29739aa6504baa2a3eb3a62830e782b794de3bb6fced475d82f82bb523062dc9
+  67782c131fa9f31144b2f86a5bf1af50c10ab5e8dc4325ae558baa6b87a9ca1e
 verify_index_sha256 acceptance/p1s11/contracts_test.go \
-  1e8274b665b74e8dabbf101a2c6486066f38605aa97b3d1a5d41d6165038bc9a
+  2b3c2d2adb6242218de13b8f89120410a4057d1c8db4ed9842d55e5681d9d6bb
 verify_index_sha256 acceptance/p1s11/doc.go \
   8a7f18c253c7b95d9714845c8a98d548c5730bde49de5d8bae156bc3967727d9
 verify_index_sha256 acceptance/p3c00/contracts_test.go \
@@ -1995,9 +1995,11 @@ verify_index_sha256 cmd/aicrm/scheduler_test.go \
 verify_index_sha256 internal/config/load.go \
   3df220675a71df7c798681c43e0ebc300342b7396fb60a5b867faed787c81b84
 verify_index_sha256 internal/config/schema.go \
-  acb2aa1fc91b3b3a1fee7eab4c43ac964e75c11723f7b0b20bb4ece421961c16
+  e55d0400b94a70335780f2101c33e8276ec5494eec547250e5dd053e70478003
 verify_index_sha256 internal/config/schema_test.go \
-  c345748a1872565a186c2ca1417cd5cdf5b62ccd3338b172078eb2bb2adcd0d0
+  815b756d04433a7abc934a84a18b294cca004e981dcc5db0d5fd9d79c71770d4
+verify_index_sha256 cmd/aicrm/legacy_health_api_test.go \
+  5fbaf94b2306aa852422caafa52eecf60730e9ca734c1a44b87c88f2484d8794
 verify_index_sha256 acceptance/p0s01/process_blackbox.sh \
   2b6376c3e061d074d8a94db6d5dc0876ec5a2084978eab0e348b028a381b6889
 verify_index_sha256 acceptance/p0s01/static_contract.sh \
@@ -2093,11 +2095,15 @@ verify_index_sha256 docs/execution/slices/P2-10.md \
 verify_index_sha256 docs/evidence/slices/P2-10-rbac-tests.md \
   be0c22686771222bdcdc3350760365a30397350915806f900e212829eca2cab8
 verify_index_sha256 cmd/aicrm/api.go \
-  952926aa12e4f4ef3be11163f5b0f17408ca437ed91d01985bc78d9209ea0092
+  5b1cb9a571980c4a9ae504b16da67ee11674cf32ff93820b265d3a4636ab74db
 verify_index_sha256 cmd/aicrm/api_test.go \
   c8e0ed59f3758867a869f08a7b4cf36f766cf24831da23a1ba3b137985244ab5
 verify_index_sha256 cmd/aicrm/domain_verification_api_test.go \
   c4c871ab2da40f066df287557f54dbe2046a4e4c8f4f0d55281e68e8c7a3498f
+verify_index_sha256 docs/ci/go-acceptance-manifest.tsv \
+  46d97abbca46689a7474c2f72548d368c6897685eca5c9e6397fd83b1eb9eced
+verify_index_sha256 docs/evidence/candidates/LEGACY-API-0757-R0.md \
+  626ea821e46b8dc35d4962125d19e6c50b523132a1c40fda77e7469aa7457125
 verify_index_sha256 acceptance/p2s11/doc.go \
   735a2c1eb929a5046d53d60a522b9b46f9c822dc20c85846eb358d2b80f15a5d
 verify_index_sha256 acceptance/p2s11/gateway_router_test.go \
@@ -3351,7 +3357,8 @@ for acceptance_row in \
   'p4-c01|P4C01_CHANNEL_TEST_DATABASE_URL|p4-c01-channel-acceptance' \
   'p4-j01|P4J01_COUPON_TEST_DATABASE_URL|p4-j01-coupon-acceptance' \
   'p4-coupon-ab|P4COUPONAB_TEST_DATABASE_URL|p4-coupon-ab-acceptance' \
-  'p4-i03|P4I03_ORDER_TEST_DATABASE_URL|p4-i03-order-acceptance'; do
+  'p4-i03|P4I03_ORDER_TEST_DATABASE_URL|p4-i03-order-acceptance' \
+  'p4-s04-legacy-health|-|p4-s04-legacy-health-acceptance'; do
   require_acceptance_manifest_row "$acceptance_row"
 done
 verify_postgres_step="$(
@@ -7109,6 +7116,45 @@ for ledger_anchor in \
   '    verification_induced_correction_count: 1' \
   '    cumulative_corrections: [slice_induced=2, verification_induced=13, infra_induced=1, scope_induced=0, redline=0]'; do
   grep -Fq -- "$ledger_anchor" <<<"$slice_policy_ledger" || fail "P4-I03 ledger drifted: $ledger_anchor"
+done
+
+p4legacyhealth_mapping="$(git show :docs/api-mapping.jsonl | grep -F '"mapping_id":"LEGACY-API-0757"')"
+[[ "$p4legacyhealth_mapping" = *'"legacy_source_sha":"6cb989c071255437d75953dabb943318a74eb8f4"'* &&
+   "$p4legacyhealth_mapping" = *'"candidate_v2_operation_id":"getLegacyHealth"'* &&
+   "$p4legacyhealth_mapping" = *'"candidate_v2_method":"GET"'* &&
+   "$p4legacyhealth_mapping" = *'"candidate_v2_path":"/health"'* &&
+   "$p4legacyhealth_mapping" = *'"target_mapping_id":"P4-S04-LEGACY-HEALTH"'* ]] ||
+  fail "P4 legacy health mapping lost its frozen central route"
+[[ "$(git show :docs/feature-matrix.csv | tail -n +2 | wc -l | tr -d ' ')" = "293" ]] ||
+  fail "P4 legacy health must not fabricate an API-only UI matrix row"
+p4legacyhealth_openapi="$(git show :api/openapi.yaml)"
+for anchor in \
+  '/health:' \
+  'operationId: getLegacyHealth' \
+  'x-legacy-mapping-ids: [LEGACY-API-0757]' \
+  'x-p4-decision-evidence: P4-S04-LEGACY-HEALTH-2026-08-16' \
+  'x-aicrm-data-source: runtime_snapshot' \
+  'LegacyHealthResponse:' \
+  'wechat_shop_callback_token_required: {type: boolean}'; do
+  grep -Fq -- "$anchor" <<<"$p4legacyhealth_openapi" || fail "P4 legacy health OpenAPI drifted: $anchor"
+done
+p4legacyhealth_recipe="$(make_target_recipe 'p4-s04-legacy-health-acceptance:')" ||
+  fail "P4 legacy health acceptance target must be unique"
+[[ "$p4legacyhealth_recipe" = *'./internal/platform/legacyhealth ./internal/config ./cmd/aicrm'* &&
+   "$p4legacyhealth_recipe" != *'migration'* &&
+   "$p4legacyhealth_recipe" != *'DATABASE_URL'* ]] ||
+  fail "P4 legacy health acceptance target gained migration or lost the router chain"
+require_acceptance_manifest_row 'p4-s04-legacy-health|-|p4-s04-legacy-health-acceptance' ||
+  fail "P4 legacy health acceptance is disconnected from application CI"
+p4legacyhealth_receipt="$(git show :docs/evidence/candidates/LEGACY-API-0757-R0.md)"
+for anchor in \
+  'INTEGRATION_CANDIDATE' \
+  '15-field payload' \
+  'does not retain, log, return or serialize a secret value' \
+  '293-row UI feature matrix is intentionally unchanged' \
+  'not an up/down/up migration target' \
+  'does not claim a deployment, provider call, production database action or real external effect'; do
+  grep -Fq -- "$anchor" <<<"$p4legacyhealth_receipt" || fail "P4 legacy health receipt drifted: $anchor"
 done
 
 scripts/scan_sensitive_paths.sh

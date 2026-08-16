@@ -45,6 +45,7 @@ import (
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	domainverification "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/domainverification"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
+	legacyhealth "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/legacyhealth"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
@@ -88,6 +89,7 @@ type candidateHandler struct {
 	domainVerification interface {
 		Read(string) (string, error)
 	}
+	legacyHealth http.Handler
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
@@ -273,6 +275,24 @@ func (handler *candidateHandler) GetDomainVerificationFile(writer http.ResponseW
 	_, _ = writer.Write([]byte(content))
 }
 
+func (handler *candidateHandler) GetLegacyHealth(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.legacyHealth == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.legacyHealth.ServeHTTP(writer, request)
+}
+
+func legacyHealthSnapshot(config appconfig.Root) legacyhealth.RuntimeSnapshot {
+	return legacyhealth.RuntimeSnapshot{
+		DatabaseIsPostgres:                  config.Database.URL.Value() != "",
+		ProductionEnvironment:               config.LegacyHealth.ProductionEnvironment,
+		SecretKeyPresent:                    config.LegacyHealth.SecretKeyPresent,
+		WeChatShopCallbackTokenPresent:      config.LegacyHealth.WeChatShopCallbackTokenPresent,
+		AllowMissingWeChatShopCallbackToken: config.LegacyHealth.AllowMissingWeChatShopCallbackToken,
+	}
+}
+
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
 	if err != nil || poolConfig.ConnConfig.DescriptionCacheCapacity < 1 || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
@@ -429,6 +449,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, errInvalidAPIComponent
 	}
+	legacyHealth := legacyhealth.NewHandler(legacyhealth.NewQuery(legacyHealthSnapshot(config)))
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
@@ -439,6 +460,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		identityReviews:    identityReviewHandler,
 		automationRuns:     automationstore.NewRepository(pool),
 		domainVerification: domainVerification,
+		legacyHealth:       legacyHealth,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -611,6 +633,21 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 	}
 
 	wrapper := &api.ServerInterfaceWrapper{Handler: candidate, ErrorHandlerFunc: platformhttp.RequestErrorHandler}
+	legacyHealthRoute, err := recovery(http.HandlerFunc(wrapper.GetLegacyHealth))
+	if err != nil {
+		return nil, err
+	}
+	legacyHealthRoute, err = gateway.TimeoutMiddleware(legacyHealthRoute)
+	if err != nil {
+		return nil, err
+	}
+	legacyHealthRoute, err = gateway.RoutePatternMiddleware("/health", legacyHealthRoute)
+	if err != nil {
+		return nil, err
+	}
+	// /health is the legacy runtime-mode snapshot, not /healthz readiness.
+	// Mount the concrete route before the final root catch-all registration.
+	router.Method(http.MethodGet, "/health", legacyHealthRoute)
 	register := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
 		tail, wrapErr := recovery(endpoint)
 		if wrapErr != nil {

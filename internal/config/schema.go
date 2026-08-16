@@ -14,25 +14,30 @@ import (
 )
 
 const (
-	databaseURLEnv           = "AICRM_DATABASE_URL"
-	apiListenAddressEnv      = "AICRM_HTTP_LISTEN_ADDRESS"
-	apiPoolMaxConnsEnv       = "AICRM_API_PGX_MAX_CONNS"
-	workerPoolMaxConnsEnv    = "AICRM_WORKER_PGX_MAX_CONNS"
-	criticalWorkersEnv       = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
-	eventWorkersEnv          = "AICRM_RIVER_EVENT_MAX_WORKERS"
-	outboundWorkersEnv       = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
-	syncWorkersEnv           = "AICRM_RIVER_SYNC_MAX_WORKERS"
-	heavyWorkersEnv          = "AICRM_RIVER_HEAVY_MAX_WORKERS"
-	aiWorkersEnv             = "AICRM_RIVER_AI_MAX_WORKERS"
-	weComCallbackCorpIDEnv   = "AICRM_WECOM_CALLBACK_CORP_ID"
-	weComCallbackTokenEnv    = "AICRM_WECOM_CALLBACK_TOKEN"
-	weComCallbackAESKeyEnv   = "AICRM_WECOM_CALLBACK_AES_KEY"
-	weComOAuthCorpIDEnv      = "AICRM_WECOM_OAUTH_CORP_ID"
-	weComOAuthSecretEnv      = "AICRM_WECOM_OAUTH_SECRET"
-	weComOAuthCallbackEnv    = "AICRM_WECOM_OAUTH_CALLBACK_URL"
-	identityHMACKeyEnv       = "AICRM_IDENTITY_HMAC_KEY"
-	domainVerificationDirEnv = "AICRM_DOMAIN_VERIFICATION_DIR"
+	databaseURLEnv                         = "AICRM_DATABASE_URL"
+	apiListenAddressEnv                    = "AICRM_HTTP_LISTEN_ADDRESS"
+	apiPoolMaxConnsEnv                     = "AICRM_API_PGX_MAX_CONNS"
+	workerPoolMaxConnsEnv                  = "AICRM_WORKER_PGX_MAX_CONNS"
+	criticalWorkersEnv                     = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
+	eventWorkersEnv                        = "AICRM_RIVER_EVENT_MAX_WORKERS"
+	outboundWorkersEnv                     = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
+	syncWorkersEnv                         = "AICRM_RIVER_SYNC_MAX_WORKERS"
+	heavyWorkersEnv                        = "AICRM_RIVER_HEAVY_MAX_WORKERS"
+	aiWorkersEnv                           = "AICRM_RIVER_AI_MAX_WORKERS"
+	weComCallbackCorpIDEnv                 = "AICRM_WECOM_CALLBACK_CORP_ID"
+	weComCallbackTokenEnv                  = "AICRM_WECOM_CALLBACK_TOKEN"
+	weComCallbackAESKeyEnv                 = "AICRM_WECOM_CALLBACK_AES_KEY"
+	weComOAuthCorpIDEnv                    = "AICRM_WECOM_OAUTH_CORP_ID"
+	weComOAuthSecretEnv                    = "AICRM_WECOM_OAUTH_SECRET"
+	weComOAuthCallbackEnv                  = "AICRM_WECOM_OAUTH_CALLBACK_URL"
+	identityHMACKeyEnv                     = "AICRM_IDENTITY_HMAC_KEY"
+	domainVerificationDirEnv               = "AICRM_DOMAIN_VERIFICATION_DIR"
+	legacySecretKeyEnv                     = "SECRET_KEY"
+	legacyShopCallbackTokenEnv             = "WECHAT_SHOP_CALLBACK_TOKEN"
+	legacyAllowMissingShopCallbackTokenEnv = "AICRM_ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN"
 )
+
+var legacyProductionEnvironmentKeys = [...]string{"AICRM_NEXT_ENV", "ENVIRONMENT", "APP_ENV", "FLASK_ENV"}
 
 var ErrInvalid = errors.New("invalid startup configuration")
 
@@ -58,6 +63,16 @@ type API struct {
 // filesystem-backed verification reader. The reader owns path safety checks.
 type DomainVerification struct {
 	Directory string
+}
+
+// LegacyHealth contains only the non-secret runtime facts that the frozen
+// public /health compatibility payload exposes. It intentionally does not
+// retain the underlying setting values.
+type LegacyHealth struct {
+	ProductionEnvironment               bool
+	SecretKeyPresent                    bool
+	WeChatShopCallbackTokenPresent      bool
+	AllowMissingWeChatShopCallbackToken bool
 }
 
 // CallbackSecret is opaque to keep callback credentials out of generic logs
@@ -140,6 +155,7 @@ type Root struct {
 	WeCom              WeCom
 	Identity           Identity
 	DomainVerification DomainVerification
+	LegacyHealth       LegacyHealth
 }
 
 type validationError struct {
@@ -185,6 +201,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
+		root.LegacyHealth = parseLegacyHealth(lookup)
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
@@ -205,6 +222,35 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		return Root{}, validationError{problems: problems}
 	}
 	return root, nil
+}
+
+func parseLegacyHealth(lookup environmentLookup) LegacyHealth {
+	production := false
+	for _, key := range legacyProductionEnvironmentKeys {
+		value, present := lookup(key)
+		if present && (strings.EqualFold(strings.TrimSpace(value), "prod") || strings.EqualFold(strings.TrimSpace(value), "production")) {
+			production = true
+			break
+		}
+	}
+	secretKey, secretKeyPresent := lookup(legacySecretKeyEnv)
+	shopToken, shopTokenPresent := lookup(legacyShopCallbackTokenEnv)
+	allowMissing, allowMissingPresent := lookup(legacyAllowMissingShopCallbackTokenEnv)
+	return LegacyHealth{
+		ProductionEnvironment:               production,
+		SecretKeyPresent:                    secretKeyPresent && strings.TrimSpace(secretKey) != "",
+		WeChatShopCallbackTokenPresent:      shopTokenPresent && strings.TrimSpace(shopToken) != "",
+		AllowMissingWeChatShopCallbackToken: allowMissingPresent && legacyEnabled(allowMissing),
+	}
+}
+
+func legacyEnabled(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func parseIdentityHMACKey(lookup environmentLookup, problems *[]string) IdentityHMACKey {

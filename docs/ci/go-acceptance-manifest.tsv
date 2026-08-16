@@ -39,3 +39,4 @@ p4-i03|P4I03_ORDER_TEST_DATABASE_URL|p4-i03-order-acceptance
 p4-message-archive-ab|P4MESSAGEARCHIVE_TEST_DATABASE_URL|p4-message-archive-ab-acceptance
 p4-order-ab|P4ORDERAB_TEST_DATABASE_URL|p4-order-ab-acceptance
 p4-operation-cycle-ab|P4OPERATIONCYCLE_TEST_DATABASE_URL|p4-operation-cycle-ab-acceptance
+p4-s04-legacy-health|-|p4-s04-legacy-health-acceptance

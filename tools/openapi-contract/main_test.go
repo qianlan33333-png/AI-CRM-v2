@@ -67,6 +67,21 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			delete(doc.Paths.Value("/{filename}").Get.Responses.Value("200").Value.Headers, "Cache-Control")
 			reject(t, doc, ids)
 		},
+		"legacy health becomes authenticated": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Security = &openapi3.SecurityRequirements{{"AdminSession": []string{}}}
+			reject(t, doc, ids)
+		},
+		"legacy health gains an error response": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Responses.Set("503", doc.Paths.Value("/health").Get.Responses.Value("200"))
+			reject(t, doc, ids)
+		},
+		"legacy health schema loses one frozen field": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Components.Schemas["LegacyHealthResponse"].Value.Properties, "warning")
+			reject(t, doc, ids)
+		},
 		"browser JWT substitution": func(t *testing.T) {
 			doc, ids := fresh(t)
 			scheme := doc.Components.SecuritySchemes["AdminSession"].Value
