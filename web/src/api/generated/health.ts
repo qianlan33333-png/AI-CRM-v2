@@ -1971,6 +1971,466 @@ export interface LegacyGroupInviteArchiveResponse {
   real_external_call_executed: boolean;
 }
 
+export type LegacyMiniProgramCreateRequest =
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    });
+
+export interface LegacyMiniProgramUpdateRequest {
+  /** @maxLength 200 */
+  name?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  appid?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  app_id?: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  pagepath?: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  page_path?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title?: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  thumb_image_id?: number | null;
+  resolve_thumb_media?: boolean;
+  enabled?: boolean;
+}
+
+export type LegacyMiniProgramThumbImageBase64 =
+  (typeof LegacyMiniProgramThumbImageBase64)[keyof typeof LegacyMiniProgramThumbImageBase64];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMiniProgramThumbImageBase64 = {
+  "": "",
+} as const;
+
+export interface LegacyMiniProgram {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  appid: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  pagepath: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  page_path: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /** @maxLength 2048 */
+  thumb_image_url: string;
+  thumb_image_base64: LegacyMiniProgramThumbImageBase64;
+  /** @maxLength 255 */
+  readonly thumb_media_id: string;
+  readonly thumb_media_id_expires_at?: string;
+  /** @minimum 1 */
+  thumb_image_id?: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  /** @minimum 1 */
+  version: number;
+}
+
+export type LegacyMiniProgramThumbnailResolutionStatus =
+  (typeof LegacyMiniProgramThumbnailResolutionStatus)[keyof typeof LegacyMiniProgramThumbnailResolutionStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMiniProgramThumbnailResolutionStatus = {
+  resolved: "resolved",
+  not_available: "not_available",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export type LegacyMiniProgramThumbnailResolutionCacheOwner =
+  (typeof LegacyMiniProgramThumbnailResolutionCacheOwner)[keyof typeof LegacyMiniProgramThumbnailResolutionCacheOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMiniProgramThumbnailResolutionCacheOwner = {
+  mediathumbnail_cache: "media.thumbnail_cache",
+} as const;
+
+export interface LegacyMiniProgramThumbnailResolution {
+  status: LegacyMiniProgramThumbnailResolutionStatus;
+  cache_owner: LegacyMiniProgramThumbnailResolutionCacheOwner;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  cache_receipt: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  readonly thumb_media_id?: string;
+  readonly thumb_media_id_expires_at?: string;
+  side_effect_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramListResponse {
+  ok: boolean;
+  items: LegacyMiniProgram[];
+  miniprograms: LegacyMiniProgram[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramDetailResponse {
+  ok: boolean;
+  item: LegacyMiniProgram;
+  miniprogram: LegacyMiniProgram;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type LegacyMiniProgramMutationResponseThumbResolve =
+  LegacyMiniProgramThumbnailResolution | null;
+
+export interface LegacyMiniProgramMutationResponse {
+  ok: boolean;
+  item: LegacyMiniProgram;
+  miniprogram: LegacyMiniProgram;
+  /** @minimum 1 */
+  item_id: number;
+  changed: boolean;
+  /** @nullable */
+  thumb_resolve: LegacyMiniProgramMutationResponseThumbResolve;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramDeleteResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  item_id: number;
+  deleted: boolean;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramResolveResponse {
+  ok: boolean;
+  item: LegacyMiniProgram;
+  miniprogram: LegacyMiniProgram;
+  resolution: LegacyMiniProgramThumbnailResolution;
+  changed: boolean;
+  /** @maxLength 255 */
+  readonly thumb_media_id: string;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface Product {
   id: number;
   /**
@@ -4511,6 +4971,19 @@ export type ListLegacyGroupInvitesParams = {
   /**
    * @maxLength 128
    */
+  q?: string;
+};
+
+export type ListLegacyMiniProgramsParams = {
+  /**
+   * @minimum 1
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+  enabled_only?: boolean;
   q?: string;
 };
 
@@ -13106,6 +13579,529 @@ export const archiveLegacyGroupInvite = async (
     status: res.status,
     headers: res.headers,
   } as archiveLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Carry the frozen Mini Program library page into the existing admin shell
+ */
+export type getLegacyMiniProgramLibraryPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyMiniProgramLibraryPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyMiniProgramLibraryPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyMiniProgramLibraryPageResponseError = (
+  | getLegacyMiniProgramLibraryPageResponse302
+  | getLegacyMiniProgramLibraryPageResponse401
+  | getLegacyMiniProgramLibraryPageResponse403
+) & {
+  headers: Headers;
+};
+
+export type getLegacyMiniProgramLibraryPageResponse =
+  getLegacyMiniProgramLibraryPageResponseError;
+
+export const getGetLegacyMiniProgramLibraryPageUrl = () => {
+  return `/admin/miniprogram-library`;
+};
+
+export const getLegacyMiniProgramLibraryPage = async (
+  options?: RequestInit,
+): Promise<getLegacyMiniProgramLibraryPageResponse> => {
+  const res = await fetch(getGetLegacyMiniProgramLibraryPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyMiniProgramLibraryPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyMiniProgramLibraryPageResponse;
+};
+
+/**
+ * @summary List local Mini Program material metadata without a provider call
+ */
+export type listLegacyMiniProgramsResponse200 = {
+  data: LegacyMiniProgramListResponse;
+  status: 200;
+};
+
+export type listLegacyMiniProgramsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyMiniProgramsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyMiniProgramsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyMiniProgramsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyMiniProgramsResponseSuccess =
+  listLegacyMiniProgramsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyMiniProgramsResponseError = (
+  | listLegacyMiniProgramsResponse400
+  | listLegacyMiniProgramsResponse401
+  | listLegacyMiniProgramsResponse403
+  | listLegacyMiniProgramsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyMiniProgramsResponse =
+  listLegacyMiniProgramsResponseSuccess | listLegacyMiniProgramsResponseError;
+
+export const getListLegacyMiniProgramsUrl = (
+  params?: ListLegacyMiniProgramsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/miniprogram-library?${stringifiedParams}`
+    : `/api/admin/miniprogram-library`;
+};
+
+export const listLegacyMiniPrograms = async (
+  params?: ListLegacyMiniProgramsParams,
+  options?: RequestInit,
+): Promise<listLegacyMiniProgramsResponse> => {
+  const res = await fetch(getListLegacyMiniProgramsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyMiniProgramsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyMiniProgramsResponse;
+};
+
+/**
+ * @summary Persist one local Mini Program material and optionally read the Media-owned thumbnail cache
+ */
+export type createLegacyMiniProgramResponse200 = {
+  data: LegacyMiniProgramMutationResponse;
+  status: 200;
+};
+
+export type createLegacyMiniProgramResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createLegacyMiniProgramResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyMiniProgramResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyMiniProgramResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createLegacyMiniProgramResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createLegacyMiniProgramResponseSuccess =
+  createLegacyMiniProgramResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyMiniProgramResponseError = (
+  | createLegacyMiniProgramResponse400
+  | createLegacyMiniProgramResponse401
+  | createLegacyMiniProgramResponse403
+  | createLegacyMiniProgramResponse409
+  | createLegacyMiniProgramResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyMiniProgramResponse =
+  createLegacyMiniProgramResponseSuccess | createLegacyMiniProgramResponseError;
+
+export const getCreateLegacyMiniProgramUrl = () => {
+  return `/api/admin/miniprogram-library`;
+};
+
+export const createLegacyMiniProgram = async (
+  legacyMiniProgramCreateRequest: LegacyMiniProgramCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyMiniProgramResponse> => {
+  const res = await fetch(getCreateLegacyMiniProgramUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyMiniProgramCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyMiniProgramResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyMiniProgramResponse;
+};
+
+/**
+ * @summary Get one local Mini Program material without a provider call
+ */
+export type getLegacyMiniProgramResponse200 = {
+  data: LegacyMiniProgramDetailResponse;
+  status: 200;
+};
+
+export type getLegacyMiniProgramResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyMiniProgramResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyMiniProgramResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyMiniProgramResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyMiniProgramResponseSuccess =
+  getLegacyMiniProgramResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyMiniProgramResponseError = (
+  | getLegacyMiniProgramResponse401
+  | getLegacyMiniProgramResponse403
+  | getLegacyMiniProgramResponse404
+  | getLegacyMiniProgramResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyMiniProgramResponse =
+  getLegacyMiniProgramResponseSuccess | getLegacyMiniProgramResponseError;
+
+export const getGetLegacyMiniProgramUrl = (itemId: number) => {
+  return `/api/admin/miniprogram-library/${itemId}`;
+};
+
+export const getLegacyMiniProgram = async (
+  itemId: number,
+  options?: RequestInit,
+): Promise<getLegacyMiniProgramResponse> => {
+  const res = await fetch(getGetLegacyMiniProgramUrl(itemId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyMiniProgramResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyMiniProgramResponse;
+};
+
+/**
+ * @summary Update local Mini Program material without accepting provider cache fields
+ */
+export type updateLegacyMiniProgramResponse200 = {
+  data: LegacyMiniProgramMutationResponse;
+  status: 200;
+};
+
+export type updateLegacyMiniProgramResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateLegacyMiniProgramResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyMiniProgramResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyMiniProgramResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateLegacyMiniProgramResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateLegacyMiniProgramResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateLegacyMiniProgramResponseSuccess =
+  updateLegacyMiniProgramResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyMiniProgramResponseError = (
+  | updateLegacyMiniProgramResponse400
+  | updateLegacyMiniProgramResponse401
+  | updateLegacyMiniProgramResponse403
+  | updateLegacyMiniProgramResponse404
+  | updateLegacyMiniProgramResponse409
+  | updateLegacyMiniProgramResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyMiniProgramResponse =
+  updateLegacyMiniProgramResponseSuccess | updateLegacyMiniProgramResponseError;
+
+export const getUpdateLegacyMiniProgramUrl = (itemId: number) => {
+  return `/api/admin/miniprogram-library/${itemId}`;
+};
+
+export const updateLegacyMiniProgram = async (
+  itemId: number,
+  legacyMiniProgramUpdateRequest: LegacyMiniProgramUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyMiniProgramResponse> => {
+  const res = await fetch(getUpdateLegacyMiniProgramUrl(itemId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyMiniProgramUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyMiniProgramResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyMiniProgramResponse;
+};
+
+/**
+ * @summary Physically delete one legacy Mini Program material while preserving its immutable receipt
+ */
+export type deleteLegacyMiniProgramResponse200 = {
+  data: LegacyMiniProgramDeleteResponse;
+  status: 200;
+};
+
+export type deleteLegacyMiniProgramResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteLegacyMiniProgramResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteLegacyMiniProgramResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteLegacyMiniProgramResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteLegacyMiniProgramResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteLegacyMiniProgramResponseSuccess =
+  deleteLegacyMiniProgramResponse200 & {
+    headers: Headers;
+  };
+export type deleteLegacyMiniProgramResponseError = (
+  | deleteLegacyMiniProgramResponse401
+  | deleteLegacyMiniProgramResponse403
+  | deleteLegacyMiniProgramResponse404
+  | deleteLegacyMiniProgramResponse409
+  | deleteLegacyMiniProgramResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteLegacyMiniProgramResponse =
+  deleteLegacyMiniProgramResponseSuccess | deleteLegacyMiniProgramResponseError;
+
+export const getDeleteLegacyMiniProgramUrl = (itemId: number) => {
+  return `/api/admin/miniprogram-library/${itemId}`;
+};
+
+export const deleteLegacyMiniProgram = async (
+  itemId: number,
+  options?: RequestInit,
+): Promise<deleteLegacyMiniProgramResponse> => {
+  const res = await fetch(getDeleteLegacyMiniProgramUrl(itemId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteLegacyMiniProgramResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteLegacyMiniProgramResponse;
+};
+
+/**
+ * @summary Read only the Media-owned local thumbnail cache and persist no provider effect
+ */
+export type testResolveLegacyMiniProgramResponse200 = {
+  data: LegacyMiniProgramResolveResponse;
+  status: 200;
+};
+
+export type testResolveLegacyMiniProgramResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type testResolveLegacyMiniProgramResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type testResolveLegacyMiniProgramResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type testResolveLegacyMiniProgramResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type testResolveLegacyMiniProgramResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type testResolveLegacyMiniProgramResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type testResolveLegacyMiniProgramResponseSuccess =
+  testResolveLegacyMiniProgramResponse200 & {
+    headers: Headers;
+  };
+export type testResolveLegacyMiniProgramResponseError = (
+  | testResolveLegacyMiniProgramResponse400
+  | testResolveLegacyMiniProgramResponse401
+  | testResolveLegacyMiniProgramResponse403
+  | testResolveLegacyMiniProgramResponse404
+  | testResolveLegacyMiniProgramResponse409
+  | testResolveLegacyMiniProgramResponse503
+) & {
+  headers: Headers;
+};
+
+export type testResolveLegacyMiniProgramResponse =
+  | testResolveLegacyMiniProgramResponseSuccess
+  | testResolveLegacyMiniProgramResponseError;
+
+export const getTestResolveLegacyMiniProgramUrl = (itemId: number) => {
+  return `/api/admin/miniprogram-library/${itemId}/test-resolve`;
+};
+
+export const testResolveLegacyMiniProgram = async (
+  itemId: number,
+  options?: RequestInit,
+): Promise<testResolveLegacyMiniProgramResponse> => {
+  const res = await fetch(getTestResolveLegacyMiniProgramUrl(itemId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: testResolveLegacyMiniProgramResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as testResolveLegacyMiniProgramResponse;
 };
 
 /**

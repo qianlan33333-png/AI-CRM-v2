@@ -2434,7 +2434,7 @@ for anchor in \
   "goose -dir migrations postgres \"\$database_url\" down" \
   'ON CONFLICT (river_job_id) DO UPDATE' \
   '[[ "$rollback_waterline" = "21" && "$rollback_history" = "2" ]]' \
-  '[[ "$upgrade_waterline" = "44" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]'; do
+  '[[ "$upgrade_waterline" = "45" && "$upgrade_history" = "2" && "$marker_count" = "1" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6a_compat" || fail "P3-O6A historical migration acceptance drifted: $anchor"
 done
 
@@ -2507,7 +2507,7 @@ done
 p3o6b1_compat="$(git show :acceptance/outbound/o6b1_migration_compatibility.sh)"
 for anchor in \
   '[[ "$rollback_waterline" = "22" && "$receipts" = "1" && "$links" = "1" ]]' \
-  '[[ "$upgrade_waterline" = "44" && "$receipts" = "1" && "$links" = "1" ]]' \
+  '[[ "$upgrade_waterline" = "45" && "$receipts" = "1" && "$links" = "1" ]]' \
   '[[ "$events" = "1" && "$jobs" = "0" && "$task_status" = "cancelled" ]]' \
   '[[ "$outbound_links" = "1" && "$river_foreign_keys" = "0" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6b1_compat" || fail "P3-O6B1 historical migration acceptance drifted: $anchor"
@@ -2574,7 +2574,7 @@ p3o6b2_compat="$(git show :acceptance/outbound/o6b2_migration_compatibility.sh)"
 for anchor in \
   'goose -dir migrations postgres "$database_url" down-to 23' \
   '[[ "$rollback_waterline" = "23" && "$receipts" = "1" && "$links" = "2" ]]' \
-  '[[ "$upgrade_waterline" = "44" && "$receipts" = "1" && "$links" = "2" ]]' \
+  '[[ "$upgrade_waterline" = "45" && "$receipts" = "1" && "$links" = "2" ]]' \
   '[[ "$events" = "1" && "$jobs" = "1" && "$task_status" = "pending" ]]'; do
   grep -Fq -- "$anchor" <<<"$p3o6b2_compat" || fail "P3-O6B2 historical migration acceptance drifted: $anchor"
 done
@@ -2643,10 +2643,10 @@ done
 p4d01_compat="$(git show :acceptance/automation/d01_migration_compatibility.sh)"
 for anchor in \
   'down-to 24' \
-  '[[ "$upgrade_waterline" = "44" && "$history_events" = "1" ]]' \
+  '[[ "$upgrade_waterline" = "45" && "$history_events" = "1" ]]' \
   '[[ "$rollback_waterline" = "24" && "$history_events" = "1" ]]' \
-  '[[ "$final_waterline" = "44" && "$history_events" = "1" ]]' \
-  'P4-W0-D01 migration compatibility: PASS (24/44/24/44, D01, L01, and current history preserved)'; do
+  '[[ "$final_waterline" = "45" && "$history_events" = "1" ]]' \
+  'P4-W0-D01 migration compatibility: PASS (24/45/24/45, D01, L01, and current history preserved)'; do
   grep -Fq -- "$anchor" <<<"$p4d01_compat" || fail "P4-W0-D01 historical migration acceptance drifted: $anchor"
 done
 
@@ -2760,8 +2760,8 @@ for anchor in \
   'up-to 25' \
   'down-to 25' \
   '[[ "$rollback_waterline" = "25"' \
-  '[[ "$final_waterline" = "44"' \
-  'P4-W0-L01 migration compatibility: PASS (25/44/25/44, history preserved through current waterline)'; do
+  '[[ "$final_waterline" = "45"' \
+  'P4-W0-L01 migration compatibility: PASS (25/45/25/45, history preserved through current waterline)'; do
   grep -Fq -- "$anchor" <<<"$p4l01_compat" || fail "P4-W0-L01 historical migration acceptance drifted: $anchor"
 done
 
@@ -2952,9 +2952,9 @@ grep -Fq 'CorpID() string' <<<"$p4a01_handler" || fail "P4-SI00B removed the A01
 p4si00b_compat="$(git show :acceptance/auth/si00b_migration_compatibility.sh)"
 for anchor in \
   'down-to 27' \
-  '[[ "$upgrade_waterline" = "44"' \
+  '[[ "$upgrade_waterline" = "45"' \
   '[[ "$rollback_waterline" = "27"' \
-  '[[ "$final_waterline" = "44"' \
+  '[[ "$final_waterline" = "45"' \
   'ck_admin_users_wecom_corp_id' \
   'uq_admin_users_wecom_identity' \
   'count(DISTINCT wecom_corp_id)' \
@@ -3934,7 +3934,7 @@ done
 
 p4automation_agents_compat="$(git show :acceptance/automation/agents_ab_migration_compatibility.sh)"
 for anchor in \
-  'if [[ "$waterline" = "42" || "$waterline" = "43" || "$waterline" = "44" ]]; then' \
+  'if [[ "$waterline" = "42" || "$waterline" = "43" || "$waterline" = "44" || "$waterline" = "45" ]]; then' \
   '-expected-waterline 42' \
   'up-to 42' \
   'down-to 41'; do
@@ -3942,7 +3942,7 @@ for anchor in \
 done
 p4automation_agents_acceptance="$(git show :acceptance/automation/agents_ab_integration_test.go)"
 for anchor in \
-  'flag.Int("expected-waterline", 44' \
+  'flag.Int("expected-waterline", 45' \
   'waterline != *p4AutomationAgentsExpectedWaterline'; do
   grep -Fq -- "$anchor" <<<"$p4automation_agents_acceptance" || fail "P4 Automation Agents current waterline default drifted: $anchor"
 done

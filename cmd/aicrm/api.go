@@ -400,6 +400,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	mediaService := mediaapp.NewService(uow, mediastore.NewUploadRepository(), eventstore.NewAppender())
 	groupInviteRepository := mediastore.NewGroupInviteRepository()
 	groupInviteService := mediaapp.NewGroupInviteService(uow, groupInviteRepository, groupInviteRepository, eventstore.NewAppender())
+	miniProgramRepository := mediastore.NewMiniProgramRepository()
+	miniProgramService := mediaapp.NewMiniProgramService(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository)
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	channelService := contactapp.NewChannelService(uow, contactstore.NewChannelRepository(), eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
@@ -462,7 +464,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
-		productService, mediaService, groupInviteService, surveyService, channelService, couponService, legacyTagService, settingsService,
+		productService, mediaService, groupInviteService, miniProgramService, surveyService, channelService, couponService, legacyTagService, settingsService,
 	)
 	if err != nil {
 		pool.Close()
@@ -859,6 +861,13 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetGroupInvite)},
 			{http.MethodPut, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateGroupInvite)},
 			{http.MethodDelete, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ArchiveGroupInvite)},
+			{http.MethodGet, "/admin/miniprogram-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.MiniProgramLibraryPage)},
+			{http.MethodGet, "/api/admin/miniprogram-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListMiniPrograms)},
+			{http.MethodPost, "/api/admin/miniprogram-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateMiniProgram)},
+			{http.MethodGet, "/api/admin/miniprogram-library/{item_id}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetMiniProgram)},
+			{http.MethodPut, "/api/admin/miniprogram-library/{item_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateMiniProgram)},
+			{http.MethodDelete, "/api/admin/miniprogram-library/{item_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.DeleteMiniProgram)},
+			{http.MethodPost, "/api/admin/miniprogram-library/{item_id}/test-resolve", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.TestResolveMiniProgram)},
 			{http.MethodGet, "/api/admin/questionnaires", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaires)},
 			{http.MethodPost, "/api/admin/questionnaires", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.CreateQuestionnaire)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaire)},

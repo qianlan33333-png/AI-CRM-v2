@@ -2307,6 +2307,165 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/miniprogram-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyMiniProgramLibraryPage
+      summary: Carry the frozen Mini Program library page into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0054]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable legacy path; no new UI is introduced.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fminiprogram-library$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/miniprogram-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: listLegacyMiniPrograms
+      summary: List local Mini Program material metadata without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0390]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, default: 100 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: enabled_only, in: query, required: false, schema: { type: boolean, default: true } }
+        - { name: q, in: query, required: false, schema: { type: string, default: "" } }
+      responses:
+        "200": { description: Local Mini Program page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-media-compat]
+      operationId: createLegacyMiniProgram
+      summary: Persist one local Mini Program material and optionally read the Media-owned thumbnail cache
+      x-legacy-mapping-ids: [LEGACY-API-0391]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramCreateRequest" } } } }
+      responses:
+        "200": { description: Locally persisted Mini Program material, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/miniprogram-library/{item_id}:
+    parameters:
+      - { name: item_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyMiniProgram
+      summary: Get one local Mini Program material without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0393]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local Mini Program material, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-media-compat]
+      operationId: updateLegacyMiniProgram
+      summary: Update local Mini Program material without accepting provider cache fields
+      x-legacy-mapping-ids: [LEGACY-API-0394]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local Mini Program material, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-media-compat]
+      operationId: deleteLegacyMiniProgram
+      summary: Physically delete one legacy Mini Program material while preserving its immutable receipt
+      x-legacy-mapping-ids: [LEGACY-API-0392]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Physical-delete receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramDeleteResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/miniprogram-library/{item_id}/test-resolve:
+    post:
+      tags: [p4-media-compat]
+      operationId: testResolveLegacyMiniProgram
+      summary: Read only the Media-owned local thumbnail cache and persist no provider effect
+      x-legacy-mapping-ids: [LEGACY-API-0395]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: item_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Local thumbnail-cache resolution fact, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramResolveResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/execution-runtime:
     get:
       tags: [p4-execution-runtime-compat]
@@ -3495,6 +3654,141 @@ components:
         ok: { type: boolean, enum: [true] }
         item: { $ref: "#/components/schemas/LegacyGroupInvite" }
         archived: { type: boolean, enum: [true] }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramCreateRequest:
+      type: object
+      additionalProperties: false
+      anyOf:
+        - { required: [appid, pagepath, name] }
+        - { required: [appid, pagepath, title] }
+        - { required: [appid, page_path, name] }
+        - { required: [appid, page_path, title] }
+        - { required: [app_id, pagepath, name] }
+        - { required: [app_id, pagepath, title] }
+        - { required: [app_id, page_path, name] }
+        - { required: [app_id, page_path, title] }
+      properties:
+        name: { type: string, maxLength: 200 }
+        appid: { type: string, minLength: 1, maxLength: 120 }
+        app_id: { type: string, minLength: 1, maxLength: 120 }
+        pagepath: { type: string, minLength: 1, maxLength: 500 }
+        page_path: { type: string, minLength: 1, maxLength: 500 }
+        title: { type: string, maxLength: 200 }
+        thumb_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        resolve_thumb_media: { type: boolean, default: true }
+        enabled: { type: boolean, default: true }
+    LegacyMiniProgramUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 200 }
+        appid: { type: string, minLength: 1, maxLength: 120 }
+        app_id: { type: string, minLength: 1, maxLength: 120 }
+        pagepath: { type: string, minLength: 1, maxLength: 500 }
+        page_path: { type: string, minLength: 1, maxLength: 500 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        thumb_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        resolve_thumb_media: { type: boolean }
+        enabled: { type: boolean }
+    LegacyMiniProgram:
+      type: object
+      additionalProperties: false
+      required: [id, name, appid, pagepath, page_path, title, thumb_image_url, thumb_image_base64, thumb_media_id, enabled, created_at, updated_at, created_by, updated_by, version]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        appid: { type: string, minLength: 1, maxLength: 120 }
+        pagepath: { type: string, minLength: 1, maxLength: 500 }
+        page_path: { type: string, minLength: 1, maxLength: 500 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        thumb_image_url: { type: string, maxLength: 2048 }
+        thumb_image_base64: { type: string, enum: [""] }
+        thumb_media_id: { type: string, maxLength: 255, readOnly: true }
+        thumb_media_id_expires_at: { type: string, format: date-time, readOnly: true }
+        thumb_image_id: { type: integer, format: int64, minimum: 1 }
+        enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 1 }
+    LegacyMiniProgramThumbnailResolution:
+      type: object
+      additionalProperties: false
+      required: [status, cache_owner, cache_receipt, side_effect_executed, real_external_call_executed]
+      properties:
+        status: { type: string, enum: [resolved, not_available, outcome_unknown] }
+        cache_owner: { type: string, enum: [media.thumbnail_cache] }
+        cache_receipt: { type: string, minLength: 1, maxLength: 512 }
+        thumb_media_id: { type: string, minLength: 1, maxLength: 255, readOnly: true }
+        thumb_media_id_expires_at: { type: string, format: date-time, readOnly: true }
+        side_effect_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, miniprograms, total, limit, offset, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyMiniProgram" } }
+        miniprograms: { type: array, items: { $ref: "#/components/schemas/LegacyMiniProgram" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1 }
+        offset: { type: integer, minimum: 0 }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, miniprogram, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        miniprogram: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, miniprogram, item_id, changed, thumb_resolve, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        miniprogram: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        item_id: { type: integer, format: int64, minimum: 1 }
+        changed: { type: boolean }
+        thumb_resolve: { allOf: [{ $ref: "#/components/schemas/LegacyMiniProgramThumbnailResolution" }], nullable: true }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramDeleteResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, id, item_id, deleted, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        id: { type: integer, format: int64, minimum: 1 }
+        item_id: { type: integer, format: int64, minimum: 1 }
+        deleted: { type: boolean, enum: [true] }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramResolveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, miniprogram, resolution, changed, thumb_media_id, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        miniprogram: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        resolution: { $ref: "#/components/schemas/LegacyMiniProgramThumbnailResolution" }
+        changed: { type: boolean }
+        thumb_media_id: { type: string, maxLength: 255, readOnly: true }
         local_only: { type: boolean, enum: [true] }
         provider_call_executed: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }

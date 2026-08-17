@@ -72,6 +72,15 @@ type legacyMediaApplication interface {
 	Upload(context.Context, mediaport.UploadCommand) (mediaport.Image, error)
 }
 
+type miniProgramApplication interface {
+	List(context.Context, mediaport.MiniProgramListQuery) (mediaport.MiniProgramPage, error)
+	Get(context.Context, int64) (mediaport.MiniProgram, error)
+	Create(context.Context, mediaport.MiniProgramCreateCommand) (mediaport.MiniProgramMutationResult, error)
+	Update(context.Context, mediaport.MiniProgramUpdateCommand) (mediaport.MiniProgramMutationResult, error)
+	Delete(context.Context, mediaport.MiniProgramDeleteCommand) (mediaport.MiniProgramDeleteResult, error)
+	ResolveThumbnail(context.Context, mediaport.MiniProgramResolveThumbnailCommand) (mediaport.MiniProgramThumbnailResolutionResult, error)
+}
+
 type legacySurveyApplication interface {
 	ListLegacy(context.Context, int32, int32) (surveyport.LegacyPage, error)
 	Get(context.Context, surveyport.ID) (surveyport.Questionnaire, error)
@@ -135,6 +144,7 @@ type Handler struct {
 	products              legacyProductApplication
 	media                 legacyMediaApplication
 	groupInvites          groupInviteApplication
+	miniPrograms          miniProgramApplication
 	surveys               legacySurveyApplication
 	channels              legacyChannelApplication
 	legacyTags            legacyTagApplication
@@ -229,6 +239,7 @@ func NewHandlerWithAll(
 	products legacyProductApplication,
 	media legacyMediaApplication,
 	groupInvites groupInviteApplication,
+	miniPrograms miniProgramApplication,
 	surveys legacySurveyApplication,
 	channels legacyChannelApplication,
 	coupons legacyCouponApplication,
@@ -238,7 +249,7 @@ func NewHandlerWithAll(
 	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
 		auth, customers, outbound, cancel, manualRetry, products, media, surveys,
 	)
-	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) || nilLegacyDependency(groupInvites) || nilLegacyDependency(settings) {
+	if err != nil || nilLegacyDependency(customerDetail) || nilLegacyDependency(identityResolve) || nilLegacyDependency(channels) || nilLegacyDependency(coupons) || nilLegacyDependency(legacyTags) || nilLegacyDependency(groupInvites) || nilLegacyDependency(miniPrograms) || nilLegacyDependency(settings) {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
 	handler.customerDetail = customerDetail
@@ -246,6 +257,7 @@ func NewHandlerWithAll(
 	handler.weComCorpID = strings.TrimSpace(weComCorpID)
 	handler.channels = channels
 	handler.groupInvites = groupInvites
+	handler.miniPrograms = miniPrograms
 	handler.coupons = coupons
 	if board, ok := coupons.(couponBoardApplication); ok {
 		handler.couponBoard = board

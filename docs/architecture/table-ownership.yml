@@ -161,13 +161,18 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_group_invites, media_group_invite_operation_receipts]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
       media_image_upload_receipts: actor_scoped_transactional_upload_idempotency_receipts
       media_group_invites: local_only_group_invite_metadata_with_read_only_media_image_reference
       media_group_invite_operation_receipts: actor_operation_business_key_scoped_transactional_mutation_receipts
+      media_thumbnail_cache_entries: media_owned_local_thumbnail_cache_with_outcome_unknown_no_retry
+      media_miniprograms: stable_single_instance_miniprogram_metadata_with_legacy_source_lineage
+      media_miniprogram_import_preflights: immutable_external_gate_snapshot_with_one_way_reconciliation_state
+      media_miniprogram_import_ledger: immutable_per_source_row_remap_rebuild_drop_and_human_decision_lineage
+      media_miniprogram_operation_receipts: actor_operation_business_target_digest_state_and_result_receipts
 
   operationcycle:
     package: internal/operationcycle
