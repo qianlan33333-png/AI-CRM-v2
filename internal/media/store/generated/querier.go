@@ -27,6 +27,7 @@ type Querier interface {
 	InsertMediaImage(ctx context.Context, arg InsertMediaImageParams) (InsertMediaImageRow, error)
 	InsertMediaImageBlob(ctx context.Context, arg InsertMediaImageBlobParams) error
 	ListMediaGroupInvites(ctx context.Context, arg ListMediaGroupInvitesParams) ([]MediaGroupInvite, error)
+	ListMediaImageFacetRows(ctx context.Context) ([]ListMediaImageFacetRowsRow, error)
 	ListMediaMiniPrograms(ctx context.Context, arg ListMediaMiniProgramsParams) ([]ListMediaMiniProgramsRow, error)
 	LockMediaGroupInvite(ctx context.Context, id int64) (int64, error)
 	LockMediaMiniProgram(ctx context.Context, id int64) (int64, error)

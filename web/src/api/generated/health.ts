@@ -1754,6 +1754,50 @@ export interface LegacyQuestionnaireError {
   detail: string;
 }
 
+export type LegacyImageFacetsSuccessSourceStatus =
+  (typeof LegacyImageFacetsSuccessSourceStatus)[keyof typeof LegacyImageFacetsSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessSourceStatus = {
+  next_media_library: "next_media_library",
+} as const;
+
+export type LegacyImageFacetsSuccessRouteOwner =
+  (typeof LegacyImageFacetsSuccessRouteOwner)[keyof typeof LegacyImageFacetsSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageFacetsSuccessStorageAdapterMode =
+  (typeof LegacyImageFacetsSuccessStorageAdapterMode)[keyof typeof LegacyImageFacetsSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageFacetsSuccessAdapterMode =
+  (typeof LegacyImageFacetsSuccessAdapterMode)[keyof typeof LegacyImageFacetsSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageFacetsSuccess {
+  ok: boolean;
+  categories: string[];
+  tags: string[];
+  source_status: LegacyImageFacetsSuccessSourceStatus;
+  route_owner: LegacyImageFacetsSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageFacetsSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageFacetsSuccessAdapterMode;
+}
+
 export type LegacyImageUploadItemMimeType =
   (typeof LegacyImageUploadItemMimeType)[keyof typeof LegacyImageUploadItemMimeType];
 
@@ -13252,6 +13296,74 @@ export const enableLegacyQuestionnaire = async (
     status: res.status,
     headers: res.headers,
   } as enableLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary List canonical image-library category and tag facets from local Media metadata
+ */
+export type getLegacyImageFacetsResponse200 = {
+  data: LegacyImageFacetsSuccess;
+  status: 200;
+};
+
+export type getLegacyImageFacetsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyImageFacetsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyImageFacetsResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyImageFacetsResponse500 = {
+  data: ErrorResponse;
+  status: 500;
+};
+
+export type getLegacyImageFacetsResponseSuccess =
+  getLegacyImageFacetsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyImageFacetsResponseError = (
+  | getLegacyImageFacetsResponse401
+  | getLegacyImageFacetsResponse403
+  | getLegacyImageFacetsResponse405
+  | getLegacyImageFacetsResponse500
+) & {
+  headers: Headers;
+};
+
+export type getLegacyImageFacetsResponse =
+  getLegacyImageFacetsResponseSuccess | getLegacyImageFacetsResponseError;
+
+export const getGetLegacyImageFacetsUrl = () => {
+  return `/api/admin/image-library/facets`;
+};
+
+export const getLegacyImageFacets = async (
+  options?: RequestInit,
+): Promise<getLegacyImageFacetsResponse> => {
+  const res = await fetch(getGetLegacyImageFacetsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyImageFacetsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyImageFacetsResponse;
 };
 
 /**
