@@ -125,6 +125,49 @@ run_no_schema_diff_case() {
   fi
 }
 
+run_framework_tooling_diff_case() {
+  local name="$1" expected="$2" extra_path="${3:-}" extra_content="${4:-}"
+  local fixture_repo="$test_root/$name-repo" event_path base head framework_path
+  local -a framework_paths=(
+    'docs/ci/repo-contract-fingerprints.tsv'
+    'scripts/check_generated_sources.sh'
+    'scripts/check_repo_contract.sh'
+    'scripts/run_ci_acceptance_manifest.sh'
+    'scripts/test_ci_acceptance_manifest.sh'
+    'scripts/test_gitless_generated_check.sh'
+    'scripts/test_repo_contract.sh'
+    'tools/migration-mapping/main.go'
+    'tools/migration-mapping/main_test.go'
+    'tools/p1-reconciliation/main.go'
+    'tools/p1-reconciliation/main_test.go'
+  )
+  mkdir -p "$fixture_repo"
+  git init -q "$fixture_repo"
+  git -C "$fixture_repo" config user.email 'candidate-guard@example.invalid'
+  git -C "$fixture_repo" config user.name 'Candidate Guard Test'
+  git -C "$fixture_repo" commit --allow-empty -qm 'base'
+  base="$(git -C "$fixture_repo" rev-parse HEAD)"
+  for framework_path in "${framework_paths[@]}"; do
+    mkdir -p "$(dirname "$fixture_repo/$framework_path")"
+    printf '%s\n' 'framework tooling' >"$fixture_repo/$framework_path"
+  done
+  if [[ -n "$extra_path" ]]; then
+    mkdir -p "$(dirname "$fixture_repo/$extra_path")"
+    printf '%s\n' "$extra_content" >"$fixture_repo/$extra_path"
+  fi
+  git -C "$fixture_repo" add .
+  git -C "$fixture_repo" commit -qm 'framework tooling change'
+  head="$(git -C "$fixture_repo" rev-parse HEAD)"
+  event_path="$test_root/$name.json"
+  write_diff_event "$event_path" "$base" "$head"
+  if GITHUB_EVENT_NAME=pull_request CANDIDATE_GUARD_EVENT_PATH="$event_path" CANDIDATE_GUARD_REPO_ROOT="$fixture_repo" "$guard" >/dev/null 2>&1
+  then
+    [[ "$expected" = pass ]] || { echo "candidate-merge-guard-tests: accepted $name" >&2; exit 1; }
+  else
+    [[ "$expected" = fail ]] || { echo "candidate-merge-guard-tests: rejected $name" >&2; exit 1; }
+  fi
+}
+
 run_case formal-integration pass 'feat: 集成 Push Center 读模型' '正式业务集成。' "$required_paths"
 run_case candidate-title fail 'CANDIDATE_ONLY: Push Center' '正式业务集成。' "$required_paths"
 run_case prohibited-merge fail 'feat: Push Center' '禁止合并' "$required_paths"
@@ -145,5 +188,7 @@ run_diff_case policy-test-self-description pass 'scripts/test_repo_fingerprints.
 run_diff_case policy-receipt-self-description pass 'docs/ci/repo-contract-fingerprints.tsv' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case openapi-checker-self-description pass 'tools/openapi-contract/main_test.go' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case implementation-not-wired fail 'internal/pushcenter/candidate.go' '// not-wired candidate implementation'
+run_framework_tooling_diff_case framework-tooling-only pass
+run_framework_tooling_diff_case framework-tooling-plus-business-without-formal-closure fail 'internal/pushcenter/store/repository.go' 'package pushcenter'
 
 echo 'candidate-merge-guard-tests: PASS'

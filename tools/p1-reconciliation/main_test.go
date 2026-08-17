@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
 func frozenPaths() paths {
-	return paths{"../../docs/evidence/p1/legacy-routes-6cb989c.json", "../../docs/api-mapping.jsonl", "../../docs/evidence/p1/route-triage.csv", "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "../../docs/migration-mapping.jsonl"}
+	return paths{routes: "../../docs/evidence/p1/legacy-routes-6cb989c.json", api: "../../docs/api-mapping.jsonl", triage: "../../docs/evidence/p1/route-triage.csv", triageAuthority: "../../docs/evidence/p1/route-triage.csv", lifecycle: "../../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", migration: "../../docs/migration-mapping.jsonl", openapi: "../../api/openapi.yaml", generated: "../../internal/api/candidate/generated/server.gen.go", generatorConfig: "../../api/oapi-codegen-p1-candidate.yaml"}
 }
 
 func TestFrozenReconciliation(t *testing.T) {
@@ -23,6 +26,11 @@ func TestFrozenReconciliation(t *testing.T) {
 }
 
 func TestRejectsUnsafeMutations(t *testing.T) {
+	frozen := frozenPaths()
+	facts, err := loadIntegrationFacts(frozen.openapi, frozen.generated, frozen.generatorConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tc := range []struct {
 		name, file string
 		mutate     func(any)
@@ -52,11 +60,20 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 				}
 			}
 		}},
-		{"integrated route mapping forged", "api", func(v any) {
+		{"integrated route operation forged", "api", func(v any) {
 			r := v.(*[]map[string]any)
 			for _, row := range *r {
 				if row["mapping_id"] == "LEGACY-API-0421" {
-					row["target_mapping_id"] = "P4-PUSH-CENTER-FORGED"
+					row["candidate_v2_operation_id"] = "getLegacyPushCenterForged"
+					return
+				}
+			}
+		}},
+		{"integrated route missing target mapping", "api", func(v any) {
+			r := v.(*[]map[string]any)
+			for _, row := range *r {
+				if row["mapping_id"] == "LEGACY-API-0422" {
+					row["target_mapping_id"] = ""
 					return
 				}
 			}
@@ -69,6 +86,27 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 					return
 				}
 			}
+		}},
+		{"triage A B swap preserves counts", "triage", func(v any) {
+			records := v.(*[][]string)
+			columns := map[string]int{}
+			for index, name := range (*records)[0] {
+				columns[name] = index
+			}
+			first, second := -1, -1
+			for index, record := range (*records)[1:] {
+				switch record[columns["mapping_id"]] {
+				case "LEGACY-API-0421":
+					first = index + 1
+				case "LEGACY-API-0053":
+					second = index + 1
+				}
+			}
+			if first < 0 || second < 0 {
+				t.Fatal("frozen A/B triage rows are missing")
+			}
+			(*records)[first][columns["recommended_tier"]] = "B"
+			(*records)[second][columns["recommended_tier"]] = "A"
 		}},
 		{"tier B mislabeled not migrated", "api", func(v any) {
 			r := v.(*[]map[string]any)
@@ -129,8 +167,176 @@ func TestRejectsUnsafeMutations(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := mutatedFixture(t, tc.file, tc.mutate)
-			if _, err := reconcile(p); err == nil {
+			if _, err := reconcileWithIntegrationFacts(p, facts); err == nil {
 				t.Fatal("mutation was accepted")
+			}
+		})
+	}
+}
+
+func TestTierAuthorityAllowsDeclarationAppendWithoutCheckerChange(t *testing.T) {
+	authority := map[string]string{"LEGACY-API-9001": "A"}
+	declared := map[string]string{"LEGACY-API-9001": "A", "LEGACY-API-9002": "B"}
+	if err := verifyTierAuthority(declared, authority); err != nil {
+		t.Fatalf("append-only tier declaration was rejected: %v", err)
+	}
+}
+
+func TestTierAuthorityRejectsEqualCountSwap(t *testing.T) {
+	authority := map[string]string{"LEGACY-API-9001": "A", "LEGACY-API-9002": "B"}
+	forged := map[string]string{"LEGACY-API-9001": "B", "LEGACY-API-9002": "A"}
+	if err := verifyTierAuthority(forged, authority); err == nil {
+		t.Fatal("equal-count A/B tier swap was accepted")
+	}
+}
+
+func TestTierAuthorityUsesParentIndexedDeclaration(t *testing.T) {
+	repository := t.TempDir()
+	triage := filepath.Join(repository, "facts", "route-triage.csv")
+	if err := os.MkdirAll(filepath.Dir(triage), 0700); err != nil {
+		t.Fatal(err)
+	}
+	writeTriage := func(rows string) {
+		t.Helper()
+		if err := os.WriteFile(triage, []byte("mapping_id,recommended_tier,human_signoff\n"+rows), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	git := func(arguments ...string) {
+		t.Helper()
+		command := exec.Command("git", append([]string{"-C", repository}, arguments...)...)
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", arguments, err, output)
+		}
+	}
+	writeTriage("LEGACY-API-9001,A,APPROVED\n")
+	git("init", "-q", "-b", "main")
+	git("config", "user.name", "p1-test")
+	git("config", "user.email", "p1-test@example.invalid")
+	git("add", ".")
+	git("commit", "-q", "-m", "base authority")
+	if err := os.WriteFile(filepath.Join(repository, "candidate"), []byte("base\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "candidate")
+	git("commit", "-q", "-m", "candidate parent")
+
+	writeTriage("LEGACY-API-9001,A,APPROVED\nLEGACY-API-9002,B,APPROVED\n")
+	git("add", "facts/route-triage.csv")
+	current, err := stagedOrFile(triage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declared, err := extractTiers(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	authority, err := parentTiers(triage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyTierAuthority(declared, authority); err != nil {
+		t.Fatalf("append-only staged declaration was rejected: %v", err)
+	}
+
+	writeTriage("LEGACY-API-9001,B,APPROVED\nLEGACY-API-9002,A,APPROVED\n")
+	git("add", "facts/route-triage.csv")
+	current, err = stagedOrFile(triage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declared, err = extractTiers(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyTierAuthority(declared, authority); err == nil {
+		t.Fatal("candidate-controlled authority and equal-count tier swap self-certified")
+	}
+}
+
+func TestIntegratedRoutesAreDerivedFromCanonicalFacts(t *testing.T) {
+	dir := t.TempDir()
+	openapi := `openapi: 3.0.3
+info:
+  title: future package fixture
+  version: 1.0.0
+paths:
+  /api/admin/media-fixtures:
+    get:
+      operationId: listLegacyMediaFixtures
+      tags: [p1-core-candidate]
+      x-legacy-mapping-ids: [LEGACY-API-9001]
+      responses:
+        "200": {description: ok}
+  /api/admin/order-fixtures:
+    get:
+      operationId: listLegacyOrderFixtures
+      tags: [p1-core-candidate]
+      x-legacy-mapping-ids: [LEGACY-API-9002]
+      responses:
+        "200": {description: ok}
+`
+	generated := `package generated
+func (siw *ServerInterfaceWrapper) ListLegacyMediaFixtures() {}
+func (siw *ServerInterfaceWrapper) ListLegacyOrderFixtures() {}
+func register(r router, options options, wrapper *ServerInterfaceWrapper) {
+  r.Get(options.BaseURL+"/api/admin/media-fixtures", wrapper.ListLegacyMediaFixtures)
+  r.Get(options.BaseURL+"/api/admin/order-fixtures", wrapper.ListLegacyOrderFixtures)
+}
+`
+	config := `output-options:
+  include-tags:
+    - p1-core-candidate
+`
+	write := func(name, data string) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	facts, err := loadIntegrationFacts(write("openapi.yaml", openapi), write("server.gen.go", generated), write("oapi.yaml", config))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ id, operation, path, owner string }{
+		{"LEGACY-API-9001", "listLegacyMediaFixtures", "/api/admin/media-fixtures", "media"},
+		{"LEGACY-API-9002", "listLegacyOrderFixtures", "/api/admin/order-fixtures", "order"},
+	} {
+		t.Run(tc.id, func(t *testing.T) {
+			authority := routeFact{Path: tc.path, Owner: tc.owner, Methods: []string{"GET"}}
+			evidence := []apiDecisionEvidence{{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"}}
+			if err := validateIntegratedRoute(tc.id, authority, tc.operation, "GET", tc.path, "P5-DECLARATIVE-"+tc.id[len(tc.id)-4:], "MIGRATE", "APPROVED", "declarative canonical route", evidence, facts); err != nil {
+				t.Fatalf("future declarative route was rejected: %v", err)
+			}
+		})
+	}
+}
+
+func TestIntegratedRouteValidationFailsClosed(t *testing.T) {
+	id := "LEGACY-API-9001"
+	authority := routeFact{Path: "/api/admin/media-fixtures", Owner: "media", Methods: []string{"GET"}}
+	evidence := []apiDecisionEvidence{{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"}}
+	valid := integrationFacts{
+		openAPI:           map[string][]openAPIRoute{id: {{Operation: "listLegacyMediaFixtures", Method: "GET", Path: authority.Path}}},
+		requiresGenerated: map[string]bool{integrationKey("listLegacyMediaFixtures", "GET", authority.Path): true},
+		generated:         map[string]bool{integrationKey("listLegacyMediaFixtures", "GET", authority.Path): true},
+	}
+	for _, tc := range []struct {
+		name      string
+		authority routeFact
+		operation string
+		facts     integrationFacts
+	}{
+		{"missing openapi", authority, "listLegacyMediaFixtures", integrationFacts{openAPI: map[string][]openAPIRoute{}, requiresGenerated: valid.requiresGenerated, generated: valid.generated}},
+		{"duplicate openapi", authority, "listLegacyMediaFixtures", integrationFacts{openAPI: map[string][]openAPIRoute{id: {valid.openAPI[id][0], valid.openAPI[id][0]}}, requiresGenerated: valid.requiresGenerated, generated: valid.generated}},
+		{"missing generated", authority, "listLegacyMediaFixtures", integrationFacts{openAPI: valid.openAPI, requiresGenerated: valid.requiresGenerated, generated: map[string]bool{}}},
+		{"missing owner", routeFact{Path: authority.Path, Methods: authority.Methods}, "listLegacyMediaFixtures", valid},
+		{"forged operation", authority, "listLegacyMediaForged", valid},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := validateIntegratedRoute(id, tc.authority, tc.operation, "GET", authority.Path, "P5-DECLARATIVE-9001", "MIGRATE", "APPROVED", "declarative canonical route", evidence, tc.facts); err == nil {
+				t.Fatal("unsafe integrated route was accepted")
 			}
 		})
 	}
@@ -150,7 +356,7 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 	t.Helper()
 	dir := t.TempDir()
 	source := frozenPaths()
-	result := paths{}
+	result := source
 	files := map[string]string{"routes": source.routes, "api": source.api, "triage": source.triage, "lifecycle": source.lifecycle, "migration": source.migration}
 	for name, path := range files {
 		data, err := os.ReadFile(path)
@@ -175,6 +381,19 @@ func mutatedFixture(t *testing.T, kind string, mutate func(any)) paths {
 					data = append(data, encoded...)
 					data = append(data, '\n')
 				}
+			} else if name == "triage" {
+				records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
+				if err != nil {
+					t.Fatal(err)
+				}
+				mutate(&records)
+				var rendered bytes.Buffer
+				writer := csv.NewWriter(&rendered)
+				writer.WriteAll(records)
+				if err := writer.Error(); err != nil {
+					t.Fatal(err)
+				}
+				data = rendered.Bytes()
 			} else {
 				var doc map[string]any
 				if err := json.Unmarshal(data, &doc); err != nil {

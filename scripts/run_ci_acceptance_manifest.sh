@@ -13,6 +13,8 @@ validate_only="${CI_ACCEPTANCE_VALIDATE_ONLY:-0}"
 makefile="${CI_ACCEPTANCE_MAKEFILE:-Makefile}"
 base_ref="${CI_ACCEPTANCE_BASE_REF:-}"
 base_manifest_path="${CI_ACCEPTANCE_BASE_MANIFEST_PATH:-$manifest}"
+canonical_header="# id|sequence|database environment (- when not needed)|executor|subject|selector (- when not needed)"
+legacy_header="# id|database environment (- when not needed)|Make target"
 
 fail() {
   echo "ci-acceptance-manifest: $*" >&2
@@ -71,6 +73,7 @@ validate_legacy_make_target() {
 }
 
 declare -A base_identifiers=()
+declare -A base_lines=()
 base_order=()
 if [[ -n "$base_ref" ]]; then
   [[ "$base_manifest_path" =~ ^[A-Za-z0-9._/-]+$ && "$base_manifest_path" != /* && "$base_manifest_path" != ./* && "$base_manifest_path" != *..* && "$base_manifest_path" != *//* ]] ||
@@ -78,14 +81,31 @@ if [[ -n "$base_ref" ]]; then
   git rev-parse --verify --quiet "$base_ref^{commit}" >/dev/null || fail "base manifest ref is not a commit"
   base_manifest="$(git show "$base_ref:$base_manifest_path")" || fail "base acceptance manifest is unavailable"
   base_line_number=0
+  base_format=""
   while IFS= read -r base_line || [[ -n "$base_line" ]]; do
     base_line_number=$((base_line_number + 1))
-    (( base_line_number > 1 )) || continue
+    if (( base_line_number == 1 )); then
+      case "$base_line" in
+        "$canonical_header") base_format="canonical" ;;
+        "$legacy_header") base_format="legacy-make" ;;
+        *) fail "base manifest header is not canonical or legacy-compatible" ;;
+      esac
+      continue
+    fi
     [[ -n "$base_line" && "$base_line" != \#* ]] || fail "base manifest has a blank or comment row"
-    IFS='|' read -r base_identifier _ <<<"$base_line"
+    if [[ "$base_format" = "legacy-make" ]]; then
+      base_without_separators="${base_line//|/}"
+      (( ${#base_line} - ${#base_without_separators} == 2 )) || fail "base legacy manifest row is malformed"
+      IFS='|' read -r base_identifier base_environment base_subject <<<"$base_line"
+      printf -v base_sequence '%04d' "$((base_line_number - 1))"
+      base_line="$base_identifier|$base_sequence|$base_environment|legacy-make|$base_subject|-"
+    else
+      IFS='|' read -r base_identifier _ <<<"$base_line"
+    fi
     [[ "$base_identifier" =~ ^[a-z0-9][a-z0-9-]*$ && -z "${base_identifiers[$base_identifier]:-}" ]] ||
       fail "base manifest has an invalid or duplicate id"
     base_identifiers["$base_identifier"]=1
+    base_lines["$base_identifier"]="$base_line"
     base_order+=("$base_identifier")
   done <<<"$base_manifest"
   (( ${#base_identifiers[@]} > 0 )) || fail "base manifest has no acceptance ids"
@@ -99,7 +119,7 @@ declare -A current_identifiers=()
 while IFS= read -r line || [[ -n "$line" ]]; do
   line_number=$((line_number + 1))
   if (( line_number == 1 )); then
-    [[ "$line" = "# id|sequence|database environment (- when not needed)|executor|subject|selector (- when not needed)" ]] ||
+    [[ "$line" = "$canonical_header" ]] ||
       fail "manifest header is not canonical"
     continue
   fi
@@ -118,6 +138,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     if [[ -n "${base_identifiers[$identifier]:-}" ]]; then
       (( seen_addition == 0 )) || fail "base acceptance id appears after a new id: $identifier"
       [[ "${base_order[$base_position]-}" = "$identifier" ]] || fail "base acceptance ids were reordered"
+      [[ "${base_lines[$identifier]}" = "$line" ]] || fail "base acceptance row semantics changed: $identifier"
       base_position=$((base_position + 1))
     else
       (( base_position == ${#base_order[@]} )) || fail "new acceptance id must be appended after base ids: $identifier"

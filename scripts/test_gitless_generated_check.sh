@@ -90,6 +90,26 @@ if (cd "$rewritten_manifest_fixture" &&
   fail "a rewritten manifest self-authorized an unexpected generated source"
 fi
 
+stale_receipt_fixture="$(make_fixture stale-generated-receipt)"
+ruby -e '
+  path = ARGV.fetch(0)
+  source = File.read(path)
+  updated = source.sub(/^(100644\t)[0-9a-f]{64}(\tscripts\/generated-sources[.]sha256)$/) { "#{$1}#{"0" * 64}#{$2}" }
+  abort "missing generated-source receipt" if updated == source
+  File.write(path, updated)
+' "$stale_receipt_fixture/docs/ci/repo-contract-fingerprints.tsv"
+if (cd "$stale_receipt_fixture" && make generate-check >/dev/null 2>&1); then
+  fail "a stale canonical generated-source receipt was accepted"
+fi
+
+symlink_manifest_fixture="$(make_fixture symlink-generated-manifest)"
+mv "$symlink_manifest_fixture/scripts/generated-sources.sha256" \
+  "$symlink_manifest_fixture/scripts/generated-sources.real.sha256"
+ln -s generated-sources.real.sha256 "$symlink_manifest_fixture/scripts/generated-sources.sha256"
+if (cd "$symlink_manifest_fixture" && make generate-check >/dev/null 2>&1); then
+  fail "a symlinked generated source manifest was accepted"
+fi
+
 missing_fixture="$(make_fixture missing-generated-source)"
 mv "$missing_fixture/internal/platform/store/generated/models.go" \
   "$test_root/removed-models.go"

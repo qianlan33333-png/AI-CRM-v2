@@ -22,6 +22,118 @@ func validRow() mappingRow {
 	}
 }
 
+func testOwnership(t *testing.T) ownershipCatalog {
+	t.Helper()
+	path := t.TempDir() + "/table-ownership.yml"
+	data := `version: 1
+owners:
+  contact:
+    package: internal/contact
+    tables: [customers]
+  media:
+    package: internal/media
+    tables: [media_images]
+  product:
+    package: internal/product
+    tables: [products]
+`
+	if err := os.WriteFile(path, []byte(data), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ownership, err := loadOwnership(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ownership
+}
+
+func testPhysicalSchema(t *testing.T) physicalSchema {
+	t.Helper()
+	dir := t.TempDir()
+	files := map[string]string{
+		"00001_customers.sql": `-- +goose Up
+CREATE TABLE customers (
+  id BIGINT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+-- +goose Down
+DROP TABLE customers;
+`,
+		"00002_media.sql": `-- +goose Up
+CREATE TABLE media_images (
+  id BIGINT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+-- +goose Down
+DROP TABLE media_images;
+`,
+		"00003_products.sql": `-- +goose Up
+CREATE TABLE products (
+  id BIGINT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+-- +goose Down
+DROP TABLE products;
+`,
+	}
+	for name, data := range files {
+		if err := os.WriteFile(dir+"/"+name, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	schema, err := loadPhysicalSchema(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return schema
+}
+
+func TestNumberedDDLChainFailsClosed(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		files map[string]string
+	}{
+		{"duplicate", map[string]string{"00001_one.sql": "CREATE TABLE one (id BIGINT);", "00001_two.sql": "CREATE TABLE two (id BIGINT);"}},
+		{"gap", map[string]string{"00001_one.sql": "CREATE TABLE one (id BIGINT);", "00003_three.sql": "CREATE TABLE three (id BIGINT);"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for name, data := range tc.files {
+				if err := os.WriteFile(dir+"/"+name, []byte(data), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err := loadPhysicalSchema(dir); err == nil {
+				t.Fatal("invalid numbered DDL chain was accepted")
+			}
+		})
+	}
+}
+
+func TestPhysicalTargetCannotComeFromDownDDL(t *testing.T) {
+	dir := t.TempDir()
+	data := `-- +goose Up
+SELECT 1;
+-- +goose Down
+CREATE TABLE media_images (id BIGINT);
+`
+	if err := os.WriteFile(dir+"/00001_down_only.sql", []byte(data), 0600); err != nil {
+		t.Fatal(err)
+	}
+	schema, err := loadPhysicalSchema(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row := validRow()
+	row.CandidateTargets = []string{"physical:media_images"}
+	row.TargetSchemaStatus = "FROZEN_PHYSICAL"
+	row.FieldMappings[0].Target = "physical:media_images.name"
+	row.FieldMappings[0].Reason = "Map contacts.name to physical:media_images.name through the frozen conversion_rule."
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), schema, expected{rows: 1, physical: 1, columns: 1}); err == nil {
+		t.Fatal("down-only DDL was accepted as a physical target")
+	}
+}
+
 func validIndex(rows ...mappingRow) lifecycleIndex {
 	tables := make([]lifecycleTable, 0, len(rows))
 	for i, row := range rows {
@@ -51,7 +163,15 @@ func TestFrozenMapping(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
-	if _, err := validate(file, index, expected{rows: 316, physical: 217, framework: 1, columns: 3312}); err != nil {
+	ownership, err := loadOwnership("../../docs/architecture/table-ownership.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema, err := loadPhysicalSchema("../../migrations")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := validate(file, index, ownership, schema, expected{rows: 316, physical: 217, framework: 1, columns: 3312}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -85,7 +205,7 @@ func TestValidationRejectsUnsafeMutations(t *testing.T) {
 				t.Fatal(err)
 			}
 			mutate(&row)
-			if _, err := validate(encoded(t, row), validIndex(row), expected{rows: 1, physical: 1, columns: 1}); err == nil {
+			if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err == nil {
 				t.Fatal("mutation was accepted")
 			}
 		})
@@ -99,7 +219,7 @@ func TestAbsentSourceMustDefer(t *testing.T) {
 	row.FieldMappings = nil
 	row.Decision = "DROP"
 	row.DecisionEvidence = approvedEvidence("DROP")
-	if _, err := validate(encoded(t, row), validIndex(row), expected{rows: 1}); err == nil {
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1}); err == nil {
 		t.Fatal("absent source table was allowed to drop")
 	}
 }
@@ -114,7 +234,7 @@ func TestValidationRejectsLifecycleIndexDrift(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			index := validIndex(row)
 			mutate(&index)
-			if _, err := validate(encoded(t, row), index, expected{rows: 1, physical: 1, columns: 1}); err == nil {
+			if _, err := validate(encoded(t, row), index, testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err == nil {
 				t.Fatal("lifecycle mutation was accepted")
 			}
 		})
@@ -130,7 +250,104 @@ func TestValidationRejectsUnscopedIdentityMapping(t *testing.T) {
 		Source: "external_userid", Target: "planned:identities.normalized_value",
 		Reason: "Map contacts.external_userid to planned:identities.normalized_value with signed scope and provenance.",
 	}
-	if _, err := validate(encoded(t, row), validIndex(row), expected{rows: 1, physical: 1, columns: 1}); err == nil {
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err == nil {
 		t.Fatal("identity mapping without a scope field was accepted")
+	}
+}
+
+func TestPhysicalTargetsUseDeclaredOwnership(t *testing.T) {
+	for _, target := range []string{"physical:media_images", "physical:products"} {
+		t.Run(target, func(t *testing.T) {
+			row := validRow()
+			row.CandidateTargets = []string{target}
+			row.TargetSchemaStatus = "FROZEN_PHYSICAL"
+			row.FieldMappings[0].Target = target + ".name"
+			row.FieldMappings[0].Reason = "Map contacts.name to " + target + ".name through the frozen conversion_rule."
+			if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err != nil {
+				t.Fatalf("declared physical target was rejected: %v", err)
+			}
+		})
+	}
+}
+
+func TestTargetValidationFailsClosed(t *testing.T) {
+	for _, target := range []string{
+		"unknown:media_images", "physical:media_images/../products", "physical:unknown_table", "planned:products..name",
+	} {
+		t.Run(target, func(t *testing.T) {
+			row := validRow()
+			row.CandidateTargets = []string{target}
+			if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err == nil {
+				t.Fatal("unsafe target was accepted")
+			}
+		})
+	}
+
+	path := t.TempDir() + "/duplicate-owner.yml"
+	data := `owners:
+  media:
+    package: internal/media
+    tables: [media_images]
+  product:
+    package: internal/product
+    tables: [media_images]
+`
+	if err := os.WriteFile(path, []byte(data), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadOwnership(path); err == nil {
+		t.Fatal("cross-owner table declaration was accepted")
+	}
+
+	row := validRow()
+	row.CandidateTargets = []string{"physical:media_images"}
+	row.TargetSchemaStatus = "FROZEN_PHYSICAL"
+	row.FieldMappings[0].Target = "physical:media_images.name"
+	row.FieldMappings[0].Reason = "Map contacts.name to physical:media_images.name through the frozen conversion_rule."
+	schema := testPhysicalSchema(t)
+	delete(schema.tables, "media_images")
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), schema, expected{rows: 1, physical: 1, columns: 1}); err == nil {
+		t.Fatal("physical target without numbered DDL was accepted")
+	}
+
+	row = validRow()
+	row.CandidateTargets = []string{"physical:media_images"}
+	row.TargetSchemaStatus = "FROZEN_PHYSICAL"
+	row.FieldMappings[0].Target = "physical:media_images.unknown_column"
+	row.FieldMappings[0].Reason = "Map contacts.name to physical:media_images.unknown_column through the frozen conversion_rule."
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err == nil {
+		t.Fatal("physical target without a numbered DDL column was accepted")
+	}
+
+	row = validRow()
+	row.CandidateTargets = []string{"planned:media_images"}
+	row.TargetSchemaStatus = "FROZEN_PHYSICAL"
+	row.FieldMappings[0].Target = "planned:media_images.name"
+	row.FieldMappings[0].Reason = "Map contacts.name to planned:media_images.name through the frozen conversion_rule."
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), testPhysicalSchema(t), expected{rows: 1, physical: 1, columns: 1}); err == nil {
+		t.Fatal("planned target was accepted as frozen physical")
+	}
+
+	dir := t.TempDir()
+	if err := os.WriteFile(dir+"/00001_migration_import_ledger.sql", []byte(`-- +goose Up
+CREATE TABLE migration_import_ledger (
+  legacy_pk TEXT NOT NULL
+);
+-- +goose Down
+DROP TABLE migration_import_ledger;
+`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ledgerSchema, err := loadPhysicalSchema(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row = validRow()
+	row.CandidateTargets = []string{"physical:migration_import_ledger"}
+	row.TargetSchemaStatus = "FROZEN_PHYSICAL"
+	row.FieldMappings[0].Target = "physical:migration_import_ledger.legacy_pk"
+	row.FieldMappings[0].Reason = "Map contacts.name to physical:migration_import_ledger.legacy_pk through the frozen conversion_rule."
+	if _, err := validate(encoded(t, row), validIndex(row), testOwnership(t), ledgerSchema, expected{rows: 1, physical: 1, columns: 1}); err == nil {
+		t.Fatal("numbered DDL without canonical ownership was accepted")
 	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -10,9 +11,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
 const (
@@ -60,9 +65,11 @@ type migrationFact struct {
 	Evidence                                                                                                            []string
 }
 
-type paths struct{ routes, api, triage, lifecycle, migration string }
+type paths struct{ routes, api, triage, triageAuthority, lifecycle, migration, openapi, generated, generatorConfig string }
 
 var identity = regexp.MustCompile(`(?i)(external_?userid|unionid|openid|mobile|phone)`)
+var operationID = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
+var targetMappingID = regexp.MustCompile(`^[A-Z][A-Z0-9-]*$`)
 
 var approvedNotMigratedRoutes = map[string]bool{
 	"LEGACY-API-0012": true, "LEGACY-API-0383": true, "LEGACY-API-0598": true,
@@ -78,52 +85,26 @@ type apiDecisionEvidence struct {
 	Decision   string `json:"decision"`
 }
 
-type integratedRoute struct {
-	Operation, Method, Path, TargetMapping, Reason string
-	Evidence                                       apiDecisionEvidence
-}
+type openAPIRoute struct{ Operation, Method, Path string }
 
-var integratedRoutes = map[string]integratedRoute{
-	"LEGACY-API-0314": {
-		Operation: "getLegacyExecutionRuntime", Method: "GET", Path: "/api/admin/execution-runtime", TargetMapping: "P4-EXECUTION-RUNTIME-0314",
-		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Execution Runtime observation read is wired to the immutable human-session administrator capability without provider or receipt claims.",
-		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
-	},
-	"LEGACY-API-0315": {
-		Operation: "getLegacyExecutionTimeline", Method: "GET", Path: "/api/admin/executions/{execution_id}", TargetMapping: "P4-EXECUTION-RUNTIME-0315",
-		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Execution Runtime observation read is wired to the immutable human-session administrator capability without provider or receipt claims.",
-		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
-	},
-	"LEGACY-API-0421": {
-		Operation: "getLegacyPushCenterSections", Method: "GET", Path: "/api/admin/push-center/sections", TargetMapping: "P4-PUSH-CENTER-0421",
-		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
-		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
-	},
-	"LEGACY-API-0422": {
-		Operation: "getLegacyPushCenterStats", Method: "GET", Path: "/api/admin/push-center/stats", TargetMapping: "P4-PUSH-CENTER-0422",
-		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Push Center read contract is wired to the canonical global administrator projection.",
-		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
-	},
-	"LEGACY-API-0001": {
-		Operation: "getLegacyAdminShell", Method: "GET", Path: "/admin", TargetMapping: "P4-ADMIN-SHELL-0001",
-		Reason:   "G1-D02 approved tier A route for 1:1 legacy semantic migration; frozen Admin Shell navigation is wired to the existing human-session and capability boundary.",
-		Evidence: apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"},
-	},
-	"LEGACY-API-0053": {
-		Operation: "getLegacyAdminLogoutCompat", Method: "GET", Path: "/admin/logout", TargetMapping: "P4-ADMIN-SHELL-0053",
-		Reason:   "Repository owner superseded the prior tier B deferral on 2026-08-16; the authenticated Admin Shell alias redirects to the existing session-bound logout flow.",
-		Evidence: apiDecisionEvidence{"P4-AB-ALL-2026-08-16", "repository_owner", "2026-08-16", "MIGRATE"},
-	},
+type integrationFacts struct {
+	openAPI           map[string][]openAPIRoute
+	requiresGenerated map[string]bool
+	generated         map[string]bool
 }
 
 func main() {
 	routes := flag.String("routes", "../docs/evidence/p1/legacy-routes-6cb989c.json", "P1-S01 route manifest")
 	api := flag.String("api", "../docs/api-mapping.jsonl", "API candidate mapping")
 	triage := flag.String("triage", "../docs/evidence/p1/route-triage.csv", "G1 route triage decisions")
+	triageAuthority := flag.String("triage-authority", "../docs/evidence/p1/route-triage.csv", "parent-indexed G1 route triage authority")
 	lifecycle := flag.String("lifecycle", "../docs/evidence/p1/migration-lifecycle-index-6cb989c.json", "legacy lifecycle index")
 	migration := flag.String("migration", "../docs/migration-mapping.jsonl", "migration mapping")
+	openapi := flag.String("openapi", "../api/openapi.yaml", "canonical OpenAPI document")
+	generated := flag.String("generated", "../internal/api/candidate/generated/server.gen.go", "canonical generated server")
+	generatorConfig := flag.String("generator-config", "../api/oapi-codegen-p1-candidate.yaml", "candidate generated server declaration")
 	flag.Parse()
-	result, err := reconcile(paths{*routes, *api, *triage, *lifecycle, *migration})
+	result, err := reconcile(paths{routes: *routes, api: *api, triage: *triage, triageAuthority: *triageAuthority, lifecycle: *lifecycle, migration: *migration, openapi: *openapi, generated: *generated, generatorConfig: *generatorConfig})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "p1-reconciliation:", err)
 		os.Exit(1)
@@ -132,15 +113,26 @@ func main() {
 }
 
 func reconcile(p paths) (string, error) {
+	facts, err := loadIntegrationFacts(p.openapi, p.generated, p.generatorConfig)
+	if err != nil {
+		return "", err
+	}
+	return reconcileWithIntegrationFacts(p, facts)
+}
+
+// reconcileWithIntegrationFacts keeps mutation tests independent from the
+// cost of repeatedly loading the same canonical OpenAPI/generated evidence.
+// The production entry point above still loads that evidence for every run.
+func reconcileWithIntegrationFacts(p paths, facts integrationFacts) (string, error) {
 	routes, err := loadRoutes(p.routes)
 	if err != nil {
 		return "", err
 	}
-	tiers, err := loadTriage(p.triage)
+	tiers, err := loadTriage(p.triage, p.triageAuthority)
 	if err != nil {
 		return "", err
 	}
-	counts, decisions, err := reconcileAPI(p.api, routes, tiers)
+	counts, decisions, err := reconcileAPI(p.api, routes, tiers, facts)
 	if err != nil {
 		return "", err
 	}
@@ -155,13 +147,12 @@ func reconcile(p paths) (string, error) {
 	return fmt.Sprintf("p1-reconciliation: PASS (routes=781 s02=%d s03=%d s04=%d migrate_routes=%d deferred_post_launch_routes=%d not_migrated_routes=%d tables=316 fields=%d pending_routes=0 pending_tables=%d)", counts[0], counts[1], counts[2], decisions[0], decisions[1], decisions[2], fields, pending), nil
 }
 
-func loadTriage(path string) (map[string]string, error) {
-	file, err := os.Open(path)
+func loadTriage(path, authorityPath string) (map[string]string, error) {
+	data, err := stagedOrFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-	reader := csv.NewReader(file)
+	reader := csv.NewReader(bytes.NewReader(data))
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, fmt.Errorf("route triage: %w", err)
@@ -194,7 +185,106 @@ func loadTriage(path string) (map[string]string, error) {
 	if counts["A"] != 501 || counts["B"] != 268 || counts["C"] != 12 {
 		return nil, fmt.Errorf("route triage tier mismatch: A=%d B=%d C=%d", counts["A"], counts["B"], counts["C"])
 	}
+	authority, err := parentTiers(authorityPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyTierAuthority(tiers, authority); err != nil {
+		return nil, err
+	}
 	return tiers, nil
+}
+
+// stagedOrFile binds repository declarations to their staged object. Temporary
+// fixture files remain readable so the same validation can exercise negative
+// and append-only cases without weakening the repository path.
+func stagedOrFile(path string) ([]byte, error) {
+	root, relative, ok := repositoryPath(path)
+	if !ok {
+		return os.ReadFile(path)
+	}
+	output, err := exec.Command("git", "-C", root, "show", ":"+relative).Output()
+	if err != nil {
+		return nil, fmt.Errorf("read staged route triage: %w", err)
+	}
+	return output, nil
+}
+
+// parentTiers reads the first parent rather than a candidate-controlled
+// declaration. On PR merge refs this is the base branch; after squash it is
+// the prior main tree. Existing tier assignments are therefore append-only.
+func parentTiers(path string) (map[string]string, error) {
+	root, relative, ok := repositoryPath(path)
+	if !ok {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		return extractTiers(data)
+	}
+	output, err := exec.Command("git", "-C", root, "show", "HEAD^:"+relative).Output()
+	if err != nil {
+		return nil, fmt.Errorf("read parent route triage authority: %w", err)
+	}
+	return extractTiers(output)
+}
+
+func repositoryPath(path string) (string, string, bool) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", "", false
+	}
+	root, err := exec.Command("git", "-C", filepath.Dir(absolute), "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return "", "", false
+	}
+	repository := strings.TrimSpace(string(root))
+	relative, err := filepath.Rel(repository, absolute)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", "", false
+	}
+	return repository, filepath.ToSlash(relative), true
+}
+
+func extractTiers(data []byte) (map[string]string, error) {
+	records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("route triage authority: %w", err)
+	}
+	if len(records) < 2 {
+		return nil, errors.New("route triage authority is empty")
+	}
+	columns := map[string]int{}
+	for index, name := range records[0] {
+		columns[name] = index
+	}
+	for _, required := range []string{"mapping_id", "recommended_tier", "human_signoff"} {
+		if _, ok := columns[required]; !ok {
+			return nil, fmt.Errorf("route triage authority lacks %s", required)
+		}
+	}
+	tiers := make(map[string]string, len(records)-1)
+	for line, record := range records[1:] {
+		if len(record) != len(records[0]) {
+			return nil, fmt.Errorf("route triage authority line %d has an invalid column count", line+2)
+		}
+		id, tier := record[columns["mapping_id"]], record[columns["recommended_tier"]]
+		if !regexp.MustCompile(`^LEGACY-API-[0-9]{4}$`).MatchString(id) || tiers[id] != "" || !oneOf(tier, "A", "B", "C") || record[columns["human_signoff"]] != "APPROVED" {
+			return nil, fmt.Errorf("route triage authority line %d is invalid", line+2)
+		}
+		tiers[id] = tier
+	}
+	return tiers, nil
+}
+
+func verifyTierAuthority(tiers, authority map[string]string) error {
+	for id, expected := range authority {
+		actual, ok := tiers[id]
+		if !ok || actual != expected {
+			return fmt.Errorf("%s differs from the parent route tier authority", id)
+		}
+	}
+	return nil
 }
 
 func loadRoutes(path string) (map[string]routeFact, error) {
@@ -249,7 +339,141 @@ func parseRoute(raw json.RawMessage) (routeFact, error) {
 	return routeFact{path, name, owner, methods, canonical}, nil
 }
 
-func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]string) ([3]int, [3]int, error) {
+func loadIntegrationFacts(openapiPath, generatedPath, generatorConfigPath string) (integrationFacts, error) {
+	candidateTags, err := loadCandidateTags(generatorConfigPath)
+	if err != nil {
+		return integrationFacts{}, err
+	}
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = false
+	doc, err := loader.LoadFromFile(openapiPath)
+	if err != nil {
+		return integrationFacts{}, err
+	}
+	if err := doc.Validate(context.Background()); err != nil {
+		return integrationFacts{}, err
+	}
+
+	facts := integrationFacts{openAPI: map[string][]openAPIRoute{}, requiresGenerated: map[string]bool{}, generated: map[string]bool{}}
+	for path, item := range doc.Paths.Map() {
+		for method, operation := range item.Operations() {
+			method = strings.ToUpper(method)
+			if operation == nil || !operationID.MatchString(operation.OperationID) {
+				return integrationFacts{}, fmt.Errorf("OpenAPI has an invalid operation at %s %s", method, path)
+			}
+			ids, err := openAPIStringList(operation.Extensions["x-legacy-mapping-ids"])
+			if err != nil {
+				continue
+			}
+			for _, id := range ids {
+				if !regexp.MustCompile(`^LEGACY-API-[0-9]{4}$`).MatchString(id) {
+					return integrationFacts{}, fmt.Errorf("OpenAPI operation %s has an invalid legacy mapping id", operation.OperationID)
+				}
+				facts.openAPI[id] = append(facts.openAPI[id], openAPIRoute{operation.OperationID, method, path})
+				for _, tag := range operation.Tags {
+					if candidateTags[tag] {
+						facts.requiresGenerated[integrationKey(operation.OperationID, method, path)] = true
+					}
+				}
+			}
+		}
+	}
+
+	info, err := os.Lstat(generatedPath)
+	if err != nil {
+		return integrationFacts{}, err
+	}
+	if !info.Mode().IsRegular() {
+		return integrationFacts{}, errors.New("generated server is not a regular file")
+	}
+	generated, err := os.ReadFile(generatedPath)
+	if err != nil {
+		return integrationFacts{}, err
+	}
+	for _, routes := range facts.openAPI {
+		for _, route := range routes {
+			if generatedRouteDeclared(generated, route) {
+				facts.generated[integrationKey(route.Operation, route.Method, route.Path)] = true
+			}
+		}
+	}
+	return facts, nil
+}
+
+func loadCandidateTags(path string) (map[string]bool, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, errors.New("candidate generator config is not a regular file")
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	tags, inIncludeTags := map[string]bool{}, false
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "  include-tags:" {
+			inIncludeTags = true
+			continue
+		}
+		if inIncludeTags && strings.HasPrefix(line, "    - ") {
+			tag := strings.TrimSpace(strings.TrimPrefix(line, "    - "))
+			if !regexp.MustCompile(`^[a-z][a-z0-9-]*$`).MatchString(tag) || tags[tag] {
+				return nil, errors.New("candidate generator config has an invalid or duplicate tag")
+			}
+			tags[tag] = true
+			continue
+		}
+		if inIncludeTags && strings.TrimSpace(line) != "" {
+			inIncludeTags = false
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	if len(tags) == 0 {
+		return nil, errors.New("candidate generator config has no include-tags")
+	}
+	return tags, nil
+}
+
+func openAPIStringList(value any) ([]string, error) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var values []string
+	if err := json.Unmarshal(raw, &values); err != nil || len(values) == 0 {
+		return nil, errors.New("OpenAPI legacy mapping extension is not a non-empty string list")
+	}
+	seen := map[string]bool{}
+	for _, value := range values {
+		if value == "" || seen[value] {
+			return nil, errors.New("OpenAPI legacy mapping extension has a blank or duplicate id")
+		}
+		seen[value] = true
+	}
+	return values, nil
+}
+
+func generatedRouteDeclared(source []byte, route openAPIRoute) bool {
+	method := strings.ToUpper(route.Method[:1]) + strings.ToLower(route.Method[1:])
+	generatedOperation := strings.ToUpper(route.Operation[:1]) + route.Operation[1:]
+	wrapper := "func (siw *ServerInterfaceWrapper) " + generatedOperation + "("
+	registration := "r." + method + "(options.BaseURL+" + fmt.Sprintf("%q", route.Path) + ", wrapper." + generatedOperation + ")"
+	return bytes.Contains(source, []byte(wrapper)) && bytes.Contains(source, []byte(registration))
+}
+
+func integrationKey(operation, method, path string) string {
+	return operation + "\x00" + method + "\x00" + path
+}
+
+func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]string, facts integrationFacts) ([3]int, [3]int, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return [3]int{}, [3]int{}, err
@@ -313,9 +537,9 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 		switch tier {
 		case "A":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"}
-			if integrated, ok := integratedRoutes[id]; ok {
-				if disposition != "MIGRATE" || signoff != "APPROVED" || operation != integrated.Operation || method != integrated.Method || candidatePath != integrated.Path || targetMapping != integrated.TargetMapping || reason != integrated.Reason || len(evidence) != 1 || evidence[0] != integrated.Evidence {
-					return counts, decisions, fmt.Errorf("%s has forged integrated tier A disposition", id)
+			if targetMapping != "" {
+				if err := validateIntegratedRoute(id, authority, operation, method, candidatePath, targetMapping, disposition, signoff, reason, evidence, facts); err != nil {
+					return counts, decisions, fmt.Errorf("%s has an invalid integrated tier A disposition: %w", id, err)
 				}
 			} else if disposition != "MIGRATE" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 approved tier A route for 1:1 legacy semantic migration; target v2 operation remains domain-contract work." || len(evidence) != 1 || evidence[0] != expectedEvidence {
 				return counts, decisions, fmt.Errorf("%s has unapproved or forged tier A disposition", id)
@@ -323,9 +547,9 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 			decisions[0]++
 		case "B":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "DEFERRED_POST_LAUNCH"}
-			if integrated, ok := integratedRoutes[id]; ok {
-				if disposition != "MIGRATE" || signoff != "APPROVED" || operation != integrated.Operation || method != integrated.Method || candidatePath != integrated.Path || targetMapping != integrated.TargetMapping || reason != integrated.Reason || len(evidence) != 1 || evidence[0] != integrated.Evidence {
-					return counts, decisions, fmt.Errorf("%s has forged integrated tier B disposition", id)
+			if targetMapping != "" {
+				if err := validateIntegratedRoute(id, authority, operation, method, candidatePath, targetMapping, disposition, signoff, reason, evidence, facts); err != nil {
+					return counts, decisions, fmt.Errorf("%s has an invalid integrated tier B disposition: %w", id, err)
 				}
 				decisions[0]++
 			} else if disposition != "DEFERRED_POST_LAUNCH" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 deferred tier B route until post-launch reassessment; this is not deprecation or NOT_MIGRATED." || len(evidence) != 1 || evidence[0] != expectedEvidence {
@@ -349,6 +573,28 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 		return counts, decisions, fmt.Errorf("route partition or decision mismatch: rows=%d seen=%d partitions=%v decisions=%v", line, len(seen), counts, decisions)
 	}
 	return counts, decisions, nil
+}
+
+func validateIntegratedRoute(id string, authority routeFact, operation, method, candidatePath, targetMapping, disposition, signoff, reason string, evidence []apiDecisionEvidence, facts integrationFacts) error {
+	if authority.Owner == "" || !operationID.MatchString(operation) || !oneOf(method, "GET", "POST", "PUT", "PATCH", "DELETE") ||
+		candidatePath == "" || !strings.HasPrefix(candidatePath, "/") || strings.Contains(candidatePath, "//") || strings.Contains(candidatePath, "..") ||
+		!targetMappingID.MatchString(targetMapping) || disposition != "MIGRATE" || signoff != "APPROVED" ||
+		strings.TrimSpace(reason) == "" || len(reason) > 1200 || strings.ContainsAny(reason, "\r\n") || len(evidence) != 1 ||
+		evidence[0].DecisionID == "" || evidence[0].ApprovedBy != "repository_owner" || evidence[0].ApprovedAt == "" || evidence[0].Decision != "MIGRATE" {
+		return errors.New("integrated route declaration is incomplete")
+	}
+	if !oneOf(method, authority.Methods...) || candidatePath != authority.Path {
+		return errors.New("integrated route disagrees with the frozen owner route")
+	}
+	candidates := facts.openAPI[id]
+	if len(candidates) != 1 || candidates[0] != (openAPIRoute{operation, method, candidatePath}) {
+		return errors.New("integrated route is missing, duplicate, or forged in OpenAPI")
+	}
+	key := integrationKey(operation, method, candidatePath)
+	if facts.requiresGenerated[key] && !facts.generated[key] {
+		return errors.New("integrated route is missing from generated server registration")
+	}
+	return nil
 }
 
 func oneOf(value string, allowed ...string) bool {

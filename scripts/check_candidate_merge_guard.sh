@@ -24,7 +24,13 @@ def fail(message: str) -> None:
 
 
 def is_guard_policy_path(candidate_path: str) -> bool:
-    if candidate_path.startswith((".github/", "docs/ci/", "tools/openapi-contract/")):
+    if candidate_path.startswith((
+        ".github/",
+        "docs/ci/",
+        "tools/openapi-contract/",
+        "tools/migration-mapping/",
+        "tools/p1-reconciliation/",
+    )):
         return True
     if candidate_path in {
         ".gitleaks.toml",
