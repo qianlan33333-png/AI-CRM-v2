@@ -2,7 +2,7 @@
 
 This pull request is the post-PR1 proof for the new always-present `ci / merge-gate` context.
 
-- Exact base: `2ee2fbeca431d2b3c12fd11b3236dbc542554fae`.
+- Exact base: `12ba66eb51da88a827469f5a593a637361a2e06d`.
 - Scope: documentation-only; no application, workflow, checker, dependency, migration, security policy, generated source, or business-contract change.
 - Expected relevant-test selection: no Go, Web, API-codegen, database, or shared-regression workload.
 - Expected always-present jobs: classification, changed-range secret scan, and merge gate; CI self-test runs only when CI-owned files change.
