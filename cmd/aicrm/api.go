@@ -39,6 +39,7 @@ import (
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	operationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/app"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
+	opsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/ops/store"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
@@ -485,6 +486,18 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
+	systemHealth, err := newSystemHealthHandler(postgresSystemHealthSource{
+		platformObserver: opsstore.NewReadinessRepository(pool),
+		queueObserver:    outboundstore.NewReadinessRepository(pool),
+		production:       strings.EqualFold(strings.TrimSpace(config.Release.Environment), "production"),
+		releaseSHA:       config.Release.SHA,
+		realCallsEnabled: config.WeCom.OAuth.Enabled,
+	})
+	if err != nil {
+		pool.Close()
+		return nil, errInvalidAPIComponent
+	}
+	legacyHandler.systemHealth = systemHealth
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
 	if err != nil {
@@ -554,6 +567,22 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 		return nil, err
 	}
 	router.Method(http.MethodGet, "/healthz", health)
+	if legacy != nil && legacy.systemHealth != nil {
+		systemHealth := legacy.systemHealth
+		systemHealth, err = recovery(systemHealth)
+		if err != nil {
+			return nil, err
+		}
+		systemHealth, err = gateway.TimeoutMiddleware(systemHealth)
+		if err != nil {
+			return nil, err
+		}
+		systemHealth, err = gateway.RoutePatternMiddleware(systemHealthPath, systemHealth)
+		if err != nil {
+			return nil, err
+		}
+		router.Method(http.MethodGet, systemHealthPath, systemHealth)
+	}
 	registerCallback := func(method, pattern string) error {
 		tail, wrapErr := recovery(callbackHandler)
 		if wrapErr != nil {

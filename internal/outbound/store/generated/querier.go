@@ -17,6 +17,7 @@ type Querier interface {
 	CompleteOutboundCancelReceipt(ctx context.Context, arg CompleteOutboundCancelReceiptParams) (CompleteOutboundCancelReceiptRow, error)
 	CompleteOutboundManualRetryReceipt(ctx context.Context, arg CompleteOutboundManualRetryReceiptParams) (CompleteOutboundManualRetryReceiptRow, error)
 	CompleteOutboundSendAttempt(ctx context.Context, arg CompleteOutboundSendAttemptParams) (CompleteOutboundSendAttemptRow, error)
+	CountOutcomeUnknownTasks(ctx context.Context) (int64, error)
 	CreateAcceptedOutboundTask(ctx context.Context, arg CreateAcceptedOutboundTaskParams) (int64, error)
 	CreateOutboundBatchTask(ctx context.Context, arg CreateOutboundBatchTaskParams) (int64, error)
 	GetOutboundTaskReadModel(ctx context.Context, arg GetOutboundTaskReadModelParams) (GetOutboundTaskReadModelRow, error)

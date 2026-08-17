@@ -66,6 +66,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /api/system/health:
+    get:
+      tags: [p4-system-health]
+      operationId: getSystemHealth
+      summary: Read bounded public system readiness without dependency details
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0741]
+      x-p4-decision-evidence: P4-SYSTEM-HEALTH-0741-2026-08-17
+      x-aicrm-capability: health.read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: bounded_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Required components are ready; warnings may remain.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: [no-store] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemHealthResponse" }
+        "503":
+          description: One or more required components failed closed.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: [no-store] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemHealthResponse" }
   /{filename}:
     get:
       tags: [p4-domain-verification]
@@ -3830,6 +3859,38 @@ components:
       required: [status]
       properties:
         status: { type: string, enum: [ok] }
+    SystemHealthComponent:
+      type: object
+      additionalProperties: false
+      required: [name, status]
+      properties:
+        name: { type: string, enum: [wecom, release, runtime_units, database, migration, queues] }
+        status: { type: string, enum: [ready, warning, failed] }
+        real_calls_enabled: { type: boolean }
+        unknown_after_dispatch_count: { type: integer, minimum: 0, maximum: 99 }
+    SystemHealthResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, status, http_status, failed_components, warning_components, components, pii_in_output, secrets_in_output]
+      properties:
+        ok: { type: boolean }
+        status: { type: string, enum: [ready, not_ready] }
+        http_status: { type: integer, enum: [200, 503] }
+        failed_components:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [wecom, release, runtime_units, database, migration, queues] }
+        warning_components:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [wecom, release, runtime_units, database, migration, queues] }
+        components:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items: { $ref: "#/components/schemas/SystemHealthComponent" }
+        pii_in_output: { type: boolean, enum: [false] }
+        secrets_in_output: { type: boolean, enum: [false] }
     ErrorResponse:
       type: object
       additionalProperties: false

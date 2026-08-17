@@ -164,6 +164,7 @@ type Handler struct {
 	pushCenter            legacyPushCenterApplication
 	executionRuntime      legacyExecutionRuntimeApplication
 	operationAuth         operationServiceAuthenticator
+	systemHealth          http.Handler
 }
 
 // legacyOperationCycleApplication is the frozen A+B operation surface. Its

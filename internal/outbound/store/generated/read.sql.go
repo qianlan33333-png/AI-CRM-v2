@@ -11,6 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countOutcomeUnknownTasks = `-- name: CountOutcomeUnknownTasks :one
+SELECT count(*)::bigint
+FROM outbound_tasks
+WHERE status = 'outcome_unknown'
+`
+
+func (q *Queries) CountOutcomeUnknownTasks(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countOutcomeUnknownTasks)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getOutboundTaskReadModel = `-- name: GetOutboundTaskReadModel :one
 SELECT task.id, task.customer_id, customer.owner_staff_id, task.batch_id,
   task.batch_chunk_index, task.status, task.attempt_count, task.current_attempt_id,
