@@ -14,7 +14,7 @@ if [[ "$has_migration_table" = "0" ]]; then
   "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43
 else
   waterline="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")"
-  if [[ "$waterline" = "44" ]]; then
+  if [[ "$waterline" = "44" || "$waterline" = "45" ]]; then
     "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 43
   elif [[ "$waterline" != "43" ]]; then
     "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43

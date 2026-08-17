@@ -260,7 +260,7 @@ func TestD01StorageCatalogIsValidatedAndHasNoRiverOrAutomationCrossDomainFK(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != 44 || constraints != 16 || invalidConstraints != 0 || indexes != 7 || invalidIndexes != 0 ||
+	if waterline != 45 || constraints != 16 || invalidConstraints != 0 || indexes != 7 || invalidIndexes != 0 ||
 		eventLogFKs != 1 || receiptFKs != 0 || riverFKs != 0 || deliveryPersistence != "p" || receiptPersistence != "p" {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%d/%d/%d/%s/%s",
 			waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventLogFKs, receiptFKs, riverFKs, deliveryPersistence, receiptPersistence)

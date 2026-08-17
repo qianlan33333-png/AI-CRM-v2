@@ -571,7 +571,7 @@ p4-operation-cycle-ab-acceptance:
 	@test -n "$${P4OPERATIONCYCLE_TEST_DATABASE_URL:-}" || { echo "P4OPERATIONCYCLE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}" up
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/operationcycle/... ./internal/events/store ./internal/auth/... ./cmd/aicrm
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./acceptance/operationcycle -args -database-url "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}" -expected-waterline 44
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./acceptance/operationcycle -args -database-url "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}" -expected-waterline 45
 
 p4-automation-agents-ab-acceptance:
 	@test -n "$${P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL:-}" || { echo "P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL is required" >&2; exit 2; }

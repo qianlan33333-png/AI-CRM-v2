@@ -12,19 +12,30 @@ type Querier interface {
 	ArchiveMediaGroupInvite(ctx context.Context, arg ArchiveMediaGroupInviteParams) error
 	CompleteMediaGroupInviteReceipt(ctx context.Context, arg CompleteMediaGroupInviteReceiptParams) (CompleteMediaGroupInviteReceiptRow, error)
 	CompleteMediaImageUploadReceipt(ctx context.Context, arg CompleteMediaImageUploadReceiptParams) (CompleteMediaImageUploadReceiptRow, error)
+	CompleteMediaMiniProgramReceipt(ctx context.Context, arg CompleteMediaMiniProgramReceiptParams) (CompleteMediaMiniProgramReceiptRow, error)
 	CountMediaGroupInvites(ctx context.Context, arg CountMediaGroupInvitesParams) (int64, error)
+	CountMediaMiniPrograms(ctx context.Context, arg CountMediaMiniProgramsParams) (int64, error)
 	CreateMediaGroupInvite(ctx context.Context, arg CreateMediaGroupInviteParams) (int64, error)
+	CreateMediaMiniProgram(ctx context.Context, arg CreateMediaMiniProgramParams) (int64, error)
+	DeleteMediaMiniProgram(ctx context.Context, id int64) error
 	GetMediaGroupInvite(ctx context.Context, id int64) (MediaGroupInvite, error)
 	GetMediaGroupInviteReceipt(ctx context.Context, arg GetMediaGroupInviteReceiptParams) (GetMediaGroupInviteReceiptRow, error)
 	GetMediaImageUploadReceipt(ctx context.Context, arg GetMediaImageUploadReceiptParams) (GetMediaImageUploadReceiptRow, error)
+	GetMediaMiniProgram(ctx context.Context, id int64) (GetMediaMiniProgramRow, error)
+	GetMediaMiniProgramReceipt(ctx context.Context, arg GetMediaMiniProgramReceiptParams) (GetMediaMiniProgramReceiptRow, error)
+	GetMediaThumbnailCache(ctx context.Context, imageID int64) (GetMediaThumbnailCacheRow, error)
 	InsertMediaImage(ctx context.Context, arg InsertMediaImageParams) (InsertMediaImageRow, error)
 	InsertMediaImageBlob(ctx context.Context, arg InsertMediaImageBlobParams) error
 	ListMediaGroupInvites(ctx context.Context, arg ListMediaGroupInvitesParams) ([]MediaGroupInvite, error)
+	ListMediaMiniPrograms(ctx context.Context, arg ListMediaMiniProgramsParams) ([]ListMediaMiniProgramsRow, error)
 	LockMediaGroupInvite(ctx context.Context, id int64) (int64, error)
+	LockMediaMiniProgram(ctx context.Context, id int64) (int64, error)
 	MediaImageExists(ctx context.Context, id int64) (bool, error)
 	ReserveMediaGroupInviteReceipt(ctx context.Context, arg ReserveMediaGroupInviteReceiptParams) (ReserveMediaGroupInviteReceiptRow, error)
 	ReserveMediaImageUploadReceipt(ctx context.Context, arg ReserveMediaImageUploadReceiptParams) (ReserveMediaImageUploadReceiptRow, error)
+	ReserveMediaMiniProgramReceipt(ctx context.Context, arg ReserveMediaMiniProgramReceiptParams) (ReserveMediaMiniProgramReceiptRow, error)
 	UpdateMediaGroupInvite(ctx context.Context, arg UpdateMediaGroupInviteParams) error
+	UpdateMediaMiniProgram(ctx context.Context, arg UpdateMediaMiniProgramParams) error
 }
 
 var _ Querier = (*Queries)(nil)

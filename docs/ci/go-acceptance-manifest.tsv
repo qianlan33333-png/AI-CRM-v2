@@ -42,3 +42,4 @@ p4-message-archive-ab|0040|P4MESSAGEARCHIVE_TEST_DATABASE_URL|legacy-make|p4-mes
 p4-order-ab|0041|P4ORDERAB_TEST_DATABASE_URL|legacy-make|p4-order-ab-acceptance|-
 p4-operation-cycle-ab|0042|P4OPERATIONCYCLE_TEST_DATABASE_URL|legacy-make|p4-operation-cycle-ab-acceptance|-
 p4-push-center-0421-0422|0043|P4PUSHCENTER_TEST_DATABASE_URL|legacy-make|p4-push-center-0421-0422-acceptance|-
+p4-miniprogram-library-ab|0044|P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL|go-test|./acceptance/media|^TestMiniProgramR1
