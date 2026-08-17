@@ -34,6 +34,8 @@ def is_guard_policy_path(candidate_path: str) -> bool:
         return True
     if candidate_path in {
         ".gitleaks.toml",
+        # Exact PR1 rollout proof; do not classify the whole governance directory as policy.
+        "docs/evidence/governance/ci-merge-gate-rollout-proof.md",
         "scripts/generated-sources.sha256",
     }:
         return True
