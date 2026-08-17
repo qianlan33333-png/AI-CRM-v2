@@ -746,6 +746,14 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if wrapErr != nil {
 				return wrapErr
 			}
+			if pattern == legacyImageFacetsPath {
+				// Keep 0358 isolated from the compatibility router's existing 400
+				// method-mismatch adapter so Chi owns the frozen 405 response.
+				methodRouter := chi.NewRouter()
+				methodRouter.Method(method, pattern, tail)
+				router.Handle(pattern, methodRouter)
+				return nil
+			}
 			router.Method(method, pattern, tail)
 			return nil
 		}
@@ -884,6 +892,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardRefund)},
 			{http.MethodGet, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListWechatOrderExternalEffects)},
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
+			{http.MethodGet, legacyImageFacetsPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageFacets)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},

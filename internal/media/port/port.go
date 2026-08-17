@@ -20,6 +20,11 @@ type Image struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type ImageFacets struct {
+	Categories []string
+	Tags       []string
+}
+
 type UploadCommand struct {
 	Actor          int64
 	IdempotencyKey string

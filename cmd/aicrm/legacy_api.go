@@ -43,6 +43,7 @@ const (
 	LegacySessionCookieName = "aicrm_next_admin_session"
 	LegacyCSRFCookieName    = "aicrm_next_csrf"
 	legacySessionMaxAge     = 8 * time.Hour
+	legacyImageFacetsPath   = "/api/admin/image-library/facets"
 )
 
 var (
@@ -70,6 +71,19 @@ type legacyProductApplication interface {
 
 type legacyMediaApplication interface {
 	Upload(context.Context, mediaport.UploadCommand) (mediaport.Image, error)
+	Facets(context.Context) (mediaport.ImageFacets, error)
+}
+
+type legacyImageFacetsSuccess struct {
+	OK                       bool     `json:"ok"`
+	Categories               []string `json:"categories"`
+	Tags                     []string `json:"tags"`
+	SourceStatus             string   `json:"source_status"`
+	RouteOwner               string   `json:"route_owner"`
+	FallbackUsed             bool     `json:"fallback_used"`
+	RealExternalCallExecuted bool     `json:"real_external_call_executed"`
+	StorageAdapterMode       string   `json:"storage_adapter_mode"`
+	AdapterMode              string   `json:"adapter_mode"`
 }
 
 type miniProgramApplication interface {
@@ -317,6 +331,29 @@ func NewHandlerWithOutboundProductsMediaAndSurvey(
 	}
 	handler.surveys = surveys
 	return handler, nil
+}
+
+func (handler *Handler) GetImageFacets(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || nilLegacyDependency(handler.media) || request == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeInternal, mediaapp.ErrFacetsUnavailable))
+		return
+	}
+	facets, err := handler.media.Facets(request.Context())
+	if err != nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeInternal, err))
+		return
+	}
+	if facets.Categories == nil {
+		facets.Categories = []string{}
+	}
+	if facets.Tags == nil {
+		facets.Tags = []string{}
+	}
+	writeJSON(writer, http.StatusOK, legacyImageFacetsSuccess{
+		OK: true, Categories: facets.Categories, Tags: facets.Tags, SourceStatus: "next_media_library",
+		RouteOwner: "ai_crm_next", FallbackUsed: false, RealExternalCallExecuted: false,
+		StorageAdapterMode: "postgresql", AdapterMode: "postgresql",
+	})
 }
 
 func (handler *Handler) UploadImage(writer http.ResponseWriter, request *http.Request) {

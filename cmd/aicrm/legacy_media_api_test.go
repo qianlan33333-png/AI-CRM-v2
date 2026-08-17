@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"image"
 	"image/color"
 	"image/png"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,14 +25,51 @@ import (
 )
 
 type legacyMediaStub struct {
-	result  mediaport.Image
-	err     error
-	command mediaport.UploadCommand
+	result     mediaport.Image
+	err        error
+	command    mediaport.UploadCommand
+	facets     mediaport.ImageFacets
+	facetsErr  error
+	facetCalls int
 }
 
 func (stub *legacyMediaStub) Upload(_ context.Context, command mediaport.UploadCommand) (mediaport.Image, error) {
 	stub.command = command
 	return stub.result, stub.err
+}
+
+func (stub *legacyMediaStub) Facets(context.Context) (mediaport.ImageFacets, error) {
+	stub.facetCalls++
+	return stub.facets, stub.facetsErr
+}
+
+type legacyMediaAuthStub struct {
+	authorizeErr      error
+	seen              []authport.Capability
+	authenticateCalls int
+	csrfCalls         int
+}
+
+func (stub *legacyMediaAuthStub) Authenticate(context.Context, authport.SessionRef) (authport.Principal, error) {
+	stub.authenticateCalls++
+	return authport.Principal{AdminUserID: 1, Role: authport.RoleAdmin}, nil
+}
+
+func (stub *legacyMediaAuthStub) Authorize(_ context.Context, _ authport.Principal, capability authport.Capability) (authport.Authorization, error) {
+	stub.seen = append(stub.seen, capability)
+	if stub.authorizeErr != nil {
+		return authport.Authorization{}, stub.authorizeErr
+	}
+	return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
+}
+
+func (stub *legacyMediaAuthStub) ValidateCSRF(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	stub.csrfCalls++
+	return nil
+}
+
+func (*legacyMediaAuthStub) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
 }
 
 func TestH01A1LegacyImageUploadPreservesEnvelopeAndMultipartContract(t *testing.T) {
@@ -100,9 +139,134 @@ func TestH01A1LegacyImageUploadRequiresSessionCapabilityAndCSRF(t *testing.T) {
 	}
 }
 
+func TestP4ImageFacetsReturnsExactNineFieldEnvelopeWithoutCSRF(t *testing.T) {
+	stub := &legacyMediaStub{facets: mediaport.ImageFacets{
+		Categories: []string{"Alpha", "beta", "分类"},
+		Tags:       []string{"Alpha", "beta", "标签"},
+	}}
+	auth := &legacyMediaAuthStub{}
+	router := legacyMediaRouterWithAuth(t, stub, auth)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyImageFacetsRequest(http.MethodGet, true))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	if auth.authenticateCalls != 1 || len(auth.seen) != 1 || auth.seen[0] != authport.CapabilityMediaLibraryRead || auth.csrfCalls != 0 {
+		t.Fatalf("authenticate_calls=%d capabilities=%v csrf_calls=%d", auth.authenticateCalls, auth.seen, auth.csrfCalls)
+	}
+	if stub.facetCalls != 1 {
+		t.Fatalf("facet calls=%d", stub.facetCalls)
+	}
+	body := decodeImageFacetsJSONObject(t, response.Body.Bytes())
+	assertExactImageFacetsJSONKeys(t, body, "ok", "categories", "tags", "source_status", "route_owner", "fallback_used", "real_external_call_executed", "storage_adapter_mode", "adapter_mode")
+	for _, forbidden := range []string{"item", "error", "message", "detail", "enabled", "url", "object_key", "actor"} {
+		if _, exists := body[forbidden]; exists {
+			t.Fatalf("forbidden response key %q in %s", forbidden, response.Body.String())
+		}
+	}
+	var payload legacyImageFacetsSuccess
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if !payload.OK || payload.SourceStatus != "next_media_library" || payload.RouteOwner != "ai_crm_next" || payload.FallbackUsed || payload.RealExternalCallExecuted || payload.StorageAdapterMode != "postgresql" || payload.AdapterMode != "postgresql" {
+		t.Fatalf("payload=%#v", payload)
+	}
+	if strings.Join(payload.Categories, "|") != "Alpha|beta|分类" || strings.Join(payload.Tags, "|") != "Alpha|beta|标签" {
+		t.Fatalf("payload=%#v", payload)
+	}
+}
+
+func TestP4ImageFacetsReturnsNonNullEmptyArrays(t *testing.T) {
+	stub := &legacyMediaStub{}
+	router := legacyMediaRouterWithAuth(t, stub, &legacyMediaAuthStub{})
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyImageFacetsRequest(http.MethodGet, true))
+	if response.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	var payload legacyImageFacetsSuccess
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Categories == nil || payload.Tags == nil || len(payload.Categories) != 0 || len(payload.Tags) != 0 {
+		t.Fatalf("payload=%#v body=%s", payload, response.Body.String())
+	}
+}
+
+func TestP4ImageFacetsUsesCanonicalSafeInternalError(t *testing.T) {
+	stub := &legacyMediaStub{facetsErr: errors.New("pq: internal-marker-0358 actor-marker-77")}
+	router := legacyMediaRouterWithAuth(t, stub, &legacyMediaAuthStub{})
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyImageFacetsRequest(http.MethodGet, true))
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	body := decodeImageFacetsJSONObject(t, response.Body.Bytes())
+	assertExactImageFacetsJSONKeys(t, body, "code", "message", "request_id")
+	var code, message, requestID string
+	if err := json.Unmarshal(body["code"], &code); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(body["message"], &message); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(body["request_id"], &requestID); err != nil {
+		t.Fatal(err)
+	}
+	if code != "INTERNAL_ERROR" || message != "An internal error occurred." || requestID == "" {
+		t.Fatalf("code=%q message=%q request_id=%q", code, message, requestID)
+	}
+	for _, forbidden := range []string{"internal-marker-0358", "actor-marker-77", "source_status", "route_owner", "next_media_library_error", `"ok"`} {
+		if strings.Contains(response.Body.String(), forbidden) {
+			t.Fatalf("leaked %q in %s", forbidden, response.Body.String())
+		}
+	}
+}
+
+func TestP4ImageFacetsRequiresSessionAndReadCapability(t *testing.T) {
+	t.Run("missing session", func(t *testing.T) {
+		stub := &legacyMediaStub{}
+		auth := &legacyMediaAuthStub{}
+		router := legacyMediaRouterWithAuth(t, stub, auth)
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, legacyImageFacetsRequest(http.MethodGet, false))
+		if response.Code != http.StatusUnauthorized || stub.facetCalls != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
+			t.Fatalf("status=%d calls=%d authenticate_calls=%d capabilities=%v csrf_calls=%d body=%s", response.Code, stub.facetCalls, auth.authenticateCalls, auth.seen, auth.csrfCalls, response.Body.String())
+		}
+	})
+
+	t.Run("forbidden", func(t *testing.T) {
+		stub := &legacyMediaStub{}
+		auth := &legacyMediaAuthStub{authorizeErr: authport.ErrUnauthorized}
+		router := legacyMediaRouterWithAuth(t, stub, auth)
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, legacyImageFacetsRequest(http.MethodGet, true))
+		if response.Code != http.StatusForbidden || stub.facetCalls != 0 || auth.authenticateCalls != 1 || len(auth.seen) != 1 || auth.seen[0] != authport.CapabilityMediaLibraryRead || auth.csrfCalls != 0 {
+			t.Fatalf("status=%d calls=%d authenticate_calls=%d capabilities=%v csrf_calls=%d body=%s", response.Code, stub.facetCalls, auth.authenticateCalls, auth.seen, auth.csrfCalls, response.Body.String())
+		}
+	})
+}
+
+func TestP4ImageFacetsMethodMismatchUsesRouter405(t *testing.T) {
+	stub := &legacyMediaStub{}
+	auth := &legacyMediaAuthStub{}
+	router := legacyMediaRouterWithAuth(t, stub, auth)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyImageFacetsRequest(http.MethodPost, true))
+	if response.Code != http.StatusMethodNotAllowed || stub.facetCalls != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
+		t.Fatalf("status=%d calls=%d authenticate_calls=%d capabilities=%v csrf_calls=%d body=%s", response.Code, stub.facetCalls, auth.authenticateCalls, auth.seen, auth.csrfCalls, response.Body.String())
+	}
+}
+
 func legacyMediaRouter(t *testing.T, media legacyMediaApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
+	return legacyMediaRouterWithAuth(t, media, service), service
+}
+
+func legacyMediaRouterWithAuth(t *testing.T, media legacyMediaApplication, service authport.Service) http.Handler {
+	t.Helper()
 	legacy, err := NewHandlerWithOutboundProductsAndMedia(service, &legacyCustomerStub{result: legacyCustomerResult()},
 		&legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, media)
 	if err != nil {
@@ -117,7 +281,44 @@ func legacyMediaRouter(t *testing.T, media legacyMediaApplication) (http.Handler
 	if err != nil {
 		t.Fatal(err)
 	}
-	return router, service
+	return router
+}
+
+func legacyImageFacetsRequest(method string, withSession bool) *http.Request {
+	request := httptest.NewRequest(method, legacyImageFacetsPath, nil)
+	if withSession {
+		request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(61)})
+	}
+	return request
+}
+
+func decodeImageFacetsJSONObject(t *testing.T, encoded []byte) map[string]json.RawMessage {
+	t.Helper()
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &body); err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+func assertExactImageFacetsJSONKeys(t *testing.T, body map[string]json.RawMessage, expected ...string) {
+	t.Helper()
+	if len(body) != len(expected) {
+		t.Fatalf("keys=%v expected=%v", imageFacetsJSONKeys(body), expected)
+	}
+	for _, key := range expected {
+		if _, exists := body[key]; !exists {
+			t.Fatalf("missing key %q in %v", key, imageFacetsJSONKeys(body))
+		}
+	}
+}
+
+func imageFacetsJSONKeys(body map[string]json.RawMessage) []string {
+	keys := make([]string, 0, len(body))
+	for key := range body {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 func legacyImageRequest(t *testing.T, filename, mediaType, key string) *http.Request {

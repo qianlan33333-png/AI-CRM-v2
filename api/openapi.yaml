@@ -2182,6 +2182,36 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/image-library/facets:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImageFacets
+      summary: List canonical image-library category and tag facets from local Media metadata
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0358]
+      x-p4-decision-evidence: P4-IMAGE-FACETS-0358-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.category_and_tags
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Exact nine-field canonical facets envelope from local PostgreSQL metadata.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageFacetsSuccess" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Chi rejects non-GET methods at the shared routing boundary. }
+        "500":
+          description: A canonical safe internal error without repository details.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
   /api/admin/image-library/upload:
     post:
       tags: [p4-media-compat]
@@ -3568,6 +3598,20 @@ components:
         ok: { type: boolean, enum: [false] }
         message: { type: string }
         detail: { type: string }
+    LegacyImageFacetsSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, categories, tags, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        categories: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string, maxLength: 64 } }
+        source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
     LegacyImageUploadItem:
       type: object
       additionalProperties: false
