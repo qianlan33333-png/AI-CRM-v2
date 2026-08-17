@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "mode_order": {"go_mode": ["none","selected","full"],"web_mode": ["none","build","full"],"database_mode": ["none","selected","full"]},
+  "rules": [
+    {
+      "name": "ci-self",
+      "patterns": [".github/**","scripts/ci/**","scripts/check_*.sh","scripts/test_*.sh","docs/ci/repo-contract-fingerprints.tsv"],
+      "effects": {"ci": true}
+    },
+    {
+      "name": "documentation",
+      "patterns": ["docs/**","README.md","AGENTS.md","CLAUDE.md","SECURITY.md"],
+      "effects": {}
+    },
+    {
+      "name": "web-source",
+      "patterns": ["web/**"],
+      "effects": {"web": true,"web_mode": "full"}
+    },
+    {
+      "name": "web-lock",
+      "patterns": ["package.json","package-lock.json"],
+      "effects": {"web": true,"web_audit": true,"web_mode": "full"}
+    },
+    {
+      "name": "openapi-source",
+      "patterns": ["api/openapi.yaml","api/oapi-codegen*.yaml"],
+      "effects": {"api": true,"web": true,"web_mode": "build"}
+    },
+    {
+      "name": "openapi-go-generated",
+      "patterns": ["internal/api/generated/**","internal/api/candidate/generated/**"],
+      "effects": {"api": true,"go": true,"go_groups": ["composition"],"go_mode": "selected"}
+    },
+    {
+      "name": "openapi-web-generated",
+      "patterns": ["web/src/api/generated/**"],
+      "effects": {"api": true,"web": true,"web_mode": "build"}
+    },
+    {
+      "name": "migrations",
+      "patterns": ["migrations/**"],
+      "effects": {"database": true,"database_mode": "full","sqlc": true}
+    },
+    {
+      "name": "sqlc-root",
+      "patterns": ["sqlc.yaml","sqlc.yml"],
+      "effects": {"database": true,"database_mode": "full","sqlc": true}
+    },
+    {
+      "name": "go-dependencies",
+      "patterns": ["go.mod","go.sum","tools/**"],
+      "effects": {"go": true,"go_mode": "full","shared": true,"vulnerability": true}
+    },
+    {
+      "name": "shared-platform",
+      "patterns": ["internal/platform/**","internal/*/port/**"],
+      "effects": {"go": true,"go_mode": "full","shared": true}
+    },
+    {
+      "name": "security-core",
+      "patterns": [".gitleaks.toml","SECURITY.md","internal/auth/**","internal/config/**","internal/gateway/**","cmd/aicrm/legacy_auth*.go","cmd/aicrm/legacy_config*.go"],
+      "effects": {"security_expanded": true}
+    },
+    {
+      "name": "composition",
+      "patterns": ["cmd/aicrm/**"],
+      "effects": {"go": true,"go_groups": ["composition"],"go_mode": "selected"}
+    },
+    {
+      "name": "media-go",
+      "patterns": ["internal/media/**","acceptance/media/**"],
+      "effects": {"go": true,"go_groups": ["media"],"go_mode": "selected"}
+    },
+    {
+      "name": "media-database",
+      "patterns": ["internal/media/store/**","acceptance/media/**"],
+      "effects": {"database": true,"database_groups": ["media"],"database_mode": "selected","sqlc": true}
+    },
+    {
+      "name": "domain-adminops",
+      "patterns": ["internal/adminops/**","acceptance/adminops/**"],
+      "effects": {"go": true,"go_groups": ["adminops"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-ai",
+      "patterns": ["internal/ai/**","acceptance/ai/**"],
+      "effects": {"go": true,"go_groups": ["ai"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-auth",
+      "patterns": ["internal/auth/**","acceptance/auth/**"],
+      "effects": {"go": true,"go_groups": ["auth"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-automation",
+      "patterns": ["internal/automation/**","acceptance/automation/**"],
+      "effects": {"go": true,"go_groups": ["automation"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-config",
+      "patterns": ["internal/config/**","acceptance/config/**"],
+      "effects": {"go": true,"go_groups": ["config"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-contact",
+      "patterns": ["internal/contact/**","acceptance/contact/**"],
+      "effects": {"go": true,"go_groups": ["contact"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-coupon",
+      "patterns": ["internal/coupon/**","acceptance/coupon/**"],
+      "effects": {"go": true,"go_groups": ["coupon"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-events",
+      "patterns": ["internal/events/**","acceptance/events/**"],
+      "effects": {"go": true,"go_groups": ["events"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-gateway",
+      "patterns": ["internal/gateway/**","acceptance/gateway/**"],
+      "effects": {"go": true,"go_groups": ["gateway"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-identity",
+      "patterns": ["internal/identity/**","acceptance/identity/**"],
+      "effects": {"go": true,"go_groups": ["identity"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-operationcycle",
+      "patterns": ["internal/operationcycle/**","acceptance/operationcycle/**"],
+      "effects": {"go": true,"go_groups": ["operationcycle"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-ops",
+      "patterns": ["internal/ops/**","acceptance/ops/**"],
+      "effects": {"go": true,"go_groups": ["ops"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-order",
+      "patterns": ["internal/order/**","acceptance/order/**"],
+      "effects": {"go": true,"go_groups": ["order"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-outbound",
+      "patterns": ["internal/outbound/**","acceptance/outbound/**"],
+      "effects": {"go": true,"go_groups": ["outbound"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-product",
+      "patterns": ["internal/product/**","acceptance/product/**"],
+      "effects": {"go": true,"go_groups": ["product"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-pushcenter",
+      "patterns": ["internal/pushcenter/**","acceptance/pushcenter/**"],
+      "effects": {"go": true,"go_groups": ["pushcenter"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-segment",
+      "patterns": ["internal/segment/**","acceptance/segment/**"],
+      "effects": {"go": true,"go_groups": ["segment"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-stats",
+      "patterns": ["internal/stats/**","acceptance/stats/**"],
+      "effects": {"go": true,"go_groups": ["stats"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-survey",
+      "patterns": ["internal/survey/**","acceptance/survey/**"],
+      "effects": {"go": true,"go_groups": ["survey"],"go_mode": "selected"}
+    },
+    {
+      "name": "domain-wecom",
+      "patterns": ["internal/wecom/**","acceptance/wecom/**"],
+      "effects": {"go": true,"go_groups": ["wecom"],"go_mode": "selected"}
+    },
+    {
+      "name": "other-domain-store",
+      "patterns": ["internal/*/store/**"],
+      "exclude": ["internal/media/store/**"],
+      "effects": {"database": true,"database_mode": "full","sqlc": true}
+    },
+    {
+      "name": "root-ci-entrypoints",
+      "patterns": ["Makefile","scripts/check_generated_sources.sh","scripts/run_ci_acceptance_manifest.sh"],
+      "effects": {"ci": true,"go": true,"go_mode": "full","shared": true}
+    }
+  ]
+}

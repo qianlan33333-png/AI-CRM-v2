@@ -37,6 +37,8 @@ def is_guard_policy_path(candidate_path: str) -> bool:
         "scripts/generated-sources.sha256",
     }:
         return True
+    if candidate_path.startswith("scripts/ci/"):
+        return True
     if candidate_path.startswith("scripts/"):
         name = candidate_path.removeprefix("scripts/")
         return name.startswith(("check_", "test_", "ci_", "run_ci_", "verify_repo_", "scan_sensitive_"))
