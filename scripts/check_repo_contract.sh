@@ -651,6 +651,8 @@ done
 
 expected_workflows="$({
   printf '%s\n' .github/workflows/application-go.yml
+  printf '%s\n' .github/workflows/ci.yml
+  printf '%s\n' .github/workflows/nightly.yml
   printf '%s\n' .github/workflows/repo-contract.yml
   printf '%s\n' .github/workflows/secret-scan.yml
 } | LC_ALL=C sort)"
@@ -869,7 +871,11 @@ if git grep --cached -n -i -E \
 fi
 
 while IFS= read -r workflow; do
-  awk '
+  permission_profile="legacy"
+  case "$workflow" in
+    .github/workflows/ci.yml|.github/workflows/nightly.yml) permission_profile="minimal" ;;
+  esac
+  awk -v profile="$permission_profile" '
     /^permissions:[[:space:]]*$/ { in_top_permissions = 1; saw_permissions = 1; next }
     in_top_permissions && /^[^[:space:]]/ { in_top_permissions = 0 }
     in_top_permissions && /^[[:space:]]*($|#)/ { next }
@@ -881,10 +887,13 @@ while IFS= read -r workflow; do
       else invalid_permission = 1
     }
     END {
+      if (profile == "minimal") {
+        exit !(saw_permissions && permission_entries == 1 && saw_contents && !saw_checks && !saw_pull_requests && !invalid_permission)
+      }
       exit !(saw_permissions && permission_entries == 3 && saw_contents && saw_checks && saw_pull_requests && !invalid_permission)
     }
   ' "$workflow" ||
-    fail "$workflow must declare only top-level contents/checks/pull-requests read permissions"
+    fail "$workflow has a non-canonical top-level read permission set"
 
   [[ "$(grep -Ec '^[[:space:]]*permissions[[:space:]]*:' "$workflow")" -eq 1 ]] ||
     fail "$workflow must have exactly one canonical permissions key"

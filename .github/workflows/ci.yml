@@ -1,0 +1,279 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  BASH_ENV: ""
+  ENV: ""
+  GOTOOLCHAIN: local
+  GOWORK: "off"
+
+jobs:
+  classify:
+    name: ci / classify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.select.outputs.go }}
+      go_selected: ${{ steps.select.outputs.go_selected }}
+      go_mode: ${{ steps.select.outputs.go_mode }}
+      go_groups: ${{ steps.select.outputs.go_groups }}
+      web: ${{ steps.select.outputs.web }}
+      web_mode: ${{ steps.select.outputs.web_mode }}
+      web_audit: ${{ steps.select.outputs.web_audit }}
+      api: ${{ steps.select.outputs.api }}
+      database: ${{ steps.select.outputs.database }}
+      database_mode: ${{ steps.select.outputs.database_mode }}
+      database_groups: ${{ steps.select.outputs.database_groups }}
+      shared: ${{ steps.select.outputs.shared }}
+      ci: ${{ steps.select.outputs.ci }}
+      vulnerability: ${{ steps.select.outputs.vulnerability }}
+      security_expanded: ${{ steps.select.outputs.security_expanded }}
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select relevant checks
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/ci/classify_changes.py --base "$BASE_SHA" --head "$HEAD_SHA" --map .github/ci-map.yml --github-output "$GITHUB_OUTPUT" --summary "$GITHUB_STEP_SUMMARY"
+
+  secret_diff:
+    name: ci / secret-diff
+    needs: classify
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned gitleaks
+        shell: bash
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_LINUX_X64_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          archive="${RUNNER_TEMP}/gitleaks.tar.gz"
+          bin_dir="${RUNNER_TEMP}/gitleaks-bin"
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 3 --output "$archive" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_LINUX_X64_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$bin_dir"
+          tar -xzf "$archive" -C "$bin_dir" gitleaks
+          "$bin_dir/gitleaks" version | grep -Fx "$GITLEAKS_VERSION"
+          echo "$bin_dir" >>"$GITHUB_PATH"
+      - name: Scan changed range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPANDED_SCAN: ${{ needs.classify.outputs.security_expanded }}
+        run: scripts/ci/scan_changed_range.sh "$BASE_SHA" "$HEAD_SHA" "${EXPANDED_SCAN:-false}"
+
+  go_selected:
+    name: ci / go
+    needs: classify
+    if: needs.classify.outputs.go_selected == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: Run selected Go checks
+        env:
+          GO_MODE: ${{ needs.classify.outputs.go_mode }}
+          GO_GROUPS: ${{ needs.classify.outputs.go_groups }}
+          RUN_VULNERABILITY: ${{ needs.classify.outputs.vulnerability }}
+        run: scripts/ci/run_selected_go.sh "$GO_MODE" "$GO_GROUPS" "$RUN_VULNERABILITY"
+
+  web:
+    name: ci / web
+    needs: classify
+    if: needs.classify.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24.18.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+          token: ''
+      - name: Install pinned npm
+        run: npm install --global npm@11.12.1 --ignore-scripts --no-audit --no-fund
+      - name: Run Web checks
+        env:
+          WEB_MODE: ${{ needs.classify.outputs.web_mode }}
+          WEB_AUDIT: ${{ needs.classify.outputs.web_audit }}
+        run: scripts/ci/run_web.sh "$WEB_MODE" "$WEB_AUDIT"
+
+  api_codegen:
+    name: ci / api-codegen
+    needs: classify
+    if: needs.classify.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24.18.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+          token: ''
+      - name: Install pinned npm
+        run: npm install --global npm@11.12.1 --ignore-scripts --no-audit --no-fund
+      - name: Verify API generators
+        run: scripts/ci/run_api_codegen.sh
+
+  database:
+    name: ci / database
+    needs: classify
+    if: needs.classify.outputs.database == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16.14-trixie@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aicrm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aicrm_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: Verify PostgreSQL version
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: test "$(docker exec "$POSTGRES_CONTAINER_ID" psql -U postgres -d aicrm_test -Atqc 'SHOW server_version_num')" = "160014"
+      - name: Run selected database checks
+        env:
+          DATABASE_MODE: ${{ needs.classify.outputs.database_mode }}
+          DATABASE_GROUPS: ${{ needs.classify.outputs.database_groups }}
+          CI_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable
+        run: scripts/ci/run_selected_database.sh "$DATABASE_MODE" "$DATABASE_GROUPS"
+
+  shared_regression:
+    name: ci / shared-regression
+    needs: classify
+    if: needs.classify.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: Run shared Go checks
+        env:
+          RUN_VULNERABILITY: ${{ needs.classify.outputs.vulnerability }}
+        run: scripts/ci/run_selected_go.sh full "" "$RUN_VULNERABILITY"
+
+  ci_self:
+    name: ci / self-test
+    needs: classify
+    if: needs.classify.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test selector and workflow wiring
+        run: python3 scripts/ci/test_selector.py
+
+  merge_gate:
+    name: ci / merge-gate
+    if: always()
+    needs:
+      - classify
+      - secret_diff
+      - go_selected
+      - web
+      - api_codegen
+      - database
+      - shared_regression
+      - ci_self
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout gate script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Evaluate job results
+        run: python3 scripts/ci/classify_changes.py --merge-gate "classify=${{ needs.classify.result }}" "secret-diff=${{ needs.secret_diff.result }}" "go=${{ needs.go_selected.result }}" "web=${{ needs.web.result }}" "api-codegen=${{ needs.api_codegen.result }}" "database=${{ needs.database.result }}" "shared-regression=${{ needs.shared_regression.result }}" "self-test=${{ needs.ci_self.result }}"

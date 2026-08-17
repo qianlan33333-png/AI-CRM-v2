@@ -188,7 +188,7 @@ run_no_schema_diff_case no-schema-without-slice fail no
 run_no_schema_diff_case no-schema-forged-business-text fail yes no yes yes
 run_no_schema_diff_case no-schema-without-slice-declaration fail yes yes no
 run_no_schema_diff_case mapping-only-without-slice-declaration fail yes no no no yes
-run_case policy-only pass 'infra: CI policy' '仅修改 CI 策略。' $'scripts/check_repo_contract.sh\ndocs/ci/repo-contract-fingerprints.tsv'
+run_case policy-only pass 'infra: CI policy' '仅修改 CI 策略。' $'.github/workflows/ci.yml\nscripts/ci/classify_changes.py\nscripts/check_repo_contract.sh\ndocs/ci/repo-contract-fingerprints.tsv'
 run_diff_case policy-self-description pass 'scripts/check_repo_contract.sh' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case policy-test-self-description pass 'scripts/test_repo_fingerprints.sh' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case policy-receipt-self-description pass 'docs/ci/repo-contract-fingerprints.tsv' 'not-wired implementation in the pull_request diff is not mergeable'
