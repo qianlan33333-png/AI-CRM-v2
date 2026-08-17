@@ -14,24 +14,26 @@ import (
 )
 
 const (
-	databaseURLEnv           = "AICRM_DATABASE_URL"
-	apiListenAddressEnv      = "AICRM_HTTP_LISTEN_ADDRESS"
-	apiPoolMaxConnsEnv       = "AICRM_API_PGX_MAX_CONNS"
-	workerPoolMaxConnsEnv    = "AICRM_WORKER_PGX_MAX_CONNS"
-	criticalWorkersEnv       = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
-	eventWorkersEnv          = "AICRM_RIVER_EVENT_MAX_WORKERS"
-	outboundWorkersEnv       = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
-	syncWorkersEnv           = "AICRM_RIVER_SYNC_MAX_WORKERS"
-	heavyWorkersEnv          = "AICRM_RIVER_HEAVY_MAX_WORKERS"
-	aiWorkersEnv             = "AICRM_RIVER_AI_MAX_WORKERS"
-	weComCallbackCorpIDEnv   = "AICRM_WECOM_CALLBACK_CORP_ID"
-	weComCallbackTokenEnv    = "AICRM_WECOM_CALLBACK_TOKEN"
-	weComCallbackAESKeyEnv   = "AICRM_WECOM_CALLBACK_AES_KEY"
-	weComOAuthCorpIDEnv      = "AICRM_WECOM_OAUTH_CORP_ID"
-	weComOAuthSecretEnv      = "AICRM_WECOM_OAUTH_SECRET"
-	weComOAuthCallbackEnv    = "AICRM_WECOM_OAUTH_CALLBACK_URL"
-	identityHMACKeyEnv       = "AICRM_IDENTITY_HMAC_KEY"
-	domainVerificationDirEnv = "AICRM_DOMAIN_VERIFICATION_DIR"
+	databaseURLEnv            = "AICRM_DATABASE_URL"
+	apiListenAddressEnv       = "AICRM_HTTP_LISTEN_ADDRESS"
+	apiPoolMaxConnsEnv        = "AICRM_API_PGX_MAX_CONNS"
+	workerPoolMaxConnsEnv     = "AICRM_WORKER_PGX_MAX_CONNS"
+	criticalWorkersEnv        = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
+	eventWorkersEnv           = "AICRM_RIVER_EVENT_MAX_WORKERS"
+	outboundWorkersEnv        = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
+	syncWorkersEnv            = "AICRM_RIVER_SYNC_MAX_WORKERS"
+	heavyWorkersEnv           = "AICRM_RIVER_HEAVY_MAX_WORKERS"
+	aiWorkersEnv              = "AICRM_RIVER_AI_MAX_WORKERS"
+	weComCallbackCorpIDEnv    = "AICRM_WECOM_CALLBACK_CORP_ID"
+	weComCallbackTokenEnv     = "AICRM_WECOM_CALLBACK_TOKEN"
+	weComCallbackAESKeyEnv    = "AICRM_WECOM_CALLBACK_AES_KEY"
+	weComOAuthCorpIDEnv       = "AICRM_WECOM_OAUTH_CORP_ID"
+	weComOAuthSecretEnv       = "AICRM_WECOM_OAUTH_SECRET"
+	weComOAuthCallbackEnv     = "AICRM_WECOM_OAUTH_CALLBACK_URL"
+	identityHMACKeyEnv        = "AICRM_IDENTITY_HMAC_KEY"
+	domainVerificationDirEnv  = "AICRM_DOMAIN_VERIFICATION_DIR"
+	applicationEnvironmentEnv = "AICRM_ENV"
+	releaseSHAEnv             = "AICRM_RELEASE_SHA"
 )
 
 var ErrInvalid = errors.New("invalid startup configuration")
@@ -58,6 +60,14 @@ type API struct {
 // filesystem-backed verification reader. The reader owns path safety checks.
 type DomainVerification struct {
 	Directory string
+}
+
+// Release contains non-secret deployment observations. Validation belongs to
+// the readiness owner because missing values are warning/failure states rather
+// than process-startup configuration errors.
+type Release struct {
+	Environment string
+	SHA         string
 }
 
 // CallbackSecret is opaque to keep callback credentials out of generic logs
@@ -140,6 +150,7 @@ type Root struct {
 	WeCom              WeCom
 	Identity           Identity
 	DomainVerification DomainVerification
+	Release            Release
 }
 
 type validationError struct {
@@ -185,6 +196,8 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
+		root.Release.Environment, _ = lookup(applicationEnvironmentEnv)
+		root.Release.SHA, _ = lookup(releaseSHAEnv)
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)

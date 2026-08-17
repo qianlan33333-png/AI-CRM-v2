@@ -569,7 +569,18 @@ func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string
 	capability, capabilityOK := op.Extensions["x-aicrm-capability"].(string)
 	authScheme, authSchemeOK := op.Extensions["x-aicrm-auth-scheme"].(string)
 	classification, classificationOK := op.Extensions["x-aicrm-data-classification"].(string)
+	_, scopesDeclared := op.Extensions["x-aicrm-rbac-scopes"]
 	scopes, scopeErr := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if authSchemeOK && authScheme == "public" {
+		csrf, csrfOK := op.Extensions["x-aicrm-csrf"].(string)
+		if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||
+			!classificationOK || classification != "public_non_pii" || scopesDeclared || scopeErr == nil || len(scopes) != 0 ||
+			op.Security == nil || len(*op.Security) != 0 || !csrfOK || csrf != "none" || method != "GET" ||
+			op.Extensions["x-aicrm-external-effect"] != "none" {
+			return fmt.Errorf("%s canonical public declaration is incomplete", op.OperationID)
+		}
+		return nil
+	}
 	if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||
 		!authSchemeOK || authScheme == "" || !classificationOK || classification == "" ||
 		scopeErr != nil || len(scopes) == 0 || op.Extensions["x-aicrm-external-effect"] != "none" {

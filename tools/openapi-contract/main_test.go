@@ -72,6 +72,21 @@ func TestCanonicalCandidateDeclarationDoesNotRequireRunnerRegistryChanges(t *tes
 
 func TestRejectsUnsafeContractMutations(t *testing.T) {
 	tests := map[string]func(*testing.T){
+		"canonical public route becomes authenticated": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/system/health").Get.Security = &openapi3.SecurityRequirements{{"AdminSession": []string{}}}
+			reject(t, doc, ids)
+		},
+		"canonical public route forges RBAC scopes": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/system/health").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global"}
+			reject(t, doc, ids)
+		},
+		"canonical public route loses non PII classification": func(t *testing.T) {
+			doc, ids := fresh(t)
+			delete(doc.Paths.Value("/api/system/health").Get.Extensions, "x-aicrm-data-classification")
+			reject(t, doc, ids)
+		},
 		"signoff regression": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/v1/customers").Get.Extensions["x-p1-signoff-status"] = "PENDING_HUMAN_SIGNOFF"

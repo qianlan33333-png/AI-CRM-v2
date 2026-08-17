@@ -12,18 +12,20 @@ import (
 
 func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 	base := map[string]string{
-		databaseURLEnv:           "postgres://aicrm:secret@db.internal:5432/aicrm?sslmode=require",
-		apiListenAddressEnv:      "127.0.0.1:8080",
-		apiPoolMaxConnsEnv:       "10",
-		workerPoolMaxConnsEnv:    "9",
-		criticalWorkersEnv:       "2",
-		eventWorkersEnv:          "1",
-		outboundWorkersEnv:       "1",
-		syncWorkersEnv:           "1",
-		heavyWorkersEnv:          "1",
-		aiWorkersEnv:             "1",
-		identityHMACKeyEnv:       strings.Repeat("A", 43),
-		domainVerificationDirEnv: "/var/lib/aicrm/domain-verification",
+		databaseURLEnv:            "postgres://aicrm:secret@db.internal:5432/aicrm?sslmode=require",
+		apiListenAddressEnv:       "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:        "10",
+		workerPoolMaxConnsEnv:     "9",
+		criticalWorkersEnv:        "2",
+		eventWorkersEnv:           "1",
+		outboundWorkersEnv:        "1",
+		syncWorkersEnv:            "1",
+		heavyWorkersEnv:           "1",
+		aiWorkersEnv:              "1",
+		identityHMACKeyEnv:        strings.Repeat("A", 43),
+		domainVerificationDirEnv:  "/var/lib/aicrm/domain-verification",
+		applicationEnvironmentEnv: "production",
+		releaseSHAEnv:             strings.Repeat("a", 40),
 	}
 	var identityKey IdentityHMACKey
 	sQueues := QueueConcurrency{Critical: 2, Event: 1, Outbound: 1, Sync: 1, Heavy: 1, AI: 1}
@@ -33,9 +35,9 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 		omit string
 		want Root
 	}{
-		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}}},
+		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}, Release: Release{Environment: base[applicationEnvironmentEnv], SHA: base[releaseSHAEnv]}}},
 		{name: "worker", role: appruntime.RoleWorker, omit: apiListenAddressEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}}},
-		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}}},
+		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}, Release: Release{Environment: base[applicationEnvironmentEnv], SHA: base[releaseSHAEnv]}}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -78,7 +78,7 @@ run_diff_case() {
 }
 
 run_no_schema_diff_case() {
-  local name="$1" expected="$2" include_slice="$3" matrix_evidence="${4:-yes}" slice_evidence="${5:-yes}" forged_business_evidence="${6:-no}"
+  local name="$1" expected="$2" include_slice="$3" matrix_evidence="${4:-yes}" slice_evidence="${5:-yes}" forged_business_evidence="${6:-no}" mapping_evidence="${7:-no}"
   local fixture_repo="$test_root/$name-repo" event_path base head
   mkdir -p "$fixture_repo"
   git init -q "$fixture_repo"
@@ -93,7 +93,11 @@ run_no_schema_diff_case() {
   git -C "$fixture_repo" add .
   git -C "$fixture_repo" commit -qm 'base'
   base="$(git -C "$fixture_repo" rev-parse HEAD)"
-  printf '%s\n' 'route mapping' >> "$fixture_repo/docs/api-mapping.jsonl"
+  if [[ "$mapping_evidence" = yes ]]; then
+    printf '%s\n' '{"disposition_reason":"no_schema_or_external_effect"}' >> "$fixture_repo/docs/api-mapping.jsonl"
+  else
+    printf '%s\n' 'route mapping' >> "$fixture_repo/docs/api-mapping.jsonl"
+  fi
   printf '%s\n' 'acceptance' >> "$fixture_repo/docs/ci/go-acceptance-manifest.tsv"
   if [[ "$matrix_evidence" = yes ]]; then
     printf '%s\n' 'no_schema_or_external_effect' >> "$fixture_repo/docs/feature-matrix.csv"
@@ -179,9 +183,11 @@ run_case missing-http fail 'feat: Push Center' '正式业务集成。' $'docs/ap
 run_case missing-store fail 'feat: Push Center' '正式业务集成。' $'docs/api-mapping.jsonl\ndocs/ci/go-acceptance-manifest.tsv\ncmd/aicrm/legacy_push_center_api.go\nmigrations/00044_push_center_read_model.sql'
 run_case missing-migration fail 'feat: Push Center' '正式业务集成。' $'docs/api-mapping.jsonl\ndocs/ci/go-acceptance-manifest.tsv\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go'
 run_no_schema_diff_case formal-no-schema pass yes
+run_no_schema_diff_case formal-mapping-only-no-schema pass yes no yes no yes
 run_no_schema_diff_case no-schema-without-slice fail no
 run_no_schema_diff_case no-schema-forged-business-text fail yes no yes yes
 run_no_schema_diff_case no-schema-without-slice-declaration fail yes yes no
+run_no_schema_diff_case mapping-only-without-slice-declaration fail yes no no no yes
 run_case policy-only pass 'infra: CI policy' '仅修改 CI 策略。' $'scripts/check_repo_contract.sh\ndocs/ci/repo-contract-fingerprints.tsv'
 run_diff_case policy-self-description pass 'scripts/check_repo_contract.sh' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case policy-test-self-description pass 'scripts/test_repo_fingerprints.sh' 'not-wired implementation in the pull_request diff is not mergeable'

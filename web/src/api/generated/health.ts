@@ -2482,6 +2482,99 @@ export interface HealthResponse {
   status: HealthResponseStatus;
 }
 
+export type SystemHealthComponentName =
+  (typeof SystemHealthComponentName)[keyof typeof SystemHealthComponentName];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthComponentName = {
+  wecom: "wecom",
+  release: "release",
+  runtime_units: "runtime_units",
+  database: "database",
+  migration: "migration",
+  queues: "queues",
+} as const;
+
+export type SystemHealthComponentStatus =
+  (typeof SystemHealthComponentStatus)[keyof typeof SystemHealthComponentStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthComponentStatus = {
+  ready: "ready",
+  warning: "warning",
+  failed: "failed",
+} as const;
+
+export interface SystemHealthComponent {
+  name: SystemHealthComponentName;
+  status: SystemHealthComponentStatus;
+  real_calls_enabled?: boolean;
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  unknown_after_dispatch_count?: number;
+}
+
+export type SystemHealthResponseStatus =
+  (typeof SystemHealthResponseStatus)[keyof typeof SystemHealthResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseStatus = {
+  ready: "ready",
+  not_ready: "not_ready",
+} as const;
+
+export type SystemHealthResponseHttpStatus =
+  (typeof SystemHealthResponseHttpStatus)[keyof typeof SystemHealthResponseHttpStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseHttpStatus = {
+  NUMBER_200: 200,
+  NUMBER_503: 503,
+} as const;
+
+export type SystemHealthResponseFailedComponentsItem =
+  (typeof SystemHealthResponseFailedComponentsItem)[keyof typeof SystemHealthResponseFailedComponentsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseFailedComponentsItem = {
+  wecom: "wecom",
+  release: "release",
+  runtime_units: "runtime_units",
+  database: "database",
+  migration: "migration",
+  queues: "queues",
+} as const;
+
+export type SystemHealthResponseWarningComponentsItem =
+  (typeof SystemHealthResponseWarningComponentsItem)[keyof typeof SystemHealthResponseWarningComponentsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseWarningComponentsItem = {
+  wecom: "wecom",
+  release: "release",
+  runtime_units: "runtime_units",
+  database: "database",
+  migration: "migration",
+  queues: "queues",
+} as const;
+
+export interface SystemHealthResponse {
+  ok: boolean;
+  status: SystemHealthResponseStatus;
+  http_status: SystemHealthResponseHttpStatus;
+  failed_components: SystemHealthResponseFailedComponentsItem[];
+  warning_components: SystemHealthResponseWarningComponentsItem[];
+  /**
+   * @minItems 6
+   * @maxItems 6
+   */
+  components: SystemHealthComponent[];
+  pii_in_output: boolean;
+  secrets_in_output: boolean;
+}
+
 export interface ErrorResponse {
   /** @minLength 1 */
   code: string;
@@ -5266,6 +5359,51 @@ export const getHealthz = async (
     status: res.status,
     headers: res.headers,
   } as getHealthzResponse;
+};
+
+/**
+ * @summary Read bounded public system readiness without dependency details
+ */
+export type getSystemHealthResponse200 = {
+  data: SystemHealthResponse;
+  status: 200;
+};
+
+export type getSystemHealthResponse503 = {
+  data: SystemHealthResponse;
+  status: 503;
+};
+
+export type getSystemHealthResponseSuccess = getSystemHealthResponse200 & {
+  headers: Headers;
+};
+export type getSystemHealthResponseError = getSystemHealthResponse503 & {
+  headers: Headers;
+};
+
+export type getSystemHealthResponse =
+  getSystemHealthResponseSuccess | getSystemHealthResponseError;
+
+export const getGetSystemHealthUrl = () => {
+  return `/api/system/health`;
+};
+
+export const getSystemHealth = async (
+  options?: RequestInit,
+): Promise<getSystemHealthResponse> => {
+  const res = await fetch(getGetSystemHealthUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSystemHealthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSystemHealthResponse;
 };
 
 /**

@@ -119,7 +119,11 @@ if not any(changed_path.startswith("internal/") for changed_path in changed):
 has_migration = any(re.fullmatch(r"migrations/[0-9]{5}_[A-Za-z0-9_]+\.sql", changed_path) for changed_path in changed)
 if not has_migration:
     matrix_added = "\n".join(added_by_path.get("docs/feature-matrix.csv", []))
-    has_no_schema_matrix_evidence = re.search(r"\bno_schema_or_external_effect\b", matrix_added) is not None
+    mapping_added = "\n".join(added_by_path.get("docs/api-mapping.jsonl", []))
+    has_no_schema_declarative_evidence = re.search(
+        r"\bno_schema_or_external_effect\b",
+        f"{matrix_added}\n{mapping_added}",
+    ) is not None
     slice_paths = [
         changed_path for changed_path in changed
         if changed_path.startswith("docs/execution/slices/") and changed_path.endswith(".md")
@@ -132,7 +136,7 @@ if not has_migration:
         )
         for slice_path in slice_paths
     )
-    if not (has_no_schema_matrix_evidence and has_slice_evidence):
+    if not (has_no_schema_declarative_evidence and has_slice_evidence):
         fail("migration closure is missing and no-schema closure evidence is absent")
 
 print("candidate-merge-guard: PASS")

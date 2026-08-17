@@ -19,6 +19,11 @@ WHERE task.id = sqlc.arg(task_id)::bigint
     OR customer.owner_staff_id = sqlc.narg(owner_staff_id)::bigint
   );
 
+-- name: CountOutcomeUnknownTasks :one
+SELECT count(*)::bigint
+FROM outbound_tasks
+WHERE status = 'outcome_unknown';
+
 -- name: ListOutboundTaskReadModels :many
 SELECT task.id, task.customer_id, customer.owner_staff_id, task.batch_id,
   task.batch_chunk_index, task.status, task.attempt_count, task.current_attempt_id,
