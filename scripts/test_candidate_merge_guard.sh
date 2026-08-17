@@ -8,6 +8,9 @@ trap 'rm -rf "$test_root"' EXIT
 required_paths=$'docs/api-mapping.jsonl\ndocs/ci/go-acceptance-manifest.tsv\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go\nmigrations/00044_push_center_read_model.sql'
 without_mapping=$'docs/ci/go-acceptance-manifest.tsv\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go\nmigrations/00044_push_center_read_model.sql'
 without_acceptance=$'docs/api-mapping.jsonl\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go\nmigrations/00044_push_center_read_model.sql'
+rollout_proof_paths=$'docs/ci/repo-contract-fingerprints.tsv\ndocs/evidence/governance/ci-merge-gate-rollout-proof.md'
+rollout_proof_business_without_mapping=$'docs/ci/go-acceptance-manifest.tsv\ndocs/ci/repo-contract-fingerprints.tsv\ndocs/evidence/governance/ci-merge-gate-rollout-proof.md\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go\nmigrations/00044_push_center_read_model.sql'
+rollout_proof_business_without_acceptance=$'docs/api-mapping.jsonl\ndocs/ci/repo-contract-fingerprints.tsv\ndocs/evidence/governance/ci-merge-gate-rollout-proof.md\ncmd/aicrm/legacy_push_center_api.go\ninternal/pushcenter/store/repository.go\nmigrations/00044_push_center_read_model.sql'
 
 write_event() {
   local output_path="$1" title="$2" body="$3"
@@ -188,6 +191,9 @@ run_no_schema_diff_case no-schema-without-slice fail no
 run_no_schema_diff_case no-schema-forged-business-text fail yes no yes yes
 run_no_schema_diff_case no-schema-without-slice-declaration fail yes yes no
 run_no_schema_diff_case mapping-only-without-slice-declaration fail yes no no no yes
+run_case rollout-proof-only pass 'docs: CI rollout proof' '仅记录 CI rollout 证明。' "$rollout_proof_paths"
+run_case rollout-proof-business-missing-mapping fail 'feat: Push Center with CI proof' '真实业务集成仍需正式闭环。' "$rollout_proof_business_without_mapping"
+run_case rollout-proof-business-missing-acceptance fail 'feat: Push Center with CI proof' '真实业务集成仍需正式闭环。' "$rollout_proof_business_without_acceptance"
 run_case policy-only pass 'infra: CI policy' '仅修改 CI 策略。' $'.github/workflows/ci.yml\nscripts/ci/classify_changes.py\nscripts/check_repo_contract.sh\ndocs/ci/repo-contract-fingerprints.tsv'
 run_diff_case policy-self-description pass 'scripts/check_repo_contract.sh' 'not-wired implementation in the pull_request diff is not mergeable'
 run_diff_case policy-test-self-description pass 'scripts/test_repo_fingerprints.sh' 'not-wired implementation in the pull_request diff is not mergeable'
