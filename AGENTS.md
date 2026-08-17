@@ -56,8 +56,9 @@
   `verification_induced`。非红线 `slice_induced` 第 1、2 个均允许在原片修复并继续；
   第 2 个起立即降档并进入 `SCOPE_FROZEN_REPAIR_ONLY`，冻结已批准能力范围，禁止新增
   能力、扩 scope 或无关重构。第 3 个及以后保持该状态，不得仅因计数达到 3 丢弃候选；
-  仍允许修复既有缺陷、补永久负例、完成原始 DoD、同步 generated/manifest/ledger、
-  rebase、required CI、PR/merge 与 exact-main CLOSED。
+  仍允许修复既有缺陷、补永久负例、完成原始 DoD、同步真实 generated/lockfile，
+  运行相关性 CI 并完成 PR/merge。不得为解锁合并伪造 mapping、acceptance、no-schema、
+  Evidence Status、Slice 或其他治理文案。
 - 红线缺陷无论第几个都立即进入 `HARD_STOP_REDLINE_READ_ONLY`：停止修复、重跑、
   generate、commit、push、PR、merge，必须在全新任务从 latest exact-green main 重切。
   红线是封闭集合：actor/授权/数据归属破坏或越权；认证绕过、
@@ -72,18 +73,17 @@
   方式的修正记入 `verification_induced_correction_count`。两者必须精确记录，但不
   降档、不硬停；机械环境、命令与时序问题在原任务内修复。只有需要修改共享基础设施
   或业务范围时才按归属另片，禁止绕过或降低门禁。
-- 预期生成物及既有 hash、manifest、ledger receipt 的正常同步属于 Definition of
-  Done，不是 correction。只有首次遗漏且被门禁发现时记一次 `verification_induced`，
-  在原任务补齐且不触发硬停。
+- 预期生成物与 lockfile 的真实同步属于 Definition of Done，不是 correction。
+  文档、mapping、manifest、ledger 或仓库 fingerprint 只在对应事实真实变化时更新；
+  不得仅为满足合并格式而补写，也不得让这些文本替代运行时测试。
 - 切片卡范围欠定义导致的修正记入 `scope_induced_correction_count`；Sol 应依
   完整行为自行合并、拆分或标记 `SUPERSEDED_BY_RESCOPE`，不得清零原片历史计数。
 - 新规则只适用于规则合入后从 exact-green main 新建、或规则合入时尚未产生 WIP 的
   候选；已按旧规则 HARD STOP 的 W0/A/H/I 及两次 W0 候选永久只读，不追溯复活、
   复制或 cherry-pick。历史计数与证据必须在 ledger 原样保留。
-- P3/P4 的每个 PR 必须关闭一个 ledger 中的官方业务 Slice，或关闭一个经用户/权威
-  计划批准且能在 feature matrix 定位的完整业务 flow；禁止 parser-only、
-  checker-only 或 governance-only PR。本次一次性修正处理规则 PR 是用户明确批准的
-  唯一例外，不计 P4 业务进度；合并后例外关闭。
+- 业务 PR 应围绕用户或权威计划批准的完整可观察行为；CI/platform 修正可作为独立、
+  可验收的中央能力单元。ledger、feature matrix、mapping 与 evidence 可记录事实，
+  但 CI 不得读取这些文本或 PR 标题/正文来判断是否可合并。
 - 并行最多 3 个任务。互不依赖、路径不重叠且不修改共享契约的业务路径允许并行 PR；
   `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收夹具等
   中央契约仍串行。P3 波次划分为 contact → (identity ∥ segment) →
@@ -96,8 +96,9 @@
 - `.github/**`、ADR、架构、OpenAPI、migrations、公共 ports、根依赖与黑盒验收
   夹具是中央契约区；只能由 Sol 在当前垂直 Slice 内裁决和修改，或在冻结后以精确
   白名单委派机械实现。
-- Sol 可让非共享业务 PR 并行运行门禁；中央契约裁决、最终 rebase、squash merge 与
-  精确 main SHA CI 必须按累计 main 串行闭环。
+- Sol 可让非共享业务 PR 并行运行相关性 CI；中央契约裁决与 squash merge 仍按累计
+  main 串行。合并资格只由 PR 上唯一的 `ci / merge-gate` 决定；无关 main 推进不得
+  重新引入旧四门、strict exact-main 复验或合并后 provenance 反向认证。
 - 常规进度仅在 P2 全部完成、P3 每个波次完成时批量汇报。只有真实外部效果、
   identity 不可逆语义分歧、鉴权/secret/企微凭据实质变更、需要用户真实输入或
   人工验收、与已决 ADR 或架构铁律实质冲突时立即停报。
@@ -107,6 +108,18 @@
 - oapi-codegen、sqlc、Orval 生成目录禁止手写；连续生成必须无 diff。
 - `go.sum`、`package-lock.json` 缺失或 `go mod tidy`/`npm ci` 后出现未解释
   diff 都是硬失败。
+- PR 唯一 Required Check 是 `ci / merge-gate`；Ruleset 的 `strict=false` 由总负责人在
+  仓库外维护，仓库内 Agent 未经明确授权不得修改 Ruleset。
+- PR CI 只能依据 base SHA、head SHA、changed paths 与 `.github/ci-map.yml` 选择测试。
+  `classify`、changed-range `secret-diff` 与 `merge-gate` 始终执行；无关 job 在 job 级
+  明确 skipped，`success|skipped` 合格，`failure|cancelled` 阻断。
+- 未知 Go/Web/SQL/migration 等可执行变更必须走保守 full fallback；不得使用 workflow
+  级 paths 过滤，也不得削弱生成一致性、真实 PostgreSQL 验收、依赖审计或密钥扫描。
+- `.github/workflows/ci.yml` 是唯一 PR 链路；不得恢复旧 application/repo-contract/
+  secret-scan workflow、promotion/provenance 或 Candidate Guard，也不得解析 PR 标题、
+  正文、Evidence Status、not-wired、no-schema、mapping/acceptance/Slice 文本来否决合并。
+- `.github/workflows/nightly.yml` 承担全 Go race/test/build、全部 acceptance、完整生成物、
+  漏洞/依赖审计、全历史 secret scan 与全域 PostgreSQL 回归；Nightly 不是 PR 合并门。
 - mock/synthetic/local/staging/production 证据必须分别标注；未执行写
   `NOT EXECUTED`，外部未授权门写 `PENDING_EXTERNAL_GATE`。
 - 所有 PR 使用中文说明，记录命令、退出码、生成物/锁文件差异、未执行项

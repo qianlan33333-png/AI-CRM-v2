@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Deterministic tests for PR1 classification, wiring, and merge-gate truth."""
+"""Deterministic tests for relevance CI classification, wiring, and merge-gate truth."""
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import os
 import re
@@ -28,12 +27,7 @@ classifier = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = classifier
 spec.loader.exec_module(classifier)
 
-OLD_WORKFLOW_HASHES = {
-    ".github/workflows/application-go.yml": "33347cdc331a6ea44082116be69d0ac1c91cdd9e22d6a907c03c2135f05dfdb4",
-    ".github/workflows/repo-contract.yml": "19be030a9301f6ca89bd31bf74b2e6a71e0991a8c2e2c7dbfdd84c9b057fcef8",
-    ".github/workflows/secret-scan.yml": "95233c1c7bf27d9bb2ee70f3f475c728de7b2dddd7d3aa74ae77968be23b0a57",  # gitleaks:allow -- workflow SHA-256 fixture
-}
-NEW_WORKFLOWS = [
+ACTIVE_WORKFLOWS = [
     ".github/workflows/ci.yml",
     ".github/workflows/nightly.yml",
 ]
@@ -65,14 +59,6 @@ EXPECTED_CLASSIFY_OUTPUTS = {
     "vulnerability",
     "security_expanded",
 }
-
-
-def sha256_file(file_name: Path) -> str:
-    digest = hashlib.sha256()
-    with file_name.open("rb") as source:
-        for chunk in iter(lambda: source.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def selection_outputs(repo_paths: list[str]) -> dict[str, str]:
@@ -347,20 +333,118 @@ class CliTests(unittest.TestCase):
 
 
 class WorkflowWiringTests(unittest.TestCase):
-    def test_old_workflows_are_unchanged(self) -> None:
-        for relative_name, expected_hash in OLD_WORKFLOW_HASHES.items():
+    def test_only_active_workflows_remain(self) -> None:
+        tracked = subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(REPO_ROOT),
+                "ls-files",
+                "--",
+                ".github/workflows/*.yml",
+                ".github/workflows/*.yaml",
+            ],
+            text=True,
+        ).splitlines()
+        self.assertEqual(tracked, ACTIVE_WORKFLOWS)
+        retired_scripts = subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(REPO_ROOT),
+                "ls-files",
+                "--",
+                "scripts/*promotion*",
+                "scripts/*candidate*merge*guard*",
+            ],
+            text=True,
+        ).splitlines()
+        self.assertEqual(retired_scripts, [])
+
+    def test_active_workflows_parse_as_yaml(self) -> None:
+        completed = subprocess.run(
+            [
+                "ruby",
+                "-e",
+                'require "yaml"; ARGV.each { |path| YAML.parse_file(path) }',
+                *(str(REPO_ROOT / relative_name) for relative_name in ACTIVE_WORKFLOWS),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def test_retired_chain_has_no_executable_reference(self) -> None:
+        sources = [REPO_ROOT / relative_name for relative_name in ACTIVE_WORKFLOWS]
+        sources.extend([MAP_PATH, CLASSIFIER_PATH, REPO_ROOT / "Makefile"])
+        sources.extend(sorted((REPO_ROOT / "scripts/ci").glob("*")))
+        sources.extend(
+            REPO_ROOT / relative_name
+            for relative_name in (
+                "scripts/check_repo_contract.sh",
+                "scripts/test_repo_contract.sh",
+            )
+        )
+        combined = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sources
+            if path.is_file()
+        )
+        retired_tokens = [
+            "ci_" + "promotion",
+            "check_ci_" + "promotion_smoke",
+            "candidate_" + "merge_" + "guard",
+            "candidate-" + "merge-" + "guard",
+            "application-" + "go.yml",
+            "repo-" + "contract.yml",
+            "secret-" + "scan.yml",
+            "exact-main " + "verification mode",
+            "promotion " + "fingerprints",
+        ]
+        for token in retired_tokens:
+            self.assertNotIn(token, combined, token)
+
+    def test_self_test_and_nightly_contract_commands(self) -> None:
+        ci_source = (REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        root_self_tests = (
+            "scripts/check_repo_contract.sh",
+            "scripts/test_repo_contract.sh",
+            "scripts/test_repo_fingerprints.sh",
+        )
+        for command in ("python3 scripts/ci/test_selector.py", *root_self_tests):
+            self.assertIn(command, ci_source)
+        for relative_name in root_self_tests:
             file_name = REPO_ROOT / relative_name
             self.assertTrue(file_name.is_file(), relative_name)
-            self.assertEqual(sha256_file(file_name), expected_hash, relative_name)
+            self.assertTrue(os.access(file_name, os.X_OK), relative_name)
+
+        full_source = (REPO_ROOT / "scripts/ci/run_full_regression.sh").read_text(encoding="utf-8")
+        for command in (
+            "python3 scripts/ci/test_selector.py",
+            "scripts/check_repo_contract.sh",
+            "scripts/test_repo_contract.sh",
+            "scripts/test_repo_fingerprints.sh",
+            "make --no-print-directory ci-go",
+            "make --no-print-directory migration-integration",
+            "scripts/run_ci_acceptance_manifest.sh",
+            "npm run ci",
+            "gitleaks git .",
+            "scripts/test_gitleaks_config.sh",
+            "scripts/scan_sensitive_paths.sh",
+            "scripts/test_build_slice_bundle.sh",
+        ):
+            self.assertIn(command, full_source)
 
     def test_new_workflows_and_permissions(self) -> None:
-        for relative_name in NEW_WORKFLOWS:
+        for relative_name in ACTIVE_WORKFLOWS:
             source = (REPO_ROOT / relative_name).read_text(encoding="utf-8")
             self.assertRegex(source, r"(?m)^permissions:\n  contents: read\n")
             permission_entries = re.findall(r"(?m)^  [a-z-]+: (?:read|write|write-all)$", source)
             self.assertEqual(permission_entries, ["  contents: read"])
             self.assertNotIn("pull_request_target", source)
-            self.assertNotRegex(source, r"(?m)^\s+paths:")
+            self.assertNotRegex(source, r"(?m)^\s+paths(?:-ignore)?:")
             for action_ref in re.findall(r"(?m)^\s+(?:- )?uses: ([^\s#]+)", source):
                 self.assertRegex(action_ref, r"^[^@]+@[0-9a-f]{40}$")
 
@@ -394,7 +478,7 @@ class WorkflowWiringTests(unittest.TestCase):
 
     def test_workflow_script_references_exist(self) -> None:
         references: set[str] = set()
-        for relative_name in NEW_WORKFLOWS:
+        for relative_name in ACTIVE_WORKFLOWS:
             source = (REPO_ROOT / relative_name).read_text(encoding="utf-8")
             references.update(re.findall(r"scripts/ci/[A-Za-z0-9_./-]+", source))
         self.assertTrue(references)
@@ -427,7 +511,7 @@ class WorkflowWiringTests(unittest.TestCase):
 
     def test_new_chain_has_no_metadata_policy_inputs(self) -> None:
         sources = [MAP_PATH, CLASSIFIER_PATH]
-        sources.extend(REPO_ROOT / relative_name for relative_name in NEW_WORKFLOWS)
+        sources.extend(REPO_ROOT / relative_name for relative_name in ACTIVE_WORKFLOWS)
         sources.extend(sorted((REPO_ROOT / "scripts/ci").glob("*.sh")))
         combined = "\n".join(file_name.read_text(encoding="utf-8") for file_name in sources).lower()
         forbidden_inputs = [
