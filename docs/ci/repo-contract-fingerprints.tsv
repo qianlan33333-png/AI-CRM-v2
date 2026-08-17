@@ -266,6 +266,7 @@
 100644	7b2d9700658610a9c2220c8a95a3e0e9a635d36f771a905384f14b9f17839f8c	docs/ci/go-acceptance-manifest.tsv
 100644	d1b7c85d695f73fe1b97bd0d128d840d539104ffe0a93b651092057b3ac09118	docs/evidence/candidates/LEGACY-API-0757-R0.md
 100644	03ce78968aa820d18e6c4ec3539c04d34a8cfda4cc232baa7a555ae1e88992e0	docs/evidence/g2/test-server-deployment.md
+100644	a70e7d05ca73c5cfe3c3b0fc05f51e3f9dd0f801a2666a9c88385102e3144215	docs/evidence/governance/ci-merge-gate-rollout-proof.md
 100644	2537cbe5865929d59a95c12e5a3fdcbbe2b3fdd580d9c6e6db9906bc940bd4c0	docs/evidence/governance/repository-visibility-2026-08-09.md
 100644	7ed8b94efb48807f21df665a719ae56397d85fba17f4d8749efc67e24314d9f4	docs/evidence/index.md
 100644	e790498b4b2c3a6a7d4a540b643842685c2cbab46101731a35cb4749ccfdf829	docs/evidence/p1/api-facts-contact-auth-admin-6cb989c.md
