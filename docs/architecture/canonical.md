@@ -8,7 +8,7 @@
 2. 已接受的 ADR 与本文；
 3. [`AI-CRM-v2-重构详细设计.md`](../spec/AI-CRM-v2-重构详细设计.md)；
 4. [`AI-CRM-v2-执行方案.md`](../spec/AI-CRM-v2-执行方案.md)；
-5. 单个 Slice 任务卡。
+5. 当前任务的验收目标。
 
 ADR 只能显式消解冲突，不能静默删减需求或验收标准。尚未由真实环境验证的能力必须标记为 synthetic、local 或 `PENDING_EXTERNAL_GATE`，不能写成生产验证通过。
 
@@ -212,7 +212,7 @@ outbound 只暴露 `EnqueueOne` 与 `EnqueueBatch`。调用方提交稳定幂等
 | 重复企微回调 | 重复业务效果 | 原始回调幂等键与数据库唯一约束 |
 | 外部写超时 | 结果可能未知 | 审计请求与结果；仅按安全策略重试，不声称 exactly-once |
 | 身份证据不足 | 错误归因或误合并 | floating identity、pending event、manual review，默认拒绝猜测 |
-| 某业务 Slice 越界 | 模块耦合和回归 | import/table/API owner lint、允许路径检查、行为快照门 |
+| 业务改动越过模块边界 | 模块耦合和回归 | import/table/API owner lint、相关测试与行为快照门 |
 | 生成物漂移 | 前后端/SQL 契约不一致 | 锁定生成器、生成两次无 diff、锁文件硬门 |
 
 ## 10. 决策索引

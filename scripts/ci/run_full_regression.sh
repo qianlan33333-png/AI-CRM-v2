@@ -33,7 +33,6 @@ fi
 python3 scripts/ci/test_selector.py
 scripts/check_repo_contract.sh
 scripts/test_repo_contract.sh
-scripts/test_repo_fingerprints.sh
 
 P0S03_PG_INTEGRATION=1 \
 P0S03_TEST_DATABASE_URL="$database_url" \

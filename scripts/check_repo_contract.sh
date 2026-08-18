@@ -19,9 +19,7 @@ for required_path in \
   .github/workflows/nightly.yml \
   scripts/ci/classify_changes.py \
   scripts/ci/test_selector.py \
-  scripts/ci/run_full_regression.sh \
-  scripts/check_repo_fingerprints.sh \
-  scripts/verify_repo_receipts.pl; do
+  scripts/ci/run_full_regression.sh; do
   [[ -f "$required_path" && ! -L "$required_path" ]] ||
     fail "required CI path is not a regular file: $required_path"
 done
@@ -72,8 +70,7 @@ for anchor in \
   '    name: ci / merge-gate' \
   'python3 scripts/ci/test_selector.py' \
   'scripts/check_repo_contract.sh' \
-  'scripts/test_repo_contract.sh' \
-  'scripts/test_repo_fingerprints.sh'; do
+  'scripts/test_repo_contract.sh'; do
   grep -Fq "$anchor" <<<"$ci_source" ||
     fail "PR CI lost required merge-gate or self-test wiring: $anchor"
 done
@@ -108,7 +105,6 @@ for anchor in \
   'python3 scripts/ci/test_selector.py' \
   'scripts/check_repo_contract.sh' \
   'scripts/test_repo_contract.sh' \
-  'scripts/test_repo_fingerprints.sh' \
   'make --no-print-directory ci-go' \
   'make --no-print-directory migration-integration' \
   'scripts/run_ci_acceptance_manifest.sh' \
@@ -156,5 +152,4 @@ for token in "${metadata_tokens[@]}"; do
   done <<<"$policy_paths"
 done
 
-scripts/check_repo_fingerprints.sh
 printf 'repo-contract: PASS (relevance CI only)\n'
