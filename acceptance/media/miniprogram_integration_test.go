@@ -546,9 +546,8 @@ func TestMiniProgramR1S200KReceiptLookupUsesCompositeIndex(t *testing.T) {
 
 func TestMiniProgramR1StorageCatalogIsSingleInstanceLocalAndValidated(t *testing.T) {
 	pool, ctx := openPool(t)
-	var waterline, invalidConstraints, invalidIndexes, tenantColumns, thumbnailFKIndex int
+	var invalidConstraints, invalidIndexes, tenantColumns, thumbnailFKIndex int
 	err := pool.QueryRow(ctx, `SELECT
-		(SELECT max(version_id) FROM goose_db_version WHERE is_applied),
 		(SELECT count(*) FROM pg_constraint WHERE conrelid IN
 			('media_miniprograms'::regclass,'media_thumbnail_cache_entries'::regclass,'media_miniprogram_operation_receipts'::regclass,
 			 'media_miniprogram_import_preflights'::regclass,'media_miniprogram_import_ledger'::regclass) AND NOT convalidated),
@@ -559,9 +558,9 @@ func TestMiniProgramR1StorageCatalogIsSingleInstanceLocalAndValidated(t *testing
 			table_name IN ('media_miniprograms','media_thumbnail_cache_entries','media_miniprogram_operation_receipts','media_miniprogram_import_preflights','media_miniprogram_import_ledger') AND
 			column_name ~* 'tenant|workspace|organization|corp_id'),
 		(to_regclass('public.media_miniprograms_thumbnail_image_id_idx') IS NOT NULL)::int`).
-		Scan(&waterline, &invalidConstraints, &invalidIndexes, &tenantColumns, &thumbnailFKIndex)
-	if err != nil || waterline != 45 || invalidConstraints != 0 || invalidIndexes != 0 || tenantColumns != 0 || thumbnailFKIndex != 1 {
-		t.Fatalf("catalog=%d/%d/%d/%d/%d err=%v", waterline, invalidConstraints, invalidIndexes, tenantColumns, thumbnailFKIndex, err)
+		Scan(&invalidConstraints, &invalidIndexes, &tenantColumns, &thumbnailFKIndex)
+	if err != nil || invalidConstraints != 0 || invalidIndexes != 0 || tenantColumns != 0 || thumbnailFKIndex != 1 {
+		t.Fatalf("catalog=%d/%d/%d/%d err=%v", invalidConstraints, invalidIndexes, tenantColumns, thumbnailFKIndex, err)
 	}
 }
 

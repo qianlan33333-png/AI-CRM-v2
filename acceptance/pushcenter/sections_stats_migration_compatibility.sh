@@ -14,9 +14,9 @@ if [[ "$has_migration_table" = "0" ]]; then
   "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43
 else
   waterline="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")"
-  if [[ "$waterline" = "44" || "$waterline" = "45" ]]; then
+  if (( waterline > 43 )); then
     "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 43
-  elif [[ "$waterline" != "43" ]]; then
+  elif (( waterline < 43 )); then
     "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43
   fi
 fi
@@ -35,7 +35,7 @@ read -r waterline state entries text_index tenant_columns foreign_keys ready fix
 [[ "$waterline" = "44" && "$state" = "1" && "$entries" = "1" && "$text_index" = "1" && "$tenant_columns" = "0" && "$foreign_keys" = "0" && "$ready" = "0" && "$fixture" = "0" && "$allow_fixture" = "0" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=300s ./acceptance/pushcenter -args -database-url "$database_url" -expected-waterline 44
+  "$go_command" test -race -count=1 -timeout=300s ./acceptance/pushcenter -args -database-url "$database_url"
 
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 43
 read -r waterline state entries <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT

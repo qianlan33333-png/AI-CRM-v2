@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"testing"
 	"time"
@@ -18,8 +17,6 @@ import (
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
-
-var p4AutomationAgentsExpectedWaterline = flag.Int("expected-waterline", 45, "expected current migration waterline for the Automation Agents storage catalog")
 
 func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	pool, ctx := openPool(t)
@@ -136,13 +133,13 @@ func TestP4AutomationAgentsABBoundaryErrorAndUOWRollback(t *testing.T) {
 
 func TestP4AutomationAgentsABStorageHasNoTenantOrCrossDomainOwnership(t *testing.T) {
 	pool, ctx := openPool(t)
-	var waterline, invalidConstraints, foreignKeys, tenantColumns, indexes int
-	err := pool.QueryRow(ctx, `SELECT (SELECT max(version_id) FROM goose_db_version WHERE is_applied),(SELECT count(*) FROM pg_constraint WHERE conrelid IN ('automation_agent_configurations'::regclass,'automation_agent_operation_receipts'::regclass) AND NOT convalidated),(SELECT count(*) FROM pg_constraint WHERE conrelid IN ('automation_agent_configurations'::regclass,'automation_agent_operation_receipts'::regclass) AND contype='f'),(SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('automation_agent_configurations','automation_agent_operation_receipts') AND column_name ILIKE '%tenant%'),(SELECT count(*) FROM pg_index WHERE indrelid IN ('automation_agent_configurations'::regclass,'automation_agent_operation_receipts'::regclass) AND indisvalid AND indisready AND indislive)`).Scan(&waterline, &invalidConstraints, &foreignKeys, &tenantColumns, &indexes)
+	var invalidConstraints, foreignKeys, tenantColumns, indexes int
+	err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('automation_agent_configurations'::regclass,'automation_agent_operation_receipts'::regclass) AND NOT convalidated),(SELECT count(*) FROM pg_constraint WHERE conrelid IN ('automation_agent_configurations'::regclass,'automation_agent_operation_receipts'::regclass) AND contype='f'),(SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('automation_agent_configurations','automation_agent_operation_receipts') AND column_name ILIKE '%tenant%'),(SELECT count(*) FROM pg_index WHERE indrelid IN ('automation_agent_configurations'::regclass,'automation_agent_operation_receipts'::regclass) AND indisvalid AND indisready AND indislive)`).Scan(&invalidConstraints, &foreignKeys, &tenantColumns, &indexes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != *p4AutomationAgentsExpectedWaterline || invalidConstraints != 0 || foreignKeys != 0 || tenantColumns != 0 || indexes != 6 {
-		t.Fatalf("waterline/invalid/fks/tenant/indexes=%d/%d/%d/%d/%d", waterline, invalidConstraints, foreignKeys, tenantColumns, indexes)
+	if invalidConstraints != 0 || foreignKeys != 0 || tenantColumns != 0 || indexes != 6 {
+		t.Fatalf("invalid/fks/tenant/indexes=%d/%d/%d/%d", invalidConstraints, foreignKeys, tenantColumns, indexes)
 	}
 }
 

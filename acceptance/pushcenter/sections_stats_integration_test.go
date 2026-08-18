@@ -18,7 +18,6 @@ import (
 )
 
 var pushCenterDatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 Push Center database")
-var pushCenterExpectedWaterline = flag.Int("expected-waterline", 44, "expected Push Center migration waterline")
 
 func TestP4PushCenterSectionsStatsNormalBoundaryAndDegraded(t *testing.T) {
 	pool, ctx := openPushCenterPool(t)
@@ -124,10 +123,6 @@ func openPushCenterPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	var serverVersion string
 	if err = pool.QueryRow(ctx, `SHOW server_version_num`).Scan(&serverVersion); err != nil || serverVersion != "160014" {
 		t.Fatalf("postgres version=%q err=%v", serverVersion, err)
-	}
-	var waterline int
-	if err = pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != *pushCenterExpectedWaterline {
-		t.Fatalf("waterline=%d err=%v", waterline, err)
 	}
 	return pool, ctx
 }

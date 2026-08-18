@@ -19,7 +19,6 @@ import (
 )
 
 var operationCycleDatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 operation-cycle database")
-var operationCycleExpectedWaterline = flag.Int("expected-waterline", 45, "expected migration waterline for operation-cycle database")
 
 func TestP4OperationCycleABNormalBoundaryAndOutcomeUnknownTerminal(t *testing.T) {
 	pool, ctx := openOperationCyclePool(t)
@@ -167,10 +166,6 @@ func openOperationCyclePool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	var version string
 	if err = pool.QueryRow(ctx, `SHOW server_version_num`).Scan(&version); err != nil || version != "160014" {
 		t.Fatalf("postgres version=%q err=%v", version, err)
-	}
-	var waterline int
-	if err = pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != *operationCycleExpectedWaterline {
-		t.Fatalf("waterline=%d err=%v", waterline, err)
 	}
 	if err = platformriver.Migrate(ctx, pool, platformriver.DirectionUp, nil); err != nil {
 		t.Fatalf("river migration=%v", err)

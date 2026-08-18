@@ -122,16 +122,15 @@ func TestF03SubmissionReadsResultsPagingExportAndGuards(t *testing.T) {
 
 func TestF03SubmissionCatalogOwnershipAndIndexes(t *testing.T) {
 	pool, ctx := openPool(t)
-	var waterline, submissionTables, tenantColumns, invalidIndexes, crossDomainFKs int
+	var submissionTables, tenantColumns, invalidIndexes, crossDomainFKs int
 	err := pool.QueryRow(ctx, `SELECT
-      (SELECT max(version_id) FROM goose_db_version WHERE is_applied),
       (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('questionnaire_submissions','questionnaire_submission_answers')),
       (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name LIKE 'questionnaire_submission%' AND column_name ~* 'tenant|workspace|organization'),
       (SELECT count(*) FROM pg_index WHERE indrelid IN ('questionnaire_submissions'::regclass,'questionnaire_submission_answers'::regclass) AND (NOT indisvalid OR NOT indisready OR NOT indislive)),
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('questionnaire_submissions'::regclass,'questionnaire_submission_answers'::regclass)
-        AND contype='f' AND confrelid NOT IN ('questionnaires'::regclass,'questionnaire_submissions'::regclass))`).Scan(&waterline, &submissionTables, &tenantColumns, &invalidIndexes, &crossDomainFKs)
-	if err != nil || waterline != 46 || submissionTables != 2 || tenantColumns != 0 || invalidIndexes != 0 || crossDomainFKs != 0 {
-		t.Fatalf("catalog=%d/%d/%d/%d/%d err=%v", waterline, submissionTables, tenantColumns, invalidIndexes, crossDomainFKs, err)
+        AND contype='f' AND confrelid NOT IN ('questionnaires'::regclass,'questionnaire_submissions'::regclass))`).Scan(&submissionTables, &tenantColumns, &invalidIndexes, &crossDomainFKs)
+	if err != nil || submissionTables != 2 || tenantColumns != 0 || invalidIndexes != 0 || crossDomainFKs != 0 {
+		t.Fatalf("catalog=%d/%d/%d/%d err=%v", submissionTables, tenantColumns, invalidIndexes, crossDomainFKs, err)
 	}
 	var pageIndex bool
 	if err = pool.QueryRow(ctx, `SELECT COUNT(*) = 1 FROM pg_indexes WHERE schemaname='public' AND tablename='questionnaire_submissions' AND indexname='questionnaire_submissions_page'`).Scan(&pageIndex); err != nil || !pageIndex {

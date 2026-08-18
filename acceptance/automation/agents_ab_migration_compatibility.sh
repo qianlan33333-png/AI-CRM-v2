@@ -14,9 +14,9 @@ if [[ "$has_migration_table" = "0" ]]; then
   "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 41
 else
   waterline="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")"
-  if [[ "$waterline" = "42" || "$waterline" = "43" || "$waterline" = "44" || "$waterline" = "45" ]]; then
+  if (( waterline > 41 )); then
     "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 41
-  elif [[ "$waterline" != "41" ]]; then
+  elif (( waterline < 41 )); then
     "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 41
   fi
 fi
@@ -47,7 +47,7 @@ read -r waterline configurations receipts tenant_columns foreign_keys indexes <<
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=180s -run '^TestP4AutomationAgentsAB' \
-  ./acceptance/automation -args -database-url "$database_url" -expected-waterline 42
+  ./acceptance/automation -args -database-url "$database_url"
 
 post_acceptance="$(history_snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 41

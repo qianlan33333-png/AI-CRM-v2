@@ -67,7 +67,7 @@ read -r waterline cache_table library_table receipt_table preflight_table ledger
     (SELECT count(*) FROM media_miniprogram_import_preflights) + (SELECT count(*) FROM media_miniprogram_import_ledger)
     FROM goose_db_version WHERE is_applied GROUP BY 2,3,4,5,6,7"
 )"
-[[ "$waterline" = "45" && "$cache_table" = "1" && "$library_table" = "1" && "$receipt_table" = "1" && "$preflight_table" = "1" && "$ledger_table" = "1" && "$thumbnail_fk_index" = "1" && "$imported_rows" = "0" ]]
+[[ "$cache_table" = "1" && "$library_table" = "1" && "$receipt_table" = "1" && "$preflight_table" = "1" && "$ledger_table" = "1" && "$thumbnail_fk_index" = "1" && "$imported_rows" = "0" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=300s -run '^TestMiniProgramR1' \

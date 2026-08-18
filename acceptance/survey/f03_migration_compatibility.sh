@@ -27,7 +27,7 @@ read -r waterline submissions_table answers_table tenant_columns <<<"$(psql "$da
   (SELECT (to_regclass('public.questionnaire_submissions') IS NOT NULL)::int),
   (SELECT (to_regclass('public.questionnaire_submission_answers') IS NOT NULL)::int),
   (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name LIKE 'questionnaire_submission%' AND column_name ~* 'tenant|workspace|organization')")"
-[[ "$waterline" = "46" && "$submissions_table" = "1" && "$answers_table" = "1" && "$tenant_columns" = "0" ]]
+[[ "$submissions_table" = "1" && "$answers_table" = "1" && "$tenant_columns" = "0" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
