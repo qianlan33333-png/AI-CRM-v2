@@ -346,7 +346,7 @@
 100644	23534fbaf7a8ee100b6dd8c23e704073018eabd877f52030ba5fdc3fa1a21429	docs/evidence/slices/P3-C06C-query-optimization.md
 100644	6a328bb6e0d0dba614498c64fa183b230254aa06847aa2e49b2ed40189c7a0d2	docs/evidence/slices/P3-C06D-tag-count.md
 100644	93663335f00ca98fb8773a6b5537b7d034a855e74066fa578de87daf893a7232	docs/evidence/slices/P4-ADMINOPS-JOBS-AB.md
-100644	f224cd180f37f0f3e9549fa0fedac181a96387f7d495ce8350dd80cd9d7b48bc	docs/evidence/slices/P4-API-DOCS-0003-0033-R2.md
+100644	bf929665e7bbd105161b89eb4916dcec6d1da0e3bad8d92616f8313282f902cc	docs/evidence/slices/P4-API-DOCS-0003-0033-R2.md
 100644	effbc23f35124f9e68bf6c5c6333806a5a084ed52dad65d47bc4c1316b0ee517	docs/evidence/slices/P4-AUTOMATION-AGENTS-AB.md
 100644	fcf9791c6e54e7e282f60b64f3fae64aff18e7f554fbbe37234a857bb300bdde	docs/evidence/slices/P4-IMAGE-FACETS-0358.md
 100644	189f892d0a4e0c3637fc69134bec6ed8977781e933570e16e87a980e28a4f01d	docs/evidence/slices/P4-MINIPROGRAM-LIBRARY-AB-R1.md
@@ -477,7 +477,7 @@
 100644	6b17091280944ca7b0ab884abe406c3e537cffe5cbd4f29c3ba710bf19c03203	docs/execution/slices/P4-A01.md
 100644	2b6aa5e523bca13f57b7e8d01d80e37ec4947ec628e6a1c7d940e3bb9dc5c398	docs/execution/slices/P4-A02.md
 100644	45cc828170e43aec9a40cfe1f4d6878a4f09dd553137d36e546542d76e947905	docs/execution/slices/P4-ADMIN-SHELL-AB.md
-100644	599b268e8ae54d37d1038aed3ae5e4656e0da5693d80b9f1ebc9b562fedfbd4e	docs/execution/slices/P4-API-DOCS-0003-0033-R2.md
+100644	f848b8fb6cdb541d2041f0390749080e9026a4479a4115ee416e675adad51161	docs/execution/slices/P4-API-DOCS-0003-0033-R2.md
 100644	9f64d1f4818d2d38df7d01d34a3b230dc57af3bf4c49a93b670663657d7e850d	docs/execution/slices/P4-B01.md
 100644	f7c9866ef7499b24a1b8551dc750a2d5826f4c0318d28d6944e7630355441ff0	docs/execution/slices/P4-B02.md
 100644	fe46ddc60f0f5975553761a2fed8c2949394b6ba9a8fe88a2039094f5384b6e5	docs/execution/slices/P4-B02AB.md
@@ -501,7 +501,7 @@
 100644	4caa2bd1343a63e5ee8395c8055486187f83e96000ebf83ecdf9b7ccead4e714	docs/execution/slices/P4-W0-D01.md
 100644	4535b5599061bbce9b4090f4fda89c9339547b19d3267886986bc6ee476fe116	docs/execution/slices/P4-W0-L01.md
 100644	94947cc722e3898c156004491758fafe550bdbb3188dc69aa2a7553bfe77ab92	docs/execution/slices/SEC-01.md
-100644	d31bcfa33f34d930e6a2707781cf1e9fb25465780d2d40eea132fe67498ff88c	docs/feature-matrix.csv
+100644	670c57e9803d630d392f515461c955ccb57f9ab41c01193c82be6dab9b7b1e40	docs/feature-matrix.csv
 100644	acb65b41dfbb8b4afc331549494b457d2a947b0c08564a351675444a5aa4940d	docs/governance/agent-orchestration.md
 100644	3dc863102ea3155dec83dc63c3f5db4530204f0257a0f3e229c4546eaca8dc83	docs/governance/limitations.md
 100644	a19163a66eb205468d3e06717d23cd4175a35b7860abca5caa82553a42d5b7e3	docs/migration-mapping.jsonl
