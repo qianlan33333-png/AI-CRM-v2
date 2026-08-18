@@ -38,3 +38,18 @@
   重建唯一生成文件后，`npm run ci` 通过 Orval contract、lint、strict typecheck、226 个 Web 测试、生产 build
   和 high-severity audit；随后发现 Candidate Merge Guard 对所有正式业务 PR 无条件要求 migration，现改为
   仅在 matrix 和 slice 同时声明 `no_schema_or_external_effect` 时允许无 migration，并以正反例覆盖。两者均未改变产品合同或扩大业务范围。
+
+## exact-main closure addendum（2026-08-18）
+
+- 正式 PR #236 已 MERGED/CLOSED：head `de4fa248749600dc1efc59be08f5e63912c5fa2f`，merge
+  `1fd449995c2d2ee5d9954b5d10d259b6bcce86bd`，两者 tree 均为
+  `1c5e3db4c0b792838a41c5a6c80f1533eb64c2a8`（match-head squash）；merge 是当前 exact main
+  `53276849b11ca9b37d10673164fb2f95d3587dd5` 的祖先，历史 Required 链全绿。
+- 2026-08-18 在 exact main 复验：`GET /admin` 服务端模板仍渲染快捷入口及旧链接，`GET /admin/logout`
+  仍只 302 到既有 `/logout` 且不自行注销或清 Cookie；human session + `admin.shell.read` global 与
+  fail-closed 拒绝链保持；`P4ADMINSHELL_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55431/aicrm_test?sslmode=disable
+  make p4-admin-shell-ab-acceptance` 退出码 0（隔离 PG16.14 `aicrm_test`，migration waterline 45）。
+- `LEGACY-S07-001` 由 `IN_PROGRESS/NOT_RUN` 更新为 `IMPLEMENTED/SYNTHETIC_PASS`；仅代表仓库代码与
+  synthetic/local 隔离 PG 验证闭环。`PRODUCTION_DATABASE_NOT_EXECUTED`、
+  `LIVE_MIGRATION_NOT_EXECUTED`、`REAL_EXTERNAL_EFFECT_NOT_EXECUTED`、
+  `EDGE_OR_STAGING_DEPLOYMENT_NOT_EXECUTED`。

@@ -115,3 +115,23 @@ exact-main closure are still required before this board can be called `MERGED`.
 `HISTORICAL_DATABASE_NOT_ACCESSED`, `PRODUCTION_DATABASE_NOT_EXECUTED`,
 `LIVE_MIGRATION_NOT_EXECUTED`, `REAL_WECOM_OR_WECHAT_NOT_EXECUTED`,
 `URL_FETCH_NOT_EXECUTED`, `OUTBOUND_NOT_EXECUTED`, `DEPLOYMENT_NOT_EXECUTED`.
+
+## Exact-main closure and open UI gap addendum (2026-08-18)
+
+- PR #240 MERGED/CLOSED with head `789049b88fb4b4bcd3e2966b1f88e0107ee2b556`, merge
+  `f10fda7f7069048b9b456a71a2f9545be28c6dc1`, identical head/merge tree
+  `ba86fccd766f14be707b9a5a0a9e3860f93aa2df`; the merge is an ancestor of exact main
+  `53276849b11ca9b37d10673164fb2f95d3587dd5` with a green historical required chain, so the
+  "exact-main closure still required" note above is satisfied for the merge itself.
+- 2026-08-18 re-run on exact main, both exit code 0:
+  `P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable GO=go TOOLS_MOD=tools/go.mod acceptance/media/miniprogram_migration_compatibility.sh`
+  (`44/45/44/45`, Event/Auth/Media history preserved, historical import not executed) and
+  `go test -race -count=1 -timeout=240s ./internal/media/... ./cmd/aicrm`.
+- Matrix rows `LEGACY-S07-018` and `LEGACY-S07-054/055/057/058/059/060` remain
+  `IN_PROGRESS/NOT_RUN`: their user-observable client behaviors (workspace rendering, list redraw,
+  create/save/enable-disable/test-resolve/delete confirmations) have no consumer in `web/src`
+  outside generated API types; the merged backend API/RBAC/CSRF/UoW/receipt/redirect evidence does
+  not close UI flows. Recorded as MATERIAL_RUNTIME_GAP; no repair is attempted in this task.
+- `HISTORICAL_DATABASE_NOT_ACCESSED`, `PRODUCTION_DATABASE_NOT_EXECUTED`,
+  `LIVE_MIGRATION_NOT_EXECUTED`, `REAL_WECOM_OR_WECHAT_NOT_EXECUTED`, `URL_FETCH_NOT_EXECUTED`,
+  `OUTBOUND_NOT_EXECUTED`, `DEPLOYMENT_NOT_EXECUTED` remain in force.

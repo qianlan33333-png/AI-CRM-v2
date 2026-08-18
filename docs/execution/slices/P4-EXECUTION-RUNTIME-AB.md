@@ -39,3 +39,17 @@
 - 还必须在同一 staged tree 运行 `make generate-check`、`make p1-reconciliation-contract`、
   `make openapi-p1-contract`、`make feature-matrix-contract`、`make vet`、`make fmt-check`、
   `scripts/check_repo_contract.sh` 和 `npm run ci`。本卡在合并前不声明 MERGED、RELEASE 或 DEPLOYED。
+
+## exact-main closure addendum（2026-08-18）
+
+- 正式 PR #237 已 MERGED/CLOSED：head `6b1ecf06c590b206c0acb58cb356d43bc4703bf5`，merge
+  `456bfa3bee008cdaf4428b07184b1cda6e2cd35c`，两者 tree 均为
+  `ac9e1efd1ea34d9ddb69b11503004f35d7482892`（match-head squash）；merge 是当前 exact main
+  `53276849b11ca9b37d10673164fb2f95d3587dd5` 的祖先，历史 Required 链全绿。
+- 2026-08-18 在 exact main 复验：路由 `LEGACY-API-0314+0315` 仍在 `cmd/aicrm/api.go` 注册；human
+  session + `admin.read` global、0314 控制面缺失 200 `ok=false`、0315 非法/不存在 404、读模型失败
+  503、固定脱敏与 observed_only 语义保持；`make p4-execution-runtime-ab-acceptance` 退出码 0。
+- `LEGACY-S06-045` 由 `IN_PROGRESS/NOT_RUN` 更新为 `IMPLEMENTED/SYNTHETIC_PASS`；仅代表仓库代码与
+  synthetic/local 验证闭环。`PRODUCTION_DATABASE_NOT_EXECUTED`、`LIVE_MIGRATION_NOT_EXECUTED`、
+  `REAL_EXTERNAL_EFFECT_NOT_EXECUTED`、`DEPLOYMENT_NOT_EXECUTED`；观测状态仍不等于 provider
+  receipt/executed/success。
