@@ -31,11 +31,14 @@ import { IdentityMergeReviewsPage } from "./identity-reviews-ui";
 import type { IdentityReviewTransport } from "./identity-reviews";
 import { MiniProgramLibraryPage } from "./miniprogram-library-ui";
 import type { MiniProgramLibraryTransport } from "./miniprogram-library";
+import { ImageLibraryPage } from "./image-library-ui";
+import type { ImageLibraryTransport } from "./image-library";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
 export const LOGIN_PATH = "/login";
 export const MINIPROGRAM_LIBRARY_PATH = "/admin/miniprogram-library";
+export const IMAGE_LIBRARY_PATH = "/admin/image-library";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -74,6 +77,12 @@ export const routes = [
     navigationLabel: "小程序素材",
     title: "小程序素材库",
     description: "小程序素材的本地媒体库工作区。",
+  },
+  {
+    path: "/admin/image-library",
+    navigationLabel: "图片素材",
+    title: "图片素材库",
+    description: "图片素材的本地媒体库工作区。",
   },
   {
     path: "/outbound",
@@ -123,6 +132,7 @@ export interface AppProps {
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
   miniProgramTransport?: MiniProgramLibraryTransport;
+  imageLibraryTransport?: ImageLibraryTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -268,6 +278,7 @@ function PageContent({
   segmentTransport,
   identityReviewTransport,
   miniProgramTransport,
+  imageLibraryTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -280,6 +291,7 @@ function PageContent({
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
   miniProgramTransport?: MiniProgramLibraryTransport;
+  imageLibraryTransport?: ImageLibraryTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -371,6 +383,17 @@ function PageContent({
     );
   }
 
+  if (route.path === IMAGE_LIBRARY_PATH) {
+    return (
+      <ImageLibraryPage
+        role={principal.role}
+        transport={imageLibraryTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -407,12 +430,14 @@ export function navigationLinks(
   const base = permittedRoutePaths(principal);
   const permitted = new Set(base);
   // Mirrors the frozen server capability map: media.library.read is held by
-  // admin and ops only, so sales never sees the MiniProgram navigation entry.
+  // admin and ops only, so sales never sees the media library navigation
+  // entries.
   if (
     base.length > 0 &&
     (principal.role === "admin" || principal.role === "ops")
   ) {
     permitted.add(MINIPROGRAM_LIBRARY_PATH);
+    permitted.add(IMAGE_LIBRARY_PATH);
   }
   return routes
     .filter((route) => permitted.has(route.path))
@@ -431,6 +456,7 @@ export function App({
   segmentTransport,
   identityReviewTransport,
   miniProgramTransport,
+  imageLibraryTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -585,6 +611,7 @@ export function App({
             segmentTransport={segmentTransport}
             identityReviewTransport={identityReviewTransport}
             miniProgramTransport={miniProgramTransport}
+            imageLibraryTransport={imageLibraryTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
