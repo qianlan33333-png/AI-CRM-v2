@@ -82,12 +82,12 @@ func (q *Queries) GetMediaImageUploadReceipt(ctx context.Context, arg GetMediaIm
 }
 
 const insertMediaImage = `-- name: InsertMediaImage :one
-INSERT INTO media_images (name, file_name, mime_type, file_size, width, height, checksum, description, tags, category, enabled, created_by, created_at, updated_at)
+INSERT INTO media_images (name, file_name, mime_type, file_size, width, height, checksum, description, tags, category, created_by, created_at, updated_at)
 VALUES ($1::text, $2::text, $3::text, $4::integer,
         $5::integer, $6::integer, $7::bytea, $8::text,
-        $9::text, $10::text, $11::boolean, $12::bigint,
-        $13::timestamptz, $13::timestamptz)
-RETURNING id, name, file_name, mime_type, file_size, width, height, description, tags, category, enabled, created_at, updated_at
+        $9::text, $10::text, $11::bigint,
+        $12::timestamptz, $12::timestamptz)
+RETURNING id, name, file_name, mime_type, file_size, width, height, description, tags, category, created_at, updated_at
 `
 
 type InsertMediaImageParams struct {
@@ -101,7 +101,6 @@ type InsertMediaImageParams struct {
 	Description string             `json:"description"`
 	Tags        string             `json:"tags"`
 	Category    string             `json:"category"`
-	Enabled     bool               `json:"enabled"`
 	CreatedBy   int64              `json:"created_by"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
@@ -117,11 +116,12 @@ type InsertMediaImageRow struct {
 	Description string             `json:"description"`
 	Tags        string             `json:"tags"`
 	Category    string             `json:"category"`
-	Enabled     bool               `json:"enabled"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+// This legacy default-true path must remain executable at the historical
+// H01A1 waterline (migration 30), before migration 47 added enabled.
 func (q *Queries) InsertMediaImage(ctx context.Context, arg InsertMediaImageParams) (InsertMediaImageRow, error) {
 	row := q.db.QueryRow(ctx, insertMediaImage,
 		arg.Name,
@@ -134,7 +134,6 @@ func (q *Queries) InsertMediaImage(ctx context.Context, arg InsertMediaImagePara
 		arg.Description,
 		arg.Tags,
 		arg.Category,
-		arg.Enabled,
 		arg.CreatedBy,
 		arg.CreatedAt,
 	)
@@ -150,7 +149,6 @@ func (q *Queries) InsertMediaImage(ctx context.Context, arg InsertMediaImagePara
 		&i.Description,
 		&i.Tags,
 		&i.Category,
-		&i.Enabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -177,6 +175,83 @@ func (q *Queries) InsertMediaImageBlob(ctx context.Context, arg InsertMediaImage
 		arg.CreatedAt,
 	)
 	return err
+}
+
+const insertMediaImageWithEnabled = `-- name: InsertMediaImageWithEnabled :one
+INSERT INTO media_images (name, file_name, mime_type, file_size, width, height, checksum, description, tags, category, enabled, created_by, created_at, updated_at)
+VALUES ($1::text, $2::text, $3::text, $4::integer,
+        $5::integer, $6::integer, $7::bytea, $8::text,
+        $9::text, $10::text, $11::boolean, $12::bigint,
+        $13::timestamptz, $13::timestamptz)
+RETURNING id, name, file_name, mime_type, file_size, width, height, description, tags, category, enabled, created_at, updated_at
+`
+
+type InsertMediaImageWithEnabledParams struct {
+	Name        string             `json:"name"`
+	FileName    string             `json:"file_name"`
+	MimeType    string             `json:"mime_type"`
+	FileSize    int32              `json:"file_size"`
+	Width       int32              `json:"width"`
+	Height      int32              `json:"height"`
+	Checksum    []byte             `json:"checksum"`
+	Description string             `json:"description"`
+	Tags        string             `json:"tags"`
+	Category    string             `json:"category"`
+	Enabled     bool               `json:"enabled"`
+	CreatedBy   int64              `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type InsertMediaImageWithEnabledRow struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	FileName    string             `json:"file_name"`
+	MimeType    string             `json:"mime_type"`
+	FileSize    int32              `json:"file_size"`
+	Width       int32              `json:"width"`
+	Height      int32              `json:"height"`
+	Description string             `json:"description"`
+	Tags        string             `json:"tags"`
+	Category    string             `json:"category"`
+	Enabled     bool               `json:"enabled"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Only the 0357 explicit-false branch requires migration 47's enabled column.
+func (q *Queries) InsertMediaImageWithEnabled(ctx context.Context, arg InsertMediaImageWithEnabledParams) (InsertMediaImageWithEnabledRow, error) {
+	row := q.db.QueryRow(ctx, insertMediaImageWithEnabled,
+		arg.Name,
+		arg.FileName,
+		arg.MimeType,
+		arg.FileSize,
+		arg.Width,
+		arg.Height,
+		arg.Checksum,
+		arg.Description,
+		arg.Tags,
+		arg.Category,
+		arg.Enabled,
+		arg.CreatedBy,
+		arg.CreatedAt,
+	)
+	var i InsertMediaImageWithEnabledRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.FileName,
+		&i.MimeType,
+		&i.FileSize,
+		&i.Width,
+		&i.Height,
+		&i.Description,
+		&i.Tags,
+		&i.Category,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const reserveMediaImageUploadReceipt = `-- name: ReserveMediaImageUploadReceipt :one
