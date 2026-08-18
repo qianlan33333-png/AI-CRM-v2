@@ -25,6 +25,47 @@ type ImageFacets struct {
 	Tags       []string
 }
 
+type ImageListQuery struct {
+	Limit         int64
+	Offset        int64
+	EnabledOnly   bool
+	Search        string
+	Category      string
+	Tags          string
+	TagGroups     []string
+	OnlyUnlabeled bool
+}
+
+type ImageListItem struct {
+	ID            int64    `json:"id"`
+	Name          string   `json:"name"`
+	FileName      string   `json:"file_name"`
+	MimeType      string   `json:"mime_type"`
+	FileSize      int32    `json:"file_size"`
+	Enabled       bool     `json:"enabled"`
+	Description   string   `json:"description"`
+	Tags          []string `json:"tags"`
+	Category      string   `json:"category"`
+	Width         int32    `json:"width"`
+	Height        int32    `json:"height"`
+	CreatedAt     string   `json:"created_at"`
+	UpdatedAt     string   `json:"updated_at"`
+	Thumb160URL   string   `json:"thumb_160_url"`
+	Thumb320URL   string   `json:"thumb_320_url"`
+	ThumbURL      string   `json:"thumb_url"`
+	PreviewURL    string   `json:"preview_url"`
+	Mobile1080URL string   `json:"mobile_1080_url"`
+	Large1440URL  string   `json:"large_1440_url"`
+	OriginalURL   string   `json:"original_url"`
+}
+
+type ImageListPage struct {
+	Items  []ImageListItem
+	Total  int64
+	Limit  int64
+	Offset int64
+}
+
 type UploadCommand struct {
 	Actor          int64
 	IdempotencyKey string

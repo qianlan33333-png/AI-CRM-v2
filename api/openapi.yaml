@@ -2182,6 +2182,92 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/image-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImageList
+      summary: List local Media-owned image metadata with strict legacy-compatible filters and pagination
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0356]
+      x-p4-decision-evidence: P4-IMAGE-LIST-0356-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.read_projection
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      x-aicrm-enabled-only-compatibility: permanent-enabled-no-op
+      x-aicrm-route-dependency: LEGACY-API-0366
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: One decimal scalar matching ^-?[0-9]+$; 0 becomes 100, negatives become 1, and values above 500 become 500.
+          schema: { type: string, pattern: '^-?[0-9]+$', default: '100' }
+        - name: offset
+          in: query
+          required: false
+          description: One decimal scalar matching ^-?[0-9]+$; zero and negatives become 0.
+          schema: { type: string, pattern: '^-?[0-9]+$', default: '0' }
+        - name: enabled_only
+          in: query
+          required: false
+          description: One lowercase boolean scalar. Both values read the same permanently-enabled v2 image set.
+          schema: { type: string, enum: ['true', 'false'], default: 'true' }
+        - name: q
+          in: query
+          required: false
+          description: One scalar; TrimSpace is applied before PostgreSQL ILIKE matching over name, file_name, description, category, and normalized tags. Percent and underscore retain LIKE wildcard meaning.
+          schema: { type: string, default: '' }
+        - name: category
+          in: query
+          required: false
+          description: One scalar; TrimSpace is applied to the query value before case-sensitive exact matching.
+          schema: { type: string, default: '' }
+        - name: tags
+          in: query
+          required: false
+          description: One ASCII-comma-separated scalar normalized with the frozen 64-code-point, 50-item, pre-truncation-dedupe rule; members are ORed.
+          schema: { type: string, default: '' }
+        - name: tag_group
+          in: query
+          required: false
+          description: Repeatable ASCII-comma-separated groups; members within a group are ORed and nonempty groups are ANDed.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string }
+            default: []
+        - name: only_unlabeled
+          in: query
+          required: false
+          description: One lowercase boolean scalar; true requires empty description, category, or normalized tags.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+      responses:
+        "200":
+          description: Exact fourteen-field local PostgreSQL page envelope with strict twenty-field image items.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageListSuccess" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Chi rejects methods not independently registered on the shared collection path before authentication. }
+        "422":
+          description: Canonical validation error for lexical, cardinality, unknown-key, percent-decoding, or UTF-8 violations.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Canonical safe internal error without SQL, actor, storage, or legacy error details.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
   /api/admin/image-library/facets:
     get:
       tags: [p4-media-compat]
@@ -3598,6 +3684,53 @@ components:
         ok: { type: boolean, enum: [false] }
         message: { type: string }
         detail: { type: string }
+    LegacyImageListItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, mime_type, file_size, enabled, description, tags, category, width, height, created_at, updated_at, thumb_160_url, thumb_320_url, thumb_url, preview_url, mobile_1080_url, large_1440_url, original_url]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        enabled: { type: boolean, enum: [true] }
+        description: { type: string, maxLength: 10000 }
+        tags:
+          type: array
+          maxItems: 50
+          items: { type: string, maxLength: 64 }
+        category: { type: string, maxLength: 200 }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+        thumb_160_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_160$' }
+        thumb_320_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        thumb_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        preview_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        mobile_1080_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        large_1440_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/large_1440$' }
+        original_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/original$' }
+    LegacyImageListSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset, count, has_more, next_offset, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyImageListItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int64, minimum: 1, maximum: 500 }
+        offset: { type: integer, format: int64, minimum: 0 }
+        count: { type: integer, format: int64, minimum: 0, maximum: 500 }
+        has_more: { type: boolean }
+        next_offset: { type: integer, format: int64, minimum: 0, nullable: true }
+        source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
     LegacyImageFacetsSuccess:
       type: object
       additionalProperties: false
