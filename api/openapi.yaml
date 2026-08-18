@@ -2441,6 +2441,68 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /api/admin/image-library/{image_id}/variants/{variant_key}:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImageVariant
+      summary: Read one validated local image blob or deterministic in-memory variant
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0366]
+      x-p4-decision-evidence: P4-IMAGE-VARIANTS-0366-2026-08-19
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images_and_media_image_blobs.read_only
+      x-aicrm-external-effect: none
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+        - name: variant_key
+          in: path
+          required: true
+          schema: { type: string, enum: [thumb_160, thumb_320, mobile_1080, large_1440, original] }
+        - name: If-None-Match
+          in: header
+          required: false
+          description: RFC weak entity-tag comparison; invalid values return the complete 200 image response.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Fully validated local PNG, JPEG, or GIF body. No partial image is written on failure.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [image/png, image/jpeg, image/gif] } }
+            Content-Length: { required: true, schema: { type: integer, minimum: 1, maximum: 10485760 } }
+            ETag: { required: true, schema: { type: string, pattern: '^"[0-9a-f]{64}"$' } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-cache'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/gif: { schema: { type: string, format: binary } }
+        "304":
+          description: Current ETag weakly matched; the response body is empty.
+          headers:
+            ETag: { required: true, schema: { type: string, pattern: '^"[0-9a-f]{64}"$' } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-cache'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Image metadata or blob was not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "405": { description: Chi rejects non-GET methods before authentication. }
+        "422":
+          description: The path image id or variant key is invalid.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "503":
+          description: Local PostgreSQL data, checksum, image decoding, resizing, or encoding is unavailable or unsafe.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   /api/admin/image-library/upload:
     post:
       tags: [p4-media-compat]

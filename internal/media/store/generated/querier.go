@@ -21,6 +21,7 @@ type Querier interface {
 	GetMediaGroupInvite(ctx context.Context, id int64) (MediaGroupInvite, error)
 	GetMediaGroupInviteReceipt(ctx context.Context, arg GetMediaGroupInviteReceiptParams) (GetMediaGroupInviteReceiptRow, error)
 	GetMediaImageUploadReceipt(ctx context.Context, arg GetMediaImageUploadReceiptParams) (GetMediaImageUploadReceiptRow, error)
+	GetMediaImageVariant(ctx context.Context, imageID int64) (GetMediaImageVariantRow, error)
 	GetMediaMiniProgram(ctx context.Context, id int64) (GetMediaMiniProgramRow, error)
 	GetMediaMiniProgramReceipt(ctx context.Context, arg GetMediaMiniProgramReceiptParams) (GetMediaMiniProgramReceiptRow, error)
 	GetMediaThumbnailCache(ctx context.Context, imageID int64) (GetMediaThumbnailCacheRow, error)

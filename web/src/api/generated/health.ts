@@ -14302,6 +14302,99 @@ export const getLegacyImageFacets = async (
 };
 
 /**
+ * @summary Read one validated local image blob or deterministic in-memory variant
+ */
+export type getLegacyImageVariantResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type getLegacyImageVariantResponse304 = {
+  data: void;
+  status: 304;
+};
+
+export type getLegacyImageVariantResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyImageVariantResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyImageVariantResponse404 = {
+  data: ErrorResponse;
+  status: 404;
+};
+
+export type getLegacyImageVariantResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyImageVariantResponse422 = {
+  data: ErrorResponse;
+  status: 422;
+};
+
+export type getLegacyImageVariantResponse503 = {
+  data: ErrorResponse;
+  status: 503;
+};
+
+export type getLegacyImageVariantResponseSuccess =
+  getLegacyImageVariantResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyImageVariantResponseError = (
+  | getLegacyImageVariantResponse304
+  | getLegacyImageVariantResponse401
+  | getLegacyImageVariantResponse403
+  | getLegacyImageVariantResponse404
+  | getLegacyImageVariantResponse405
+  | getLegacyImageVariantResponse422
+  | getLegacyImageVariantResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyImageVariantResponse =
+  getLegacyImageVariantResponseSuccess | getLegacyImageVariantResponseError;
+
+export const getGetLegacyImageVariantUrl = (
+  imageId: string,
+  variantKey:
+    "thumb_160" | "thumb_320" | "mobile_1080" | "large_1440" | "original",
+) => {
+  return `/api/admin/image-library/${imageId}/variants/${variantKey}`;
+};
+
+export const getLegacyImageVariant = async (
+  imageId: string,
+  variantKey:
+    "thumb_160" | "thumb_320" | "mobile_1080" | "large_1440" | "original",
+  options?: RequestInit,
+): Promise<getLegacyImageVariantResponse> => {
+  const res = await fetch(getGetLegacyImageVariantUrl(imageId, variantKey), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyImageVariantResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyImageVariantResponse;
+};
+
+/**
  * @summary Safely persist one legacy UI PNG, JPEG, or GIF image
  */
 export type uploadLegacyImageResponse200 = {

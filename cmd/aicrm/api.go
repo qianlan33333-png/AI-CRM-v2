@@ -801,7 +801,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if wrapErr != nil {
 				return wrapErr
 			}
-			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath {
+			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -958,6 +958,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
 			{http.MethodGet, legacyImageListPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageList)},
 			{http.MethodGet, legacyImageFacetsPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageFacets)},
+			{http.MethodGet, legacyImageVariantPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageVariant)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},
