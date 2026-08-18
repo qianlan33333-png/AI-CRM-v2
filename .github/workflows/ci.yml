@@ -252,8 +252,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Test selector and workflow wiring
-        run: python3 scripts/ci/test_selector.py
+      - name: Test selector and repository CI contract
+        run: |
+          python3 scripts/ci/test_selector.py
+          scripts/check_repo_contract.sh
+          scripts/test_repo_contract.sh
+          scripts/test_repo_fingerprints.sh
 
   merge_gate:
     name: ci / merge-gate
