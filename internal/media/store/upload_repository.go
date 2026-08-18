@@ -55,19 +55,38 @@ func (repository *UploadRepository) Create(ctx context.Context, input mediaapp.C
 		return mediaport.Image{}, err
 	}
 	command := input.Command
+	createdAt := stamp(input.Now)
+	if command.Enabled != nil && !*command.Enabled {
+		row, insertErr := query.InsertMediaImageWithEnabled(ctx, mediadb.InsertMediaImageWithEnabledParams{
+			Name: command.Name, FileName: command.FileName, MimeType: input.MediaType, FileSize: int32(len(command.Content)),
+			Width: input.Width, Height: input.Height, Checksum: input.Checksum[:], Description: command.Description,
+			Tags: command.Tags, Category: command.Category, Enabled: false, CreatedBy: command.Actor, CreatedAt: createdAt,
+		})
+		if insertErr != nil {
+			return mediaport.Image{}, insertErr
+		}
+		if err = query.InsertMediaImageBlob(ctx, mediadb.InsertMediaImageBlobParams{ImageID: row.ID, Content: command.Content, Checksum: input.Checksum[:], CreatedAt: createdAt}); err != nil {
+			return mediaport.Image{}, err
+		}
+		return mediaport.Image{ID: row.ID, Name: row.Name, FileName: row.FileName, FileSize: row.FileSize, MimeType: row.MimeType,
+			Width: row.Width, Height: row.Height, Description: row.Description, Tags: row.Tags, Category: row.Category, Enabled: false,
+			CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}, nil
+	}
+	// Omitted or explicitly true preserves the 0361 SQL shape so its original
+	// migration-30 acceptance can run before the later enabled column exists.
 	row, err := query.InsertMediaImage(ctx, mediadb.InsertMediaImageParams{
 		Name: command.Name, FileName: command.FileName, MimeType: input.MediaType, FileSize: int32(len(command.Content)),
 		Width: input.Width, Height: input.Height, Checksum: input.Checksum[:], Description: command.Description,
-		Tags: command.Tags, Category: command.Category, CreatedBy: command.Actor, CreatedAt: stamp(input.Now),
+		Tags: command.Tags, Category: command.Category, CreatedBy: command.Actor, CreatedAt: createdAt,
 	})
 	if err != nil {
 		return mediaport.Image{}, err
 	}
-	if err = query.InsertMediaImageBlob(ctx, mediadb.InsertMediaImageBlobParams{ImageID: row.ID, Content: command.Content, Checksum: input.Checksum[:], CreatedAt: stamp(input.Now)}); err != nil {
+	if err = query.InsertMediaImageBlob(ctx, mediadb.InsertMediaImageBlobParams{ImageID: row.ID, Content: command.Content, Checksum: input.Checksum[:], CreatedAt: createdAt}); err != nil {
 		return mediaport.Image{}, err
 	}
 	return mediaport.Image{ID: row.ID, Name: row.Name, FileName: row.FileName, FileSize: row.FileSize, MimeType: row.MimeType,
-		Width: row.Width, Height: row.Height, Description: row.Description, Tags: row.Tags, Category: row.Category,
+		Width: row.Width, Height: row.Height, Description: row.Description, Tags: row.Tags, Category: row.Category, Enabled: true,
 		CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}, nil
 }
 

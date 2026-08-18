@@ -1879,6 +1879,137 @@ export interface LegacyQuestionnaireSubmissionListResponse {
   side_effect_executed?: boolean;
 }
 
+export interface LegacyImageCreateRequest {
+  /**
+   * One canonical standard-base64 data URL with an exact lower-case image/png, image/jpeg, or image/gif prefix. Raw bytes and alternate alphabets are rejected.
+   * @pattern ^data:image/(png|jpeg|gif);base64,[A-Za-z0-9+/]+={0,2}$
+   */
+  data_url: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  /** @maxLength 200 */
+  name?: string;
+  /** @maxLength 10000 */
+  description?: string;
+  /** @maxItems 50 */
+  tags?: string[];
+  /** @maxLength 200 */
+  category?: string;
+  enabled?: boolean;
+}
+
+export type LegacyImageCreateItemMimeType =
+  (typeof LegacyImageCreateItemMimeType)[keyof typeof LegacyImageCreateItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export interface LegacyImageCreateItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  mime_type: LegacyImageCreateItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  enabled: boolean;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  /** @maxLength 200 */
+  category: string;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+}
+
+export type LegacyImageCreateSuccessSourceStatus =
+  (typeof LegacyImageCreateSuccessSourceStatus)[keyof typeof LegacyImageCreateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessSourceStatus = {
+  local_repository_write: "local_repository_write",
+} as const;
+
+export type LegacyImageCreateSuccessRouteOwner =
+  (typeof LegacyImageCreateSuccessRouteOwner)[keyof typeof LegacyImageCreateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageCreateSuccessStorageAdapterMode =
+  (typeof LegacyImageCreateSuccessStorageAdapterMode)[keyof typeof LegacyImageCreateSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageCreateSuccessAdapterMode =
+  (typeof LegacyImageCreateSuccessAdapterMode)[keyof typeof LegacyImageCreateSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageCreateSuccess {
+  ok: boolean;
+  item: LegacyImageCreateItem;
+  source_status: LegacyImageCreateSuccessSourceStatus;
+  route_owner: LegacyImageCreateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageCreateSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageCreateSuccessAdapterMode;
+}
+
+export type LegacyImageCreateErrorCode =
+  (typeof LegacyImageCreateErrorCode)[keyof typeof LegacyImageCreateErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateErrorCode = {
+  MALFORMED_REQUEST: "MALFORMED_REQUEST",
+  CONFLICT: "CONFLICT",
+  DEPENDENCY_UNAVAILABLE: "DEPENDENCY_UNAVAILABLE",
+} as const;
+
+export interface LegacyImageCreateError {
+  code: LegacyImageCreateErrorCode;
+  message: string;
+  /** @minLength 1 */
+  request_id: string;
+}
+
 export type LegacyImageListItemMimeType =
   (typeof LegacyImageListItemMimeType)[keyof typeof LegacyImageListItemMimeType];
 
@@ -14992,6 +15123,86 @@ export const getLegacyImageList = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyImageListResponse;
+};
+
+/**
+ * @summary Import one fully decoded local image from a canonical JSON data URL
+ */
+export type createLegacyImageResponse200 = {
+  data: LegacyImageCreateSuccess;
+  status: 200;
+};
+
+export type createLegacyImageResponse400 = {
+  data: LegacyImageCreateError;
+  status: 400;
+};
+
+export type createLegacyImageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyImageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyImageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type createLegacyImageResponse409 = {
+  data: LegacyImageCreateError;
+  status: 409;
+};
+
+export type createLegacyImageResponse503 = {
+  data: LegacyImageCreateError;
+  status: 503;
+};
+
+export type createLegacyImageResponseSuccess = createLegacyImageResponse200 & {
+  headers: Headers;
+};
+export type createLegacyImageResponseError = (
+  | createLegacyImageResponse400
+  | createLegacyImageResponse401
+  | createLegacyImageResponse403
+  | createLegacyImageResponse405
+  | createLegacyImageResponse409
+  | createLegacyImageResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyImageResponse =
+  createLegacyImageResponseSuccess | createLegacyImageResponseError;
+
+export const getCreateLegacyImageUrl = () => {
+  return `/api/admin/image-library`;
+};
+
+export const createLegacyImage = async (
+  legacyImageCreateRequest: LegacyImageCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyImageResponse> => {
+  const res = await fetch(getCreateLegacyImageUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyImageCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyImageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyImageResponse;
 };
 
 /**

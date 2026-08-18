@@ -26,8 +26,12 @@ type Querier interface {
 	GetMediaMiniProgram(ctx context.Context, id int64) (GetMediaMiniProgramRow, error)
 	GetMediaMiniProgramReceipt(ctx context.Context, arg GetMediaMiniProgramReceiptParams) (GetMediaMiniProgramReceiptRow, error)
 	GetMediaThumbnailCache(ctx context.Context, imageID int64) (GetMediaThumbnailCacheRow, error)
+	// This legacy default-true path must remain executable at the historical
+	// H01A1 waterline (migration 30), before migration 47 added enabled.
 	InsertMediaImage(ctx context.Context, arg InsertMediaImageParams) (InsertMediaImageRow, error)
 	InsertMediaImageBlob(ctx context.Context, arg InsertMediaImageBlobParams) error
+	// Only the 0357 explicit-false branch requires migration 47's enabled column.
+	InsertMediaImageWithEnabled(ctx context.Context, arg InsertMediaImageWithEnabledParams) (InsertMediaImageWithEnabledRow, error)
 	ListMediaGroupInvites(ctx context.Context, arg ListMediaGroupInvitesParams) ([]MediaGroupInvite, error)
 	ListMediaImageFacetRows(ctx context.Context) ([]ListMediaImageFacetRowsRow, error)
 	ListMediaImagePage(ctx context.Context, arg ListMediaImagePageParams) ([]ListMediaImagePageRow, error)

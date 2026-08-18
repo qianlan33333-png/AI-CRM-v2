@@ -76,6 +76,77 @@ func TestH01A1UploadReplayActorIsolationAndEventShareOneUoW(t *testing.T) {
 	}
 }
 
+func TestP4ImageCreateEnabledReceiptCompatibilityAndDurableFacts(t *testing.T) {
+	pool, ctx := openPool(t)
+	service := realService(pool)
+	actor, key, name := int64(4357), unique("enabled-key"), unique("enabled-image")
+	commandValue := command(t, actor, key, name)
+	created, err := service.Upload(ctx, commandValue)
+	if err != nil || !created.Enabled {
+		t.Fatalf("default create=%+v err=%v", created, err)
+	}
+	var enabled, blobMatches bool
+	checksum := sha256.Sum256(commandValue.Content)
+	if err = pool.QueryRow(ctx, `SELECT i.enabled, b.content=$2 AND b.checksum=$3 AND i.checksum=b.checksum
+		FROM media_images i JOIN media_image_blobs b ON b.image_id=i.id WHERE i.id=$1`, created.ID, commandValue.Content, checksum[:]).Scan(&enabled, &blobMatches); err != nil || !enabled || !blobMatches {
+		t.Fatalf("default durable enabled/blob=%v/%v err=%v", enabled, blobMatches, err)
+	}
+	assertFacts(t, pool, ctx, actor, key, name, 1, 1, 1)
+	// Simulate the pre-0357 completed receipt JSON, which deliberately has no
+	// enabled member. Seed it only through the legal in_progress -> completed
+	// store transition; completed receipt facts are immutable by design.
+	var payloadDigest []byte
+	keyDigest := sha256.Sum256([]byte(key))
+	if err = pool.QueryRow(ctx, `SELECT payload_digest FROM media_image_upload_receipts
+		WHERE operation='upload' AND actor_scope=$1 AND key_digest=$2`, fmt.Sprintf("admin:%d", actor), keyDigest[:]).Scan(&payloadDigest); err != nil || len(payloadDigest) != sha256.Size {
+		t.Fatal(err)
+	}
+	legacyKey := unique("legacy-receipt-key")
+	legacyKeyDigest := sha256.Sum256([]byte(legacyKey))
+	legacySnapshot, err := json.Marshal(created)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacyObject map[string]json.RawMessage
+	if err = json.Unmarshal(legacySnapshot, &legacyObject); err != nil {
+		t.Fatal(err)
+	}
+	delete(legacyObject, "enabled")
+	legacySnapshot, err = json.Marshal(legacyObject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacyPayloadDigest [sha256.Size]byte
+	copy(legacyPayloadDigest[:], payloadDigest)
+	if err = platformstore.NewUnitOfWork(pool).Within(ctx, func(tx context.Context) error {
+		repository := mediastore.NewUploadRepository()
+		receipt, owned, reserveErr := repository.Reserve(tx, mediaapp.Reservation{ActorScope: fmt.Sprintf("admin:%d", actor), KeyDigest: legacyKeyDigest, PayloadDigest: legacyPayloadDigest, CreatedAt: time.Now().UTC()})
+		if reserveErr != nil || !owned {
+			return fmt.Errorf("reserve legacy receipt owned=%v: %w", owned, reserveErr)
+		}
+		_, completeErr := repository.Complete(tx, receipt.ID, legacySnapshot, time.Now().UTC())
+		return completeErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+	truth := true
+	trueReplay := commandValue
+	trueReplay.IdempotencyKey = legacyKey
+	trueReplay.Enabled = &truth
+	replayed, err := service.Upload(ctx, trueReplay)
+	if err != nil || replayed.ID != created.ID || !replayed.Enabled {
+		t.Fatalf("legacy true replay=%+v err=%v", replayed, err)
+	}
+	falseValue := false
+	falseCommand := command(t, actor, unique("false-key"), unique("false-image"))
+	falseCommand.Enabled = &falseValue
+	falseCreated, err := service.Upload(ctx, falseCommand)
+	if err != nil || falseCreated.Enabled {
+		t.Fatalf("false create=%+v err=%v", falseCreated, err)
+	}
+	assertFacts(t, pool, ctx, actor, falseCommand.IdempotencyKey, falseCommand.Name, 1, 1, 1)
+}
+
 func TestH01A1EventConflictRollsBackMetadataBlobAndReceipt(t *testing.T) {
 	pool, ctx := openPool(t)
 	actor, key, name := int64(4201), unique("rollback-key"), unique("rollback-image")

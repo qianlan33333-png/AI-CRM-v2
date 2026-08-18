@@ -118,6 +118,9 @@ func TestH01A1LegacyImageUploadPreservesEnvelopeAndMultipartContract(t *testing.
 	if !ok || item["id"] != float64(91) || item["name"] != "封面" || item["file_name"] != "cover.png" || item["file_size"] != float64(73) {
 		t.Fatalf("item=%#v", body["item"])
 	}
+	if _, leaked := item["enabled"]; leaked {
+		t.Fatalf("pre-0357 upload DTO leaked enabled: %#v", item)
+	}
 }
 
 func TestH01A1LegacyImageUploadMintsKeyAndReturnsExactErrorEnvelope(t *testing.T) {
@@ -573,7 +576,7 @@ func TestP4ImageListMethodMismatchUsesRouter405BeforeAuth(t *testing.T) {
 	auth := &legacyMediaAuthStub{}
 	router := legacyMediaRouterWithAuth(t, stub, auth)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, legacyImageListRequest(http.MethodPost, "", true))
+	router.ServeHTTP(response, legacyImageListRequest(http.MethodPatch, "", true))
 	if response.Code != http.StatusMethodNotAllowed || stub.listCalls != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
 		t.Fatalf("status=%d list=%d authenticate=%d capabilities=%v csrf=%d body=%s", response.Code, stub.listCalls, auth.authenticateCalls, auth.seen, auth.csrfCalls, response.Body.String())
 	}

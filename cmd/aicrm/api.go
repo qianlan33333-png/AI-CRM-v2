@@ -821,11 +821,14 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if method == http.MethodPut && pattern == legacyImageDetailPath {
 				tail = legacyImageUpdateSecurityHeaders(tail)
 			}
-			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath {
+			if method == http.MethodPost && pattern == legacyImageCollectionPath {
+				tail = legacyImageCreateSecurityHeaders(tail)
+			}
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
-				// collection path for the independently-owned future 0357 POST.
+				// collection path shared by the owned 0356 GET and 0357 POST.
 				// The API-docs page and the MCP-tools redirect use the same
 				// mechanism so non-GET methods see 405 before authentication.
 				methodRouter := strictLegacyMethodRouters[pattern]
@@ -833,6 +836,8 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 					methodRouter = chi.NewRouter()
 					if pattern == legacyImageDetailPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyImageDetailMethodNotAllowed))
+					} else if pattern == legacyImageCollectionPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyImageCollectionMethodNotAllowed))
 					}
 					strictLegacyMethodRouters[pattern] = methodRouter
 					router.Handle(pattern, methodRouter)
@@ -984,7 +989,8 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardRefund)},
 			{http.MethodGet, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListWechatOrderExternalEffects)},
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
-			{http.MethodGet, legacyImageListPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageList)},
+			{http.MethodGet, legacyImageCollectionPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageList)},
+			{http.MethodPost, legacyImageCollectionPath, authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.CreateImage)},
 			{http.MethodGet, legacyImageFacetsPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageFacets)},
 			{http.MethodGet, legacyImageDetailPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageDetail)},
 			{http.MethodPut, legacyImageDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateImageMetadata)},
