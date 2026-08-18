@@ -48,3 +48,4 @@ p4-image-facets-0358|0046|P4IMAGEFACETS_TEST_DATABASE_URL|go-test|./acceptance/m
 p4-s04-legacy-health-0757|0047|-|go-test|./cmd/aicrm|^TestLegacyHealth
 p4-image-update-0364|0048|P4IMAGEUPDATE_TEST_DATABASE_URL|script|acceptance/media/image_update_0364_migration_compatibility.sh|-
 p4-hxc-sender-0051-0348|0049|P4HXC_SENDER_TEST_DATABASE_URL|script|acceptance/hxc/sender_read_migration_compatibility.sh|-
+p4-delivery-lineage-0308|0050|P4DELIVERYLINEAGE_TEST_DATABASE_URL|legacy-make|p4-delivery-lineage-0308-acceptance|-

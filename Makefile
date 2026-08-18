@@ -10,7 +10,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
-.PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance
+.PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance p4-delivery-lineage-0308-acceptance
 .PHONY: p4-f01a-survey-acceptance p4-f01ab-survey-acceptance
 .PHONY: p4-c01-channel-acceptance
 .PHONY: p4-f01a-survey-acceptance
@@ -530,6 +530,12 @@ p4-hxc-sender-read-acceptance:
 	@test -n "$${P4HXC_SENDER_TEST_DATABASE_URL:-}" || { echo "P4HXC_SENDER_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/hxc/sender_read_migration_compatibility.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/hxc/... ./internal/contact/store ./cmd/aicrm
+
+p4-delivery-lineage-0308-acceptance:
+	@test -n "$${P4DELIVERYLINEAGE_TEST_DATABASE_URL:-}" || { echo "P4DELIVERYLINEAGE_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$P4DELIVERYLINEAGE_TEST_DATABASE_URL" up
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/outbound/app ./internal/outbound/store ./internal/events/app ./internal/events/store ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./acceptance/deliverylineage -args -database-url "$$P4DELIVERYLINEAGE_TEST_DATABASE_URL"
 
 p4-f01a-survey-acceptance:
 	@test -n "$${P4F01A_SURVEY_TEST_DATABASE_URL:-}" || { echo "P4F01A_SURVEY_TEST_DATABASE_URL is required" >&2; exit 2; }

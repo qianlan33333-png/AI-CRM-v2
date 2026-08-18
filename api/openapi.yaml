@@ -2850,6 +2850,31 @@ paths:
         "405":
           description: The legacy route only accepts GET.
           headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/delivery-lineage:
+    get:
+      tags: [p4-delivery-lineage-compat]
+      operationId: getLegacyDeliveryLineage
+      summary: Read local delivery-processing lineage without asserting external delivery
+      x-legacy-mapping-ids: [LEGACY-API-0308]
+      x-p4-decision-evidence: P4-0308-FROZEN-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Read-only internal processing lineage, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDeliveryLineageResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { description: A local read dependency or deterministic merge is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDeliveryLineageUnavailable" } } } }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
   /admin/miniprogram-library:
     get:
       tags: [p4-media-compat]
@@ -4608,6 +4633,45 @@ components:
         status_code: { type: integer, enum: [503] }
         error_code: { type: string, enum: [hxc_send_config_unavailable] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyDeliveryLineageRecord:
+      type: object
+      additionalProperties: false
+      required: [lineage_id, record_kind, internal_state, attempt_count, updated_at, external_delivery, external_receipt]
+      properties:
+        lineage_id: { type: string, pattern: '^(outbound-task:[1-9][0-9]*|event-delivery:v1:[0-9a-f]{64})$' }
+        record_kind: { type: string, enum: [outbound_task, event_delivery] }
+        internal_state: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled, processing, completed] }
+        attempt_count: { type: integer, minimum: 0 }
+        updated_at: { type: string, format: date-time }
+        external_delivery: { type: string, enum: [unknown] }
+        external_receipt: { type: string, enum: [unknown] }
+    LegacyDeliveryLineageInterpretation:
+      type: object
+      additionalProperties: false
+      required: [kind, external_delivery, external_receipt]
+      properties:
+        kind: { type: string, enum: [internal_processing_only] }
+        external_delivery: { type: string, enum: [unknown] }
+        external_receipt: { type: string, enum: [unknown] }
+    LegacyDeliveryLineageResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, limit, offset, has_more, interpretation]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyDeliveryLineageRecord" } }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        interpretation: { $ref: "#/components/schemas/LegacyDeliveryLineageInterpretation" }
+    LegacyDeliveryLineageUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [503] }
+        error_code: { type: string, enum: [delivery_lineage_unavailable] }
     LegacyMiniProgramCreateRequest:
       type: object
       additionalProperties: false

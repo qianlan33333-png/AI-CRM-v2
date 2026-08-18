@@ -23,6 +23,7 @@ type Querier interface {
 	GetOutboundTaskReadModel(ctx context.Context, arg GetOutboundTaskReadModelParams) (GetOutboundTaskReadModelRow, error)
 	ListOutboundAttemptReadModels(ctx context.Context, taskID int64) ([]ListOutboundAttemptReadModelsRow, error)
 	ListOutboundControlReceiptReadModels(ctx context.Context, taskID int64) ([]ListOutboundControlReceiptReadModelsRow, error)
+	ListOutboundDeliveryLineage(ctx context.Context, resultLimit int32) ([]ListOutboundDeliveryLineageRow, error)
 	ListOutboundTaskReadModels(ctx context.Context, arg ListOutboundTaskReadModelsParams) ([]ListOutboundTaskReadModelsRow, error)
 	LoadLatestOutboundTaskJobLink(ctx context.Context, taskID int64) (LoadLatestOutboundTaskJobLinkRow, error)
 	LoadOutboundAttemptHistory(ctx context.Context, historyID int64) (LoadOutboundAttemptHistoryRow, error)

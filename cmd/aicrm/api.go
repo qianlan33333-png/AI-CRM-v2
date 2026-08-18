@@ -31,6 +31,7 @@ import (
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponstore "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/store"
+	eventapp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/app"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
@@ -511,6 +512,15 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	legacyHandler.hxcSender = &hxcSenderHandler{reader: hxcapp.Reader{Staff: contactstore.NewStaffDirectoryRepository(pool), Configs: hxcstore.NewSenderConfigRepository(pool)}}
+	eventDeliveryLineage, err := eventapp.NewDeliveryLineageReader(uow, eventstore.NewDeliveryLineageRepository(), config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, errInvalidAPIComponent
+	}
+	legacyHandler.deliveryLineage = legacyDeliveryLineageReaders{
+		outbound: outboundapp.NewDeliveryLineageReader(uow, outboundstore.NewDeliveryLineageRepository()),
+		events:   eventDeliveryLineage,
+	}
 	dataHealthSource := postgresSystemHealthSource{
 		platformObserver: opsstore.NewReadinessRepository(pool),
 		queueObserver:    outboundstore.NewReadinessRepository(pool),
@@ -824,7 +834,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if method == http.MethodPost && pattern == legacyImageCollectionPath {
 				tail = legacyImageCreateSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -838,6 +848,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyImageDetailMethodNotAllowed))
 					} else if pattern == legacyImageCollectionPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyImageCollectionMethodNotAllowed))
+					}
+					if pattern == legacyDeliveryLineagePath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyDeliveryLineageMethodNotAllowed))
 					}
 					strictLegacyMethodRouters[pattern] = methodRouter
 					router.Handle(pattern, methodRouter)
@@ -859,6 +872,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, legacyDataHealthSummaryPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.Summary)},
 			{http.MethodGet, legacyHXCSenderPagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.hxcSender.Page)},
 			{http.MethodGet, legacyHXCSenderReadPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.hxcSender.Read)},
+			{http.MethodGet, legacyDeliveryLineagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetDeliveryLineage)},
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
