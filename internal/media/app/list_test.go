@@ -73,6 +73,7 @@ func TestImageListRepositoryContractUsesOneCombinedSameSnapshotRead(t *testing.T
 	longTag := strings.Repeat("界", 64) + "尾"
 	store := &imageListTestStore{read: ImageListRead{Total: 1, Rows: []ImageListRow{{
 		ID: 42, Name: " Hero ", FileName: "hero.png", MimeType: "image/png", FileSize: 123,
+		Enabled:     true,
 		Description: "说明", Tags: " alpha,alpha," + longTag + "," + longTag, Category: "cover",
 		Width: 640, Height: 480, CreatedAt: created, UpdatedAt: updated,
 	}}}}
@@ -89,7 +90,7 @@ func TestImageListRepositoryContractUsesOneCombinedSameSnapshotRead(t *testing.T
 	if uow.calls != 1 || store.calls != 1 || store.writeCalls != 0 || store.marker != "one-read-uow" {
 		t.Fatalf("uow=%d reads=%d writes=%d marker=%q", uow.calls, store.calls, store.writeCalls, store.marker)
 	}
-	if store.limit != 100 || store.offset != 0 || store.filter.Search != "%_" || store.filter.Category != "cover" || !store.filter.OnlyUnlabeled {
+	if store.limit != 100 || store.offset != 0 || store.filter.Search != "%_" || store.filter.Category != "cover" || !store.filter.OnlyUnlabeled || !store.filter.EnabledOnly {
 		t.Fatalf("limit=%d offset=%d filter=%#v", store.limit, store.offset, store.filter)
 	}
 	if want := []string{"alpha", "beta"}; !reflect.DeepEqual(store.filter.Tags, want) {
@@ -120,10 +121,11 @@ func TestImageListRepositoryContractUsesOneCombinedSameSnapshotRead(t *testing.T
 	}
 }
 
-func TestImageListEnabledOnlyIsPermanentEnabledNoSchemaNoOp(t *testing.T) {
+func TestImageListEnabledOnlyIsPassedToTheRepository(t *testing.T) {
 	now := time.Date(2026, 8, 17, 10, 0, 0, 0, time.UTC)
 	read := ImageListRead{Total: 1, Rows: []ImageListRow{{
 		ID: 1, FileName: "one.png", MimeType: "image/png", FileSize: 1, Width: 1, Height: 1,
+		Enabled:   true,
 		CreatedAt: now, UpdatedAt: now,
 	}}}
 	call := func(enabledOnly bool) (mediaport.ImageListPage, ImageListFilter) {
@@ -138,10 +140,10 @@ func TestImageListEnabledOnlyIsPermanentEnabledNoSchemaNoOp(t *testing.T) {
 		}
 		return page, store.filter
 	}
-	withFilter, trueFilter := call(true)
-	withoutFilter, falseFilter := call(false)
-	if !reflect.DeepEqual(withFilter, withoutFilter) || !reflect.DeepEqual(trueFilter, falseFilter) {
-		t.Fatalf("true=%#v/%#v false=%#v/%#v", withFilter, trueFilter, withoutFilter, falseFilter)
+	_, trueFilter := call(true)
+	_, falseFilter := call(false)
+	if !trueFilter.EnabledOnly || falseFilter.EnabledOnly {
+		t.Fatalf("true=%#v false=%#v", trueFilter, falseFilter)
 	}
 }
 

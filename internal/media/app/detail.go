@@ -20,6 +20,7 @@ type ImageDetailRow struct {
 	ID                          int64
 	Name, FileName, MimeType    string
 	FileSize                    int32
+	Enabled                     bool
 	Description, Tags, Category string
 	Width, Height               int32
 	CreatedAt, UpdatedAt        time.Time
@@ -37,6 +38,7 @@ type ImageDetail struct {
 	ID                       int64
 	Name, FileName, MimeType string
 	FileSize                 int32
+	Enabled                  bool
 	Description, Category    string
 	Tags                     []string
 	Width, Height            int32
@@ -81,7 +83,7 @@ func (service *Service) GetImageDetail(ctx context.Context, imageID int64) (Imag
 		return ImageDetail{}, ErrImageDetailUnavailable
 	}
 	return ImageDetail{
-		ID: row.ID, Name: row.Name, FileName: row.FileName, MimeType: row.MimeType, FileSize: row.FileSize,
+		ID: row.ID, Name: row.Name, FileName: row.FileName, MimeType: row.MimeType, FileSize: row.FileSize, Enabled: row.Enabled,
 		Description: row.Description, Category: row.Category, Tags: normalizeImageListTags(row.Tags), Width: row.Width,
 		Height: row.Height, CreatedAt: row.CreatedAt.UTC(), UpdatedAt: row.UpdatedAt.UTC(), Content: append([]byte(nil), row.Content...),
 	}, nil

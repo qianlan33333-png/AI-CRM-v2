@@ -20,6 +20,7 @@ func TestImageListReadFromGeneratedRowsPreservesFailClosedValidation(t *testing.
 		FileName:    pgtype.Text{String: "cover.png", Valid: true},
 		MimeType:    pgtype.Text{String: "image/png", Valid: true},
 		FileSize:    pgtype.Int4{Int32: 123, Valid: true},
+		Enabled:     pgtype.Bool{Bool: true, Valid: true},
 		Description: pgtype.Text{String: "description", Valid: true},
 		Tags:        pgtype.Text{String: "hero,cover", Valid: true},
 		Category:    pgtype.Text{String: "cover", Valid: true},
@@ -38,12 +39,12 @@ func TestImageListReadFromGeneratedRowsPreservesFailClosedValidation(t *testing.
 	}
 	want := mediaapp.ImageListRead{Total: 2, Rows: []mediaapp.ImageListRow{
 		{
-			ID: 42, Name: "cover", FileName: "cover.png", MimeType: "image/png", FileSize: 123,
+			ID: 42, Name: "cover", FileName: "cover.png", MimeType: "image/png", FileSize: 123, Enabled: true,
 			Description: "description", Tags: "hero,cover", Category: "cover", Width: 640, Height: 480,
 			CreatedAt: now, UpdatedAt: now.Add(time.Minute),
 		},
 		{
-			ID: 41, Name: "cover", FileName: "second.png", MimeType: "image/png", FileSize: 123,
+			ID: 41, Name: "cover", FileName: "second.png", MimeType: "image/png", FileSize: 123, Enabled: true,
 			Description: "description", Tags: "hero,cover", Category: "cover", Width: 640, Height: 480,
 			CreatedAt: now, UpdatedAt: now.Add(time.Minute),
 		},

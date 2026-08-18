@@ -17,6 +17,7 @@ SELECT image.id,
        image.file_name,
        image.mime_type,
        image.file_size,
+       image.enabled,
        image.description,
        image.tags,
        image.category,
@@ -38,6 +39,7 @@ type GetMediaImageDetailRow struct {
 	FileName      string             `json:"file_name"`
 	MimeType      string             `json:"mime_type"`
 	FileSize      int32              `json:"file_size"`
+	Enabled       bool               `json:"enabled"`
 	Description   string             `json:"description"`
 	Tags          string             `json:"tags"`
 	Category      string             `json:"category"`
@@ -59,6 +61,7 @@ func (q *Queries) GetMediaImageDetail(ctx context.Context, imageID int64) (GetMe
 		&i.FileName,
 		&i.MimeType,
 		&i.FileSize,
+		&i.Enabled,
 		&i.Description,
 		&i.Tags,
 		&i.Category,
@@ -69,6 +72,141 @@ func (q *Queries) GetMediaImageDetail(ctx context.Context, imageID int64) (GetMe
 		&i.ImageChecksum,
 		&i.BlobChecksum,
 		&i.Content,
+	)
+	return i, err
+}
+
+const lockMediaImageMetadata = `-- name: LockMediaImageMetadata :one
+SELECT image.id,
+       image.name,
+       image.file_name,
+       image.mime_type,
+       image.file_size,
+       image.enabled,
+       image.description,
+       image.tags,
+       image.category,
+       image.width,
+       image.height,
+       image.created_at,
+       image.updated_at
+FROM media_images AS image
+WHERE image.id = $1::bigint
+FOR UPDATE
+`
+
+type LockMediaImageMetadataRow struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	FileName    string             `json:"file_name"`
+	MimeType    string             `json:"mime_type"`
+	FileSize    int32              `json:"file_size"`
+	Enabled     bool               `json:"enabled"`
+	Description string             `json:"description"`
+	Tags        string             `json:"tags"`
+	Category    string             `json:"category"`
+	Width       int32              `json:"width"`
+	Height      int32              `json:"height"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) LockMediaImageMetadata(ctx context.Context, imageID int64) (LockMediaImageMetadataRow, error) {
+	row := q.db.QueryRow(ctx, lockMediaImageMetadata, imageID)
+	var i LockMediaImageMetadataRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.FileName,
+		&i.MimeType,
+		&i.FileSize,
+		&i.Enabled,
+		&i.Description,
+		&i.Tags,
+		&i.Category,
+		&i.Width,
+		&i.Height,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateMediaImageMetadata = `-- name: UpdateMediaImageMetadata :one
+UPDATE media_images
+SET name = $1::text,
+    description = $2::text,
+    tags = $3::text,
+    category = $4::text,
+    enabled = $5::boolean,
+    updated_at = $6::timestamptz
+WHERE id = $7::bigint
+RETURNING id,
+          name,
+          file_name,
+          mime_type,
+          file_size,
+          enabled,
+          description,
+          tags,
+          category,
+          width,
+          height,
+          created_at,
+          updated_at
+`
+
+type UpdateMediaImageMetadataParams struct {
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Tags        string             `json:"tags"`
+	Category    string             `json:"category"`
+	Enabled     bool               `json:"enabled"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ImageID     int64              `json:"image_id"`
+}
+
+type UpdateMediaImageMetadataRow struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	FileName    string             `json:"file_name"`
+	MimeType    string             `json:"mime_type"`
+	FileSize    int32              `json:"file_size"`
+	Enabled     bool               `json:"enabled"`
+	Description string             `json:"description"`
+	Tags        string             `json:"tags"`
+	Category    string             `json:"category"`
+	Width       int32              `json:"width"`
+	Height      int32              `json:"height"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateMediaImageMetadata(ctx context.Context, arg UpdateMediaImageMetadataParams) (UpdateMediaImageMetadataRow, error) {
+	row := q.db.QueryRow(ctx, updateMediaImageMetadata,
+		arg.Name,
+		arg.Description,
+		arg.Tags,
+		arg.Category,
+		arg.Enabled,
+		arg.UpdatedAt,
+		arg.ImageID,
+	)
+	var i UpdateMediaImageMetadataRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.FileName,
+		&i.MimeType,
+		&i.FileSize,
+		&i.Enabled,
+		&i.Description,
+		&i.Tags,
+		&i.Category,
+		&i.Width,
+		&i.Height,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

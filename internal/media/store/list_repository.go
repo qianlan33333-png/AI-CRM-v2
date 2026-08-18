@@ -50,6 +50,7 @@ func (repository *UploadRepository) ListImageRows(
 		Column6: limit,
 		Column7: offset,
 		Column8: imageListTrimSpaceCharacters,
+		Column9: filter.EnabledOnly,
 	})
 	if err != nil {
 		return mediaapp.ImageListRead{}, err
@@ -67,19 +68,19 @@ func imageListReadFromGeneratedRows(rows []mediadb.ListMediaImagePageRow) (media
 		seen = true
 		result.Total = row.Total
 		if !row.ID.Valid {
-			if row.Name.Valid || row.FileName.Valid || row.MimeType.Valid || row.FileSize.Valid || row.Description.Valid || row.Tags.Valid ||
+			if row.Name.Valid || row.FileName.Valid || row.MimeType.Valid || row.FileSize.Valid || row.Enabled.Valid || row.Description.Valid || row.Tags.Valid ||
 				row.Category.Valid || row.Width.Valid || row.Height.Valid || row.CreatedAt.Valid || row.UpdatedAt.Valid {
 				return mediaapp.ImageListRead{}, errInvalidImageListRepository
 			}
 			continue
 		}
-		if !row.Name.Valid || !row.FileName.Valid || !row.MimeType.Valid || !row.FileSize.Valid || !row.Description.Valid || !row.Tags.Valid ||
+		if !row.Name.Valid || !row.FileName.Valid || !row.MimeType.Valid || !row.FileSize.Valid || !row.Enabled.Valid || !row.Description.Valid || !row.Tags.Valid ||
 			!row.Category.Valid || !row.Width.Valid || !row.Height.Valid || !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
 			return mediaapp.ImageListRead{}, errInvalidImageListRepository
 		}
 		result.Rows = append(result.Rows, mediaapp.ImageListRow{
 			ID: row.ID.Int64, Name: row.Name.String, FileName: row.FileName.String, MimeType: row.MimeType.String,
-			FileSize: row.FileSize.Int32, Description: row.Description.String, Tags: row.Tags.String, Category: row.Category.String,
+			FileSize: row.FileSize.Int32, Enabled: row.Enabled.Bool, Description: row.Description.String, Tags: row.Tags.String, Category: row.Category.String,
 			Width: row.Width.Int32, Height: row.Height.Int32, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time,
 		})
 	}

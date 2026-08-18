@@ -239,7 +239,7 @@ func effectiveLegacyImageListPage(limit, offset int64) (int64, int64) {
 }
 
 func validLegacyImageListItem(item mediaport.ImageListItem) bool {
-	if item.ID < 1 || item.FileName == "" || item.FileSize < 1 || item.FileSize > 10_485_760 || !item.Enabled ||
+	if item.ID < 1 || item.FileName == "" || item.FileSize < 1 || item.FileSize > 10_485_760 ||
 		item.Tags == nil || len(item.Tags) > 50 || item.Width < 1 || item.Width > 10_000 || item.Height < 1 || item.Height > 10_000 ||
 		int64(item.Width)*int64(item.Height) > 40_000_000 {
 		return false
