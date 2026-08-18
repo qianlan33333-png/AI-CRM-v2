@@ -33,12 +33,15 @@ import { MiniProgramLibraryPage } from "./miniprogram-library-ui";
 import type { MiniProgramLibraryTransport } from "./miniprogram-library";
 import { ImageLibraryPage } from "./image-library-ui";
 import type { ImageLibraryTransport } from "./image-library";
+import { HXCSenderPage } from "./hxc-sender-ui";
+import type { HXCSenderTransport } from "./hxc-sender";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
 export const LOGIN_PATH = "/login";
 export const MINIPROGRAM_LIBRARY_PATH = "/admin/miniprogram-library";
 export const IMAGE_LIBRARY_PATH = "/admin/image-library";
+export const HXC_SENDER_PATH = "/admin/hxc-send-config";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -83,6 +86,12 @@ export const routes = [
     navigationLabel: "图片素材",
     title: "图片素材库",
     description: "图片素材的本地媒体库工作区。",
+  },
+  {
+    path: "/admin/hxc-send-config",
+    navigationLabel: "HXC 发件人",
+    title: "HXC 发件人配置",
+    description: "HXC 本地发件人目录与配置的只读视图。",
   },
   {
     path: "/outbound",
@@ -133,6 +142,7 @@ export interface AppProps {
   identityReviewTransport?: IdentityReviewTransport;
   miniProgramTransport?: MiniProgramLibraryTransport;
   imageLibraryTransport?: ImageLibraryTransport;
+  hxcSenderTransport?: HXCSenderTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -180,8 +190,9 @@ export function carrierPathname(pathname: string, search: string): string {
     return pathname;
   }
   const values = params.getAll(LEGACY_ADMIN_PATH_PARAM);
-  return values.length === 1 && values[0] === MINIPROGRAM_LIBRARY_PATH
-    ? MINIPROGRAM_LIBRARY_PATH
+  if (values.length !== 1) return pathname;
+  return values[0] === MINIPROGRAM_LIBRARY_PATH || values[0] === HXC_SENDER_PATH
+    ? values[0]
     : pathname;
 }
 
@@ -279,6 +290,7 @@ function PageContent({
   identityReviewTransport,
   miniProgramTransport,
   imageLibraryTransport,
+  hxcSenderTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -292,6 +304,7 @@ function PageContent({
   identityReviewTransport?: IdentityReviewTransport;
   miniProgramTransport?: MiniProgramLibraryTransport;
   imageLibraryTransport?: ImageLibraryTransport;
+  hxcSenderTransport?: HXCSenderTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -394,6 +407,16 @@ function PageContent({
     );
   }
 
+  if (route.path === HXC_SENDER_PATH) {
+    return (
+      <HXCSenderPage
+        role={principal.role}
+        transport={hxcSenderTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -439,6 +462,9 @@ export function navigationLinks(
     permitted.add(MINIPROGRAM_LIBRARY_PATH);
     permitted.add(IMAGE_LIBRARY_PATH);
   }
+  if (base.length > 0 && principal.role === "admin") {
+    permitted.add(HXC_SENDER_PATH);
+  }
   return routes
     .filter((route) => permitted.has(route.path))
     .map((route) => ({ href: route.path, label: route.navigationLabel }));
@@ -457,6 +483,7 @@ export function App({
   identityReviewTransport,
   miniProgramTransport,
   imageLibraryTransport,
+  hxcSenderTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -612,6 +639,7 @@ export function App({
             identityReviewTransport={identityReviewTransport}
             miniProgramTransport={miniProgramTransport}
             imageLibraryTransport={imageLibraryTransport}
+            hxcSenderTransport={hxcSenderTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />

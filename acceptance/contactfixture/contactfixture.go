@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -29,14 +30,26 @@ RETURNING id`, "acceptance-contact-fixture").Scan(&id); err != nil {
 
 // CreateStaff creates a Contact-owned owner row for acceptance scenarios.
 func CreateStaff(ctx context.Context, tx pgx.Tx, wecomUserID string) (int64, error) {
+	return CreateStaffWithState(ctx, tx, wecomUserID, true, time.Now().UTC())
+}
+
+// CreateStaffWithState creates a Contact-owned staff fixture while preserving
+// the explicit activity and update facts required by an acceptance scenario.
+func CreateStaffWithState(ctx context.Context, tx pgx.Tx, wecomUserID string, active bool, updatedAt time.Time) (int64, error) {
+	return CreateStaffWithDetails(ctx, tx, wecomUserID, "acceptance-contact-owner", active, updatedAt)
+}
+
+// CreateStaffWithDetails creates a Contact-owned staff fixture while retaining
+// the fixture name where the consumer's read projection depends on it.
+func CreateStaffWithDetails(ctx context.Context, tx pgx.Tx, wecomUserID, name string, active bool, updatedAt time.Time) (int64, error) {
 	if tx == nil || wecomUserID == "" {
 		return 0, ErrNilTransaction
 	}
 	var id int64
 	if err := tx.QueryRow(ctx, `
-INSERT INTO staff (wecom_userid, name)
-VALUES ($1::text, $2::text)
-RETURNING id`, wecomUserID, "acceptance-contact-owner").Scan(&id); err != nil {
+INSERT INTO staff (wecom_userid, name, is_active, updated_at)
+VALUES ($1::text, $2::text, $3::boolean, $4::timestamptz)
+RETURNING id`, wecomUserID, name, active, updatedAt.UTC()).Scan(&id); err != nil {
 		return 0, fmt.Errorf("create contact-owned acceptance staff: %w", err)
 	}
 	return id, nil

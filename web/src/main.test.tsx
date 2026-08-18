@@ -5,6 +5,7 @@ import { getHealthz } from "./api/generated/health";
 import {
   App,
   IMAGE_LIBRARY_PATH,
+  HXC_SENDER_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -144,10 +145,7 @@ describe("Web shell routes", () => {
     vi.stubGlobal("window", { location: { pathname: "/admin/image-library" } });
     const client = imageLibraryTransport();
     const html = renderToStaticMarkup(
-      <App
-        imageLibraryTransport={client}
-        initialSession={adminSession}
-      />,
+      <App imageLibraryTransport={client} initialSession={adminSession} />,
     );
     expect(html).toContain('<h1 id="app-title">图片素材库</h1>');
     expect(html).toContain("搜索图片");
@@ -171,8 +169,8 @@ describe("Web shell routes", () => {
     expect(client.facets).not.toHaveBeenCalled();
   });
 
-  it("matches only the nine frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(9);
+  it("matches only the frozen pathname routes and renders a 404 for all others", () => {
+    expect(routes).toHaveLength(10);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -216,7 +214,9 @@ describe("Web shell routes", () => {
     expect(identityReviews).toContain("审阅与决策");
     expect(identityReviews).not.toContain("模块边界");
 
-    vi.stubGlobal("window", { location: { pathname: "/admin/miniprogram-library" } });
+    vi.stubGlobal("window", {
+      location: { pathname: "/admin/miniprogram-library" },
+    });
     const miniProgramLibrary = renderToStaticMarkup(
       <App initialSession={adminSession} />,
     );
@@ -294,6 +294,7 @@ describe("Web shell routes", () => {
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
       "/admin/image-library",
+      "/admin/hxc-send-config",
       "/settings",
     ]);
     expect(
@@ -341,22 +342,20 @@ describe("Web shell routes", () => {
 describe("legacy admin path carrier", () => {
   it("maps only the exact frozen carrier value to the MiniProgram route", () => {
     expect(
-      carrierPathname(
-        "/",
-        "?legacy_admin_path=%2Fadmin%2Fminiprogram-library",
-      ),
+      carrierPathname("/", "?legacy_admin_path=%2Fadmin%2Fminiprogram-library"),
     ).toBe(MINIPROGRAM_LIBRARY_PATH);
+    expect(carrierPathname("/", `?legacy_admin_path=${HXC_SENDER_PATH}`)).toBe(
+      HXC_SENDER_PATH,
+    );
     expect(
-      carrierPathname(
-        "/",
-        `?legacy_admin_path=${MINIPROGRAM_LIBRARY_PATH}`,
-      ),
+      carrierPathname("/", `?legacy_admin_path=${MINIPROGRAM_LIBRARY_PATH}`),
     ).toBe(MINIPROGRAM_LIBRARY_PATH);
 
     for (const search of [
       "?legacy_admin_path=/admin/wecom-tags",
       "?legacy_admin_path=/admin/image-library",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
+      `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,
       "?legacy_admin_path=https://evil.example",
       "?legacy_admin_path=//evil.example",
       "?legacy_admin_path=/admin/miniprogram-library/extra",
