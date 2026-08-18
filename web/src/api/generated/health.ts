@@ -1754,6 +1754,131 @@ export interface LegacyQuestionnaireError {
   detail: string;
 }
 
+export type LegacyQuestionnaireSubmissionResultsResponseResultsRulesItem = {
+  [key: string]: unknown;
+};
+
+export type LegacyQuestionnaireSubmissionResultsResponseResults = {
+  /** @minimum 0 */
+  submission_count: number;
+  /** @nullable */
+  latest_submitted_at: string | null;
+  average_score: number;
+  /** @maxItems 0 */
+  rules: LegacyQuestionnaireSubmissionResultsResponseResultsRulesItem[];
+};
+
+export type LegacyQuestionnaireSubmissionResultsResponseData = {
+  [key: string]: unknown;
+};
+
+export interface LegacyQuestionnaireSubmissionResultsResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  results: LegacyQuestionnaireSubmissionResultsResponseResults;
+  data?: LegacyQuestionnaireSubmissionResultsResponseData;
+  side_effect_executed?: boolean;
+}
+
+export type LegacyQuestionnaireSubmissionAnswerQuestionType =
+  (typeof LegacyQuestionnaireSubmissionAnswerQuestionType)[keyof typeof LegacyQuestionnaireSubmissionAnswerQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireSubmissionAnswerQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+  textarea: "textarea",
+  mobile: "mobile",
+} as const;
+
+export type LegacyQuestionnaireSubmissionAnswerSelectedOptionsItem = {
+  /** @minimum 1 */
+  option_id: number;
+  /** @maxLength 500 */
+  option_text: string;
+};
+
+export interface LegacyQuestionnaireSubmissionAnswer {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: LegacyQuestionnaireSubmissionAnswerQuestionType;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  question_title: string;
+  /** @minimum 0 */
+  sort_order: number;
+  selected_options: LegacyQuestionnaireSubmissionAnswerSelectedOptionsItem[];
+  /** @maxLength 10000 */
+  text_value: string;
+}
+
+export interface LegacyQuestionnaireSubmission {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  submission_id: number;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  submitted_at: string;
+  created_at: string;
+  /** @maxLength 200 */
+  respondent_key: string;
+  /** @maxLength 200 */
+  openid: string;
+  /** @maxLength 200 */
+  unionid: string;
+  /** @maxLength 200 */
+  external_userid: string;
+  /** @maxLength 300 */
+  customer_name: string;
+  /** @maxLength 200 */
+  follow_user_userid: string;
+  /** @maxLength 50 */
+  matched_by: string;
+  /** @maxLength 32 */
+  mobile: string;
+  /** @maxLength 100 */
+  source_channel: string;
+  /** @maxLength 200 */
+  campaign_id: string;
+  /** @maxLength 200 */
+  staff_id: string;
+  score: number;
+  total_score: number;
+  final_tags: string[];
+  /** @maxLength 200 */
+  result_token: string;
+  /** @maxLength 2000 */
+  redirect_url_snapshot: string;
+  answers: LegacyQuestionnaireSubmissionAnswer[];
+}
+
+export type LegacyQuestionnaireSubmissionListResponseData = {
+  [key: string]: unknown;
+};
+
+export interface LegacyQuestionnaireSubmissionListResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  items: LegacyQuestionnaireSubmission[];
+  submissions: LegacyQuestionnaireSubmission[];
+  data?: LegacyQuestionnaireSubmissionListResponseData;
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  side_effect_executed?: boolean;
+}
+
 export type LegacyImageListItemMimeType =
   (typeof LegacyImageListItemMimeType)[keyof typeof LegacyImageListItemMimeType];
 
@@ -5291,6 +5416,19 @@ export type ListLegacyQuestionnairesParams = {
   /**
    * @minimum 1
    * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyQuestionnaireSubmissionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
    */
   limit?: number;
   /**
@@ -13742,6 +13880,263 @@ export const enableLegacyQuestionnaire = async (
     status: res.status,
     headers: res.headers,
   } as enableLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary Read the Survey-owned submission aggregate for one questionnaire
+ */
+export type getLegacyQuestionnaireResultsResponse200 = {
+  data: LegacyQuestionnaireSubmissionResultsResponse;
+  status: 200;
+};
+
+export type getLegacyQuestionnaireResultsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyQuestionnaireResultsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnaireResultsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnaireResultsResponse404 = {
+  data: LegacyQuestionnaireError;
+  status: 404;
+};
+
+export type getLegacyQuestionnaireResultsResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type getLegacyQuestionnaireResultsResponseSuccess =
+  getLegacyQuestionnaireResultsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyQuestionnaireResultsResponseError = (
+  | getLegacyQuestionnaireResultsResponse400
+  | getLegacyQuestionnaireResultsResponse401
+  | getLegacyQuestionnaireResultsResponse403
+  | getLegacyQuestionnaireResultsResponse404
+  | getLegacyQuestionnaireResultsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnaireResultsResponse =
+  | getLegacyQuestionnaireResultsResponseSuccess
+  | getLegacyQuestionnaireResultsResponseError;
+
+export const getGetLegacyQuestionnaireResultsUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/results`;
+};
+
+export const getLegacyQuestionnaireResults = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<getLegacyQuestionnaireResultsResponse> => {
+  const res = await fetch(
+    getGetLegacyQuestionnaireResultsUrl(questionnaireId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnaireResultsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnaireResultsResponse;
+};
+
+/**
+ * @summary Page Survey-owned submission snapshots in submitted_at DESC, id DESC order
+ */
+export type listLegacyQuestionnaireSubmissionsResponse200 = {
+  data: LegacyQuestionnaireSubmissionListResponse;
+  status: 200;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponse404 = {
+  data: LegacyQuestionnaireError;
+  status: 404;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponseSuccess =
+  listLegacyQuestionnaireSubmissionsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyQuestionnaireSubmissionsResponseError = (
+  | listLegacyQuestionnaireSubmissionsResponse400
+  | listLegacyQuestionnaireSubmissionsResponse401
+  | listLegacyQuestionnaireSubmissionsResponse403
+  | listLegacyQuestionnaireSubmissionsResponse404
+  | listLegacyQuestionnaireSubmissionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyQuestionnaireSubmissionsResponse =
+  | listLegacyQuestionnaireSubmissionsResponseSuccess
+  | listLegacyQuestionnaireSubmissionsResponseError;
+
+export const getListLegacyQuestionnaireSubmissionsUrl = (
+  questionnaireId: number,
+  params?: ListLegacyQuestionnaireSubmissionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/questionnaires/${questionnaireId}/submissions?${stringifiedParams}`
+    : `/api/admin/questionnaires/${questionnaireId}/submissions`;
+};
+
+export const listLegacyQuestionnaireSubmissions = async (
+  questionnaireId: number,
+  params?: ListLegacyQuestionnaireSubmissionsParams,
+  options?: RequestInit,
+): Promise<listLegacyQuestionnaireSubmissionsResponse> => {
+  const res = await fetch(
+    getListLegacyQuestionnaireSubmissionsUrl(questionnaireId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyQuestionnaireSubmissionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyQuestionnaireSubmissionsResponse;
+};
+
+/**
+ * @summary Download the PII submission CSV encoded fully in memory with formula-injection escaping
+ */
+export type exportLegacyQuestionnaireSubmissionsResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponse404 = {
+  data: LegacyQuestionnaireError;
+  status: 404;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponseSuccess =
+  exportLegacyQuestionnaireSubmissionsResponse200 & {
+    headers: Headers;
+  };
+export type exportLegacyQuestionnaireSubmissionsResponseError = (
+  | exportLegacyQuestionnaireSubmissionsResponse400
+  | exportLegacyQuestionnaireSubmissionsResponse401
+  | exportLegacyQuestionnaireSubmissionsResponse403
+  | exportLegacyQuestionnaireSubmissionsResponse404
+  | exportLegacyQuestionnaireSubmissionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type exportLegacyQuestionnaireSubmissionsResponse =
+  | exportLegacyQuestionnaireSubmissionsResponseSuccess
+  | exportLegacyQuestionnaireSubmissionsResponseError;
+
+export const getExportLegacyQuestionnaireSubmissionsUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/export`;
+};
+
+export const exportLegacyQuestionnaireSubmissions = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<exportLegacyQuestionnaireSubmissionsResponse> => {
+  const res = await fetch(
+    getExportLegacyQuestionnaireSubmissionsUrl(questionnaireId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: exportLegacyQuestionnaireSubmissionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as exportLegacyQuestionnaireSubmissionsResponse;
 };
 
 /**

@@ -83,7 +83,7 @@ owners:
 
   survey:
     package: internal/survey
-    tables: [questionnaires, questionnaire_questions, questionnaire_options, questionnaire_catalog_counters, questionnaire_operation_receipts, questionnaire_management_receipts]
+    tables: [questionnaires, questionnaire_questions, questionnaire_options, questionnaire_catalog_counters, questionnaire_operation_receipts, questionnaire_management_receipts, questionnaire_submissions, questionnaire_submission_answers]
     constraints:
       questionnaires: single_instance_f01_definition_without_assessment_or_submission_execution
       questionnaire_questions: ordered_frozen_old_UI_question_schema
@@ -91,6 +91,8 @@ owners:
       questionnaire_catalog_counters: exact_legacy_total_without_questionnaire_scan
       questionnaire_operation_receipts: actor_scoped_transactional_create_idempotency_receipts
       questionnaire_management_receipts: actor_scoped_transactional_F01B_update_enable_disable_delete_idempotency_receipts
+      questionnaire_submissions: immutable_opaque_identity_submission_snapshots_with_counter_sync
+      questionnaire_submission_answers: immutable_question_and_option_snapshot_rows_without_definition_fk
 
   ai:
     package: internal/ai

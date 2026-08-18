@@ -417,6 +417,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	miniProgramRepository := mediastore.NewMiniProgramRepository()
 	miniProgramService := mediaapp.NewMiniProgramService(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository)
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
+	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveystore.NewSubmissionRepository())
 	channelService := contactapp.NewChannelService(uow, contactstore.NewChannelRepository(), eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
 	legacyTagExecutionRepository, err := contactstore.NewLegacyTagExecutionRepository(pool)
@@ -505,6 +506,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
+	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	systemHealth, err := newSystemHealthHandler(postgresSystemHealthSource{
 		platformObserver: opsstore.NewReadinessRepository(pool),
@@ -978,6 +980,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SetQuestionnaireDisabled)},
 			{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/enable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SetQuestionnaireDisabled)},
 			{http.MethodDelete, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.DeleteQuestionnaire)},
+			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/results", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaireResults)},
+			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/submissions", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaireSubmissions)},
+			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/export", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ExportQuestionnaireSubmissions)},
 			{http.MethodGet, "/api/admin/channels", authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.ListChannels)},
 			{http.MethodPost, "/api/admin/channels", authport.CapabilityChannelsWrite, true, http.HandlerFunc(legacy.CreateChannel)},
 			{http.MethodGet, "/api/admin/channels/{channel_id}", authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.GetChannel)},
