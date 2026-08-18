@@ -49,9 +49,7 @@ while [[ -n "$remaining_groups" ]]; do
     media)
       P4H01A1_MEDIA_TEST_DATABASE_URL="$database_url" make --no-print-directory p4-h01a1-media-acceptance
       P4H03_MEDIA_TEST_DATABASE_URL="$database_url" make --no-print-directory p4-h03-media-acceptance
-      P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL="$database_url" \
-        GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-        go test -race -count=1 -timeout=240s -run '^TestMiniProgramR1' ./acceptance/media
+      P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL="$database_url" make --no-print-directory p4-miniprogram-library-ab-acceptance
       P4IMAGEFACETS_TEST_DATABASE_URL="$database_url" \
         GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
         go test -race -count=1 -timeout=240s -run '^TestImageFacets0358' ./acceptance/media

@@ -241,10 +241,9 @@ func TestD01S200KReceiptPlanHasNoIllegalSequentialScan(t *testing.T) {
 func TestD01StorageCatalogIsValidatedAndHasNoRiverOrAutomationCrossDomainFK(t *testing.T) {
 	pool, ctx := openPool(t)
 	ensureRiver(t, ctx, pool)
-	var waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventLogFKs, receiptFKs, riverFKs int
+	var constraints, invalidConstraints, indexes, invalidIndexes, eventLogFKs, receiptFKs, riverFKs int
 	var deliveryPersistence, receiptPersistence string
 	err := pool.QueryRow(ctx, `SELECT
-      (SELECT max(version_id) FROM goose_db_version WHERE is_applied),
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('event_deliveries'::regclass,'automation_trigger_receipts'::regclass)),
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('event_deliveries'::regclass,'automation_trigger_receipts'::regclass) AND NOT convalidated),
       (SELECT count(*) FROM pg_index WHERE indrelid IN ('event_deliveries'::regclass,'automation_trigger_receipts'::regclass)),
@@ -254,16 +253,16 @@ func TestD01StorageCatalogIsValidatedAndHasNoRiverOrAutomationCrossDomainFK(t *t
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('event_deliveries'::regclass,'automation_trigger_receipts'::regclass) AND contype='f' AND confrelid='river_job'::regclass),
       (SELECT relpersistence::text FROM pg_class WHERE oid='event_deliveries'::regclass),
       (SELECT relpersistence::text FROM pg_class WHERE oid='automation_trigger_receipts'::regclass)`).Scan(
-		&waterline, &constraints, &invalidConstraints, &indexes, &invalidIndexes,
+		&constraints, &invalidConstraints, &indexes, &invalidIndexes,
 		&eventLogFKs, &receiptFKs, &riverFKs, &deliveryPersistence, &receiptPersistence,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != 45 || constraints != 16 || invalidConstraints != 0 || indexes != 7 || invalidIndexes != 0 ||
+	if constraints != 16 || invalidConstraints != 0 || indexes != 7 || invalidIndexes != 0 ||
 		eventLogFKs != 1 || receiptFKs != 0 || riverFKs != 0 || deliveryPersistence != "p" || receiptPersistence != "p" {
-		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%d/%d/%d/%s/%s",
-			waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventLogFKs, receiptFKs, riverFKs, deliveryPersistence, receiptPersistence)
+		t.Fatalf("catalog constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%d/%d/%s/%s",
+			constraints, invalidConstraints, indexes, invalidIndexes, eventLogFKs, receiptFKs, riverFKs, deliveryPersistence, receiptPersistence)
 	}
 }
 

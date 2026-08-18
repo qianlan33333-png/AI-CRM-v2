@@ -105,6 +105,14 @@ type legacySurveyApplication interface {
 	Duplicate(context.Context, surveyport.ID, int64, string, string, string) (surveyport.Questionnaire, error)
 }
 
+// legacySurveySubmissionApplication is the frozen read-only submission
+// analysis surface: aggregate results, paged detail, and the PII CSV export.
+type legacySurveySubmissionApplication interface {
+	Results(context.Context, surveyport.ID) (surveyport.SubmissionResult, error)
+	List(context.Context, surveyport.ID, int32, int32) (surveyport.SubmissionPage, error)
+	Export(context.Context, surveyport.ID) (surveyport.SubmissionCSVDownload, error)
+}
+
 type legacyChannelApplication interface {
 	ListChannels(context.Context, int32, string, bool) ([]contactapp.Channel, error)
 	GetChannel(context.Context, int64) (contactapp.Channel, error)
@@ -160,6 +168,7 @@ type Handler struct {
 	groupInvites          groupInviteApplication
 	miniPrograms          miniProgramApplication
 	surveys               legacySurveyApplication
+	surveySubmissions     legacySurveySubmissionApplication
 	channels              legacyChannelApplication
 	legacyTags            legacyTagApplication
 	automationAgents      automationport.AgentService

@@ -314,7 +314,7 @@ func legacyQuestionnaire(item surveyport.Questionnaire) map[string]any {
 func writeLegacySurveyError(writer http.ResponseWriter, err error) {
 	status, code := http.StatusServiceUnavailable, platformhttp.CodeDependencyUnavailable
 	switch {
-	case errors.Is(err, surveyapp.ErrInvalidQuestionnaire), errors.Is(err, surveyapp.ErrInvalidSchema), errors.Is(err, surveyapp.ErrInvalidPage), errors.Is(err, surveyapp.ErrAssessmentUnavailable):
+	case errors.Is(err, surveyapp.ErrInvalidQuestionnaire), errors.Is(err, surveyapp.ErrInvalidSchema), errors.Is(err, surveyapp.ErrInvalidPage), errors.Is(err, surveyapp.ErrInvalidSubmissionPage), errors.Is(err, surveyapp.ErrAssessmentUnavailable):
 		status, code = http.StatusBadRequest, platformhttp.CodeMalformedRequest
 	case errors.Is(err, surveyapp.ErrNotFound):
 		status, code = http.StatusNotFound, platformhttp.CodeNotFound

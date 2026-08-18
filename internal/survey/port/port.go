@@ -103,3 +103,90 @@ type LegacyPage struct {
 	Limit  int32
 	Offset int32
 }
+
+// SubmissionResult is the aggregate read model for one questionnaire. Rules
+// stays empty until the F02 assessment contract exists; the field is frozen so
+// the admin envelope never changes shape.
+type SubmissionResult struct {
+	QuestionnaireID   ID
+	SubmissionCount   int64
+	LatestSubmittedAt time.Time
+	AverageScore      float64
+	Rules             []ScoreRule
+}
+
+// SubmissionAnswer is the immutable per-question snapshot stored with one
+// submission. QuestionID references the definition row captured at submit
+// time; it is deliberately not a foreign key because editor writes replace
+// definition rows.
+type SubmissionAnswer struct {
+	QuestionID      int64
+	QuestionType    QuestionType
+	QuestionTitle   string
+	SortOrder       int
+	SelectedOptions []SubmissionAnswerOption
+	TextValue       string
+}
+
+type SubmissionAnswerOption struct {
+	OptionID   int64
+	OptionText string
+}
+
+// Submission is the Survey-owned submission snapshot. Identity fields are
+// opaque values captured at submit time; reads never resolve them against
+// another domain.
+type Submission struct {
+	ID                  int64
+	QuestionnaireID     ID
+	RespondentKey       string
+	OpenID              string
+	UnionID             string
+	ExternalUserID      string
+	CustomerName        string
+	FollowUserUserID    string
+	MatchedBy           string
+	Mobile              string
+	SourceChannel       string
+	CampaignID          string
+	StaffID             string
+	TotalScore          float64
+	FinalTags           []string
+	ResultToken         string
+	RedirectURLSnapshot string
+	SubmittedAt         time.Time
+	CreatedAt           time.Time
+	Answers             []SubmissionAnswer
+}
+
+type SubmissionPage struct {
+	Items  []Submission
+	Total  int64
+	Limit  int32
+	Offset int32
+}
+
+// SubmissionExportQuestion is the current definition order used for CSV
+// question columns.
+type SubmissionExportQuestion struct {
+	ID        int64
+	Title     string
+	SortOrder int
+}
+
+type SubmissionExportSnapshot struct {
+	QuestionnaireID ID
+	Slug            string
+	Questions       []SubmissionExportQuestion
+	Submissions     []Submission
+	Total           int64
+}
+
+// SubmissionCSVDownload is the fully encoded in-memory CSV response. No file,
+// job, or storage object is ever created.
+type SubmissionCSVDownload struct {
+	Filename    string
+	ContentType string
+	Body        []byte
+	Total       int64
+}

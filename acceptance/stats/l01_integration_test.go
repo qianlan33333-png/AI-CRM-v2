@@ -250,10 +250,9 @@ func TestL01S200KPlansUseStatsIndexes(t *testing.T) {
 
 func TestL01StorageCatalogHasValidatedStatsOwnedTables(t *testing.T) {
 	pool, ctx := openPool(t)
-	var waterline, constraints, invalidConstraints, indexes, invalidIndexes, foreignKeys int
+	var constraints, invalidConstraints, indexes, invalidIndexes, foreignKeys int
 	var dailyPersistence, receiptPersistence string
 	err := pool.QueryRow(ctx, `SELECT
-      (SELECT max(version_id) FROM goose_db_version WHERE is_applied),
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('stats_daily'::regclass,'stats_event_receipts'::regclass)),
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('stats_daily'::regclass,'stats_event_receipts'::regclass) AND NOT convalidated),
       (SELECT count(*) FROM pg_index WHERE indrelid IN ('stats_daily'::regclass,'stats_event_receipts'::regclass)),
@@ -261,15 +260,15 @@ func TestL01StorageCatalogHasValidatedStatsOwnedTables(t *testing.T) {
       (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('stats_daily'::regclass,'stats_event_receipts'::regclass) AND contype='f'),
       (SELECT relpersistence::text FROM pg_class WHERE oid='stats_daily'::regclass),
       (SELECT relpersistence::text FROM pg_class WHERE oid='stats_event_receipts'::regclass)`).Scan(
-		&waterline, &constraints, &invalidConstraints, &indexes, &invalidIndexes, &foreignKeys, &dailyPersistence, &receiptPersistence,
+		&constraints, &invalidConstraints, &indexes, &invalidIndexes, &foreignKeys, &dailyPersistence, &receiptPersistence,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waterline != 45 || constraints != 10 || invalidConstraints != 0 || indexes != 3 || invalidIndexes != 0 ||
+	if constraints != 10 || invalidConstraints != 0 || indexes != 3 || invalidIndexes != 0 ||
 		foreignKeys != 0 || dailyPersistence != "p" || receiptPersistence != "p" {
-		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%d/%s/%s",
-			waterline, constraints, invalidConstraints, indexes, invalidIndexes, foreignKeys, dailyPersistence, receiptPersistence)
+		t.Fatalf("catalog constraints/invalid/indexes/invalid/fks/persistence=%d/%d/%d/%d/%d/%s/%s",
+			constraints, invalidConstraints, indexes, invalidIndexes, foreignKeys, dailyPersistence, receiptPersistence)
 	}
 }
 

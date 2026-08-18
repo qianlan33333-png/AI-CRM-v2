@@ -2249,6 +2249,82 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/results:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaireResults
+      summary: Read the Survey-owned submission aggregate for one questionnaire
+      x-legacy-mapping-ids: [LEGACY-API-0442]
+      x-p4-decision-evidence: P4-F03-2026-08-18
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: Frozen submission results envelope with stable empty-data shape.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireSubmissionResultsResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Submission snapshot storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}/submissions:
+    get:
+      tags: [p4-survey-compat]
+      operationId: listLegacyQuestionnaireSubmissions
+      summary: Page Survey-owned submission snapshots in submitted_at DESC, id DESC order
+      x-legacy-mapping-ids: [LEGACY-API-0444]
+      x-p4-decision-evidence: P4-F03-2026-08-18
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Frozen submission page envelope with identical items and submissions arrays.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireSubmissionListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Submission snapshot storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}/export:
+    get:
+      tags: [p4-survey-compat]
+      operationId: exportLegacyQuestionnaireSubmissions
+      summary: Download the PII submission CSV encoded fully in memory with formula-injection escaping
+      x-legacy-mapping-ids: [LEGACY-API-0433]
+      x-p4-decision-evidence: P4-F03-2026-08-18
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: UTF-8 BOM CRLF CSV attachment, at most 10000 rows, no file or storage side effect.
+          headers:
+            Content-Disposition: { schema: { type: string, pattern: '^attachment; filename="questionnaire-[A-Za-z0-9._-]+-submissions\.csv"$' } }
+          content: { text/csv: { schema: { type: string, format: binary } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found; errors are always JSON, never a partial CSV.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Submission snapshot storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
   /api/admin/image-library:
     get:
       tags: [p4-media-compat]
@@ -3751,6 +3827,78 @@ components:
         ok: { type: boolean, enum: [false] }
         message: { type: string }
         detail: { type: string }
+    LegacyQuestionnaireSubmissionResultsResponse:
+      type: object
+      required: [ok, questionnaire_id, results]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        results:
+          type: object
+          required: [submission_count, latest_submitted_at, average_score, rules]
+          properties:
+            submission_count: { type: integer, format: int64, minimum: 0 }
+            latest_submitted_at: { type: string, format: date-time, nullable: true }
+            average_score: { type: number, format: double }
+            rules: { type: array, maxItems: 0, items: { type: object } }
+        data: { type: object }
+        side_effect_executed: { type: boolean, enum: [false] }
+    LegacyQuestionnaireSubmissionAnswer:
+      type: object
+      required: [question_id, question_type, question_title, sort_order, selected_options, text_value]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        question_type: { type: string, enum: [single_choice, multi_choice, textarea, mobile] }
+        question_title: { type: string, minLength: 1, maxLength: 500 }
+        sort_order: { type: integer, minimum: 0 }
+        selected_options:
+          type: array
+          items:
+            type: object
+            required: [option_id, option_text]
+            properties:
+              option_id: { type: integer, format: int64, minimum: 1 }
+              option_text: { type: string, maxLength: 500 }
+        text_value: { type: string, maxLength: 10000 }
+    LegacyQuestionnaireSubmission:
+      type: object
+      required: [id, submission_id, questionnaire_id, submitted_at, created_at, respondent_key, openid, unionid, external_userid, customer_name, follow_user_userid, matched_by, mobile, source_channel, campaign_id, staff_id, score, total_score, final_tags, result_token, redirect_url_snapshot, answers]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        respondent_key: { type: string, maxLength: 200 }
+        openid: { type: string, maxLength: 200 }
+        unionid: { type: string, maxLength: 200 }
+        external_userid: { type: string, maxLength: 200 }
+        customer_name: { type: string, maxLength: 300 }
+        follow_user_userid: { type: string, maxLength: 200 }
+        matched_by: { type: string, maxLength: 50 }
+        mobile: { type: string, maxLength: 32 }
+        source_channel: { type: string, maxLength: 100 }
+        campaign_id: { type: string, maxLength: 200 }
+        staff_id: { type: string, maxLength: 200 }
+        score: { type: number, format: double }
+        total_score: { type: number, format: double }
+        final_tags: { type: array, items: { type: string, maxLength: 200 } }
+        result_token: { type: string, maxLength: 200 }
+        redirect_url_snapshot: { type: string, maxLength: 2000 }
+        answers: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireSubmissionAnswer" } }
+    LegacyQuestionnaireSubmissionListResponse:
+      type: object
+      required: [ok, questionnaire_id, items, submissions, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireSubmission" } }
+        submissions: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireSubmission" } }
+        data: { type: object }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+        side_effect_executed: { type: boolean, enum: [false] }
     LegacyImageListItem:
       type: object
       additionalProperties: false

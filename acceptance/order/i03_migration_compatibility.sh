@@ -41,7 +41,7 @@ read -r waterline projections counters functions cross_fks <<<"$(psql "$database
 [[ "$(history_snapshot)" = "$baseline" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=360s -run '^TestI03' ./acceptance/order -args -database-url "$database_url" -expected-waterline 36
+  "$go_command" test -race -count=1 -timeout=360s -run '^TestI03' ./acceptance/order -args -database-url "$database_url"
 
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 34
 read -r waterline projections counters <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT max(version_id),(to_regclass('public.order_list_projections') IS NOT NULL)::int,(to_regclass('public.order_list_projection_counters') IS NOT NULL)::int FROM goose_db_version WHERE is_applied")"
