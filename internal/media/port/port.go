@@ -6,18 +6,22 @@ import (
 )
 
 type Image struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	FileName    string    `json:"file_name"`
-	FileSize    int32     `json:"file_size"`
-	MimeType    string    `json:"mime_type"`
-	Width       int32     `json:"width"`
-	Height      int32     `json:"height"`
-	Description string    `json:"description"`
-	Tags        string    `json:"tags"`
-	Category    string    `json:"category"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	FileName    string `json:"file_name"`
+	FileSize    int32  `json:"file_size"`
+	MimeType    string `json:"mime_type"`
+	Width       int32  `json:"width"`
+	Height      int32  `json:"height"`
+	Description string `json:"description"`
+	Tags        string `json:"tags"`
+	Category    string `json:"category"`
+	// Enabled is persisted with the upload and stored in the completion
+	// receipt. The legacy multipart /upload adapter deliberately projects its
+	// pre-0357 DTO instead of serializing Image directly.
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ImageFacets struct {
@@ -76,6 +80,9 @@ type UploadCommand struct {
 	Description    string
 	Tags           string
 	Category       string
+	// Enabled is optional for compatibility: an omitted value preserves the
+	// historic upload default of true without changing its receipt digest.
+	Enabled *bool
 }
 
 type GroupInvite struct {

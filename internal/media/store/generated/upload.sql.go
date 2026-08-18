@@ -82,12 +82,12 @@ func (q *Queries) GetMediaImageUploadReceipt(ctx context.Context, arg GetMediaIm
 }
 
 const insertMediaImage = `-- name: InsertMediaImage :one
-INSERT INTO media_images (name, file_name, mime_type, file_size, width, height, checksum, description, tags, category, created_by, created_at, updated_at)
+INSERT INTO media_images (name, file_name, mime_type, file_size, width, height, checksum, description, tags, category, enabled, created_by, created_at, updated_at)
 VALUES ($1::text, $2::text, $3::text, $4::integer,
         $5::integer, $6::integer, $7::bytea, $8::text,
-        $9::text, $10::text, $11::bigint,
-        $12::timestamptz, $12::timestamptz)
-RETURNING id, name, file_name, mime_type, file_size, width, height, description, tags, category, created_at, updated_at
+        $9::text, $10::text, $11::boolean, $12::bigint,
+        $13::timestamptz, $13::timestamptz)
+RETURNING id, name, file_name, mime_type, file_size, width, height, description, tags, category, enabled, created_at, updated_at
 `
 
 type InsertMediaImageParams struct {
@@ -101,6 +101,7 @@ type InsertMediaImageParams struct {
 	Description string             `json:"description"`
 	Tags        string             `json:"tags"`
 	Category    string             `json:"category"`
+	Enabled     bool               `json:"enabled"`
 	CreatedBy   int64              `json:"created_by"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
@@ -116,6 +117,7 @@ type InsertMediaImageRow struct {
 	Description string             `json:"description"`
 	Tags        string             `json:"tags"`
 	Category    string             `json:"category"`
+	Enabled     bool               `json:"enabled"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -132,6 +134,7 @@ func (q *Queries) InsertMediaImage(ctx context.Context, arg InsertMediaImagePara
 		arg.Description,
 		arg.Tags,
 		arg.Category,
+		arg.Enabled,
 		arg.CreatedBy,
 		arg.CreatedAt,
 	)
@@ -147,6 +150,7 @@ func (q *Queries) InsertMediaImage(ctx context.Context, arg InsertMediaImagePara
 		&i.Description,
 		&i.Tags,
 		&i.Category,
+		&i.Enabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -3,15 +3,18 @@ package app
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"image"
 	"image/color"
 	"image/png"
+	"strings"
 	"testing"
 	"time"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 )
 
@@ -48,9 +51,11 @@ func (s memoryStore) Reserve(_ context.Context, input Reservation) (Receipt, boo
 	return value, true, nil
 }
 func (s memoryStore) Create(_ context.Context, input CreateInput) (mediaport.Image, error) {
+	enabled := input.Command.Enabled == nil || *input.Command.Enabled
 	value := mediaport.Image{ID: int64(len(s.state.images) + 1), Name: input.Command.Name, FileName: input.Command.FileName,
 		FileSize: int32(len(input.Command.Content)), MimeType: input.MediaType, Width: input.Width, Height: input.Height,
 		Description: input.Command.Description, Tags: input.Command.Tags, Category: input.Command.Category,
+		Enabled:   enabled,
 		CreatedAt: input.Now, UpdatedAt: input.Now}
 	s.state.images = append(s.state.images, value)
 	return value, nil
@@ -102,6 +107,102 @@ func TestUploadActorScopedReplayConflictAndRollback(t *testing.T) {
 	failing.IdempotencyKey = "rollback-key-000001"
 	if _, err = service.Upload(context.Background(), failing); !errors.Is(err, ErrUnavailable) || len(state.images) != 2 || len(state.events) != 2 || len(state.receipts) != 2 {
 		t.Fatalf("rollback failed: %v state=%#v", err, state)
+	}
+}
+
+func TestUploadEnabledDigestAndLegacyReceiptReplay(t *testing.T) {
+	command := validCommand(t)
+	inspection, err := domain.Inspect(command.FileName, command.DeclaredType, command.Content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checksum := sha256.Sum256(command.Content)
+	nilPayload, err := uploadPayload(command, inspection.MediaType, checksum, inspection.Width, inspection.Height)
+	if err != nil {
+		t.Fatal(err)
+	}
+	enabled := true
+	trueCommand := command
+	trueCommand.Enabled = &enabled
+	truePayload, err := uploadPayload(trueCommand, inspection.MediaType, checksum, inspection.Width, inspection.Height)
+	if err != nil || string(nilPayload) != string(truePayload) {
+		t.Fatalf("nil/true payload compatibility = %q / %q err=%v", nilPayload, truePayload, err)
+	}
+	disabled := false
+	falseCommand := command
+	falseCommand.Enabled = &disabled
+	falsePayload, err := uploadPayload(falseCommand, inspection.MediaType, checksum, inspection.Width, inspection.Height)
+	if err != nil || string(nilPayload) == string(falsePayload) {
+		t.Fatalf("false payload did not distinguish: %q / %q err=%v", nilPayload, falsePayload, err)
+	}
+
+	now := time.Date(2026, 8, 19, 12, 0, 0, 0, time.UTC)
+	legacySnapshot, err := json.Marshal(struct {
+		ID          int64     `json:"id"`
+		Name        string    `json:"name"`
+		FileName    string    `json:"file_name"`
+		FileSize    int32     `json:"file_size"`
+		MimeType    string    `json:"mime_type"`
+		Width       int32     `json:"width"`
+		Height      int32     `json:"height"`
+		Description string    `json:"description"`
+		Tags        string    `json:"tags"`
+		Category    string    `json:"category"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+	}{1, command.Name, command.FileName, int32(len(command.Content)), inspection.MediaType, inspection.Width, inspection.Height, command.Description, command.Tags, command.Category, now, now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyDigest := sha256.Sum256([]byte(command.IdempotencyKey))
+	payloadDigest := sha256.Sum256(nilPayload)
+	state := &memoryState{receipts: map[string]Receipt{
+		receiptKey("admin:7", keyDigest): {
+			ID: 1, ActorScope: "admin:7", KeyDigest: keyDigest, PayloadDigest: payloadDigest, State: "completed", ResultSnapshot: legacySnapshot,
+		},
+	}}
+	service := NewService(memoryUOW{state}, memoryStore{state}, memoryEvents{state})
+	service.now = func() time.Time { return now }
+	replay, err := service.Upload(context.Background(), trueCommand)
+	if err != nil || !replay.Enabled || len(state.images) != 0 || len(state.events) != 0 {
+		t.Fatalf("legacy receipt replay = %#v err=%v images=%d events=%d", replay, err, len(state.images), len(state.events))
+	}
+	if _, err := service.Upload(context.Background(), falseCommand); !errors.Is(err, ErrConflict) {
+		t.Fatalf("false against legacy true receipt error=%v, want conflict", err)
+	}
+}
+
+func TestUploadTextRuneBoundariesAndUTF8AreValidatedBeforeUoW(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		apply func(*mediaport.UploadCommand)
+		want  error
+	}{
+		{"name exact Chinese runes", func(command *mediaport.UploadCommand) { command.Name = strings.Repeat("名", 200) }, nil},
+		{"name Chinese runes over limit", func(command *mediaport.UploadCommand) { command.Name = strings.Repeat("名", 201) }, ErrInvalidUpload},
+		{"description exact Chinese runes", func(command *mediaport.UploadCommand) { command.Description = strings.Repeat("描", 10_000) }, nil},
+		{"description Chinese runes over limit", func(command *mediaport.UploadCommand) { command.Description = strings.Repeat("描", 10_001) }, ErrInvalidUpload},
+		{"category exact Chinese runes", func(command *mediaport.UploadCommand) { command.Category = strings.Repeat("类", 200) }, nil},
+		{"category Chinese runes over limit", func(command *mediaport.UploadCommand) { command.Category = strings.Repeat("类", 201) }, ErrInvalidUpload},
+		{"tags exact Chinese runes", func(command *mediaport.UploadCommand) { command.Tags = strings.Repeat("标", 10_000) }, nil},
+		{"tags Chinese runes over limit", func(command *mediaport.UploadCommand) { command.Tags = strings.Repeat("标", 10_001) }, ErrInvalidUpload},
+		{"invalid UTF-8", func(command *mediaport.UploadCommand) { command.Name = string([]byte{0xff}) }, ErrInvalidUpload},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			state := &memoryState{receipts: map[string]Receipt{}}
+			service := NewService(memoryUOW{state}, memoryStore{state}, memoryEvents{state})
+			service.now = func() time.Time { return time.Date(2026, 8, 19, 13, 0, 0, 0, time.UTC) }
+			command := validCommand(t)
+			command.IdempotencyKey = strings.Repeat("i", 16)
+			test.apply(&command)
+			_, err := service.Upload(context.Background(), command)
+			if !errors.Is(err, test.want) || (test.want == nil && err != nil) {
+				t.Fatalf("error=%v want=%v", err, test.want)
+			}
+			if test.want != nil && (len(state.receipts) != 0 || len(state.images) != 0 || len(state.events) != 0) {
+				t.Fatalf("invalid text reached UoW: %#v", state)
+			}
+		})
 	}
 }
 

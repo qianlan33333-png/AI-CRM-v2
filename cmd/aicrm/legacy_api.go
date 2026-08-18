@@ -412,10 +412,42 @@ func (handler *Handler) UploadImage(writer http.ResponseWriter, request *http.Re
 		return
 	}
 	writeJSON(writer, http.StatusOK, map[string]any{
-		"ok": true, "item": result, "source_status": "local_upload", "route_owner": "ai_crm_next",
+		"ok": true, "item": projectLegacyImageUploadItem(result), "source_status": "local_upload", "route_owner": "ai_crm_next",
 		"fallback_used": false, "real_external_call_executed": false,
 		"storage_adapter_mode": "postgresql", "adapter_mode": "postgresql",
 	})
+}
+
+// projectLegacyImageUploadItem freezes the pre-0357 multipart contract. The
+// new enabled field is intentionally not visible through /upload.
+func projectLegacyImageUploadItem(image mediaport.Image) struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	FileName    string    `json:"file_name"`
+	FileSize    int32     `json:"file_size"`
+	MimeType    string    `json:"mime_type"`
+	Width       int32     `json:"width"`
+	Height      int32     `json:"height"`
+	Description string    `json:"description"`
+	Tags        string    `json:"tags"`
+	Category    string    `json:"category"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+} {
+	return struct {
+		ID          int64     `json:"id"`
+		Name        string    `json:"name"`
+		FileName    string    `json:"file_name"`
+		FileSize    int32     `json:"file_size"`
+		MimeType    string    `json:"mime_type"`
+		Width       int32     `json:"width"`
+		Height      int32     `json:"height"`
+		Description string    `json:"description"`
+		Tags        string    `json:"tags"`
+		Category    string    `json:"category"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+	}{image.ID, image.Name, image.FileName, image.FileSize, image.MimeType, image.Width, image.Height, image.Description, image.Tags, image.Category, image.CreatedAt, image.UpdatedAt}
 }
 
 func writeLegacyImageError(writer http.ResponseWriter, err error) {

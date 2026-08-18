@@ -12,6 +12,7 @@ import (
 	"io"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
@@ -68,8 +69,8 @@ func (s *Service) Upload(ctx context.Context, command mediaport.UploadCommand) (
 	command.Category = strings.TrimSpace(command.Category)
 	inspection, err := domain.Inspect(command.FileName, command.DeclaredType, command.Content)
 	if err != nil || command.Actor < 1 || len(command.IdempotencyKey) < 16 || len(command.IdempotencyKey) > 128 ||
-		strings.TrimSpace(command.IdempotencyKey) != command.IdempotencyKey || len(command.Name) > 200 ||
-		len(command.Description) > 10_000 || len(command.Tags) > 10_000 || len(command.Category) > 200 {
+		strings.TrimSpace(command.IdempotencyKey) != command.IdempotencyKey || !validUploadText(command.Name, 200) ||
+		!validUploadText(command.Description, 10_000) || !validUploadText(command.Tags, 10_000) || !validUploadText(command.Category, 200) {
 		return mediaport.Image{}, ErrInvalidUpload
 	}
 	if s == nil || s.uow == nil || s.store == nil || s.events == nil {
@@ -80,12 +81,7 @@ func (s *Service) Upload(ctx context.Context, command mediaport.UploadCommand) (
 		return mediaport.Image{}, ErrUnavailable
 	}
 	checksum := sha256.Sum256(command.Content)
-	payload, err := json.Marshal(struct {
-		FileName, MediaType, Name, Description, Tags, Category string
-		Size, Width, Height                                    int32
-		Checksum                                               string
-	}{command.FileName, inspection.MediaType, command.Name, command.Description, command.Tags, command.Category,
-		int32(len(command.Content)), inspection.Width, inspection.Height, hex.EncodeToString(checksum[:])})
+	payload, err := uploadPayload(command, inspection.MediaType, checksum, inspection.Width, inspection.Height)
 	if err != nil {
 		return mediaport.Image{}, ErrUnavailable
 	}
@@ -101,17 +97,13 @@ func (s *Service) Upload(ctx context.Context, command mediaport.UploadCommand) (
 			return ErrConflict
 		}
 		if !owned {
-			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validImage(result) {
-				return ErrUnavailable
-			}
-			canonical, marshalErr := json.Marshal(result)
-			if marshalErr != nil || !jsonEquivalent(canonical, receipt.ResultSnapshot) {
+			if receipt.State != "completed" || !decodeUploadReceipt(receipt.ResultSnapshot, &result) || !validImage(result) || result.Enabled != expectedUploadEnabled(command) {
 				return ErrUnavailable
 			}
 			return nil
 		}
 		result, reserveErr = s.store.Create(tx, CreateInput{Command: command, MediaType: inspection.MediaType, Width: inspection.Width, Height: inspection.Height, Checksum: checksum, Now: now})
-		if reserveErr != nil || !validImage(result) {
+		if reserveErr != nil || !validImage(result) || result.Enabled != expectedUploadEnabled(command) {
 			return ErrUnavailable
 		}
 		snapshot, marshalErr := json.Marshal(result)
@@ -142,6 +134,69 @@ func (s *Service) Upload(ctx context.Context, command mediaport.UploadCommand) (
 		return mediaport.Image{}, ErrUnavailable
 	}
 	return result, nil
+}
+
+func validUploadText(value string, maxRunes int) bool {
+	return utf8.ValidString(value) && utf8.RuneCountInString(value) <= maxRunes
+}
+
+// uploadPayload preserves the exact pre-0357 canonical payload for an
+// omitted or explicitly true Enabled value. Only false adds an immutable
+// discriminator, so an old completed receipt remains replayable.
+func uploadPayload(command mediaport.UploadCommand, mediaType string, checksum [32]byte, width, height int32) ([]byte, error) {
+	base := struct {
+		FileName, MediaType, Name, Description, Tags, Category string
+		Size, Width, Height                                    int32
+		Checksum                                               string
+	}{command.FileName, mediaType, command.Name, command.Description, command.Tags, command.Category,
+		int32(len(command.Content)), width, height, hex.EncodeToString(checksum[:])}
+	if command.Enabled == nil || *command.Enabled {
+		return json.Marshal(base)
+	}
+	return json.Marshal(struct {
+		FileName, MediaType, Name, Description, Tags, Category string
+		Size, Width, Height                                    int32
+		Checksum                                               string
+		Enabled                                                bool
+	}{base.FileName, base.MediaType, base.Name, base.Description, base.Tags, base.Category,
+		base.Size, base.Width, base.Height, base.Checksum, false})
+}
+
+func expectedUploadEnabled(command mediaport.UploadCommand) bool {
+	return command.Enabled == nil || *command.Enabled
+}
+
+// decodeUploadReceipt accepts an exact pre-0357 receipt snapshot that lacks
+// enabled as the historical enabled=true result. New snapshots must include
+// it, so a false result can never be mistaken for that legacy default.
+func decodeUploadReceipt(snapshot json.RawMessage, result *mediaport.Image) bool {
+	if result == nil || json.Unmarshal(snapshot, result) != nil {
+		return false
+	}
+	var persisted map[string]json.RawMessage
+	if json.Unmarshal(snapshot, &persisted) != nil {
+		return false
+	}
+	if _, present := persisted["enabled"]; !present {
+		result.Enabled = true
+	}
+	canonical, err := json.Marshal(*result)
+	if err != nil {
+		return false
+	}
+	if jsonEquivalent(canonical, snapshot) {
+		return true
+	}
+	if _, present := persisted["enabled"]; present || !result.Enabled {
+		return false
+	}
+	var normalized map[string]json.RawMessage
+	if json.Unmarshal(canonical, &normalized) != nil {
+		return false
+	}
+	delete(normalized, "enabled")
+	legacyCanonical, err := json.Marshal(normalized)
+	return err == nil && jsonEquivalent(legacyCanonical, snapshot)
 }
 
 func validReceipt(receipt Receipt, expected Reservation) bool {

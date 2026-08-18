@@ -55,10 +55,14 @@ func (repository *UploadRepository) Create(ctx context.Context, input mediaapp.C
 		return mediaport.Image{}, err
 	}
 	command := input.Command
+	enabled := true
+	if command.Enabled != nil {
+		enabled = *command.Enabled
+	}
 	row, err := query.InsertMediaImage(ctx, mediadb.InsertMediaImageParams{
 		Name: command.Name, FileName: command.FileName, MimeType: input.MediaType, FileSize: int32(len(command.Content)),
 		Width: input.Width, Height: input.Height, Checksum: input.Checksum[:], Description: command.Description,
-		Tags: command.Tags, Category: command.Category, CreatedBy: command.Actor, CreatedAt: stamp(input.Now),
+		Tags: command.Tags, Category: command.Category, Enabled: enabled, CreatedBy: command.Actor, CreatedAt: stamp(input.Now),
 	})
 	if err != nil {
 		return mediaport.Image{}, err
@@ -67,7 +71,7 @@ func (repository *UploadRepository) Create(ctx context.Context, input mediaapp.C
 		return mediaport.Image{}, err
 	}
 	return mediaport.Image{ID: row.ID, Name: row.Name, FileName: row.FileName, FileSize: row.FileSize, MimeType: row.MimeType,
-		Width: row.Width, Height: row.Height, Description: row.Description, Tags: row.Tags, Category: row.Category,
+		Width: row.Width, Height: row.Height, Description: row.Description, Tags: row.Tags, Category: row.Category, Enabled: row.Enabled,
 		CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}, nil
 }
 

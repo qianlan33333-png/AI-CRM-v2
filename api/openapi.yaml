@@ -2411,6 +2411,53 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
+    post:
+      tags: [p4-media-compat]
+      operationId: createLegacyImage
+      summary: Import one fully decoded local image from a canonical JSON data URL
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0357]
+      x-p4-decision-evidence: P4-IMAGE-CREATE-0357-2026-08-19
+      x-aicrm-capability: media.images.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images_and_blobs.local_uow
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: One trimmed 16..128 byte actor-scoped key; replay returns the first local result and a changed canonical payload conflicts.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyImageCreateRequest" }
+      responses:
+        "200":
+          description: Exact safe local metadata projection. No provider call, receipt, raw bytes, or data URL is returned.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageCreateSuccess" }
+        "400":
+          description: Closed JSON/data URL/image-admission validation failure.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyImageCreateError" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only the independently registered GET and POST methods exist on this collection path.
+          headers: { Allow: { required: true, schema: { type: string, enum: ['GET, POST'] } } }
+        "409":
+          description: The actor-scoped idempotency key was completed with a different canonical payload.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyImageCreateError" } } }
+        "503":
+          description: The local UoW dependency is unavailable; no partial write is committed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyImageCreateError" } } }
   /api/admin/image-library/facets:
     get:
       tags: [p4-media-compat]
@@ -4164,6 +4211,64 @@ components:
         limit: { type: integer, minimum: 1, maximum: 100 }
         offset: { type: integer, minimum: 0 }
         side_effect_executed: { type: boolean, enum: [false] }
+    LegacyImageCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [data_url, file_name]
+      properties:
+        data_url:
+          type: string
+          description: One canonical standard-base64 data URL with an exact lower-case image/png, image/jpeg, or image/gif prefix. Raw bytes and alternate alphabets are rejected.
+          pattern: '^data:image/(png|jpeg|gif);base64,[A-Za-z0-9+/]+={0,2}$'
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        name: { type: string, maxLength: 200, default: '' }
+        description: { type: string, maxLength: 10000, default: '' }
+        tags:
+          type: array
+          default: []
+          maxItems: 50
+          items: { type: string, minLength: 1, maxLength: 64, pattern: '^[^,]*$' }
+        category: { type: string, maxLength: 200, default: '' }
+        enabled: { type: boolean, default: true }
+    LegacyImageCreateItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, file_size, mime_type, width, height, enabled, description, tags, category, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        enabled: { type: boolean }
+        description: { type: string, maxLength: 10000 }
+        tags: { type: array, maxItems: 50, items: { type: string, maxLength: 64 } }
+        category: { type: string, maxLength: 200 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+    LegacyImageCreateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, item, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyImageCreateItem" }
+        source_status: { type: string, enum: [local_repository_write] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageCreateError:
+      type: object
+      additionalProperties: false
+      required: [code, message, request_id]
+      properties:
+        code: { type: string, enum: [MALFORMED_REQUEST, CONFLICT, DEPENDENCY_UNAVAILABLE] }
+        message: { type: string }
+        request_id: { type: string, minLength: 1 }
     LegacyImageListItem:
       type: object
       additionalProperties: false
