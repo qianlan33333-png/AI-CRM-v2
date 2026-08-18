@@ -5,7 +5,9 @@ import { getHealthz } from "./api/generated/health";
 import {
   App,
   LOGIN_PATH,
+  MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
+  carrierPathname,
   customerIDForPathname,
   handleNavigationClick,
   navigateTo,
@@ -127,8 +129,8 @@ describe("Web shell routes", () => {
     expect(html).not.toContain("\u672a\u627e\u5230\u9875\u9762");
   });
 
-  it("matches only the seven frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(7);
+  it("matches only the eight frozen pathname routes and renders a 404 for all others", () => {
+    expect(routes).toHaveLength(8);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -171,6 +173,14 @@ describe("Web shell routes", () => {
     expect(identityReviews).toContain("待合并列表");
     expect(identityReviews).toContain("审阅与决策");
     expect(identityReviews).not.toContain("模块边界");
+
+    vi.stubGlobal("window", { location: { pathname: "/admin/miniprogram-library" } });
+    const miniProgramLibrary = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
+    expect(miniProgramLibrary).toContain("小程序素材库");
+    expect(miniProgramLibrary).toContain("素材列表");
+    expect(miniProgramLibrary).not.toContain("模块边界");
 
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
     const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
@@ -231,6 +241,7 @@ describe("Web shell routes", () => {
       "/stages",
       "/segments",
       "/identity/merge-reviews",
+      "/admin/miniprogram-library",
       "/settings",
     ]);
     expect(
@@ -241,6 +252,7 @@ describe("Web shell routes", () => {
       "/stages",
       "/segments",
       "/identity/merge-reviews",
+      "/admin/miniprogram-library",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -253,6 +265,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/stages"');
     expect(html).toContain('href="/segments"');
     expect(html).toContain('href="/identity/merge-reviews"');
+    expect(html).toContain('href="/admin/miniprogram-library"');
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -268,6 +281,69 @@ describe("Web shell routes", () => {
       <App initialSession={adminSession} />,
     );
     expect(nearMiss).toContain("404");
+  });
+});
+
+describe("legacy admin path carrier", () => {
+  it("maps only the exact frozen carrier value to the MiniProgram route", () => {
+    expect(
+      carrierPathname(
+        "/",
+        "?legacy_admin_path=%2Fadmin%2Fminiprogram-library",
+      ),
+    ).toBe(MINIPROGRAM_LIBRARY_PATH);
+    expect(
+      carrierPathname(
+        "/",
+        `?legacy_admin_path=${MINIPROGRAM_LIBRARY_PATH}`,
+      ),
+    ).toBe(MINIPROGRAM_LIBRARY_PATH);
+
+    for (const search of [
+      "?legacy_admin_path=/admin/wecom-tags",
+      "?legacy_admin_path=https://evil.example",
+      "?legacy_admin_path=//evil.example",
+      "?legacy_admin_path=/admin/miniprogram-library/extra",
+      "?legacy_admin_path=/admin/miniprogram-library&legacy_admin_path=/admin/miniprogram-library",
+      "?other=/admin/miniprogram-library",
+      "",
+    ]) {
+      expect(carrierPathname("/", search), search).toBe("/");
+    }
+    expect(
+      carrierPathname(
+        "/customers",
+        "?legacy_admin_path=%2Fadmin%2Fminiprogram-library",
+      ),
+    ).toBe("/customers");
+  });
+
+  it("lands on the MiniProgram page after a carrier refresh without falling back to the overview", () => {
+    vi.stubGlobal("window", {
+      location: {
+        pathname: "/",
+        search: "?legacy_admin_path=%2Fadmin%2Fminiprogram-library",
+      },
+    });
+    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(html).toContain('<h1 id="app-title">小程序素材库</h1>');
+    expect(html).toContain("素材列表");
+    expect(html).not.toContain("运营工作台骨架已就绪");
+    expect(html).toMatch(
+      /<a aria-current="page" href="\/admin\/miniprogram-library">小程序素材<\/a>/,
+    );
+  });
+
+  it("ignores any non-whitelist carrier value and keeps the overview route", () => {
+    vi.stubGlobal("window", {
+      location: {
+        pathname: "/",
+        search: "?legacy_admin_path=%2Fadmin%2Fwecom-tags",
+      },
+    });
+    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(html).toContain("AI-CRM 运营指挥台");
+    expect(html).not.toContain("小程序素材库");
   });
 });
 
