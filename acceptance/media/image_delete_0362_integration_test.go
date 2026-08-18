@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
@@ -319,8 +321,8 @@ func seedDeleteArchivedGroupInviteReference(t *testing.T, ctx context.Context, p
 
 func seedDeleteAutomationReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, imageID int64) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_type,status,fixed_content_package_json,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,'agent','active',jsonb_build_object('image_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now()) RETURNING id`, unique("delete-agent"), unique("delete-agent-code"), imageID).Scan(&id); err != nil {
+	id, err := automationfixture.CreateImageReference(ctx, pool, unique("delete-agent"), unique("delete-agent-code"), imageID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -328,8 +330,8 @@ func seedDeleteAutomationReference(t *testing.T, ctx context.Context, pool *pgxp
 
 func seedDeleteChannelReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, imageID int64) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO channels (name,code,status,config,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,'archived',jsonb_build_object('schema_version',1,'welcome_image_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now()) RETURNING id`, unique("delete-channel"), unique("delete-channel-code"), imageID).Scan(&id); err != nil {
+	id, err := contactfixture.CreateImageReference(ctx, pool, unique("delete-channel"), unique("delete-channel-code"), imageID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -337,8 +339,8 @@ func seedDeleteChannelReference(t *testing.T, ctx context.Context, pool *pgxpool
 
 func seedMalformedAutomationReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, raw string) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_type,status,fixed_content_package_json,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,'agent','active',jsonb_build_object('image_library_ids',$3::jsonb),1,1,now(),now()) RETURNING id`, unique("malformed-agent"), unique("malformed-agent-code"), raw).Scan(&id); err != nil {
+	id, err := automationfixture.CreateImageReferenceWithRawIDs(ctx, pool, unique("malformed-agent"), unique("malformed-agent-code"), raw)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -346,15 +348,15 @@ func seedMalformedAutomationReference(t *testing.T, ctx context.Context, pool *p
 
 func removeMalformedAutomationReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, id int64) {
 	t.Helper()
-	if _, err := pool.Exec(ctx, `DELETE FROM automation_agent_configurations WHERE id=$1`, id); err != nil {
+	if err := automationfixture.DeleteImageReference(ctx, pool, id); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func seedMalformedChannelReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, raw string) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO channels (name,code,status,config,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,'archived',jsonb_build_object('schema_version',1,'welcome_image_library_ids',$3::jsonb),1,1,now(),now()) RETURNING id`, unique("malformed-channel"), unique("malformed-channel-code"), raw).Scan(&id); err != nil {
+	id, err := contactfixture.CreateImageReferenceWithRawIDs(ctx, pool, unique("malformed-channel"), unique("malformed-channel-code"), raw)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -362,7 +364,7 @@ func seedMalformedChannelReference(t *testing.T, ctx context.Context, pool *pgxp
 
 func removeMalformedChannelReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, id int64) {
 	t.Helper()
-	if _, err := pool.Exec(ctx, `DELETE FROM channels WHERE id=$1`, id); err != nil {
+	if err := contactfixture.DeleteImageReference(ctx, pool, id); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -390,7 +392,21 @@ func seedDeletePreflightReference(t *testing.T, ctx context.Context, pool *pgxpo
 
 func deleteReferenceOwnerCount(t *testing.T, ctx context.Context, pool *pgxpool.Pool, name string, id int64) int {
 	t.Helper()
-	table := map[string]string{"miniprogram": "media_miniprograms", "archived group invite": "media_group_invites", "automation agent": "automation_agent_configurations", "channel": "channels", "incomplete preflight": "media_miniprogram_import_preflights"}[name]
+	if name == "automation agent" {
+		count, err := automationfixture.CountImageReferences(ctx, pool, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return count
+	}
+	if name == "channel" {
+		count, err := contactfixture.CountImageReferences(ctx, pool, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return count
+	}
+	table := map[string]string{"miniprogram": "media_miniprograms", "archived group invite": "media_group_invites", "incomplete preflight": "media_miniprogram_import_preflights"}[name]
 	var count int
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM `+table+` WHERE id=$1`, id).Scan(&count); err != nil {
 		t.Fatal(err)
