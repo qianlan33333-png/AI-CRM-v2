@@ -175,6 +175,37 @@ func (q *Queries) GetChannelOperationReceipt(ctx context.Context, arg GetChannel
 	return i, err
 }
 
+const listChannelImageReferencePackages = `-- name: ListChannelImageReferencePackages :many
+SELECT id, COALESCE(config -> 'welcome_image_library_ids', '[]'::jsonb)::text AS welcome_image_library_ids
+FROM channels
+ORDER BY id ASC
+`
+
+type ListChannelImageReferencePackagesRow struct {
+	ID                     int64  `json:"id"`
+	WelcomeImageLibraryIds string `json:"welcome_image_library_ids"`
+}
+
+func (q *Queries) ListChannelImageReferencePackages(ctx context.Context) ([]ListChannelImageReferencePackagesRow, error) {
+	rows, err := q.db.Query(ctx, listChannelImageReferencePackages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListChannelImageReferencePackagesRow{}
+	for rows.Next() {
+		var i ListChannelImageReferencePackagesRow
+		if err := rows.Scan(&i.ID, &i.WelcomeImageLibraryIds); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannels = `-- name: ListChannels :many
 SELECT id, code AS channel_code, name AS channel_name, status, config AS legacy_projection, created_by, updated_by, created_at, updated_at
 FROM channels

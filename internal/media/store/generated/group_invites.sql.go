@@ -286,15 +286,16 @@ func (q *Queries) LockMediaGroupInvite(ctx context.Context, id int64) (int64, er
 	return id, err
 }
 
-const mediaImageExists = `-- name: MediaImageExists :one
-SELECT EXISTS (SELECT 1 FROM media_images WHERE id = $1::bigint)
+const lockMediaImageReference = `-- name: LockMediaImageReference :one
+SELECT id FROM media_images
+WHERE id = $1::bigint
+FOR KEY SHARE
 `
 
-func (q *Queries) MediaImageExists(ctx context.Context, id int64) (bool, error) {
-	row := q.db.QueryRow(ctx, mediaImageExists, id)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
+func (q *Queries) LockMediaImageReference(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, lockMediaImageReference, id)
+	err := row.Scan(&id)
+	return id, err
 }
 
 const reserveMediaGroupInviteReceipt = `-- name: ReserveMediaGroupInviteReceipt :one

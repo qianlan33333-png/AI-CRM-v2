@@ -15,6 +15,7 @@ import (
 
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
@@ -61,6 +62,7 @@ type Store interface {
 type Service struct {
 	uow    platformport.UnitOfWork
 	store  Store
+	images mediaport.ImageMetadataReader
 	events eventport.Appender
 	now    func() time.Time
 }
@@ -69,6 +71,12 @@ var _ automationport.AgentService = (*Service)(nil)
 
 func NewAgentService(uow platformport.UnitOfWork, store Store, events eventport.Appender) *Service {
 	return &Service{uow: uow, store: store, events: events, now: time.Now}
+}
+
+// NewAgentServiceWithImageReferences wires Media's transaction-bound image
+// reader for the only Automation image-reference field.
+func NewAgentServiceWithImageReferences(uow platformport.UnitOfWork, store Store, images mediaport.ImageMetadataReader, events eventport.Appender) *Service {
+	return &Service{uow: uow, store: store, images: images, events: events, now: time.Now}
 }
 
 func (s *Service) List(ctx context.Context, kind automationport.AutomationType) (automationport.Page, error) {
@@ -110,6 +118,9 @@ func (s *Service) Create(ctx context.Context, input automationport.CreateCommand
 		return automationport.Agent{}, err
 	}
 	return s.mutate(ctx, "create", input.Actor, input.IdempotencyKey, item, func(tx context.Context, now time.Time) (automationport.Agent, bool, error) {
+		if err := s.validateImageReferences(tx, item.FixedContentPackage); err != nil {
+			return automationport.Agent{}, false, err
+		}
 		item, err := s.store.Create(tx, item, now)
 		return item, err == nil, err
 	})
@@ -130,6 +141,9 @@ func (s *Service) Update(ctx context.Context, input automationport.UpdateCommand
 		}
 		if sameConfig(current, next) {
 			return current, false, nil
+		}
+		if err := s.validateImageReferences(tx, next.FixedContentPackage); err != nil {
+			return automationport.Agent{}, false, err
 		}
 		next.UpdatedBy = input.Actor
 		item, err := s.store.Update(tx, next, now)
@@ -155,6 +169,9 @@ func (s *Service) Copy(ctx context.Context, input automationport.MutationCommand
 		}
 		source.ID, source.AgentCode = 0, code
 		source.AgentName, source.CreatedBy, source.UpdatedBy = copiedName(source.AgentName), input.Actor, input.Actor
+		if err := s.validateImageReferences(tx, source.FixedContentPackage); err != nil {
+			return automationport.Agent{}, false, err
+		}
 		item, err := s.store.Create(tx, source, now)
 		return item, err == nil, err
 	})
@@ -191,6 +208,9 @@ func (s *Service) SaveFixedContent(ctx context.Context, input automationport.Fix
 		}
 		if reflect.DeepEqual(item.FixedContentPackage, content) {
 			return item, false, nil
+		}
+		if err := s.validateImageReferences(tx, content); err != nil {
+			return automationport.Agent{}, false, err
 		}
 		item.FixedContentPackage, item.UpdatedBy = content, input.Actor
 		updated, err := s.store.Update(tx, item, now)
@@ -425,6 +445,25 @@ func normalIDs(values []int64, limit int) ([]int64, error) {
 		}
 	}
 	return result, nil
+}
+
+func (s *Service) validateImageReferences(ctx context.Context, content automationport.FixedContentPackage) error {
+	if len(content.ImageLibraryIDs) == 0 {
+		return nil
+	}
+	if s == nil || s.images == nil {
+		return ErrAgentUnavailable
+	}
+	for _, imageID := range content.ImageLibraryIDs {
+		exists, err := s.images.ImageExists(ctx, imageID)
+		if err != nil {
+			return ErrAgentUnavailable
+		}
+		if !exists {
+			return ErrInvalidAgent
+		}
+	}
+	return nil
 }
 func copiedName(name string) string {
 	candidate := strings.TrimSpace(name) + "（副本）"

@@ -34,6 +34,13 @@ type FixedContentPackage struct {
 	DynamicMiniprogramCard json.RawMessage `json:"dynamic_miniprogram_card,omitempty"`
 }
 
+// ImageReferenceReader is the Automation-owned read-only answer to whether a
+// fixed content package references one Media image. It returns only local
+// Automation agent IDs in ascending order.
+type ImageReferenceReader interface {
+	ListImageReferenceAgentIDs(context.Context, int64) ([]int64, error)
+}
+
 type Agent struct {
 	ID                  AgentID             `json:"id"`
 	AgentName           string              `json:"agent_name"`

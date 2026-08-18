@@ -202,6 +202,37 @@ func (q *Queries) ListAutomationAgentCodesByCopyPrefix(ctx context.Context, copy
 	return items, nil
 }
 
+const listAutomationAgentImageReferencePackages = `-- name: ListAutomationAgentImageReferencePackages :many
+SELECT id, COALESCE(fixed_content_package_json -> 'image_library_ids', '[]'::jsonb)::text AS image_library_ids
+FROM automation_agent_configurations
+ORDER BY id ASC
+`
+
+type ListAutomationAgentImageReferencePackagesRow struct {
+	ID              int64  `json:"id"`
+	ImageLibraryIds string `json:"image_library_ids"`
+}
+
+func (q *Queries) ListAutomationAgentImageReferencePackages(ctx context.Context) ([]ListAutomationAgentImageReferencePackagesRow, error) {
+	rows, err := q.db.Query(ctx, listAutomationAgentImageReferencePackages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAutomationAgentImageReferencePackagesRow{}
+	for rows.Next() {
+		var i ListAutomationAgentImageReferencePackagesRow
+		if err := rows.Scan(&i.ID, &i.ImageLibraryIds); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAutomationAgents = `-- name: ListAutomationAgents :many
 SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
        draft_task_prompt, published_role_prompt, published_task_prompt,

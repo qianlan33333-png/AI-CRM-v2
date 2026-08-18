@@ -203,13 +203,13 @@ func TestLegacyImageDetailRouterSecurityMethodGuardAndResponseLimit(t *testing.T
 		t.Fatalf("sales status=%d calls=%d", response.Code, forbidden.detailCall)
 	}
 
-	for _, method := range []string{http.MethodPost, http.MethodPatch, http.MethodDelete} {
+	for _, method := range []string{http.MethodPost, http.MethodPatch} {
 		t.Run(method+" before authentication", func(t *testing.T) {
 			stub := &legacyImageDetailStub{detail: testLegacyImageDetail()}
 			auth := &legacyMediaAuthStub{}
 			response := httptest.NewRecorder()
 			legacyMediaRouterWithAuth(t, stub, auth).ServeHTTP(response, legacyImageDetailRequest(method, "1", "", false))
-			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") == "" || stub.detailCall != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
+			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != "GET, PUT, DELETE" || stub.detailCall != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
 				t.Fatalf("status=%d allow=%q calls=%d auth=%#v", response.Code, response.Header().Get("Allow"), stub.detailCall, auth)
 			}
 		})

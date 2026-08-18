@@ -11,6 +11,11 @@ LIMIT sqlc.arg(row_limit)::integer;
 SELECT id, code AS channel_code, name AS channel_name, status, config AS legacy_projection, created_by, updated_by, created_at, updated_at
 FROM channels WHERE id = sqlc.arg(channel_id)::bigint;
 
+-- name: ListChannelImageReferencePackages :many
+SELECT id, COALESCE(config -> 'welcome_image_library_ids', '[]'::jsonb)::text AS welcome_image_library_ids
+FROM channels
+ORDER BY id ASC;
+
 -- name: CreateChannel :one
 INSERT INTO channels (code, name, status, config, created_by, updated_by, created_at, updated_at)
 VALUES (sqlc.arg(channel_code)::text, sqlc.arg(channel_name)::text, sqlc.arg(status)::text,

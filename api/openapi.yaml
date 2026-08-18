@@ -2538,7 +2538,8 @@ paths:
         "404":
           description: Image metadata or blob was not found.
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
-        "405": { description: Chi rejects methods other than the independently registered GET and PUT before authentication. }
+        "405":
+          description: "Chi rejects methods other than the independently registered GET, PUT, and DELETE before authentication."
         "422":
           description: The path image id or strict query is invalid.
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
@@ -2590,8 +2591,74 @@ paths:
         "404":
           description: Image row was not found.
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "405":
+          description: "Chi rejects methods other than GET, PUT, and DELETE before authentication."
         "503":
           description: Local PostgreSQL transaction, projection, or event persistence is unavailable; no partial mutation is exposed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    delete:
+      tags: [p4-media-compat]
+      operationId: deleteLegacyImage
+      summary: Hard delete one unreferenced local Media image
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0362]
+      x-p4-decision-evidence: P4-IMAGE-DELETE-0362-2026-08-19
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.hard_delete_when_unreferenced
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, whitespace, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+        - name: force
+          in: query
+          required: false
+          description: Legacy-compatible flag. It never clears or mutates references and does not bypass a reference conflict.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional actor-scoped key. When omitted, the server mints a one-request key; a reused key with a different canonical command conflicts.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      responses:
+        "200":
+          description: The image was hard-deleted locally; blob and thumbnail-cache removal is limited to existing foreign-key cascades.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [application/json] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageDeleteSuccess" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No image exists and no completed actor-scoped delete receipt can replay the request.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "409":
+          description: A reference blocks deletion, or the actor-scoped idempotency key is bound to another canonical command.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LegacyImageDeleteConflict"
+                  - $ref: "#/components/schemas/ErrorResponse"
+        "405":
+          description: "Chi rejects methods other than GET, PUT, and DELETE before authentication."
+        "503":
+          description: Local Media, receipt, event, or required reference reads are unavailable; no partial mutation is exposed.
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   /api/admin/image-library/{image_id}/variants/{variant_key}:
     get:
@@ -4400,6 +4467,60 @@ components:
         ok: { type: boolean, enum: [true] }
         item: { $ref: "#/components/schemas/LegacyImageDetailItem" }
         source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageDeleteReferencesCleared:
+      type: object
+      additionalProperties: false
+      required: [miniprograms_cleared, campaign_steps_cleared]
+      properties:
+        miniprograms_cleared: { type: integer, minimum: 0, maximum: 0 }
+        campaign_steps_cleared: { type: integer, minimum: 0, maximum: 0 }
+    LegacyImageDeleteSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, deleted, hard_deleted, id, references_cleared, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        deleted: { type: boolean, enum: [true] }
+        hard_deleted: { type: boolean, enum: [true] }
+        id: { type: integer, format: int64, minimum: 1 }
+        references_cleared: { $ref: "#/components/schemas/LegacyImageDeleteReferencesCleared" }
+        source_status: { type: string, enum: [local_delete] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageDeleteReferenceID:
+      type: object
+      additionalProperties: false
+      required: [id]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+    LegacyImageDeleteReferences:
+      type: object
+      additionalProperties: false
+      required: [miniprograms, campaign_steps, group_invites, automation_agents, channels, import_preflights]
+      properties:
+        miniprograms: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        campaign_steps: { type: array, maxItems: 0, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        group_invites: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        automation_agents: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        channels: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        import_preflights: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+    LegacyImageDeleteConflict:
+      type: object
+      additionalProperties: false
+      required: [ok, error, references, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [image_has_references] }
+        references: { $ref: "#/components/schemas/LegacyImageDeleteReferences" }
+        source_status: { type: string, enum: [local_delete] }
         route_owner: { type: string, enum: [ai_crm_next] }
         fallback_used: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }

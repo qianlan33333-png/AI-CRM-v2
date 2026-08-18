@@ -2344,6 +2344,133 @@ export interface LegacyImageDetailSuccess {
   adapter_mode: LegacyImageDetailSuccessAdapterMode;
 }
 
+export interface LegacyImageDeleteReferencesCleared {
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  miniprograms_cleared: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  campaign_steps_cleared: number;
+}
+
+export type LegacyImageDeleteSuccessSourceStatus =
+  (typeof LegacyImageDeleteSuccessSourceStatus)[keyof typeof LegacyImageDeleteSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessSourceStatus = {
+  local_delete: "local_delete",
+} as const;
+
+export type LegacyImageDeleteSuccessRouteOwner =
+  (typeof LegacyImageDeleteSuccessRouteOwner)[keyof typeof LegacyImageDeleteSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageDeleteSuccessStorageAdapterMode =
+  (typeof LegacyImageDeleteSuccessStorageAdapterMode)[keyof typeof LegacyImageDeleteSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageDeleteSuccessAdapterMode =
+  (typeof LegacyImageDeleteSuccessAdapterMode)[keyof typeof LegacyImageDeleteSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageDeleteSuccess {
+  ok: boolean;
+  deleted: boolean;
+  hard_deleted: boolean;
+  /** @minimum 1 */
+  id: number;
+  references_cleared: LegacyImageDeleteReferencesCleared;
+  source_status: LegacyImageDeleteSuccessSourceStatus;
+  route_owner: LegacyImageDeleteSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageDeleteSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageDeleteSuccessAdapterMode;
+}
+
+export interface LegacyImageDeleteReferenceID {
+  /** @minimum 1 */
+  id: number;
+}
+
+export interface LegacyImageDeleteReferences {
+  miniprograms: LegacyImageDeleteReferenceID[];
+  /** @maxItems 0 */
+  campaign_steps: LegacyImageDeleteReferenceID[];
+  group_invites: LegacyImageDeleteReferenceID[];
+  automation_agents: LegacyImageDeleteReferenceID[];
+  channels: LegacyImageDeleteReferenceID[];
+  import_preflights: LegacyImageDeleteReferenceID[];
+}
+
+export type LegacyImageDeleteConflictError =
+  (typeof LegacyImageDeleteConflictError)[keyof typeof LegacyImageDeleteConflictError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictError = {
+  image_has_references: "image_has_references",
+} as const;
+
+export type LegacyImageDeleteConflictSourceStatus =
+  (typeof LegacyImageDeleteConflictSourceStatus)[keyof typeof LegacyImageDeleteConflictSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictSourceStatus = {
+  local_delete: "local_delete",
+} as const;
+
+export type LegacyImageDeleteConflictRouteOwner =
+  (typeof LegacyImageDeleteConflictRouteOwner)[keyof typeof LegacyImageDeleteConflictRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageDeleteConflictStorageAdapterMode =
+  (typeof LegacyImageDeleteConflictStorageAdapterMode)[keyof typeof LegacyImageDeleteConflictStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageDeleteConflictAdapterMode =
+  (typeof LegacyImageDeleteConflictAdapterMode)[keyof typeof LegacyImageDeleteConflictAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageDeleteConflict {
+  ok: boolean;
+  error: LegacyImageDeleteConflictError;
+  references: LegacyImageDeleteReferences;
+  source_status: LegacyImageDeleteConflictSourceStatus;
+  route_owner: LegacyImageDeleteConflictRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageDeleteConflictStorageAdapterMode;
+  adapter_mode: LegacyImageDeleteConflictAdapterMode;
+}
+
 export interface LegacyImageMetadataUpdateRequest {
   /**
    * TrimSpace; absent leaves the stored value unchanged.
@@ -6506,6 +6633,24 @@ export const GetLegacyImageVariant = {
   large_1440: "large_1440",
   original: "original",
 } as const;
+
+export type DeleteLegacyImageParams = {
+  /**
+   * Legacy-compatible flag. It never clears or mutates references and does not bypass a reference conflict.
+   */
+  force?: DeleteLegacyImageForce;
+};
+
+export type DeleteLegacyImageForce =
+  (typeof DeleteLegacyImageForce)[keyof typeof DeleteLegacyImageForce];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeleteLegacyImageForce = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type DeleteLegacyImage409 = LegacyImageDeleteConflict | ErrorResponse;
 
 export type UploadLegacyImageBody = {
   image: Blob;
@@ -15530,6 +15675,11 @@ export type updateLegacyImageResponse404 = {
   status: 404;
 };
 
+export type updateLegacyImageResponse405 = {
+  data: void;
+  status: 405;
+};
+
 export type updateLegacyImageResponse503 = {
   data: ErrorResponse;
   status: 503;
@@ -15543,6 +15693,7 @@ export type updateLegacyImageResponseError = (
   | updateLegacyImageResponse401
   | updateLegacyImageResponse403
   | updateLegacyImageResponse404
+  | updateLegacyImageResponse405
   | updateLegacyImageResponse503
 ) & {
   headers: Headers;
@@ -15575,6 +15726,106 @@ export const updateLegacyImage = async (
     status: res.status,
     headers: res.headers,
   } as updateLegacyImageResponse;
+};
+
+/**
+ * @summary Hard delete one unreferenced local Media image
+ */
+export type deleteLegacyImageResponse200 = {
+  data: LegacyImageDeleteSuccess;
+  status: 200;
+};
+
+export type deleteLegacyImageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteLegacyImageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteLegacyImageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteLegacyImageResponse404 = {
+  data: ErrorResponse;
+  status: 404;
+};
+
+export type deleteLegacyImageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type deleteLegacyImageResponse409 = {
+  data: DeleteLegacyImage409;
+  status: 409;
+};
+
+export type deleteLegacyImageResponse503 = {
+  data: ErrorResponse;
+  status: 503;
+};
+
+export type deleteLegacyImageResponseSuccess = deleteLegacyImageResponse200 & {
+  headers: Headers;
+};
+export type deleteLegacyImageResponseError = (
+  | deleteLegacyImageResponse400
+  | deleteLegacyImageResponse401
+  | deleteLegacyImageResponse403
+  | deleteLegacyImageResponse404
+  | deleteLegacyImageResponse405
+  | deleteLegacyImageResponse409
+  | deleteLegacyImageResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteLegacyImageResponse =
+  deleteLegacyImageResponseSuccess | deleteLegacyImageResponseError;
+
+export const getDeleteLegacyImageUrl = (
+  imageId: string,
+  params?: DeleteLegacyImageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/image-library/${imageId}?${stringifiedParams}`
+    : `/api/admin/image-library/${imageId}`;
+};
+
+export const deleteLegacyImage = async (
+  imageId: string,
+  params?: DeleteLegacyImageParams,
+  options?: RequestInit,
+): Promise<deleteLegacyImageResponse> => {
+  const res = await fetch(getDeleteLegacyImageUrl(imageId, params), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteLegacyImageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteLegacyImageResponse;
 };
 
 /**

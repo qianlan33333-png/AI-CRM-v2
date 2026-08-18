@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 )
 
 type AgentRepository struct{}
+
+var _ automationport.ImageReferenceReader = (*AgentRepository)(nil)
 
 func NewAgentRepository() *AgentRepository { return &AgentRepository{} }
 
@@ -47,6 +50,82 @@ func (r *AgentRepository) List(ctx context.Context, kind automationport.Automati
 		result = append(result, item)
 	}
 	return result, nil
+}
+
+func (r *AgentRepository) ListImageReferenceAgentIDs(ctx context.Context, imageID int64) ([]int64, error) {
+	q, err := agentQueries(ctx)
+	if r == nil || imageID < 1 {
+		return nil, errors.New("automation image reference reader unavailable")
+	}
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListAutomationAgentImageReferencePackages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]int64, 0, len(rows))
+	var previousID int64
+	for _, row := range rows {
+		if row.ID < 1 || row.ID <= previousID {
+			return nil, errors.New("automation image reference reader unavailable")
+		}
+		previousID = row.ID
+		ids, parseErr := automationImageReferenceIDs(json.RawMessage(row.ImageLibraryIds))
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		for _, candidate := range ids {
+			if candidate == imageID {
+				result = append(result, row.ID)
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
+func automationImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
+	if len(raw) == 0 {
+		return []int64{}, nil
+	}
+	if raw[0] != '[' {
+		return nil, errors.New("automation image reference reader unavailable")
+	}
+	var values []json.RawMessage
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return nil, errors.New("automation image reference reader unavailable")
+	}
+	result := make([]int64, 0, len(values))
+	seen := make(map[int64]struct{}, len(values))
+	for _, value := range values {
+		id, err := automationCanonicalImageReferenceID(value)
+		if err != nil {
+			return nil, err
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return nil, errors.New("automation image reference reader unavailable")
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result, nil
+}
+
+func automationCanonicalImageReferenceID(raw json.RawMessage) (int64, error) {
+	if len(raw) == 0 || raw[0] < '1' || raw[0] > '9' {
+		return 0, errors.New("automation image reference reader unavailable")
+	}
+	for _, character := range raw[1:] {
+		if character < '0' || character > '9' {
+			return 0, errors.New("automation image reference reader unavailable")
+		}
+	}
+	id, err := strconv.ParseInt(string(raw), 10, 64)
+	if err != nil || id < 1 {
+		return 0, errors.New("automation image reference reader unavailable")
+	}
+	return id, nil
 }
 func (r *AgentRepository) Get(ctx context.Context, id automationport.AgentID) (automationport.Agent, error) {
 	q, e := agentQueries(ctx)

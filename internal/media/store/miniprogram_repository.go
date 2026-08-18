@@ -127,11 +127,14 @@ func (repository *MiniProgramRepository) ImageExists(ctx context.Context, id int
 	if repository == nil || err != nil || id < 1 {
 		return false, miniProgramStoreUnavailable(err)
 	}
-	exists, err := query.MediaImageExists(ctx, id)
+	_, err = query.LockMediaImageReference(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
 	if err != nil {
 		return false, miniProgramStoreUnavailable(err)
 	}
-	return exists, nil
+	return true, nil
 }
 
 func (repository *MiniProgramRepository) ResolveThumbnailFromCache(ctx context.Context, item mediaport.MiniProgram) (mediaport.ThumbnailCacheResolution, error) {

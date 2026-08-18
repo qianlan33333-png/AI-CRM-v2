@@ -167,7 +167,7 @@ func TestLegacyImageUpdateBoundaryRequestsReachApplicationAndMapItsValidation(t 
 }
 
 func TestLegacyImageUpdateRouterAndFailureContract(t *testing.T) {
-	for _, method := range []string{http.MethodPost, http.MethodPatch, http.MethodDelete} {
+	for _, method := range []string{http.MethodPost, http.MethodPatch} {
 		stub := &legacyImageUpdateStub{result: imageUpdateResult()}
 		auth := &legacyMediaAuthStub{}
 		response := httptest.NewRecorder()
