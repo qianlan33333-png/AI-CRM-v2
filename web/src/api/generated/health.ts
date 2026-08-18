@@ -1754,6 +1754,132 @@ export interface LegacyQuestionnaireError {
   detail: string;
 }
 
+export type LegacyImageListItemMimeType =
+  (typeof LegacyImageListItemMimeType)[keyof typeof LegacyImageListItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export interface LegacyImageListItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  mime_type: LegacyImageListItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  enabled: boolean;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  /** @maxLength 200 */
+  category: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_160$ */
+  thumb_160_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_320_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  preview_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  mobile_1080_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/large_1440$ */
+  large_1440_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/original$ */
+  original_url: string;
+}
+
+export type LegacyImageListSuccessSourceStatus =
+  (typeof LegacyImageListSuccessSourceStatus)[keyof typeof LegacyImageListSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessSourceStatus = {
+  next_media_library: "next_media_library",
+} as const;
+
+export type LegacyImageListSuccessRouteOwner =
+  (typeof LegacyImageListSuccessRouteOwner)[keyof typeof LegacyImageListSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageListSuccessStorageAdapterMode =
+  (typeof LegacyImageListSuccessStorageAdapterMode)[keyof typeof LegacyImageListSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageListSuccessAdapterMode =
+  (typeof LegacyImageListSuccessAdapterMode)[keyof typeof LegacyImageListSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageListSuccess {
+  ok: boolean;
+  items: LegacyImageListItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /**
+   * @minimum 0
+   * @maximum 500
+   */
+  count: number;
+  has_more: boolean;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  next_offset: number | null;
+  source_status: LegacyImageListSuccessSourceStatus;
+  route_owner: LegacyImageListSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageListSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageListSuccessAdapterMode;
+}
+
 export type LegacyImageFacetsSuccessSourceStatus =
   (typeof LegacyImageFacetsSuccessSourceStatus)[keyof typeof LegacyImageFacetsSuccessSourceStatus];
 
@@ -5080,6 +5206,61 @@ export type ListLegacyQuestionnairesParams = {
    */
   offset?: number;
 };
+
+export type GetLegacyImageListParams = {
+  /**
+   * One decimal scalar matching ^-?[0-9]+$; 0 becomes 100, negatives become 1, and values above 500 become 500.
+   * @pattern ^-?[0-9]+$
+   */
+  limit?: string;
+  /**
+   * One decimal scalar matching ^-?[0-9]+$; zero and negatives become 0.
+   * @pattern ^-?[0-9]+$
+   */
+  offset?: string;
+  /**
+   * One lowercase boolean scalar. Both values read the same permanently-enabled v2 image set.
+   */
+  enabled_only?: GetLegacyImageListEnabledOnly;
+  /**
+   * One scalar; TrimSpace is applied before PostgreSQL ILIKE matching over name, file_name, description, category, and normalized tags. Percent and underscore retain LIKE wildcard meaning.
+   */
+  q?: string;
+  /**
+   * One scalar; TrimSpace is applied to the query value before case-sensitive exact matching.
+   */
+  category?: string;
+  /**
+   * One ASCII-comma-separated scalar normalized with the frozen 64-code-point, 50-item, pre-truncation-dedupe rule; members are ORed.
+   */
+  tags?: string;
+  /**
+   * Repeatable ASCII-comma-separated groups; members within a group are ORed and nonempty groups are ANDed.
+   */
+  tag_group?: string[];
+  /**
+   * One lowercase boolean scalar; true requires empty description, category, or normalized tags.
+   */
+  only_unlabeled?: GetLegacyImageListOnlyUnlabeled;
+};
+
+export type GetLegacyImageListEnabledOnly =
+  (typeof GetLegacyImageListEnabledOnly)[keyof typeof GetLegacyImageListEnabledOnly];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageListEnabledOnly = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type GetLegacyImageListOnlyUnlabeled =
+  (typeof GetLegacyImageListOnlyUnlabeled)[keyof typeof GetLegacyImageListOnlyUnlabeled];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageListOnlyUnlabeled = {
+  true: "true",
+  false: "false",
+} as const;
 
 export type UploadLegacyImageBody = {
   image: Blob;
@@ -13296,6 +13477,100 @@ export const enableLegacyQuestionnaire = async (
     status: res.status,
     headers: res.headers,
   } as enableLegacyQuestionnaireResponse;
+};
+
+/**
+ * @summary List local Media-owned image metadata with strict legacy-compatible filters and pagination
+ */
+export type getLegacyImageListResponse200 = {
+  data: LegacyImageListSuccess;
+  status: 200;
+};
+
+export type getLegacyImageListResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyImageListResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyImageListResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyImageListResponse422 = {
+  data: ErrorResponse;
+  status: 422;
+};
+
+export type getLegacyImageListResponse500 = {
+  data: ErrorResponse;
+  status: 500;
+};
+
+export type getLegacyImageListResponseSuccess =
+  getLegacyImageListResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyImageListResponseError = (
+  | getLegacyImageListResponse401
+  | getLegacyImageListResponse403
+  | getLegacyImageListResponse405
+  | getLegacyImageListResponse422
+  | getLegacyImageListResponse500
+) & {
+  headers: Headers;
+};
+
+export type getLegacyImageListResponse =
+  getLegacyImageListResponseSuccess | getLegacyImageListResponseError;
+
+export const getGetLegacyImageListUrl = (params?: GetLegacyImageListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["tag_group"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? "null" : v.toString());
+      });
+      return;
+    }
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/image-library?${stringifiedParams}`
+    : `/api/admin/image-library`;
+};
+
+export const getLegacyImageList = async (
+  params?: GetLegacyImageListParams,
+  options?: RequestInit,
+): Promise<getLegacyImageListResponse> => {
+  const res = await fetch(getGetLegacyImageListUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyImageListResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyImageListResponse;
 };
 
 /**

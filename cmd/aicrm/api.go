@@ -718,6 +718,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 		}
 	}
 	if legacy != nil {
+		strictLegacyMethodRouters := make(map[string]*chi.Mux)
 		registerLegacy := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
 			tail, wrapErr := recovery(endpoint)
 			if wrapErr != nil {
@@ -746,12 +747,18 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if wrapErr != nil {
 				return wrapErr
 			}
-			if pattern == legacyImageFacetsPath {
-				// Keep 0358 isolated from the compatibility router's existing 400
-				// method-mismatch adapter so Chi owns the frozen 405 response.
-				methodRouter := chi.NewRouter()
+			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath {
+				// Keep the strict image-library reads out of the compatibility
+				// router's legacy 400 method adapter. A per-path method router lets
+				// Chi return 405 before authentication and preserves the shared
+				// collection path for the independently-owned future 0357 POST.
+				methodRouter := strictLegacyMethodRouters[pattern]
+				if methodRouter == nil {
+					methodRouter = chi.NewRouter()
+					strictLegacyMethodRouters[pattern] = methodRouter
+					router.Handle(pattern, methodRouter)
+				}
 				methodRouter.Method(method, pattern, tail)
-				router.Handle(pattern, methodRouter)
 				return nil
 			}
 			router.Method(method, pattern, tail)
@@ -892,6 +899,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardRefund)},
 			{http.MethodGet, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListWechatOrderExternalEffects)},
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
+			{http.MethodGet, legacyImageListPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageList)},
 			{http.MethodGet, legacyImageFacetsPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageFacets)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
