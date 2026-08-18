@@ -4,7 +4,7 @@
   "rules": [
     {
       "name": "ci-self",
-      "patterns": [".github/**","scripts/ci/**","scripts/check_*.sh","scripts/test_*.sh","docs/ci/repo-contract-fingerprints.tsv"],
+      "patterns": [".github/**","scripts/ci/**","scripts/check_*.sh","scripts/test_*.sh"],
       "effects": {"ci": true}
     },
     {

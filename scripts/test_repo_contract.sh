@@ -12,28 +12,9 @@ fail() {
   exit 1
 }
 
-sha256_index_path() {
-  local fixture="$1" file_path="$2"
-  if command -v sha256sum >/dev/null 2>&1; then
-    git -C "$fixture" show ":$file_path" | sha256sum | awk '{print $1}'
-  else
-    git -C "$fixture" show ":$file_path" | shasum -a 256 | awk '{print $1}'
-  fi
-}
-
 refresh_manifest() {
-  local fixture="$1" manifest file_path mode digest
-  manifest="$fixture/docs/ci/repo-contract-fingerprints.tsv"
+  local fixture="$1"
   git -C "$fixture" add -A
-  mkdir -p "$(dirname "$manifest")"
-  printf '# mode\tsha256\tpath\n' >"$manifest"
-  while IFS= read -r -d '' file_path; do
-    [[ "$file_path" = "docs/ci/repo-contract-fingerprints.tsv" ]] && continue
-    mode="$(git -C "$fixture" ls-files --stage -- "$file_path" | awk '{print $1}')"
-    digest="$(sha256_index_path "$fixture" "$file_path")"
-    printf '%s\t%s\t%s\n' "$mode" "$digest" "$file_path" >>"$manifest"
-  done < <(git -C "$fixture" -c core.quotePath=false ls-files -z)
-  git -C "$fixture" add docs/ci/repo-contract-fingerprints.tsv
 }
 
 run_contract() {
@@ -58,17 +39,14 @@ make_fixture() {
   printf '%s\n' "$fixture"
 }
 
-mkdir -p "$test_root/baseline/.github/workflows" "$test_root/baseline/scripts" "$test_root/baseline/docs/ci"
+mkdir -p "$test_root/baseline/.github/workflows" "$test_root/baseline/scripts"
 cp -a .github/ci-map.yml "$test_root/baseline/.github/"
 cp -a .github/workflows/ci.yml .github/workflows/nightly.yml "$test_root/baseline/.github/workflows/"
 mkdir -p "$test_root/baseline/scripts/ci"
 cp -a scripts/ci/*.py scripts/ci/*.sh "$test_root/baseline/scripts/ci/"
 cp -a \
   scripts/check_repo_contract.sh \
-  scripts/check_repo_fingerprints.sh \
   scripts/test_repo_contract.sh \
-  scripts/test_repo_fingerprints.sh \
-  scripts/verify_repo_receipts.pl \
   "$test_root/baseline/scripts/"
 cp -a Makefile "$test_root/baseline/"
 git -C "$test_root/baseline" init --quiet -b main

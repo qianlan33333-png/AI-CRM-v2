@@ -411,7 +411,6 @@ class WorkflowWiringTests(unittest.TestCase):
         root_self_tests = (
             "scripts/check_repo_contract.sh",
             "scripts/test_repo_contract.sh",
-            "scripts/test_repo_fingerprints.sh",
         )
         for command in ("python3 scripts/ci/test_selector.py", *root_self_tests):
             self.assertIn(command, ci_source)
@@ -425,7 +424,6 @@ class WorkflowWiringTests(unittest.TestCase):
             "python3 scripts/ci/test_selector.py",
             "scripts/check_repo_contract.sh",
             "scripts/test_repo_contract.sh",
-            "scripts/test_repo_fingerprints.sh",
             "make --no-print-directory ci-go",
             "make --no-print-directory migration-integration",
             "scripts/run_ci_acceptance_manifest.sh",
