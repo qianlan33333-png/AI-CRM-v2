@@ -3311,6 +3311,261 @@ export interface LegacyHealthMethodNotAllowed {
   detail: LegacyHealthMethodNotAllowedDetail;
 }
 
+export type LegacyDataHealthCheckCheckId =
+  (typeof LegacyDataHealthCheckCheckId)[keyof typeof LegacyDataHealthCheckCheckId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckCheckId = {
+  database_readiness: "database_readiness",
+  migration_compatibility: "migration_compatibility",
+  outbound_outcome_unknown_backlog: "outbound_outcome_unknown_backlog",
+  release_sha_complete: "release_sha_complete",
+} as const;
+
+export type LegacyDataHealthCheckStatus =
+  (typeof LegacyDataHealthCheckStatus)[keyof typeof LegacyDataHealthCheckStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckStatus = {
+  ok: "ok",
+  warn: "warn",
+  fail: "fail",
+} as const;
+
+export type LegacyDataHealthCheckSeverity =
+  (typeof LegacyDataHealthCheckSeverity)[keyof typeof LegacyDataHealthCheckSeverity];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckSeverity = {
+  green: "green",
+  yellow: "yellow",
+  red: "red",
+} as const;
+
+export type LegacyDataHealthCheckEvidenceEnvironment =
+  (typeof LegacyDataHealthCheckEvidenceEnvironment)[keyof typeof LegacyDataHealthCheckEvidenceEnvironment];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckEvidenceEnvironment = {
+  production: "production",
+  non_production: "non_production",
+} as const;
+
+export type LegacyDataHealthCheckEvidence = {
+  database_readable?: boolean;
+  schema_compatible?: boolean;
+  sha_complete?: boolean;
+  environment?: LegacyDataHealthCheckEvidenceEnvironment;
+  queue_observation_available?: boolean;
+  /** @minimum 0 */
+  outcome_unknown_count?: number;
+};
+
+export type LegacyDataHealthCheckGateDecision =
+  (typeof LegacyDataHealthCheckGateDecision)[keyof typeof LegacyDataHealthCheckGateDecision];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckGateDecision = {
+  pass: "pass",
+  warn: "warn",
+  block: "block",
+} as const;
+
+export type LegacyDataHealthCheckOwner =
+  (typeof LegacyDataHealthCheckOwner)[keyof typeof LegacyDataHealthCheckOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckOwner = {
+  platform_readiness: "platform_readiness",
+} as const;
+
+export type LegacyDataHealthCheckReplayPolicy =
+  (typeof LegacyDataHealthCheckReplayPolicy)[keyof typeof LegacyDataHealthCheckReplayPolicy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckReplayPolicy = {
+  manual_after_remediation: "manual_after_remediation",
+} as const;
+
+export interface LegacyDataHealthCheck {
+  check_id: LegacyDataHealthCheckCheckId;
+  title: string;
+  status: LegacyDataHealthCheckStatus;
+  severity: LegacyDataHealthCheckSeverity;
+  summary: string;
+  evidence: LegacyDataHealthCheckEvidence;
+  remediation: string;
+  gate_decision: LegacyDataHealthCheckGateDecision;
+  reason_code: string;
+  owner: LegacyDataHealthCheckOwner;
+  candidate_related: boolean;
+  first_observed_at: string;
+  last_observed_at: string;
+  replay_policy: LegacyDataHealthCheckReplayPolicy;
+}
+
+export type LegacyDataHealthChecksResponseRegistryId =
+  (typeof LegacyDataHealthChecksResponseRegistryId)[keyof typeof LegacyDataHealthChecksResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthChecksResponseRegistryId = {
+  "v2-core-readinessv1": "v2-core-readiness.v1",
+} as const;
+
+export interface LegacyDataHealthChecksResponse {
+  ok: boolean;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  checks: LegacyDataHealthCheck[];
+  registry_id: LegacyDataHealthChecksResponseRegistryId;
+  /** @pattern ^[a-f0-9]{64}$ */
+  registry_sha256: string;
+  registry_matches_manifest: boolean;
+  /**
+   * @minItems 19
+   * @maxItems 19
+   */
+  excluded_legacy_check_ids: string[];
+  observed_at: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthCheckResponseRegistryId =
+  (typeof LegacyDataHealthCheckResponseRegistryId)[keyof typeof LegacyDataHealthCheckResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckResponseRegistryId = {
+  "v2-core-readinessv1": "v2-core-readiness.v1",
+} as const;
+
+export interface LegacyDataHealthCheckResponse {
+  ok: boolean;
+  check: LegacyDataHealthCheck;
+  registry_id: LegacyDataHealthCheckResponseRegistryId;
+  /** @pattern ^[a-f0-9]{64}$ */
+  registry_sha256: string;
+  registry_matches_manifest: boolean;
+  observed_at: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthSummaryResponseOverallStatus =
+  (typeof LegacyDataHealthSummaryResponseOverallStatus)[keyof typeof LegacyDataHealthSummaryResponseOverallStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthSummaryResponseOverallStatus = {
+  ok: "ok",
+  warn: "warn",
+  fail: "fail",
+} as const;
+
+export type LegacyDataHealthSummaryResponseCountsNotApplicable =
+  (typeof LegacyDataHealthSummaryResponseCountsNotApplicable)[keyof typeof LegacyDataHealthSummaryResponseCountsNotApplicable];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthSummaryResponseCountsNotApplicable = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyDataHealthSummaryResponseCounts = {
+  /** @minimum 0 */
+  ok: number;
+  /** @minimum 0 */
+  warn: number;
+  /** @minimum 0 */
+  fail: number;
+  not_applicable: LegacyDataHealthSummaryResponseCountsNotApplicable;
+};
+
+export type LegacyDataHealthSummaryResponseGateCounts = {
+  /** @minimum 0 */
+  pass: number;
+  /** @minimum 0 */
+  warn: number;
+  /** @minimum 0 */
+  block: number;
+};
+
+export type LegacyDataHealthSummaryResponseRegistryId =
+  (typeof LegacyDataHealthSummaryResponseRegistryId)[keyof typeof LegacyDataHealthSummaryResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthSummaryResponseRegistryId = {
+  "v2-core-readinessv1": "v2-core-readiness.v1",
+} as const;
+
+export interface LegacyDataHealthSummaryResponse {
+  ok: boolean;
+  overall_status: LegacyDataHealthSummaryResponseOverallStatus;
+  counts: LegacyDataHealthSummaryResponseCounts;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  checks: LegacyDataHealthCheck[];
+  gate_counts: LegacyDataHealthSummaryResponseGateCounts;
+  registry_id: LegacyDataHealthSummaryResponseRegistryId;
+  /** @pattern ^[a-f0-9]{64}$ */
+  registry_sha256: string;
+  registry_matches_manifest: boolean;
+  /**
+   * @minItems 19
+   * @maxItems 19
+   */
+  excluded_legacy_check_ids: string[];
+  observed_at: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthCheckNotFoundStatusCode =
+  (typeof LegacyDataHealthCheckNotFoundStatusCode)[keyof typeof LegacyDataHealthCheckNotFoundStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckNotFoundStatusCode = {
+  NUMBER_404: 404,
+} as const;
+
+export type LegacyDataHealthCheckNotFoundErrorCode =
+  (typeof LegacyDataHealthCheckNotFoundErrorCode)[keyof typeof LegacyDataHealthCheckNotFoundErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckNotFoundErrorCode = {
+  data_health_check_not_found: "data_health_check_not_found",
+} as const;
+
+export interface LegacyDataHealthCheckNotFound {
+  ok: boolean;
+  status_code: LegacyDataHealthCheckNotFoundStatusCode;
+  error_code: LegacyDataHealthCheckNotFoundErrorCode;
+  check_id: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthObservationUnavailableStatusCode =
+  (typeof LegacyDataHealthObservationUnavailableStatusCode)[keyof typeof LegacyDataHealthObservationUnavailableStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthObservationUnavailableStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyDataHealthObservationUnavailableErrorCode =
+  (typeof LegacyDataHealthObservationUnavailableErrorCode)[keyof typeof LegacyDataHealthObservationUnavailableErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthObservationUnavailableErrorCode = {
+  data_health_observation_unavailable: "data_health_observation_unavailable",
+} as const;
+
+export interface LegacyDataHealthObservationUnavailable {
+  ok: boolean;
+  status_code: LegacyDataHealthObservationUnavailableStatusCode;
+  error_code: LegacyDataHealthObservationUnavailableErrorCode;
+  real_external_call_executed: boolean;
+}
+
 export interface ErrorResponse {
   /** @minLength 1 */
   code: string;
@@ -15993,6 +16248,202 @@ export const getLegacyExecutionRuntime = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyExecutionRuntimeResponse;
+};
+
+/**
+ * @summary Read the local data-health registry without external calls
+ */
+export type listLegacyDataHealthChecksResponse200 = {
+  data: LegacyDataHealthChecksResponse;
+  status: 200;
+};
+
+export type listLegacyDataHealthChecksResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyDataHealthChecksResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyDataHealthChecksResponse503 = {
+  data: LegacyDataHealthObservationUnavailable;
+  status: 503;
+};
+
+export type listLegacyDataHealthChecksResponseSuccess =
+  listLegacyDataHealthChecksResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyDataHealthChecksResponseError = (
+  | listLegacyDataHealthChecksResponse401
+  | listLegacyDataHealthChecksResponse403
+  | listLegacyDataHealthChecksResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyDataHealthChecksResponse =
+  | listLegacyDataHealthChecksResponseSuccess
+  | listLegacyDataHealthChecksResponseError;
+
+export const getListLegacyDataHealthChecksUrl = () => {
+  return `/api/admin/data-health/checks`;
+};
+
+export const listLegacyDataHealthChecks = async (
+  options?: RequestInit,
+): Promise<listLegacyDataHealthChecksResponse> => {
+  const res = await fetch(getListLegacyDataHealthChecksUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyDataHealthChecksResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyDataHealthChecksResponse;
+};
+
+/**
+ * @summary Read one local data-health check without external calls
+ */
+export type getLegacyDataHealthCheckResponse200 = {
+  data: LegacyDataHealthCheckResponse;
+  status: 200;
+};
+
+export type getLegacyDataHealthCheckResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyDataHealthCheckResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyDataHealthCheckResponse404 = {
+  data: LegacyDataHealthCheckNotFound;
+  status: 404;
+};
+
+export type getLegacyDataHealthCheckResponse503 = {
+  data: LegacyDataHealthObservationUnavailable;
+  status: 503;
+};
+
+export type getLegacyDataHealthCheckResponseSuccess =
+  getLegacyDataHealthCheckResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyDataHealthCheckResponseError = (
+  | getLegacyDataHealthCheckResponse401
+  | getLegacyDataHealthCheckResponse403
+  | getLegacyDataHealthCheckResponse404
+  | getLegacyDataHealthCheckResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyDataHealthCheckResponse =
+  | getLegacyDataHealthCheckResponseSuccess
+  | getLegacyDataHealthCheckResponseError;
+
+export const getGetLegacyDataHealthCheckUrl = (checkId: string) => {
+  return `/api/admin/data-health/checks/${checkId}`;
+};
+
+export const getLegacyDataHealthCheck = async (
+  checkId: string,
+  options?: RequestInit,
+): Promise<getLegacyDataHealthCheckResponse> => {
+  const res = await fetch(getGetLegacyDataHealthCheckUrl(checkId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyDataHealthCheckResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyDataHealthCheckResponse;
+};
+
+/**
+ * @summary Read the local data-health summary without external calls
+ */
+export type getLegacyDataHealthSummaryResponse200 = {
+  data: LegacyDataHealthSummaryResponse;
+  status: 200;
+};
+
+export type getLegacyDataHealthSummaryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyDataHealthSummaryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyDataHealthSummaryResponse503 = {
+  data: LegacyDataHealthObservationUnavailable;
+  status: 503;
+};
+
+export type getLegacyDataHealthSummaryResponseSuccess =
+  getLegacyDataHealthSummaryResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyDataHealthSummaryResponseError = (
+  | getLegacyDataHealthSummaryResponse401
+  | getLegacyDataHealthSummaryResponse403
+  | getLegacyDataHealthSummaryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyDataHealthSummaryResponse =
+  | getLegacyDataHealthSummaryResponseSuccess
+  | getLegacyDataHealthSummaryResponseError;
+
+export const getGetLegacyDataHealthSummaryUrl = () => {
+  return `/api/admin/data-health/summary`;
+};
+
+export const getLegacyDataHealthSummary = async (
+  options?: RequestInit,
+): Promise<getLegacyDataHealthSummaryResponse> => {
+  const res = await fetch(getGetLegacyDataHealthSummaryUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyDataHealthSummaryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyDataHealthSummaryResponse;
 };
 
 /**

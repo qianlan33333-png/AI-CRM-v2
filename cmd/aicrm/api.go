@@ -508,13 +508,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
-	systemHealth, err := newSystemHealthHandler(postgresSystemHealthSource{
+	dataHealthSource := postgresSystemHealthSource{
 		platformObserver: opsstore.NewReadinessRepository(pool),
 		queueObserver:    outboundstore.NewReadinessRepository(pool),
 		production:       strings.EqualFold(strings.TrimSpace(config.Release.Environment), "production"),
 		releaseSHA:       config.Release.SHA,
 		realCallsEnabled: config.WeCom.OAuth.Enabled,
-	})
+	}
+	systemHealth, err := newSystemHealthHandler(dataHealthSource)
 	if err != nil {
 		pool.Close()
 		return nil, errInvalidAPIComponent
@@ -536,7 +537,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, errInvalidAPIComponent
 	}
-	handler, err := newAPIHandlerWithAll(logger, callbackHandler, authHandler, candidate, legacyHandler, humanAuth)
+	handler, err := newAPIHandlerWithAll(logger, callbackHandler, authHandler, candidate, legacyHandler, humanAuth, dataHealthSource)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -567,7 +568,7 @@ func newAPIHandlerWithCallbackAndLegacy(logger *slog.Logger, callbackHandler htt
 	return newAPIHandlerWithAll(logger, callbackHandler, authHandler, candidate, legacy, nil)
 }
 
-func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler) (http.Handler, error) {
+func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler, dataHealthSources ...legacyDataHealthObservationSource) (http.Handler, error) {
 	if logger == nil || callbackHandler == nil || authHandler == nil || candidate == nil {
 		return nil, errInvalidAPIComponent
 	}
@@ -768,6 +769,11 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 		}
 	}
 	if legacy != nil {
+		var source legacyDataHealthObservationSource
+		if len(dataHealthSources) > 0 {
+			source = dataHealthSources[0]
+		}
+		dataHealth := newLegacyDataHealthHandler(source)
 		strictLegacyMethodRouters := make(map[string]*chi.Mux)
 		legacyAPIDocs, docsErr := newLegacyAPIDocsHandler()
 		if docsErr != nil {
@@ -812,7 +818,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if method == http.MethodPut && pattern == legacyImageDetailPath {
 				tail = legacyImageUpdateSecurityHeaders(tail)
 			}
-			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath {
+			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -840,6 +846,9 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			csrf            bool
 			endpoint        http.Handler
 		}{
+			{http.MethodGet, legacyDataHealthChecksPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.List)},
+			{http.MethodGet, legacyDataHealthCheckPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.Detail)},
+			{http.MethodGet, legacyDataHealthSummaryPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.Summary)},
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
