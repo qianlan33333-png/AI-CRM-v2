@@ -230,6 +230,57 @@ func TestGatewayNormalizesPanicsDirectErrorsAndOversizeBodies(t *testing.T) {
 	}
 }
 
+func TestGatewayRecoveryResponseBufferLimitsAreBoundedAtRegistration(t *testing.T) {
+	logs := &bytes.Buffer{}
+	gateway := mustTestGateway(t, logs, GatewayOptions{})
+	writeBytes := func(length int) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			_, _ = writer.Write(bytes.Repeat([]byte("x"), length))
+		})
+	}
+	serve := func(handler http.Handler) *httptest.ResponseRecorder {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/buffer-limit", nil))
+		return response
+	}
+
+	defaultAtLimit, err := gateway.RecoveryErrorLog(writeBytes(maxBufferedResponseBytes))
+	if err != nil {
+		t.Fatalf("default recovery error = %v", err)
+	}
+	if response := serve(defaultAtLimit); response.Code != http.StatusOK || response.Body.Len() != maxBufferedResponseBytes {
+		t.Fatalf("default at limit status/body=%d/%d", response.Code, response.Body.Len())
+	}
+	defaultOverLimit, err := gateway.RecoveryErrorLog(writeBytes(maxBufferedResponseBytes + 1))
+	if err != nil {
+		t.Fatalf("default overflow recovery error = %v", err)
+	}
+	if response := serve(defaultOverLimit); response.Code != http.StatusInternalServerError || decodeErrorResponse(t, response).Code != CodeInternal {
+		t.Fatalf("default over limit status/body=%d/%d", response.Code, response.Body.Len())
+	}
+
+	customAtLimit, err := gateway.RecoveryErrorLogWithResponseBufferLimit(writeBytes(maxRouteResponseBufferBytes), maxRouteResponseBufferBytes)
+	if err != nil {
+		t.Fatalf("custom recovery error = %v", err)
+	}
+	if response := serve(customAtLimit); response.Code != http.StatusOK || response.Body.Len() != maxRouteResponseBufferBytes {
+		t.Fatalf("custom at limit status/body=%d/%d", response.Code, response.Body.Len())
+	}
+	customOverLimit, err := gateway.RecoveryErrorLogWithResponseBufferLimit(writeBytes(maxRouteResponseBufferBytes+1), maxRouteResponseBufferBytes)
+	if err != nil {
+		t.Fatalf("custom overflow recovery error = %v", err)
+	}
+	if response := serve(customOverLimit); response.Code != http.StatusInternalServerError || decodeErrorResponse(t, response).Code != CodeInternal {
+		t.Fatalf("custom over limit status/body=%d/%d", response.Code, response.Body.Len())
+	}
+
+	for _, limit := range []int{-1, 0, maxRouteResponseBufferBytes + 1} {
+		if _, err := gateway.RecoveryErrorLogWithResponseBufferLimit(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), limit); !errors.Is(err, ErrInvalidGateway) {
+			t.Fatalf("limit %d error = %v, want ErrInvalidGateway", limit, err)
+		}
+	}
+}
+
 func TestGatewayUsesRouteTemplatesAndOpaqueAccountContextInStructuredLogs(t *testing.T) {
 	t.Parallel()
 

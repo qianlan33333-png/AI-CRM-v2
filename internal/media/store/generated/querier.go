@@ -20,6 +20,7 @@ type Querier interface {
 	DeleteMediaMiniProgram(ctx context.Context, id int64) error
 	GetMediaGroupInvite(ctx context.Context, id int64) (MediaGroupInvite, error)
 	GetMediaGroupInviteReceipt(ctx context.Context, arg GetMediaGroupInviteReceiptParams) (GetMediaGroupInviteReceiptRow, error)
+	GetMediaImageDetail(ctx context.Context, imageID int64) (GetMediaImageDetailRow, error)
 	GetMediaImageUploadReceipt(ctx context.Context, arg GetMediaImageUploadReceiptParams) (GetMediaImageUploadReceiptRow, error)
 	GetMediaImageVariant(ctx context.Context, imageID int64) (GetMediaImageVariantRow, error)
 	GetMediaMiniProgram(ctx context.Context, id int64) (GetMediaMiniProgramRow, error)

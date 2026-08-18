@@ -20,6 +20,7 @@ import (
 const (
 	RequestIDHeader                = "X-Request-ID"
 	maxBufferedResponseBytes       = 8 << 20
+	maxRouteResponseBufferBytes    = 30 << 20
 	DefaultMaxConcurrentPerAccount = 4
 	DefaultRequestTimeout          = 10 * time.Second
 )
@@ -183,11 +184,19 @@ func (gateway *Gateway) TimeoutMiddleware(next http.Handler) (http.Handler, erro
 // after this tail or any earlier middleware returns. Responses are buffered,
 // so the platform business API does not support streaming handlers.
 func (gateway *Gateway) RecoveryErrorLog(next http.Handler) (http.Handler, error) {
-	if gateway == nil || next == nil {
+	return gateway.RecoveryErrorLogWithResponseBufferLimit(next, maxBufferedResponseBytes)
+}
+
+// RecoveryErrorLogWithResponseBufferLimit is the route-registration-time
+// recovery boundary for a bounded, non-streaming response. The platform
+// default stays at 8 MiB; a route may opt in to a larger limit only up to the
+// fixed 30 MiB compatibility ceiling.
+func (gateway *Gateway) RecoveryErrorLogWithResponseBufferLimit(next http.Handler, responseBufferLimit int) (http.Handler, error) {
+	if gateway == nil || next == nil || responseBufferLimit < 1 || responseBufferLimit > maxRouteResponseBufferBytes {
 		return nil, ErrInvalidGateway
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		response := newBufferedResponse(writer)
+		response := newBufferedResponse(writer, responseBufferLimit)
 		response.Header().Set(RequestIDHeader, RequestID(request.Context()))
 
 		defer func() {
@@ -361,6 +370,7 @@ type bufferedResponse struct {
 	underlying http.ResponseWriter
 	header     http.Header
 	body       bytes.Buffer
+	maxBodyLen int
 	status     int
 	errorCode  ErrorCode
 	overflow   bool
@@ -391,8 +401,8 @@ func (response *observedResponse) Write(content []byte) (int, error) {
 
 func (response *observedResponse) markError(code ErrorCode) { response.errorCode = code }
 
-func newBufferedResponse(underlying http.ResponseWriter) *bufferedResponse {
-	return &bufferedResponse{underlying: underlying, header: make(http.Header)}
+func newBufferedResponse(underlying http.ResponseWriter, maxBodyLen int) *bufferedResponse {
+	return &bufferedResponse{underlying: underlying, header: make(http.Header), maxBodyLen: maxBodyLen}
 }
 
 func (response *bufferedResponse) Header() http.Header { return response.header }
@@ -408,7 +418,7 @@ func (response *bufferedResponse) Write(content []byte) (int, error) {
 	if response.status == 0 {
 		response.status = http.StatusOK
 	}
-	if response.body.Len()+len(content) > maxBufferedResponseBytes {
+	if response.body.Len()+len(content) > response.maxBodyLen {
 		response.overflow = true
 		return len(content), nil
 	}
