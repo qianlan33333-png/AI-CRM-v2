@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getHealthz } from "./api/generated/health";
 import {
   App,
+  IMAGE_LIBRARY_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -21,6 +22,7 @@ import {
   type NavigationClick,
 } from "./main";
 import type { CustomerDetailTransport } from "./customer-detail";
+import type { ImageLibraryTransport } from "./image-library";
 
 const adminSession = {
   status: "authenticated",
@@ -83,6 +85,15 @@ function customerDetailTransport(): CustomerDetailTransport {
   };
 }
 
+function imageLibraryTransport(): ImageLibraryTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return {
+    list: vi.fn(response),
+    facets: vi.fn(response),
+    upload: vi.fn(response),
+  } as unknown as ImageLibraryTransport;
+}
+
 describe("Web shell routes", () => {
   it("accepts only an exact positive safe OneID customer-detail pathname", () => {
     expect(customerIDForPathname("/customers/1")).toBe(1);
@@ -129,8 +140,39 @@ describe("Web shell routes", () => {
     expect(html).not.toContain("\u672a\u627e\u5230\u9875\u9762");
   });
 
-  it("matches only the eight frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(8);
+  it("renders the injected image-library route and keeps sales fail-closed", () => {
+    vi.stubGlobal("window", { location: { pathname: "/admin/image-library" } });
+    const client = imageLibraryTransport();
+    const html = renderToStaticMarkup(
+      <App
+        imageLibraryTransport={client}
+        initialSession={adminSession}
+      />,
+    );
+    expect(html).toContain('<h1 id="app-title">图片素材库</h1>');
+    expect(html).toContain("搜索图片");
+    expect(html).toMatch(
+      /<a aria-current="page" href="\/admin\/image-library">图片素材<\/a>/,
+    );
+
+    const sales = renderToStaticMarkup(
+      <App
+        imageLibraryTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有图片素材库访问权限。");
+    expect(sales).not.toContain("搜索图片");
+    expect(sales).not.toContain('href="/admin/image-library"');
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.facets).not.toHaveBeenCalled();
+  });
+
+  it("matches only the nine frozen pathname routes and renders a 404 for all others", () => {
+    expect(routes).toHaveLength(9);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -181,6 +223,15 @@ describe("Web shell routes", () => {
     expect(miniProgramLibrary).toContain("小程序素材库");
     expect(miniProgramLibrary).toContain("素材列表");
     expect(miniProgramLibrary).not.toContain("模块边界");
+
+    vi.stubGlobal("window", { location: { pathname: "/admin/image-library" } });
+    const imageLibrary = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
+    expect(imageLibrary).toContain('<h1 id="app-title">图片素材库</h1>');
+    expect(imageLibrary).toContain("图片列表");
+    expect(imageLibrary).toContain("上传图片");
+    expect(imageLibrary).not.toContain("模块边界");
 
     vi.stubGlobal("window", { location: { pathname: "/not-a-route" } });
     const missing = renderToStaticMarkup(<App initialSession={adminSession} />);
@@ -242,6 +293,7 @@ describe("Web shell routes", () => {
       "/segments",
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
+      "/admin/image-library",
       "/settings",
     ]);
     expect(
@@ -253,6 +305,7 @@ describe("Web shell routes", () => {
       "/segments",
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
+      "/admin/image-library",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -266,6 +319,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/segments"');
     expect(html).toContain('href="/identity/merge-reviews"');
     expect(html).toContain('href="/admin/miniprogram-library"');
+    expect(html).toContain('href="/admin/image-library"');
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -301,6 +355,8 @@ describe("legacy admin path carrier", () => {
 
     for (const search of [
       "?legacy_admin_path=/admin/wecom-tags",
+      "?legacy_admin_path=/admin/image-library",
+      `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       "?legacy_admin_path=https://evil.example",
       "?legacy_admin_path=//evil.example",
       "?legacy_admin_path=/admin/miniprogram-library/extra",
