@@ -2441,6 +2441,63 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /api/admin/image-library/{image_id}:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImage
+      summary: Read one fully validated local Media image with optional legacy data URL compatibility
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0363]
+      x-p4-decision-evidence: P4-IMAGE-DETAIL-0363-2026-08-19
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images_and_media_image_blobs.read_only
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+        - name: include_data
+          in: query
+          required: false
+          description: One lowercase boolean scalar. True returns a fully validated original blob as a bounded data URL.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+        - name: variant
+          in: query
+          required: false
+          description: One optional scalar that only constructs a relative variant URL; it never reads or generates a variant.
+          schema: { type: string, enum: ['', thumb_160, thumb_320, mobile_1080, large_1440, original], default: '' }
+      responses:
+        "200":
+          description: Exact eight-field local PostgreSQL image-detail envelope; the complete JSON is bounded to 30 MiB before headers are written.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [application/json] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageDetailSuccess" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Image metadata or blob was not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "405": { description: Chi rejects non-GET methods before authentication. }
+        "422":
+          description: The path image id or strict query is invalid.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "503":
+          description: Local PostgreSQL data, blob integrity, image decoding, or bounded response encoding is unavailable or unsafe.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   /api/admin/image-library/{image_id}/variants/{variant_key}:
     get:
       tags: [p4-media-compat]
@@ -4016,6 +4073,56 @@ components:
         ok: { type: boolean, enum: [true] }
         categories: { type: array, items: { type: string } }
         tags: { type: array, items: { type: string, maxLength: 64 } }
+        source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageDetailItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, mime_type, file_size, description, category, width, height, created_at, updated_at, content_type, tags, enabled, source, source_url, thumb_media_id, thumb_media_id_expires_at, ai_metadata, thumb_160_url, thumb_320_url, thumb_url, preview_url, mobile_1080_url, large_1440_url, original_url]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        description: { type: string, maxLength: 10000 }
+        category: { type: string, maxLength: 200 }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+        content_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        tags:
+          type: array
+          maxItems: 50
+          items: { type: string, maxLength: 64 }
+        enabled: { type: boolean, enum: [true] }
+        source: { type: string, enum: [upload] }
+        source_url: { type: string, enum: [''] }
+        thumb_media_id: { type: string, enum: [''] }
+        thumb_media_id_expires_at: { type: string, enum: [''] }
+        ai_metadata: { type: object, additionalProperties: false }
+        thumb_160_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_160$' }
+        thumb_320_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        thumb_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        preview_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        mobile_1080_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        large_1440_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/large_1440$' }
+        original_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/original$' }
+        variant_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/(thumb_160|thumb_320|mobile_1080|large_1440|original)$' }
+        data_base64: { type: string, minLength: 1 }
+        data_url: { type: string, pattern: '^data:image/(png|jpeg|gif);base64,.+$' }
+    LegacyImageDetailSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, item, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyImageDetailItem" }
         source_status: { type: string, enum: [next_media_library] }
         route_owner: { type: string, enum: [ai_crm_next] }
         fallback_used: { type: boolean, enum: [false] }

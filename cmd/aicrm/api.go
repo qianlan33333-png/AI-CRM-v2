@@ -774,7 +774,15 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			return nil, docsErr
 		}
 		registerLegacy := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
-			tail, wrapErr := recovery(endpoint)
+			var (
+				tail    http.Handler
+				wrapErr error
+			)
+			if method == http.MethodGet && pattern == legacyImageDetailPath {
+				tail, wrapErr = gateway.RecoveryErrorLogWithResponseBufferLimit(endpoint, legacyImageDetailMaxJSONLen)
+			} else {
+				tail, wrapErr = recovery(endpoint)
+			}
 			if wrapErr != nil {
 				return wrapErr
 			}
@@ -801,7 +809,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if wrapErr != nil {
 				return wrapErr
 			}
-			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath {
+			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -958,6 +966,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
 			{http.MethodGet, legacyImageListPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageList)},
 			{http.MethodGet, legacyImageFacetsPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageFacets)},
+			{http.MethodGet, legacyImageDetailPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageDetail)},
 			{http.MethodGet, legacyImageVariantPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageVariant)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},

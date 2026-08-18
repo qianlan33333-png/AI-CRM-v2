@@ -2049,6 +2049,168 @@ export interface LegacyImageFacetsSuccess {
   adapter_mode: LegacyImageFacetsSuccessAdapterMode;
 }
 
+export type LegacyImageDetailItemMimeType =
+  (typeof LegacyImageDetailItemMimeType)[keyof typeof LegacyImageDetailItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export type LegacyImageDetailItemContentType =
+  (typeof LegacyImageDetailItemContentType)[keyof typeof LegacyImageDetailItemContentType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemContentType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export type LegacyImageDetailItemSource =
+  (typeof LegacyImageDetailItemSource)[keyof typeof LegacyImageDetailItemSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemSource = {
+  upload: "upload",
+} as const;
+
+export type LegacyImageDetailItemSourceUrl =
+  (typeof LegacyImageDetailItemSourceUrl)[keyof typeof LegacyImageDetailItemSourceUrl];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemSourceUrl = {
+  "": "",
+} as const;
+
+export type LegacyImageDetailItemThumbMediaId =
+  (typeof LegacyImageDetailItemThumbMediaId)[keyof typeof LegacyImageDetailItemThumbMediaId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemThumbMediaId = {
+  "": "",
+} as const;
+
+export type LegacyImageDetailItemThumbMediaIdExpiresAt =
+  (typeof LegacyImageDetailItemThumbMediaIdExpiresAt)[keyof typeof LegacyImageDetailItemThumbMediaIdExpiresAt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemThumbMediaIdExpiresAt = {
+  "": "",
+} as const;
+
+export type LegacyImageDetailItemAiMetadata = { [key: string]: unknown };
+
+export interface LegacyImageDetailItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  mime_type: LegacyImageDetailItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxLength 200 */
+  category: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+  content_type: LegacyImageDetailItemContentType;
+  /** @maxItems 50 */
+  tags: string[];
+  enabled: boolean;
+  source: LegacyImageDetailItemSource;
+  source_url: LegacyImageDetailItemSourceUrl;
+  thumb_media_id: LegacyImageDetailItemThumbMediaId;
+  thumb_media_id_expires_at: LegacyImageDetailItemThumbMediaIdExpiresAt;
+  ai_metadata: LegacyImageDetailItemAiMetadata;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_160$ */
+  thumb_160_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_320_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  preview_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  mobile_1080_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/large_1440$ */
+  large_1440_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/original$ */
+  original_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/(thumb_160|thumb_320|mobile_1080|large_1440|original)$ */
+  variant_url?: string;
+  /** @minLength 1 */
+  data_base64?: string;
+  /** @pattern ^data:image/(png|jpeg|gif);base64,.+$ */
+  data_url?: string;
+}
+
+export type LegacyImageDetailSuccessSourceStatus =
+  (typeof LegacyImageDetailSuccessSourceStatus)[keyof typeof LegacyImageDetailSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessSourceStatus = {
+  next_media_library: "next_media_library",
+} as const;
+
+export type LegacyImageDetailSuccessRouteOwner =
+  (typeof LegacyImageDetailSuccessRouteOwner)[keyof typeof LegacyImageDetailSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageDetailSuccessStorageAdapterMode =
+  (typeof LegacyImageDetailSuccessStorageAdapterMode)[keyof typeof LegacyImageDetailSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageDetailSuccessAdapterMode =
+  (typeof LegacyImageDetailSuccessAdapterMode)[keyof typeof LegacyImageDetailSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageDetailSuccess {
+  ok: boolean;
+  item: LegacyImageDetailItem;
+  source_status: LegacyImageDetailSuccessSourceStatus;
+  route_owner: LegacyImageDetailSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageDetailSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageDetailSuccessAdapterMode;
+}
+
 export type LegacyImageUploadItemMimeType =
   (typeof LegacyImageUploadItemMimeType)[keyof typeof LegacyImageUploadItemMimeType];
 
@@ -5491,6 +5653,39 @@ export type GetLegacyImageListOnlyUnlabeled =
 export const GetLegacyImageListOnlyUnlabeled = {
   true: "true",
   false: "false",
+} as const;
+
+export type GetLegacyImageParams = {
+  /**
+   * One lowercase boolean scalar. True returns a fully validated original blob as a bounded data URL.
+   */
+  include_data?: GetLegacyImageIncludeData;
+  /**
+   * One optional scalar that only constructs a relative variant URL; it never reads or generates a variant.
+   */
+  variant?: GetLegacyImageVariant;
+};
+
+export type GetLegacyImageIncludeData =
+  (typeof GetLegacyImageIncludeData)[keyof typeof GetLegacyImageIncludeData];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageIncludeData = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type GetLegacyImageVariant =
+  (typeof GetLegacyImageVariant)[keyof typeof GetLegacyImageVariant];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageVariant = {
+  "": "",
+  thumb_160: "thumb_160",
+  thumb_320: "thumb_320",
+  mobile_1080: "mobile_1080",
+  large_1440: "large_1440",
+  original: "original",
 } as const;
 
 export type UploadLegacyImageBody = {
@@ -14299,6 +14494,100 @@ export const getLegacyImageFacets = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyImageFacetsResponse;
+};
+
+/**
+ * @summary Read one fully validated local Media image with optional legacy data URL compatibility
+ */
+export type getLegacyImageResponse200 = {
+  data: LegacyImageDetailSuccess;
+  status: 200;
+};
+
+export type getLegacyImageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyImageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyImageResponse404 = {
+  data: ErrorResponse;
+  status: 404;
+};
+
+export type getLegacyImageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyImageResponse422 = {
+  data: ErrorResponse;
+  status: 422;
+};
+
+export type getLegacyImageResponse503 = {
+  data: ErrorResponse;
+  status: 503;
+};
+
+export type getLegacyImageResponseSuccess = getLegacyImageResponse200 & {
+  headers: Headers;
+};
+export type getLegacyImageResponseError = (
+  | getLegacyImageResponse401
+  | getLegacyImageResponse403
+  | getLegacyImageResponse404
+  | getLegacyImageResponse405
+  | getLegacyImageResponse422
+  | getLegacyImageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyImageResponse =
+  getLegacyImageResponseSuccess | getLegacyImageResponseError;
+
+export const getGetLegacyImageUrl = (
+  imageId: string,
+  params?: GetLegacyImageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/image-library/${imageId}?${stringifiedParams}`
+    : `/api/admin/image-library/${imageId}`;
+};
+
+export const getLegacyImage = async (
+  imageId: string,
+  params?: GetLegacyImageParams,
+  options?: RequestInit,
+): Promise<getLegacyImageResponse> => {
+  const res = await fetch(getGetLegacyImageUrl(imageId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyImageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyImageResponse;
 };
 
 /**
