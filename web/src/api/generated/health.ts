@@ -2745,6 +2745,99 @@ export interface SystemHealthResponse {
   secrets_in_output: boolean;
 }
 
+export type LegacyRuntimeHealthSnapshotStatus =
+  (typeof LegacyRuntimeHealthSnapshotStatus)[keyof typeof LegacyRuntimeHealthSnapshotStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotStatus = {
+  ok: "ok",
+  degraded: "degraded",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotService =
+  (typeof LegacyRuntimeHealthSnapshotService)[keyof typeof LegacyRuntimeHealthSnapshotService];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotService = {
+  "aicrm-next": "aicrm-next",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotDatabase =
+  (typeof LegacyRuntimeHealthSnapshotDatabase)[keyof typeof LegacyRuntimeHealthSnapshotDatabase];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotDatabase = {
+  postgres: "postgres",
+  fixture: "fixture",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotDatabaseMode =
+  (typeof LegacyRuntimeHealthSnapshotDatabaseMode)[keyof typeof LegacyRuntimeHealthSnapshotDatabaseMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotDatabaseMode = {
+  postgres: "postgres",
+  fixture: "fixture",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotRepositoryPolicy =
+  (typeof LegacyRuntimeHealthSnapshotRepositoryPolicy)[keyof typeof LegacyRuntimeHealthSnapshotRepositoryPolicy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotRepositoryPolicy = {
+  production_repositories_required: "production_repositories_required",
+  fixture_repositories_allowed: "fixture_repositories_allowed",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotRuntimeOwner =
+  (typeof LegacyRuntimeHealthSnapshotRuntimeOwner)[keyof typeof LegacyRuntimeHealthSnapshotRuntimeOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotRuntimeOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotWarning =
+  (typeof LegacyRuntimeHealthSnapshotWarning)[keyof typeof LegacyRuntimeHealthSnapshotWarning];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotWarning = {
+  "": "",
+  fixture_data_mode: "fixture data mode",
+  "production_runtime_is_using_fixture_data;_production_data_is_not_ready":
+    "production runtime is using fixture data; production data is not ready",
+} as const;
+
+export interface LegacyRuntimeHealthSnapshot {
+  ok: boolean;
+  status: LegacyRuntimeHealthSnapshotStatus;
+  service: LegacyRuntimeHealthSnapshotService;
+  secret_key_present: boolean;
+  wechat_shop_callback_token_present: boolean;
+  wechat_shop_callback_token_required: boolean;
+  database: LegacyRuntimeHealthSnapshotDatabase;
+  database_mode: LegacyRuntimeHealthSnapshotDatabaseMode;
+  fixture_mode: boolean;
+  production_data_ready: boolean;
+  production_data_mode: boolean;
+  repository_policy: LegacyRuntimeHealthSnapshotRepositoryPolicy;
+  runtime_owner: LegacyRuntimeHealthSnapshotRuntimeOwner;
+  legacy_runtime_enabled: boolean;
+  warning: LegacyRuntimeHealthSnapshotWarning;
+}
+
+export type LegacyHealthMethodNotAllowedDetail =
+  (typeof LegacyHealthMethodNotAllowedDetail)[keyof typeof LegacyHealthMethodNotAllowedDetail];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthMethodNotAllowedDetail = {
+  Method_Not_Allowed: "Method Not Allowed",
+} as const;
+
+export interface LegacyHealthMethodNotAllowed {
+  detail: LegacyHealthMethodNotAllowedDetail;
+}
+
 export interface ErrorResponse {
   /** @minLength 1 */
   code: string;
@@ -5584,6 +5677,51 @@ export const getHealthz = async (
     status: res.status,
     headers: res.headers,
   } as getHealthzResponse;
+};
+
+/**
+ * @summary Read the public legacy configuration-derived runtime-mode snapshot
+ */
+export type getLegacyHealthResponse200 = {
+  data: LegacyRuntimeHealthSnapshot;
+  status: 200;
+};
+
+export type getLegacyHealthResponse405 = {
+  data: LegacyHealthMethodNotAllowed;
+  status: 405;
+};
+
+export type getLegacyHealthResponseSuccess = getLegacyHealthResponse200 & {
+  headers: Headers;
+};
+export type getLegacyHealthResponseError = getLegacyHealthResponse405 & {
+  headers: Headers;
+};
+
+export type getLegacyHealthResponse =
+  getLegacyHealthResponseSuccess | getLegacyHealthResponseError;
+
+export const getGetLegacyHealthUrl = () => {
+  return `/health`;
+};
+
+export const getLegacyHealth = async (
+  options?: RequestInit,
+): Promise<getLegacyHealthResponse> => {
+  const res = await fetch(getGetLegacyHealthUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyHealthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyHealthResponse;
 };
 
 /**

@@ -1,7 +1,8 @@
-// Package legacyhealth implements the non-central candidate for LEGACY-API-0757.
+// Package legacyhealth implements the frozen leaf for LEGACY-API-0757.
 //
-// It deliberately does not register a route. The future clean replay owns the
-// public route table, OpenAPI contract, and generated bindings.
+// The central v2 router owns the public route table, OpenAPI contract, and
+// generated bindings; this package owns only the exact legacy payload and
+// method semantics.
 package legacyhealth
 
 import (
@@ -93,8 +94,8 @@ func (query Query) Execute() Payload {
 	}
 }
 
-// Handler is a stand-alone candidate for GET /health. It has no router
-// registration: that central integration remains deliberately out of R0.
+// Handler serves the legacy GET /health payload. The central v2 router mounts
+// it for every method so the exact legacy 405 guard below stays authoritative.
 type Handler struct {
 	query Query
 }

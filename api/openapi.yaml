@@ -66,6 +66,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /health:
+    get:
+      tags: [p4-legacy-health]
+      operationId: getLegacyHealth
+      summary: Read the public legacy configuration-derived runtime-mode snapshot
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0757]
+      x-p4-decision-evidence: P4-S04-LEGACY-HEALTH-2026-08-18
+      x-aicrm-capability: health_read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: read_model
+      x-aicrm-rate-limit: health
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Runtime-mode snapshot. It is not a liveness, readiness, database, worker, or provider proof.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyRuntimeHealthSnapshot" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyHealthMethodNotAllowed" }
   /api/system/health:
     get:
       tags: [p4-system-health]
@@ -4107,6 +4135,32 @@ components:
           items: { $ref: "#/components/schemas/SystemHealthComponent" }
         pii_in_output: { type: boolean, enum: [false] }
         secrets_in_output: { type: boolean, enum: [false] }
+    LegacyRuntimeHealthSnapshot:
+      type: object
+      additionalProperties: false
+      required: [ok, status, service, secret_key_present, wechat_shop_callback_token_present, wechat_shop_callback_token_required, database, database_mode, fixture_mode, production_data_ready, production_data_mode, repository_policy, runtime_owner, legacy_runtime_enabled, warning]
+      properties:
+        ok: { type: boolean }
+        status: { type: string, enum: [ok, degraded] }
+        service: { type: string, enum: [aicrm-next] }
+        secret_key_present: { type: boolean }
+        wechat_shop_callback_token_present: { type: boolean }
+        wechat_shop_callback_token_required: { type: boolean }
+        database: { type: string, enum: [postgres, fixture] }
+        database_mode: { type: string, enum: [postgres, fixture] }
+        fixture_mode: { type: boolean }
+        production_data_ready: { type: boolean }
+        production_data_mode: { type: boolean }
+        repository_policy: { type: string, enum: [production_repositories_required, fixture_repositories_allowed] }
+        runtime_owner: { type: string, enum: [ai_crm_next] }
+        legacy_runtime_enabled: { type: boolean, enum: [false] }
+        warning: { type: string, enum: ["", "fixture data mode", "production runtime is using fixture data; production data is not ready"] }
+    LegacyHealthMethodNotAllowed:
+      type: object
+      additionalProperties: false
+      required: [detail]
+      properties:
+        detail: { type: string, enum: ["Method Not Allowed"] }
     ErrorResponse:
       type: object
       additionalProperties: false

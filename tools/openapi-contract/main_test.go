@@ -132,6 +132,51 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			delete(doc.Paths.Value("/{filename}").Get.Responses.Value("200").Value.Headers, "Cache-Control")
 			reject(t, doc, ids)
 		},
+		"legacy health capability swapped to dotted form": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Extensions["x-aicrm-capability"] = "health.read"
+			reject(t, doc, ids)
+		},
+		"legacy health becomes authenticated": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Security = &openapi3.SecurityRequirements{{"AdminSession": []string{}}}
+			reject(t, doc, ids)
+		},
+		"legacy health forges RBAC scopes": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global"}
+			reject(t, doc, ids)
+		},
+		"legacy health evidence forged": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Extensions["x-p4-decision-evidence"] = "P4-S04-LEGACY-HEALTH-FORGED"
+			reject(t, doc, ids)
+		},
+		"legacy health linked to the wrong mapping": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0741"}
+			reject(t, doc, ids)
+		},
+		"legacy health claims an external effect": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Extensions["x-aicrm-external-effect"] = "provider"
+			reject(t, doc, ids)
+		},
+		"legacy health loses the exact method error": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/health").Get.Responses.Delete("405")
+			reject(t, doc, ids)
+		},
+		"legacy health snapshot widens a field": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyRuntimeHealthSnapshot"].Value.Properties["debug"] = doc.Components.Schemas["HealthResponse"]
+			reject(t, doc, ids)
+		},
+		"legacy health warning enum widened": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyRuntimeHealthSnapshot"].Value.Properties["warning"].Value.Enum = []any{"", "fixture data mode", "production runtime is using fixture data; production data is not ready", "everything is fine"}
+			reject(t, doc, ids)
+		},
 		"push center evidence forged": func(t *testing.T) {
 			doc, ids := fresh(t)
 			doc.Paths.Value("/api/admin/push-center/stats").Get.Extensions["x-p4-decision-evidence"] = "P4-PUSH-CENTER-FORGED"

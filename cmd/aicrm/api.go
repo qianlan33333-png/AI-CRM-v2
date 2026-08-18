@@ -46,6 +46,7 @@ import (
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	domainverification "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/domainverification"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/platform/legacyhealth"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
@@ -91,6 +92,7 @@ type candidateHandler struct {
 	domainVerification interface {
 		Read(string) (string, error)
 	}
+	legacyHealth *legacyhealth.Handler
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
@@ -276,6 +278,17 @@ func (handler *candidateHandler) GetDomainVerificationFile(writer http.ResponseW
 	_, _ = writer.Write([]byte(content))
 }
 
+// GetLegacyHealth serves the public LEGACY-API-0757 runtime-mode snapshot.
+// The frozen legacy handler owns the exact 405 method guard, so the route
+// stays mounted for every method outside all authentication middleware.
+func (handler *candidateHandler) GetLegacyHealth(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.legacyHealth == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeNotFound, nil))
+		return
+	}
+	handler.legacyHealth.ServeHTTP(writer, request)
+}
+
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	poolConfig, err := pgxpool.ParseConfig(config.Database.URL.Value())
 	if err != nil || poolConfig.ConnConfig.DescriptionCacheCapacity < 1 || config.API.PoolMaxConns < 1 || config.API.ListenAddress == "" {
@@ -444,6 +457,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		identityReviews:    identityReviewHandler,
 		automationRuns:     automationstore.NewRepository(pool),
 		domainVerification: domainVerification,
+		legacyHealth: legacyhealth.NewHandler(legacyhealth.NewQuery(legacyhealth.RuntimeSnapshot{
+			DatabaseIsPostgres:                  config.LegacyHealth.DatabaseIsPostgres,
+			ProductionEnvironment:               config.LegacyHealth.ProductionEnvironment,
+			SecretKeyPresent:                    config.LegacyHealth.SecretKeyPresent,
+			WeChatShopCallbackTokenPresent:      config.LegacyHealth.WeChatShopCallbackTokenPresent,
+			AllowMissingWeChatShopCallbackToken: config.LegacyHealth.AllowMissingWeChatShopCallbackToken,
+		})),
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -567,6 +587,34 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 		return nil, err
 	}
 	router.Method(http.MethodGet, "/healthz", health)
+	// The public LEGACY-API-0757 runtime-mode snapshot mounts outside every
+	// authentication middleware, exactly like /healthz. GET keeps the shared
+	// recovery boundary; non-GET methods bypass RecoveryErrorLog so the frozen
+	// legacy handler answers its exact 405 contract directly (the recovery
+	// buffer would normalize the empty-code 405 into a 500). Both branches
+	// keep the /health route-pattern record.
+	if concrete, ok := candidate.(*candidateHandler); ok && concrete.legacyHealth != nil {
+		leaf := http.Handler(concrete.legacyHealth)
+		withRecovery, recoverErr := recovery(leaf)
+		if recoverErr != nil {
+			return nil, recoverErr
+		}
+		getChain, patternErr := gateway.RoutePatternMiddleware("/health", withRecovery)
+		if patternErr != nil {
+			return nil, patternErr
+		}
+		methodGuard, patternErr := gateway.RoutePatternMiddleware("/health", leaf)
+		if patternErr != nil {
+			return nil, patternErr
+		}
+		router.Handle("/health", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == http.MethodGet {
+				getChain.ServeHTTP(writer, request)
+				return
+			}
+			methodGuard.ServeHTTP(writer, request)
+		}))
+	}
 	if legacy != nil && legacy.systemHealth != nil {
 		systemHealth := legacy.systemHealth
 		systemHealth, err = recovery(systemHealth)

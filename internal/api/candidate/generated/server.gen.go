@@ -542,6 +542,21 @@ func (e LegacyExecutionTimelineUnavailableRealExternalCallExecuted) Valid() bool
 	}
 }
 
+// Defines values for LegacyHealthMethodNotAllowedDetail.
+const (
+	MethodNotAllowed LegacyHealthMethodNotAllowedDetail = "Method Not Allowed"
+)
+
+// Valid indicates whether the value is a known member of the LegacyHealthMethodNotAllowedDetail enum.
+func (e LegacyHealthMethodNotAllowedDetail) Valid() bool {
+	switch e {
+	case MethodNotAllowed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyPushCenterDegradedCountsFailed.
 const (
 	LegacyPushCenterDegradedCountsFailedN0 LegacyPushCenterDegradedCountsFailed = 0
@@ -1367,6 +1382,144 @@ func (e LegacyPushCenterStatusDefinitionKey) Valid() bool {
 	}
 }
 
+// Defines values for LegacyRuntimeHealthSnapshotDatabase.
+const (
+	LegacyRuntimeHealthSnapshotDatabaseFixture  LegacyRuntimeHealthSnapshotDatabase = "fixture"
+	LegacyRuntimeHealthSnapshotDatabasePostgres LegacyRuntimeHealthSnapshotDatabase = "postgres"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotDatabase enum.
+func (e LegacyRuntimeHealthSnapshotDatabase) Valid() bool {
+	switch e {
+	case LegacyRuntimeHealthSnapshotDatabaseFixture:
+		return true
+	case LegacyRuntimeHealthSnapshotDatabasePostgres:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotDatabaseMode.
+const (
+	LegacyRuntimeHealthSnapshotDatabaseModeFixture  LegacyRuntimeHealthSnapshotDatabaseMode = "fixture"
+	LegacyRuntimeHealthSnapshotDatabaseModePostgres LegacyRuntimeHealthSnapshotDatabaseMode = "postgres"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotDatabaseMode enum.
+func (e LegacyRuntimeHealthSnapshotDatabaseMode) Valid() bool {
+	switch e {
+	case LegacyRuntimeHealthSnapshotDatabaseModeFixture:
+		return true
+	case LegacyRuntimeHealthSnapshotDatabaseModePostgres:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled.
+const (
+	False LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled enum.
+func (e LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotRepositoryPolicy.
+const (
+	FixtureRepositoriesAllowed     LegacyRuntimeHealthSnapshotRepositoryPolicy = "fixture_repositories_allowed"
+	ProductionRepositoriesRequired LegacyRuntimeHealthSnapshotRepositoryPolicy = "production_repositories_required"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotRepositoryPolicy enum.
+func (e LegacyRuntimeHealthSnapshotRepositoryPolicy) Valid() bool {
+	switch e {
+	case FixtureRepositoriesAllowed:
+		return true
+	case ProductionRepositoriesRequired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotRuntimeOwner.
+const (
+	AiCrmNext LegacyRuntimeHealthSnapshotRuntimeOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotRuntimeOwner enum.
+func (e LegacyRuntimeHealthSnapshotRuntimeOwner) Valid() bool {
+	switch e {
+	case AiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotService.
+const (
+	AicrmNext LegacyRuntimeHealthSnapshotService = "aicrm-next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotService enum.
+func (e LegacyRuntimeHealthSnapshotService) Valid() bool {
+	switch e {
+	case AicrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotStatus.
+const (
+	Degraded LegacyRuntimeHealthSnapshotStatus = "degraded"
+	Ok       LegacyRuntimeHealthSnapshotStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotStatus enum.
+func (e LegacyRuntimeHealthSnapshotStatus) Valid() bool {
+	switch e {
+	case Degraded:
+		return true
+	case Ok:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotWarning.
+const (
+	Empty                                                       LegacyRuntimeHealthSnapshotWarning = ""
+	FixtureDataMode                                             LegacyRuntimeHealthSnapshotWarning = "fixture data mode"
+	ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady LegacyRuntimeHealthSnapshotWarning = "production runtime is using fixture data; production data is not ready"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotWarning enum.
+func (e LegacyRuntimeHealthSnapshotWarning) Valid() bool {
+	switch e {
+	case Empty:
+		return true
+	case FixtureDataMode:
+		return true
+	case ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResolveIdentityConflictStatus.
 const (
 	ResolveIdentityConflictStatusConflict ResolveIdentityConflictStatus = "conflict"
@@ -2013,6 +2166,14 @@ type LegacyExecutionTimelineUnavailableOk bool
 // LegacyExecutionTimelineUnavailableRealExternalCallExecuted defines model for LegacyExecutionTimelineUnavailable.RealExternalCallExecuted.
 type LegacyExecutionTimelineUnavailableRealExternalCallExecuted bool
 
+// LegacyHealthMethodNotAllowed defines model for LegacyHealthMethodNotAllowed.
+type LegacyHealthMethodNotAllowed struct {
+	Detail LegacyHealthMethodNotAllowedDetail `json:"detail"`
+}
+
+// LegacyHealthMethodNotAllowedDetail defines model for LegacyHealthMethodNotAllowed.Detail.
+type LegacyHealthMethodNotAllowedDetail string
+
 // LegacyPushCenterCounts defines model for LegacyPushCenterCounts.
 type LegacyPushCenterCounts struct {
 	ByEffectiveStatus map[string]int64 `json:"by_effective_status"`
@@ -2388,6 +2549,49 @@ type LegacyPushCenterStatusDefinition struct {
 
 // LegacyPushCenterStatusDefinitionKey defines model for LegacyPushCenterStatusDefinition.Key.
 type LegacyPushCenterStatusDefinitionKey string
+
+// LegacyRuntimeHealthSnapshot defines model for LegacyRuntimeHealthSnapshot.
+type LegacyRuntimeHealthSnapshot struct {
+	Database                        LegacyRuntimeHealthSnapshotDatabase             `json:"database"`
+	DatabaseMode                    LegacyRuntimeHealthSnapshotDatabaseMode         `json:"database_mode"`
+	FixtureMode                     bool                                            `json:"fixture_mode"`
+	LegacyRuntimeEnabled            LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled `json:"legacy_runtime_enabled"`
+	Ok                              bool                                            `json:"ok"`
+	ProductionDataMode              bool                                            `json:"production_data_mode"`
+	ProductionDataReady             bool                                            `json:"production_data_ready"`
+	RepositoryPolicy                LegacyRuntimeHealthSnapshotRepositoryPolicy     `json:"repository_policy"`
+	RuntimeOwner                    LegacyRuntimeHealthSnapshotRuntimeOwner         `json:"runtime_owner"`
+	SecretKeyPresent                bool                                            `json:"secret_key_present"`
+	Service                         LegacyRuntimeHealthSnapshotService              `json:"service"`
+	Status                          LegacyRuntimeHealthSnapshotStatus               `json:"status"`
+	Warning                         LegacyRuntimeHealthSnapshotWarning              `json:"warning"`
+	WechatShopCallbackTokenPresent  bool                                            `json:"wechat_shop_callback_token_present"`
+	WechatShopCallbackTokenRequired bool                                            `json:"wechat_shop_callback_token_required"`
+}
+
+// LegacyRuntimeHealthSnapshotDatabase defines model for LegacyRuntimeHealthSnapshot.Database.
+type LegacyRuntimeHealthSnapshotDatabase string
+
+// LegacyRuntimeHealthSnapshotDatabaseMode defines model for LegacyRuntimeHealthSnapshot.DatabaseMode.
+type LegacyRuntimeHealthSnapshotDatabaseMode string
+
+// LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled defines model for LegacyRuntimeHealthSnapshot.LegacyRuntimeEnabled.
+type LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled bool
+
+// LegacyRuntimeHealthSnapshotRepositoryPolicy defines model for LegacyRuntimeHealthSnapshot.RepositoryPolicy.
+type LegacyRuntimeHealthSnapshotRepositoryPolicy string
+
+// LegacyRuntimeHealthSnapshotRuntimeOwner defines model for LegacyRuntimeHealthSnapshot.RuntimeOwner.
+type LegacyRuntimeHealthSnapshotRuntimeOwner string
+
+// LegacyRuntimeHealthSnapshotService defines model for LegacyRuntimeHealthSnapshot.Service.
+type LegacyRuntimeHealthSnapshotService string
+
+// LegacyRuntimeHealthSnapshotStatus defines model for LegacyRuntimeHealthSnapshot.Status.
+type LegacyRuntimeHealthSnapshotStatus string
+
+// LegacyRuntimeHealthSnapshotWarning defines model for LegacyRuntimeHealthSnapshot.Warning.
+type LegacyRuntimeHealthSnapshotWarning string
 
 // Product defines model for Product.
 type Product struct {
@@ -3688,6 +3892,9 @@ type ServerInterface interface {
 	// List the local tag catalog in deterministic order
 	// (GET /api/v1/tags)
 	ListTags(w http.ResponseWriter, r *http.Request)
+	// Read the public legacy configuration-derived runtime-mode snapshot
+	// (GET /health)
+	GetLegacyHealth(w http.ResponseWriter, r *http.Request)
 	// Read one WeChat or WeCom domain verification file
 	// (GET /{filename})
 	GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string)
@@ -3898,6 +4105,12 @@ func (_ Unimplemented) RenameStage(w http.ResponseWriter, r *http.Request, stage
 // List the local tag catalog in deterministic order
 // (GET /api/v1/tags)
 func (_ Unimplemented) ListTags(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the public legacy configuration-derived runtime-mode snapshot
+// (GET /health)
+func (_ Unimplemented) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5956,6 +6169,20 @@ func (siw *ServerInterfaceWrapper) ListTags(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// GetLegacyHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetDomainVerificationFile operation middleware
 func (siw *ServerInterfaceWrapper) GetDomainVerificationFile(w http.ResponseWriter, r *http.Request) {
 
@@ -6195,6 +6422,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/tags", wrapper.ListTags)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/health", wrapper.GetLegacyHealth)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/{filename}", wrapper.GetDomainVerificationFile)
@@ -8169,6 +8399,39 @@ func (response ListTags503JSONResponse) VisitListTagsResponse(w http.ResponseWri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetLegacyHealthRequestObject struct {
+}
+
+type GetLegacyHealthResponseObject interface {
+	VisitGetLegacyHealthResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyHealth200JSONResponse LegacyRuntimeHealthSnapshot
+
+func (response GetLegacyHealth200JSONResponse) VisitGetLegacyHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyHealth405ResponseHeaders struct {
+	Allow string
+}
+
+type GetLegacyHealth405JSONResponse struct {
+	Body    LegacyHealthMethodNotAllowed
+	Headers GetLegacyHealth405ResponseHeaders
+}
+
+func (response GetLegacyHealth405JSONResponse) VisitGetLegacyHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type GetDomainVerificationFileRequestObject struct {
 	Filename string `json:"filename"`
 }
@@ -8308,6 +8571,9 @@ type StrictServerInterface interface {
 	// List the local tag catalog in deterministic order
 	// (GET /api/v1/tags)
 	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
+	// Read the public legacy configuration-derived runtime-mode snapshot
+	// (GET /health)
+	GetLegacyHealth(ctx context.Context, request GetLegacyHealthRequestObject) (GetLegacyHealthResponseObject, error)
 	// Read one WeChat or WeCom domain verification file
 	// (GET /{filename})
 	GetDomainVerificationFile(ctx context.Context, request GetDomainVerificationFileRequestObject) (GetDomainVerificationFileResponseObject, error)
@@ -9304,6 +9570,30 @@ func (sh *strictHandler) ListTags(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListTagsResponseObject); ok {
 		if err := validResponse.VisitListTagsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyHealth operation middleware
+func (sh *strictHandler) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
+	var request GetLegacyHealthRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyHealth(ctx, request.(GetLegacyHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyHealth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyHealthResponseObject); ok {
+		if err := validResponse.VisitGetLegacyHealthResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
