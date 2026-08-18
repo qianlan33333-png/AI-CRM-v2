@@ -29,10 +29,14 @@ import { SegmentsPage } from "./segments-ui";
 import type { SegmentTransport } from "./segments";
 import { IdentityMergeReviewsPage } from "./identity-reviews-ui";
 import type { IdentityReviewTransport } from "./identity-reviews";
+import { MiniProgramLibraryPage } from "./miniprogram-library-ui";
+import type { MiniProgramLibraryTransport } from "./miniprogram-library";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
 export const LOGIN_PATH = "/login";
+export const MINIPROGRAM_LIBRARY_PATH = "/admin/miniprogram-library";
+export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
   {
@@ -64,6 +68,12 @@ export const routes = [
     navigationLabel: "待合并",
     title: "人工待合并",
     description: "Identity 人工待合并审阅与决策。",
+  },
+  {
+    path: "/admin/miniprogram-library",
+    navigationLabel: "小程序素材",
+    title: "小程序素材库",
+    description: "小程序素材的本地媒体库工作区。",
   },
   {
     path: "/outbound",
@@ -112,6 +122,7 @@ export interface AppProps {
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
+  miniProgramTransport?: MiniProgramLibraryTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -137,6 +148,31 @@ export function routeForURL(
 export function readPathname(): string {
   if (typeof window === "undefined") return "/";
   return window.location.pathname;
+}
+
+export function readSearch(): string {
+  if (typeof window === "undefined") return "";
+  return typeof window.location.search === "string"
+    ? window.location.search
+    : "";
+}
+
+// The legacy admin page carrier (`GET /admin/miniprogram-library` →
+// `302 /?legacy_admin_path=%2Fadmin%2Fminiprogram-library`) is the only
+// query-carried route source. Only the exact frozen whitelist value maps to a
+// shell route; any other value is ignored and never navigated to.
+export function carrierPathname(pathname: string, search: string): string {
+  if (pathname !== "/" || search === "") return pathname;
+  let params: URLSearchParams;
+  try {
+    params = new URLSearchParams(search);
+  } catch {
+    return pathname;
+  }
+  const values = params.getAll(LEGACY_ADMIN_PATH_PARAM);
+  return values.length === 1 && values[0] === MINIPROGRAM_LIBRARY_PATH
+    ? MINIPROGRAM_LIBRARY_PATH
+    : pathname;
 }
 
 export function subscribeToRouteChanges(
@@ -231,6 +267,7 @@ function PageContent({
   stageTransport,
   segmentTransport,
   identityReviewTransport,
+  miniProgramTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -242,6 +279,7 @@ function PageContent({
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
+  miniProgramTransport?: MiniProgramLibraryTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -322,6 +360,17 @@ function PageContent({
     );
   }
 
+  if (route.path === MINIPROGRAM_LIBRARY_PATH) {
+    return (
+      <MiniProgramLibraryPage
+        role={principal.role}
+        transport={miniProgramTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -355,7 +404,16 @@ function accountSummary(principal: AuthPrincipal): AccountSummary {
 export function navigationLinks(
   principal: AuthPrincipal,
 ): readonly PermissionNavigationLink[] {
-  const permitted = new Set(permittedRoutePaths(principal));
+  const base = permittedRoutePaths(principal);
+  const permitted = new Set(base);
+  // Mirrors the frozen server capability map: media.library.read is held by
+  // admin and ops only, so sales never sees the MiniProgram navigation entry.
+  if (
+    base.length > 0 &&
+    (principal.role === "admin" || principal.role === "ops")
+  ) {
+    permitted.add(MINIPROGRAM_LIBRARY_PATH);
+  }
   return routes
     .filter((route) => permitted.has(route.path))
     .map((route) => ({ href: route.path, label: route.navigationLabel }));
@@ -372,20 +430,26 @@ export function App({
   stageTransport,
   segmentTransport,
   identityReviewTransport,
+  miniProgramTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
   const [pathname, setPathname] = useState(readPathname);
+  const [search, setSearch] = useState(readSearch);
   const [session, setSession] = useState<AppSessionState>(
     initialSession ?? { status: "checking" },
   );
   const [logoutState, setLogoutState] = useState<LogoutState>("ready");
-  const route = routeForPathname(pathname);
-  const customerID = customerIDForPathname(pathname);
+  const effectivePathname = carrierPathname(pathname, search);
+  const route = routeForPathname(effectivePathname);
+  const customerID = customerIDForPathname(effectivePathname);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    return subscribeToRouteChanges(window, () => setPathname(readPathname()));
+    return subscribeToRouteChanges(window, () => {
+      setPathname(readPathname());
+      setSearch(readSearch());
+    });
   }, []);
 
   useEffect(() => {
@@ -500,7 +564,9 @@ export function App({
         <nav className="shell-nav" aria-label="主导航">
           {navigation ?? (
             <PermissionNavigation
-              activeHref={customerID === undefined ? pathname : "/customers"}
+              activeHref={
+                customerID === undefined ? effectivePathname : "/customers"
+              }
               links={links}
               onNavigate={(event) =>
                 handleNavigationClick(event, event.currentTarget.href)
@@ -518,6 +584,7 @@ export function App({
             stageTransport={stageTransport}
             segmentTransport={segmentTransport}
             identityReviewTransport={identityReviewTransport}
+            miniProgramTransport={miniProgramTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
