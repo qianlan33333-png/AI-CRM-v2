@@ -2939,6 +2939,63 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { description: Execution Runtime read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionRuntimeUnavailable" } } } }
+  /api/admin/data-health/checks:
+    get:
+      tags: [p4-data-health]
+      operationId: listLegacyDataHealthChecks
+      summary: Read the local data-health registry without external calls
+      x-legacy-mapping-ids: [LEGACY-API-0305]
+      x-p4-decision-evidence: P4-DATA-HEALTH-0305-0307-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local data-health check registry, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthChecksResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local data-health observation is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthObservationUnavailable" } } } }
+  /api/admin/data-health/checks/{check_id}:
+    get:
+      tags: [p4-data-health]
+      operationId: getLegacyDataHealthCheck
+      summary: Read one local data-health check without external calls
+      x-legacy-mapping-ids: [LEGACY-API-0306]
+      x-p4-decision-evidence: P4-DATA-HEALTH-0305-0307-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: check_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 100 } }
+      responses:
+        "200": { description: Local data-health check, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthCheckResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown check ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthCheckNotFound" } } } }
+        "503": { description: Local data-health observation is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthObservationUnavailable" } } } }
+  /api/admin/data-health/summary:
+    get:
+      tags: [p4-data-health]
+      operationId: getLegacyDataHealthSummary
+      summary: Read the local data-health summary without external calls
+      x-legacy-mapping-ids: [LEGACY-API-0307]
+      x-p4-decision-evidence: P4-DATA-HEALTH-0305-0307-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local data-health summary, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthSummaryResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local data-health observation is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthObservationUnavailable" } } } }
   /api/admin/executions/{execution_id}:
     get:
       tags: [p4-execution-runtime-compat]
@@ -4583,6 +4640,102 @@ components:
       required: [detail]
       properties:
         detail: { type: string, enum: ["Method Not Allowed"] }
+    LegacyDataHealthCheck:
+      type: object
+      additionalProperties: false
+      required: [check_id, title, status, severity, summary, evidence, remediation, gate_decision, reason_code, owner, candidate_related, first_observed_at, last_observed_at, replay_policy]
+      properties:
+        check_id: { type: string, enum: [database_readiness, migration_compatibility, outbound_outcome_unknown_backlog, release_sha_complete] }
+        title: { type: string }
+        status: { type: string, enum: [ok, warn, fail] }
+        severity: { type: string, enum: [green, yellow, red] }
+        summary: { type: string }
+        evidence:
+          type: object
+          additionalProperties: false
+          properties:
+            database_readable: { type: boolean }
+            schema_compatible: { type: boolean }
+            sha_complete: { type: boolean }
+            environment: { type: string, enum: [production, non_production] }
+            queue_observation_available: { type: boolean }
+            outcome_unknown_count: { type: integer, minimum: 0 }
+        remediation: { type: string }
+        gate_decision: { type: string, enum: [pass, warn, block] }
+        reason_code: { type: string }
+        owner: { type: string, enum: [platform_readiness] }
+        candidate_related: { type: boolean, enum: [false] }
+        first_observed_at: { type: string, format: date-time }
+        last_observed_at: { type: string, format: date-time }
+        replay_policy: { type: string, enum: [manual_after_remediation] }
+    LegacyDataHealthChecksResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, checks, registry_id, registry_sha256, registry_matches_manifest, excluded_legacy_check_ids, observed_at, real_external_call_executed]
+      properties:
+        ok: { type: boolean }
+        checks: { type: array, minItems: 4, maxItems: 4, items: { $ref: "#/components/schemas/LegacyDataHealthCheck" } }
+        registry_id: { type: string, enum: [v2-core-readiness.v1] }
+        registry_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        registry_matches_manifest: { type: boolean }
+        excluded_legacy_check_ids: { type: array, minItems: 19, maxItems: 19, items: { type: string } }
+        observed_at: { type: string, format: date-time }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyDataHealthCheckResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, check, registry_id, registry_sha256, registry_matches_manifest, observed_at, real_external_call_executed]
+      properties:
+        ok: { type: boolean }
+        check: { $ref: "#/components/schemas/LegacyDataHealthCheck" }
+        registry_id: { type: string, enum: [v2-core-readiness.v1] }
+        registry_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        registry_matches_manifest: { type: boolean }
+        observed_at: { type: string, format: date-time }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyDataHealthSummaryResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, overall_status, counts, checks, gate_counts, registry_id, registry_sha256, registry_matches_manifest, excluded_legacy_check_ids, observed_at, real_external_call_executed]
+      properties:
+        ok: { type: boolean }
+        overall_status: { type: string, enum: [ok, warn, fail] }
+        counts:
+          type: object
+          additionalProperties: false
+          required: [ok, warn, fail, not_applicable]
+          properties: { ok: { type: integer, minimum: 0 }, warn: { type: integer, minimum: 0 }, fail: { type: integer, minimum: 0 }, not_applicable: { type: integer, enum: [0] } }
+        checks: { type: array, minItems: 4, maxItems: 4, items: { $ref: "#/components/schemas/LegacyDataHealthCheck" } }
+        gate_counts:
+          type: object
+          additionalProperties: false
+          required: [pass, warn, block]
+          properties: { pass: { type: integer, minimum: 0 }, warn: { type: integer, minimum: 0 }, block: { type: integer, minimum: 0 } }
+        registry_id: { type: string, enum: [v2-core-readiness.v1] }
+        registry_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        registry_matches_manifest: { type: boolean }
+        excluded_legacy_check_ids: { type: array, minItems: 19, maxItems: 19, items: { type: string } }
+        observed_at: { type: string, format: date-time }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyDataHealthCheckNotFound:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, check_id, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [404] }
+        error_code: { type: string, enum: [data_health_check_not_found] }
+        check_id: { type: string }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyDataHealthObservationUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [503] }
+        error_code: { type: string, enum: [data_health_observation_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     ErrorResponse:
       type: object
       additionalProperties: false
