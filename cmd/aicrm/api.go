@@ -719,6 +719,10 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 	}
 	if legacy != nil {
 		strictLegacyMethodRouters := make(map[string]*chi.Mux)
+		legacyAPIDocs, docsErr := newLegacyAPIDocsHandler()
+		if docsErr != nil {
+			return nil, docsErr
+		}
 		registerLegacy := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
 			tail, wrapErr := recovery(endpoint)
 			if wrapErr != nil {
@@ -747,11 +751,13 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if wrapErr != nil {
 				return wrapErr
 			}
-			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath {
+			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
 				// collection path for the independently-owned future 0357 POST.
+				// The API-docs page and the MCP-tools redirect use the same
+				// mechanism so non-GET methods see 405 before authentication.
 				methodRouter := strictLegacyMethodRouters[pattern]
 				if methodRouter == nil {
 					methodRouter = chi.NewRouter()
@@ -791,7 +797,8 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodPost, "/admin/config/releases/{release_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/admin/config/releases/{release_id}/rollback", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/admin/runtime-config", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
-			{http.MethodGet, "/admin/api-docs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, legacyApiDocsPath, authport.CapabilityConfigOverviewRead, false, legacyAPIDocs},
+			{http.MethodGet, legacyMcpToolsPath, authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacyMcpToolsRedirect)},
 			{http.MethodGet, "/admin/config/checklist", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/setup/wizard", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/setup/wizard/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},

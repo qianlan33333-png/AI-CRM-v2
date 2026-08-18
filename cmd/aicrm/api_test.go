@@ -235,3 +235,22 @@ func (service *recordingAuth) capabilities() []authport.Capability {
 	defer service.mu.Unlock()
 	return append([]authport.Capability(nil), service.seen...)
 }
+
+func TestFinalRouterWithoutLegacyDoesNotServeAPIDocsPage(t *testing.T) {
+	service := &recordingAuth{}
+	authHandler, err := authhttp.NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := newAPIHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), authHandler, authHandler)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/admin/api-docs", "/admin/config/mcp-tools", "/admin/config/mcp-tools/save"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusNotFound {
+			t.Fatalf("GET %s = %d without legacy composition, want 404", path, response.Code)
+		}
+	}
+}

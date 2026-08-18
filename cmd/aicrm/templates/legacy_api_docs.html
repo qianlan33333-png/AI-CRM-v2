@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.Title}}</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;background:#f5f6f8;color:#1f2329;font-size:14px;line-height:1.6}
+a{color:#265ae0;text-decoration:none}
+a:hover{text-decoration:underline}
+button{cursor:pointer;font:inherit}
+.topbar{background:#fff;border-bottom:1px solid #e5e6eb;padding:16px 24px}
+.breadcrumb{font-size:13px;color:#646a73;margin-bottom:6px}
+.breadcrumb span:last-child{color:#1f2329}
+.topbar h1{margin:0 0 4px;font-size:20px}
+.topbar p{margin:0;color:#646a73}
+.top-actions{margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top-actions .stat{color:#8f959e;font-size:12px}
+.btn{border:1px solid #d0d3d6;background:#fff;border-radius:6px;padding:4px 10px;font-size:13px}
+.btn:hover{background:#f0f4ff;border-color:#94b3ff}
+.btn.copied{border-color:#34a853;color:#34a853}
+.layout{display:flex;align-items:flex-start}
+.sidebar{width:280px;flex:none;padding:16px 12px;position:sticky;top:0;max-height:100vh;overflow:auto}
+.sidebar h2{font-size:13px;color:#646a73;margin:12px 8px 6px}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:#3b3f45;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar li a:hover{background:#e8ebf0;text-decoration:none}
+.main{flex:1;padding:16px 24px;min-width:0}
+.searchbox{margin-bottom:14px}
+.searchbox input{width:100%;max-width:520px;padding:8px 12px;border:1px solid #d0d3d6;border-radius:8px;font-size:14px}
+.quickref{background:#fff;border:1px solid #e5e6eb;border-radius:8px;margin-bottom:18px;padding:8px 14px}
+.quickref h2{font-size:15px;margin:6px 0 10px}
+.quickref table{width:100%;border-collapse:collapse}
+.quickref td{padding:5px 8px;border-top:1px solid #f0f1f3;font-size:13px}
+.quickref tr:first-child td{border-top:none}
+.method{display:inline-block;min-width:46px;padding:0 6px;border-radius:4px;font-size:12px;font-weight:600;text-align:center}
+.method-get{background:#e6f4ea;color:#137333}
+.method-post{background:#e8f0fe;color:#1a56db}
+.method-put{background:#fef3e2;color:#b06000}
+.method-patch{background:#f3e8fd;color:#7b2cbf}
+.method-delete{background:#fde8e8;color:#c81e1e}
+.badge{display:inline-block;padding:0 6px;border-radius:4px;font-size:12px;background:#eef1f5;color:#4e5562}
+.group{background:#fff;border:1px solid #e5e6eb;border-radius:8px;margin-bottom:14px}
+.group>summary{padding:12px 16px;font-size:15px;font-weight:600;cursor:pointer;list-style:none}
+.group>summary::-webkit-details-marker{display:none}
+.group>summary .count{color:#8f959e;font-weight:400;font-size:12px;margin-left:8px}
+.group .group-body{padding:0 16px 14px}
+.group .group-desc{color:#646a73;margin:0 0 10px}
+.card{border:1px solid #ebedf0;border-radius:8px;margin-bottom:10px}
+.card>summary{padding:10px 14px;cursor:pointer;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.card>summary::-webkit-details-marker{display:none}
+.card>summary code{font-size:13px}
+.card>summary .summary{color:#3b3f45}
+.card .card-body{padding:0 14px 12px;border-top:1px solid #f0f1f3}
+.card .desc{color:#4e5562;margin:10px 0}
+.meta{margin:8px 0;font-size:13px;color:#4e5562}
+.meta span{margin-right:14px}
+table.params{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+table.params th,table.params td{border:1px solid #ebedf0;padding:4px 8px;text-align:left}
+table.params th{background:#f7f8fa;font-weight:600}
+.empty{color:#8f959e;padding:20px;text-align:center;display:none}
+code{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+</style>
+</head>
+<body>
+<header class="topbar">
+<nav class="breadcrumb"><span>客户管理后台</span> / <span>API 文档</span></nav>
+<h1>{{.Title}}</h1>
+<p>{{.Summary}}</p>
+<div class="top-actions">
+<button type="button" class="btn" data-copy-md="full">复制全部 Markdown（{{.MarkdownSizeLabel}}）</button>
+<span class="stat">共 {{.EndpointCount}} 个接口</span>
+</div>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="API 分组导航">
+<h2>分组</h2>
+<ul>
+{{- range .Groups}}
+<li><a href="#group-{{.ID}}">{{.Title}}</a></li>
+{{- end}}
+</ul>
+<h2>快速索引</h2>
+<ul>
+{{- range .QuickReference}}
+<li data-search-row data-search-text="{{.Method}} {{.Path}} {{.Summary}}"><a href="#{{.Anchor}}"><strong>{{.Method}}</strong> {{.Path}}</a></li>
+{{- end}}
+</ul>
+</nav>
+<main class="main">
+<div class="searchbox"><input id="api-docs-search" type="search" placeholder="搜索 API（路径、名称、关键词）..." aria-label="搜索 API"></div>
+{{- range .Groups}}
+<details class="group" id="group-{{.ID}}" open>
+<summary>{{.Title}}<span class="count">{{len .Endpoints}} 个接口</span>
+<button type="button" class="btn" data-copy-md="group:{{.ID}}">复制本组 Markdown</button></summary>
+<div class="group-body">
+<p class="group-desc">{{.Description}}</p>
+{{- range .Endpoints}}
+<details class="card" id="{{.ID}}" data-search-text="{{.Method}} {{.Path}} {{.Summary}}">
+<summary>
+<span class="method method-{{.MethodLower}}">{{.Method}}</span>
+<code>{{.Path}}</code>
+<span class="summary">{{.Summary}}</span>
+<span class="badge">{{.AuthLabel}}</span>
+</summary>
+<div class="card-body">
+<div class="meta">
+{{- if .Capability}}<span>Capability：<code>{{.Capability}}</code></span>{{end}}
+{{- if .CSRF}}<span>CSRF：{{.CSRF}}</span>{{end}}
+{{- if .Effect}}<span>外部效果：{{.Effect}}</span>{{end}}
+</div>
+{{- if .Description}}<p class="desc">{{.Description}}</p>{{end}}
+{{- if .Params}}
+<table class="params">
+<thead><tr><th>参数</th><th>位置</th><th>必填</th><th>类型</th><th>格式</th><th>枚举</th><th>范围</th></tr></thead>
+<tbody>
+{{- range .Params}}
+<tr><td><code>{{.Name}}</code></td><td>{{.Location}}</td><td>{{if .Required}}是{{else}}否{{end}}</td><td>{{.Type}}</td><td>{{.Format}}</td><td>{{.Enum}}</td><td>{{.Range}}</td></tr>
+{{- end}}
+</tbody>
+</table>
+{{- end}}
+{{- if .Responses}}
+<table class="params">
+<thead><tr><th>状态</th><th>Schema</th></tr></thead>
+<tbody>
+{{- range .Responses}}
+<tr><td>{{.Status}}</td><td>{{if .SchemaRef}}<code>{{.SchemaRef}}</code>{{else}}-{{end}}</td></tr>
+{{- end}}
+</tbody>
+</table>
+{{- end}}
+<button type="button" class="btn" data-copy-md="ep:{{.ID}}">复制接口 Markdown</button>
+</div>
+</details>
+{{- end}}
+</div>
+</details>
+{{- end}}
+<div class="empty" id="api-docs-empty">没有匹配的接口</div>
+</main>
+</div>
+<script type="application/json" id="apidoc-md-data">{{.MarkdownJSON}}</script>
+<script>
+(function () {
+  "use strict";
+  var searchInput = document.getElementById("api-docs-search");
+  var emptyHint = document.getElementById("api-docs-empty");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+  var groups = Array.prototype.slice.call(document.querySelectorAll(".group"));
+  var quickRows = Array.prototype.slice.call(document.querySelectorAll("[data-search-row]"));
+  function applySearch() {
+    var term = (searchInput.value || "").toLowerCase().trim();
+    var anyVisible = false;
+    cards.forEach(function (card) {
+      var match = term === "" || (card.getAttribute("data-search-text") || "").toLowerCase().indexOf(term) !== -1;
+      card.style.display = match ? "" : "none";
+      if (match) anyVisible = true;
+    });
+    quickRows.forEach(function (row) {
+      var match = term === "" || row.getAttribute("data-search-text").toLowerCase().indexOf(term) !== -1;
+      row.style.display = match ? "" : "none";
+    });
+    groups.forEach(function (group) {
+      var visibleCards = group.querySelectorAll(".card:not([style*='none'])");
+      group.style.display = term === "" || visibleCards.length > 0 ? "" : "none";
+    });
+    emptyHint.style.display = anyVisible ? "none" : "block";
+  }
+  if (searchInput) searchInput.addEventListener("input", applySearch);
+  var markdownData = null;
+  function loadMarkdown() {
+    if (markdownData) return markdownData;
+    var node = document.getElementById("apidoc-md-data");
+    if (!node) return null;
+    try {
+      markdownData = JSON.parse(node.textContent);
+    } catch (error) {
+      markdownData = null;
+    }
+    return markdownData;
+  }
+  function copyText(text, button) {
+    function done() {
+      var original = button.textContent;
+      button.textContent = "已复制";
+      button.classList.add("copied");
+      setTimeout(function () { button.textContent = original; button.classList.remove("copied"); }, 1500);
+    }
+    function fallback() {
+      var area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "readonly");
+      area.style.position = "absolute";
+      area.style.left = "-9999px";
+      document.body.appendChild(area);
+      area.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (error) { ok = false; }
+      document.body.removeChild(area);
+      if (ok) { done(); } else { window.alert("复制失败，请手动复制。"); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-copy-md]");
+    if (!button) return;
+    event.preventDefault();
+    var data = loadMarkdown();
+    if (!data) { window.alert("复制失败，请手动复制。"); return; }
+    var key = button.getAttribute("data-copy-md");
+    var text = "";
+    if (key === "full") {
+      text = data.full || "";
+    } else if (key.indexOf("group:") === 0) {
+      text = (data.groups || {})[key.slice(6)] || "";
+    } else if (key.indexOf("ep:") === 0) {
+      text = (data.endpoints || {})[key.slice(3)] || "";
+    }
+    if (!text) { window.alert("复制失败，请手动复制。"); return; }
+    copyText(text, button);
+  });
+  function expandHash() {
+    var hash = window.location.hash;
+    if (!hash || hash.length < 2) return;
+    var target = null;
+    try { target = document.querySelector(hash); } catch (error) { target = null; }
+    if (!target) return;
+    var node = target;
+    while (node) {
+      if (node.tagName === "DETAILS") node.open = true;
+      node = node.parentElement;
+    }
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+  window.addEventListener("hashchange", expandHash);
+  setTimeout(expandHash, 100);
+})();
+</script>
+</body>
+</html>

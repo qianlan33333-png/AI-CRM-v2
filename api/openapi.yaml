@@ -159,6 +159,45 @@ paths:
         "302": { description: "Authenticated browser redirects exactly to /logout; a missing, expired, malformed, or ambiguous browser session redirects to the local login path with next=/admin/logout", headers: { Location: { required: true, schema: { type: string } } } }
         "403": { description: "Sales, unknown identity, bearer principal, or non-global grant is denied", content: { application/json: { schema: { $ref: "#/components/schemas/AdminShellAccessDenied" } } } }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/api-docs:
+    get:
+      tags: [p4-api-docs-compat]
+      operationId: getLegacyApiDocsPage
+      summary: Render the frozen server-side API documentation page from the embedded canonical OpenAPI contract
+      x-legacy-mapping-ids: [LEGACY-API-0003]
+      x-p4-decision-evidence: P4-API-DOCS-0003-0033-R2-2026-08-18
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: embedded_openapi
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Frozen server-rendered API documentation page, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { description: "Safe internal error envelope without spec, stack, or cause leakage", content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/mcp-tools:
+    get:
+      tags: [p4-api-docs-compat]
+      operationId: getLegacyMcpToolsRedirect
+      summary: Redirect an authenticated Admin Config browser exactly to /admin/api-docs
+      x-legacy-mapping-ids: [LEGACY-API-0033]
+      x-p4-decision-evidence: P4-API-DOCS-0003-0033-R2-2026-08-18
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: "Authorized browser redirects exactly to /admin/api-docs with an empty body; the original query and body are never parsed, logged, or echoed", headers: { Location: { required: true, schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/customers:
     get:
       tags: [p4-customer-compat]
