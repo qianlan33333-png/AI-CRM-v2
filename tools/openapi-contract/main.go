@@ -251,6 +251,10 @@ var p4DomainVerificationOperations = map[string]bool{
 	"getDomainVerificationFile": true,
 }
 
+var p4LegacyHealthOperations = map[string]bool{
+	"getLegacyHealth": true,
+}
+
 var p4PushCenterOperations = map[string]bool{
 	"getLegacyPushCenterSections": true, "getLegacyPushCenterStats": true,
 }
@@ -439,6 +443,7 @@ const p4CouponABDecisionEvidence = "P4-COUPON-AB-2026-08-15"
 const p4OrderDecisionEvidence = "P4-ORDER-AB-2026-08-15"
 const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
 const p4DomainVerificationDecisionEvidence = "P4-S04-DOMAIN-VERIFICATION-2026-08-16"
+const p4LegacyHealthDecisionEvidence = "P4-S04-LEGACY-HEALTH-2026-08-18"
 const p4PushCenterDecisionEvidence = "P4-PUSH-CENTER-0421-0422-2026-08-16"
 const p4ExecutionRuntimeDecisionEvidence = "P4-EXECUTION-RUNTIME-AB-2026-08-16"
 const p4AdminShellDecisionEvidence = "P4-ADMIN-SHELL-AB-2026-08-16"
@@ -522,7 +527,8 @@ func isRunnerDeclaredOperation(operationID string) bool {
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
 		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
-		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID]
+		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID] ||
+		p4LegacyHealthOperations[operationID]
 }
 
 func operationForMethod(item *openapi3.PathItem, method string) *openapi3.Operation {
@@ -612,7 +618,7 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -858,6 +864,43 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 				if response == nil || response.Value == nil || response.Value.Headers["Cache-Control"] == nil || response.Value.Content["text/plain"] == nil {
 					return fmt.Errorf("%s plaintext no-store response drifted", op.OperationID)
 				}
+			} else if p4LegacyHealthOperations[op.OperationID] {
+				seenP4LegacyHealth[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4LegacyHealthDecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 legacy health evidence", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, []string{"LEGACY-API-0757"}) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				// The immutable LEGACY-API-0757 capability keeps its exact
+				// underscored manifest name; the generic dotted-capability
+				// fallback deliberately does not apply to this operation.
+				if op.Security == nil || len(*op.Security) != 0 ||
+					op.Extensions["x-aicrm-capability"] != "health_read" ||
+					op.Extensions["x-aicrm-auth-scheme"] != "public" ||
+					op.Extensions["x-aicrm-csrf"] != "none" ||
+					op.Extensions["x-aicrm-data-classification"] != "public_non_pii" ||
+					op.Extensions["x-aicrm-data-source"] != "read_model" ||
+					op.Extensions["x-aicrm-rate-limit"] != "health" ||
+					op.Extensions["x-aicrm-external-effect"] != "none" {
+					return fmt.Errorf("%s public runtime-mode snapshot contract drifted", op.OperationID)
+				}
+				if _, scopesDeclared := op.Extensions["x-aicrm-rbac-scopes"]; scopesDeclared {
+					return fmt.Errorf("%s must not declare RBAC scopes", op.OperationID)
+				}
+				if op.RequestBody != nil || len(op.Parameters) != 0 {
+					return fmt.Errorf("%s must remain a parameterless read", op.OperationID)
+				}
+				methodNotAllowed := op.Responses.Value("405")
+				if !operationResponseUsesLocalSchema(op, "LegacyRuntimeHealthSnapshot") ||
+					methodNotAllowed == nil || methodNotAllowed.Value == nil ||
+					methodNotAllowed.Value.Headers["Allow"] == nil ||
+					!operationResponseUsesStatusLocalSchema(op, "405", "LegacyHealthMethodNotAllowed") ||
+					len(op.Responses.Map()) != 2 {
+					return fmt.Errorf("%s response envelope drifted", op.OperationID)
+				}
 			} else if canonicalFallback {
 				if err := validateGenericCanonicalAuthorization(op, canonicalContract.Method); err != nil {
 					return err
@@ -883,9 +926,10 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] {
-				// The public static route is fully constrained in its dedicated
-				// branch above and intentionally has no RBAC capability map.
+			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] {
+				// The public static route and the public runtime-mode snapshot are
+				// fully constrained in their dedicated branches above and
+				// intentionally have no RBAC capability map.
 			} else if public, publicOperation := couponPublicAccessContracts[op.OperationID]; publicOperation {
 				authScheme, ok := op.Extensions["x-aicrm-auth-scheme"].(string)
 				if !ok || authScheme != public.authScheme {
@@ -930,7 +974,7 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
 		len(seenP4ConfigSettings) != len(p4ConfigSettingsOperations) || len(seenP4DomainVerification) != len(p4DomainVerificationOperations) ||
 		len(seenP4PushCenter) != len(p4PushCenterOperations) || len(seenP4ExecutionRuntime) != len(p4ExecutionRuntimeOperations) ||
-		len(seenP4AdminShell) != len(p4AdminShellOperations) || len(seenCanonical) != len(inventory.Candidates) {
+		len(seenP4AdminShell) != len(p4AdminShellOperations) || len(seenP4LegacyHealth) != len(p4LegacyHealthOperations) || len(seenCanonical) != len(inventory.Candidates) {
 		return errors.New("candidate inventory differs from canonical declarations")
 	}
 	for id := range p1CandidateOperations {
@@ -1038,6 +1082,11 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 			return fmt.Errorf("missing P4 Admin Shell operation: %s", id)
 		}
 	}
+	for id := range p4LegacyHealthOperations {
+		if !seenP4LegacyHealth[id] {
+			return fmt.Errorf("missing P4 legacy health operation: %s", id)
+		}
+	}
 	for id := range inventory.Candidates {
 		if !seenCanonical[id] {
 			return fmt.Errorf("missing canonical candidate operation: %s", id)
@@ -1119,6 +1168,58 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	}
 	if err := validateAdminShellContract(doc); err != nil {
 		return err
+	}
+	if err := validateLegacyHealthContract(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateLegacyHealthContract freezes the exact 15-field LEGACY-API-0757
+// snapshot and the legacy 405 detail payload at immutable legacy SHA 6cb989c.
+func validateLegacyHealthContract(doc *openapi3.T) error {
+	snapshot := doc.Components.Schemas["LegacyRuntimeHealthSnapshot"]
+	if snapshot == nil || snapshot.Value == nil || snapshot.Value.AdditionalProperties.Has == nil ||
+		*snapshot.Value.AdditionalProperties.Has || len(snapshot.Value.Properties) != 15 {
+		return errors.New("LegacyRuntimeHealthSnapshot must remain a closed 15-field snapshot")
+	}
+	required := append([]string(nil), snapshot.Value.Required...)
+	sort.Strings(required)
+	want := []string{"database", "database_mode", "fixture_mode", "legacy_runtime_enabled", "ok",
+		"production_data_mode", "production_data_ready", "repository_policy", "runtime_owner",
+		"secret_key_present", "service", "status", "warning",
+		"wechat_shop_callback_token_present", "wechat_shop_callback_token_required"}
+	if !reflect.DeepEqual(required, want) {
+		return fmt.Errorf("LegacyRuntimeHealthSnapshot required=%v", required)
+	}
+	stringEnums := map[string][]any{
+		"status":            {"ok", "degraded"},
+		"service":           {"aicrm-next"},
+		"database":          {"postgres", "fixture"},
+		"database_mode":     {"postgres", "fixture"},
+		"repository_policy": {"production_repositories_required", "fixture_repositories_allowed"},
+		"runtime_owner":     {"ai_crm_next"},
+		"warning":           {"", "fixture data mode", "production runtime is using fixture data; production data is not ready"},
+	}
+	for name, wantEnum := range stringEnums {
+		property := snapshot.Value.Properties[name]
+		if property == nil || property.Value == nil || !reflect.DeepEqual(property.Value.Enum, wantEnum) {
+			return fmt.Errorf("LegacyRuntimeHealthSnapshot %s enum drifted", name)
+		}
+	}
+	legacyEnabled := snapshot.Value.Properties["legacy_runtime_enabled"]
+	if legacyEnabled == nil || legacyEnabled.Value == nil || !reflect.DeepEqual(legacyEnabled.Value.Enum, []any{false}) {
+		return errors.New("LegacyRuntimeHealthSnapshot legacy_runtime_enabled must remain fixed false")
+	}
+	methodNotAllowed := doc.Components.Schemas["LegacyHealthMethodNotAllowed"]
+	if methodNotAllowed == nil || methodNotAllowed.Value == nil || methodNotAllowed.Value.AdditionalProperties.Has == nil ||
+		*methodNotAllowed.Value.AdditionalProperties.Has || len(methodNotAllowed.Value.Properties) != 1 ||
+		!reflect.DeepEqual(methodNotAllowed.Value.Required, []string{"detail"}) {
+		return errors.New("LegacyHealthMethodNotAllowed must remain a closed detail-only payload")
+	}
+	detail := methodNotAllowed.Value.Properties["detail"]
+	if detail == nil || detail.Value == nil || !reflect.DeepEqual(detail.Value.Enum, []any{"Method Not Allowed"}) {
+		return errors.New("LegacyHealthMethodNotAllowed detail must remain the exact legacy message")
 	}
 	return nil
 }

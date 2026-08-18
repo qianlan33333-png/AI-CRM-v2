@@ -35,9 +35,9 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 		omit string
 		want Root
 	}{
-		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}, Release: Release{Environment: base[applicationEnvironmentEnv], SHA: base[releaseSHAEnv]}}},
-		{name: "worker", role: appruntime.RoleWorker, omit: apiListenAddressEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}}},
-		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}, Release: Release{Environment: base[applicationEnvironmentEnv], SHA: base[releaseSHAEnv]}}},
+		{name: "api", role: appruntime.RoleAPI, omit: workerPoolMaxConnsEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}, Release: Release{Environment: base[applicationEnvironmentEnv], SHA: base[releaseSHAEnv]}, LegacyHealth: LegacyHealthSnapshot{DatabaseIsPostgres: true}}},
+		{name: "worker", role: appruntime.RoleWorker, omit: apiListenAddressEnv, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}, LegacyHealth: LegacyHealthSnapshot{DatabaseIsPostgres: true}}},
+		{name: "all", role: appruntime.RoleAll, want: Root{Database: Database{URL: DatabaseURL{value: base[databaseURLEnv]}}, API: API{ListenAddress: base[apiListenAddressEnv], PoolMaxConns: 10}, Worker: Worker{PoolMaxConns: 9, Queues: sQueues}, Identity: Identity{HMACKey: identityKey}, DomainVerification: DomainVerification{Directory: base[domainVerificationDirEnv]}, Release: Release{Environment: base[applicationEnvironmentEnv], SHA: base[releaseSHAEnv]}, LegacyHealth: LegacyHealthSnapshot{DatabaseIsPostgres: true}}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -222,6 +222,109 @@ func TestDatabaseURLFormattingIsRedacted(t *testing.T) {
 	}
 	if value.Value() != "postgres://user:secret@db/aicrm" {
 		t.Fatal("DatabaseURL.Value() did not preserve the validated value")
+	}
+}
+
+func TestLoadFoldsLegacyHealthSnapshotWithoutRetainingSecrets(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                            "postgres://db/aicrm",
+		apiListenAddressEnv:                       "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:                        "1",
+		identityHMACKeyEnv:                        strings.Repeat("A", 43),
+		legacySecretKeyEnv:                        "legacy-secret-sentinel",
+		legacyWeChatShopCallbackTokenEnv:          "legacy-callback-token-sentinel",
+		legacyProductionEnvironmentEnvs[0]:        " production ",
+		legacyAllowMissingWeChatShopCallbackToken: " YeS ",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil {
+		t.Fatalf("load() error = %v", err)
+	}
+	want := LegacyHealthSnapshot{
+		DatabaseIsPostgres:                  true,
+		ProductionEnvironment:               true,
+		SecretKeyPresent:                    true,
+		WeChatShopCallbackTokenPresent:      true,
+		AllowMissingWeChatShopCallbackToken: true,
+	}
+	if root.LegacyHealth != want {
+		t.Fatalf("legacy health snapshot = %#v, want %#v", root.LegacyHealth, want)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, "sentinel") {
+			t.Fatalf("Root formatting retained legacy secret material: %q", formatted)
+		}
+	}
+}
+
+func TestLoadLegacyHealthEnvironmentBoundaries(t *testing.T) {
+	base := map[string]string{
+		databaseURLEnv:      "postgres://db/aicrm",
+		apiListenAddressEnv: "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:  "1",
+		identityHMACKeyEnv:  strings.Repeat("A", 43),
+	}
+	loadSnapshot := func(t *testing.T, extra map[string]string) LegacyHealthSnapshot {
+		t.Helper()
+		values := cloneValues(base)
+		for key, value := range extra {
+			values[key] = value
+		}
+		root, err := load(appruntime.RoleAPI, mapLookup(values))
+		if err != nil {
+			t.Fatalf("load() error = %v", err)
+		}
+		return root.LegacyHealth
+	}
+
+	if snapshot := loadSnapshot(t, nil); snapshot != (LegacyHealthSnapshot{DatabaseIsPostgres: true}) {
+		t.Fatalf("absent legacy names must stay absent: %#v", snapshot)
+	}
+	// The v2 environment name must never substitute for the legacy aliases.
+	if snapshot := loadSnapshot(t, map[string]string{applicationEnvironmentEnv: "production"}); snapshot.ProductionEnvironment {
+		t.Fatalf("AICRM_ENV must not feed the legacy production snapshot: %#v", snapshot)
+	}
+	for _, alias := range legacyProductionEnvironmentEnvs {
+		for _, value := range []string{"prod", " Production ", "PROD"} {
+			if snapshot := loadSnapshot(t, map[string]string{alias: value}); !snapshot.ProductionEnvironment {
+				t.Fatalf("%s=%q must mark the legacy production environment", alias, value)
+			}
+		}
+		for _, value := range []string{"", "staging", "prod-local"} {
+			if snapshot := loadSnapshot(t, map[string]string{alias: value}); snapshot.ProductionEnvironment {
+				t.Fatalf("%s=%q must not mark the legacy production environment", alias, value)
+			}
+		}
+	}
+	for _, value := range []string{"1", "true", " TRUE ", "yes", "on"} {
+		if snapshot := loadSnapshot(t, map[string]string{legacyAllowMissingWeChatShopCallbackToken: value}); !snapshot.AllowMissingWeChatShopCallbackToken {
+			t.Fatalf("allow-missing %q must fold to true", value)
+		}
+	}
+	for _, value := range []string{"0", "false", "enabled", ""} {
+		if snapshot := loadSnapshot(t, map[string]string{legacyAllowMissingWeChatShopCallbackToken: value}); snapshot.AllowMissingWeChatShopCallbackToken {
+			t.Fatalf("allow-missing %q must fold to false", value)
+		}
+	}
+	// Worker-only startup never reads the legacy presence names.
+	workerValues := map[string]string{
+		databaseURLEnv:                     "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:              "9",
+		criticalWorkersEnv:                 "2",
+		eventWorkersEnv:                    "1",
+		outboundWorkersEnv:                 "1",
+		syncWorkersEnv:                     "1",
+		heavyWorkersEnv:                    "1",
+		aiWorkersEnv:                       "1",
+		legacySecretKeyEnv:                 "legacy-secret-sentinel",
+		legacyProductionEnvironmentEnvs[1]: "production",
+	}
+	worker, err := load(appruntime.RoleWorker, mapLookup(workerValues))
+	if err != nil {
+		t.Fatalf("worker load() error = %v", err)
+	}
+	if worker.LegacyHealth != (LegacyHealthSnapshot{DatabaseIsPostgres: true}) {
+		t.Fatalf("worker legacy health snapshot = %#v", worker.LegacyHealth)
 	}
 }
 

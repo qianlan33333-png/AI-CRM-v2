@@ -34,7 +34,15 @@ const (
 	domainVerificationDirEnv  = "AICRM_DOMAIN_VERIFICATION_DIR"
 	applicationEnvironmentEnv = "AICRM_ENV"
 	releaseSHAEnv             = "AICRM_RELEASE_SHA"
+
+	legacySecretKeyEnv                        = "SECRET_KEY"
+	legacyWeChatShopCallbackTokenEnv          = "WECHAT_SHOP_CALLBACK_TOKEN"
+	legacyAllowMissingWeChatShopCallbackToken = "AICRM_ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN"
 )
+
+// legacyProductionEnvironmentEnvs are the legacy production aliases. The v2
+// AICRM_ENV name is deliberately not one of them.
+var legacyProductionEnvironmentEnvs = []string{"AICRM_NEXT_ENV", "ENVIRONMENT", "APP_ENV", "FLASK_ENV"}
 
 var ErrInvalid = errors.New("invalid startup configuration")
 
@@ -68,6 +76,20 @@ type DomainVerification struct {
 type Release struct {
 	Environment string
 	SHA         string
+}
+
+// LegacyHealthSnapshot carries the presence/mode facts behind the public
+// LEGACY-API-0757 GET /health runtime-mode snapshot. Legacy configuration
+// names are folded into booleans at load time; Root never stores, logs, or
+// returns their raw values. DatabaseIsPostgres is set where the startup
+// database URL is validated, because AICRM_DATABASE_URL only accepts
+// PostgreSQL in v2.
+type LegacyHealthSnapshot struct {
+	DatabaseIsPostgres                  bool
+	ProductionEnvironment               bool
+	SecretKeyPresent                    bool
+	WeChatShopCallbackTokenPresent      bool
+	AllowMissingWeChatShopCallbackToken bool
 }
 
 // CallbackSecret is opaque to keep callback credentials out of generic logs
@@ -151,6 +173,7 @@ type Root struct {
 	Identity           Identity
 	DomainVerification DomainVerification
 	Release            Release
+	LegacyHealth       LegacyHealthSnapshot
 }
 
 type validationError struct {
@@ -176,6 +199,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		problems = append(problems, "database.url must be a valid postgres URL")
 	} else {
 		root.Database.URL = DatabaseURL{value: databaseValue}
+		root.LegacyHealth.DatabaseIsPostgres = true
 	}
 
 	needAPI, needWorker, roleValid := selectedComponents(role)
@@ -198,6 +222,10 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
 		root.Release.Environment, _ = lookup(applicationEnvironmentEnv)
 		root.Release.SHA, _ = lookup(releaseSHAEnv)
+		root.LegacyHealth.SecretKeyPresent = legacyValuePresent(lookup, legacySecretKeyEnv)
+		root.LegacyHealth.WeChatShopCallbackTokenPresent = legacyValuePresent(lookup, legacyWeChatShopCallbackTokenEnv)
+		root.LegacyHealth.AllowMissingWeChatShopCallbackToken = legacyToggleEnabled(lookup, legacyAllowMissingWeChatShopCallbackToken)
+		root.LegacyHealth.ProductionEnvironment = legacyProductionEnvironment(lookup)
 	}
 	if needWorker {
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
@@ -376,4 +404,42 @@ func parsePositiveInt32(lookup environmentLookup, environmentKey, field string, 
 		return 0
 	}
 	return int32(parsed)
+}
+
+// legacyValuePresent folds a legacy presence-only name into a boolean. The raw
+// value is discarded immediately so the health snapshot cannot expose secrets.
+func legacyValuePresent(lookup environmentLookup, name string) bool {
+	value, present := lookup(name)
+	return present && value != ""
+}
+
+// legacyToggleEnabled accepts exactly the legacy truthy tokens 1/true/yes/on,
+// trimmed and case-insensitive; everything else stays false.
+func legacyToggleEnabled(lookup environmentLookup, name string) bool {
+	value, present := lookup(name)
+	if !present {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+// legacyProductionEnvironment reports true when any legacy production alias
+// holds prod or production, trimmed and case-insensitive.
+func legacyProductionEnvironment(lookup environmentLookup) bool {
+	for _, name := range legacyProductionEnvironmentEnvs {
+		value, present := lookup(name)
+		if !present {
+			continue
+		}
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "prod", "production":
+			return true
+		}
+	}
+	return false
 }

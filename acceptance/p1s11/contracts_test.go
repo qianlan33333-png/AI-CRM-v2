@@ -184,11 +184,38 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 	}
 }
 
+// TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet pins the
+// LEGACY-API-0757 wire shape: exactly the 15 frozen fields, nothing else.
+func TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet(t *testing.T) {
+	typeOf := reflect.TypeOf(generated.LegacyRuntimeHealthSnapshot{})
+	want := map[string]bool{
+		"ok": true, "status": true, "service": true,
+		"secret_key_present": true, "wechat_shop_callback_token_present": true,
+		"wechat_shop_callback_token_required": true, "database": true, "database_mode": true,
+		"fixture_mode": true, "production_data_ready": true, "production_data_mode": true,
+		"repository_policy": true, "runtime_owner": true, "legacy_runtime_enabled": true,
+		"warning": true,
+	}
+	if typeOf.NumField() != len(want) {
+		t.Fatalf("LegacyRuntimeHealthSnapshot fields=%d want=%d", typeOf.NumField(), len(want))
+	}
+	for index := 0; index < typeOf.NumField(); index++ {
+		name := strings.Split(typeOf.Field(index).Tag.Get("json"), ",")[0]
+		if !want[name] {
+			t.Fatalf("LegacyRuntimeHealthSnapshot carries unexpected field %s", name)
+		}
+		delete(want, name)
+	}
+	if len(want) != 0 {
+		t.Fatalf("LegacyRuntimeHealthSnapshot missing fields: %v", want)
+	}
+}
+
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
 		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateProduct", "CreateSegment", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
-		"GetCustomer", "GetDomainVerificationFile", "GetLegacyExecutionRuntime", "GetLegacyExecutionTimeline", "GetLegacyPushCenterSections", "GetLegacyPushCenterStats", "GetProduct", "GetSegment", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
+		"GetCustomer", "GetDomainVerificationFile", "GetLegacyExecutionRuntime", "GetLegacyExecutionTimeline", "GetLegacyHealth", "GetLegacyPushCenterSections", "GetLegacyPushCenterStats", "GetProduct", "GetSegment", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
 		"ListProducts", "ListSegmentMembers", "ListSegments", "ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
 		"RemoveCustomerTag", "RenameStage", "RequestSegmentRefresh", "ResolveIdentity", "SetCustomerStage", "UpdateCustomer", "UpdateSegment",
 	})
