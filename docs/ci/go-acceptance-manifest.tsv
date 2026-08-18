@@ -46,3 +46,4 @@ p4-miniprogram-library-ab|0044|P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL|legacy-mak
 p4-system-health-0741|0045|-|go-test|./internal/platform/readiness|^TestEvaluate
 p4-image-facets-0358|0046|P4IMAGEFACETS_TEST_DATABASE_URL|go-test|./acceptance/media|^TestImageFacets0358
 p4-s04-legacy-health-0757|0047|-|go-test|./cmd/aicrm|^TestLegacyHealth
+p4-image-update-0364|0048|P4IMAGEUPDATE_TEST_DATABASE_URL|script|acceptance/media/image_update_0364_migration_compatibility.sh|-

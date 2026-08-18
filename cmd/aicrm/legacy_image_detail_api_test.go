@@ -36,7 +36,7 @@ func TestLegacyImageDetailReturnsExactEnvelopeAndOptionalFields(t *testing.T) {
 	createdAt := time.Date(2026, 8, 19, 9, 8, 7, 654321987, time.FixedZone("legacy", 8*60*60))
 	detail := mediaapp.ImageDetail{
 		ID: 42, Name: "封面", FileName: "cover.png", MimeType: "image/png", FileSize: 5, Description: "说明", Category: "cover",
-		Tags: []string{"hero", "首页"}, Width: 640, Height: 480, CreatedAt: createdAt, UpdatedAt: createdAt.Add(time.Second), Content: []byte("hello"),
+		Tags: []string{"hero", "首页"}, Enabled: true, Width: 640, Height: 480, CreatedAt: createdAt, UpdatedAt: createdAt.Add(time.Second), Content: []byte("hello"),
 	}
 	stub := &legacyImageDetailStub{detail: detail}
 	auth := &legacyMediaAuthStub{}
@@ -203,16 +203,23 @@ func TestLegacyImageDetailRouterSecurityMethodGuardAndResponseLimit(t *testing.T
 		t.Fatalf("sales status=%d calls=%d", response.Code, forbidden.detailCall)
 	}
 
-	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+	for _, method := range []string{http.MethodPost, http.MethodPatch, http.MethodDelete} {
 		t.Run(method+" before authentication", func(t *testing.T) {
 			stub := &legacyImageDetailStub{detail: testLegacyImageDetail()}
 			auth := &legacyMediaAuthStub{}
 			response := httptest.NewRecorder()
 			legacyMediaRouterWithAuth(t, stub, auth).ServeHTTP(response, legacyImageDetailRequest(method, "1", "", false))
-			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet || stub.detailCall != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
+			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") == "" || stub.detailCall != 0 || auth.authenticateCalls != 0 || len(auth.seen) != 0 || auth.csrfCalls != 0 {
 				t.Fatalf("status=%d allow=%q calls=%d auth=%#v", response.Code, response.Header().Get("Allow"), stub.detailCall, auth)
 			}
 		})
+	}
+
+	updateAnonymous := &legacyImageDetailStub{detail: testLegacyImageDetail()}
+	response = httptest.NewRecorder()
+	legacyMediaRouterWithAuth(t, updateAnonymous, &legacyMediaAuthStub{}).ServeHTTP(response, legacyImageDetailRequest(http.MethodPut, "1", "", false))
+	if response.Code != http.StatusUnauthorized || updateAnonymous.detailCall != 0 {
+		t.Fatalf("anonymous update status=%d calls=%d", response.Code, updateAnonymous.detailCall)
 	}
 
 	anonymous := &legacyImageDetailStub{detail: testLegacyImageDetail()}

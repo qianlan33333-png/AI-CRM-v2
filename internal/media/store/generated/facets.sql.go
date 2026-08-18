@@ -12,6 +12,7 @@ import (
 const listMediaImageFacetRows = `-- name: ListMediaImageFacetRows :many
 SELECT category, tags
 FROM media_images
+WHERE enabled
 `
 
 type ListMediaImageFacetRowsRow struct {

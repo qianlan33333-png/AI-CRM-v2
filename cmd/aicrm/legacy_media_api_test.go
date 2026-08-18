@@ -474,7 +474,6 @@ func TestP4ImageListRejectsMalformedSuccessProjection(t *testing.T) {
 		{"non RFC3339 timestamp", func(item *mediaport.ImageListItem) { item.CreatedAt = "2026-08-17 12:34:56" }},
 		{"absolute raw URL", func(item *mediaport.ImageListItem) { item.OriginalURL = "https://private.invalid/blob" }},
 		{"wrong compatibility alias", func(item *mediaport.ImageListItem) { item.ThumbURL = item.Thumb160URL }},
-		{"disabled item", func(item *mediaport.ImageListItem) { item.Enabled = false }},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -587,6 +586,10 @@ func legacyMediaRouter(t *testing.T, media legacyMediaApplication) (http.Handler
 }
 
 func legacyMediaRouterWithAuth(t *testing.T, media legacyMediaApplication, service authport.Service) http.Handler {
+	return legacyMediaRouterWithAuthAndLogger(t, media, service, slog.New(slog.NewJSONHandler(io.Discard, nil)))
+}
+
+func legacyMediaRouterWithAuthAndLogger(t *testing.T, media legacyMediaApplication, service authport.Service, logger *slog.Logger) http.Handler {
 	t.Helper()
 	legacy, err := NewHandlerWithOutboundProductsAndMedia(service, &legacyCustomerStub{result: legacyCustomerResult()},
 		&legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, media)
@@ -597,7 +600,7 @@ func legacyMediaRouterWithAuth(t *testing.T, media legacyMediaApplication, servi
 	if err != nil {
 		t.Fatal(err)
 	}
-	router, err := newAPIHandlerWithCallbackAndLegacy(slog.New(slog.NewJSONHandler(io.Discard, nil)),
+	router, err := newAPIHandlerWithCallbackAndLegacy(logger,
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), authHandler, authHandler, legacy)
 	if err != nil {
 		t.Fatal(err)

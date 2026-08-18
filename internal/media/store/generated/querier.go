@@ -33,12 +33,14 @@ type Querier interface {
 	ListMediaImagePage(ctx context.Context, arg ListMediaImagePageParams) ([]ListMediaImagePageRow, error)
 	ListMediaMiniPrograms(ctx context.Context, arg ListMediaMiniProgramsParams) ([]ListMediaMiniProgramsRow, error)
 	LockMediaGroupInvite(ctx context.Context, id int64) (int64, error)
+	LockMediaImageMetadata(ctx context.Context, imageID int64) (LockMediaImageMetadataRow, error)
 	LockMediaMiniProgram(ctx context.Context, id int64) (int64, error)
 	MediaImageExists(ctx context.Context, id int64) (bool, error)
 	ReserveMediaGroupInviteReceipt(ctx context.Context, arg ReserveMediaGroupInviteReceiptParams) (ReserveMediaGroupInviteReceiptRow, error)
 	ReserveMediaImageUploadReceipt(ctx context.Context, arg ReserveMediaImageUploadReceiptParams) (ReserveMediaImageUploadReceiptRow, error)
 	ReserveMediaMiniProgramReceipt(ctx context.Context, arg ReserveMediaMiniProgramReceiptParams) (ReserveMediaMiniProgramReceiptRow, error)
 	UpdateMediaGroupInvite(ctx context.Context, arg UpdateMediaGroupInviteParams) error
+	UpdateMediaImageMetadata(ctx context.Context, arg UpdateMediaImageMetadataParams) (UpdateMediaImageMetadataRow, error)
 	UpdateMediaMiniProgram(ctx context.Context, arg UpdateMediaMiniProgramParams) error
 }
 

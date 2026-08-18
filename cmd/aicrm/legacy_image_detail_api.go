@@ -173,7 +173,7 @@ func projectLegacyImageDetailItem(detail mediaapp.ImageDetail, query legacyImage
 		ID: detail.ID, Name: detail.Name, FileName: detail.FileName, MimeType: detail.MimeType, FileSize: detail.FileSize,
 		Description: detail.Description, Category: detail.Category, Width: detail.Width, Height: detail.Height,
 		CreatedAt: detail.CreatedAt.UTC().Format(time.RFC3339Nano), UpdatedAt: detail.UpdatedAt.UTC().Format(time.RFC3339Nano),
-		ContentType: detail.MimeType, Tags: detail.Tags, Enabled: true, Source: "upload", SourceURL: "", ThumbMediaID: "",
+		ContentType: detail.MimeType, Tags: detail.Tags, Enabled: detail.Enabled, Source: "upload", SourceURL: "", ThumbMediaID: "",
 		ThumbMediaIDExpiresAt: "", AIMetadata: map[string]any{}, Thumb160URL: base + "thumb_160", Thumb320URL: base + "thumb_320",
 		ThumbURL: base + "thumb_320", PreviewURL: base + "mobile_1080", Mobile1080URL: base + "mobile_1080",
 		Large1440URL: base + "large_1440", OriginalURL: base + "original",

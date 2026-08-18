@@ -32,7 +32,7 @@ func (repository *UploadRepository) ReadImageDetail(ctx context.Context, imageID
 func imageDetailRowFromGenerated(row mediadb.GetMediaImageDetailRow) mediaapp.ImageDetailRow {
 	return mediaapp.ImageDetailRow{
 		ID: row.ID, Name: row.Name, FileName: row.FileName, MimeType: row.MimeType,
-		FileSize: row.FileSize, Description: row.Description, Tags: row.Tags, Category: row.Category,
+		FileSize: row.FileSize, Enabled: row.Enabled, Description: row.Description, Tags: row.Tags, Category: row.Category,
 		Width: row.Width, Height: row.Height, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time,
 		ImageChecksum: append([]byte(nil), row.ImageChecksum...), BlobChecksum: append([]byte(nil), row.BlobChecksum...),
 		Content: append([]byte(nil), row.Content...),

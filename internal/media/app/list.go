@@ -23,6 +23,7 @@ type ImageListFilter struct {
 	Tags          []string
 	TagGroups     [][]string
 	OnlyUnlabeled bool
+	EnabledOnly   bool
 }
 
 type ImageListRow struct {
@@ -31,6 +32,7 @@ type ImageListRow struct {
 	FileName    string
 	MimeType    string
 	FileSize    int32
+	Enabled     bool
 	Description string
 	Tags        string
 	Category    string
@@ -69,11 +71,8 @@ func (service *Service) ListImages(ctx context.Context, query mediaport.ImageLis
 		Tags:          normalizeImageListTags(query.Tags),
 		TagGroups:     normalizeImageListTagGroups(query.TagGroups),
 		OnlyUnlabeled: query.OnlyUnlabeled,
+		EnabledOnly:   query.EnabledOnly,
 	}
-	// enabled_only is an approved compatibility no-op: media_images has no
-	// disabled state, every projected item is permanently enabled, and both
-	// lexical boolean values read the same complete Media-owned set.
-	_ = query.EnabledOnly
 
 	read := ImageListRead{Rows: []ImageListRow{}}
 	if err := service.uow.Within(ctx, func(tx context.Context) error {
@@ -140,7 +139,7 @@ func projectImageListItem(row ImageListRow) mediaport.ImageListItem {
 	mobile1080 := base + "mobile_1080"
 	return mediaport.ImageListItem{
 		ID: row.ID, Name: row.Name, FileName: row.FileName, MimeType: row.MimeType, FileSize: row.FileSize,
-		Enabled: true, Description: row.Description, Tags: normalizeImageListTags(row.Tags), Category: row.Category,
+		Enabled: row.Enabled, Description: row.Description, Tags: normalizeImageListTags(row.Tags), Category: row.Category,
 		Width: row.Width, Height: row.Height, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339Nano),
 		UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339Nano), Thumb160URL: thumb160, Thumb320URL: thumb320,
 		ThumbURL: thumb320, PreviewURL: mobile1080, Mobile1080URL: mobile1080,

@@ -6,6 +6,7 @@ WITH normalized AS MATERIALIZED (
         image.file_name,
         image.mime_type,
         image.file_size,
+        image.enabled,
         image.description,
         image.tags,
         image.category,
@@ -82,6 +83,7 @@ filtered AS MATERIALIZED (
           OR category = ''
           OR cardinality(normalized_tags) = 0
       )
+      AND (NOT $9::boolean OR enabled)
 ),
 total AS (
     SELECT count(*)::bigint AS value
@@ -101,6 +103,7 @@ SELECT
     page.file_name,
     page.mime_type,
     page.file_size,
+    page.enabled,
     page.description,
     page.tags,
     page.category,

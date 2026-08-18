@@ -19,6 +19,7 @@ WITH normalized AS MATERIALIZED (
         image.file_name,
         image.mime_type,
         image.file_size,
+        image.enabled,
         image.description,
         image.tags,
         image.category,
@@ -49,7 +50,7 @@ WITH normalized AS MATERIALIZED (
     FROM media_images AS image
 ),
 filtered AS MATERIALIZED (
-    SELECT id, name, file_name, mime_type, file_size, description, tags, category, width, height, created_at, updated_at, normalized_tags
+    SELECT id, name, file_name, mime_type, file_size, enabled, description, tags, category, width, height, created_at, updated_at, normalized_tags
     FROM normalized
     WHERE (
         $1::text = ''
@@ -95,13 +96,14 @@ filtered AS MATERIALIZED (
           OR category = ''
           OR cardinality(normalized_tags) = 0
       )
+      AND (NOT $9::boolean OR enabled)
 ),
 total AS (
     SELECT count(*)::bigint AS value
     FROM filtered
 ),
 page AS (
-    SELECT id, name, file_name, mime_type, file_size, description, tags, category, width, height, created_at, updated_at, normalized_tags
+    SELECT id, name, file_name, mime_type, file_size, enabled, description, tags, category, width, height, created_at, updated_at, normalized_tags
     FROM filtered
     ORDER BY updated_at DESC, id DESC
     LIMIT $6::bigint
@@ -114,6 +116,7 @@ SELECT
     page.file_name,
     page.mime_type,
     page.file_size,
+    page.enabled,
     page.description,
     page.tags,
     page.category,
@@ -135,6 +138,7 @@ type ListMediaImagePageParams struct {
 	Column6 int64    `json:"column_6"`
 	Column7 int64    `json:"column_7"`
 	Column8 string   `json:"column_8"`
+	Column9 bool     `json:"column_9"`
 }
 
 type ListMediaImagePageRow struct {
@@ -144,6 +148,7 @@ type ListMediaImagePageRow struct {
 	FileName    pgtype.Text        `json:"file_name"`
 	MimeType    pgtype.Text        `json:"mime_type"`
 	FileSize    pgtype.Int4        `json:"file_size"`
+	Enabled     pgtype.Bool        `json:"enabled"`
 	Description pgtype.Text        `json:"description"`
 	Tags        pgtype.Text        `json:"tags"`
 	Category    pgtype.Text        `json:"category"`
@@ -163,6 +168,7 @@ func (q *Queries) ListMediaImagePage(ctx context.Context, arg ListMediaImagePage
 		arg.Column6,
 		arg.Column7,
 		arg.Column8,
+		arg.Column9,
 	)
 	if err != nil {
 		return nil, err
@@ -178,6 +184,7 @@ func (q *Queries) ListMediaImagePage(ctx context.Context, arg ListMediaImagePage
 			&i.FileName,
 			&i.MimeType,
 			&i.FileSize,
+			&i.Enabled,
 			&i.Description,
 			&i.Tags,
 			&i.Category,
