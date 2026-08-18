@@ -32,6 +32,8 @@ import (
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponstore "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
+	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
@@ -508,6 +510,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
+	legacyHandler.hxcSender = &hxcSenderHandler{reader: hxcapp.Reader{Staff: contactstore.NewStaffDirectoryRepository(pool), Configs: hxcstore.NewSenderConfigRepository(pool)}}
 	dataHealthSource := postgresSystemHealthSource{
 		platformObserver: opsstore.NewReadinessRepository(pool),
 		queueObserver:    outboundstore.NewReadinessRepository(pool),
@@ -818,7 +821,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if method == http.MethodPut && pattern == legacyImageDetailPath {
 				tail = legacyImageUpdateSecurityHeaders(tail)
 			}
-			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath {
+			if pattern == legacyImageListPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -849,6 +852,8 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, legacyDataHealthChecksPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.List)},
 			{http.MethodGet, legacyDataHealthCheckPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.Detail)},
 			{http.MethodGet, legacyDataHealthSummaryPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.Summary)},
+			{http.MethodGet, legacyHXCSenderPagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.hxcSender.Page)},
+			{http.MethodGet, legacyHXCSenderReadPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.hxcSender.Read)},
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},

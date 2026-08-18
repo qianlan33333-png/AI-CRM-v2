@@ -188,6 +188,7 @@ type Handler struct {
 	executionRuntime      legacyExecutionRuntimeApplication
 	operationAuth         operationServiceAuthenticator
 	systemHealth          http.Handler
+	hxcSender             *hxcSenderHandler
 }
 
 // legacyOperationCycleApplication is the frozen A+B operation surface. Its

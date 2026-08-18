@@ -201,6 +201,12 @@ owners:
       push_center_read_model_state: global_fail_closed_readiness_only_without_worker_or_provider_execution
       push_center_read_model_entries: global_internal_push_status_projection_without_tenant_or_cross_domain_foreign_key
 
+  hxc:
+    package: internal/hxc
+    tables: [hxc_sender_configs]
+    constraints:
+      hxc_sender_configs: single_instance_local_sender_configuration_without_provider_directory_or_broadcast_execution
+
   ops:
     package: internal/ops
     tables: []

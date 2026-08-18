@@ -40,6 +40,19 @@ type CustomerReader interface {
 	ReadCustomer(context.Context, CustomerID) (CustomerProjection, error)
 }
 
+// StaffDirectoryReader exposes the narrowly-scoped local staff projection to
+// approved read-only consumers. It contains only the approved staff identity
+// fields and no provider payload or broader contact PII.
+type StaffDirectoryReader interface {
+	ListEligibleStaff(context.Context) ([]StaffDirectoryEntry, error)
+}
+
+type StaffDirectoryEntry struct {
+	WeComUserID string
+	DisplayName string
+	UpdatedAt   time.Time
+}
+
 type Stage struct {
 	ID        StageID
 	Name      string

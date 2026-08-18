@@ -2614,6 +2614,131 @@ export interface LegacyGroupInviteArchiveResponse {
   real_external_call_executed: boolean;
 }
 
+export interface LegacyHXCSenderConfig {
+  id: string;
+  /** @minLength 1 */
+  sender_userid: string;
+  /** @maxLength 200 */
+  display_name: string;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyHXCDirectoryCandidatePosition =
+  (typeof LegacyHXCDirectoryCandidatePosition)[keyof typeof LegacyHXCDirectoryCandidatePosition];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCDirectoryCandidatePosition = {
+  "": "",
+} as const;
+
+export type LegacyHXCDirectoryCandidateWecomStatus =
+  (typeof LegacyHXCDirectoryCandidateWecomStatus)[keyof typeof LegacyHXCDirectoryCandidateWecomStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCDirectoryCandidateWecomStatus = {
+  NUMBER_0: 0,
+} as const;
+
+export interface LegacyHXCDirectoryCandidate {
+  /** @minLength 1 */
+  wecom_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  display_name: string;
+  position: LegacyHXCDirectoryCandidatePosition;
+  wecom_status: LegacyHXCDirectoryCandidateWecomStatus;
+  is_sender: boolean;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  priority: number;
+  is_active: boolean;
+}
+
+export type LegacyHXCSenderReadResponseSourceStatus =
+  (typeof LegacyHXCSenderReadResponseSourceStatus)[keyof typeof LegacyHXCSenderReadResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderReadResponseSourceStatus = {
+  v2_local_staff: "v2_local_staff",
+} as const;
+
+export type LegacyHXCSenderReadResponseRouteOwner =
+  (typeof LegacyHXCSenderReadResponseRouteOwner)[keyof typeof LegacyHXCSenderReadResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderReadResponseRouteOwner = {
+  aicrm_v2: "aicrm_v2",
+} as const;
+
+export type LegacyHXCSenderReadResponseWarningsItem =
+  (typeof LegacyHXCSenderReadResponseWarningsItem)[keyof typeof LegacyHXCSenderReadResponseWarningsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderReadResponseWarningsItem = {
+  "HXC_senders_use_the_local_staff_projection;_no_WeCom_directory_call_was_executed":
+    "HXC senders use the local staff projection; no WeCom directory call was executed.",
+} as const;
+
+export interface LegacyHXCSenderReadResponse {
+  ok: boolean;
+  source_status: LegacyHXCSenderReadResponseSourceStatus;
+  route_owner: LegacyHXCSenderReadResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  send_configs: LegacyHXCSenderConfig[];
+  directory_candidates: LegacyHXCDirectoryCandidate[];
+  members: LegacyHXCDirectoryCandidate[];
+  /** @minimum 0 */
+  directory_count: number;
+  /** @minimum 0 */
+  sender_count: number;
+  /** @minimum 0 */
+  active_sender_count: number;
+  /** UTC RFC3339Nano or empty when no eligible staff. */
+  last_synced_at: string;
+  /**
+   * @minItems 1
+   * @maxItems 1
+   */
+  warnings: LegacyHXCSenderReadResponseWarningsItem[];
+  degraded: boolean;
+  empty_state: boolean;
+}
+
+export type LegacyHXCSenderUnavailableResponseStatusCode =
+  (typeof LegacyHXCSenderUnavailableResponseStatusCode)[keyof typeof LegacyHXCSenderUnavailableResponseStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderUnavailableResponseStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyHXCSenderUnavailableResponseErrorCode =
+  (typeof LegacyHXCSenderUnavailableResponseErrorCode)[keyof typeof LegacyHXCSenderUnavailableResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderUnavailableResponseErrorCode = {
+  hxc_send_config_unavailable: "hxc_send_config_unavailable",
+} as const;
+
+export interface LegacyHXCSenderUnavailableResponse {
+  ok: boolean;
+  status_code: LegacyHXCSenderUnavailableResponseStatusCode;
+  error_code: LegacyHXCSenderUnavailableResponseErrorCode;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyMiniProgramCreateRequest =
   | (unknown & {
       /** @maxLength 200 */
@@ -15662,6 +15787,127 @@ export const archiveLegacyGroupInvite = async (
     status: res.status,
     headers: res.headers,
   } as archiveLegacyGroupInviteResponse;
+};
+
+/**
+ * @summary Carry the read-only HXC sender view into the existing admin shell
+ */
+export type getLegacyHXCSendConfigPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyHXCSendConfigPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyHXCSendConfigPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyHXCSendConfigPageResponseError = (
+  | getLegacyHXCSendConfigPageResponse302
+  | getLegacyHXCSendConfigPageResponse401
+  | getLegacyHXCSendConfigPageResponse403
+) & {
+  headers: Headers;
+};
+
+export type getLegacyHXCSendConfigPageResponse =
+  getLegacyHXCSendConfigPageResponseError;
+
+export const getGetLegacyHXCSendConfigPageUrl = () => {
+  return `/admin/hxc-send-config`;
+};
+
+export const getLegacyHXCSendConfigPage = async (
+  options?: RequestInit,
+): Promise<getLegacyHXCSendConfigPageResponse> => {
+  const res = await fetch(getGetLegacyHXCSendConfigPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyHXCSendConfigPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyHXCSendConfigPageResponse;
+};
+
+/**
+ * @summary Read local HXC sender configuration and eligible staff without a provider call
+ */
+export type getLegacyHXCSendConfigResponse200 = {
+  data: LegacyHXCSenderReadResponse;
+  status: 200;
+};
+
+export type getLegacyHXCSendConfigResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyHXCSendConfigResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyHXCSendConfigResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyHXCSendConfigResponse503 = {
+  data: LegacyHXCSenderUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyHXCSendConfigResponseSuccess =
+  getLegacyHXCSendConfigResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyHXCSendConfigResponseError = (
+  | getLegacyHXCSendConfigResponse401
+  | getLegacyHXCSendConfigResponse403
+  | getLegacyHXCSendConfigResponse405
+  | getLegacyHXCSendConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyHXCSendConfigResponse =
+  getLegacyHXCSendConfigResponseSuccess | getLegacyHXCSendConfigResponseError;
+
+export const getGetLegacyHXCSendConfigUrl = () => {
+  return `/api/admin/hxc-dashboard/send-config`;
+};
+
+export const getLegacyHXCSendConfig = async (
+  options?: RequestInit,
+): Promise<getLegacyHXCSendConfigResponse> => {
+  const res = await fetch(getGetLegacyHXCSendConfigUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyHXCSendConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyHXCSendConfigResponse;
 };
 
 /**
