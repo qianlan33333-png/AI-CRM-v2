@@ -157,7 +157,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       fi
       ;;
     go-test)
-      [[ "$subject" =~ ^\./(acceptance|internal)/[A-Za-z0-9_./-]+$ ]] ||
+      [[ "$subject" =~ ^\./(acceptance|internal)/[A-Za-z0-9_./-]+$ || "$subject" = "./cmd/aicrm" ]] ||
         fail "line $line_number has an invalid Go package"
       [[ "$subject" != *..* && "$subject" != *//* && "$subject" != */ ]] ||
         fail "line $line_number has a non-canonical Go package"
