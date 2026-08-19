@@ -13,6 +13,7 @@ export interface QuestionnaireItem {
   readonly id: number;
   readonly name: string;
   readonly title: string;
+  readonly publicPath: string;
   readonly isDisabled: boolean;
   readonly status: "active" | "disabled";
   readonly questionCount: number;
@@ -87,6 +88,15 @@ function text(value: unknown, maximum: number, empty = false): value is string {
     typeof value === "string" &&
     (empty || value.length > 0) &&
     [...value].length <= maximum
+  );
+}
+function questionnaireSlug(value: unknown): value is string {
+  return (
+    text(value, 200) &&
+    value === value.trim() &&
+    value !== "." &&
+    value !== ".." &&
+    !/[\\\\/?%#\u0000-\u001f\u007f]/.test(value)
   );
 }
 function positive(value: unknown): value is number {
@@ -238,7 +248,7 @@ function questionnaire(value: unknown): QuestionnaireItem | undefined {
     !text(value.name, 120) ||
     !text(value.title, 300) ||
     !text(value.description, 10000, true) ||
-    !text(value.slug, 200) ||
+    !questionnaireSlug(value.slug) ||
     typeof value.is_disabled !== "boolean" ||
     typeof value.enabled !== "boolean" ||
     value.enabled === value.is_disabled ||
@@ -262,6 +272,7 @@ function questionnaire(value: unknown): QuestionnaireItem | undefined {
       value.answer_display_mode !== "one_by_one") ||
     value.assessment_enabled !== false ||
     !text(value.public_path, Number.MAX_SAFE_INTEGER, true) ||
+    value.public_path !== `/q/${value.slug}` ||
     !text(value.submitted_path, Number.MAX_SAFE_INTEGER, true)
   )
     return undefined;
@@ -269,6 +280,7 @@ function questionnaire(value: unknown): QuestionnaireItem | undefined {
     id: value.id,
     name: value.name,
     title: value.title,
+    publicPath: value.public_path,
     isDisabled: value.is_disabled,
     status: value.status,
     questionCount: value.question_count,
@@ -397,7 +409,8 @@ export async function loadQuestionnairePreflight(
           wecomContactConfigured: body.checks.wecom_contact_configured,
           debugSessionAPIEnabled: body.checks.debug_session_api_enabled,
           wecomTagsAPIAvailable: body.checks.wecom_tags_api_available,
-          questionnaireAdminUIEnabled: body.checks.questionnaire_admin_ui_enabled,
+          questionnaireAdminUIEnabled:
+            body.checks.questionnaire_admin_ui_enabled,
           identityMapAvailable: body.checks.identity_map_available,
         },
       },

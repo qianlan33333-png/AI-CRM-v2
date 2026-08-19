@@ -129,10 +129,25 @@ function transport(
     ...overrides,
   } as unknown as QuestionnaireListTransport;
 }
+function listResponse(questionnaire: Record<string, unknown>) {
+  return {
+    status: 200,
+    data: {
+      ok: true,
+      questionnaires: [questionnaire],
+      items: [questionnaire],
+      data: { questionnaires: [questionnaire] },
+      total: 1,
+      limit: 50,
+      offset: 0,
+    },
+  };
+}
 const parsed: QuestionnaireItem = {
   id: 41,
   name: "welcome",
   title: "欢迎问卷",
+  publicPath: "/q/welcome",
   isDisabled: false,
   status: "active",
   questionCount: 1,
@@ -230,6 +245,7 @@ describe("questionnaire list transport", () => {
       { ...item, assessment_config: { unexpected: true } },
       { ...item, assessment_enabled: true },
       { ...item, created_at: "2026-08-19" },
+      { ...item, public_path: "https://untrusted.example/q/welcome" },
       {
         ...item,
         questions: [
@@ -287,6 +303,42 @@ describe("questionnaire list transport", () => {
         }),
       ),
     ).resolves.toEqual({ status: "unauthenticated" });
+  });
+  it("accepts only safe single-segment slugs paired with their public path", async () => {
+    for (const slug of [
+      "../admin/users",
+      "a/b",
+      "a\\\\b",
+      ".",
+      "..",
+      "question?next=/admin",
+      "question#section",
+      "%2fadmin",
+    ]) {
+      const malicious = { ...item, slug, public_path: `/q/${slug}` };
+      await expect(
+        loadQuestionnaires(
+          transport({
+            list: vi.fn(async () => listResponse(malicious)) as never,
+          }),
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    const boundary = {
+      ...item,
+      slug: "问卷.v2-2026_08",
+      public_path: "/q/问卷.v2-2026_08",
+    };
+    await expect(
+      loadQuestionnaires(
+        transport({
+          list: vi.fn(async () => listResponse(boundary)) as never,
+        }),
+      ),
+    ).resolves.toMatchObject({
+      status: "loaded",
+      items: [expect.objectContaining({ publicPath: boundary.public_path })],
+    });
   });
   it("uses only disable for both state transitions, validates success, and never deletes an active questionnaire", async () => {
     const client = transport();

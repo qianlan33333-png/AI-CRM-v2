@@ -95,6 +95,35 @@ export interface QuestionnaireMutationRequest {
   readonly action: QuestionnaireMutationAction;
 }
 
+export type QuestionnairePublicLinkCopyResult = "copied" | "manual" | "missing";
+
+export interface QuestionnairePublicLinkBrowser {
+  readonly location: Pick<Location, "origin">;
+  readonly navigator: {
+    readonly clipboard?: Pick<Clipboard, "writeText">;
+  };
+  readonly prompt: Window["prompt"];
+}
+
+export async function copyQuestionnairePublicLink(
+  item: QuestionnaireItem,
+  browser: QuestionnairePublicLinkBrowser = window,
+): Promise<QuestionnairePublicLinkCopyResult> {
+  if (!item.publicPath) return "missing";
+  const publicURL = new URL(
+    item.publicPath,
+    browser.location.origin,
+  ).toString();
+  try {
+    if (!browser.navigator.clipboard) throw new Error("clipboard unavailable");
+    await browser.navigator.clipboard.writeText(publicURL);
+    return "copied";
+  } catch {
+    browser.prompt("请手动复制公开链接：", publicURL);
+    return "manual";
+  }
+}
+
 export interface QuestionnaireListContentProps {
   readonly busy: number | undefined;
   readonly onLoad: React.Dispatch<number>;
@@ -152,6 +181,17 @@ export function QuestionnaireListContent({
   preflight,
   state,
 }: QuestionnaireListContentProps): React.ReactElement {
+  const [copyNotice, setCopyNotice] = useState<string>();
+  const copyPublicLink = async (item: QuestionnaireItem) => {
+    const result = await copyQuestionnairePublicLink(item);
+    setCopyNotice(
+      result === "copied"
+        ? "公开链接已复制。"
+        : result === "manual"
+          ? "请在弹窗中手动复制公开链接。"
+          : "该问卷没有公开链接。",
+    );
+  };
   const preflightPanel = preflight ? (
     <QuestionnairePreflightPanel state={preflight} />
   ) : null;
@@ -180,6 +220,7 @@ export function QuestionnaireListContent({
       <h1 id="app-title">问卷列表</h1>
       {preflightPanel}
       <p>共 {state.total} 条问卷。写入成功后会重新加载列表。</p>
+      {copyNotice ? <p role="status">{copyNotice}</p> : null}
       {state.items.length === 0 ? (
         <p>当前没有问卷。</p>
       ) : (
@@ -205,6 +246,13 @@ export function QuestionnaireListContent({
                 <td>{item.questionCount}</td>
                 <td>{item.submissionCount}</td>
                 <td>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined}
+                    onClick={() => void copyPublicLink(item)}
+                  >
+                    复制公开链接
+                  </button>
                   <button
                     type="button"
                     disabled={busy !== undefined}

@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
+  copyQuestionnairePublicLink,
   performQuestionnairePageMutation,
   QuestionnaireListContent,
   QuestionnaireListPage,
@@ -62,6 +63,7 @@ const active: QuestionnaireItem = {
   id: 41,
   name: "welcome",
   title: "欢迎问卷",
+  publicPath: "/q/welcome",
   isDisabled: false,
   status: "active",
   questionCount: 1,
@@ -210,7 +212,62 @@ describe("QuestionnaireListPage UI", () => {
         }}
       />,
     );
-    expect(busy.match(/disabled=""/g)).toHaveLength(5);
+    expect(busy.match(/disabled=""/g)).toHaveLength(7);
+  });
+
+  it("copies the parsed same-origin public link without using transport", async () => {
+    const writeText = vi.fn(async () => undefined);
+    const prompt = vi.fn();
+    await expect(
+      copyQuestionnairePublicLink(active, {
+        location: { origin: "https://crm.example.test" },
+        navigator: { clipboard: { writeText } },
+        prompt,
+      }),
+    ).resolves.toBe("copied");
+    expect(writeText).toHaveBeenCalledWith(
+      "https://crm.example.test/q/welcome",
+    );
+    expect(prompt).not.toHaveBeenCalled();
+  });
+
+  it("uses the manual-copy prompt when clipboard is missing or rejects", async () => {
+    for (const clipboard of [
+      undefined,
+      {
+        writeText: vi.fn(async () => {
+          throw new Error("denied");
+        }),
+      },
+    ]) {
+      const prompt = vi.fn();
+      await expect(
+        copyQuestionnairePublicLink(active, {
+          location: { origin: "https://crm.example.test" },
+          navigator: { clipboard },
+          prompt,
+        }),
+      ).resolves.toBe("manual");
+      expect(prompt).toHaveBeenCalledWith(
+        "请手动复制公开链接：",
+        "https://crm.example.test/q/welcome",
+      );
+    }
+  });
+
+  it("reports a questionnaire without a public link without opening a prompt", async () => {
+    const prompt = vi.fn();
+    await expect(
+      copyQuestionnairePublicLink(
+        { ...active, publicPath: "" },
+        {
+          location: { origin: "https://crm.example.test" },
+          navigator: {},
+          prompt,
+        },
+      ),
+    ).resolves.toBe("missing");
+    expect(prompt).not.toHaveBeenCalled();
   });
 
   it("renders the six fail-closed preflight checks without changing operations", () => {
