@@ -15,7 +15,7 @@ function transport(): GroupInviteLibraryTransport {
 
 describe("GroupInviteLibraryPage", () => {
   it.each(["admin", "ops"] as const)(
-    "renders %s a local read-only group-invite library without exposing its join URL",
+    "renders %s a local group-invite library without linking its join URL",
     (role) => {
       const html = renderToStaticMarkup(
         <GroupInviteLibraryPage role={role} transport={transport()} />,
@@ -23,8 +23,8 @@ describe("GroupInviteLibraryPage", () => {
       expect(html).toContain('<h1 id="app-title">群邀请素材库</h1>');
       expect(html).toContain("本地群邀请卡元数据");
       expect(html).toContain("正在读取本地群邀请素材。");
-      expect(html).not.toContain("入群地址");
-      expect(html).not.toMatch(/href=|clipboard|provider|join_url/i);
+      expect(html).toContain("入群地址仅作为本地文本保存");
+      expect(html).not.toMatch(/href=|clipboard|provider|join_url|window\.open/i);
     },
   );
 
