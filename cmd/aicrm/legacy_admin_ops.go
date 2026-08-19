@@ -52,9 +52,13 @@ type legacyAdminOps interface {
 	GetFeishuNotification(context.Context) (adminopsapp.NotificationSetting, error)
 }
 
+const legacyRuntimeConfigPath = "/admin/runtime-config"
+
 var adminOpsPageTemplate = template.Must(template.New("admin-ops").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>{{.Title}}</title><main><h1>{{.Title}}</h1><p>{{.Summary}}</p><pre>{{.Payload}}</pre></main></html>`))
 
 var adminOpsAPIClientListTemplate = template.Must(template.New("admin-ops-api-clients").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>API 接入与 Token</title><main><h1>API 接入与 Token</h1><p>创建、轮换和停用外部 API 客户端；Secret 只在创建或轮换时显示一次。</p><nav><a href="/admin/config/api-clients/new">新建客户端</a></nav><form method="get" action="/admin/config/api-clients"><label>搜索 <input name="q" value="{{.Query}}"></label><label>状态 <select name="status"><option value=""{{if eq .Status ""}} selected{{end}}>全部</option><option value="enabled"{{if eq .Status "enabled"}} selected{{end}}>已启用</option><option value="disabled"{{if eq .Status "disabled"}} selected{{end}}>已停用</option><option value="pending_activation"{{if eq .Status "pending_activation"}} selected{{end}}>待激活</option></select></label><button type="submit">应用筛选</button><a href="/admin/config/api-clients">重置</a></form><p>共 {{.ConfiguredCount}} 个；已启用 {{.EnabledCount}} 个；已停用 {{.DisabledCount}} 个；待激活 {{.PendingActivationCount}} 个。</p><table><thead><tr><th>客户端</th><th>状态</th><th>版本</th><th>最近更新</th><th>操作</th></tr></thead><tbody>{{range .Clients}}<tr><td><strong>{{.DisplayName}}</strong><br><code>{{.ClientID}}</code></td><td>{{.StatusLabel}}</td><td>v{{.Version}}</td><td>{{.UpdatedAt}}</td><td><a href="/admin/config/api-clients/{{.EscapedClientID}}">管理 Secret</a></td></tr>{{else}}<tr><td colspan="5">没有符合条件的 API 客户端。</td></tr>{{end}}</tbody></table></main></html>`))
+
+var runtimeConfigPageTemplate = template.Must(template.New("runtime-config").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>运行配置</title><main><h1>运行配置</h1><table><thead><tr><th>项目</th><th>状态</th></tr></thead><tbody><tr><td>database_mode</td><td>{{.DatabaseMode}}</td></tr><tr><td>production_data_ready</td><td>{{.ProductionDataReady}}</td></tr><tr><td>release_sha</td><td>{{.ReleaseSHA}}</td></tr><tr><td>wechat_callback_token</td><td>{{.WeChatCallbackToken}}</td></tr><tr><td>wechat_pay_config</td><td>{{.WeChatPayConfig}}</td></tr><tr><td>oauth_config</td><td>{{.OAuthConfig}}</td></tr></tbody></table></main></html>`))
 
 type adminOpsPageData struct{ Title, Summary, Payload string }
 
@@ -76,8 +80,24 @@ func adminOpsActionToken(session authport.SessionRef, method, pattern string) st
 }
 
 func (handler *Handler) AdminOps(writer http.ResponseWriter, request *http.Request) {
-	if handler == nil || handler.adminOps == nil || request == nil {
+	if handler == nil || request == nil {
 		writeAdminOpsError(writer, http.StatusServiceUnavailable, "admin_ops_unavailable")
+		return
+	}
+	if handler.adminOps == nil {
+		if request.URL.Path == legacyRuntimeConfigPath {
+			writeRuntimeConfigUnavailable(writer)
+			return
+		}
+		writeAdminOpsError(writer, http.StatusServiceUnavailable, "admin_ops_unavailable")
+		return
+	}
+	if request.URL.Path == legacyRuntimeConfigPath {
+		if !runtimeConfigAuthorized(request) {
+			writeRuntimeConfigForbidden(writer, request)
+			return
+		}
+		handler.runtimeConfigPage(writer)
 		return
 	}
 	if strings.HasPrefix(request.URL.Path, "/api/") {
@@ -115,13 +135,43 @@ func (handler *Handler) adminOpsPage(writer http.ResponseWriter, request *http.R
 			payload["categories"] = categories
 		}
 	}
-	if request.URL.Path == "/admin/runtime-config" {
-		title, summary = "运行配置快照", "只显示非 secret 的本地运行治理状态。"
-	}
 	raw, _ := json.Marshal(payload)
 	writer.Header().Set("Cache-Control", "no-store")
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = adminOpsPageTemplate.Execute(writer, adminOpsPageData{Title: title, Summary: summary, Payload: string(raw)})
+}
+
+func (handler *Handler) runtimeConfigPage(writer http.ResponseWriter) {
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	_ = runtimeConfigPageTemplate.Execute(writer, handler.runtimeConfig)
+}
+
+func writeLegacyRuntimeConfigMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Allow", http.MethodGet)
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+func runtimeConfigAuthorized(request *http.Request) bool {
+	if request == nil {
+		return false
+	}
+	principal, principalOK := authport.PrincipalFromContext(request.Context())
+	authorization, authorizationOK := authport.AuthorizationFromContext(request.Context())
+	return principalOK && principal.AdminUserID > 0 && principal.Role == authport.RoleAdmin && authorizationOK &&
+		authorization.Capability == authport.CapabilityConfigOverviewRead && authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
+}
+
+func writeRuntimeConfigUnavailable(writer http.ResponseWriter) {
+	platformhttp.MarkCompatibilityError(writer, platformhttp.CodeDependencyUnavailable)
+	writeJSON(writer, http.StatusServiceUnavailable, map[string]any{"ok": false, "error": "admin_ops_unavailable"})
+}
+
+func writeRuntimeConfigForbidden(writer http.ResponseWriter, request *http.Request) {
+	platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized))
 }
 
 func (handler *Handler) adminOpsAPIClientListPage(writer http.ResponseWriter, request *http.Request) {

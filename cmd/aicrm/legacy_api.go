@@ -153,6 +153,17 @@ type legacyExecutionRuntimeApplication interface {
 	Timeline(context.Context, string) (adminopsport.ExecutionTimeline, error)
 }
 
+// runtimeConfigDeclaration is an immutable, local-only rendering projection.
+// It contains no connection, secret, provider, or persisted-state material.
+type runtimeConfigDeclaration struct {
+	DatabaseMode        string
+	ProductionDataReady string
+	ReleaseSHA          string
+	WeChatCallbackToken string
+	WeChatPayConfig     string
+	OAuthConfig         string
+}
+
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	auth                  authport.Service
@@ -184,6 +195,7 @@ type Handler struct {
 	messageArchive        legacyMessageArchiveApplication
 	messageArchiveUnionID legacyMessageArchiveUnionResolver
 	adminOps              legacyAdminOps
+	runtimeConfig         runtimeConfigDeclaration
 	operationCycles       legacyOperationCycleApplication
 	pushCenter            legacyPushCenterApplication
 	executionRuntime      legacyExecutionRuntimeApplication
