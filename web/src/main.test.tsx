@@ -16,6 +16,7 @@ import {
   DATA_HEALTH_PATH,
   EXECUTION_RUNTIME_PATH,
   ORDERS_PATH,
+  OUTBOUND_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -632,6 +633,7 @@ describe("Web shell routes", () => {
       "/admin/data-health",
       "/admin/execution-runtime",
       "/admin/orders",
+      "/outbound",
       "/settings",
     ]);
     expect(
@@ -673,7 +675,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/data-health"');
     expect(html).toContain(`href="${EXECUTION_RUNTIME_PATH}"`);
     expect(html).toContain(`href="${ORDERS_PATH}"`);
-    expect(html).not.toContain('href="/outbound"');
+    expect(html).toContain(`href="${OUTBOUND_PATH}"`);
   });
 
   it("renders an authenticated account view only for the exact login route", () => {

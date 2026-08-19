@@ -85,8 +85,11 @@ func legacyPushCenterRequest(writer http.ResponseWriter, request *http.Request) 
 }
 
 func legacyPushCenterAuthorized(ctx context.Context) bool {
-	authorization, ok := authport.AuthorizationFromContext(ctx)
-	return ok && authorization.Capability == authport.CapabilityOperationsRead && authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
+	principal, principalOK := authport.PrincipalFromContext(ctx)
+	authorization, authorizationOK := authport.AuthorizationFromContext(ctx)
+	return principalOK && principal.AdminUserID > 0 && principal.Role == authport.RoleAdmin &&
+		authorizationOK && authorization.Capability == authport.CapabilityOperationsRead &&
+		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
 }
 
 func legacyPushCenterSections(summary pushcenterapp.Summary) []map[string]any {

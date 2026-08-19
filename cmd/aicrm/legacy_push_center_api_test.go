@@ -56,17 +56,39 @@ func TestLegacyPushCenterReadRoutesNormalContractAndNoCSRF(t *testing.T) {
 	}
 }
 
-func TestLegacyPushCenterRejectsSalesScopeAndDegradesRatherThanZero(t *testing.T) {
+func TestLegacyPushCenterRejectsNonAdminEvenWhenOuterPolicyGrantsOperationsRead(t *testing.T) {
 	staffID := int64(7)
-	sales := legacyPushCenterRouter(t, &legacyAuthStub{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleSales, StaffID: &staffID}}, &legacyPushCenterStub{summary: legacyPushCenterSummary()})
-	response := httptest.NewRecorder()
-	sales.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/push-center/sections", legacyToken(52)))
-	if response.Code != http.StatusForbidden {
-		t.Fatalf("sales status=%d body=%s", response.Code, response.Body.String())
+	for _, testCase := range []struct {
+		name      string
+		principal authport.Principal
+	}{
+		{name: "ops", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleOps}},
+		{name: "sales", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleSales, StaffID: &staffID}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			pushCenter := &legacyPushCenterStub{summary: legacyPushCenterSummary()}
+			router := legacyPushCenterRouter(t, &dataHealthAuthStub{
+				principal:     testCase.principal,
+				authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeGlobal},
+			}, pushCenter)
+			for _, target := range []string{"/api/admin/push-center/sections", "/api/admin/push-center/stats"} {
+				response := httptest.NewRecorder()
+				router.ServeHTTP(response, legacyRequest(http.MethodGet, target, legacyToken(52)))
+				if response.Code != http.StatusForbidden {
+					t.Fatalf("%s status=%d body=%s", target, response.Code, response.Body.String())
+				}
+			}
+			if len(pushCenter.filters) != 0 {
+				t.Fatalf("source was called: %#v", pushCenter.filters)
+			}
+		})
 	}
+}
 
+func TestLegacyPushCenterDegradesRatherThanZero(t *testing.T) {
 	router := legacyPushCenterRouter(t, &legacyAuthStub{}, &legacyPushCenterStub{err: errors.New("read model offline")})
-	response = httptest.NewRecorder()
+	response := httptest.NewRecorder()
+
 	router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/push-center/stats?created_from=not-a-time", legacyToken(53)))
 	if response.Code != http.StatusOK {
 		t.Fatalf("degraded status=%d body=%s", response.Code, response.Body.String())
