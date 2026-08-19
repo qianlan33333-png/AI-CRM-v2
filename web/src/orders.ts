@@ -1,8 +1,10 @@
 import {
   getLegacyOrder,
   listLegacyOrders,
+  listLegacyRefunds,
   type GetLegacyOrderParams,
   type ListLegacyOrdersParams,
+  type ListLegacyRefundsParams,
 } from "./api/generated/health";
 
 export type OrdersRole = "admin" | "ops" | "sales";
@@ -60,6 +62,37 @@ export interface OrderDetail {
   readonly refundableAmountTotal: number;
 }
 
+export type LocalRefundState =
+  | "pending_external_gate"
+  | "outcome_unknown"
+  | "completed"
+  | "final_failed";
+
+export interface LocalRefundRecord {
+  readonly id: number;
+  readonly orderID: number;
+  readonly provider: OrderProvider;
+  readonly orderNo: string;
+  readonly transactionID: string;
+  readonly refundID: string;
+  readonly outRefundNo: string;
+  readonly refundAmountTotal: number;
+  readonly currency: "CNY";
+  readonly reason: string;
+  readonly status: LocalRefundState;
+  readonly externalEffectID: number;
+  readonly externalEffectState: LocalRefundState;
+  readonly autoRetryAllowed: false;
+  readonly createdAt: string;
+}
+
+export interface LocalRefundPage {
+  readonly items: readonly LocalRefundRecord[];
+  readonly total: number;
+  readonly offset: number;
+  readonly hasMore: boolean;
+}
+
 async function generatedList(
   params: ListLegacyOrdersParams,
   options: RequestInit,
@@ -75,14 +108,23 @@ async function generatedDetail(
   return getLegacyOrder(orderNo, params, options);
 }
 
+async function generatedRefunds(
+  params: ListLegacyRefundsParams,
+  options: RequestInit,
+): Promise<OrdersTransportResponse> {
+  return listLegacyRefunds(params, options);
+}
+
 export interface OrdersTransport {
   readonly list: typeof generatedList;
   readonly detail: typeof generatedDetail;
+  readonly refunds: typeof generatedRefunds;
 }
 
 export const generatedOrdersTransport: OrdersTransport = {
   list: generatedList,
   detail: generatedDetail,
+  refunds: generatedRefunds,
 };
 
 export type OrdersFailure =
@@ -95,6 +137,9 @@ export type OrdersResult =
   | { readonly status: OrdersFailure };
 export type OrderDetailResult =
   | { readonly status: "loaded"; readonly detail: OrderDetail }
+  | { readonly status: OrdersFailure };
+export type LocalRefundResult =
+  | { readonly status: "loaded"; readonly page: LocalRefundPage }
   | { readonly status: OrdersFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -156,6 +201,11 @@ function safeDetailPath(value: unknown): value is string {
 
 function provider(value: unknown): value is OrderProvider {
   return value === "wechat" || value === "alipay" || value === "wechat_shop";
+}
+
+function localRefundState(value: unknown): value is LocalRefundState {
+  return value === "pending_external_gate" || value === "outcome_unknown" ||
+    value === "completed" || value === "final_failed";
 }
 
 function amountMinor(value: string): bigint | undefined {
@@ -316,6 +366,72 @@ function parseOrderPage(value: unknown, offset: number): OrderListPage | undefin
   return { items: parsed, total: value.total, offset, hasMore: value.has_more };
 }
 
+const LOCAL_REFUND_KEYS = [
+  "id", "order_id", "provider", "order_no", "transaction_id", "refund_id",
+  "out_refund_no", "refund_amount_total", "currency", "reason", "status",
+  "external_effect_id", "external_effect_state", "auto_retry_allowed", "created_at",
+] as const;
+
+function parseLocalRefund(value: unknown): LocalRefundRecord | undefined {
+  if (
+    !record(value) || !exact(value, LOCAL_REFUND_KEYS) ||
+    !nonnegative(value.id) || value.id < 1 ||
+    !nonnegative(value.order_id) || value.order_id < 1 ||
+    !provider(value.provider) ||
+    !text(value.order_no, 200, true) ||
+    !text(value.transaction_id, 200, true) ||
+    !text(value.refund_id, 200, true) ||
+    !value.refund_id.startsWith("rfd_") ||
+    !text(value.out_refund_no, 200, true) ||
+    !value.out_refund_no.startsWith("rfd_") ||
+    !nonnegative(value.refund_amount_total) || value.refund_amount_total < 1 ||
+    value.currency !== "CNY" ||
+    !text(value.reason, 500, true) ||
+    !localRefundState(value.status) ||
+    !nonnegative(value.external_effect_id) || value.external_effect_id < 1 ||
+    !localRefundState(value.external_effect_state) ||
+    value.auto_retry_allowed !== false ||
+    !timestamp(value.created_at)
+  ) return undefined;
+  return {
+    id: value.id,
+    orderID: value.order_id,
+    provider: value.provider,
+    orderNo: value.order_no,
+    transactionID: value.transaction_id,
+    refundID: value.refund_id,
+    outRefundNo: value.out_refund_no,
+    refundAmountTotal: value.refund_amount_total,
+    currency: "CNY",
+    reason: value.reason,
+    status: value.status,
+    externalEffectID: value.external_effect_id,
+    externalEffectState: value.external_effect_state,
+    autoRetryAllowed: false,
+    createdAt: value.created_at,
+  };
+}
+
+function parseLocalRefundPage(value: unknown, offset: number): LocalRefundPage | undefined {
+  if (
+    !record(value) || !exact(value, ["items", "total", "limit", "has_more"]) ||
+    !Array.isArray(value.items) || !nonnegative(value.total) ||
+    value.limit !== ORDER_PAGE_SIZE || typeof value.has_more !== "boolean" ||
+    value.items.length > ORDER_PAGE_SIZE || value.total < offset + value.items.length ||
+    (value.items.length === 0 && value.has_more) ||
+    value.has_more !== (offset + value.items.length < value.total)
+  ) return undefined;
+  const items = value.items.map(parseLocalRefund);
+  if (items.some((item) => item === undefined)) return undefined;
+  const parsed = items as LocalRefundRecord[];
+  if (
+    new Set(parsed.map((item) => item.id)).size !== parsed.length ||
+    new Set(parsed.map((item) => `${item.provider}:${item.refundID}`)).size !== parsed.length ||
+    new Set(parsed.map((item) => `${item.provider}:${item.outRefundNo}`)).size !== parsed.length
+  ) return undefined;
+  return { items: parsed, total: value.total, offset, hasMore: value.has_more };
+}
+
 function failure(status: number): OrdersFailure {
   if (status === 401) return "unauthenticated";
   if (status === 403) return "forbidden";
@@ -359,11 +475,38 @@ export async function loadOrderDetail(
   }
 }
 
+export async function loadLocalRefunds(
+  transport: OrdersTransport,
+  offset = 0,
+): Promise<LocalRefundResult> {
+  if (!nonnegative(offset) || offset > MAXIMUM_OFFSET || offset % ORDER_PAGE_SIZE !== 0) return { status: "invalid" };
+  try {
+    const response = await transport.refunds(
+      { provider: "all", limit: ORDER_PAGE_SIZE, offset },
+      { credentials: "same-origin" },
+    );
+    if (response.status !== 200) return { status: failure(response.status) };
+    const page = parseLocalRefundPage(response.data, offset);
+    return page ? { status: "loaded", page } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
 export function previousOrderOffset(page: OrderListPage): number | undefined {
   return page.offset >= ORDER_PAGE_SIZE ? page.offset - ORDER_PAGE_SIZE : undefined;
 }
 
 export function nextOrderOffset(page: OrderListPage): number | undefined {
+  const next = page.offset + ORDER_PAGE_SIZE;
+  return page.hasMore && next <= MAXIMUM_OFFSET ? next : undefined;
+}
+
+export function previousLocalRefundOffset(page: LocalRefundPage): number | undefined {
+  return page.offset >= ORDER_PAGE_SIZE ? page.offset - ORDER_PAGE_SIZE : undefined;
+}
+
+export function nextLocalRefundOffset(page: LocalRefundPage): number | undefined {
   const next = page.offset + ORDER_PAGE_SIZE;
   return page.hasMore && next <= MAXIMUM_OFFSET ? next : undefined;
 }

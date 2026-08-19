@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   loadOrderDetail,
+  loadLocalRefunds,
   loadOrders,
+  nextLocalRefundOffset,
   nextOrderOffset,
+  previousLocalRefundOffset,
   previousOrderOffset,
   type OrdersTransport,
 } from "./orders";
@@ -22,15 +25,30 @@ function page(items: unknown[] = [item()], extra: Record<string, unknown> = {}) 
 function detail(extra: Record<string, unknown> = {}) {
   return { id: 17, ...item(), refundable_amount_total: 1990, ...extra };
 }
+function refund(extra: Record<string, unknown> = {}) {
+  return {
+    id: 23, order_id: 17, provider: "wechat", order_no: "M-1", transaction_id: "WX-1",
+    refund_id: "rfd_provider-1", out_refund_no: "rfd_local-1", refund_amount_total: 1990,
+    currency: "CNY", reason: "重复支付", status: "pending_external_gate",
+    external_effect_id: 31, external_effect_state: "pending_external_gate",
+    auto_retry_allowed: false, created_at: "2026-08-19T00:00:00Z", ...extra,
+  };
+}
+function refundPage(items: unknown[] = [refund()], extra: Record<string, unknown> = {}) {
+  return { items, total: items.length, limit: 50, has_more: false, ...extra };
+}
 function transport(
   status: number,
   data: unknown,
   detailStatus = status,
   detailData = data,
+  refundStatus = status,
+  refundData = data,
 ): OrdersTransport {
   return {
     list: vi.fn(async () => ({ status, data })),
     detail: vi.fn(async () => ({ status: detailStatus, data: detailData })),
+    refunds: vi.fn(async () => ({ status: refundStatus, data: refundData })),
   } as unknown as OrdersTransport;
 }
 
@@ -145,5 +163,63 @@ describe("local order overview read boundary", () => {
       await expect(loadOrderDetail(client, loaded.page.items[0])).resolves.toEqual({ status: expected });
       expect(client.detail).toHaveBeenCalledOnce();
     }
+  });
+
+  it("uses exactly the fixed same-origin local refund-history GET", async () => {
+    const client = transport(200, page(), 200, detail(), 200, refundPage());
+    await expect(loadLocalRefunds(client)).resolves.toEqual({
+      status: "loaded",
+      page: {
+        items: [{
+          id: 23, orderID: 17, provider: "wechat", orderNo: "M-1", transactionID: "WX-1",
+          refundID: "rfd_provider-1", outRefundNo: "rfd_local-1", refundAmountTotal: 1990,
+          currency: "CNY", reason: "重复支付", status: "pending_external_gate",
+          externalEffectID: 31, externalEffectState: "pending_external_gate",
+          autoRetryAllowed: false, createdAt: "2026-08-19T00:00:00Z",
+        }],
+        total: 1, offset: 0, hasMore: false,
+      },
+    });
+    expect(client.refunds).toHaveBeenCalledWith(
+      { provider: "all", limit: 50, offset: 0 },
+      { credentials: "same-origin" },
+    );
+  });
+
+  it("fails closed for all local refund DTO, page, and external-effect contract drift", async () => {
+    const invalid = [
+      refund({ unexpected: true }), refund({ id: 0 }), refund({ order_id: 0 }),
+      refund({ provider: "stripe" }), refund({ order_no: "" }), refund({ transaction_id: "" }),
+      refund({ refund_id: "legacy-1" }), refund({ out_refund_no: "legacy-1" }),
+      refund({ refund_amount_total: 0 }), refund({ currency: "USD" }),
+      refund({ reason: "" }), refund({ status: "succeeded" }),
+      refund({ external_effect_state: "succeeded" }), refund({ auto_retry_allowed: true }),
+      refund({ created_at: "2026-02-31T00:00:00Z" }),
+    ];
+    for (const data of [
+      ...invalid.map((entry) => refundPage([entry])),
+      refundPage([refund(), refund({ id: 24 })]),
+      refundPage([refund(), refund({ id: 24, out_refund_no: "rfd_local-2" })]),
+      refundPage([refund(), refund({ id: 24, refund_id: "rfd_provider-2" })]),
+      refundPage([], { total: 1, has_more: true }),
+      refundPage([refund()], { total: 2, has_more: false }), refundPage([refund()], { limit: 20 }),
+      { ...refundPage(), unexpected: true },
+    ]) {
+      await expect(loadLocalRefunds(transport(200, page(), 200, detail(), 200, data)))
+        .resolves.toEqual({ status: "invalid" });
+    }
+  });
+
+  it("maps local refund-history failures without retry and keeps its offset boundary", async () => {
+    for (const [status, expected] of [[401, "unauthenticated"], [403, "forbidden"], [503, "unavailable"]] as const) {
+      const client = transport(200, page(), 200, detail(), status, {});
+      await expect(loadLocalRefunds(client)).resolves.toEqual({ status: expected });
+      expect(client.refunds).toHaveBeenCalledOnce();
+    }
+    await expect(loadLocalRefunds(transport(200, page(), 200, detail(), 200, refundPage()), 1))
+      .resolves.toEqual({ status: "invalid" });
+    const localPage = { items: [], total: 51, offset: 50, hasMore: false };
+    expect(previousLocalRefundOffset(localPage)).toBe(0);
+    expect(nextLocalRefundOffset({ ...localPage, offset: 0, hasMore: true })).toBe(50);
   });
 });
