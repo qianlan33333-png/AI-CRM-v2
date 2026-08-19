@@ -1,8 +1,7 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"html/template"
@@ -117,6 +116,10 @@ func (handler *Handler) CreateAutomationAgent(w http.ResponseWriter, r *http.Req
 		writeAutomationAgentFailure(w, http.StatusGone, "webhook_configuration_retired", platformhttp.CodeMalformedRequest)
 		return
 	}
+	if !automationAgentExactBody(body, "agent_name", "agent_code", "automation_type", "status", "role_prompt", "task_prompt", "fixed_content_package") {
+		writeAutomationAgentError(w, automationapp.ErrInvalidAgent)
+		return
+	}
 	principal, key, err := automationAgentActorAndKey(r)
 	if err != nil {
 		writeAutomationAgentError(w, err)
@@ -168,6 +171,10 @@ func (handler *Handler) UpdateAutomationAgent(w http.ResponseWriter, r *http.Req
 	}
 	if retiredAutomationWebhook(body) {
 		writeAutomationAgentFailure(w, http.StatusGone, "webhook_configuration_retired", platformhttp.CodeMalformedRequest)
+		return
+	}
+	if !automationAgentExactBody(body, "agent_name", "automation_type", "status", "role_prompt", "task_prompt", "fixed_content_package") || len(body) == 0 {
+		writeAutomationAgentError(w, automationapp.ErrInvalidAgent)
 		return
 	}
 	principal, key, err := automationAgentActorAndKey(r)
@@ -281,6 +288,10 @@ func (handler *Handler) SaveAutomationAgentFixedContent(w http.ResponseWriter, r
 		writeAutomationAgentError(w, err)
 		return
 	}
+	if !automationAgentExactBody(body, "content_package") {
+		writeAutomationAgentError(w, automationapp.ErrInvalidAgent)
+		return
+	}
 	content, _, err := automationAgentContent(body, "content_package")
 	if err != nil {
 		writeAutomationAgentError(w, err)
@@ -327,6 +338,21 @@ func retiredAutomationWebhook(body map[string]json.RawMessage) bool {
 	_, bound := body["bound_package_key"]
 	_, webhook := body["send_webhook_url"]
 	return bound || webhook
+}
+func automationAgentExactBody(body map[string]json.RawMessage, allowed ...string) bool {
+	if body == nil {
+		return false
+	}
+	keys := make(map[string]struct{}, len(allowed))
+	for _, key := range allowed {
+		keys[key] = struct{}{}
+	}
+	for key := range body {
+		if _, ok := keys[key]; !ok {
+			return false
+		}
+	}
+	return true
 }
 func automationAgentCreateCommand(body map[string]json.RawMessage, actor int64, key string) (automationport.CreateCommand, error) {
 	name, _, err := automationAgentString(body, "agent_name")
@@ -422,7 +448,9 @@ func automationAgentContent(body map[string]json.RawMessage, field string) (auto
 		return automationport.FixedContentPackage{}, false, automationapp.ErrInvalidAgent
 	}
 	var value automationport.FixedContentPackage
-	if json.Unmarshal(raw, &value) != nil {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&value) != nil || decoder.Decode(&struct{}{}) != io.EOF {
 		return automationport.FixedContentPackage{}, false, automationapp.ErrInvalidAgent
 	}
 	return value, true, nil
@@ -435,18 +463,11 @@ func automationAgentActorAndKey(r *http.Request) (authport.Principal, string, er
 	if !ok || principal.AdminUserID < 1 {
 		return authport.Principal{}, "", authport.ErrUnauthorized
 	}
-	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
-	if key != "" {
-		if len(key) < 16 || len(key) > 128 {
-			return authport.Principal{}, "", automationapp.ErrInvalidAgent
-		}
-		return principal, key, nil
+	values := r.Header.Values("Idempotency-Key")
+	if len(values) != 1 || values[0] == "" || values[0] != strings.TrimSpace(values[0]) || len(values[0]) < 16 || len(values[0]) > 128 {
+		return authport.Principal{}, "", automationapp.ErrInvalidAgent
 	}
-	var entropy [16]byte
-	if _, err := rand.Read(entropy[:]); err != nil {
-		return authport.Principal{}, "", automationapp.ErrAgentUnavailable
-	}
-	return principal, "legacy-automation:" + hex.EncodeToString(entropy[:]), nil
+	return principal, values[0], nil
 }
 func automationAgentID(r *http.Request) (automationport.AgentID, error) {
 	if r == nil {

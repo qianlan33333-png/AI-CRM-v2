@@ -1125,6 +1125,234 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListError" } } } }
+    post:
+      tags: [p4-automation-agents]
+      operationId: createLegacyAutomationAgent
+      summary: Create one local automation-agent configuration without running or sending it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAutomationAgentCreateRequest" }
+      responses:
+        "200": { description: Confirmed local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Local idempotency or code conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "410": { description: Retired webhook or audience-package field, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    get:
+      tags: [p4-automation-agents]
+      operationId: getLegacyAutomationAgent
+      summary: Read one complete local automation-agent configuration
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Complete local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+    patch:
+      tags: [p4-automation-agents]
+      operationId: updateLegacyAutomationAgent
+      summary: Update the local automation-agent draft without running or sending it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAutomationAgentUpdateRequest" }
+      responses:
+        "200": { description: Confirmed updated local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local update, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "410": { description: Retired webhook or audience-package field, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+    delete:
+      tags: [p4-automation-agents]
+      operationId: archiveLegacyAutomationAgent
+      summary: Archive one local automation-agent configuration
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200": { description: Confirmed local archive, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentArchiveResponse" } } } }
+        "400": { description: Invalid archive command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/fixed-content:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    put:
+      tags: [p4-automation-agents]
+      operationId: saveLegacyAutomationAgentFixedContent
+      summary: Save local fixed content and validated local media references
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContentRequest" }
+      responses:
+        "200": { description: Confirmed local fixed content, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local fixed content, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID or image reference, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/activate:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: activateLegacyAutomationAgent
+      summary: Activate one local automation-agent configuration without running it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed active local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/copy:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: copyLegacyAutomationAgent
+      summary: Copy one local automation-agent configuration without running it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed copied local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown source configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or code conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/pause:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: pauseLegacyAutomationAgent
+      summary: Pause one local automation-agent configuration
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed paused local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: publishLegacyAutomationAgent
+      summary: Publish the local draft version without running or sending it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed locally published draft version, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
   /api/admin/wecom/tags:
     get:
       tags: [p4-tag-compat]
@@ -3678,6 +3906,11 @@ components:
       name: aicrm_sidebar_grant
       description: Opaque owner-scoped sidebar grant; it is not interchangeable with a payment-identity session.
   parameters:
+    AutomationAgentID:
+      name: agent_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
     ProductID:
       name: product_id
       in: path
@@ -4038,6 +4271,118 @@ components:
       properties:
         ok: { type: boolean, enum: [false] }
         error: { type: string, enum: [invalid_agent_payload, automation_agent_unavailable] }
+    LegacyAutomationAgentDynamicCard:
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version: {}
+        appid: {}
+        title: {}
+        pagepath: {}
+        card_id: {}
+        cid: {}
+        cover_image_id: {}
+    LegacyAutomationAgentFixedContent:
+      type: object
+      additionalProperties: false
+      required: [content_text, image_library_ids, miniprogram_library_ids, attachment_library_ids, group_invite_library_ids]
+      properties:
+        content_text: { type: string, maxLength: 4000 }
+        image_library_ids: { type: array, maxItems: 3, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        miniprogram_library_ids: { type: array, maxItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        attachment_library_ids: { type: array, maxItems: 9, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        group_invite_library_ids: { type: array, maxItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        dynamic_miniprogram_card: { $ref: "#/components/schemas/LegacyAutomationAgentDynamicCard" }
+    LegacyAutomationAgentFixedContentPreview:
+      type: object
+      additionalProperties: false
+      required: [content_text, material_summary, materials]
+      properties:
+        content_text: { type: string, maxLength: 4000 }
+        material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
+        materials: { type: array, maxItems: 0, items: {} }
+    LegacyAutomationAgentDetail:
+      type: object
+      additionalProperties: false
+      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, updated_at, automation_type_label, draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt, draft_version, published_version, has_unpublished_changes, fixed_content_package, fixed_content_package_preview]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        automation_type: { type: string, enum: [agent, fixed_script] }
+        agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        bound_package_key: { type: string, enum: [""] }
+        bound_package_id: { type: integer, format: int64, nullable: true, enum: [null] }
+        bound_package_name: { type: string, enum: [""] }
+        fixed_material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
+        status: { type: string, enum: [active, paused] }
+        updated_at: { type: string, format: date-time }
+        automation_type_label: { type: string, enum: [Agent 机器人, 固定话术] }
+        draft_role_prompt: { type: string, maxLength: 20000 }
+        draft_task_prompt: { type: string, maxLength: 20000 }
+        published_role_prompt: { type: string, maxLength: 20000 }
+        published_task_prompt: { type: string, maxLength: 20000 }
+        draft_version: { type: integer, format: int64, minimum: 1 }
+        published_version: { type: integer, format: int64, minimum: 1 }
+        has_unpublished_changes: { type: boolean }
+        fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+        fixed_content_package_preview: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContentPreview" }
+    LegacyAutomationAgentDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, agent]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        agent: { $ref: "#/components/schemas/LegacyAutomationAgentDetail" }
+    LegacyAutomationAgentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [agent_name, agent_code]
+      properties:
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
+        automation_type: { type: string, enum: [agent, fixed_script], default: agent }
+        status: { type: string, enum: [active, paused], default: active }
+        role_prompt: { type: string, maxLength: 20000, default: "" }
+        task_prompt: { type: string, maxLength: 20000, default: "" }
+        fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+    LegacyAutomationAgentUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        automation_type: { type: string, enum: [agent, fixed_script] }
+        status: { type: string, enum: [active, paused] }
+        role_prompt: { type: string, maxLength: 20000 }
+        task_prompt: { type: string, maxLength: 20000 }
+        fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+    LegacyAutomationAgentFixedContentRequest:
+      type: object
+      additionalProperties: false
+      required: [content_package]
+      properties:
+        content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+    LegacyAutomationAgentArchiveResult:
+      type: object
+      additionalProperties: false
+      required: [id, status]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [archived] }
+    LegacyAutomationAgentArchiveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, agent]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        agent: { $ref: "#/components/schemas/LegacyAutomationAgentArchiveResult" }
+    LegacyAutomationAgentError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [invalid_agent_payload, agent_not_found, automation_agent_conflict, authentication_required, permission_denied, automation_agent_unavailable, webhook_configuration_retired] }
     LegacyExecutionTimelineUnavailable:
       type: object
       additionalProperties: false
