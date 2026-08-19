@@ -1240,7 +1240,8 @@ paths:
       x-aicrm-capability: customers.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
-      responses: { "200": { description: Local group archive envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagArchiveRequest" } } } }
+      responses: { "200": { description: Closed local group-archived or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupArchiveResponse" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/wecom/tags/{tag_id}:
     parameters: [{ name: tag_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
     get:
@@ -4068,6 +4069,10 @@ components:
       allOf:
         - $ref: "#/components/schemas/LegacyWriteMetadata"
         - { type: object, additionalProperties: false, required: [group_name], properties: { group_name: { type: string, minLength: 1, maxLength: 200 }, actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
+    LegacyTagArchiveRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyWriteMetadata"
+        - { type: object, additionalProperties: false, properties: { actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
     LegacyTagCreateRequest:
       allOf:
         - $ref: "#/components/schemas/LegacyWriteMetadata"
@@ -4201,6 +4206,39 @@ components:
       oneOf:
         - $ref: "#/components/schemas/LegacyTagGroupUpdateSuccess"
         - $ref: "#/components/schemas/LegacyTagGroupUpdateValidatedSuccess"
+    LegacyTagGroupArchiveSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, group]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_archived] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        group: { $ref: "#/components/schemas/LegacyTagGroupUpdateSuccessGroup" }
+    LegacyTagGroupArchiveValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_archive_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupArchiveResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagGroupArchiveSuccess"
+        - $ref: "#/components/schemas/LegacyTagGroupArchiveValidatedSuccess"
     LegacyTagUpdateSuccessTag:
       type: object
       additionalProperties: false
