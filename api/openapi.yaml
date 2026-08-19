@@ -1177,7 +1177,13 @@ paths:
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupUpdateRequest" } } } }
-      responses: { "200": { description: Local group update envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+      responses:
+        "200": { description: Local group update envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupUpdateResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
     delete:
       tags: [p4-tag-compat]
       operationId: archiveLegacyWecomTagGroup
@@ -4068,6 +4074,47 @@ components:
         sync_executed: { type: boolean, enum: [false] }
         fixture_used: { type: boolean, enum: [false] }
         dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupUpdateSuccessGroup:
+      type: object
+      additionalProperties: false
+      required: [group_id, group_name, sort_order]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupUpdateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, group]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_updated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        group: { $ref: "#/components/schemas/LegacyTagGroupUpdateSuccessGroup" }
+    LegacyTagGroupUpdateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_update_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupUpdateResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagGroupUpdateSuccess"
+        - $ref: "#/components/schemas/LegacyTagGroupUpdateValidatedSuccess"
     LegacyTagUpdateSuccessTag:
       type: object
       additionalProperties: false

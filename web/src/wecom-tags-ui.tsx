@@ -3,6 +3,7 @@ import { readCSRFCookie } from "./auth";
 import {
   confirmsCreatedWecomTagGroup,
   confirmsRenamedWecomTag,
+  confirmsRenamedWecomTagGroup,
   createWecomTagGroup,
   filterWecomTagGroups,
   generatedWecomTagsTransport,
@@ -11,15 +12,18 @@ import {
   nextWecomTagPage,
   previousWecomTagPage,
   renameWecomTag,
+  renameWecomTagGroup,
   wecomTagPage,
   wecomTagPageCount,
   wecomTagSearchState,
   type WecomTagCatalog,
   type WecomTagGroupCreateResult,
+  type WecomTagGroupRenameResult,
   type WecomTagRenameResult,
   type WecomTagsRole,
   type WecomTagsTransport,
   type WecomTag,
+  type WecomTagGroup,
 } from "./wecom-tags";
 
 export interface WecomTagsPageProps {
@@ -85,6 +89,73 @@ export function startWecomTagMutation<T>(
   })();
 }
 
+// Keep the Page's actual group-rename lifecycle outside the view markup so
+// its ref-backed single-flight, receipt reload, and fail-closed lock can be
+// exercised without a browser-only DOM harness.
+export interface WecomTagGroupRenameController {
+  readonly transport: WecomTagsTransport;
+  readonly readCookie: () => string;
+  readonly onUnauthenticated?: () => void;
+  readonly mutationInFlight: { current: boolean };
+  readonly mutationLocked: { current: boolean };
+  readonly lockMutations: () => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setRenaming: (value: boolean) => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setCatalog: (catalog: WecomTagCatalog) => void;
+}
+
+export function submitWecomTagGroupRename(
+  controller: WecomTagGroupRenameController,
+  group: WecomTagGroup,
+  groupName: string,
+): Promise<WecomTagGroupRenameResult | undefined> | undefined {
+  if (controller.mutationLocked.current) return undefined;
+  return startWecomTagMutation(controller.mutationInFlight, async () => {
+    let csrfToken: string | undefined;
+    try {
+      csrfToken = readCSRFCookie(controller.readCookie());
+    } catch {
+      csrfToken = undefined;
+    }
+    const idempotencyKey = newWecomTagIdempotencyKey();
+    if (!csrfToken || !idempotencyKey) return { status: "invalid" };
+
+    controller.setRenaming(true);
+    try {
+      const result = await renameWecomTagGroup(
+        controller.transport,
+        group,
+        groupName,
+        csrfToken,
+        idempotencyKey,
+      );
+      if (result.status !== "confirmed") {
+        if (result.status === "unauthenticated") {
+          controller.onUnauthenticated?.();
+        }
+        if (result.status === "unknown") controller.lockMutations();
+        return result;
+      }
+      const refreshed = await loadWecomTagCatalog(controller.transport);
+      if (refreshed.status === "unauthenticated") {
+        controller.onUnauthenticated?.();
+      }
+      if (
+        refreshed.status === "loaded" &&
+        confirmsRenamedWecomTagGroup(refreshed.catalog, result.group)
+      ) {
+        controller.setCatalog(refreshed.catalog);
+        return result;
+      }
+      controller.lockMutations();
+      return { status: "unknown" };
+    } finally {
+      controller.setRenaming(false);
+    }
+  });
+}
+
 export async function copyWecomTagID(
   tagID: number,
   clipboard: ClipboardWriter | undefined = typeof navigator === "undefined"
@@ -117,6 +188,11 @@ export function WecomTagsPage({
   const [mutationUncertain, setMutationUncertain] = useState(false);
   const [createNotice, setCreateNotice] = useState<string>();
   const mutationInFlight = useRef(false);
+  const mutationLocked = useRef(false);
+  const lockMutations = () => {
+    mutationLocked.current = true;
+    setMutationUncertain(true);
+  };
 
   useEffect(() => {
     if (!canAccess) return undefined;
@@ -137,7 +213,7 @@ export function WecomTagsPage({
 
   const submitCreate = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canAccess || mutationUncertain) return;
+    if (!canAccess || mutationLocked.current || mutationUncertain) return;
     void startWecomTagGroupCreate(mutationInFlight, async () => {
       let csrfToken: string | undefined;
       try {
@@ -172,7 +248,7 @@ export function WecomTagsPage({
           ) {
             setState({ kind: "ready", catalog: refreshed.catalog });
           } else {
-            setMutationUncertain(true);
+            lockMutations();
             setCreateNotice(
               "创建已确认，但目录刷新未确认；请人工刷新页面后核对目录。",
             );
@@ -180,7 +256,7 @@ export function WecomTagsPage({
           return;
         }
         if (result.status === "unauthenticated") onUnauthenticated?.();
-        if (result.status === "unknown") setMutationUncertain(true);
+        if (result.status === "unknown") lockMutations();
         setCreateNotice(createMessages[result.status]);
       } finally {
         setCreating(false);
@@ -223,7 +299,8 @@ export function WecomTagsPage({
     tag: WecomTag,
     tagName: string,
   ): Promise<WecomTagRenameResult | undefined> => {
-    if (!canAccess || mutationUncertain) return undefined;
+    if (!canAccess || mutationLocked.current || mutationUncertain)
+      return undefined;
     return startWecomTagMutation(mutationInFlight, async () => {
       let csrfToken: string | undefined;
       try {
@@ -245,7 +322,7 @@ export function WecomTagsPage({
         );
         if (result.status !== "confirmed") {
           if (result.status === "unauthenticated") onUnauthenticated?.();
-          if (result.status === "unknown") setMutationUncertain(true);
+          if (result.status === "unknown") lockMutations();
           return result;
         }
         const refreshed = await loadWecomTagCatalog(transport);
@@ -257,7 +334,7 @@ export function WecomTagsPage({
           setState({ kind: "ready", catalog: refreshed.catalog });
           return result;
         }
-        setMutationUncertain(true);
+        lockMutations();
         return { status: "unknown" };
       } finally {
         setRenaming(false);
@@ -265,11 +342,33 @@ export function WecomTagsPage({
     });
   };
 
+  const onRenameGroup = async (
+    group: WecomTagGroup,
+    groupName: string,
+  ): Promise<WecomTagGroupRenameResult | undefined> => {
+    if (!canAccess) return undefined;
+    return submitWecomTagGroupRename(
+      {
+        transport,
+        readCookie,
+        onUnauthenticated,
+        mutationInFlight,
+        mutationLocked,
+        lockMutations,
+        setRenaming,
+        setCatalog: (catalog) => setState({ kind: "ready", catalog }),
+      },
+      group,
+      groupName,
+    );
+  };
+
   return (
     <WecomTagsView
       createPanel={createPanel}
       mutationBusy={creating || renaming}
       mutationLocked={mutationUncertain}
+      onRenameGroup={onRenameGroup}
       onRenameTag={onRenameTag}
       renaming={renaming}
       role={role}
@@ -284,6 +383,7 @@ export function WecomTagsView({
   createPanel,
   mutationBusy = false,
   mutationLocked = false,
+  onRenameGroup,
   onRenameTag,
   renaming = false,
 }: {
@@ -292,6 +392,12 @@ export function WecomTagsView({
   readonly createPanel?: React.ReactNode;
   readonly mutationBusy?: boolean;
   readonly mutationLocked?: boolean;
+  readonly onRenameGroup?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    group: WecomTagGroup,
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    groupName: string,
+  ) => Promise<WecomTagGroupRenameResult | undefined>;
   readonly onRenameTag?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     tag: WecomTag,
@@ -410,6 +516,13 @@ export function WecomTagsView({
       {selected ? (
         <section aria-labelledby="wecom-tag-list-title">
           <h2 id="wecom-tag-list-title">{selected.name}</h2>
+          <WecomTagGroupDetails
+            group={selected}
+            mutationBusy={mutationBusy}
+            mutationLocked={mutationLocked}
+            onRename={onRenameGroup}
+            renaming={renaming}
+          />
           {visibleTags.length === 0 ? (
             <p>当前筛选下没有标签。</p>
           ) : (
@@ -472,6 +585,86 @@ export function WecomTagsView({
             />
           ) : null}
         </section>
+      ) : null}
+    </section>
+  );
+}
+
+export function WecomTagGroupDetails({
+  group,
+  mutationBusy = false,
+  mutationLocked = false,
+  onRename,
+  renaming = false,
+}: {
+  readonly group: WecomTagGroup;
+  readonly mutationBusy?: boolean;
+  readonly mutationLocked?: boolean;
+  readonly onRename?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    group: WecomTagGroup,
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    groupName: string,
+  ) => Promise<WecomTagGroupRenameResult | undefined>;
+  readonly renaming?: boolean;
+}): React.ReactElement {
+  const [groupName, setGroupName] = useState(group.name);
+  const [renameNotice, setRenameNotice] = useState<string>();
+
+  useEffect(() => {
+    setGroupName(group.name);
+    setRenameNotice(undefined);
+  }, [group.id, group.name]);
+
+  return (
+    <section aria-labelledby="wecom-tag-group-detail-title">
+      <h3 id="wecom-tag-group-detail-title">标签组详情</h3>
+      <dl>
+        <dt>标签组名称</dt>
+        <dd>{group.name}</dd>
+        <dt>标签组 ID</dt>
+        <dd>{group.id}</dd>
+      </dl>
+      {onRename ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (mutationLocked || mutationBusy) return;
+            void onRename(group, groupName).then((result) => {
+              if (!result) return;
+              const notices: Record<
+                WecomTagGroupRenameResult["status"],
+                string
+              > = {
+                confirmed: "本地标签组名称已更新。",
+                unauthenticated: "登录状态已失效，请重新登录。",
+                forbidden: "当前账号没有本地标签组改名权限。",
+                invalid: "标签组名称不符合已冻结的本地合同。",
+                unknown:
+                  "改名结果未确认，系统不会自动重试；请人工刷新页面后核对目录。",
+              };
+              setRenameNotice(notices[result.status]);
+            });
+          }}
+        >
+          <fieldset disabled={mutationLocked || mutationBusy}>
+            <label>
+              本地标签组名称
+              <input
+                value={groupName}
+                onChange={(event) => setGroupName(event.currentTarget.value)}
+              />
+            </label>
+            <button type="submit">
+              {renaming ? "正在保存…" : "保存本地标签组名称"}
+            </button>
+          </fieldset>
+        </form>
+      ) : null}
+      {renameNotice ? (
+        <p aria-live="polite" role={mutationLocked ? "alert" : "status"}>
+          {renameNotice}
+        </p>
       ) : null}
     </section>
   );
