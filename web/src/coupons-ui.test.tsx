@@ -9,6 +9,7 @@ import {
   performCouponCopy,
   startCouponArchive,
   startCouponCopy,
+  startCouponDetail,
 } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
 
@@ -27,6 +28,7 @@ function transport(): CouponsTransport {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     copy: vi.fn(async () => ({ status: 503, data: {} })),
     claims: vi.fn(async () => ({ status: 503, data: {} })),
+    detail: vi.fn(async () => ({ status: 503, data: {} })),
     share: vi.fn(async () => ({ status: 503, data: {} })),
     archive: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as CouponsTransport;
@@ -105,7 +107,42 @@ describe("CouponsView", () => {
     expect(client.copy).not.toHaveBeenCalled();
     expect(client.archive).not.toHaveBeenCalled();
     expect(client.claims).not.toHaveBeenCalled();
+    expect(client.detail).not.toHaveBeenCalled();
     expect(client.share).not.toHaveBeenCalled();
+  });
+
+  it("renders only a validated local rule detail, preserves it while a same-card refresh is loading, and has no external action", () => {
+    const detail = {
+      ...item,
+      discountAmountTotal: 100,
+      currency: "CNY" as const,
+      totalIssueLimit: 20,
+      perUserIssueLimit: 1,
+      claimStartsAt: "2026-08-19T00:00:00Z",
+      claimEndsAt: "2026-08-20T00:00:00Z",
+      validityMode: "relative_days" as const,
+      relativeValidityDays: 30,
+      instructions: "仅本地规则",
+      targetRefs: ["standard_product:7"],
+      createdBy: 1,
+      updatedBy: 1,
+      version: 1,
+    };
+    const html = renderToStaticMarkup(
+      <CouponsView
+        detailState={{ kind: "loading", coupon: item, previous: detail }}
+        onCopy={vi.fn()}
+        onDetail={vi.fn()}
+        role="admin"
+        state={{ kind: "ready", items: [item] }}
+      />,
+    );
+    expect(html).toContain("正在读取规则…");
+    expect(html).toContain('aria-label="优惠券本地规则详情"');
+    expect(html).toContain("正在读取本地优惠券规则。");
+    expect(html).toContain("仅显示已保存的本地规则，不代表可领取、可用或已发生外部效果。");
+    expect(html).toContain("standard_product:7");
+    expect(html).not.toMatch(/provider|payment|redeem|send|href=/i);
   });
 
   it("shows a local share URL only for a published coupon and retains it for manual copy", () => {
@@ -345,6 +382,28 @@ describe("CouponsView", () => {
     expect(client.archive).toHaveBeenCalledOnce();
     await first;
     expect(lock.current).toBe(false);
+  });
+
+  it("allows one in-flight detail request per coupon and releases each local lock", async () => {
+    const inFlight = new Set<number>();
+    let releaseFirst: (() => void) | undefined;
+    const first = startCouponDetail(inFlight, 7, async () => {
+      await new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+    });
+    const duplicate = startCouponDetail(inFlight, 7, async () => undefined);
+    const other = startCouponDetail(inFlight, 8, async () => undefined);
+    expect(first).toBeInstanceOf(Promise);
+    expect(duplicate).toBeUndefined();
+    expect(other).toBeInstanceOf(Promise);
+    expect(inFlight).toEqual(new Set([7, 8]));
+    await other;
+    expect(inFlight).toEqual(new Set([7]));
+    releaseFirst?.();
+    await first;
+    expect(inFlight).toEqual(new Set());
+    expect(startCouponDetail(inFlight, 0, async () => undefined)).toBeUndefined();
   });
 
   it("releases the single-flight lock when the copy flow throws", async () => {

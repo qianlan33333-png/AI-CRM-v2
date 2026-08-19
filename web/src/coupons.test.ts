@@ -4,6 +4,7 @@ import {
   copyCoupon,
   filterCoupons,
   loadCouponClaims,
+  loadCouponDetail,
   loadCouponShare,
   loadCoupons,
   newCouponArchiveIdempotencyKey,
@@ -13,6 +14,7 @@ import {
 import {
   archiveLegacyCoupon,
   copyLegacyCoupon,
+  getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
 } from "./api/generated/health";
@@ -104,17 +106,26 @@ function shareEnvelope(extra: Record<string, unknown> = {}) {
   return { ok: true, public_slug: "c-7", url: "/c/c-7", ...extra };
 }
 
+function detailEnvelope(
+  coupon: Record<string, unknown> = sourceCoupon,
+  mirror: Record<string, unknown> = coupon,
+) {
+  return { ok: true, coupon, data: { coupon: mirror } };
+}
+
 function transport(
   listData: unknown = envelope(),
   copyData: unknown = copiedEnvelope(),
   claimsData: unknown = claimsEnvelope(),
   shareData: unknown = shareEnvelope(),
   archiveData: unknown = archivedEnvelope(),
+  detailData: unknown = detailEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
     copy: vi.fn(async () => ({ status: 200, data: copyData })),
     claims: vi.fn(async () => ({ status: 200, data: claimsData })),
+    detail: vi.fn(async () => ({ status: 200, data: detailData })),
     share: vi.fn(async () => ({ status: 200, data: shareData })),
     archive: vi.fn(async () => ({ status: 200, data: archiveData })),
   } as unknown as CouponsTransport;
@@ -446,6 +457,64 @@ describe("coupon list and copy local boundary", () => {
       status: "invalid",
     });
     expect(invalidOffset.claims).not.toHaveBeenCalled();
+  });
+
+  it("reads one same-origin coupon rule detail through the generated GET only", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(detailEnvelope()), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(
+      loadCouponDetail(
+        {
+          list: vi.fn(),
+          copy: vi.fn(),
+          detail: getLegacyCoupon,
+        } as unknown as CouponsTransport,
+        7,
+      ),
+    ).resolves.toMatchObject({
+      status: "loaded",
+      detail: {
+        id: 7,
+        discountAmountTotal: 100,
+        currency: "CNY",
+        targetRefs: ["standard_product:7"],
+      },
+    });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/coupons/7",
+      expect.objectContaining({ credentials: "same-origin", method: "GET" }),
+    );
+  });
+
+  it("fails closed when either detail mirror, its requested ID, or its DTO differs", async () => {
+    const client = transport();
+    await expect(loadCouponDetail(client, 0)).resolves.toEqual({ status: "invalid" });
+    expect(client.detail).not.toHaveBeenCalled();
+
+    for (const body of [
+      { ok: true, coupon: sourceCoupon },
+      { ok: true, coupon: sourceCoupon, data: {} },
+      { ...detailEnvelope(), unexpected: true },
+      { ok: true, coupon: sourceCoupon, data: { coupon: sourceCoupon, extra: true } },
+      detailEnvelope({ ...sourceCoupon, id: 8 }),
+      detailEnvelope(sourceCoupon, { ...sourceCoupon, issued_count: 1 }),
+      detailEnvelope(sourceCoupon, { ...sourceCoupon, target_refs: ["standard_product:8"] }),
+      detailEnvelope({ ...sourceCoupon, instructions: "bad\x00value" }),
+    ]) {
+      await expect(
+        loadCouponDetail(transport(undefined, undefined, undefined, undefined, undefined, body), 7),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    const unavailable = transport();
+    vi.mocked(unavailable.detail).mockRejectedValue(new Error("network"));
+    await expect(loadCouponDetail(unavailable, 7)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(unavailable.detail).toHaveBeenCalledOnce();
   });
 
   it("reads exactly one same-origin local share URL for a published coupon", async () => {

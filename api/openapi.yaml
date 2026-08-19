@@ -4355,11 +4355,17 @@ components:
         offset: { type: integer, format: int32, minimum: 0 }
     LegacyCouponDetailResponse:
       type: object
-      additionalProperties: true
-      required: [ok, coupon]
+      additionalProperties: false
+      required: [ok, coupon, data]
       properties:
         ok: { type: boolean, enum: [true] }
         coupon: { $ref: "#/components/schemas/Coupon" }
+        data:
+          type: object
+          additionalProperties: false
+          required: [coupon]
+          properties:
+            coupon: { $ref: "#/components/schemas/Coupon" }
     LegacyCouponMutationResponse:
       type: object
       additionalProperties: true

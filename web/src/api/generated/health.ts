@@ -1716,10 +1716,14 @@ export interface LegacyCouponListResponse {
   [key: string]: unknown;
 }
 
+export type LegacyCouponDetailResponseData = {
+  coupon: Coupon;
+};
+
 export interface LegacyCouponDetailResponse {
   ok: boolean;
   coupon: Coupon;
-  [key: string]: unknown;
+  data: LegacyCouponDetailResponseData;
 }
 
 export interface LegacyCouponMutationResponse {
