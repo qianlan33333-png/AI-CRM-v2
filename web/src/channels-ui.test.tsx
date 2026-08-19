@@ -49,7 +49,7 @@ describe("ChannelsView", () => {
       expect(html).not.toMatch(
         /welcome|owner|tag|material|link_url|share_url|copy_text/i,
       );
-      expect(html).not.toContain("<button");
+      expect(html).toContain(">查看本地配置</button>");
       expect(html.match(/<h1\b/g)).toHaveLength(1);
     },
   );
@@ -78,6 +78,29 @@ describe("ChannelsView", () => {
     );
     expect(invalid).toContain("渠道列表响应不符合已冻结合同。");
     expect(invalid).not.toContain("渠道 ID");
+  });
+
+  it("renders only safe local detail text without URL or QR activation", () => {
+    const html = renderToStaticMarkup(
+      <ChannelsView
+        role="admin"
+        state={{ kind: "ready", items }}
+        detail={{
+          kind: "ready",
+          item: items[0],
+          detail: {
+            item: items[0], channelType: "qrcode", carrierType: "qrcode",
+            sceneValue: "scene-1", welcomeMessage: "欢迎", hasAssignmentConfig: true,
+            imageMaterialCount: 1, miniProgramMaterialCount: 0,
+            attachmentMaterialCount: 0, groupInviteMaterialCount: 0,
+          },
+        }}
+      />,
+    );
+    expect(html).toContain('data-testid="channel-detail"');
+    expect(html).toContain("本地配置：&lt;img src=x onerror=&quot;bad&quot;&gt;");
+    expect(html).toContain("图片 1，小程序 0，附件 0，群邀请 0");
+    expect(html).not.toMatch(/href=|qr_url|share_url|copy_text|assignment_config_json/i);
   });
 
   it("keeps sales fail-closed without issuing a read", () => {
