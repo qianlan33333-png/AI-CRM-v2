@@ -3,7 +3,10 @@ import { readCSRFCookie } from "./auth";
 import {
   deleteQuestionnaire,
   duplicateQuestionnaire,
+  addQuestionnaireEditorOption,
+  addQuestionnaireEditorQuestion,
   generatedQuestionnaireListTransport,
+  loadQuestionnaireEditor,
   loadQuestionnaireDefinition,
   loadQuestionnaires,
   loadQuestionnairePreflight,
@@ -11,7 +14,22 @@ import {
   nextQuestionnaireOffset,
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
+  moveQuestionnaireEditorOption,
+  moveQuestionnaireEditorQuestion,
+  newQuestionnaireEditorDraft,
+  newQuestionnaireEditorIdempotencyKey,
+  removeQuestionnaireEditorOption,
+  removeQuestionnaireEditorQuestion,
+  saveQuestionnaireEditor,
+  setQuestionnaireEditorQuestionRequired,
+  setQuestionnaireEditorQuestionType,
   setQuestionnaireEnabled,
+  updateQuestionnaireEditorOption,
+  updateQuestionnaireEditorQuestion,
+  type QuestionnaireEditorDraft,
+  type QuestionnaireEditorLoadResult,
+  type QuestionnaireEditorQuestionType,
+  type QuestionnaireEditorSaveResult,
   type QuestionnaireDefinition,
   type QuestionnaireDefinitionResult,
   type QuestionnaireFailure,
@@ -83,8 +101,15 @@ export type QuestionnaireDefinitionState =
       readonly kind: "error";
       readonly item: QuestionnaireItem;
       readonly failure: QuestionnaireFailure;
-      readonly previous?: QuestionnaireDefinition;
-    };
+    readonly previous?: QuestionnaireDefinition;
+  };
+
+export type QuestionnaireEditorState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly item: QuestionnaireItem }
+  | { readonly kind: "ready"; readonly item?: QuestionnaireItem; readonly draft: QuestionnaireEditorDraft }
+  | { readonly kind: "saving"; readonly item?: QuestionnaireItem; readonly draft: QuestionnaireEditorDraft }
+  | { readonly kind: "error"; readonly failure: QuestionnaireFailure; readonly item?: QuestionnaireItem; readonly draft?: QuestionnaireEditorDraft };
 
 export type QuestionnaireMutationAction = "toggle" | "delete" | "duplicate";
 export type QuestionnairePageMutationResult =
@@ -180,6 +205,11 @@ export interface QuestionnaireListContentProps {
     item: QuestionnaireItem,
   ) => void;
   readonly onLoadDefinition?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    item: QuestionnaireItem,
+  ) => void;
+  readonly onCreate?: VoidFunction;
+  readonly onEdit?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     item: QuestionnaireItem,
   ) => void;
@@ -354,11 +384,98 @@ function QuestionnaireDefinitionPanel({
   );
 }
 
+export function QuestionnaireEditorPanel({
+  state,
+  onCancel,
+  onDraft,
+  onSave,
+  outcomeUnknown = false,
+}: {
+  readonly state: QuestionnaireEditorState;
+  readonly onCancel: VoidFunction;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onDraft: (value: QuestionnaireEditorDraft) => void;
+  readonly onSave: VoidFunction;
+  readonly outcomeUnknown?: boolean;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  if (state.kind === "loading")
+    return <section className="route-card"><h2>编辑问卷</h2><p>正在读取完整问卷定义。</p></section>;
+  if (state.kind === "error" && !state.draft)
+    return <section className="route-card"><h2>编辑问卷</h2><p role="alert">{messages[state.failure]}</p><button type="button" onClick={onCancel}>关闭</button></section>;
+  const draft = state.draft;
+  if (!draft) return null;
+  const saving = state.kind === "saving" || outcomeUnknown;
+  const change = (value: Partial<QuestionnaireEditorDraft>) => onDraft({ ...draft, ...value });
+  return (
+    <section className="route-card" data-testid="questionnaire-editor">
+      <h2>{state.item ? `编辑问卷：${state.item.title}` : "新建问卷草稿"}</h2>
+      <p>仅保存本地问卷定义；不会读取提交答案、打开公开链接或触发任何 Provider。</p>
+      {outcomeUnknown ? <p role="alert">保存结果未知。为避免重复写入，本页已锁定写操作；请刷新后核对本地列表。</p> : state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+      <fieldset disabled={saving}>
+        <p><label>名称 <input value={draft.name} onChange={(event) => change({ name: event.currentTarget.value })} /></label></p>
+        <p><label>标题 <input value={draft.title} onChange={(event) => change({ title: event.currentTarget.value })} /></label></p>
+        <p><label>Slug <input value={draft.slug} onChange={(event) => change({ slug: event.currentTarget.value })} /></label></p>
+        <p><label>说明 <textarea value={draft.description} onChange={(event) => change({ description: event.currentTarget.value })} /></label></p>
+        <p><label>答题方式 <select value={draft.answerDisplayMode} onChange={(event) => change({ answerDisplayMode: event.currentTarget.value as QuestionnaireEditorDraft["answerDisplayMode"] })}><option value="all_in_one">all_in_one</option><option value="one_by_one">one_by_one</option></select></label></p>
+        <p><label><input type="checkbox" checked={draft.isDisabled} onChange={(event) => change({ isDisabled: event.currentTarget.checked })} /> 保持停用</label></p>
+      </fieldset>
+      <h3>题目</h3>
+      <p>
+        <button type="button" disabled={saving || draft.questions.length >= 100} onClick={() => onDraft(addQuestionnaireEditorQuestion(draft, "textarea"))}>添加文本题</button>{" "}
+        <button type="button" disabled={saving || draft.questions.length >= 100} onClick={() => onDraft(addQuestionnaireEditorQuestion(draft, "single_choice"))}>添加单选题</button>{" "}
+        <button type="button" disabled={saving || draft.questions.length >= 100} onClick={() => onDraft(addQuestionnaireEditorQuestion(draft, "multi_choice"))}>添加多选题</button>{" "}
+        <button type="button" disabled={saving || draft.questions.length >= 100} onClick={() => onDraft(addQuestionnaireEditorQuestion(draft, "mobile"))}>添加手机号题</button>
+      </p>
+      <ol>
+        {draft.questions.map((question, questionIndex) => {
+          const choice = question.type === "single_choice" || question.type === "multi_choice";
+          return (
+            <li key={`question-${question.sortOrder}`}>
+              <fieldset disabled={saving}>
+                <p><label>类型 <select value={question.type} onChange={(event) => onDraft(setQuestionnaireEditorQuestionType(draft, questionIndex, event.currentTarget.value as QuestionnaireEditorQuestionType))}><option value="textarea">textarea</option><option value="single_choice">single_choice</option><option value="multi_choice">multi_choice</option><option value="mobile">mobile</option></select></label></p>
+                <p><label>题目 <input value={question.title} onChange={(event) => onDraft(updateQuestionnaireEditorQuestion(draft, questionIndex, { title: event.currentTarget.value }))} /></label></p>
+                {!choice ? <p><label>提示 <input value={question.placeholderText} onChange={(event) => onDraft(updateQuestionnaireEditorQuestion(draft, questionIndex, { placeholderText: event.currentTarget.value }))} /></label></p> : null}
+                <p><label><input type="checkbox" checked={question.required} onChange={(event) => onDraft(setQuestionnaireEditorQuestionRequired(draft, questionIndex, event.currentTarget.checked))} /> 必答</label></p>
+                <p>
+                  <button type="button" disabled={questionIndex === 0} onClick={() => onDraft(moveQuestionnaireEditorQuestion(draft, questionIndex, -1))}>上移题目</button>{" "}
+                  <button type="button" disabled={questionIndex + 1 === draft.questions.length} onClick={() => onDraft(moveQuestionnaireEditorQuestion(draft, questionIndex, 1))}>下移题目</button>{" "}
+                  <button type="button" disabled={draft.questions.length <= 1} onClick={() => onDraft(removeQuestionnaireEditorQuestion(draft, questionIndex))}>删除题目</button>
+                </p>
+                {choice ? (
+                  <>
+                    <h4>选项</h4>
+                    <ol>
+                      {question.options.map((option, optionIndex) => (
+                        <li key={`option-${option.sortOrder}`}>
+                          <label>文本 <input value={option.optionText} onChange={(event) => onDraft(updateQuestionnaireEditorOption(draft, questionIndex, optionIndex, { optionText: event.currentTarget.value }))} /></label>{" "}
+                          <label><input type="checkbox" checked={option.isOther} onChange={(event) => onDraft(updateQuestionnaireEditorOption(draft, questionIndex, optionIndex, { isOther: event.currentTarget.checked, otherPlaceholder: event.currentTarget.checked ? option.otherPlaceholder : "", otherMaxLength: event.currentTarget.checked ? Math.max(1, option.otherMaxLength || 200) : 0 }))} /> 其他</label>{" "}
+                          <button type="button" disabled={optionIndex === 0} onClick={() => onDraft(moveQuestionnaireEditorOption(draft, questionIndex, optionIndex, -1))}>上移</button>{" "}
+                          <button type="button" disabled={optionIndex + 1 === question.options.length} onClick={() => onDraft(moveQuestionnaireEditorOption(draft, questionIndex, optionIndex, 1))}>下移</button>{" "}
+                          <button type="button" disabled={question.options.length <= 1} onClick={() => onDraft(removeQuestionnaireEditorOption(draft, questionIndex, optionIndex))}>删除</button>
+                        </li>
+                      ))}
+                    </ol>
+                    <button type="button" disabled={question.options.length >= 100} onClick={() => onDraft(addQuestionnaireEditorOption(draft, questionIndex))}>添加选项</button>
+                  </>
+                ) : null}
+              </fieldset>
+            </li>
+          );
+        })}
+      </ol>
+      <p><button type="button" disabled={saving} onClick={onSave}>{saving ? "正在保存" : "保存完整定义"}</button>{" "}<button type="button" disabled={saving} onClick={onCancel}>取消</button></p>
+    </section>
+  );
+}
+
 export function QuestionnaireListContent({
   busy,
   notice,
   onLoad,
   onLoadDefinition = noopLoadDefinition,
+  onCreate = noopCreate,
+  onEdit = noopEdit,
   onMutate,
   onLoadResults = noopLoadResults,
   definition = { kind: "idle" },
@@ -406,6 +523,7 @@ export function QuestionnaireListContent({
       {preflightPanel}
       <p>共 {state.total} 条问卷。写入成功后会重新加载列表。</p>
       <p>提交汇总只读取本地 Survey 聚合，不包含提交者身份或答案。</p>
+      <p><button type="button" disabled={busy !== undefined} onClick={onCreate}>新建问卷</button></p>
       {(notice ?? copyNotice) ? (
         <p role="status">{notice ?? copyNotice}</p>
       ) : null}
@@ -436,6 +554,13 @@ export function QuestionnaireListContent({
                 <td>{item.questionCount}</td>
                 <td>{item.submissionCount}</td>
                 <td>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined}
+                    onClick={() => onEdit(item)}
+                  >
+                    编辑问卷
+                  </button>
                   <button
                     type="button"
                     disabled={busy !== undefined}
@@ -527,6 +652,8 @@ export function QuestionnaireListContent({
 
 function noopLoadResults(): void {}
 function noopLoadDefinition(): void {}
+function noopCreate(): void {}
+function noopEdit(): void {}
 
 export function QuestionnaireListPage({
   role,
@@ -553,8 +680,15 @@ export function QuestionnaireListPage({
   const [definition, setDefinition] = useState<QuestionnaireDefinitionState>({
     kind: "idle",
   });
+  const [editor, setEditor] = useState<QuestionnaireEditorState>({
+    kind: "idle",
+  });
+  const [editorOutcomeUnknown, setEditorOutcomeUnknown] = useState(false);
+  const [editorWriteLocked, setEditorWriteLocked] = useState(false);
   const resultsGeneration = useRef(0);
   const definitionGeneration = useRef(0);
+  const editorGeneration = useRef(0);
+  const editorSaveToken = useRef<symbol>();
   const definitionInflight = useRef(new Set<number>());
   const load = useCallback(
     (offset: number) => {
@@ -632,8 +766,101 @@ export function QuestionnaireListPage({
     },
     [definition, onUnauthenticated, transport],
   );
+  const openEditor = useCallback(
+    (item: QuestionnaireItem) => {
+      if (editorOutcomeUnknown || editorSaveToken.current !== undefined) return;
+      const generation = ++editorGeneration.current;
+      setEditor({ kind: "loading", item });
+      void loadQuestionnaireEditor(transport, item.id).then(
+        (result: QuestionnaireEditorLoadResult) => {
+          if (generation !== editorGeneration.current) return;
+          if (result.status === "loaded") {
+            setEditor({ kind: "ready", item: result.item, draft: result.draft });
+            return;
+          }
+          if (result.status === "unauthenticated") onUnauthenticated?.();
+          setEditor({ kind: "error", item, failure: result.status });
+        },
+      );
+    },
+    [editorOutcomeUnknown, onUnauthenticated, transport],
+  );
+  const beginCreate = useCallback(() => {
+    if (editorOutcomeUnknown || editorSaveToken.current !== undefined) return;
+    ++editorGeneration.current;
+    setEditor({ kind: "ready", draft: newQuestionnaireEditorDraft() });
+  }, [editorOutcomeUnknown]);
+  const closeEditor = useCallback(() => {
+    ++editorGeneration.current;
+    setEditor({ kind: "idle" });
+  }, []);
+  const saveEditor = useCallback(() => {
+    if (editor.kind !== "ready" || editorSaveToken.current !== undefined || editorOutcomeUnknown) return;
+    let csrf: string | undefined;
+    try {
+      csrf = readCSRFCookie(readCookie());
+    } catch {
+      csrf = undefined;
+    }
+    const key = newQuestionnaireEditorIdempotencyKey(
+      editor.item ? "replace" : "create",
+    );
+    if (!csrf || !key) {
+      setEditor({ ...editor, kind: "error", failure: "forbidden" });
+      return;
+    }
+    const token = Symbol("questionnaire-editor-save");
+    editorSaveToken.current = token;
+    setEditorWriteLocked(true);
+    const generation = ++editorGeneration.current;
+    setEditor({ ...editor, kind: "saving" });
+    void (async () => {
+      try {
+        const result: QuestionnaireEditorSaveResult = await saveQuestionnaireEditor(
+          transport,
+          editor.item,
+          editor.draft,
+          csrf,
+          key,
+        );
+        if (generation !== editorGeneration.current) return;
+        if (result.status !== "saved") {
+          if (result.status === "unauthenticated") onUnauthenticated?.();
+          if (result.status === "unavailable" || result.status === "invalid") {
+            setEditorOutcomeUnknown(true);
+            setMutationNotice("问卷写入结果未知。为避免重复写入，请刷新后核对本地列表。");
+          }
+          setEditor({ kind: "error", item: editor.item, draft: editor.draft, failure: result.status });
+          return;
+        }
+        const rereadGeneration = ++editorGeneration.current;
+        setEditor({ kind: "loading", item: result.item });
+        const reread = await loadQuestionnaireEditor(
+          transport,
+          result.item.id,
+          result.request,
+        );
+        if (rereadGeneration !== editorGeneration.current) return;
+        if (reread.status === "loaded") {
+          setEditor({ kind: "ready", item: reread.item, draft: reread.draft });
+          setMutationNotice(editor.item ? "问卷定义已保存，已重新读取确认。" : "问卷草稿已创建，已重新读取确认。");
+          load(0);
+          return;
+        }
+        if (reread.status === "unauthenticated") onUnauthenticated?.();
+        setEditorOutcomeUnknown(true);
+        setMutationNotice("问卷写入结果未知。为避免重复写入，请刷新后核对本地列表。");
+        setEditor({ kind: "error", item: result.item, failure: reread.status });
+      } finally {
+        if (editorSaveToken.current === token) {
+          editorSaveToken.current = undefined;
+          setEditorWriteLocked(false);
+        }
+      }
+    })();
+  }, [editor, editorOutcomeUnknown, load, onUnauthenticated, readCookie, transport]);
   useEffect(() => {
-    if (role === "admin") {
+    if (role === "admin" || role === "ops") {
       load(0);
       loadPreflight();
     }
@@ -642,7 +869,7 @@ export function QuestionnaireListPage({
     item: QuestionnaireItem,
     action: QuestionnaireMutationAction,
   ) => {
-    if (busy !== undefined) return;
+    if (busy !== undefined || editorOutcomeUnknown || editorSaveToken.current !== undefined) return;
     setMutationNotice(undefined);
     const result = await performQuestionnairePageMutation({
       action,
@@ -663,7 +890,7 @@ export function QuestionnaireListPage({
     }
     setState({ kind: "error", failure: result.status });
   };
-  if (role !== "admin")
+  if (role !== "admin" && role !== "ops")
     return (
       <section className="route-card">
         <h1 id="app-title">问卷列表</h1>
@@ -671,18 +898,29 @@ export function QuestionnaireListPage({
       </section>
     );
   return (
-    <QuestionnaireListContent
-      busy={busy}
-      notice={mutationNotice}
-      onLoad={load}
-      onLoadDefinition={loadDefinition}
-      onLoadResults={loadResults}
-      onMutate={({ item, action }) => void mutate(item, action)}
-      preflight={preflight}
-      definition={definition}
-      results={results}
-      state={state}
-    />
+    <>
+      <QuestionnaireEditorPanel
+        state={editor}
+        outcomeUnknown={editorOutcomeUnknown}
+        onCancel={closeEditor}
+        onDraft={(draft) => setEditor((current) => current.kind === "ready" || current.kind === "error" ? { ...current, kind: "ready", draft } : current)}
+        onSave={saveEditor}
+      />
+      <QuestionnaireListContent
+        busy={busy ?? (editorWriteLocked || editorOutcomeUnknown ? -1 : undefined)}
+        notice={mutationNotice}
+        onCreate={beginCreate}
+        onEdit={openEditor}
+        onLoad={load}
+        onLoadDefinition={loadDefinition}
+        onLoadResults={loadResults}
+        onMutate={({ item, action }) => void mutate(item, action)}
+        preflight={preflight}
+        definition={definition}
+        results={results}
+        state={state}
+      />
+    </>
   );
 }
 

@@ -770,8 +770,10 @@ export function navigationLinks(
   if (base.length > 0 && principal.role === "admin") {
     permitted.add(HXC_SENDER_PATH);
   }
-  if (base.length > 0 && principal.role === "admin") {
+  if (base.length > 0 && (principal.role === "admin" || principal.role === "ops")) {
     permitted.add(QUESTIONNAIRE_LIST_PATH);
+  }
+  if (base.length > 0 && principal.role === "admin") {
     permitted.add(AUTOMATION_RUNS_PATH);
     permitted.add(AUTOMATION_AGENTS_PATH);
     permitted.add(DELIVERY_LINEAGE_PATH);

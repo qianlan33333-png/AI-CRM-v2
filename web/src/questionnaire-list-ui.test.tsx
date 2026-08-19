@@ -1,9 +1,12 @@
-import React from "react";
+/* eslint-disable no-unused-vars -- the minimal DOM shim exposes React DOM structural fields. */
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   copyQuestionnairePublicLink,
   performQuestionnairePageMutation,
+  QuestionnaireEditorPanel,
   QuestionnaireListContent,
   QuestionnaireListPage,
 } from "./questionnaire-list-ui";
@@ -12,6 +15,85 @@ import type {
   QuestionnaireItem,
   QuestionnaireListTransport,
 } from "./questionnaire-list";
+import { newQuestionnaireEditorDraft } from "./questionnaire-list";
+
+class TestNode {
+  parentNode: TestNode | null = null;
+  childNodes: TestNode[] = [];
+  ownerDocument!: TestDocument;
+  constructor(readonly nodeType: number, readonly nodeName: string) {}
+  appendChild(node: TestNode): TestNode { node.parentNode = this; this.childNodes.push(node); return node; }
+  insertBefore(node: TestNode, before: TestNode | null): TestNode { if (before === null) return this.appendChild(node); node.parentNode = this; this.childNodes.splice(this.childNodes.indexOf(before), 0, node); return node; }
+  removeChild(node: TestNode): TestNode { this.childNodes.splice(this.childNodes.indexOf(node), 1); node.parentNode = null; return node; }
+  get firstChild(): TestNode | null { return this.childNodes[0] ?? null; }
+  get nextSibling(): TestNode | null { if (!this.parentNode) return null; return this.parentNode.childNodes[this.parentNode.childNodes.indexOf(this) + 1] ?? null; }
+  get textContent(): string { return this.childNodes.map((node) => node.textContent).join(""); }
+  set textContent(value: string) { this.childNodes = value === "" ? [] : [new TestText(value, this.ownerDocument)]; }
+  addEventListener(): void {}
+  removeEventListener(): void {}
+  contains(node: TestNode | null): boolean { return node === this || this.childNodes.some((child) => child.contains(node)); }
+}
+class TestText extends TestNode {
+  constructor(private data: string, ownerDocument: TestDocument) { super(3, "#text"); this.ownerDocument = ownerDocument; }
+  override get textContent(): string { return this.data; }
+  override set textContent(value: string) { this.data = value; }
+}
+class TestElement extends TestNode {
+  readonly tagName: string;
+  readonly namespaceURI = "http://www.w3.org/1999/xhtml";
+  readonly style: Record<string, string> = {};
+  private readonly attributes = new Map<string, string>();
+  constructor(tagName: string, ownerDocument: TestDocument) { super(1, tagName.toUpperCase()); this.tagName = tagName.toUpperCase(); this.ownerDocument = ownerDocument; }
+  get options(): TestElement[] { return this.childNodes.filter((node): node is TestElement => node instanceof TestElement && node.tagName === "OPTION"); }
+  setAttribute(name: string, value: string): void { this.attributes.set(name, value); }
+  removeAttribute(name: string): void { this.attributes.delete(name); }
+  getAttribute(name: string): string | null { return this.attributes.get(name) ?? null; }
+  hasAttribute(name: string): boolean { return this.attributes.has(name); }
+}
+class TestDocument extends TestNode {
+  readonly nodeType = 9;
+  readonly documentElement: TestElement;
+  readonly body: TestElement;
+  readonly defaultView: Record<string, unknown>;
+  activeElement: TestElement | null;
+  constructor() {
+    super(9, "#document"); this.ownerDocument = this;
+    this.documentElement = this.createElement("html"); this.body = this.createElement("body"); this.documentElement.appendChild(this.body); this.appendChild(this.documentElement);
+    this.activeElement = this.body;
+    this.defaultView = { document: this, navigator: { userAgent: "node" } };
+  }
+  createElement(tagName: string): TestElement { return new TestElement(tagName, this); }
+  createElementNS(_namespace: string, tagName: string): TestElement { return this.createElement(tagName); }
+  createTextNode(value: string): TestText { return new TestText(value, this); }
+  createComment(value: string): TestText { return new TestText(value, this); }
+}
+
+function mountedRoot(): { readonly root: Root; readonly container: TestElement } {
+  const document = new TestDocument();
+  const window = document.defaultView as Record<string, unknown>;
+  Object.assign(window, { Node: TestNode, Element: TestElement, HTMLElement: TestElement, HTMLIFrameElement: TestElement, getSelection: () => null });
+  Object.assign(globalThis, { document, window, Node: TestNode, Element: TestElement, HTMLElement: TestElement, HTMLIFrameElement: TestElement, IS_REACT_ACT_ENVIRONMENT: true });
+  const container = document.createElement("div"); document.body.appendChild(container);
+  return { root: createRoot(container as unknown as Element), container };
+}
+function elements(root: TestNode, tagName: string): TestElement[] {
+  return [root, ...root.childNodes.flatMap((node) => elements(node, tagName))].filter((node): node is TestElement => node instanceof TestElement && node.tagName === tagName);
+}
+function buttons(root: TestNode): TestElement[] { return elements(root, "BUTTON"); }
+function reactProps<T extends Record<string, unknown>>(element: TestElement): T {
+  const key = Object.keys(element).find((candidate) => candidate.startsWith("__reactProps"));
+  if (key === undefined) throw new Error("mounted element is missing React props");
+  return (element as unknown as Record<string, T>)[key];
+}
+function click(button: TestElement): void {
+  const props = reactProps<{ onClick?: () => void }>(button);
+  if (!props.onClick) throw new Error("mounted button is missing React click handler");
+  props.onClick();
+}
+function deferred<T>(): { readonly promise: Promise<T>; resolve(value: T): void } {
+  let resolve!: (value: T) => void;
+  return { promise: new Promise<T>((done) => { resolve = done; }), resolve };
+}
 
 const csrf = "x".repeat(43);
 const item = {
@@ -84,14 +166,21 @@ const definition: QuestionnaireDefinition = {
     {
       type: "single_choice",
       title: "目标",
+      assessmentDimensionKey: "",
+      sidebarProfileField: "",
       required: true,
       placeholderText: "请选择",
+      validation: { minSelections: 1, maxSelections: 1 },
       sortOrder: 0,
       options: [
         {
           text: "增长",
+          score: 0,
+          assessmentTypeKey: "",
+          tagCodes: [],
           isOther: false,
           otherPlaceholder: "",
+          otherMaxLength: 0,
           sortOrder: 0,
         },
       ],
@@ -221,17 +310,185 @@ function mutationArgs(
 }
 
 describe("QuestionnaireListPage UI", () => {
-  it("rejects direct ops and sales access without rendering management controls", () => {
-    for (const role of ["ops", "sales"] as const) {
+  it("allows admin and ops locally while sales remains inert", () => {
+    for (const role of ["admin", "ops"] as const) {
       const client = transport();
       const html = renderToStaticMarkup(
         <QuestionnaireListPage role={role} transport={client} />,
       );
-      expect(html).toContain("当前账号没有问卷管理权限。");
-      expect(html).not.toContain("正在读取问卷列表");
+      expect(html).toContain("正在读取问卷列表");
+      expect(html).not.toContain("当前账号没有问卷管理权限。");
       expect(html).not.toContain("删除");
       expect(client.list).not.toHaveBeenCalled();
     }
+    const client = transport();
+    const html = renderToStaticMarkup(<QuestionnaireListPage role="sales" transport={client} />);
+    expect(html).toContain("当前账号没有问卷管理权限。");
+    expect(client.list).not.toHaveBeenCalled();
+  });
+
+  it("keeps every list command locked until a successful editor save is semantically reread", async () => {
+    const initial = deferred<{ status: number; data: unknown }>();
+    const firstRead = deferred<{ status: number; data: unknown }>();
+    const confirmationRead = deferred<{ status: number; data: unknown }>();
+    let savedQuestionnaire: Record<string, unknown> = item;
+    const envelope = (questionnaire: Record<string, unknown>) => ({
+      ok: true,
+      questionnaire,
+      questions: questionnaire.questions,
+      data: { questionnaire },
+    });
+    const list = vi.fn(() =>
+      list.mock.calls.length === 1
+        ? initial.promise
+        : Promise.resolve({
+            status: 200,
+            data: {
+              ok: true,
+              questionnaires: [item, { ...item, id: 42, name: "disabled", title: "已停用", slug: "disabled", public_path: "/q/disabled", is_disabled: true, enabled: false, status: "disabled" }],
+              items: [item, { ...item, id: 42, name: "disabled", title: "已停用", slug: "disabled", public_path: "/q/disabled", is_disabled: true, enabled: false, status: "disabled" }],
+              data: { questionnaires: [item, { ...item, id: 42, name: "disabled", title: "已停用", slug: "disabled", public_path: "/q/disabled", is_disabled: true, enabled: false, status: "disabled" }] },
+              total: 2,
+              limit: 50,
+              offset: 0,
+            },
+          }),
+    );
+    const definition = vi.fn(() =>
+      definition.mock.calls.length === 1
+        ? firstRead.promise
+        : confirmationRead.promise,
+    );
+    const replace = vi.fn(async (_id: number, request: Record<string, unknown>) => {
+      savedQuestionnaire = {
+        ...item,
+        ...request,
+        id: item.id,
+        enabled: !(request.is_disabled as boolean),
+        status: request.is_disabled ? "disabled" : "active",
+        question_count: (request.questions as readonly unknown[]).length,
+        questions: request.questions,
+      };
+      return {
+        status: 200,
+        data: {
+          ...envelope(savedQuestionnaire),
+          questionnaire_id: item.id,
+          write_model_status: "updated",
+        },
+      };
+    });
+    const client = transport({
+      list: list as never,
+      definition: definition as never,
+      replace: replace as never,
+    });
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(
+        <QuestionnaireListPage
+          role="admin"
+          readCookie={() => `aicrm_csrf=${csrf}`}
+          transport={client}
+        />,
+      );
+    });
+    await act(async () => {
+      initial.resolve({
+        status: 200,
+        data: {
+          ok: true,
+          questionnaires: [item, { ...item, id: 42, name: "disabled", title: "已停用", slug: "disabled", public_path: "/q/disabled", is_disabled: true, enabled: false, status: "disabled" }],
+          items: [item, { ...item, id: 42, name: "disabled", title: "已停用", slug: "disabled", public_path: "/q/disabled", is_disabled: true, enabled: false, status: "disabled" }],
+          data: { questionnaires: [item, { ...item, id: 42, name: "disabled", title: "已停用", slug: "disabled", public_path: "/q/disabled", is_disabled: true, enabled: false, status: "disabled" }] },
+          total: 2,
+          limit: 50,
+          offset: 0,
+        },
+      });
+      await Promise.resolve();
+    });
+    const byText = (text: string) => {
+      const button = buttons(mounted.container).find((candidate) => candidate.textContent === text);
+      if (!button) throw new Error(`missing ${text}`);
+      return button;
+    };
+    await act(async () => { click(byText("编辑问卷")); });
+    await act(async () => { firstRead.resolve({ status: 200, data: envelope(item) }); await Promise.resolve(); });
+    await act(async () => { click(byText("保存完整定义")); await Promise.resolve(); });
+    expect(replace).toHaveBeenCalledOnce();
+    expect(definition).toHaveBeenCalledTimes(2);
+    for (const text of ["新建问卷", "编辑问卷", "复制问卷", "停用", "删除"]) {
+      expect(byText(text).hasAttribute("disabled")).toBe(true);
+      await act(async () => { click(byText(text)); });
+    }
+    expect(replace).toHaveBeenCalledOnce();
+    expect(definition).toHaveBeenCalledTimes(2);
+    expect(client.disable).not.toHaveBeenCalled();
+    expect(client.duplicate).not.toHaveBeenCalled();
+    expect(client.remove).not.toHaveBeenCalled();
+    await act(async () => {
+      confirmationRead.resolve({ status: 200, data: envelope(savedQuestionnaire) });
+      await Promise.resolve();
+    });
+    expect(mounted.container.textContent).toContain("问卷定义已保存，已重新读取确认。");
+    expect(byText("停用").hasAttribute("disabled")).toBe(false);
+    await act(async () => { mounted.root.unmount(); });
+  });
+
+  it("keeps every local write locked after an invalid or unavailable editor receipt", async () => {
+    for (const response of [
+      { status: 503, data: {} },
+      { status: 200, data: { ok: true } },
+    ]) {
+      const replace = vi.fn(async () => response);
+      const client = transport({ replace: replace as never });
+      const mounted = mountedRoot();
+      await act(async () => {
+        mounted.root.render(
+          <QuestionnaireListPage
+            role="ops"
+            readCookie={() => `aicrm_csrf=${csrf}`}
+            transport={client}
+          />,
+        );
+        await Promise.resolve();
+      });
+      const byText = (text: string) => {
+        const button = buttons(mounted.container).find((candidate) => candidate.textContent === text);
+        if (!button) throw new Error(`missing ${text}`);
+        return button;
+      };
+      await act(async () => { click(byText("编辑问卷")); await Promise.resolve(); });
+      await act(async () => { click(byText("保存完整定义")); await Promise.resolve(); });
+      expect(replace).toHaveBeenCalledOnce();
+      expect(mounted.container.textContent).toContain("问卷写入结果未知");
+      for (const text of ["新建问卷", "编辑问卷", "复制问卷", "停用"]) {
+        expect(byText(text).hasAttribute("disabled")).toBe(true);
+        await act(async () => { click(byText(text)); });
+      }
+      expect(replace).toHaveBeenCalledOnce();
+      expect(client.disable).not.toHaveBeenCalled();
+      expect(client.duplicate).not.toHaveBeenCalled();
+      await act(async () => { mounted.root.unmount(); });
+    }
+  });
+
+  it("renders the local full-definition editor without public, submission, or provider controls", () => {
+    const html = renderToStaticMarkup(
+      <QuestionnaireEditorPanel
+        state={{ kind: "ready", draft: newQuestionnaireEditorDraft() }}
+        onCancel={() => undefined}
+        onDraft={() => undefined}
+        onSave={() => undefined}
+      />,
+    );
+    expect(html).toContain("新建问卷草稿");
+    expect(html).toContain("添加文本题");
+    expect(html).toContain("添加单选题");
+    expect(html).toContain("保存完整定义");
+    expect(html).not.toContain("href=");
+    expect(html).not.toContain("/q/");
   });
 
   it("renders empty and paginated states, hides active delete, and disables all actions while busy", () => {
@@ -270,7 +527,7 @@ describe("QuestionnaireListPage UI", () => {
       />,
     );
     expect(page).toContain(">复制问卷<");
-    expect(busy.match(/disabled=""/g)).toHaveLength(13);
+    expect(busy.match(/disabled=""/g)).toHaveLength(16);
   });
 
   it("renders only the local submission aggregate and retains it on a local result read failure", () => {
