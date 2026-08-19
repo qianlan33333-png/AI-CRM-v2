@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  addQuestionnaireEditorOption,
+  addQuestionnaireEditorQuestion,
   deleteQuestionnaire,
   duplicateQuestionnaire,
+  loadQuestionnaireEditor,
   loadQuestionnaireDefinition,
   loadQuestionnaires,
   loadQuestionnairePreflight,
@@ -9,7 +12,14 @@ import {
   nextQuestionnaireOffset,
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
+  questionnaireEditorRequest,
+  removeQuestionnaireEditorOption,
+  removeQuestionnaireEditorQuestion,
+  saveQuestionnaireEditor,
+  setQuestionnaireEditorQuestionType,
   setQuestionnaireEnabled,
+  newQuestionnaireEditorDraft,
+  newQuestionnaireEditorIdempotencyKey,
   type QuestionnaireItem,
   type QuestionnaireListTransport,
 } from "./questionnaire-list";
@@ -75,6 +85,20 @@ function responseQuestionnaire(
     status: disabled ? "disabled" : "active",
   };
 }
+function editorResponseQuestionnaire(
+  request: NonNullable<ReturnType<typeof questionnaireEditorRequest>>,
+  id = 42,
+) {
+  return {
+    ...responseQuestionnaire(request.is_disabled, id, request.slug),
+    ...request,
+    id,
+    enabled: !request.is_disabled,
+    status: request.is_disabled ? "disabled" : "active",
+    question_count: request.questions.length,
+    questions: request.questions,
+  };
+}
 function mutationResponse(
   disabled: boolean,
   write_model_status: "enabled" | "disabled" | "deleted",
@@ -123,10 +147,12 @@ function transport(
         offset: 0,
       },
     })),
+    create: vi.fn(async () => ({ status: 503, data: {} })),
     definition: vi.fn(async () => ({
       status: 200,
       data: definitionResponse(),
     })),
+    replace: vi.fn(async () => ({ status: 503, data: {} })),
     disable: vi.fn(async (_id, body) => ({
       status: 200,
       data: mutationResponse(
@@ -228,14 +254,21 @@ describe("questionnaire list transport", () => {
           {
             type: "single_choice",
             title: "目标",
+            assessmentDimensionKey: "",
+            sidebarProfileField: "",
             required: true,
             placeholderText: "",
+            validation: undefined,
             sortOrder: 0,
             options: [
               {
                 text: "增长",
+                score: 0,
+                assessmentTypeKey: "",
+                tagCodes: [],
                 isOther: false,
                 otherPlaceholder: "",
+                otherMaxLength: 0,
                 sortOrder: 0,
               },
             ],
@@ -835,5 +868,92 @@ describe("questionnaire list transport", () => {
     await expect(
       deleteQuestionnaire(enabledDeleteClient, disabled, "x".repeat(43)),
     ).resolves.toEqual({ status: "invalid" });
+  });
+  it("creates a disabled textarea draft and keeps question and option order local", () => {
+    const initial = newQuestionnaireEditorDraft();
+    expect(initial).toMatchObject({ isDisabled: true, questions: [{ type: "textarea", sortOrder: 0, options: [] }] });
+    const choice = addQuestionnaireEditorQuestion(initial, "single_choice");
+    expect(choice.questions).toHaveLength(2);
+    expect(choice.questions[1]).toMatchObject({ type: "single_choice", sortOrder: 1, options: [{ sortOrder: 0 }] });
+    const options = addQuestionnaireEditorOption(choice, 1);
+    expect(options.questions[1].options.map((option) => option.sortOrder)).toEqual([0, 1]);
+    const shortened = removeQuestionnaireEditorOption(options, 1, 0);
+    expect(shortened.questions[1].options.map((option) => option.sortOrder)).toEqual([0]);
+    expect(shortened.questions[1].validation).toEqual({ minSelections: 0, maxSelections: 1 });
+    expect(removeQuestionnaireEditorQuestion(initial, 0)).toBe(initial);
+    expect(setQuestionnaireEditorQuestionType(options, 1, "mobile").questions[1]).toMatchObject({ type: "mobile", options: [] });
+  });
+  it("loads a full ordered definition into the editor and saves only the frozen request with CSRF and a unique key", async () => {
+    const loaded = await loadQuestionnaireEditor(transport(), item.id);
+    expect(loaded.status).toBe("loaded");
+    if (loaded.status !== "loaded") return;
+    const valid = {
+      ...loaded.draft,
+      name: "editor",
+      title: "编辑器问卷",
+      slug: "editor",
+      questions: [{
+        type: "textarea" as const,
+        title: "你的目标",
+        assessmentDimensionKey: "",
+        sidebarProfileField: "",
+        required: true,
+        placeholderText: "请输入",
+        validation: { minLength: 1, maxLength: 2000 },
+        sortOrder: 0,
+        options: [],
+      }],
+    };
+    expect(questionnaireEditorRequest(valid)).toEqual({
+      name: "editor", title: "编辑器问卷", description: "", answer_display_mode: "all_in_one",
+      assessment_enabled: false, assessment_config: {}, slug: "editor", is_disabled: false,
+      questions: [{ type: "textarea", title: "你的目标", assessment_dimension_key: "", sidebar_profile_field: "", required: true, sort_order: 0, placeholder_text: "请输入", validation: { min_length: 1, max_length: 2000 }, options: [] }],
+      score_rules: [],
+    });
+    const request = questionnaireEditorRequest(valid)!;
+    const created = editorResponseQuestionnaire(request);
+    const client = transport({
+      create: vi.fn(async () => ({ status: 200, data: { ok: true, questionnaire: created, questionnaire_id: 42, questions: created.questions, data: { questionnaire: created } } })) as never,
+    });
+    const key = "questionnaire-create:123e4567-e89b-42d3-a456-426614174000";
+    await expect(saveQuestionnaireEditor(client, undefined, valid, "x".repeat(43), key)).resolves.toMatchObject({ status: "saved", item: { id: 42 }, request });
+    expect(client.create).toHaveBeenCalledWith(request, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": "x".repeat(43), "Idempotency-Key": key },
+    });
+    expect(newQuestionnaireEditorIdempotencyKey("create", { randomUUID: () => "123e4567-e89b-42d3-a456-426614174000" })).toBe(key);
+  });
+  it("rejects invalid drafts and malformed editor write mirrors before a blind retry", async () => {
+    const invalid = { ...newQuestionnaireEditorDraft(), name: "x", title: "x", slug: "x", questions: [{ ...newQuestionnaireEditorDraft().questions[0], title: "" }] };
+    const client = transport();
+    await expect(saveQuestionnaireEditor(client, undefined, invalid, "x".repeat(43), "questionnaire-create:123e4567-e89b-42d3-a456-426614174000")).resolves.toEqual({ status: "invalid" });
+    expect(client.create).not.toHaveBeenCalled();
+    expect(newQuestionnaireEditorIdempotencyKey("replace", { randomUUID: () => "not-a-uuid" })).toBeUndefined();
+    const valid = {
+      ...newQuestionnaireEditorDraft(), name: "editor", title: "编辑", slug: "editor", questions: [{ ...newQuestionnaireEditorDraft().questions[0], title: "目标" }],
+    };
+    const malformed = transport({
+      create: vi.fn(async () => ({ status: 200, data: { ok: true, questionnaire: responseQuestionnaire(true, 42, "editor"), questionnaire_id: 42, questions: [], data: { questionnaire: responseQuestionnaire(true, 42, "editor") } } })) as never,
+    });
+    await expect(saveQuestionnaireEditor(malformed, undefined, valid, "x".repeat(43), "questionnaire-create:123e4567-e89b-42d3-a456-426614174000")).resolves.toEqual({ status: "invalid" });
+    expect(malformed.create).toHaveBeenCalledTimes(1);
+  });
+  it("rejects a 200 editor receipt or reread that drifts from any submitted semantic field", async () => {
+    const valid = {
+      ...newQuestionnaireEditorDraft(), name: "editor", title: "编辑", slug: "editor", questions: [{ ...newQuestionnaireEditorDraft().questions[0], title: "目标" }],
+    };
+    const request = questionnaireEditorRequest(valid)!;
+    const created = editorResponseQuestionnaire(request);
+    for (const questionnaire of [
+      { ...created, title: "漂移" },
+      { ...created, questions: [{ ...created.questions[0], validation: { min_length: 2, max_length: 2000 } }] },
+      { ...created, questions: [{ ...created.questions[0], options: [{ option_text: "意外", score: 0, assessment_type_key: "", tag_codes: [], is_other: false, other_placeholder: "", other_max_length: 0, sort_order: 0 }] }] },
+    ]) {
+      const client = transport({ create: vi.fn(async () => ({ status: 200, data: { ok: true, questionnaire, questionnaire_id: 42, questions: questionnaire.questions, data: { questionnaire } } })) as never });
+      await expect(saveQuestionnaireEditor(client, undefined, valid, "x".repeat(43), "questionnaire-create:123e4567-e89b-42d3-a456-426614174000")).resolves.toEqual({ status: "invalid" });
+    }
+    const drifted = { ...created, title: "漂移" };
+    const rereadClient = transport({ definition: vi.fn(async () => ({ status: 200, data: { ok: true, questionnaire: drifted, questions: drifted.questions, data: { questionnaire: drifted } } })) as never });
+    await expect(loadQuestionnaireEditor(rereadClient, 42, request)).resolves.toEqual({ status: "invalid" });
   });
 });

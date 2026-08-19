@@ -401,7 +401,7 @@ describe("Web shell routes", () => {
     expect(client.list).not.toHaveBeenCalled();
   });
 
-  it("renders the questionnaire carrier route for admin and keeps non-admins fail-closed", () => {
+  it("renders the questionnaire carrier route for admin and ops while sales remains fail-closed", () => {
     vi.stubGlobal("window", {
       location: { pathname: QUESTIONNAIRE_LIST_PATH },
     });
@@ -417,7 +417,7 @@ describe("Web shell routes", () => {
           }}
         />,
       ),
-    ).toContain("当前账号没有问卷管理权限。");
+    ).toContain("正在读取问卷列表");
     expect(
       renderToStaticMarkup(
         <App
@@ -721,6 +721,7 @@ describe("Web shell routes", () => {
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
       "/admin/image-library",
+      QUESTIONNAIRE_LIST_PATH,
       "/admin/wecom-tags",
       "/admin/channels",
       "/admin/coupons",

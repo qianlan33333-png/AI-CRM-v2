@@ -1,4 +1,5 @@
 import {
+  createLegacyQuestionnaire,
   deleteLegacyQuestionnaire,
   disableLegacyQuestionnaire,
   duplicateLegacyQuestionnaire,
@@ -6,7 +7,9 @@ import {
   getLegacyQuestionnairePreflight,
   getLegacyQuestionnaireResults,
   listLegacyQuestionnaires,
+  replaceLegacyQuestionnaire,
   type LegacyQuestionnaire,
+  type LegacyQuestionnaireCreateRequest,
 } from "./api/generated/health";
 
 export type QuestionnaireRole = "admin" | "ops" | "sales";
@@ -26,16 +29,28 @@ export interface QuestionnaireItem {
 
 export interface QuestionnaireDefinitionOption {
   readonly text: string;
+  readonly score: number;
+  readonly assessmentTypeKey: string;
+  readonly tagCodes: readonly string[];
   readonly isOther: boolean;
   readonly otherPlaceholder: string;
+  readonly otherMaxLength: number;
   readonly sortOrder: number;
 }
 
 export interface QuestionnaireDefinitionQuestion {
   readonly type: "single_choice" | "multi_choice" | "textarea" | "mobile";
   readonly title: string;
+  readonly assessmentDimensionKey: string;
+  readonly sidebarProfileField: string;
   readonly required: boolean;
   readonly placeholderText: string;
+  readonly validation?: {
+    readonly minSelections?: number;
+    readonly maxSelections?: number;
+    readonly minLength?: number;
+    readonly maxLength?: number;
+  };
   readonly sortOrder: number;
   readonly options: readonly QuestionnaireDefinitionOption[];
 }
@@ -47,9 +62,48 @@ export interface QuestionnaireDefinition {
   readonly questions: readonly QuestionnaireDefinitionQuestion[];
 }
 
+export type QuestionnaireEditorQuestionType = QuestionnaireDefinitionQuestion["type"];
+export interface QuestionnaireEditorOption {
+  readonly optionText: string;
+  readonly score: number;
+  readonly assessmentTypeKey: string;
+  readonly tagCodes: readonly string[];
+  readonly isOther: boolean;
+  readonly otherPlaceholder: string;
+  readonly otherMaxLength: number;
+  readonly sortOrder: number;
+}
+export interface QuestionnaireEditorQuestion {
+  readonly type: QuestionnaireEditorQuestionType;
+  readonly title: string;
+  readonly assessmentDimensionKey: string;
+  readonly sidebarProfileField: string;
+  readonly required: boolean;
+  readonly placeholderText: string;
+  readonly validation?: {
+    readonly minSelections?: number;
+    readonly maxSelections?: number;
+    readonly minLength?: number;
+    readonly maxLength?: number;
+  };
+  readonly sortOrder: number;
+  readonly options: readonly QuestionnaireEditorOption[];
+}
+export interface QuestionnaireEditorDraft {
+  readonly name: string;
+  readonly title: string;
+  readonly description: string;
+  readonly answerDisplayMode: "all_in_one" | "one_by_one";
+  readonly slug: string;
+  readonly isDisabled: boolean;
+  readonly questions: readonly QuestionnaireEditorQuestion[];
+}
+
 export interface QuestionnaireListTransport {
   readonly list: typeof listLegacyQuestionnaires;
+  readonly create: typeof createLegacyQuestionnaire;
   readonly definition: typeof getLegacyQuestionnaire;
+  readonly replace: typeof replaceLegacyQuestionnaire;
   readonly disable: typeof disableLegacyQuestionnaire;
   readonly duplicate: typeof duplicateLegacyQuestionnaire;
   readonly remove: typeof deleteLegacyQuestionnaire;
@@ -59,7 +113,9 @@ export interface QuestionnaireListTransport {
 
 export const generatedQuestionnaireListTransport: QuestionnaireListTransport = {
   list: listLegacyQuestionnaires,
+  create: createLegacyQuestionnaire,
   definition: getLegacyQuestionnaire,
+  replace: replaceLegacyQuestionnaire,
   disable: disableLegacyQuestionnaire,
   duplicate: duplicateLegacyQuestionnaire,
   remove: deleteLegacyQuestionnaire,
@@ -371,13 +427,25 @@ function questionnaireDefinition(
       return {
         type: question.type as QuestionnaireDefinitionQuestion["type"],
         title: question.title as string,
+        assessmentDimensionKey: question.assessment_dimension_key as string,
+        sidebarProfileField: question.sidebar_profile_field as string,
         required: question.required as boolean,
         placeholderText: question.placeholder_text as string,
+        validation: question.validation === undefined ? undefined : {
+          ...(record(question.validation) && question.validation.min_selections !== undefined ? { minSelections: question.validation.min_selections as number } : {}),
+          ...(record(question.validation) && question.validation.max_selections !== undefined ? { maxSelections: question.validation.max_selections as number } : {}),
+          ...(record(question.validation) && question.validation.min_length !== undefined ? { minLength: question.validation.min_length as number } : {}),
+          ...(record(question.validation) && question.validation.max_length !== undefined ? { maxLength: question.validation.max_length as number } : {}),
+        },
         sortOrder: question.sort_order as number,
         options: options.map((option) => ({
           text: option.option_text as string,
+          score: option.score as number,
+          assessmentTypeKey: option.assessment_type_key as string,
+          tagCodes: option.tag_codes as readonly string[],
           isOther: option.is_other as boolean,
           otherPlaceholder: option.other_placeholder as string,
+          otherMaxLength: option.other_max_length as number,
           sortOrder: option.sort_order as number,
         })),
       };
@@ -387,6 +455,488 @@ function questionnaireDefinition(
 
 function questionnaire(value: unknown): QuestionnaireItem | undefined {
   return questionnaireDefinition(value)?.item;
+}
+
+const QUESTION_TYPES: ReadonlySet<QuestionnaireEditorQuestionType> = new Set([
+  "single_choice", "multi_choice", "textarea", "mobile",
+]);
+
+function editorOption(sortOrder: number): QuestionnaireEditorOption {
+  return {
+    optionText: "",
+    score: 0,
+    assessmentTypeKey: "",
+    tagCodes: [],
+    isOther: false,
+    otherPlaceholder: "",
+    otherMaxLength: 0,
+    sortOrder,
+  };
+}
+
+function editorQuestion(
+  sortOrder: number,
+  type: QuestionnaireEditorQuestionType = "textarea",
+): QuestionnaireEditorQuestion {
+  return {
+    type,
+    title: "",
+    assessmentDimensionKey: "",
+    sidebarProfileField: "",
+    required: false,
+    placeholderText: "",
+    validation:
+      type === "textarea"
+        ? { minLength: 0, maxLength: 2000 }
+        : type === "mobile"
+          ? { minLength: 0, maxLength: 32 }
+          : { minSelections: 0, maxSelections: type === "single_choice" ? 1 : 1 },
+    sortOrder,
+    options: type === "single_choice" || type === "multi_choice" ? [editorOption(0)] : [],
+  };
+}
+
+export function newQuestionnaireEditorDraft(): QuestionnaireEditorDraft {
+  return {
+    name: "",
+    title: "",
+    description: "",
+    answerDisplayMode: "all_in_one",
+    slug: "",
+    // A new definition stays local-disabled until the administrator explicitly enables it.
+    isDisabled: true,
+    questions: [editorQuestion(0)],
+  };
+}
+
+export function questionnaireEditorDraft(
+  definition: QuestionnaireDefinition,
+): QuestionnaireEditorDraft {
+  return {
+    name: definition.item.name,
+    title: definition.item.title,
+    description: definition.description,
+    answerDisplayMode: definition.answerDisplayMode,
+    slug: definition.item.publicPath.slice(3),
+    isDisabled: definition.item.isDisabled,
+    questions: definition.questions.map((question) => ({
+      type: question.type,
+      title: question.title,
+      assessmentDimensionKey: question.assessmentDimensionKey,
+      sidebarProfileField: question.sidebarProfileField,
+      required: question.required,
+      placeholderText: question.placeholderText,
+      validation: question.validation,
+      sortOrder: question.sortOrder,
+      options: question.options.map((option) => ({
+        optionText: option.text,
+        score: option.score,
+        assessmentTypeKey: option.assessmentTypeKey,
+        tagCodes: option.tagCodes,
+        isOther: option.isOther,
+        otherPlaceholder: option.otherPlaceholder,
+        otherMaxLength: option.otherMaxLength,
+        sortOrder: option.sortOrder,
+      })),
+    })),
+  };
+}
+
+function reorderQuestions(
+  questions: readonly QuestionnaireEditorQuestion[],
+): readonly QuestionnaireEditorQuestion[] {
+  return questions.map((question, index) => ({ ...question, sortOrder: index }));
+}
+function reorderOptions(
+  options: readonly QuestionnaireEditorOption[],
+): readonly QuestionnaireEditorOption[] {
+  return options.map((option, index) => ({ ...option, sortOrder: index }));
+}
+
+export function addQuestionnaireEditorQuestion(
+  draft: QuestionnaireEditorDraft,
+  type: QuestionnaireEditorQuestionType = "textarea",
+): QuestionnaireEditorDraft {
+  if (!QUESTION_TYPES.has(type) || draft.questions.length >= 100) return draft;
+  return {
+    ...draft,
+    questions: [...draft.questions, editorQuestion(draft.questions.length, type)],
+  };
+}
+export function removeQuestionnaireEditorQuestion(
+  draft: QuestionnaireEditorDraft,
+  index: number,
+): QuestionnaireEditorDraft {
+  if (!Number.isSafeInteger(index) || index < 0 || index >= draft.questions.length || draft.questions.length <= 1)
+    return draft;
+  return { ...draft, questions: reorderQuestions(draft.questions.filter((_, position) => position !== index)) };
+}
+export function moveQuestionnaireEditorQuestion(
+  draft: QuestionnaireEditorDraft,
+  index: number,
+  direction: -1 | 1,
+): QuestionnaireEditorDraft {
+  const target = index + direction;
+  if (!Number.isSafeInteger(index) || target < 0 || target >= draft.questions.length) return draft;
+  const questions = [...draft.questions];
+  [questions[index], questions[target]] = [questions[target], questions[index]];
+  return { ...draft, questions: reorderQuestions(questions) };
+}
+export function updateQuestionnaireEditorQuestion(
+  draft: QuestionnaireEditorDraft,
+  index: number,
+  update: Partial<Omit<QuestionnaireEditorQuestion, "sortOrder" | "options">> & {
+    readonly options?: readonly QuestionnaireEditorOption[];
+  },
+): QuestionnaireEditorDraft {
+  if (!Number.isSafeInteger(index) || index < 0 || index >= draft.questions.length) return draft;
+  const questions = draft.questions.map((question, position) =>
+    position === index ? { ...question, ...update, sortOrder: question.sortOrder, options: update.options ?? question.options } : question,
+  );
+  return { ...draft, questions };
+}
+export function setQuestionnaireEditorQuestionType(
+  draft: QuestionnaireEditorDraft,
+  index: number,
+  type: QuestionnaireEditorQuestionType,
+): QuestionnaireEditorDraft {
+  if (!QUESTION_TYPES.has(type)) return draft;
+  const current = draft.questions[index];
+  if (!current) return draft;
+  const choice = type === "single_choice" || type === "multi_choice";
+  const validation = choice
+    ? { minSelections: current.required ? 1 : 0, maxSelections: type === "single_choice" ? 1 : Math.max(1, current.options.length) }
+    : { minLength: current.required ? 1 : 0, maxLength: type === "mobile" ? 32 : 2000 };
+  return updateQuestionnaireEditorQuestion(draft, index, {
+    type,
+    placeholderText: choice ? "" : current.placeholderText,
+    validation,
+    options: choice ? (current.options.length ? reorderOptions(current.options) : [editorOption(0)]) : [],
+  });
+}
+export function setQuestionnaireEditorQuestionRequired(
+  draft: QuestionnaireEditorDraft,
+  index: number,
+  required: boolean,
+): QuestionnaireEditorDraft {
+  const current = draft.questions[index];
+  if (!current || typeof required !== "boolean") return draft;
+  const choice = current.type === "single_choice" || current.type === "multi_choice";
+  const validation = choice
+    ? {
+        minSelections: required ? 1 : 0,
+        maxSelections: current.type === "single_choice" ? 1 : Math.max(1, current.options.length),
+      }
+    : {
+        minLength: required ? 1 : 0,
+        maxLength: current.type === "mobile" ? 32 : 2000,
+      };
+  return updateQuestionnaireEditorQuestion(draft, index, { required, validation });
+}
+export function addQuestionnaireEditorOption(
+  draft: QuestionnaireEditorDraft,
+  questionIndex: number,
+): QuestionnaireEditorDraft {
+  const question = draft.questions[questionIndex];
+  if (!question || (question.type !== "single_choice" && question.type !== "multi_choice") || question.options.length >= 100)
+    return draft;
+  return updateQuestionnaireEditorQuestion(draft, questionIndex, {
+    options: [...question.options, editorOption(question.options.length)],
+  });
+}
+export function removeQuestionnaireEditorOption(
+  draft: QuestionnaireEditorDraft,
+  questionIndex: number,
+  optionIndex: number,
+): QuestionnaireEditorDraft {
+  const question = draft.questions[questionIndex];
+  if (!question || !Number.isSafeInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length || question.options.length <= 1)
+    return draft;
+  const options = reorderOptions(question.options.filter((_, index) => index !== optionIndex));
+  return updateQuestionnaireEditorQuestion(draft, questionIndex, {
+    options,
+    validation: {
+      minSelections: question.required ? 1 : 0,
+      maxSelections: question.type === "single_choice" ? 1 : Math.min(options.length, question.validation?.maxSelections ?? options.length),
+    },
+  });
+}
+export function moveQuestionnaireEditorOption(
+  draft: QuestionnaireEditorDraft,
+  questionIndex: number,
+  optionIndex: number,
+  direction: -1 | 1,
+): QuestionnaireEditorDraft {
+  const question = draft.questions[questionIndex];
+  const target = optionIndex + direction;
+  if (!question || !Number.isSafeInteger(optionIndex) || target < 0 || target >= question.options.length) return draft;
+  const options = [...question.options];
+  [options[optionIndex], options[target]] = [options[target], options[optionIndex]];
+  return updateQuestionnaireEditorQuestion(draft, questionIndex, { options: reorderOptions(options) });
+}
+export function updateQuestionnaireEditorOption(
+  draft: QuestionnaireEditorDraft,
+  questionIndex: number,
+  optionIndex: number,
+  update: Partial<Omit<QuestionnaireEditorOption, "sortOrder">>,
+): QuestionnaireEditorDraft {
+  const question = draft.questions[questionIndex];
+  if (!question || !Number.isSafeInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length)
+    return draft;
+  return updateQuestionnaireEditorQuestion(draft, questionIndex, {
+    options: question.options.map((option, index) => index === optionIndex ? { ...option, ...update, sortOrder: option.sortOrder } : option),
+  });
+}
+
+function textExact(value: unknown, maximum: number, empty = false): value is string {
+  return text(value, maximum, empty) && value === value.trim();
+}
+function editorValidation(value: QuestionnaireEditorQuestion["validation"]): boolean {
+  if (value === undefined) return true;
+  return validation({
+    ...(value.minSelections === undefined ? {} : { min_selections: value.minSelections }),
+    ...(value.maxSelections === undefined ? {} : { max_selections: value.maxSelections }),
+    ...(value.minLength === undefined ? {} : { min_length: value.minLength }),
+    ...(value.maxLength === undefined ? {} : { max_length: value.maxLength }),
+  });
+}
+export function questionnaireEditorRequest(
+  draft: QuestionnaireEditorDraft,
+): LegacyQuestionnaireCreateRequest | undefined {
+  if (
+    !textExact(draft.name, 120) ||
+    !textExact(draft.title, 300) ||
+    !textExact(draft.description, 10000, true) ||
+    !questionnaireSlug(draft.slug) ||
+    (draft.answerDisplayMode !== "all_in_one" && draft.answerDisplayMode !== "one_by_one") ||
+    typeof draft.isDisabled !== "boolean" ||
+    draft.questions.length < 1 || draft.questions.length > 100
+  ) return undefined;
+  const questions = draft.questions.map((question, index) => ({
+    type: question.type,
+    title: question.title,
+    assessment_dimension_key: question.assessmentDimensionKey,
+    sidebar_profile_field: question.sidebarProfileField,
+    required: question.required,
+    sort_order: index,
+    placeholder_text: question.placeholderText,
+    ...(question.validation === undefined ? {} : {
+      validation: {
+        ...(question.validation.minSelections === undefined ? {} : { min_selections: question.validation.minSelections }),
+        ...(question.validation.maxSelections === undefined ? {} : { max_selections: question.validation.maxSelections }),
+        ...(question.validation.minLength === undefined ? {} : { min_length: question.validation.minLength }),
+        ...(question.validation.maxLength === undefined ? {} : { max_length: question.validation.maxLength }),
+      },
+    }),
+    options: question.options.map((option, optionIndex) => ({
+      option_text: option.optionText,
+      score: option.score,
+      assessment_type_key: option.assessmentTypeKey,
+      tag_codes: [...option.tagCodes],
+      is_other: option.isOther,
+      other_placeholder: option.otherPlaceholder,
+      other_max_length: option.otherMaxLength,
+      sort_order: optionIndex,
+    })),
+  }));
+  if (!frozenQuestions(questions) || !questions.every((question) => {
+    const source = draft.questions[question.sort_order];
+    return source !== undefined && editorValidation(source.validation);
+  })) return undefined;
+  return {
+    name: draft.name,
+    title: draft.title,
+    description: draft.description,
+    answer_display_mode: draft.answerDisplayMode,
+    assessment_enabled: false,
+    assessment_config: {},
+    slug: draft.slug,
+    is_disabled: draft.isDisabled,
+    questions,
+    score_rules: [],
+  };
+}
+
+export type QuestionnaireEditorLoadResult =
+  | { readonly status: "loaded"; readonly item: QuestionnaireItem; readonly draft: QuestionnaireEditorDraft }
+  | { readonly status: QuestionnaireFailure };
+export type QuestionnaireEditorSaveResult =
+  | { readonly status: "saved"; readonly item: QuestionnaireItem; readonly request: LegacyQuestionnaireCreateRequest }
+  | { readonly status: QuestionnaireFailure };
+
+function sameEditorValidation(
+  left: LegacyQuestionnaireCreateRequest["questions"][number]["validation"] | undefined,
+  right: LegacyQuestionnaireCreateRequest["questions"][number]["validation"] | undefined,
+): boolean {
+  const leftKeys = left === undefined ? [] : Object.keys(left).sort();
+  const rightKeys = right === undefined ? [] : Object.keys(right).sort();
+  return leftKeys.length === rightKeys.length && leftKeys.every((key, index) => key === rightKeys[index] && left?.[key as keyof typeof left] === right?.[key as keyof typeof right]);
+}
+
+function sameEditorRequest(
+  left: LegacyQuestionnaireCreateRequest,
+  right: LegacyQuestionnaireCreateRequest,
+): boolean {
+  if (
+    left.name !== right.name || left.title !== right.title ||
+    left.description !== right.description ||
+    left.answer_display_mode !== right.answer_display_mode ||
+    left.assessment_enabled !== right.assessment_enabled ||
+    JSON.stringify(left.assessment_config) !== JSON.stringify(right.assessment_config) ||
+    left.slug !== right.slug || left.is_disabled !== right.is_disabled ||
+    JSON.stringify(left.score_rules) !== JSON.stringify(right.score_rules) ||
+    left.questions.length !== right.questions.length
+  ) return false;
+  return left.questions.every((question, index) => {
+    const candidate = right.questions[index];
+    if (!candidate || question.type !== candidate.type || question.title !== candidate.title ||
+      question.assessment_dimension_key !== candidate.assessment_dimension_key ||
+      question.sidebar_profile_field !== candidate.sidebar_profile_field || question.required !== candidate.required ||
+      question.sort_order !== candidate.sort_order || question.placeholder_text !== candidate.placeholder_text ||
+      !sameEditorValidation(question.validation, candidate.validation) || question.options.length !== candidate.options.length) return false;
+    return question.options.every((option, optionIndex) => {
+      const other = candidate.options[optionIndex];
+      return other !== undefined && option.option_text === other.option_text && option.score === other.score &&
+        option.assessment_type_key === other.assessment_type_key && JSON.stringify(option.tag_codes) === JSON.stringify(other.tag_codes) &&
+        option.is_other === other.is_other && option.other_placeholder === other.other_placeholder &&
+        option.other_max_length === other.other_max_length && option.sort_order === other.sort_order;
+    });
+  });
+}
+
+function editorDefinitionRequest(
+  definition: QuestionnaireDefinition,
+): LegacyQuestionnaireCreateRequest | undefined {
+  return questionnaireEditorRequest(questionnaireEditorDraft(definition));
+}
+
+function editorDefinitionResult(
+  body: unknown,
+  expectedID: number,
+  expectedRequest?: LegacyQuestionnaireCreateRequest,
+): QuestionnaireDefinition | undefined {
+  if (
+    !record(body) ||
+    !exact(body, ["ok", "questionnaire", "questions", "data"]) ||
+    body.ok !== true ||
+    !record(body.questionnaire) ||
+    !Array.isArray(body.questions) ||
+    !record(body.data) ||
+    !exact(body.data, ["questionnaire"]) ||
+    JSON.stringify(body.questions) !== JSON.stringify(body.questionnaire.questions) ||
+    JSON.stringify(body.data.questionnaire) !== JSON.stringify(body.questionnaire)
+  ) return undefined;
+  const definition = questionnaireDefinition(body.questionnaire);
+  if (definition?.item.id !== expectedID) return undefined;
+  const observed = editorDefinitionRequest(definition);
+  return observed !== undefined && (expectedRequest === undefined || sameEditorRequest(observed, expectedRequest))
+    ? definition
+    : undefined;
+}
+
+export async function loadQuestionnaireEditor(
+  transport: QuestionnaireListTransport,
+  questionnaireID: number,
+  expectedRequest?: LegacyQuestionnaireCreateRequest,
+): Promise<QuestionnaireEditorLoadResult> {
+  if (!positive(questionnaireID)) return { status: "invalid" };
+  try {
+    const response = await transport.definition(questionnaireID, { credentials: "same-origin" });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const definition = editorDefinitionResult(response.data, questionnaireID, expectedRequest);
+    return definition
+      ? { status: "loaded", item: definition.item, draft: questionnaireEditorDraft(definition) }
+      : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export function newQuestionnaireEditorIdempotencyKey(
+  operation: "create" | "replace",
+  source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
+): string | undefined {
+  try {
+    const uuid = source?.randomUUID();
+    return typeof uuid === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid)
+      ? `questionnaire-${operation}:${uuid}`
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function validEditorCSRF(value: string): boolean {
+  return /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+function validEditorIdempotencyKey(value: string): boolean {
+  return /^[A-Za-z0-9:_-]{16,128}$/.test(value) && value === value.trim();
+}
+function editorWriteOptions(csrfToken: string, idempotencyKey: string): RequestInit | undefined {
+  return validEditorCSRF(csrfToken) && validEditorIdempotencyKey(idempotencyKey)
+    ? {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Idempotency-Key": idempotencyKey,
+        },
+      }
+    : undefined;
+}
+function editorMutationResult(
+  body: unknown,
+  expectedID: number | undefined,
+  kind: "created" | "updated",
+  expectedRequest: LegacyQuestionnaireCreateRequest,
+): QuestionnaireDefinition | undefined {
+  const keys = kind === "created"
+    ? ["ok", "questionnaire", "questionnaire_id", "questions", "data"]
+    : ["ok", "questionnaire", "questions", "data", "write_model_status", "questionnaire_id"];
+  if (
+    !record(body) ||
+    !exact(body, keys) ||
+    body.ok !== true ||
+    !positive(body.questionnaire_id) ||
+    (expectedID !== undefined && body.questionnaire_id !== expectedID) ||
+    (kind === "updated" && body.write_model_status !== "updated") ||
+    !record(body.questionnaire) ||
+    !Array.isArray(body.questions) ||
+    !record(body.data) ||
+    !exact(body.data, ["questionnaire"]) ||
+    JSON.stringify(body.questions) !== JSON.stringify(body.questionnaire.questions) ||
+    JSON.stringify(body.data.questionnaire) !== JSON.stringify(body.questionnaire)
+  ) return undefined;
+  const definition = questionnaireDefinition(body.questionnaire);
+  const observed = definition === undefined ? undefined : editorDefinitionRequest(definition);
+  return definition?.item.id === body.questionnaire_id && observed !== undefined && sameEditorRequest(observed, expectedRequest)
+    ? definition
+    : undefined;
+}
+export async function saveQuestionnaireEditor(
+  transport: QuestionnaireListTransport,
+  existing: QuestionnaireItem | undefined,
+  draft: QuestionnaireEditorDraft,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<QuestionnaireEditorSaveResult> {
+  const request = questionnaireEditorRequest(draft);
+  const options = editorWriteOptions(csrfToken, idempotencyKey);
+  if (!request || !options || (existing !== undefined && !positive(existing.id))) return { status: "invalid" };
+  try {
+    const response = existing === undefined
+      ? await transport.create(request, options)
+      : await transport.replace(existing.id, request, options);
+    if (response.status !== 200) return { status: failure(response.status) };
+    const definition = editorMutationResult(
+      response.data,
+      existing?.id,
+      existing === undefined ? "created" : "updated",
+      request,
+    );
+    return definition ? { status: "saved", item: definition.item, request } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
 }
 
 function failure(status: number): QuestionnaireFailure {
