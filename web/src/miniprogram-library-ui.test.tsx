@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   handleImageSearchKeyDown,
+  MiniProgramDetailPanel,
   MiniProgramLibraryPage,
 } from "./miniprogram-library-ui";
 import { editorDraft } from "./miniprogram-library";
@@ -12,6 +13,7 @@ function transport(): MiniProgramLibraryTransport {
   const unavailable = async () => ({ status: 503, data: {} });
   return {
     list: vi.fn(unavailable),
+    detail: vi.fn(unavailable),
     create: vi.fn(unavailable),
     update: vi.fn(unavailable),
     remove: vi.fn(unavailable),
@@ -54,6 +56,62 @@ describe("MiniProgramLibraryPage shell", () => {
     expect(html).not.toContain("素材列表");
     expect(client.list).not.toHaveBeenCalled();
     expect(client.listImages).not.toHaveBeenCalled();
+    expect(client.detail).not.toHaveBeenCalled();
+  });
+
+  it("renders only frozen local detail fields and hides thumbnail cache values", () => {
+    const html = renderToStaticMarkup(
+      <MiniProgramDetailPanel
+        state={{
+          kind: "ready",
+          item: {
+            id: 7,
+            name: "卡片",
+            appID: "wx-demo",
+            pagePath: "pages/home",
+            title: "首页",
+            thumbImageID: 11,
+            thumbMediaID: "thumb-media-secret",
+            enabled: true,
+            version: 1,
+            createdAt: "2026-08-19T08:00:00Z",
+            updatedAt: "2026-08-19T08:00:01Z",
+          },
+        }}
+      />,
+    );
+    expect(html).toContain("本地素材详情");
+    expect(html).toContain("缩略图素材 ID");
+    expect(html).toContain("wx-demo");
+    expect(html).not.toContain("thumb-media-secret");
+    expect(html).not.toMatch(/thumb_media_id|href=|clipboard|window\.open|<img/i);
+  });
+
+  it("keeps a verified detail visible beside a local detail failure", () => {
+    const html = renderToStaticMarkup(
+      <MiniProgramDetailPanel
+        state={{
+          kind: "error",
+          itemID: 7,
+          failure: "unavailable",
+          previous: {
+            id: 7,
+            name: "卡片",
+            appID: "wx-demo",
+            pagePath: "pages/home",
+            title: "首页",
+            thumbMediaID: "thumb-media-secret",
+            enabled: true,
+            version: 1,
+            createdAt: "2026-08-19T08:00:00Z",
+            updatedAt: "2026-08-19T08:00:01Z",
+          },
+        }}
+      />,
+    );
+    expect(html).toContain("卡片");
+    expect(html).toContain("小程序素材服务暂时不可用");
+    expect(html).not.toContain("thumb-media-secret");
   });
 
   it("starts an empty draft without a thumbnail and never infers IDs", () => {

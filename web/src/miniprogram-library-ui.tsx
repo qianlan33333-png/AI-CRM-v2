@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
   deleteMiniProgram,
@@ -6,6 +6,7 @@ import {
   editorDraft,
   generatedMiniProgramLibraryTransport,
   loadLibraryImages,
+  loadMiniProgramDetail,
   loadMiniPrograms,
   resolveMiniProgramThumbnail,
   saveMiniProgram,
@@ -15,6 +16,7 @@ import {
   MINIPROGRAM_PAGE_SIZE,
   type LibraryImage,
   type MiniProgramDraft,
+  type MiniProgramDetailResult,
   type MiniProgramFailure,
   type MiniProgramLibraryTransport,
   type MiniProgramListQuery,
@@ -52,6 +54,20 @@ type ImageListState =
       readonly nextOffset?: number;
     }
   | { readonly kind: "error"; readonly failure: MiniProgramFailure };
+type DetailState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly itemID: number;
+      readonly previous?: MiniProgramRecord;
+    }
+  | { readonly kind: "ready"; readonly item: MiniProgramRecord }
+  | {
+      readonly kind: "error";
+      readonly itemID: number;
+      readonly failure: MiniProgramFailure;
+      readonly previous?: MiniProgramRecord;
+    };
 
 const messages: Record<MiniProgramFailure, string> = {
   unauthenticated: "登录状态已失效，请重新登录。",
@@ -92,6 +108,36 @@ export function handleImageSearchKeyDown(
   search();
 }
 
+export function MiniProgramDetailPanel({
+  state,
+}: {
+  readonly state: DetailState;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const item = state.kind === "ready" ? state.item : state.previous;
+  return (
+    <section className="miniprogram-detail" aria-label="小程序素材本地详情">
+      <h3>本地素材详情</h3>
+      {item ? (
+        <dl>
+          <dt>素材 ID</dt><dd>{item.id}</dd>
+          <dt>名称</dt><dd>{item.name}</dd>
+          <dt>AppID</dt><dd>{item.appID}</dd>
+          <dt>页面路径</dt><dd>{item.pagePath}</dd>
+          <dt>标题</dt><dd>{item.title}</dd>
+          <dt>缩略图素材 ID</dt><dd>{item.thumbImageID ?? "—"}</dd>
+          <dt>状态</dt><dd>{item.enabled ? "启用" : "停用"}</dd>
+          <dt>版本</dt><dd>{item.version}</dd>
+          <dt>创建时间</dt><dd>{item.createdAt}</dd>
+          <dt>更新时间</dt><dd>{item.updatedAt}</dd>
+        </dl>
+      ) : null}
+      {state.kind === "loading" ? <p role="status">正在读取本地素材详情。</p> : null}
+      {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+    </section>
+  );
+}
+
 export function MiniProgramLibraryPage({
   role,
   transport = generatedMiniProgramLibraryTransport,
@@ -123,7 +169,12 @@ export function MiniProgramLibraryPage({
   const [imageQuery, setImageQuery] = useState({ search: "", offset: 0 });
   const [images, setImages] = useState<ImageListState>({ kind: "idle" });
   const [uploading, setUploading] = useState(false);
-  const busy = saving || toggling || resolving || deleting || uploading;
+  const detailGeneration = useRef(0);
+  const detailInFlight = useRef(false);
+  const verifiedDetail = useRef<MiniProgramRecord>();
+  const [detail, setDetail] = useState<DetailState>({ kind: "idle" });
+  const [detailBusy, setDetailBusy] = useState(false);
+  const busy = saving || toggling || resolving || deleting || uploading || detailBusy;
 
   const loadList = useCallback(
     async (next: MiniProgramListQuery) => {
@@ -171,6 +222,12 @@ export function MiniProgramLibraryPage({
   useEffect(() => {
     if (canAccess && pickerOpen) void loadImages(imageQuery);
   }, [canAccess, pickerOpen, imageQuery, loadImages]);
+  useEffect(
+    () => () => {
+      detailGeneration.current += 1;
+    },
+    [],
+  );
 
   const csrf = (): string | undefined => {
     try {
@@ -184,7 +241,13 @@ export function MiniProgramLibraryPage({
     if (failure === "unauthenticated") onUnauthenticated?.();
     if (failure === "not_found") void loadList(query);
   };
+  const clearDetail = () => {
+    detailGeneration.current += 1;
+    verifiedDetail.current = undefined;
+    setDetail({ kind: "idle" });
+  };
   const select = (item: MiniProgramRecord) => {
+    clearDetail();
     setSelected(item);
     setDraft(editorDraft(item));
     setResolution(undefined);
@@ -192,11 +255,40 @@ export function MiniProgramLibraryPage({
     setNotice(undefined);
   };
   const startCreate = () => {
+    clearDetail();
     setSelected(undefined);
     setDraft(editorDraft());
     setResolution(undefined);
     setConfirmingDelete(false);
     setNotice("已开始创建新的小程序素材。");
+  };
+
+  const loadDetail = async () => {
+    if (!selected || !canAccess || detailInFlight.current) return;
+    detailInFlight.current = true;
+    setDetailBusy(true);
+    const itemID = selected.id;
+    const generation = ++detailGeneration.current;
+    const previous = verifiedDetail.current?.id === itemID
+      ? verifiedDetail.current
+      : undefined;
+    setDetail({ kind: "loading", itemID, previous });
+    try {
+      const result: MiniProgramDetailResult = await loadMiniProgramDetail(transport, itemID);
+      if (generation !== detailGeneration.current) return;
+      if (result.status === "loaded") {
+        verifiedDetail.current = result.item;
+        setDetail({ kind: "ready", item: result.item });
+        return;
+      }
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      setDetail({ kind: "error", itemID, failure: result.status, previous });
+    } finally {
+      if (generation === detailGeneration.current) {
+        detailInFlight.current = false;
+        setDetailBusy(false);
+      }
+    }
   };
 
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -226,6 +318,7 @@ export function MiniProgramLibraryPage({
       handleFailure(result.status);
       return;
     }
+    clearDetail();
     setSelected(result.item);
     setDraft({
       ...editorDraft(result.item),
@@ -264,6 +357,7 @@ export function MiniProgramLibraryPage({
       handleFailure(result.status);
       return;
     }
+    clearDetail();
     setSelected(result.item);
     setNotice(
       result.item.enabled
@@ -294,6 +388,7 @@ export function MiniProgramLibraryPage({
       handleFailure(result.status);
       return;
     }
+    clearDetail();
     setSelected(result.item);
     setResolution({ itemID: result.item.id, value: result.resolution });
     if (result.changed) void loadList(query);
@@ -320,6 +415,7 @@ export function MiniProgramLibraryPage({
       handleFailure(result.status);
       return;
     }
+    clearDetail();
     setConfirmingDelete(false);
     setSelected(undefined);
     setDraft(editorDraft());
@@ -476,6 +572,7 @@ export function MiniProgramLibraryPage({
                     <button
                       aria-pressed={selected?.id === item.id}
                       type="button"
+                      disabled={detailBusy}
                       onClick={() => select(item)}
                     >
                       <strong>
@@ -732,6 +829,9 @@ export function MiniProgramLibraryPage({
             <div className="miniprogram-actions">
               <h3>素材操作</h3>
               <div className="miniprogram-actions__row">
+                <button type="button" disabled={busy} onClick={() => void loadDetail()}>
+                  {detailBusy ? "正在刷新详情…" : "刷新本地详情"}
+                </button>
                 <button type="button" disabled={busy} onClick={toggleEnabled}>
                   {toggling
                     ? "正在提交启停…"
@@ -807,6 +907,7 @@ export function MiniProgramLibraryPage({
                   )}
                 </section>
               )}
+              <MiniProgramDetailPanel state={detail} />
             </div>
           )}
         </form>

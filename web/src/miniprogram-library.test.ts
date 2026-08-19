@@ -5,9 +5,11 @@ import {
   editorDraft,
   imagePickerPreviousOffset,
   loadLibraryImages,
+  loadMiniProgramDetail,
   loadMiniPrograms,
   parseLibraryImage,
   parseMiniProgram,
+  parseMiniProgramDetail,
   parseThumbnailResolution,
   resolveMiniProgramThumbnail,
   saveMiniProgram,
@@ -48,6 +50,12 @@ const page = {
   total: 1,
   limit: MINIPROGRAM_PAGE_SIZE,
   offset: 0,
+  ...flags,
+};
+const detail = {
+  ok: true,
+  item,
+  miniprogram: item,
   ...flags,
 };
 const mutation = {
@@ -145,6 +153,7 @@ function transport(
   const result = async () => response;
   return {
     list: vi.fn(result),
+    detail: vi.fn(result),
     create: vi.fn(result),
     update: vi.fn(result),
     remove: vi.fn(result),
@@ -210,6 +219,35 @@ describe("miniprogram response boundary", () => {
     ).toBeUndefined();
   });
 
+  it("accepts only an exact, local, mirrored, ID-bound detail receipt", () => {
+    expect(parseMiniProgramDetail(detail, 7)).toMatchObject({
+      id: 7,
+      appID: "wx-demo",
+    });
+    for (const value of [
+      { ...detail, extra: true },
+      { ...detail, local_only: false },
+      { ...detail, provider_call_executed: true },
+      { ...detail, real_external_call_executed: true },
+      { ...detail, item: { ...item, id: 8 } },
+      { ...detail, miniprogram: { ...item, thumb_media_id: "drift" } },
+      { ...detail, miniprogram: { ...item, thumb_image_url: "/drift" } },
+      {
+        ...detail,
+        miniprogram: {
+          ...item,
+          thumb_media_id_expires_at: "2026-08-20T08:00:00Z",
+        },
+      },
+      { ...detail, miniprogram: { ...item, created_by: 8 } },
+      { ...detail, miniprogram: { ...item, updated_by: 8 } },
+      { ...detail, item: { ...item, thumb_image_base64: "aGk=" } },
+      { ...detail, item: { ...item, thumb_media_id_expires_at: "" } },
+    ]) {
+      expect(parseMiniProgramDetail(value, 7)).toBeUndefined();
+    }
+  });
+
   it("parses only an exact frozen Image Library item", () => {
     expect(parseLibraryImage(imageItem)).toMatchObject({
       id: 11,
@@ -254,6 +292,21 @@ describe("miniprogram list", () => {
       },
       { credentials: "same-origin" },
     );
+  });
+
+  it("uses a single same-origin detail GET and fails closed without retry", async () => {
+    const client = transport({ status: 200, data: detail });
+    await expect(loadMiniProgramDetail(client, 7)).resolves.toMatchObject({
+      status: "loaded",
+      item: { id: 7 },
+    });
+    expect(client.detail).toHaveBeenCalledOnce();
+    expect(client.detail).toHaveBeenCalledWith(7, { credentials: "same-origin" });
+    await expect(loadMiniProgramDetail(client, 0)).resolves.toEqual({ status: "invalid" });
+    expect(client.detail).toHaveBeenCalledOnce();
+    await expect(
+      loadMiniProgramDetail(transport({ status: 401, data: {} }), 7),
+    ).resolves.toEqual({ status: "unauthenticated" });
   });
 
   it("fails closed on malformed, mirrored-mismatched, or externally-flagged pages", async () => {
