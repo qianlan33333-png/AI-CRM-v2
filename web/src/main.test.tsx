@@ -13,6 +13,7 @@ import {
   AUTOMATION_RUNS_PATH,
   GROUP_INVITE_LIBRARY_PATH,
   DELIVERY_LINEAGE_PATH,
+  DATA_HEALTH_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -37,6 +38,7 @@ import type { CouponsTransport } from "./coupons";
 import type { AutomationRunsTransport } from "./automation-runs";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
+import type { DataHealthTransport } from "./data-health";
 
 const adminSession = {
   status: "authenticated",
@@ -216,10 +218,15 @@ describe("Web shell routes", () => {
   });
 
   it("renders the group-invite library for admin and ops while sales remains inert", () => {
-    vi.stubGlobal("window", { location: { pathname: GROUP_INVITE_LIBRARY_PATH } });
+    vi.stubGlobal("window", {
+      location: { pathname: GROUP_INVITE_LIBRARY_PATH },
+    });
     const client = groupInviteLibraryTransport();
     const admin = renderToStaticMarkup(
-      <App groupInviteLibraryTransport={client} initialSession={adminSession} />,
+      <App
+        groupInviteLibraryTransport={client}
+        initialSession={adminSession}
+      />,
     );
     expect(admin).toContain('<h1 id="app-title">群邀请素材库</h1>');
     expect(admin).toContain("正在读取本地群邀请素材。");
@@ -421,8 +428,38 @@ describe("Web shell routes", () => {
     expect(client.list).not.toHaveBeenCalled();
   });
 
+  it("renders the data-health route for admin and keeps non-admins fail-closed", () => {
+    vi.stubGlobal("window", { location: { pathname: DATA_HEALTH_PATH } });
+    const client = {
+      list: vi.fn(),
+      summary: vi.fn(),
+      detail: vi.fn(),
+    } as unknown as DataHealthTransport;
+    expect(
+      renderToStaticMarkup(
+        <App dataHealthTransport={client} initialSession={adminSession} />,
+      ),
+    ).toContain("正在读取本地数据健康观测。");
+    for (const role of ["ops", "sales"] as const) {
+      expect(
+        renderToStaticMarkup(
+          <App
+            dataHealthTransport={client}
+            initialSession={{
+              status: "authenticated",
+              principal: { adminUserID: 8, role },
+            }}
+          />,
+        ),
+      ).toContain("当前账号没有数据健康访问权限。");
+    }
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.summary).not.toHaveBeenCalled();
+    expect(client.detail).not.toHaveBeenCalled();
+  });
+
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(17);
+    expect(routes).toHaveLength(18);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -554,6 +591,7 @@ describe("Web shell routes", () => {
       "/admin/automation-runs",
       "/admin/group-invite-library",
       "/admin/delivery-lineage",
+      "/admin/data-health",
       "/settings",
     ]);
     expect(
@@ -591,6 +629,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/automation-runs"');
     expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).toContain('href="/admin/delivery-lineage"');
+    expect(html).toContain('href="/admin/data-health"');
     expect(html).not.toContain('href="/outbound"');
   });
 

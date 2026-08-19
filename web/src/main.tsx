@@ -49,6 +49,8 @@ import { GroupInviteLibraryPage } from "./group-invite-library-ui";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import { DeliveryLineagePage } from "./delivery-lineage-ui";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
+import { DataHealthPage } from "./data-health-ui";
+import type { DataHealthTransport } from "./data-health";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -63,6 +65,7 @@ export const COUPONS_PATH = "/admin/coupons";
 export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
 export const GROUP_INVITE_LIBRARY_PATH = "/admin/group-invite-library";
 export const DELIVERY_LINEAGE_PATH = "/admin/delivery-lineage";
+export const DATA_HEALTH_PATH = "/admin/data-health";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -157,6 +160,12 @@ export const routes = [
     description: "本地内部处理状态的只读浏览。",
   },
   {
+    path: "/admin/data-health",
+    navigationLabel: "数据健康",
+    title: "数据健康",
+    description: "四项本地平台就绪度检查的只读视图。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -213,6 +222,7 @@ export interface AppProps {
   automationRunsTransport?: AutomationRunsTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
+  dataHealthTransport?: DataHealthTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -373,6 +383,7 @@ function PageContent({
   automationRunsTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
+  dataHealthTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -394,6 +405,7 @@ function PageContent({
   automationRunsTransport?: AutomationRunsTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
+  dataHealthTransport?: DataHealthTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -578,6 +590,16 @@ function PageContent({
     );
   }
 
+  if (route.path === DATA_HEALTH_PATH) {
+    return (
+      <DataHealthPage
+        role={principal.role}
+        transport={dataHealthTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -630,6 +652,7 @@ export function navigationLinks(
     permitted.add(QUESTIONNAIRE_LIST_PATH);
     permitted.add(AUTOMATION_RUNS_PATH);
     permitted.add(DELIVERY_LINEAGE_PATH);
+    permitted.add(DATA_HEALTH_PATH);
   }
   if (
     base.length > 0 &&
@@ -666,6 +689,7 @@ export function App({
   automationRunsTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
+  dataHealthTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -829,6 +853,7 @@ export function App({
             automationRunsTransport={automationRunsTransport}
             groupInviteLibraryTransport={groupInviteLibraryTransport}
             deliveryLineageTransport={deliveryLineageTransport}
+            dataHealthTransport={dataHealthTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
