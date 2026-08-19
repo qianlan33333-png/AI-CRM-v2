@@ -245,4 +245,40 @@ refresh_manifest "$events_make_skip_fixture"
 expect_rejected "$events_make_skip_fixture" "Events Make acceptance skip"
 printf 'repo-contract-tests: events-make-skip PASS\n'
 
-printf 'repo-contract-tests: PASS cases=16\n'
+events_manifest_append_fixture="$(make_fixture events-manifest-append)"
+printf '%s\n' 'future-acceptance|0053|-|legacy-make|p4-execution-runtime-ab-acceptance|-' >>"$events_manifest_append_fixture/docs/ci/go-acceptance-manifest.tsv"
+refresh_manifest "$events_manifest_append_fixture"
+run_contract "$events_manifest_append_fixture" || fail "a later Events manifest entry was rejected"
+printf 'repo-contract-tests: events-manifest-append PASS\n'
+
+events_manifest_mutation_fixture="$(make_fixture events-manifest-mutation)"
+python3 - "$events_manifest_mutation_fixture/docs/ci/go-acceptance-manifest.tsv" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = 'internal-events-0367-0368|0052|P4INTERNAL_EVENTS_TEST_DATABASE_URL|legacy-make|p4-internal-events-0367-0368-acceptance|-'
+if old not in source:
+    raise SystemExit("events manifest mutation fixture anchor missing")
+path.write_text(source.replace(old, old.replace("P4INTERNAL_EVENTS_TEST_DATABASE_URL", "MUTATED_DATABASE_URL"), 1), encoding="utf-8")
+PY
+refresh_manifest "$events_manifest_mutation_fixture"
+expect_rejected "$events_manifest_mutation_fixture" "Events manifest 0052 mutation"
+printf 'repo-contract-tests: events-manifest-mutation PASS\n'
+
+events_manifest_removal_fixture="$(make_fixture events-manifest-removal)"
+python3 - "$events_manifest_removal_fixture/docs/ci/go-acceptance-manifest.tsv" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = 'internal-events-0367-0368|0052|P4INTERNAL_EVENTS_TEST_DATABASE_URL|legacy-make|p4-internal-events-0367-0368-acceptance|-\n'
+if old not in source:
+    raise SystemExit("events manifest removal fixture anchor missing")
+path.write_text(source.replace(old, "", 1), encoding="utf-8")
+PY
+refresh_manifest "$events_manifest_removal_fixture"
+expect_rejected "$events_manifest_removal_fixture" "Events manifest 0052 removal"
+printf 'repo-contract-tests: events-manifest-removal PASS\n'
+
+printf 'repo-contract-tests: PASS cases=19\n'
