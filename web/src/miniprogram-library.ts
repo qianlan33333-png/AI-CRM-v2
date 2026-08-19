@@ -1,6 +1,7 @@
 import {
   createLegacyMiniProgram,
   deleteLegacyMiniProgram,
+  getLegacyMiniProgram,
   getLegacyImageList,
   listLegacyMiniPrograms,
   testResolveLegacyMiniProgram,
@@ -89,6 +90,9 @@ async function generatedList(
 ) {
   return listLegacyMiniPrograms(params, options);
 }
+async function generatedDetail(id: number, options: RequestInit) {
+  return getLegacyMiniProgram(id, options);
+}
 async function generatedCreate(
   request: LegacyMiniProgramCreateRequest,
   options: RequestInit,
@@ -123,6 +127,7 @@ async function generatedUploadImage(
 
 export interface MiniProgramLibraryTransport {
   readonly list: typeof generatedList;
+  readonly detail?: typeof generatedDetail;
   readonly create: typeof generatedCreate;
   readonly update: typeof generatedUpdate;
   readonly remove: typeof generatedDelete;
@@ -134,6 +139,7 @@ export interface MiniProgramLibraryTransport {
 export const generatedMiniProgramLibraryTransport: MiniProgramLibraryTransport =
   {
     list: generatedList,
+    detail: generatedDetail,
     create: generatedCreate,
     update: generatedUpdate,
     remove: generatedDelete,
@@ -157,6 +163,9 @@ export type MiniProgramListResult =
       readonly limit: number;
       readonly offset: number;
     }
+  | { readonly status: MiniProgramFailure };
+export type MiniProgramDetailResult =
+  | { readonly status: "loaded"; readonly item: MiniProgramRecord }
   | { readonly status: MiniProgramFailure };
 export type MiniProgramMutationResult =
   | {
@@ -671,6 +680,37 @@ function parseMiniProgramPage(
   };
 }
 
+export function parseMiniProgramDetail(
+  data: unknown,
+  expectedID: number,
+): MiniProgramRecord | undefined {
+  if (
+    !positive(expectedID) ||
+    !record(data) ||
+    !exactKeys(data, [
+      "ok",
+      "item",
+      "miniprogram",
+      "local_only",
+      "provider_call_executed",
+      "real_external_call_executed",
+    ]) ||
+    data.ok !== true ||
+    !frozenLocalFlags(data)
+  ) {
+    return undefined;
+  }
+  const item = parseMiniProgram(data.item);
+  const mirrored = parseMiniProgram(data.miniprogram);
+  return item &&
+    mirrored &&
+    item.id === expectedID &&
+    mirrored.id === expectedID &&
+    JSON.stringify(data.item) === JSON.stringify(data.miniprogram)
+    ? item
+    : undefined;
+}
+
 function parseMiniProgramMutation(
   data: unknown,
 ):
@@ -955,6 +995,23 @@ export async function loadMiniPrograms(
           offset: page.offset,
         }
       : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadMiniProgramDetail(
+  transport: MiniProgramLibraryTransport,
+  id: number,
+): Promise<MiniProgramDetailResult> {
+  if (!positive(id)) return { status: "invalid" };
+  const detail = transport.detail;
+  if (!detail) return { status: "unavailable" };
+  try {
+    const response = await detail(id, { credentials: "same-origin" });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const item = parseMiniProgramDetail(response.data, id);
+    return item ? { status: "loaded", item } : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }
