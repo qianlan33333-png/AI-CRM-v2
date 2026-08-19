@@ -88,7 +88,8 @@ var p4GroupInviteLegacyMappings = map[string][]string{
 
 var p4SurveyOperations = map[string]bool{
 	"listLegacyQuestionnaires": true, "createLegacyQuestionnaire": true, "getLegacyQuestionnaire": true,
-	"replaceLegacyQuestionnaire": true, "updateLegacyQuestionnaire": true,
+	"getLegacyQuestionnairePreflight": true,
+	"replaceLegacyQuestionnaire":      true, "updateLegacyQuestionnaire": true,
 	"deleteLegacyQuestionnaire": true, "duplicateLegacyQuestionnaire": true,
 	"disableLegacyQuestionnaire": true, "enableLegacyQuestionnaire": true,
 	"getLegacyQuestionnaireResults": true, "listLegacyQuestionnaireSubmissions": true,
@@ -99,6 +100,7 @@ var p4SurveyLegacyMappings = map[string][]string{
 	"listLegacyQuestionnaires":             {"LEGACY-API-0423"},
 	"createLegacyQuestionnaire":            {"LEGACY-API-0424"},
 	"getLegacyQuestionnaire":               {"LEGACY-API-0427"},
+	"getLegacyQuestionnairePreflight":      {"LEGACY-API-0425"},
 	"replaceLegacyQuestionnaire":           {"LEGACY-API-0429"},
 	"updateLegacyQuestionnaire":            {"LEGACY-API-0428"},
 	"deleteLegacyQuestionnaire":            {"LEGACY-API-0426"},
@@ -114,6 +116,7 @@ var p4SurveyEvidence = map[string]string{
 	"listLegacyQuestionnaires":             "P4-F01A-2026-08-15",
 	"createLegacyQuestionnaire":            "P4-F01A-2026-08-15",
 	"getLegacyQuestionnaire":               "P4-F01A-2026-08-15",
+	"getLegacyQuestionnairePreflight":      "P4-F01A-2026-08-15",
 	"replaceLegacyQuestionnaire":           "P4-F01AB-2026-08-15",
 	"updateLegacyQuestionnaire":            "P4-F01AB-2026-08-15",
 	"deleteLegacyQuestionnaire":            "P4-F01AB-2026-08-15",
@@ -366,6 +369,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"duplicateLegacyQuestionnaire":              {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
 	"disableLegacyQuestionnaire":                {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
 	"enableLegacyQuestionnaire":                 {"questionnaires.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyQuestionnairePreflight":           {"admin.read", map[string]string{"admin": "global"}},
 	"getLegacyQuestionnaireResults":             {"questionnaires.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyQuestionnaireSubmissions":        {"questionnaires.read", map[string]string{"admin": "global", "ops": "global"}},
 	"exportLegacyQuestionnaireSubmissions":      {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
@@ -1568,14 +1572,21 @@ func validateCustomerCompatContract(doc *openapi3.T) error {
 
 func validateSurveyContract(doc *openapi3.T) error {
 	collection := doc.Paths.Value("/api/admin/questionnaires")
+	preflight := doc.Paths.Value("/api/admin/questionnaires/preflight")
 	detail := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}")
 	duplicate := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/duplicate")
 	disable := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/disable")
 	enable := doc.Paths.Value("/api/admin/questionnaires/{questionnaire_id}/enable")
-	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil ||
+	if collection == nil || collection.Get == nil || collection.Post == nil || preflight == nil || preflight.Get == nil || detail == nil || detail.Get == nil ||
 		detail.Put == nil || detail.Patch == nil || detail.Delete == nil ||
 		duplicate == nil || duplicate.Post == nil || disable == nil || disable.Post == nil || enable == nil || enable.Post == nil {
 		return errors.New("P4-F01A Survey compatibility operations are incomplete")
+	}
+	if preflight.Get.OperationID != "getLegacyQuestionnairePreflight" || preflight.Get.RequestBody != nil || len(preflight.Get.Parameters) != 0 ||
+		!operationResponseUsesLocalSchema(preflight.Get, "LegacyQuestionnairePreflightResponse") ||
+		preflight.Get.Responses.Value("401") == nil || preflight.Get.Responses.Value("403") == nil ||
+		preflight.Get.Responses.Value("405") == nil || preflight.Get.Responses.Value("503") == nil {
+		return errors.New("P4-F01A Questionnaire preflight contract drifted")
 	}
 	if !operationResponseUsesLocalSchema(collection.Get, "LegacyQuestionnaireListResponse") ||
 		!operationRequestUsesLocalSchema(collection.Post, "LegacyQuestionnaireCreateRequest") ||

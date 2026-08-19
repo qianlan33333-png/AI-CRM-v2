@@ -2085,6 +2085,30 @@ export type LegacyQuestionnaireDeleteResponseAllOf = {
 export type LegacyQuestionnaireDeleteResponse =
   LegacyQuestionnaireMutationResponse & LegacyQuestionnaireDeleteResponseAllOf;
 
+export interface LegacyQuestionnairePreflightChecks {
+  wechat_oauth_configured: boolean;
+  wecom_contact_configured: boolean;
+  debug_session_api_enabled: boolean;
+  wecom_tags_api_available: boolean;
+  questionnaire_admin_ui_enabled: boolean;
+  identity_map_available: boolean;
+}
+
+export type LegacyQuestionnairePreflightResponseStatus =
+  (typeof LegacyQuestionnairePreflightResponseStatus)[keyof typeof LegacyQuestionnairePreflightResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnairePreflightResponseStatus = {
+  partial: "partial",
+  ok: "ok",
+} as const;
+
+export interface LegacyQuestionnairePreflightResponse {
+  ok: boolean;
+  checks: LegacyQuestionnairePreflightChecks;
+  status: LegacyQuestionnairePreflightResponseStatus;
+}
+
 export interface LegacyQuestionnaireError {
   ok: boolean;
   message: string;
@@ -14964,6 +14988,75 @@ export const getLegacyQuestionnaireListUIAlias = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyQuestionnaireListUIAliasResponse;
+};
+
+/**
+ * @summary Read the local declaration-only questionnaire preflight snapshot
+ */
+export type getLegacyQuestionnairePreflightResponse200 = {
+  data: LegacyQuestionnairePreflightResponse;
+  status: 200;
+};
+
+export type getLegacyQuestionnairePreflightResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnairePreflightResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnairePreflightResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyQuestionnairePreflightResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type getLegacyQuestionnairePreflightResponseSuccess =
+  getLegacyQuestionnairePreflightResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyQuestionnairePreflightResponseError = (
+  | getLegacyQuestionnairePreflightResponse401
+  | getLegacyQuestionnairePreflightResponse403
+  | getLegacyQuestionnairePreflightResponse405
+  | getLegacyQuestionnairePreflightResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnairePreflightResponse =
+  | getLegacyQuestionnairePreflightResponseSuccess
+  | getLegacyQuestionnairePreflightResponseError;
+
+export const getGetLegacyQuestionnairePreflightUrl = () => {
+  return `/api/admin/questionnaires/preflight`;
+};
+
+export const getLegacyQuestionnairePreflight = async (
+  options?: RequestInit,
+): Promise<getLegacyQuestionnairePreflightResponse> => {
+  const res = await fetch(getGetLegacyQuestionnairePreflightUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnairePreflightResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnairePreflightResponse;
 };
 
 /**

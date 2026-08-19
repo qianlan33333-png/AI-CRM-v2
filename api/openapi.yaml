@@ -2083,6 +2083,35 @@ paths:
         "405":
           description: The legacy route only accepts GET.
           headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/questionnaires/preflight:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnairePreflight
+      summary: Read the local declaration-only questionnaire preflight snapshot
+      x-legacy-mapping-ids: [LEGACY-API-0425]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Local declaration-only preflight snapshot; no provider reachability is asserted.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnairePreflightResponse" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The preflight route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+        "503":
+          description: Reserved for an explicitly approved local snapshot dependency failure; the current static snapshot does not use one.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
   /api/admin/questionnaires:
     get:
       tags: [p4-survey-compat]
@@ -4520,6 +4549,25 @@ components:
           properties:
             deleted: { type: boolean, enum: [true] }
             delete_mode: { type: string, enum: [hard_delete] }
+    LegacyQuestionnairePreflightChecks:
+      type: object
+      additionalProperties: false
+      required: [wechat_oauth_configured, wecom_contact_configured, debug_session_api_enabled, wecom_tags_api_available, questionnaire_admin_ui_enabled, identity_map_available]
+      properties:
+        wechat_oauth_configured: { type: boolean, enum: [false] }
+        wecom_contact_configured: { type: boolean, enum: [false] }
+        debug_session_api_enabled: { type: boolean, enum: [false] }
+        wecom_tags_api_available: { type: boolean, enum: [false] }
+        questionnaire_admin_ui_enabled: { type: boolean, enum: [true] }
+        identity_map_available: { type: boolean, enum: [false] }
+    LegacyQuestionnairePreflightResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, checks, status]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        checks: { $ref: "#/components/schemas/LegacyQuestionnairePreflightChecks" }
+        status: { type: string, enum: [partial, ok] }
     LegacyQuestionnaireError:
       type: object
       additionalProperties: false

@@ -234,6 +234,69 @@ func TestLegacyQuestionnaireCarrierRejectsOtherMethodsBeforeAuthOrSurvey(t *test
 	}
 }
 
+func TestLegacyQuestionnairePreflightIsStaticAndFailsClosed(t *testing.T) {
+	stub := &legacySurveyStub{}
+	router, auth := legacySurveyRouter(t, stub)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyRequest(http.MethodGet, legacyQuestionnairePreflightPath, legacyToken(94)))
+	if response.Code != http.StatusOK {
+		t.Fatalf("preflight status=%d body=%s", response.Code, response.Body.String())
+	}
+	assertQuestionnaireSecurityHeaders(t, response)
+	if capabilities := auth.capabilities(); len(capabilities) != 1 || capabilities[0] != authport.CapabilityAdminRead {
+		t.Fatalf("capabilities=%v", capabilities)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if len(body) != 3 || body["ok"] != true || body["status"] != "partial" {
+		t.Fatalf("preflight envelope=%#v", body)
+	}
+	checks, ok := body["checks"].(map[string]any)
+	if !ok || len(checks) != 6 {
+		t.Fatalf("preflight checks=%#v", body["checks"])
+	}
+	want := map[string]bool{
+		"wechat_oauth_configured":        false,
+		"wecom_contact_configured":       false,
+		"debug_session_api_enabled":      false,
+		"wecom_tags_api_available":       false,
+		"questionnaire_admin_ui_enabled": true,
+		"identity_map_available":         false,
+	}
+	for key, expected := range want {
+		if actual, present := checks[key]; !present || actual != expected {
+			t.Fatalf("check %s=%v present=%t want=%t", key, actual, present, expected)
+		}
+	}
+	if stub.calls != 0 {
+		t.Fatalf("static preflight called survey dependency %d times", stub.calls)
+	}
+}
+
+func TestLegacyQuestionnairePreflightRejectsOtherMethodsBeforeAuth(t *testing.T) {
+	stub := &legacySurveyStub{}
+	router, auth := legacySurveyRouter(t, stub)
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(method, legacyQuestionnairePreflightPath, nil))
+		if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet {
+			t.Fatalf("%s status=%d allow=%q body=%s", method, response.Code, response.Header().Get("Allow"), response.Body.String())
+		}
+		assertQuestionnaireSecurityHeaders(t, response)
+	}
+	if capabilities := auth.capabilities(); len(capabilities) != 0 || stub.calls != 0 {
+		t.Fatalf("auth=%v survey_calls=%d", capabilities, stub.calls)
+	}
+	unauthenticated := httptest.NewRecorder()
+	router.ServeHTTP(unauthenticated, httptest.NewRequest(http.MethodGet, legacyQuestionnairePreflightPath, nil))
+	if unauthenticated.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated status=%d body=%s", unauthenticated.Code, unauthenticated.Body.String())
+	}
+	assertQuestionnaireSecurityHeaders(t, unauthenticated)
+}
+
 func assertQuestionnaireSecurityHeaders(t *testing.T, response *httptest.ResponseRecorder) {
 	t.Helper()
 	if response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {

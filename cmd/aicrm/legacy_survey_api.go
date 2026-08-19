@@ -31,7 +31,25 @@ type legacyQuestionnaireRequest struct {
 	ScoreRules        []surveyport.ScoreRule       `json:"score_rules"`
 }
 
-const legacyQuestionnairePagePath = "/admin/questionnaires"
+const (
+	legacyQuestionnairePagePath      = "/admin/questionnaires"
+	legacyQuestionnairePreflightPath = "/api/admin/questionnaires/preflight"
+)
+
+type legacyQuestionnairePreflightChecks struct {
+	WechatOAuthConfigured       bool `json:"wechat_oauth_configured"`
+	WeComContactConfigured      bool `json:"wecom_contact_configured"`
+	DebugSessionAPIEnabled      bool `json:"debug_session_api_enabled"`
+	WeComTagsAPIAvailable       bool `json:"wecom_tags_api_available"`
+	QuestionnaireAdminUIEnabled bool `json:"questionnaire_admin_ui_enabled"`
+	IdentityMapAvailable        bool `json:"identity_map_available"`
+}
+
+type legacyQuestionnairePreflightResponse struct {
+	OK     bool                               `json:"ok"`
+	Checks legacyQuestionnairePreflightChecks `json:"checks"`
+	Status string                             `json:"status"`
+}
 
 func legacyQuestionnaireSecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -69,6 +87,26 @@ func (handler *Handler) QuestionnaireListPage(writer http.ResponseWriter, reques
 		return
 	}
 	http.Redirect(writer, request, "/?legacy_admin_path="+url.QueryEscape(legacyQuestionnairePagePath), http.StatusFound)
+}
+
+// QuestionnairePreflight is deliberately a local declaration-only snapshot.
+// It does not read secrets, query a provider, inspect the database, or infer
+// readiness from the existence of an unrelated route. The UI flag is true
+// because this exact build registers the questionnaire admin page routes.
+func (handler *Handler) QuestionnairePreflight(writer http.ResponseWriter, _ *http.Request) {
+	checks := legacyQuestionnairePreflightChecks{
+		WechatOAuthConfigured:       false,
+		WeComContactConfigured:      false,
+		DebugSessionAPIEnabled:      false,
+		WeComTagsAPIAvailable:       false,
+		QuestionnaireAdminUIEnabled: true,
+		IdentityMapAvailable:        false,
+	}
+	status := "partial"
+	if checks.WechatOAuthConfigured && checks.WeComContactConfigured && checks.WeComTagsAPIAvailable {
+		status = "ok"
+	}
+	writeJSON(writer, http.StatusOK, legacyQuestionnairePreflightResponse{OK: true, Checks: checks, Status: status})
 }
 
 func (handler *Handler) ListQuestionnaires(writer http.ResponseWriter, request *http.Request) {

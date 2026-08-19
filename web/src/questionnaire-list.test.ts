@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   deleteQuestionnaire,
   loadQuestionnaires,
+  loadQuestionnairePreflight,
   nextQuestionnaireOffset,
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
@@ -110,6 +111,21 @@ function transport(
         delete_mode: "hard_delete",
       }),
     })),
+    preflight: vi.fn(async () => ({
+      status: 200,
+      data: {
+        ok: true,
+        checks: {
+          wechat_oauth_configured: false,
+          wecom_contact_configured: false,
+          debug_session_api_enabled: false,
+          wecom_tags_api_available: false,
+          questionnaire_admin_ui_enabled: true,
+          identity_map_available: false,
+        },
+        status: "partial",
+      },
+    })),
     ...overrides,
   } as unknown as QuestionnaireListTransport;
 }
@@ -125,6 +141,49 @@ const parsed: QuestionnaireItem = {
 };
 
 describe("questionnaire list transport", () => {
+  it("strictly accepts the local declaration-only preflight snapshot", async () => {
+    const client = transport();
+    await expect(loadQuestionnairePreflight(client)).resolves.toEqual({
+      status: "loaded",
+      preflight: {
+        status: "partial",
+        checks: {
+          wechatOAuthConfigured: false,
+          wecomContactConfigured: false,
+          debugSessionAPIEnabled: false,
+          wecomTagsAPIAvailable: false,
+          questionnaireAdminUIEnabled: true,
+          identityMapAvailable: false,
+        },
+      },
+    });
+    expect(client.preflight).toHaveBeenCalledWith({
+      credentials: "same-origin",
+    });
+    await expect(
+      loadQuestionnairePreflight(
+        transport({
+          preflight: vi.fn(async () => ({
+            status: 200,
+            data: {
+              ok: true,
+              checks: {
+                wechat_oauth_configured: false,
+                wecom_contact_configured: false,
+                debug_session_api_enabled: false,
+                wecom_tags_api_available: false,
+                questionnaire_admin_ui_enabled: true,
+                identity_map_available: false,
+                unexpected: false,
+              },
+              status: "partial",
+            },
+          })) as never,
+        }),
+      ),
+    ).resolves.toEqual({ status: "invalid" });
+  });
+
   it("strictly accepts the frozen list envelope and paging", async () => {
     const client = transport();
     await expect(loadQuestionnaires(client)).resolves.toEqual({

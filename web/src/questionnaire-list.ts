@@ -1,6 +1,7 @@
 import {
   deleteLegacyQuestionnaire,
   disableLegacyQuestionnaire,
+  getLegacyQuestionnairePreflight,
   listLegacyQuestionnaires,
   type LegacyQuestionnaire,
 } from "./api/generated/health";
@@ -23,13 +24,29 @@ export interface QuestionnaireListTransport {
   readonly list: typeof listLegacyQuestionnaires;
   readonly disable: typeof disableLegacyQuestionnaire;
   readonly remove: typeof deleteLegacyQuestionnaire;
+  readonly preflight: typeof getLegacyQuestionnairePreflight;
 }
 
 export const generatedQuestionnaireListTransport: QuestionnaireListTransport = {
   list: listLegacyQuestionnaires,
   disable: disableLegacyQuestionnaire,
   remove: deleteLegacyQuestionnaire,
+  preflight: getLegacyQuestionnairePreflight,
 };
+
+export type QuestionnairePreflightStatus = "partial" | "ok";
+export interface QuestionnairePreflightChecks {
+  readonly wechatOAuthConfigured: false;
+  readonly wecomContactConfigured: false;
+  readonly debugSessionAPIEnabled: false;
+  readonly wecomTagsAPIAvailable: false;
+  readonly questionnaireAdminUIEnabled: true;
+  readonly identityMapAvailable: false;
+}
+export interface QuestionnairePreflight {
+  readonly checks: QuestionnairePreflightChecks;
+  readonly status: QuestionnairePreflightStatus;
+}
 
 export type QuestionnaireFailure =
   | "unauthenticated"
@@ -49,6 +66,9 @@ export type QuestionnaireListResult =
   | { readonly status: QuestionnaireFailure };
 export type QuestionnaireMutationResult =
   { readonly status: "saved" } | { readonly status: QuestionnaireFailure };
+export type QuestionnairePreflightResult =
+  | { readonly status: "loaded"; readonly preflight: QuestionnairePreflight }
+  | { readonly status: QuestionnaireFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -326,6 +346,61 @@ export async function loadQuestionnaires(
       total: body.total,
       limit: body.limit,
       offset: body.offset,
+    };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadQuestionnairePreflight(
+  transport: QuestionnaireListTransport = generatedQuestionnaireListTransport,
+): Promise<QuestionnairePreflightResult> {
+  try {
+    const response = await transport.preflight({ credentials: "same-origin" });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const body: unknown = response.data;
+    if (
+      !record(body) ||
+      !exact(body, ["ok", "checks", "status"]) ||
+      body.ok !== true ||
+      (body.status !== "partial" && body.status !== "ok") ||
+      !record(body.checks) ||
+      !exact(body.checks, [
+        "wechat_oauth_configured",
+        "wecom_contact_configured",
+        "debug_session_api_enabled",
+        "wecom_tags_api_available",
+        "questionnaire_admin_ui_enabled",
+        "identity_map_available",
+      ]) ||
+      body.checks.wechat_oauth_configured !== false ||
+      body.checks.wecom_contact_configured !== false ||
+      body.checks.debug_session_api_enabled !== false ||
+      body.checks.wecom_tags_api_available !== false ||
+      body.checks.questionnaire_admin_ui_enabled !== true ||
+      body.checks.identity_map_available !== false
+    )
+      return { status: "invalid" };
+    const status: QuestionnairePreflightStatus =
+      body.checks.wechat_oauth_configured &&
+      body.checks.wecom_contact_configured &&
+      body.checks.wecom_tags_api_available
+        ? "ok"
+        : "partial";
+    if (body.status !== status) return { status: "invalid" };
+    return {
+      status: "loaded",
+      preflight: {
+        status,
+        checks: {
+          wechatOAuthConfigured: body.checks.wechat_oauth_configured,
+          wecomContactConfigured: body.checks.wecom_contact_configured,
+          debugSessionAPIEnabled: body.checks.debug_session_api_enabled,
+          wecomTagsAPIAvailable: body.checks.wecom_tags_api_available,
+          questionnaireAdminUIEnabled: body.checks.questionnaire_admin_ui_enabled,
+          identityMapAvailable: body.checks.identity_map_available,
+        },
+      },
     };
   } catch {
     return { status: "unavailable" };

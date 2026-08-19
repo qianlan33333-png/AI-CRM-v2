@@ -126,6 +126,21 @@ function transport(
         delete_mode: "hard_delete",
       }),
     })),
+    preflight: vi.fn(async () => ({
+      status: 200,
+      data: {
+        ok: true,
+        checks: {
+          wechat_oauth_configured: false,
+          wecom_contact_configured: false,
+          debug_session_api_enabled: false,
+          wecom_tags_api_available: false,
+          questionnaire_admin_ui_enabled: true,
+          identity_map_available: false,
+        },
+        status: "partial",
+      },
+    })),
     ...overrides,
   } as unknown as QuestionnaireListTransport;
 }
@@ -196,6 +211,36 @@ describe("QuestionnaireListPage UI", () => {
       />,
     );
     expect(busy.match(/disabled=""/g)).toHaveLength(5);
+  });
+
+  it("renders the six fail-closed preflight checks without changing operations", () => {
+    const html = renderToStaticMarkup(
+      <QuestionnaireListContent
+        busy={undefined}
+        onLoad={vi.fn()}
+        onMutate={vi.fn()}
+        preflight={{
+          kind: "ready",
+          preflight: {
+            status: "partial",
+            checks: {
+              wechatOAuthConfigured: false,
+              wecomContactConfigured: false,
+              debugSessionAPIEnabled: false,
+              wecomTagsAPIAvailable: false,
+              questionnaireAdminUIEnabled: true,
+              identityMapAvailable: false,
+            },
+          },
+        }}
+        state={{ kind: "ready", items: [active], total: 1, offset: 0 }}
+      />,
+    );
+    expect(html).toContain('data-testid="questionnaire-preflight"');
+    expect(html).toContain("状态：partial");
+    expect(html).toContain("wechat_oauth_configured");
+    expect(html).toContain("questionnaire_admin_ui_enabled");
+    expect(html).toContain("identity_map_available");
   });
 
   it("fails closed on a missing CSRF cookie before any mutation", async () => {
