@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AutomationRunsPage,
   AutomationDiagnosticsPanel,
+  AutomationInternalEventsPanel,
   AutomationSourceEventPanel,
   loadAutomationDiagnosticsState,
+  loadAutomationInternalEventsState,
   loadAutomationSourceEventState,
   RunRows,
   type AutomationSourceEventState,
@@ -62,11 +64,38 @@ const sourceEvent = {
   real_external_call_executed: false,
 };
 
+const internalEvents = {
+  ok: true,
+  items: [{
+    event_id: 52,
+    event_type: "customer.tag_applied",
+    occurred_at: "2026-08-19T08:01:00Z",
+    dispatched: true,
+    deliveries: [{
+      consumer: "automation.tag-trigger.v1",
+      status: "completed",
+      attempt_count: 1,
+      completed_at: "2026-08-19T08:01:01Z",
+    }],
+  }],
+  total: 1,
+  limit: 50,
+  offset: 0,
+  observed_at: "2026-08-19T08:02:00Z",
+  registry_id: "v2-internal-events.v1",
+  source_status: "local_read_model",
+  delivery_observation_available: true,
+  external_delivery: "unknown",
+  route_owner: "ai_crm_next",
+  real_external_call_executed: false,
+};
+
 function transport(): AutomationRunsTransport {
   return {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     sourceEvent: vi.fn(async () => ({ status: 503, data: {} })),
     diagnostics: vi.fn(async () => ({ status: 503, data: {} })),
+    internalEvents: vi.fn(async () => ({ status: 503, data: {} })),
   } as AutomationRunsTransport;
 }
 
@@ -89,6 +118,30 @@ function diagnosticsController(
     generation,
     inFlight,
     load: () => loadAutomationDiagnosticsState({ generation, inFlight, onState, onUnauthenticated, state, transport: client }),
+    onState,
+    state,
+  };
+}
+
+function internalEventsReader(client: AutomationRunsTransport) {
+  if (!client.internalEvents) throw new Error("internal event reader required");
+  return vi.mocked(client.internalEvents);
+}
+
+function internalEventsController(
+  client: AutomationRunsTransport,
+  onUnauthenticated?: () => void,
+) {
+  const state = { current: { kind: "loading" } as const } as { current: import("./automation-runs-ui").AutomationInternalEventsState };
+  const generation = { current: 0 };
+  const inFlight = { current: undefined as symbol | undefined };
+  const onState = vi.fn((next: import("./automation-runs-ui").AutomationInternalEventsState) => {
+    state.current = next;
+  });
+  return {
+    generation,
+    inFlight,
+    load: (offset: number) => loadAutomationInternalEventsState({ generation, inFlight, onState, onUnauthenticated, state, transport: client }, offset),
     onState,
     state,
   };
@@ -189,6 +242,7 @@ describe("AutomationRunsPage shell", () => {
       expect(client.list).not.toHaveBeenCalled();
       expect(client.sourceEvent).not.toHaveBeenCalled();
       expect(client.diagnostics).not.toHaveBeenCalled();
+      expect(client.internalEvents).not.toHaveBeenCalled();
     },
   );
 
@@ -289,6 +343,108 @@ describe("AutomationRunsPage shell", () => {
     expect(html).toContain("外部投递状态为 unknown");
     expect(html).toContain("未执行真实外部调用");
     expect(html).not.toMatch(/provider 已执行|外部投递成功|已送达/i);
+  });
+
+  it("renders local internal-event observations without external delivery claims", () => {
+    const html = renderToStaticMarkup(
+      <AutomationInternalEventsPanel
+        state={{
+          kind: "ready",
+          page: {
+            items: [{
+              eventID: 52,
+              eventType: "customer.tag_applied",
+              occurredAt: "2026-08-19T08:01:00Z",
+              dispatched: true,
+              deliveries: [{
+                consumer: "automation.tag-trigger.v1",
+                status: "completed",
+                attemptCount: 1,
+                completedAt: "2026-08-19T08:01:01Z",
+              }],
+            }],
+            total: 1,
+            limit: 50,
+            offset: 0,
+            observedAt: "2026-08-19T08:02:00Z",
+          },
+        }}
+        onLoad={vi.fn()}
+      />,
+    );
+    expect(html).toContain("内部事件列表");
+    expect(html).toContain("内部派发标记");
+    expect(html).toContain("本地处理");
+    expect(html).toContain("外部投递状态为 unknown");
+    expect(html).not.toMatch(/provider 已执行|外部投递成功|已送达/i);
+  });
+
+  it("single-flights internal-event reads, preserves a verified page, and drops stale results", async () => {
+    let release: (() => void) | undefined;
+    const client = transport();
+    internalEventsReader(client).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ status: 200, data: internalEvents }); }),
+    );
+    const controller = internalEventsController(client);
+    const first = controller.load(0);
+    expect(controller.load(50)).toBeUndefined();
+    expect(internalEventsReader(client)).toHaveBeenCalledWith(
+      { limit: "50", offset: "0" },
+      { credentials: "same-origin" },
+    );
+    release?.();
+    await first;
+    expect(controller.state.current).toMatchObject({ kind: "ready", page: { total: 1 } });
+
+    internalEventsReader(client).mockResolvedValueOnce({ status: 503, data: {} });
+    await controller.load(0);
+    expect(controller.state.current).toMatchObject({
+      kind: "error", failure: "unavailable", previous: { total: 1 },
+    });
+
+    internalEventsReader(client).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ status: 200, data: internalEvents }); }),
+    );
+    const stale = controller.load(0);
+    const statesBeforeUnmount = controller.onState.mock.calls.length;
+    controller.generation.current += 1;
+    release?.();
+    await stale;
+    expect(controller.onState).toHaveBeenCalledTimes(statesBeforeUnmount);
+  });
+
+  it("notifies an expired session after the active internal-event read", async () => {
+    const client = transport();
+    internalEventsReader(client).mockResolvedValue({ status: 401, data: {} });
+    const onUnauthenticated = vi.fn();
+    const controller = internalEventsController(client, onUnauthenticated);
+    await controller.load(0);
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(controller.state.current).toMatchObject({ kind: "error", failure: "unauthenticated" });
+  });
+
+  it("allows a replacement internal-event effect without an old request unlocking it", async () => {
+    // eslint-disable-next-line no-unused-vars -- the Promise resolver receives the synthetic transport response.
+    const resolvers: ((value: { status: number; data: unknown }) => void)[] = [];
+    const client = transport();
+    internalEventsReader(client).mockImplementation(
+      () => new Promise((resolve) => { resolvers.push(resolve); }),
+    );
+    const controller = internalEventsController(client);
+    const oldRequest = controller.load(0);
+    controller.generation.current += 1;
+    controller.inFlight.current = undefined;
+    const replacement = controller.load(0);
+    expect(internalEventsReader(client)).toHaveBeenCalledTimes(2);
+
+    resolvers[0]?.({ status: 200, data: internalEvents });
+    await oldRequest;
+    expect(controller.inFlight.current).toBeDefined();
+
+    resolvers[1]?.({ status: 200, data: internalEvents });
+    await replacement;
+    expect(controller.state.current).toMatchObject({ kind: "ready", page: { total: 1 } });
+    expect(controller.inFlight.current).toBeUndefined();
   });
 
   it("single-flights diagnostics, retains a verified summary, and invalidates unmounted results", async () => {
