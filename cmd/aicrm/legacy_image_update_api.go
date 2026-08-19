@@ -271,7 +271,7 @@ func (writer legacyImageUpdateHeaderWriter) setSecurityHeaders() {
 }
 
 func writeLegacyImageDetailMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
-	writer.Header().Set("Allow", "GET, PUT")
+	writer.Header().Set("Allow", "GET, PUT, DELETE")
 	writer.Header().Set("Cache-Control", "private, no-store")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	writer.WriteHeader(http.StatusMethodNotAllowed)

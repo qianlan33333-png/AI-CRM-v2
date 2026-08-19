@@ -119,11 +119,14 @@ func (repository *GroupInviteRepository) ImageExists(ctx context.Context, id int
 	if repository == nil || err != nil || id < 1 {
 		return false, groupInviteUnavailable(err)
 	}
-	exists, err := query.MediaImageExists(ctx, id)
+	_, err = query.LockMediaImageReference(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
 	if err != nil {
 		return false, groupInviteUnavailable(err)
 	}
-	return exists, nil
+	return true, nil
 }
 
 func (repository *GroupInviteRepository) ReserveGroupInvite(ctx context.Context, input mediaapp.GroupInviteReservation) (mediaapp.GroupInviteReceipt, bool, error) {

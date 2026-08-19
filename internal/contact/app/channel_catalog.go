@@ -16,6 +16,7 @@ import (
 	"time"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
@@ -78,12 +79,19 @@ type ChannelStore interface {
 type ChannelService struct {
 	uow    platformport.UnitOfWork
 	store  ChannelStore
+	images mediaport.ImageMetadataReader
 	events eventport.Appender
 	now    func() time.Time
 }
 
 func NewChannelService(uow platformport.UnitOfWork, store ChannelStore, events eventport.Appender) *ChannelService {
 	return &ChannelService{uow: uow, store: store, events: events, now: time.Now}
+}
+
+// NewChannelServiceWithImageReferences wires Media's transaction-bound image
+// reader for welcome_image_library_ids in the Contact-owned projection.
+func NewChannelServiceWithImageReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, events eventport.Appender) *ChannelService {
+	return &ChannelService{uow: uow, store: store, images: images, events: events, now: time.Now}
 }
 
 func (service *ChannelService) ListChannels(ctx context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
@@ -128,6 +136,9 @@ func (service *ChannelService) CreateChannel(ctx context.Context, command Create
 		return Channel{}, err
 	}
 	return service.mutate(ctx, "create", normalized.Actor, normalized.IdempotencyKey, normalized, func(tx context.Context, now time.Time) (Channel, error) {
+		if err := service.validateImageReferences(tx, normalized.LegacyProjection); err != nil {
+			return Channel{}, err
+		}
 		return service.store.CreateChannel(tx, normalized, now)
 	})
 }
@@ -143,6 +154,9 @@ func (service *ChannelService) UpdateChannel(ctx context.Context, command Update
 		}
 		merged, err := mergeChannel(current, command.Patch)
 		if err != nil {
+			return Channel{}, err
+		}
+		if err := service.validateImageReferences(tx, merged.LegacyProjection); err != nil {
 			return Channel{}, err
 		}
 		return service.store.UpdateChannel(tx, merged, command.Actor, now)
@@ -363,6 +377,33 @@ func normalizeProjection(raw json.RawMessage, code, name, status string) (json.R
 		return nil, ErrInvalidChannel
 	}
 	return canonicalJSON(encoded)
+}
+
+func (service *ChannelService) validateImageReferences(ctx context.Context, projection json.RawMessage) error {
+	values, err := object(projection)
+	if err != nil {
+		return ErrChannelUnavailable
+	}
+	var imageIDs []int64
+	if err := json.Unmarshal(values["welcome_image_library_ids"], &imageIDs); err != nil {
+		return ErrChannelUnavailable
+	}
+	if len(imageIDs) == 0 {
+		return nil
+	}
+	if service == nil || service.images == nil {
+		return ErrChannelUnavailable
+	}
+	for _, imageID := range imageIDs {
+		exists, err := service.images.ImageExists(ctx, imageID)
+		if err != nil {
+			return ErrChannelUnavailable
+		}
+		if !exists {
+			return ErrInvalidChannel
+		}
+	}
+	return nil
 }
 
 func object(raw []byte) (map[string]json.RawMessage, error) {

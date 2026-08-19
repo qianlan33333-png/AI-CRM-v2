@@ -17,6 +17,7 @@ import (
 type UploadRepository struct{}
 
 var _ mediaapp.Store = (*UploadRepository)(nil)
+var _ mediaport.ImageMetadataReader = (*UploadRepository)(nil)
 
 func NewUploadRepository() *UploadRepository { return &UploadRepository{} }
 
@@ -100,6 +101,23 @@ func (repository *UploadRepository) Complete(ctx context.Context, id int64, snap
 		return mediaapp.Receipt{}, err
 	}
 	return receipt(row.ID, row.ActorScope, row.KeyDigest, row.PayloadDigest, row.State, row.ResultSnapshot), nil
+}
+
+// ImageExists takes a key-share row lock in the caller's UoW. A reference
+// writer holding this lock serializes against hard deletion of the image.
+func (repository *UploadRepository) ImageExists(ctx context.Context, id int64) (bool, error) {
+	query, err := queries(ctx)
+	if repository == nil || id < 1 {
+		return false, errors.New("media image reference reader unavailable")
+	}
+	if err != nil {
+		return false, err
+	}
+	_, err = query.LockMediaImageReference(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func receipt(id int64, actor string, key, payload []byte, state string, snapshot []byte) mediaapp.Receipt {

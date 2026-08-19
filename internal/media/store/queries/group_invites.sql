@@ -52,8 +52,10 @@ SET enabled = FALSE, updated_by = sqlc.arg(updated_by)::bigint, version = sqlc.a
     updated_at = sqlc.arg(updated_at)::timestamptz, archived_at = sqlc.arg(archived_at)::timestamptz
 WHERE id = sqlc.arg(id)::bigint AND archived_at IS NULL;
 
--- name: MediaImageExists :one
-SELECT EXISTS (SELECT 1 FROM media_images WHERE id = sqlc.arg(id)::bigint);
+-- name: LockMediaImageReference :one
+SELECT id FROM media_images
+WHERE id = sqlc.arg(id)::bigint
+FOR KEY SHARE;
 
 -- name: ReserveMediaGroupInviteReceipt :one
 INSERT INTO media_group_invite_operation_receipts (

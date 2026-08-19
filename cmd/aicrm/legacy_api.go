@@ -165,6 +165,7 @@ type Handler struct {
 	manualRetry           legacyRetryApplication
 	products              legacyProductApplication
 	media                 legacyMediaApplication
+	imageDeletes          legacyImageDeleteApplication
 	groupInvites          groupInviteApplication
 	miniPrograms          miniProgramApplication
 	surveys               legacySurveyApplication

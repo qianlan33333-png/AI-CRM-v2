@@ -40,6 +40,13 @@ type CustomerReader interface {
 	ReadCustomer(context.Context, CustomerID) (CustomerProjection, error)
 }
 
+// ImageReferenceReader is the Contact-owned read-only answer to whether a
+// channel welcome projection references one Media image. It returns only local
+// channel IDs in ascending order.
+type ImageReferenceReader interface {
+	ListImageReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
 // StaffDirectoryReader exposes the narrowly-scoped local staff projection to
 // approved read-only consumers. It contains only the approved staff identity
 // fields and no provider payload or broader contact PII.

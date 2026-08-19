@@ -8,6 +8,11 @@ WHERE status <> 'archived'
   AND (sqlc.arg(automation_type)::text = '' OR automation_type = sqlc.arg(automation_type)::text)
 ORDER BY updated_at DESC, id DESC LIMIT 200;
 
+-- name: ListAutomationAgentImageReferencePackages :many
+SELECT id, COALESCE(fixed_content_package_json -> 'image_library_ids', '[]'::jsonb)::text AS image_library_ids
+FROM automation_agent_configurations
+ORDER BY id ASC;
+
 -- name: GetAutomationAgent :one
 SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
        draft_task_prompt, published_role_prompt, published_task_prompt,

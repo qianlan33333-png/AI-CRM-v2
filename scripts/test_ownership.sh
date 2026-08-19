@@ -13,10 +13,13 @@ seed() {
     "$root/internal/segment/store/queries" "$root/internal/outbound/worker" \
     "$root/internal/wecom/store" "$root/internal/platform/store" \
     "$root/internal/events/store/queries" \
+    "$root/internal/media/store/queries" \
     "$root/internal/automation/store/queries" "$root/internal/stats/store/queries" \
-    "$root/acceptance/fixtures" "$root/acceptance/contactfixture"
+    "$root/acceptance/fixtures" "$root/acceptance/contactfixture" \
+    "$root/acceptance/automationfixture" "$root/acceptance/mediafixture"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
+  printf '%s\n' 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/media/store/queries/write.sql"
   printf '%s\n' "SELECT 'UPDATE identities'; -- DELETE FROM tags" 'SELECT * FROM customers;' >"$root/internal/segment/store/queries/read.sql"
   printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/outbound/worker/client.go"
   printf '%s\n' 'package store' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/wecom/store/client.go"
@@ -25,8 +28,14 @@ seed() {
     'const dml = "INSERT INTO acceptance_fixtures.fixture_probe (id) VALUES (1)"' \
     >"$root/acceptance/fixtures/probe.go"
   printf '%s\n' 'package contactfixture' \
-    'const dml = "INSERT INTO customers (name) VALUES ($1)"' \
+    'const dml = "INSERT INTO channels (name) VALUES ($1)"' \
     >"$root/acceptance/contactfixture/customer.go"
+  printf '%s\n' 'package automationfixture' \
+    'const dml = "INSERT INTO automation_agent_configurations (agent_name) VALUES ($1)"' \
+    >"$root/acceptance/automationfixture/agent.go"
+  printf '%s\n' 'package mediafixture' \
+    'const dml = "INSERT INTO media_images (name) VALUES ($1)"' \
+    >"$root/acceptance/mediafixture/image.go"
   printf '%s\n' \
     'INSERT INTO event_log (event_type) VALUES ($1)' \
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
@@ -62,6 +71,9 @@ mutate() {
     stats-event-delivery) echo 'UPDATE event_deliveries SET status = '\''completed'\'';' >"$root/internal/stats/store/queries/write.sql" ;;
     acceptance-event-delivery) mkdir -p "$root/acceptance/automation"; echo 'package automation; const dml = "INSERT INTO event_deliveries (event_id, consumer) VALUES (1, '\''automation.tag-trigger.v1'\'')"' >"$root/acceptance/automation/direct_event_write.go" ;;
     contact-auth-session) echo 'UPDATE admin_sessions SET revoked_reason = '\''bypass'\'';' >"$root/internal/contact/store/queries/write.sql" ;;
+    contact-media-delete-receipt) echo 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql" ;;
+    automationfixture-contact-write) echo 'package automationfixture; const dml = "INSERT INTO customers (name) VALUES ($1)"' >"$root/acceptance/automationfixture/agent.go" ;;
+    mediafixture-automation-write) echo 'package mediafixture; const dml = "INSERT INTO automation_agent_configurations (agent_name) VALUES ($1)"' >"$root/acceptance/mediafixture/image.go" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
     update-unknown-table) echo 'UPDATE mystery_table AS target SET id = 2;' >"$root/internal/contact/store/queries/write.sql" ;;
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
@@ -80,6 +92,9 @@ reject automation-event-delivery 'table write ownership violation'
 reject stats-event-delivery 'table write ownership violation'
 reject acceptance-event-delivery 'table write ownership violation'
 reject contact-auth-session 'table write ownership violation'
+reject contact-media-delete-receipt 'table write ownership violation'
+reject automationfixture-contact-write 'table write ownership violation'
+reject mediafixture-automation-write 'table write ownership violation'
 reject unknown-table 'write to unknown table'
 reject update-unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'

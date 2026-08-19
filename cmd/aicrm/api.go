@@ -414,14 +414,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	productService := productapp.NewService(uow, productstore.NewCatalogRepository(), eventstore.NewAppender())
-	mediaService := mediaapp.NewService(uow, mediastore.NewUploadRepository(), eventstore.NewAppender())
+	mediaRepository := mediastore.NewUploadRepository()
+	mediaService := mediaapp.NewService(uow, mediaRepository, eventstore.NewAppender())
+	imageDeleteService := mediaapp.NewImageDeleteService(uow, mediaRepository, automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), eventstore.NewAppender())
 	groupInviteRepository := mediastore.NewGroupInviteRepository()
 	groupInviteService := mediaapp.NewGroupInviteService(uow, groupInviteRepository, groupInviteRepository, eventstore.NewAppender())
 	miniProgramRepository := mediastore.NewMiniProgramRepository()
 	miniProgramService := mediaapp.NewMiniProgramService(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository)
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveystore.NewSubmissionRepository())
-	channelService := contactapp.NewChannelService(uow, contactstore.NewChannelRepository(), eventstore.NewAppender())
+	channelService := contactapp.NewChannelServiceWithImageReferences(uow, contactstore.NewChannelRepository(), mediaRepository, eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
 	legacyTagExecutionRepository, err := contactstore.NewLegacyTagExecutionRepository(pool)
 	if err != nil {
@@ -432,7 +434,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyTagLiveService := contactapp.NewLegacyTagLiveMutationService(uow, legacyTagExecutionRepository, eventstore.NewAppender(), legacyTagExecutionRepository)
 	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
-	automationAgentService := automationapp.NewAgentService(uow, automationstore.NewAgentRepository(), eventstore.NewAppender())
+	automationAgentService := automationapp.NewAgentServiceWithImageReferences(uow, automationstore.NewAgentRepository(), mediaRepository, eventstore.NewAppender())
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -496,6 +498,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	legacyHandler.legacyTagSync = legacyTagSyncService
+	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
@@ -828,7 +831,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			if wrapErr != nil {
 				return wrapErr
 			}
-			if method == http.MethodPut && pattern == legacyImageDetailPath {
+			if (method == http.MethodPut || method == http.MethodDelete) && pattern == legacyImageDetailPath {
 				tail = legacyImageUpdateSecurityHeaders(tail)
 			}
 			if method == http.MethodPost && pattern == legacyImageCollectionPath {
@@ -1008,6 +1011,7 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 			{http.MethodGet, legacyImageFacetsPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageFacets)},
 			{http.MethodGet, legacyImageDetailPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageDetail)},
 			{http.MethodPut, legacyImageDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateImageMetadata)},
+			{http.MethodDelete, legacyImageDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.DeleteImage)},
 			{http.MethodGet, legacyImageVariantPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageVariant)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},

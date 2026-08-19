@@ -599,6 +599,9 @@ func legacyMediaRouterWithAuthAndLogger(t *testing.T, media legacyMediaApplicati
 	if err != nil {
 		t.Fatal(err)
 	}
+	if deletes, ok := media.(legacyImageDeleteApplication); ok {
+		legacy.imageDeletes = deletes
+	}
 	authHandler, err := authhttp.NewHandler(service)
 	if err != nil {
 		t.Fatal(err)
