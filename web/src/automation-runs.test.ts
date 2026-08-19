@@ -2,14 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AUTOMATION_RUNS_PAGE_SIZE,
   loadAutomationDiagnostics,
+  loadAutomationInternalEvents,
   loadAutomationRuns,
   loadAutomationSourceEvent,
   nextAutomationRunsPage,
+  nextAutomationInternalEventsOffset,
+  parseAutomationInternalEventsPage,
   parseAutomationSourceEvent,
   parseAutomationDiagnostics,
   parseAutomationRun,
   parseAutomationRunsPage,
   previousAutomationRunsPage,
+  previousAutomationInternalEventsOffset,
   startAutomationSourceEventRead,
   type AutomationRunsTransport,
 } from "./automation-runs";
@@ -83,6 +87,49 @@ const diagnostics = {
   real_external_call_executed: false,
 };
 
+const internalEvents = {
+  ok: true,
+  items: [
+    {
+      event_id: 52,
+      event_type: "customer.tag_applied",
+      occurred_at: "2026-08-19T08:01:00Z",
+      dispatched: true,
+      deliveries: [
+        {
+          consumer: "automation.tag-trigger.v1",
+          status: "completed",
+          attempt_count: 1,
+          completed_at: "2026-08-19T08:01:01Z",
+        },
+        {
+          consumer: "stats.tag-applied.v1",
+          status: "pending",
+          attempt_count: 0,
+          completed_at: null,
+        },
+      ],
+    },
+    {
+      event_id: 51,
+      event_type: "legacy.local_fact",
+      occurred_at: "2026-08-19T08:00:00Z",
+      dispatched: false,
+      deliveries: [],
+    },
+  ],
+  total: 2,
+  limit: 50,
+  offset: 0,
+  observed_at: "2026-08-19T08:02:00Z",
+  registry_id: "v2-internal-events.v1",
+  source_status: "local_read_model",
+  delivery_observation_available: true,
+  external_delivery: "unknown",
+  route_owner: "ai_crm_next",
+  real_external_call_executed: false,
+};
+
 function transport(
   overrides: Partial<AutomationRunsTransport> = {},
 ): AutomationRunsTransport {
@@ -90,6 +137,7 @@ function transport(
     list: vi.fn(async () => ({ status: 503, data: {} })),
     sourceEvent: vi.fn(async () => ({ status: 503, data: {} })),
     diagnostics: vi.fn(async () => ({ status: 503, data: {} })),
+    internalEvents: vi.fn(async () => ({ status: 503, data: {} })),
     ...overrides,
   } as AutomationRunsTransport;
 }
@@ -191,6 +239,137 @@ describe("automation internal-event diagnostics contract", () => {
     await expect(loadAutomationDiagnostics(client)).resolves.toEqual({ status: "unauthenticated" });
     await expect(loadAutomationDiagnostics(client)).resolves.toEqual({ status: "unavailable" });
     expect(client.diagnostics).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("automation internal-events list contract", () => {
+  it("accepts the exact bounded local projection, including unknown local facts without deliveries", () => {
+    expect(parseAutomationInternalEventsPage(internalEvents, 0)).toMatchObject({
+      total: 2,
+      offset: 0,
+      items: [
+        { eventID: 52, eventType: "customer.tag_applied" },
+        { eventID: 51, eventType: "legacy.local_fact", deliveries: [] },
+      ],
+    });
+    expect(parseAutomationInternalEventsPage({
+      ...internalEvents,
+      total: 1,
+      items: [{ ...internalEvents.items[1], event_type: "legacy.😀" }],
+    }, 0)).toBeDefined();
+  });
+
+  it.each([
+    { ...internalEvents, extra: true },
+    { ...internalEvents, external_delivery: "sent" },
+    { ...internalEvents, real_external_call_executed: true },
+    { ...internalEvents, source_status: "provider_read_model" },
+    { ...internalEvents, offset: 1 },
+    { ...internalEvents, items: [{ ...internalEvents.items[0], event_type: " " }] },
+    { ...internalEvents, items: [{ ...internalEvents.items[1], event_type: "legacy.\uD800" }] },
+    { ...internalEvents, items: [{ ...internalEvents.items[1], deliveries: [internalEvents.items[0].deliveries[0]] }] },
+    { ...internalEvents, items: [internalEvents.items[1], internalEvents.items[0]] },
+    {
+      ...internalEvents,
+      items: [
+        { ...internalEvents.items[0], event_id: 50 },
+        { ...internalEvents.items[1], event_id: 51, occurred_at: internalEvents.items[0].occurred_at },
+      ],
+    },
+    {
+      ...internalEvents,
+      items: [{
+        ...internalEvents.items[0],
+        deliveries: [...internalEvents.items[0].deliveries].reverse(),
+      }],
+    },
+  ])("fails closed when a local-event list fact drifts %#", (value) => {
+    expect(parseAutomationInternalEventsPage(value, 0)).toBeUndefined();
+  });
+
+  it("keeps a subset delivery in registry order while rejecting its reverse", () => {
+    const statsOnly = {
+      ...internalEvents,
+      total: 1,
+      items: [{
+        ...internalEvents.items[0],
+        deliveries: [internalEvents.items[0].deliveries[1]],
+      }],
+    };
+    expect(parseAutomationInternalEventsPage(statsOnly, 0)).toBeDefined();
+    expect(
+      parseAutomationInternalEventsPage({
+        ...statsOnly,
+        total: 2,
+        items: [{
+          ...internalEvents.items[0],
+          deliveries: [
+            internalEvents.items[0].deliveries[1],
+            internalEvents.items[0].deliveries[0],
+          ],
+        }],
+      }, 0),
+    ).toBeUndefined();
+  });
+
+  it("accepts only service-compatible empty pages at or beyond the total", () => {
+    expect(parseAutomationInternalEventsPage({
+      ...internalEvents,
+      items: [],
+      total: 0,
+      offset: 0,
+    }, 0)).toBeDefined();
+    expect(parseAutomationInternalEventsPage({
+      ...internalEvents,
+      items: [],
+      total: 2,
+      offset: 2,
+    }, 2)).toBeDefined();
+    expect(parseAutomationInternalEventsPage({
+      ...internalEvents,
+      items: [],
+      total: 2,
+      offset: 50,
+    }, 50)).toBeDefined();
+    expect(parseAutomationInternalEventsPage({
+      ...internalEvents,
+      items: [],
+      total: 2,
+      offset: 1,
+    }, 1)).toBeUndefined();
+  });
+
+  it("uses only the fixed local same-origin GET and never retries", async () => {
+    const client = transport({
+      internalEvents: vi
+        .fn()
+        .mockResolvedValueOnce({ status: 200, data: internalEvents })
+        .mockResolvedValueOnce({ status: 401, data: {} })
+        .mockRejectedValueOnce(new Error("offline")),
+    });
+    await expect(loadAutomationInternalEvents(client, 0)).resolves.toMatchObject({ status: "loaded" });
+    expect(client.internalEvents).toHaveBeenCalledWith(
+      { limit: "50", offset: "0" },
+      { credentials: "same-origin" },
+    );
+    await expect(loadAutomationInternalEvents(client, 0)).resolves.toEqual({ status: "unauthenticated" });
+    await expect(loadAutomationInternalEvents(client, 0)).resolves.toEqual({ status: "unavailable" });
+    expect(client.internalEvents).toHaveBeenCalledTimes(3);
+  });
+
+  it("calculates only bounded offset transitions", () => {
+    const parsed = parseAutomationInternalEventsPage(internalEvents, 0);
+    if (!parsed) throw new Error("expected page");
+    const page = {
+      ...parsed,
+      total: 52,
+      items: Array.from({ length: 50 }, (_, index) => ({
+        ...parsed.items[0]!,
+        eventID: 100 - index,
+      })),
+    };
+    expect(previousAutomationInternalEventsOffset(page)).toBeUndefined();
+    expect(nextAutomationInternalEventsOffset(page)).toBe(50);
   });
 });
 

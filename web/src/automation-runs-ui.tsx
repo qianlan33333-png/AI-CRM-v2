@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   generatedAutomationRunsTransport,
   loadAutomationDiagnostics,
+  loadAutomationInternalEvents,
   loadAutomationRuns,
   loadAutomationSourceEvent,
+  nextAutomationInternalEventsOffset,
   nextAutomationRunsPage,
+  previousAutomationInternalEventsOffset,
   previousAutomationRunsPage,
   startAutomationSourceEventRead,
   type AutomationSourceEvent,
@@ -14,6 +17,7 @@ import {
   type AutomationRunsRole,
   type AutomationRunsTransport,
   type AutomationDiagnostics,
+  type AutomationInternalEventsPage,
 } from "./automation-runs";
 
 const messages: Record<AutomationRunsFailure, string> = {
@@ -60,6 +64,11 @@ export type AutomationDiagnosticsState =
   | { readonly kind: "ready"; readonly diagnostics: AutomationDiagnostics }
   | { readonly kind: "error"; readonly failure: AutomationRunsFailure; readonly previous?: AutomationDiagnostics };
 
+export type AutomationInternalEventsState =
+  | { readonly kind: "loading"; readonly previous?: AutomationInternalEventsPage }
+  | { readonly kind: "ready"; readonly page: AutomationInternalEventsPage }
+  | { readonly kind: "error"; readonly failure: AutomationRunsFailure; readonly previous?: AutomationInternalEventsPage };
+
 export interface AutomationSourceEventReadController {
   readonly generation: { current: number };
   readonly inFlight: { current: boolean };
@@ -77,6 +86,16 @@ export interface AutomationDiagnosticsReadController {
   readonly onState: (state: AutomationDiagnosticsState) => void;
   readonly onUnauthenticated?: () => void;
   readonly state: { current: AutomationDiagnosticsState };
+  readonly transport: AutomationRunsTransport;
+}
+
+export interface AutomationInternalEventsReadController {
+  readonly generation: { current: number };
+  readonly inFlight: { current: symbol | undefined };
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onState: (state: AutomationInternalEventsState) => void;
+  readonly onUnauthenticated?: () => void;
+  readonly state: { current: AutomationInternalEventsState };
   readonly transport: AutomationRunsTransport;
 }
 
@@ -251,6 +270,77 @@ export function AutomationDiagnosticsPanel({
   );
 }
 
+export function AutomationInternalEventsPanel({
+  onLoad,
+  state,
+}: {
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onLoad: (offset: number) => void;
+  readonly state: AutomationInternalEventsState;
+}): React.ReactElement {
+  const page = state.kind === "ready" ? state.page : state.previous;
+  return (
+    <section aria-live="polite" data-testid="automation-internal-events">
+      <h2>内部事件列表</h2>
+      <p>
+        仅展示本地事件与本地 consumer 的内部处理观测；“内部处理完成”不代表外部投递、送达或成功。
+      </p>
+      {page ? (
+        <>
+          <p>已验证本地事件：共 {page.total} 条，偏移 {page.offset}。</p>
+          {page.items.length === 0 ? <p>当前没有本地内部事件。</p> : (
+            <table>
+              <thead>
+                <tr>
+                  <th>事件 ID</th><th>事件类型</th><th>发生时间</th><th>内部派发标记</th><th>本地处理</th>
+                </tr>
+              </thead>
+              <tbody>
+                {page.items.map((event) => (
+                  <tr key={event.eventID}>
+                    <td>{event.eventID}</td>
+                    <td>{event.eventType}</td>
+                    <td>{displayDate(event.occurredAt)}</td>
+                    <td>{event.dispatched ? "是" : "否"}</td>
+                    <td>{event.deliveries.map((delivery) => `${delivery.consumer}：${delivery.status}（尝试 ${delivery.attemptCount} 次${delivery.completedAt ? `，完成于 ${displayDate(delivery.completedAt)}` : ""}）`).join("；") || "无"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p>
+            <button
+              type="button"
+              disabled={
+                state.kind === "loading" ||
+                previousAutomationInternalEventsOffset(page) === undefined
+              }
+              onClick={() => {
+                const previous = previousAutomationInternalEventsOffset(page);
+                if (previous !== undefined) onLoad(previous);
+              }}
+            >上一页</button>{" "}
+            <button
+              type="button"
+              disabled={
+                state.kind === "loading" ||
+                nextAutomationInternalEventsOffset(page) === undefined
+              }
+              onClick={() => {
+                const next = nextAutomationInternalEventsOffset(page);
+                if (next !== undefined) onLoad(next);
+              }}
+            >下一页</button>
+          </p>
+        </>
+      ) : null}
+      <p>外部投递状态为 unknown，且未执行真实外部调用。</p>
+      {state.kind === "loading" ? <p role="status">正在读取本地内部事件。</p> : null}
+      {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+    </section>
+  );
+}
+
 // The page calls this controller directly.  Keeping its mutable state in refs
 // makes the same-tick gate and the unmount generation boundary executable in
 // tests without adding a DOM test dependency.
@@ -307,19 +397,51 @@ export function loadAutomationDiagnosticsState(
     });
 }
 
+export function loadAutomationInternalEventsState(
+  controller: AutomationInternalEventsReadController,
+  offset: number,
+): Promise<void> | undefined {
+  if (controller.inFlight.current !== undefined) return undefined;
+  const token = Symbol("automation-internal-events-read");
+  controller.inFlight.current = token;
+  const currentGeneration = ++controller.generation.current;
+  const previous = controller.state.current.kind === "ready"
+    ? controller.state.current.page
+    : controller.state.current.previous;
+  controller.onState({ kind: "loading", previous });
+  return loadAutomationInternalEvents(controller.transport, offset)
+    .then((result) => {
+      if (currentGeneration !== controller.generation.current) return;
+      if (result.status === "loaded") {
+        controller.onState({ kind: "ready", page: result.page });
+        return;
+      }
+      if (result.status === "unauthenticated") controller.onUnauthenticated?.();
+      controller.onState({ kind: "error", failure: result.status, previous });
+    })
+    .finally(() => {
+      if (controller.inFlight.current === token) controller.inFlight.current = undefined;
+    });
+}
+
 function AutomationRunsContent({
   onLoad,
   onLoadSourceEvent,
+  onLoadInternalEvents,
   sourceEvent,
   diagnostics,
+  internalEvents,
   state,
 }: {
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onLoad: (page: number) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onLoadSourceEvent: (eventID: number) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onLoadInternalEvents: (offset: number) => void;
   readonly sourceEvent: AutomationSourceEventState;
   readonly diagnostics: AutomationDiagnosticsState;
+  readonly internalEvents: AutomationInternalEventsState;
   readonly state: AutomationRunsState;
 }): React.ReactElement {
   const page = state.kind === "ready" ? state.page : state.previous;
@@ -332,6 +454,10 @@ function AutomationRunsContent({
       </p>
       <AutomationSourceEventPanel state={sourceEvent} />
       <AutomationDiagnosticsPanel state={diagnostics} />
+      <AutomationInternalEventsPanel
+        state={internalEvents}
+        onLoad={onLoadInternalEvents}
+      />
       {page ? (
         <RunRows
           page={page}
@@ -410,6 +536,10 @@ export function AutomationRunsPage({
   const diagnosticsInFlight = useRef<symbol | undefined>(undefined);
   const diagnosticsState = useRef<AutomationDiagnosticsState>({ kind: "loading" });
   const [diagnostics, setDiagnostics] = useState<AutomationDiagnosticsState>({ kind: "loading" });
+  const internalEventsGeneration = useRef(0);
+  const internalEventsInFlight = useRef<symbol | undefined>(undefined);
+  const internalEventsState = useRef<AutomationInternalEventsState>({ kind: "loading" });
+  const [internalEvents, setInternalEvents] = useState<AutomationInternalEventsState>({ kind: "loading" });
 
   const setSourceEventState = useCallback(
     (next: AutomationSourceEventState) => {
@@ -457,18 +587,38 @@ export function AutomationRunsPage({
     if (operation) void operation;
   }, [onUnauthenticated, setDiagnosticsState, transport]);
 
+  const setInternalEventsState = useCallback((next: AutomationInternalEventsState) => {
+    internalEventsState.current = next;
+    setInternalEvents(next);
+  }, []);
+
+  const loadInternalEvents = useCallback((offset: number) => {
+    const operation = loadAutomationInternalEventsState({
+      generation: internalEventsGeneration,
+      inFlight: internalEventsInFlight,
+      onState: setInternalEventsState,
+      onUnauthenticated,
+      state: internalEventsState,
+      transport,
+    }, offset);
+    if (operation) void operation;
+  }, [onUnauthenticated, setInternalEventsState, transport]);
+
   useEffect(() => {
     if (canRead) {
       void load(1);
       loadDiagnostics();
+      loadInternalEvents(0);
     }
     return () => {
       generation.current += 1;
       sourceEventGeneration.current += 1;
       diagnosticsGeneration.current += 1;
       diagnosticsInFlight.current = undefined;
+      internalEventsGeneration.current += 1;
+      internalEventsInFlight.current = undefined;
     };
-  }, [canRead, load, loadDiagnostics]);
+  }, [canRead, load, loadDiagnostics, loadInternalEvents]);
 
   const loadSourceEvent = useCallback(
     (eventID: number) => {
@@ -500,8 +650,10 @@ export function AutomationRunsPage({
     <AutomationRunsContent
       onLoad={(page) => void load(page)}
       onLoadSourceEvent={loadSourceEvent}
+      onLoadInternalEvents={loadInternalEvents}
       sourceEvent={sourceEvent}
       diagnostics={diagnostics}
+      internalEvents={internalEvents}
       state={state}
     />
   );
