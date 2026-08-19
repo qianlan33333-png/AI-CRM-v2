@@ -1,4 +1,5 @@
 import {
+  getLegacyChannel,
   listLegacyChannels,
   updateLegacyChannel,
 } from "./api/generated/health";
@@ -17,6 +18,18 @@ export interface ChannelListItem {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+export interface ChannelDetail {
+  readonly item: ChannelListItem;
+  readonly channelType?: "qrcode" | "wecom_customer_acquisition";
+  readonly carrierType?: "qrcode" | "link";
+  readonly sceneValue?: string;
+  readonly welcomeMessage?: string;
+  readonly hasAssignmentConfig: boolean;
+  readonly imageMaterialCount: number;
+  readonly miniProgramMaterialCount: number;
+  readonly attachmentMaterialCount: number;
+  readonly groupInviteMaterialCount: number;
+}
 
 export type ChannelsFailure =
   "unauthenticated" | "forbidden" | "unavailable" | "invalid";
@@ -31,6 +44,9 @@ export type ChannelStatusUpdateResult =
       readonly items: readonly ChannelListItem[];
     }
   | { readonly status: "unknown" }
+  | { readonly status: ChannelsFailure };
+export type ChannelDetailResult =
+  | { readonly status: "loaded"; readonly detail: ChannelDetail }
   | { readonly status: ChannelsFailure };
 
 const channelListParams = { limit: 300, include_archived: true } as const;
@@ -53,14 +69,19 @@ async function generatedWrite(
     { ...options, credentials: "same-origin" },
   );
 }
+async function generatedDetail(channelID: number, options?: RequestInit) {
+  return getLegacyChannel(channelID, { credentials: "same-origin", ...options });
+}
 
 export interface ChannelsTransport {
   readonly read: typeof generatedRead;
+  readonly detail: typeof generatedDetail;
   readonly write: typeof generatedWrite;
 }
 
 export const generatedChannelsTransport: ChannelsTransport = {
   read: generatedRead,
+  detail: generatedDetail,
   write: generatedWrite,
 };
 
@@ -90,6 +111,18 @@ function frozenText(value: unknown, allowEmpty = false): value is string {
     value.trim() === value &&
     !value.includes("\x00")
   );
+}
+function longText(value: unknown): value is string {
+  return typeof value === "string" && [...value].length <= 10_000 && !value.includes("\x00");
+}
+function optionalEnum<T extends string>(value: unknown, values: readonly T[]): value is T | undefined {
+  return value === undefined || (typeof value === "string" && values.includes(value as T));
+}
+function optionalLongText(value: unknown): value is string | undefined {
+  return value === undefined || longText(value);
+}
+function localMaterialIDs(value: unknown): value is readonly number[] | undefined {
+  return value === undefined || (Array.isArray(value) && value.length <= 12 && value.every(positiveInteger));
 }
 
 function frozenTimestamp(value: unknown): value is string {
@@ -240,6 +273,78 @@ export async function loadChannels(
   }
   const items = parseChannelList(response.data);
   return items ? { status: "loaded", items } : { status: "invalid" };
+}
+
+const DETAIL_REQUIRED = [
+  "schema_version", "id", "channel_name", "channel_code", "status", "created_at", "updated_at",
+  "assignees", "assignment_stats_24h", "assignee_count", "channel_contact_count",
+  "latest_channel_entered_at", "qrcode_asset_id", "qrcode_status", "qr_download_url",
+  "share_url", "copy_text",
+] as const;
+const DETAIL_OPTIONAL = [
+  "channel_type", "carrier_type", "scene_value", "qr_url", "owner_staff_id",
+  "customer_channel", "link_url", "final_url", "welcome_message",
+  "welcome_image_library_ids", "welcome_miniprogram_library_ids",
+  "welcome_attachment_library_ids", "welcome_group_invite_library_ids",
+  "auto_accept_friend", "entry_tag_id", "entry_tag_name", "entry_tag_group_name",
+  "assignment_mode", "assignment_strategy", "overflow_policy", "assignment_config_json",
+] as const;
+const DETAIL_KEYS: readonly string[] = [...DETAIL_REQUIRED, ...DETAIL_OPTIONAL];
+
+function parseChannelDetail(value: unknown, item: ChannelListItem): ChannelDetail | undefined {
+  if (!record(value)) return undefined;
+  const keys = Object.keys(value);
+  if (!DETAIL_REQUIRED.every((key) => key in value) || !keys.every((key) => DETAIL_KEYS.includes(key))) return undefined;
+  if (
+    value.schema_version !== 1 || !positiveInteger(value.id) || value.id !== item.id ||
+    !frozenText(value.channel_name, true) || value.channel_name !== item.name ||
+    !frozenText(value.channel_code, true) || value.channel_code !== item.code ||
+    value.status !== item.status || !frozenTimestamp(value.created_at) || value.created_at !== item.createdAt ||
+    !frozenTimestamp(value.updated_at) || value.updated_at !== item.updatedAt ||
+    !Array.isArray(value.assignees) || value.assignees.length !== 0 ||
+    !Array.isArray(value.assignment_stats_24h) || value.assignment_stats_24h.length !== 0 ||
+    value.assignee_count !== 0 || value.channel_contact_count !== 0 ||
+    value.latest_channel_entered_at !== "" || value.qrcode_asset_id !== 0 ||
+    value.qrcode_status !== "not_generated" || value.qr_download_url !== "" ||
+    value.share_url !== "" || value.copy_text !== "" ||
+    !optionalEnum(value.channel_type, ["qrcode", "wecom_customer_acquisition"]) ||
+    !optionalEnum(value.carrier_type, ["qrcode", "link"]) ||
+    !optionalLongText(value.scene_value) || !optionalLongText(value.qr_url) ||
+    !optionalLongText(value.owner_staff_id) || !optionalLongText(value.customer_channel) ||
+    !optionalLongText(value.link_url) || !optionalLongText(value.final_url) ||
+    !optionalLongText(value.welcome_message) || !optionalLongText(value.entry_tag_id) ||
+    !optionalLongText(value.entry_tag_name) || !optionalLongText(value.entry_tag_group_name) ||
+    !optionalLongText(value.overflow_policy) ||
+    (value.auto_accept_friend !== undefined && typeof value.auto_accept_friend !== "boolean") ||
+    !optionalEnum(value.assignment_mode, ["single_owner", "multi_staff"]) ||
+    !optionalEnum(value.assignment_strategy, ["ratio", "cap_switch"]) ||
+    !localMaterialIDs(value.welcome_image_library_ids) || !localMaterialIDs(value.welcome_miniprogram_library_ids) ||
+    !localMaterialIDs(value.welcome_attachment_library_ids) || !localMaterialIDs(value.welcome_group_invite_library_ids) ||
+    (value.assignment_config_json !== undefined && !record(value.assignment_config_json))
+  ) return undefined;
+  return {
+    item,
+    ...(typeof value.channel_type === "string" ? { channelType: value.channel_type as ChannelDetail["channelType"] } : {}),
+    ...(typeof value.carrier_type === "string" ? { carrierType: value.carrier_type as ChannelDetail["carrierType"] } : {}),
+    ...(typeof value.scene_value === "string" ? { sceneValue: value.scene_value } : {}),
+    ...(typeof value.welcome_message === "string" ? { welcomeMessage: value.welcome_message } : {}),
+    hasAssignmentConfig: value.assignment_config_json !== undefined,
+    imageMaterialCount: value.welcome_image_library_ids?.length ?? 0,
+    miniProgramMaterialCount: value.welcome_miniprogram_library_ids?.length ?? 0,
+    attachmentMaterialCount: value.welcome_attachment_library_ids?.length ?? 0,
+    groupInviteMaterialCount: value.welcome_group_invite_library_ids?.length ?? 0,
+  };
+}
+
+export async function loadChannelDetail(transport: ChannelsTransport, item: ChannelListItem): Promise<ChannelDetailResult> {
+  try {
+    const response = await transport.detail(item.id);
+    if (response.status !== 200) return { status: failure(response.status, response.data) };
+    const body: unknown = response.data;
+    if (!record(body) || !exact(body, ["ok", "channel", "reason", "source"]) || body.ok !== true || body.reason !== "channel_loaded" || body.source !== "ai_crm_next") return { status: "invalid" };
+    const detail = parseChannelDetail(body.channel, item);
+    return detail ? { status: "loaded", detail } : { status: "invalid" };
+  } catch { return { status: "unavailable" }; }
 }
 
 export function newChannelStatusIdempotencyKey(

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   filterChannels,
+  loadChannelDetail,
   loadChannels,
   newChannelStatusIdempotencyKey,
   updateChannelStatus,
@@ -41,10 +42,62 @@ function transport(status: number, data: unknown): ChannelsTransport {
     write: vi.fn(),
   } as unknown as ChannelsTransport;
 }
+function detailChannel(extra: Record<string, unknown> = {}) {
+  return {
+    schema_version: 1, id: 1, channel_name: "公开课", channel_code: "course", status: "active",
+    created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T01:02:03Z",
+    assignees: [], assignment_stats_24h: [], assignee_count: 0, channel_contact_count: 0,
+    latest_channel_entered_at: "", qrcode_asset_id: 0, qrcode_status: "not_generated",
+    qr_download_url: "", share_url: "", copy_text: "", ...extra,
+  };
+}
+function detailResponse(channel: unknown = detailChannel(), extra: Record<string, unknown> = {}) {
+  return { ok: true, channel, reason: "channel_loaded", source: "ai_crm_next", ...extra };
+}
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("local channel list read boundary", () => {
+  it("reads one strict local detail through the same-origin generated GET only", async () => {
+    const list = await loadChannels(transport(200, response));
+    if (list.status !== "loaded") throw new Error("fixture must load");
+    const client = {
+      read: vi.fn(), write: vi.fn(),
+      detail: vi.fn(async () => ({ status: 200, data: detailResponse(), headers: new Headers() })),
+    } as unknown as ChannelsTransport;
+    await expect(loadChannelDetail(client, list.items[0])).resolves.toMatchObject({
+      status: "loaded", detail: { item: list.items[0], imageMaterialCount: 0, hasAssignmentConfig: false },
+    });
+    expect(client.detail).toHaveBeenCalledWith(1);
+    expect(client.read).not.toHaveBeenCalled();
+    expect(client.write).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for extra, stale, unsafe fixed, and malformed local detail facts without retry", async () => {
+    const list = await loadChannels(transport(200, response));
+    if (list.status !== "loaded") throw new Error("fixture must load");
+    const missingSchemaVersion = detailChannel();
+    delete (missingSchemaVersion as Record<string, unknown>).schema_version;
+    for (const data of [
+      detailResponse(detailChannel({ unexpected: true })),
+      detailResponse(missingSchemaVersion),
+      detailResponse(detailChannel({ schema_version: 0 })),
+      detailResponse(detailChannel({ schema_version: 2 })),
+      detailResponse(detailChannel({ schema_version: "1" })),
+      detailResponse(detailChannel({ channel_name: "不同渠道" })),
+      detailResponse(detailChannel({ qrcode_status: "generated" })),
+      detailResponse(detailChannel({ welcome_image_library_ids: [0] })),
+      detailResponse(detailChannel({ assignment_config_json: [] })),
+      detailResponse(detailChannel(), { source: "legacy" }),
+    ]) {
+      await expect(loadChannelDetail({
+        read: vi.fn(), write: vi.fn(), detail: vi.fn(async () => ({ status: 200, data, headers: new Headers() })),
+      } as unknown as ChannelsTransport, list.items[0])).resolves.toEqual({ status: "invalid" });
+    }
+    const unavailable = { read: vi.fn(), write: vi.fn(), detail: vi.fn(async () => { throw new Error("offline"); }) } as unknown as ChannelsTransport;
+    await expect(loadChannelDetail(unavailable, list.items[0])).resolves.toEqual({ status: "unavailable" });
+    expect(unavailable.detail).toHaveBeenCalledTimes(1);
+  });
   it("uses the existing same-origin Orval GET with the frozen complete local list parameters", async () => {
     const fetch = vi.fn(
       async () => new Response(JSON.stringify(response), { status: 200 }),

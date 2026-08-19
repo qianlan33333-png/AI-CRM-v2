@@ -9,10 +9,13 @@ import { readCSRFCookie } from "./auth";
 import {
   filterChannels,
   generatedChannelsTransport,
+  loadChannelDetail,
   loadChannels,
   newChannelStatusIdempotencyKey,
   updateChannelStatus,
   type ChannelListItem,
+  type ChannelDetail,
+  type ChannelDetailResult,
   type ChannelListResult,
   type ChannelStatus,
   type ChannelStatusUpdateResult,
@@ -33,6 +36,11 @@ export type ChannelsViewState =
   | { readonly kind: "loading" }
   | { readonly kind: "ready"; readonly items: readonly ChannelListItem[] }
   | { readonly kind: "error"; readonly failure: ChannelsFailure };
+export type ChannelDetailState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly item: ChannelListItem; readonly previous?: ChannelDetail }
+  | { readonly kind: "ready"; readonly item: ChannelListItem; readonly detail: ChannelDetail }
+  | { readonly kind: "error"; readonly item: ChannelListItem; readonly failure: ChannelsFailure; readonly previous?: ChannelDetail };
 
 export interface ChannelStatusUpdateInput {
   readonly channelID: number;
@@ -97,8 +105,11 @@ export function ChannelsPage({
   const [state, setState] = useState<ChannelsViewState>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
+  const [detail, setDetail] = useState<ChannelDetailState>({ kind: "idle" });
   const loadGeneration = useRef(0);
   const updateInFlight = useRef(false);
+  const detailGeneration = useRef(0);
+  const detailInflight = useRef(new Set<number>());
 
   useEffect(() => {
     if (!canAccess) return undefined;
@@ -149,11 +160,28 @@ export function ChannelsPage({
     },
     [onUnauthenticated, readCookie, transport],
   );
+  const onLoadDetail = useCallback((item: ChannelListItem) => {
+    if (detailInflight.current.has(item.id)) return;
+    detailInflight.current.add(item.id);
+    const generation = ++detailGeneration.current;
+    const previous = detail.kind !== "idle" && detail.item.id === item.id
+      ? detail.kind === "ready" ? detail.detail : detail.previous
+      : undefined;
+    setDetail({ kind: "loading", item, previous });
+    void loadChannelDetail(transport, item).then((result: ChannelDetailResult) => {
+      if (generation !== detailGeneration.current) return;
+      if (result.status === "loaded") { setDetail({ kind: "ready", item, detail: result.detail }); return; }
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      setDetail({ kind: "error", item, failure: result.status, previous });
+    }).finally(() => detailInflight.current.delete(item.id));
+  }, [detail, onUnauthenticated, transport]);
 
   return (
     <ChannelsView
       busy={busy}
       notice={notice}
+      detail={detail}
+      onLoadDetail={onLoadDetail}
       onStatusChange={onStatusChange}
       role={role}
       state={state}
@@ -163,13 +191,20 @@ export function ChannelsPage({
 
 export function ChannelsView({
   busy = false,
+  detail = { kind: "idle" },
   notice,
+  onLoadDetail = noopDetail,
   onStatusChange = noopStatusChange,
   role,
   state,
 }: {
   readonly busy?: boolean;
+  readonly detail?: ChannelDetailState;
   readonly notice?: string;
+  readonly onLoadDetail?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    item: ChannelListItem,
+  ) => void;
   readonly onStatusChange?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
     item: ChannelListItem,
@@ -218,6 +253,7 @@ export function ChannelsView({
       <h1 id="app-title">渠道列表</h1>
       <p>状态更新仅写入本地渠道，不执行外部渠道能力。</p>
       {notice ? <p role="status">{notice}</p> : null}
+      <ChannelDetailPanel state={detail} />
       <p>
         <label>
           搜索渠道名称或编码
@@ -262,6 +298,7 @@ export function ChannelsView({
               <th>本地进入人数</th>
               <th>创建时间</th>
               <th>更新时间</th>
+              <th>本地配置</th>
               <th>更新本地状态</th>
             </tr>
           </thead>
@@ -276,6 +313,7 @@ export function ChannelsView({
                 <td>{item.contactCount}</td>
                 <td>{item.createdAt}</td>
                 <td>{item.updatedAt}</td>
+                <td><button type="button" disabled={busy || (detail.kind === "loading" && detail.item.id === item.id)} onClick={() => onLoadDetail(item)}>查看本地配置</button></td>
                 <td>
                   <select
                     aria-label={`更新${item.name}的本地状态`}
@@ -303,6 +341,24 @@ export function ChannelsView({
 }
 
 function noopStatusChange(): void {}
+function noopDetail(): void {}
+
+function ChannelDetailPanel({ state }: { readonly state: ChannelDetailState }): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const value = state.kind === "ready" ? state.detail : state.previous;
+  return <section data-testid="channel-detail">
+    <h2>本地配置：{state.item.name}</h2>
+    {value ? <dl>
+      <dt>渠道类型</dt><dd>{value.channelType ?? "未配置"}</dd>
+      <dt>载体类型</dt><dd>{value.carrierType ?? "未配置"}</dd>
+      <dt>场景值</dt><dd>{value.sceneValue ?? "未配置"}</dd>
+      <dt>欢迎语</dt><dd>{value.welcomeMessage ?? "未配置"}</dd>
+      <dt>本地素材引用</dt><dd>图片 {value.imageMaterialCount}，小程序 {value.miniProgramMaterialCount}，附件 {value.attachmentMaterialCount}，群邀请 {value.groupInviteMaterialCount}</dd>
+      <dt>分配配置</dt><dd>{value.hasAssignmentConfig ? "已配置" : "未配置"}</dd>
+    </dl> : null}
+    {state.kind === "loading" ? <p>正在读取本地配置。</p> : state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+  </section>;
+}
 
 function runtimeCookieHeader(): string {
   return typeof document === "undefined" ? "" : document.cookie;
