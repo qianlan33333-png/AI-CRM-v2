@@ -223,8 +223,9 @@ if events_target not in makefile:
 
 manifest = staged("docs/ci/go-acceptance-manifest.tsv").splitlines()
 expected_row = "internal-events-0367-0368|0052|P4INTERNAL_EVENTS_TEST_DATABASE_URL|legacy-make|p4-internal-events-0367-0368-acceptance|-"
-if not manifest or manifest[-1] != expected_row:
-    fail("nightly Events acceptance must be the immutable appended manifest row")
+events_rows = [line for line in manifest if line.startswith("internal-events-0367-0368|")]
+if events_rows != [expected_row]:
+    fail("nightly Events acceptance 0052 must exist exactly once with immutable semantics")
 PY
 
 printf 'repo-contract: PASS (relevance CI only)\n'
