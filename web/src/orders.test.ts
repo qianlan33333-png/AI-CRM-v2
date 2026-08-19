@@ -4,6 +4,7 @@ import {
   filterSafeRefunds,
   loadOrderDetail,
   loadOrderItems,
+  loadLocalExternalEffects,
   loadLocalRefunds,
   loadOrders,
   nextLocalRefundOffset,
@@ -243,5 +244,14 @@ describe("local order overview read boundary", () => {
     const localPage = { items: [], total: 51, offset: 50, hasMore: false };
     expect(previousLocalRefundOffset(localPage)).toBe(0);
     expect(nextLocalRefundOffset({ ...localPage, offset: 0, hasMore: true })).toBe(50);
+  });
+
+  it("reads only a closed local external-effect projection and discards receipts", async () => {
+    const externalEffects = vi.fn(async () => ({ status: 200, data: { items: [{ id: 31, order_id: 17, provider: "wechat", effect_kind: "external_push", state: "outcome_unknown", auto_retry_allowed: false, provider_receipt: "hidden", manual_review_requested_at: null, created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T00:00:01Z" }], total: 1 } }));
+    const client: OrdersTransport = { ...transport(200, page(), 200, detail()), externalEffects };
+    const listed = await loadOrders(client); if (listed.status !== "loaded") throw new Error("expected order");
+    const loaded = await loadOrderDetail(client, listed.page.items[0]); if (loaded.status !== "loaded") throw new Error("expected detail");
+    await expect(loadLocalExternalEffects(client, loaded.detail)).resolves.toEqual({ status: "loaded", page: { items: [{ id: 31, kind: "external_push", state: "outcome_unknown", createdAt: "2026-08-19T00:00:00Z", updatedAt: "2026-08-19T00:00:01Z" }], total: 1 } });
+    expect(externalEffects).toHaveBeenCalledWith("M-1", { credentials: "same-origin" });
   });
 });

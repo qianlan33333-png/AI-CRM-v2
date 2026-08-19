@@ -1,6 +1,7 @@
 import {
   getLegacyOrder,
   getLegacyOrderItems,
+  listLegacyWechatOrderExternalEffects,
   listLegacyOrders,
   listLegacyRefunds,
   type GetLegacyOrderParams,
@@ -88,6 +89,20 @@ export interface LocalRefundPage {
   readonly hasMore: boolean;
 }
 
+/** Safe local projection only. Provider receipts and review metadata are verified then discarded. */
+export interface LocalExternalEffect {
+  readonly id: number;
+  readonly kind: "refund" | "external_push";
+  readonly state: LocalRefundState;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface LocalExternalEffectPage {
+  readonly items: readonly LocalExternalEffect[];
+  readonly total: number;
+}
+
 async function generatedList(
   params: ListLegacyOrdersParams,
   options: RequestInit,
@@ -118,11 +133,19 @@ async function generatedRefunds(
   return listLegacyRefunds(params, options);
 }
 
+async function generatedExternalEffects(
+  orderNo: string,
+  options: RequestInit,
+): Promise<OrdersTransportResponse> {
+  return listLegacyWechatOrderExternalEffects(orderNo, options);
+}
+
 export interface OrdersTransport {
   readonly list: typeof generatedList;
   readonly detail: typeof generatedDetail;
   readonly items: typeof generatedItems;
   readonly refunds: typeof generatedRefunds;
+  readonly externalEffects?: typeof generatedExternalEffects;
 }
 
 export const generatedOrdersTransport: OrdersTransport = {
@@ -130,6 +153,7 @@ export const generatedOrdersTransport: OrdersTransport = {
   detail: generatedDetail,
   items: generatedItems,
   refunds: generatedRefunds,
+  externalEffects: generatedExternalEffects,
 };
 
 export type OrdersFailure =
@@ -148,6 +172,9 @@ export type OrderItemsResult =
   | { readonly status: OrdersFailure };
 export type LocalRefundResult =
   | { readonly status: "loaded"; readonly page: LocalRefundPage }
+  | { readonly status: OrdersFailure };
+export type LocalExternalEffectResult =
+  | { readonly status: "loaded"; readonly page: LocalExternalEffectPage }
   | { readonly status: OrdersFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -428,6 +455,22 @@ function parseLocalRefundPage(value: unknown, offset: number): LocalRefundPage |
   return { items: parsed, total: value.total, offset, hasMore: value.has_more };
 }
 
+const LOCAL_EXTERNAL_EFFECT_KEYS = [
+  "id", "order_id", "provider", "effect_kind", "state", "auto_retry_allowed", "provider_receipt", "manual_review_requested_at", "created_at", "updated_at",
+] as const;
+
+function parseLocalExternalEffect(value: unknown, orderID: number): LocalExternalEffect | undefined {
+  const required = LOCAL_EXTERNAL_EFFECT_KEYS.slice(0, 8);
+  if (!record(value) || !Object.keys(value).every((key) => LOCAL_EXTERNAL_EFFECT_KEYS.includes(key as typeof LOCAL_EXTERNAL_EFFECT_KEYS[number])) || !required.every((key) => Object.hasOwn(value, key)) || !nonnegative(value.id) || value.id < 1 || value.order_id !== orderID || value.provider !== "wechat" || (value.effect_kind !== "refund" && value.effect_kind !== "external_push") || !localRefundState(value.state) || value.auto_retry_allowed !== false || (Object.hasOwn(value, "provider_receipt") && value.provider_receipt !== null && !text(value.provider_receipt, 4096, true)) || (Object.hasOwn(value, "manual_review_requested_at") && value.manual_review_requested_at !== null && !timestamp(value.manual_review_requested_at)) || !timestamp(value.created_at) || !timestamp(value.updated_at) || Date.parse(value.updated_at) < Date.parse(value.created_at)) return undefined;
+  return { id: value.id, kind: value.effect_kind, state: value.state, createdAt: value.created_at, updatedAt: value.updated_at };
+}
+
+export function parseLocalExternalEffectPage(value: unknown, orderID: number): LocalExternalEffectPage | undefined {
+  if (!record(value) || !exact(value, ["items", "total"]) || !Array.isArray(value.items) || !nonnegative(value.total) || value.total !== value.items.length) return undefined;
+  const items = value.items.map((item) => parseLocalExternalEffect(item, orderID));
+  return items.includes(undefined) || new Set((items as readonly LocalExternalEffect[]).map((item) => item.id)).size !== items.length ? undefined : { items: items as readonly LocalExternalEffect[], total: value.total };
+}
+
 function failure(status: number): OrdersFailure {
   if (status === 401) return "unauthenticated";
   if (status === 403) return "forbidden";
@@ -505,6 +548,16 @@ export async function loadLocalRefunds(
   } catch {
     return { status: "unavailable" };
   }
+}
+
+export async function loadLocalExternalEffects(transport: OrdersTransport, detail: OrderDetail): Promise<LocalExternalEffectResult> {
+  if (detail.provider !== "wechat" || !text(detail.orderNo, 200, true) || !transport.externalEffects) return { status: "invalid" };
+  try {
+    const response = await transport.externalEffects(detail.orderNo, { credentials: "same-origin" });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const page = parseLocalExternalEffectPage(response.data, detail.id);
+    return page ? { status: "loaded", page } : { status: "invalid" };
+  } catch { return { status: "unavailable" }; }
 }
 
 export function previousOrderOffset(page: OrderListPage): number | undefined {

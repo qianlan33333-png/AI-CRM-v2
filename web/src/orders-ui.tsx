@@ -5,6 +5,7 @@ import {
   filterSafeRefunds,
   loadOrderDetail,
   loadOrderItems,
+  loadLocalExternalEffects,
   loadLocalRefunds,
   loadOrders,
   nextLocalRefundOffset,
@@ -12,6 +13,7 @@ import {
   previousLocalRefundOffset,
   previousOrderOffset,
   type LocalRefundPage,
+  type LocalExternalEffectPage,
   type OrderDetail,
   type OrderItemSnapshot,
   type OrderListPage,
@@ -44,6 +46,12 @@ export type LocalRefundViewState =
   | { readonly kind: "loading"; readonly previous?: LocalRefundPage }
   | { readonly kind: "ready"; readonly page: LocalRefundPage }
   | { readonly kind: "error"; readonly failure: OrdersFailure; readonly previous?: LocalRefundPage };
+
+export type LocalExternalEffectViewState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly orderNo: string; readonly previous?: LocalExternalEffectPage }
+  | { readonly kind: "ready"; readonly orderNo: string; readonly page: LocalExternalEffectPage }
+  | { readonly kind: "error"; readonly orderNo: string; readonly failure: OrdersFailure; readonly previous?: LocalExternalEffectPage };
 
 export type OrderItemsViewState =
   | { readonly kind: "idle" }
@@ -96,6 +104,18 @@ export interface OrderItemsLoadController {
   readonly verified: { current: OrderItemSnapshot | undefined };
   // eslint-disable-next-line no-unused-vars -- named transition value documents the state sink.
   readonly setState: (state: OrderItemsViewState) => void;
+  readonly onUnauthenticated?: () => void;
+}
+
+export interface LocalExternalEffectLoadController {
+  readonly role: OrdersRole;
+  readonly detail: OrderDetail;
+  readonly transport: OrdersTransport;
+  readonly generation: { current: number };
+  readonly inFlight: { current: ReadonlyMap<string, symbol> };
+  readonly verified: { current: LocalExternalEffectPage | undefined };
+  // eslint-disable-next-line no-unused-vars -- named transition value documents the state sink.
+  readonly setState: (state: LocalExternalEffectViewState) => void;
   readonly onUnauthenticated?: () => void;
 }
 
@@ -237,6 +257,23 @@ export function startLocalRefundLoad(
     });
 }
 
+export function startLocalExternalEffectLoad(controller: LocalExternalEffectLoadController): Promise<void> | undefined {
+  if (!canReadOrders(controller.role) || controller.detail.provider !== "wechat" || !controller.transport.externalEffects || controller.inFlight.current.has(controller.detail.orderNo)) return undefined;
+  const token = Symbol(controller.detail.orderNo);
+  const next = new Map(controller.inFlight.current); next.set(controller.detail.orderNo, token); controller.inFlight.current = next;
+  const generation = ++controller.generation.current;
+  const previous = controller.verified.current;
+  controller.setState({ kind: "loading", orderNo: controller.detail.orderNo, previous });
+  return loadLocalExternalEffects(controller.transport, controller.detail).then((result) => {
+    if (generation !== controller.generation.current) return;
+    if (result.status === "loaded") { controller.verified.current = result.page; controller.setState({ kind: "ready", orderNo: controller.detail.orderNo, page: result.page }); return; }
+    if (result.status === "unauthenticated") controller.onUnauthenticated?.();
+    controller.setState({ kind: "error", orderNo: controller.detail.orderNo, failure: result.status, previous });
+  }).finally(() => {
+    if (controller.inFlight.current.get(controller.detail.orderNo) === token) { const cleared = new Map(controller.inFlight.current); cleared.delete(controller.detail.orderNo); controller.inFlight.current = cleared; }
+  });
+}
+
 function displayDate(value: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
     dateStyle: "medium",
@@ -293,7 +330,8 @@ function OrderRows({
   );
 }
 
-function OrderDetailPanel({ state }: { readonly state: OrderDetailViewState }): React.ReactElement | null {
+function OrderDetailPanel({ state, effects, onLoadEffects }: { readonly state: OrderDetailViewState; readonly effects: LocalExternalEffectViewState; // eslint-disable-next-line no-unused-vars -- callback identifies the verified local detail.
+ readonly onLoadEffects: (detail: OrderDetail) => void; }): React.ReactElement | null {
   const detail = state.kind === "ready" ? state.detail : state.kind === "loading" || state.kind === "error" ? state.previous : undefined;
   if (state.kind === "idle") return null;
   return (
@@ -312,6 +350,8 @@ function OrderDetailPanel({ state }: { readonly state: OrderDetailViewState }): 
       {state.kind === "loading" ? <p role="status">正在读取本地订单详情。</p> : null}
       {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
       <p>详情仅来自本地订单投影；可退金额不代表退款已经执行，也不会发起退款。</p>
+      {detail?.provider === "wechat" ? <button type="button" disabled={effects.kind === "loading"} onClick={() => onLoadEffects(detail)}>读取本地外效状态</button> : null}
+      {effects.kind !== "idle" ? <section aria-label="本地外效状态" data-testid="local-external-effects"><h3>本地外效状态</h3><p>仅显示已持久化的本地状态；任何状态均不代表支付渠道、投递或退款成功，本页不会重试或调用第三方服务。</p>{(effects.kind === "ready" ? effects.page : effects.previous) ? <table><thead><tr><th>本地记录 ID</th><th>本地类型</th><th>本地状态</th><th>创建时间</th><th>更新时间</th></tr></thead><tbody>{(effects.kind === "ready" ? effects.page : effects.previous)!.items.map((item) => <tr key={item.id}><td>{item.id}</td><td>{item.kind}</td><td>{item.state}</td><td>{displayDate(item.createdAt)}</td><td>{displayDate(item.updatedAt)}</td></tr>)}</tbody></table> : null}{effects.kind === "loading" ? <p role="status">正在读取本地外效状态。</p> : null}{effects.kind === "error" ? <p role="alert">{messages[effects.failure]}</p> : null}</section> : null}
     </section>
   );
 }
@@ -412,9 +452,11 @@ export function OrdersContent({
   onLoad,
   onLoadDetail,
   onLoadItems = () => undefined,
+  onLoadEffects = () => undefined,
   onLoadRefunds,
   detail,
   items = { kind: "idle" },
+  effects = { kind: "idle" },
   refunds,
   state,
 }: {
@@ -424,10 +466,13 @@ export function OrdersContent({
   readonly onLoadDetail: (item: OrderListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter identifies the selected local order item.
   readonly onLoadItems?: (item: OrderListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- callback identifies the verified local detail.
+  readonly onLoadEffects?: (detail: OrderDetail) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter identifies the requested local-refund page.
   readonly onLoadRefunds: (offset: number) => void;
   readonly detail: OrderDetailViewState;
   readonly items?: OrderItemsViewState;
+  readonly effects?: LocalExternalEffectViewState;
   readonly refunds: LocalRefundViewState;
   readonly state: OrdersViewState;
 }): React.ReactElement {
@@ -443,7 +488,7 @@ export function OrdersContent({
       {filteredPage ? <OrderRows page={filteredPage} detail={detail} itemSnapshot={items} onLoadDetail={onLoadDetail} onLoadItems={onLoadItems} /> : null}
       {state.kind === "loading" ? <p role="status">正在读取本地订单总览。</p> : null}
       {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
-      <OrderDetailPanel state={detail} />
+      <OrderDetailPanel state={detail} effects={effects} onLoadEffects={onLoadEffects} />
       <OrderItemsPanel state={items} />
       <LocalRefundHistoryPanel
         state={refunds}
@@ -495,10 +540,14 @@ export function OrdersPage({
   const refundGeneration = useRef(0);
   const refundInFlight = useRef<symbol>();
   const verifiedRefunds = useRef<LocalRefundPage>();
+  const effectsGeneration = useRef(0);
+  const effectsInFlight = useRef<ReadonlyMap<string, symbol>>(new Map());
+  const verifiedEffects = useRef<LocalExternalEffectPage>();
   const [state, setState] = useState<OrdersViewState>({ kind: "loading" });
   const [detail, setDetail] = useState<OrderDetailViewState>({ kind: "idle" });
   const [items, setItems] = useState<OrderItemsViewState>({ kind: "idle" });
   const [refunds, setRefunds] = useState<LocalRefundViewState>({ kind: "loading" });
+  const [effects, setEffects] = useState<LocalExternalEffectViewState>({ kind: "idle" });
 
   const load = useCallback((offset: number) => {
     detailGeneration.current += 1;
@@ -507,8 +556,12 @@ export function OrdersPage({
     itemsGeneration.current += 1;
     itemsInFlight.current = new Map();
     verifiedItems.current = undefined;
+    effectsGeneration.current += 1;
+    effectsInFlight.current = new Map();
+    verifiedEffects.current = undefined;
     setDetail({ kind: "idle" });
     setItems({ kind: "idle" });
+    setEffects({ kind: "idle" });
     return startOrdersLoad({
       role,
       offset,
@@ -548,6 +601,8 @@ export function OrdersPage({
     onUnauthenticated,
   }), [onUnauthenticated, role, transport]);
 
+  const loadEffects = useCallback((detailValue: OrderDetail) => startLocalExternalEffectLoad({ role, detail: detailValue, transport, generation: effectsGeneration, inFlight: effectsInFlight, verified: verifiedEffects, setState: setEffects, onUnauthenticated }), [onUnauthenticated, role, transport]);
+
   useEffect(() => {
     if (canRead) {
       void load(0);
@@ -561,6 +616,8 @@ export function OrdersPage({
       itemsInFlight.current = new Map();
       refundGeneration.current += 1;
       refundInFlight.current = undefined;
+      effectsGeneration.current += 1;
+      effectsInFlight.current = new Map();
     };
   }, [canRead, load, loadRefunds]);
 
@@ -575,9 +632,11 @@ export function OrdersPage({
     detail={detail}
     items={items}
     refunds={refunds}
+    effects={effects}
     onLoad={(offset) => void load(offset)}
     onLoadDetail={(item) => void loadDetail(item)}
     onLoadItems={(item) => void loadItems(item)}
     onLoadRefunds={(offset) => void loadRefunds(offset)}
+    onLoadEffects={(detailValue) => void loadEffects(detailValue)}
   />;
 }

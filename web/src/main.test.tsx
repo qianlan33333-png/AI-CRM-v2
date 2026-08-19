@@ -761,6 +761,16 @@ describe("Web shell routes", () => {
     expect(html).toContain(`href="${PRODUCTS_PATH}"`);
   });
 
+  it("composes the Push Center sections with local task observation at outbound", () => {
+    vi.stubGlobal("window", { location: { pathname: OUTBOUND_PATH, search: "" } });
+
+    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
+
+    expect(html).toContain("推送中心");
+    expect(html).toContain("仅展示本地分区聚合计数");
+    expect(html).toContain("投递任务观察与本地对账");
+  });
+
   it("renders an authenticated account view only for the exact login route", () => {
     vi.stubGlobal("window", { location: { pathname: LOGIN_PATH } });
     const login = renderToStaticMarkup(<App initialSession={adminSession} />);

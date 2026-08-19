@@ -58,6 +58,8 @@ import { ExecutionRuntimePage } from "./execution-runtime-ui";
 import type { ExecutionRuntimeTransport } from "./execution-runtime";
 import { PushCenterPage } from "./push-center-ui";
 import type { PushCenterTransport } from "./push-center";
+import { OutboundOperationsPage } from "./outbound-operations-ui";
+import type { OutboundOperationsTransport } from "./outbound-operations";
 import { OrdersPage } from "./orders-ui";
 import type { OrdersTransport } from "./orders";
 import { ProductsPage } from "./products-ui";
@@ -269,6 +271,7 @@ export interface AppProps {
   dataHealthTransport?: DataHealthTransport;
   executionRuntimeTransport?: ExecutionRuntimeTransport;
   pushCenterTransport?: PushCenterTransport;
+  outboundOperationsTransport?: OutboundOperationsTransport;
   ordersTransport?: OrdersTransport;
   productsTransport?: ProductsTransport;
   appSettingsTransport?: AppSettingsTransport;
@@ -441,6 +444,7 @@ function PageContent({
   dataHealthTransport,
   executionRuntimeTransport,
   pushCenterTransport,
+  outboundOperationsTransport,
   ordersTransport,
   productsTransport,
   appSettingsTransport,
@@ -470,6 +474,7 @@ function PageContent({
   dataHealthTransport?: DataHealthTransport;
   executionRuntimeTransport?: ExecutionRuntimeTransport;
   pushCenterTransport?: PushCenterTransport;
+  outboundOperationsTransport?: OutboundOperationsTransport;
   ordersTransport?: OrdersTransport;
   productsTransport?: ProductsTransport;
   appSettingsTransport?: AppSettingsTransport;
@@ -690,11 +695,7 @@ function PageContent({
 
   if (route.path === OUTBOUND_PATH) {
     return (
-      <PushCenterPage
-        role={principal.role}
-        transport={pushCenterTransport}
-        onUnauthenticated={onUnauthenticated}
-      />
+      <><PushCenterPage role={principal.role} transport={pushCenterTransport} onUnauthenticated={onUnauthenticated} /><OutboundOperationsPage role={principal.role} transport={outboundOperationsTransport} onUnauthenticated={onUnauthenticated} /></>
     );
   }
 
@@ -831,6 +832,7 @@ export function App({
   dataHealthTransport,
   executionRuntimeTransport,
   pushCenterTransport,
+  outboundOperationsTransport,
   ordersTransport,
   productsTransport,
   appSettingsTransport,
@@ -1002,6 +1004,7 @@ export function App({
             dataHealthTransport={dataHealthTransport}
             executionRuntimeTransport={executionRuntimeTransport}
             pushCenterTransport={pushCenterTransport}
+            outboundOperationsTransport={outboundOperationsTransport}
             ordersTransport={ordersTransport}
             productsTransport={productsTransport}
             appSettingsTransport={appSettingsTransport}
