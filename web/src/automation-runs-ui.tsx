@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   generatedAutomationRunsTransport,
+  loadAutomationDiagnostics,
   loadAutomationRuns,
   loadAutomationSourceEvent,
   nextAutomationRunsPage,
@@ -12,6 +13,7 @@ import {
   type AutomationRunsPage,
   type AutomationRunsRole,
   type AutomationRunsTransport,
+  type AutomationDiagnostics,
 } from "./automation-runs";
 
 const messages: Record<AutomationRunsFailure, string> = {
@@ -53,6 +55,11 @@ export type AutomationSourceEventState =
       readonly previous?: AutomationSourceEvent;
     };
 
+export type AutomationDiagnosticsState =
+  | { readonly kind: "loading"; readonly previous?: AutomationDiagnostics }
+  | { readonly kind: "ready"; readonly diagnostics: AutomationDiagnostics }
+  | { readonly kind: "error"; readonly failure: AutomationRunsFailure; readonly previous?: AutomationDiagnostics };
+
 export interface AutomationSourceEventReadController {
   readonly generation: { current: number };
   readonly inFlight: { current: boolean };
@@ -60,6 +67,16 @@ export interface AutomationSourceEventReadController {
   readonly onState: (state: AutomationSourceEventState) => void;
   readonly onUnauthenticated?: () => void;
   readonly state: { current: AutomationSourceEventState };
+  readonly transport: AutomationRunsTransport;
+}
+
+export interface AutomationDiagnosticsReadController {
+  readonly generation: { current: number };
+  readonly inFlight: { current: symbol | undefined };
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onState: (state: AutomationDiagnosticsState) => void;
+  readonly onUnauthenticated?: () => void;
+  readonly state: { current: AutomationDiagnosticsState };
   readonly transport: AutomationRunsTransport;
 }
 
@@ -196,6 +213,44 @@ export function AutomationSourceEventPanel({
   );
 }
 
+export function AutomationDiagnosticsPanel({
+  state,
+}: {
+  readonly state: AutomationDiagnosticsState;
+}): React.ReactElement {
+  const diagnostics = state.kind === "ready" ? state.diagnostics : state.previous;
+  return (
+    <section aria-live="polite" data-testid="automation-diagnostics">
+      <h2>内部事件诊断摘要</h2>
+      <p>
+        仅统计本地事件与本地 consumer 的内部处理观测；“内部处理完成”不代表外部投递、送达或成功。
+      </p>
+      {diagnostics ? <>
+        <dl>
+          <dt>本地事件数</dt><dd>{diagnostics.eventCount}</dd>
+          <dt>未调度事件数</dt><dd>{diagnostics.undispatchedEventCount}</dd>
+          <dt>观测时间</dt><dd>{displayDate(diagnostics.observedAt)}</dd>
+        </dl>
+        <table>
+          <thead><tr><th>内部状态</th><th>数量</th></tr></thead>
+          <tbody>
+            <tr><td>待处理</td><td>{diagnostics.deliveryCounts.pending}</td></tr>
+            <tr><td>内部处理中</td><td>{diagnostics.deliveryCounts.processing}</td></tr>
+            <tr><td>内部处理完成</td><td>{diagnostics.deliveryCounts.completed}</td></tr>
+            <tr><td>内部处理最终失败</td><td>{diagnostics.deliveryCounts.final_failed}</td></tr>
+            <tr><td>内部结果未知</td><td>{diagnostics.deliveryCounts.outcome_unknown}</td></tr>
+          </tbody>
+        </table>
+        <p>本地 consumer：{diagnostics.consumerRegistry.map((binding) => `${binding.consumer} (${binding.eventType})`).join("；")}</p>
+        <p>已观测本地域：{diagnostics.observedDomains.join("、")}；未观测域：{diagnostics.unobservedDomains.join("、")}。</p>
+      </> : null}
+      <p>外部投递状态为 unknown，且未执行真实外部调用。</p>
+      {state.kind === "loading" ? <p role="status">正在读取内部事件诊断摘要。</p> : null}
+      {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+    </section>
+  );
+}
+
 // The page calls this controller directly.  Keeping its mutable state in refs
 // makes the same-tick gate and the unmount generation boundary executable in
 // tests without adding a DOM test dependency.
@@ -226,10 +281,37 @@ export function loadAutomationSourceEventState(
   });
 }
 
+export function loadAutomationDiagnosticsState(
+  controller: AutomationDiagnosticsReadController,
+): Promise<void> | undefined {
+  if (controller.inFlight.current !== undefined) return undefined;
+  const token = Symbol("automation-diagnostics-read");
+  controller.inFlight.current = token;
+  const currentGeneration = ++controller.generation.current;
+  const previous = controller.state.current.kind === "ready"
+    ? controller.state.current.diagnostics
+    : controller.state.current.previous;
+  controller.onState({ kind: "loading", previous });
+  return loadAutomationDiagnostics(controller.transport)
+    .then((result) => {
+      if (currentGeneration !== controller.generation.current) return;
+      if (result.status === "loaded") {
+        controller.onState({ kind: "ready", diagnostics: result.diagnostics });
+        return;
+      }
+      if (result.status === "unauthenticated") controller.onUnauthenticated?.();
+      controller.onState({ kind: "error", failure: result.status, previous });
+    })
+    .finally(() => {
+      if (controller.inFlight.current === token) controller.inFlight.current = undefined;
+    });
+}
+
 function AutomationRunsContent({
   onLoad,
   onLoadSourceEvent,
   sourceEvent,
+  diagnostics,
   state,
 }: {
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
@@ -237,6 +319,7 @@ function AutomationRunsContent({
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onLoadSourceEvent: (eventID: number) => void;
   readonly sourceEvent: AutomationSourceEventState;
+  readonly diagnostics: AutomationDiagnosticsState;
   readonly state: AutomationRunsState;
 }): React.ReactElement {
   const page = state.kind === "ready" ? state.page : state.previous;
@@ -248,6 +331,7 @@ function AutomationRunsContent({
         仅显示服务端返回的脱敏触发收据。该记录不代表任何企业微信、支付或其他外部效果已经执行或成功。
       </p>
       <AutomationSourceEventPanel state={sourceEvent} />
+      <AutomationDiagnosticsPanel state={diagnostics} />
       {page ? (
         <RunRows
           page={page}
@@ -322,6 +406,10 @@ export function AutomationRunsPage({
     kind: "idle",
   });
   const sourceEventState = useRef<AutomationSourceEventState>({ kind: "idle" });
+  const diagnosticsGeneration = useRef(0);
+  const diagnosticsInFlight = useRef<symbol | undefined>(undefined);
+  const diagnosticsState = useRef<AutomationDiagnosticsState>({ kind: "loading" });
+  const [diagnostics, setDiagnostics] = useState<AutomationDiagnosticsState>({ kind: "loading" });
 
   const setSourceEventState = useCallback(
     (next: AutomationSourceEventState) => {
@@ -352,13 +440,35 @@ export function AutomationRunsPage({
     [onUnauthenticated, transport],
   );
 
+  const setDiagnosticsState = useCallback((next: AutomationDiagnosticsState) => {
+    diagnosticsState.current = next;
+    setDiagnostics(next);
+  }, []);
+
+  const loadDiagnostics = useCallback(() => {
+    const operation = loadAutomationDiagnosticsState({
+      generation: diagnosticsGeneration,
+      inFlight: diagnosticsInFlight,
+      onState: setDiagnosticsState,
+      onUnauthenticated,
+      state: diagnosticsState,
+      transport,
+    });
+    if (operation) void operation;
+  }, [onUnauthenticated, setDiagnosticsState, transport]);
+
   useEffect(() => {
-    if (canRead) void load(1);
+    if (canRead) {
+      void load(1);
+      loadDiagnostics();
+    }
     return () => {
       generation.current += 1;
       sourceEventGeneration.current += 1;
+      diagnosticsGeneration.current += 1;
+      diagnosticsInFlight.current = undefined;
     };
-  }, [canRead, load]);
+  }, [canRead, load, loadDiagnostics]);
 
   const loadSourceEvent = useCallback(
     (eventID: number) => {
@@ -391,6 +501,7 @@ export function AutomationRunsPage({
       onLoad={(page) => void load(page)}
       onLoadSourceEvent={loadSourceEvent}
       sourceEvent={sourceEvent}
+      diagnostics={diagnostics}
       state={state}
     />
   );

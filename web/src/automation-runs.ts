@@ -1,6 +1,8 @@
 import {
   getLegacyInternalEvent,
+  getLegacyInternalEventDiagnostics,
   listAutomationTriggerRuns,
+  type GetLegacyInternalEventDiagnosticsParams,
   type ListAutomationTriggerRunsParams,
 } from "./api/generated/health";
 
@@ -55,6 +57,30 @@ export interface AutomationSourceEvent {
   readonly observedAt: string;
 }
 
+export type AutomationDiagnosticConsumer =
+  | "automation.tag-trigger.v1"
+  | "stats.tag-applied.v1"
+  | "operation-cycle.fact.v1";
+export type AutomationDiagnosticStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "final_failed"
+  | "outcome_unknown";
+
+export interface AutomationDiagnostics {
+  readonly eventCount: number;
+  readonly undispatchedEventCount: number;
+  readonly deliveryCounts: Readonly<Record<AutomationDiagnosticStatus, number>>;
+  readonly consumerRegistry: readonly Readonly<{
+    readonly consumer: AutomationDiagnosticConsumer;
+    readonly eventType: "customer.tag_applied" | "operation_cycle.fact_recorded";
+  }>[];
+  readonly observedAt: string;
+  readonly observedDomains: readonly ["event_log", "event_deliveries"];
+  readonly unobservedDomains: readonly ["river_queue", "outbound_provider", "external_delivery"];
+}
+
 export interface AutomationRunsTransportResponse {
   readonly status: number;
   readonly data: unknown;
@@ -74,16 +100,25 @@ async function generatedSourceEvent(
   return getLegacyInternalEvent(String(eventID), options);
 }
 
+async function generatedDiagnostics(
+  params: GetLegacyInternalEventDiagnosticsParams,
+  options: RequestInit,
+): Promise<AutomationRunsTransportResponse> {
+  return getLegacyInternalEventDiagnostics(params, options);
+}
+
 export interface AutomationRunsTransport {
   readonly list: typeof generatedList;
   // Optional only to preserve existing injected list-only test transports;
   // production always supplies the generated same-origin reader below.
   readonly sourceEvent?: typeof generatedSourceEvent;
+  readonly diagnostics?: typeof generatedDiagnostics;
 }
 
 export const generatedAutomationRunsTransport: AutomationRunsTransport = {
   list: generatedList,
   sourceEvent: generatedSourceEvent,
+  diagnostics: generatedDiagnostics,
 };
 
 export type AutomationRunsFailure =
@@ -106,6 +141,9 @@ export type AutomationSourceEventFailure =
 export type AutomationSourceEventResult =
   | { readonly status: "loaded"; readonly sourceEvent: AutomationSourceEvent }
   | { readonly status: AutomationSourceEventFailure };
+export type AutomationDiagnosticsResult =
+  | { readonly status: "loaded"; readonly diagnostics: AutomationDiagnostics }
+  | { readonly status: AutomationRunsFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
   return (
@@ -165,6 +203,90 @@ const SOURCE_EVENT_DELIVERY_STATUSES: ReadonlySet<AutomationSourceEventDeliveryS
     "outcome_unknown",
   ]);
 const MAX_INT32 = 2_147_483_647;
+const DIAGNOSTIC_STATUSES: readonly AutomationDiagnosticStatus[] = [
+  "pending", "processing", "completed", "final_failed", "outcome_unknown",
+];
+const DIAGNOSTIC_REGISTRY: readonly Readonly<{
+  readonly consumer: AutomationDiagnosticConsumer;
+  readonly eventType: "customer.tag_applied" | "operation_cycle.fact_recorded";
+}>[] = [
+  { consumer: "automation.tag-trigger.v1", eventType: "customer.tag_applied" },
+  { consumer: "stats.tag-applied.v1", eventType: "customer.tag_applied" },
+  { consumer: "operation-cycle.fact.v1", eventType: "operation_cycle.fact_recorded" },
+];
+const DIAGNOSTIC_OBSERVED_DOMAINS = ["event_log", "event_deliveries"] as const;
+const DIAGNOSTIC_UNOBSERVED_DOMAINS = [
+  "river_queue", "outbound_provider", "external_delivery",
+] as const;
+
+function exactStrings(value: unknown, expected: readonly string[]): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length === expected.length &&
+    value.every((item, index) => item === expected[index])
+  );
+}
+
+export function parseAutomationDiagnostics(value: unknown): AutomationDiagnostics | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok", "filters", "event_count", "undispatched_event_count", "delivery_counts",
+      "consumer_registry", "observed_at", "registry_id", "source_status",
+      "observed_domains", "unobserved_domains", "external_delivery", "route_owner",
+      "real_external_call_executed",
+    ]) ||
+    value.ok !== true ||
+    !record(value.filters) ||
+    !exact(value.filters, ["event_type", "consumer", "status"]) ||
+    value.filters.event_type !== "" || value.filters.consumer !== "" || value.filters.status !== "" ||
+    !nonnegative(value.event_count) || !nonnegative(value.undispatched_event_count) ||
+    value.undispatched_event_count > value.event_count ||
+    !record(value.delivery_counts) ||
+    !Array.isArray(value.consumer_registry) ||
+    value.consumer_registry.length !== DIAGNOSTIC_REGISTRY.length ||
+    !timestamp(value.observed_at) ||
+    value.registry_id !== "v2-internal-events.v1" ||
+    value.source_status !== "local_read_model" ||
+    !exactStrings(value.observed_domains, DIAGNOSTIC_OBSERVED_DOMAINS) ||
+    !exactStrings(value.unobserved_domains, DIAGNOSTIC_UNOBSERVED_DOMAINS) ||
+    value.external_delivery !== "unknown" || value.route_owner !== "ai_crm_next" ||
+    value.real_external_call_executed !== false
+  ) return undefined;
+  const deliveryCounts = value.delivery_counts;
+  const pending = deliveryCounts.pending;
+  const processing = deliveryCounts.processing;
+  const completed = deliveryCounts.completed;
+  const finalFailed = deliveryCounts.final_failed;
+  const outcomeUnknown = deliveryCounts.outcome_unknown;
+  if (
+    !exact(deliveryCounts, DIAGNOSTIC_STATUSES) ||
+    !nonnegative(pending) || !nonnegative(processing) || !nonnegative(completed) ||
+    !nonnegative(finalFailed) || !nonnegative(outcomeUnknown)
+  ) return undefined;
+  for (const [index, expected] of DIAGNOSTIC_REGISTRY.entries()) {
+    const binding = value.consumer_registry[index];
+    if (
+      !record(binding) || !exact(binding, ["consumer", "event_types"]) ||
+      binding.consumer !== expected.consumer || !exactStrings(binding.event_types, [expected.eventType])
+    ) return undefined;
+  }
+  return {
+    eventCount: value.event_count,
+    undispatchedEventCount: value.undispatched_event_count,
+    deliveryCounts: {
+      pending,
+      processing,
+      completed,
+      final_failed: finalFailed,
+      outcome_unknown: outcomeUnknown,
+    },
+    consumerRegistry: DIAGNOSTIC_REGISTRY,
+    observedAt: value.observed_at,
+    observedDomains: [...DIAGNOSTIC_OBSERVED_DOMAINS],
+    unobservedDomains: [...DIAGNOSTIC_UNOBSERVED_DOMAINS],
+  };
+}
 
 function terminalSourceEventDelivery(
   status: AutomationSourceEventDeliveryStatus,
@@ -411,6 +533,20 @@ export async function loadAutomationSourceEvent(
     return sourceEvent
       ? { status: "loaded", sourceEvent }
       : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadAutomationDiagnostics(
+  transport: AutomationRunsTransport,
+): Promise<AutomationDiagnosticsResult> {
+  if (!transport.diagnostics) return { status: "unavailable" };
+  try {
+    const response = await transport.diagnostics({}, { credentials: "same-origin" });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const diagnostics = parseAutomationDiagnostics(response.data);
+    return diagnostics ? { status: "loaded", diagnostics } : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }
