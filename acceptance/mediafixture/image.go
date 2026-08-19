@@ -35,8 +35,8 @@ func CreateImage(ctx context.Context, pool *pgxpool.Pool, name string) (int64, e
 	defer func() { _ = tx.Rollback(ctx) }()
 	var id int64
 	if err = tx.QueryRow(ctx, `
-INSERT INTO media_images (name,file_name,mime_type,file_size,width,height,checksum,description,tags,category,enabled,created_by,created_at,updated_at)
-VALUES ($1,'mediafixture.png','image/png',$2,1,1,$3,'','','',true,1,now(),now())
+INSERT INTO media_images (name,file_name,mime_type,file_size,width,height,checksum,description,tags,category,created_by,created_at,updated_at)
+VALUES ($1,'mediafixture.png','image/png',$2,1,1,$3,'','','',1,now(),now())
 RETURNING id`, name, content.Len(), checksum[:]).Scan(&id); err != nil {
 		return 0, fmt.Errorf("create media-owned image fixture: %w", err)
 	}
