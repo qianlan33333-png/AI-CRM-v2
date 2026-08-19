@@ -1,4 +1,4 @@
-import { listProducts, type ListProductsParams } from "./api/generated/health";
+import { getProduct, listProducts, type ListProductsParams } from "./api/generated/health";
 
 export type ProductsRole = "admin" | "ops" | "sales";
 export const PRODUCT_PAGE_SIZE = 50;
@@ -24,11 +24,14 @@ export interface ProductsTransportResponse { readonly status: number; readonly d
 export interface ProductsTransport {
   // eslint-disable-next-line no-unused-vars -- named transport arguments document the generated GET contract.
   readonly list: (params: ListProductsParams, options: RequestInit) => Promise<ProductsTransportResponse>;
+  // eslint-disable-next-line no-unused-vars -- named transport arguments document the generated GET contract.
+  readonly get: (productID: number, options: RequestInit) => Promise<ProductsTransportResponse>;
 }
 
-export const generatedProductsTransport: ProductsTransport = { list: listProducts };
+export const generatedProductsTransport: ProductsTransport = { list: listProducts, get: getProduct };
 export type ProductsFailure = "unauthenticated" | "forbidden" | "invalid" | "unavailable";
 export type ProductsResult = { readonly status: "loaded"; readonly page: ProductPage } | { readonly status: ProductsFailure };
+export type ProductDetailResult = { readonly status: "loaded"; readonly product: ProductListItem } | { readonly status: ProductsFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) &&
@@ -62,6 +65,11 @@ function parseProduct(value: unknown): ProductListItem | undefined {
     createdAt: value.created_at, updatedAt: value.updated_at };
 }
 
+export function parseProductDetail(value: unknown, requestedID: number): ProductListItem | undefined {
+  const product = parseProduct(value);
+  return product?.id === requestedID ? product : undefined;
+}
+
 export function parseProductPage(value: unknown): ProductPage | undefined {
   if (!record(value) || !Object.keys(value).every((key) => key === "items" || key === "next_cursor") || !Array.isArray(value.items)) return undefined;
   if ("next_cursor" in value && !text(value.next_cursor, 512, true)) return undefined;
@@ -82,5 +90,17 @@ export async function loadProducts(transport: ProductsTransport, cursor?: string
     if (response.status !== 200) return { status: "unavailable" };
     const page = parseProductPage(response.data);
     return page === undefined ? { status: "invalid" } : { status: "loaded", page };
+  } catch { return { status: "unavailable" }; }
+}
+
+export async function loadProductDetail(transport: ProductsTransport, productID: number): Promise<ProductDetailResult> {
+  if (!positive(productID)) return { status: "invalid" };
+  try {
+    const response = await transport.get(productID, { credentials: "same-origin" });
+    if (response.status === 401) return { status: "unauthenticated" };
+    if (response.status === 403) return { status: "forbidden" };
+    if (response.status !== 200) return { status: "unavailable" };
+    const product = parseProductDetail(response.data, productID);
+    return product === undefined ? { status: "invalid" } : { status: "loaded", product };
   } catch { return { status: "unavailable" }; }
 }
