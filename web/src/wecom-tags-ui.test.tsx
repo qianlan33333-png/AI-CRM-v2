@@ -1,7 +1,12 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { WecomTagsPage, WecomTagsView } from "./wecom-tags-ui";
+import {
+  copyWecomTagID,
+  WecomTagDetails,
+  WecomTagsPage,
+  WecomTagsView,
+} from "./wecom-tags-ui";
 import type { WecomTagsTransport } from "./wecom-tags";
 
 const catalog = {
@@ -107,5 +112,53 @@ describe("WecomTagsView", () => {
     expect(html).not.toContain("搜索标签组");
     expect(html).not.toContain("标签总数");
     expect(client.read).not.toHaveBeenCalled();
+  });
+
+  it("renders only the frozen tag detail fields and keeps text escaped", () => {
+    const html = renderToStaticMarkup(
+      <WecomTagDetails
+        copyStatus="idle"
+        onCopy={vi.fn()}
+        tag={{
+          id: 10,
+          name: '<img src=x onerror="bad">',
+          groupName: "意向",
+        }}
+      />,
+    );
+    expect(html).toContain("标签详情");
+    expect(html).toContain("标签名称");
+    expect(html).toContain("标签 ID");
+    expect(html).toContain("标签组名称");
+    expect(html).toContain("复制标签 ID");
+    expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
+    expect(html).not.toContain("<img");
+    expect(html).not.toMatch(/usage_count|使用次数/i);
+  });
+
+  it("reports copy success or failure once and leaves the displayed ID available for manual copy", async () => {
+    const writeText = vi.fn(async () => undefined);
+    await expect(copyWecomTagID(10, { writeText })).resolves.toBe("copied");
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText).toHaveBeenCalledWith("10");
+
+    const failedWrite = vi.fn(async () => {
+      throw new Error("denied");
+    });
+    await expect(copyWecomTagID(10, { writeText: failedWrite })).resolves.toBe(
+      "failed",
+    );
+    expect(failedWrite).toHaveBeenCalledOnce();
+    await expect(copyWecomTagID(10, undefined)).resolves.toBe("unavailable");
+
+    const failed = renderToStaticMarkup(
+      <WecomTagDetails
+        copyStatus="failed"
+        onCopy={vi.fn()}
+        tag={{ id: 10, name: "高意向", groupName: "意向" }}
+      />,
+    );
+    expect(failed).toContain("<dd>10</dd>");
+    expect(failed).toContain("复制失败，请手工复制上方标签 ID。");
   });
 });

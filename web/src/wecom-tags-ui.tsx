@@ -24,6 +24,30 @@ export type WecomTagsViewState =
   | { readonly kind: "ready"; readonly catalog: WecomTagCatalog }
   | { readonly kind: "error" };
 
+export type WecomTagCopyStatus =
+  | "idle"
+  | "copied"
+  | "unavailable"
+  | "failed";
+
+type ClipboardWriter = Pick<Clipboard, "writeText">;
+
+export async function copyWecomTagID(
+  tagID: number,
+  clipboard: ClipboardWriter | undefined =
+    typeof navigator === "undefined" ? undefined : navigator.clipboard,
+): Promise<Exclude<WecomTagCopyStatus, "idle">> {
+  if (!clipboard || typeof clipboard.writeText !== "function") {
+    return "unavailable";
+  }
+  try {
+    await clipboard.writeText(String(tagID));
+    return "copied";
+  } catch {
+    return "failed";
+  }
+}
+
 export function WecomTagsPage({
   role,
   transport = generatedWecomTagsTransport,
@@ -67,6 +91,8 @@ export function WecomTagsView({
     [query, state],
   );
   const [selectedGroupID, setSelectedGroupID] = useState<number>();
+  const [selectedTagID, setSelectedTagID] = useState<number>();
+  const [copyStatus, setCopyStatus] = useState<WecomTagCopyStatus>("idle");
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -75,6 +101,8 @@ export function WecomTagsView({
         ? wecomTagSearchState(state.catalog, query)
         : { selectedGroupID: undefined, page: 0 as const };
     setSelectedGroupID(next.selectedGroupID);
+    setSelectedTagID(undefined);
+    setCopyStatus("idle");
     setPage(0);
   }, [state]);
 
@@ -106,6 +134,7 @@ export function WecomTagsView({
   const currentPage = Math.min(page, wecomTagPageCount(tags) - 1);
   const visibleTags = wecomTagPage(tags, currentPage);
   const nextPage = nextWecomTagPage(currentPage, tags);
+  const selectedTag = tags.find((tag) => tag.id === selectedTagID);
 
   return (
     <section className="route-card" aria-labelledby="app-title">
@@ -129,6 +158,8 @@ export function WecomTagsView({
             const next = wecomTagSearchState(state.catalog, nextQuery);
             setQuery(nextQuery);
             setSelectedGroupID(next.selectedGroupID);
+            setSelectedTagID(undefined);
+            setCopyStatus("idle");
             setPage(next.page);
           }}
         />
@@ -146,6 +177,8 @@ export function WecomTagsView({
                   aria-pressed={selected?.id === group.id}
                   onClick={() => {
                     setSelectedGroupID(group.id);
+                    setSelectedTagID(undefined);
+                    setCopyStatus("idle");
                     setPage(0);
                   }}
                 >
@@ -173,7 +206,18 @@ export function WecomTagsView({
                 {visibleTags.map((tag) => (
                   <tr key={tag.id}>
                     <td>{tag.id}</td>
-                    <td>{tag.name}</td>
+                    <td>
+                      <button
+                        type="button"
+                        aria-pressed={selectedTag?.id === tag.id}
+                        onClick={() => {
+                          setSelectedTagID(tag.id);
+                          setCopyStatus("idle");
+                        }}
+                      >
+                        {tag.name}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -196,7 +240,62 @@ export function WecomTagsView({
           >
             下一页
           </button>
+          {selectedTag ? (
+            <WecomTagDetails
+              copyStatus={copyStatus}
+              onCopy={() => {
+                void copyWecomTagID(selectedTag.id).then(setCopyStatus);
+              }}
+              tag={selectedTag}
+            />
+          ) : null}
         </section>
+      ) : null}
+    </section>
+  );
+}
+
+export function WecomTagDetails({
+  copyStatus,
+  onCopy,
+  tag,
+}: {
+  readonly copyStatus: WecomTagCopyStatus;
+  readonly onCopy: () => void;
+  readonly tag: {
+    readonly groupName: string;
+    readonly id: number;
+    readonly name: string;
+  };
+}): React.ReactElement {
+  return (
+    <section aria-labelledby="wecom-tag-detail-title">
+      <h2 id="wecom-tag-detail-title">标签详情</h2>
+      <dl>
+        <dt>标签名称</dt>
+        <dd>{tag.name}</dd>
+        <dt>标签 ID</dt>
+        <dd>{tag.id}</dd>
+        <dt>标签组名称</dt>
+        <dd>{tag.groupName}</dd>
+      </dl>
+      <button type="button" onClick={onCopy}>
+        复制标签 ID
+      </button>
+      {copyStatus === "copied" ? (
+        <p aria-live="polite" role="status">
+          标签 ID 已复制。
+        </p>
+      ) : null}
+      {copyStatus === "unavailable" ? (
+        <p aria-live="polite" role="status">
+          当前浏览器不支持复制，请手工复制上方标签 ID。
+        </p>
+      ) : null}
+      {copyStatus === "failed" ? (
+        <p aria-live="polite" role="status">
+          复制失败，请手工复制上方标签 ID。
+        </p>
       ) : null}
     </section>
   );
