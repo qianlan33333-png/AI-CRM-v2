@@ -1,6 +1,7 @@
 import {
   deleteLegacyQuestionnaire,
   disableLegacyQuestionnaire,
+  duplicateLegacyQuestionnaire,
   getLegacyQuestionnairePreflight,
   listLegacyQuestionnaires,
   type LegacyQuestionnaire,
@@ -24,6 +25,7 @@ export interface QuestionnaireItem {
 export interface QuestionnaireListTransport {
   readonly list: typeof listLegacyQuestionnaires;
   readonly disable: typeof disableLegacyQuestionnaire;
+  readonly duplicate: typeof duplicateLegacyQuestionnaire;
   readonly remove: typeof deleteLegacyQuestionnaire;
   readonly preflight: typeof getLegacyQuestionnairePreflight;
 }
@@ -31,6 +33,7 @@ export interface QuestionnaireListTransport {
 export const generatedQuestionnaireListTransport: QuestionnaireListTransport = {
   list: listLegacyQuestionnaires,
   disable: disableLegacyQuestionnaire,
+  duplicate: duplicateLegacyQuestionnaire,
   remove: deleteLegacyQuestionnaire,
   preflight: getLegacyQuestionnairePreflight,
 };
@@ -482,6 +485,63 @@ function mutation(
     status !== "deleted" ||
     (body.deleted === true && body.delete_mode === "hard_delete")
   );
+}
+function duplicateMutation(body: unknown, sourceID: number): boolean {
+  if (
+    !record(body) ||
+    !exact(body, [
+      "ok",
+      "questionnaire",
+      "questions",
+      "data",
+      "write_model_status",
+      "questionnaire_id",
+      "source_questionnaire_id",
+    ]) ||
+    body.ok !== true ||
+    !positive(body.questionnaire_id) ||
+    body.questionnaire_id === sourceID ||
+    body.source_questionnaire_id !== sourceID ||
+    body.write_model_status !== "duplicated" ||
+    !record(body.questionnaire) ||
+    !questionnaire(body.questionnaire) ||
+    !Array.isArray(body.questions) ||
+    JSON.stringify(body.questions) !==
+      JSON.stringify(body.questionnaire.questions) ||
+    !record(body.data) ||
+    !exact(body.data, ["questionnaire"]) ||
+    JSON.stringify(body.data.questionnaire) !==
+      JSON.stringify(body.questionnaire)
+  )
+    return false;
+  const copy = questionnaire(body.questionnaire);
+  return (
+    copy !== undefined &&
+    copy.id === body.questionnaire_id &&
+    copy.isDisabled &&
+    copy.status === "disabled"
+  );
+}
+export async function duplicateQuestionnaire(
+  transport: QuestionnaireListTransport,
+  item: QuestionnaireItem,
+  csrfToken: string,
+): Promise<QuestionnaireMutationResult> {
+  try {
+    const response = await transport.duplicate(
+      item.id,
+      undefined,
+      writeOptions(csrfToken, "duplicate"),
+    );
+    return response.status === 200 && duplicateMutation(response.data, item.id)
+      ? { status: "saved" }
+      : {
+          status:
+            response.status === 200 ? "invalid" : failure(response.status),
+        };
+  } catch {
+    return { status: "unavailable" };
+  }
 }
 export async function setQuestionnaireEnabled(
   transport: QuestionnaireListTransport,
