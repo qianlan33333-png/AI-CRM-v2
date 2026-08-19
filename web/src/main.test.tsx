@@ -11,6 +11,7 @@ import {
   CHANNELS_PATH,
   COUPONS_PATH,
   AUTOMATION_RUNS_PATH,
+  AUTOMATION_AGENTS_PATH,
   GROUP_INVITE_LIBRARY_PATH,
   DELIVERY_LINEAGE_PATH,
   DATA_HEALTH_PATH,
@@ -40,6 +41,7 @@ import type { WecomTagsTransport } from "./wecom-tags";
 import type { ChannelsTransport } from "./channels";
 import type { CouponsTransport } from "./coupons";
 import type { AutomationRunsTransport } from "./automation-runs";
+import type { AutomationAgentsTransport } from "./automation-agents";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
 import type { DataHealthTransport } from "./data-health";
@@ -136,6 +138,11 @@ function couponsTransport(): CouponsTransport {
 function automationRunsTransport(): AutomationRunsTransport {
   const response = async () => ({ status: 503, data: {} });
   return { list: vi.fn(response) } as AutomationRunsTransport;
+}
+
+function automationAgentsTransport(): AutomationAgentsTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { read: vi.fn(response) } as AutomationAgentsTransport;
 }
 
 function groupInviteLibraryTransport(): GroupInviteLibraryTransport {
@@ -438,6 +445,27 @@ describe("Web shell routes", () => {
     expect(client.list).not.toHaveBeenCalled();
   });
 
+  it("renders the automation-agent carrier route only for admin", () => {
+    vi.stubGlobal("window", { location: { pathname: AUTOMATION_AGENTS_PATH } });
+    const client = automationAgentsTransport();
+    expect(
+      renderToStaticMarkup(
+        <App automationAgentsTransport={client} initialSession={adminSession} />,
+      ),
+    ).toContain("正在读取本地自动化话术摘要。");
+    for (const role of ["ops", "sales"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          automationAgentsTransport={client}
+          initialSession={{ status: "authenticated", principal: { adminUserID: 8, role } }}
+        />,
+      );
+      expect(html).toContain("当前账号没有自动化话术目录访问权限。");
+      expect(html).not.toContain(`href="${AUTOMATION_AGENTS_PATH}"`);
+    }
+    expect(client.read).not.toHaveBeenCalled();
+  });
+
   it("renders the data-health route for admin and keeps non-admins fail-closed", () => {
     vi.stubGlobal("window", { location: { pathname: DATA_HEALTH_PATH } });
     const client = {
@@ -499,7 +527,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(21);
+    expect(routes).toHaveLength(22);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -629,6 +657,7 @@ describe("Web shell routes", () => {
       "/admin/channels",
       "/admin/coupons",
       "/admin/automation-runs",
+      AUTOMATION_AGENTS_PATH,
       "/admin/group-invite-library",
       "/admin/delivery-lineage",
       "/admin/data-health",
@@ -673,6 +702,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/channels"');
     expect(html).toContain('href="/admin/coupons"');
     expect(html).toContain('href="/admin/automation-runs"');
+    expect(html).toContain(`href="${AUTOMATION_AGENTS_PATH}"`);
     expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).toContain('href="/admin/delivery-lineage"');
     expect(html).toContain('href="/admin/data-health"');
@@ -721,6 +751,9 @@ describe("legacy admin path carrier", () => {
       COUPONS_PATH,
     );
     expect(
+      carrierPathname("/", `?legacy_admin_path=${AUTOMATION_AGENTS_PATH}`),
+    ).toBe(AUTOMATION_AGENTS_PATH);
+    expect(
       carrierPathname("/", `?legacy_admin_path=${EXECUTION_RUNTIME_PATH}`),
     ).toBe(EXECUTION_RUNTIME_PATH);
     expect(carrierPathname("/", `?legacy_admin_path=${ORDERS_PATH}`)).toBe(
@@ -735,6 +768,7 @@ describe("legacy admin path carrier", () => {
       "?legacy_admin_path=/admin/wecom-tags/extra",
       "?legacy_admin_path=/admin/channels/extra",
       "?legacy_admin_path=/admin/coupons/extra",
+      "?legacy_admin_path=/admin/automation-agents/extra",
       "?legacy_admin_path=/admin/orders/extra",
       "?legacy_admin_path=/admin/wechat-pay/products/extra",
       "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",

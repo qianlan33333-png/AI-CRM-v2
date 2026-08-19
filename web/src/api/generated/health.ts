@@ -467,6 +467,110 @@ export interface LegacyExecutionRuntimeUnavailable {
   real_external_call_executed: boolean;
 }
 
+export interface LegacyAutomationAgentMaterialSummary {
+  /** @minimum 0 */
+  image_count: number;
+  /** @minimum 0 */
+  miniprogram_count: number;
+  /** @minimum 0 */
+  attachment_count: number;
+  /** @minimum 0 */
+  group_invite_count: number;
+}
+
+export type LegacyAutomationAgentListItemAutomationType =
+  (typeof LegacyAutomationAgentListItemAutomationType)[keyof typeof LegacyAutomationAgentListItemAutomationType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentListItemAutomationType = {
+  agent: "agent",
+  fixed_script: "fixed_script",
+} as const;
+
+export type LegacyAutomationAgentListItemBoundPackageKey =
+  (typeof LegacyAutomationAgentListItemBoundPackageKey)[keyof typeof LegacyAutomationAgentListItemBoundPackageKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentListItemBoundPackageKey = {
+  "": "",
+} as const;
+
+/**
+ * @nullable
+ */
+export type LegacyAutomationAgentListItemBoundPackageId =
+  | (typeof LegacyAutomationAgentListItemBoundPackageId)[keyof typeof LegacyAutomationAgentListItemBoundPackageId]
+  | null;
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentListItemBoundPackageId = {} as const;
+
+export type LegacyAutomationAgentListItemBoundPackageName =
+  (typeof LegacyAutomationAgentListItemBoundPackageName)[keyof typeof LegacyAutomationAgentListItemBoundPackageName];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentListItemBoundPackageName = {
+  "": "",
+} as const;
+
+export type LegacyAutomationAgentListItemStatus =
+  (typeof LegacyAutomationAgentListItemStatus)[keyof typeof LegacyAutomationAgentListItemStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentListItemStatus = {
+  active: "active",
+  paused: "paused",
+} as const;
+
+export interface LegacyAutomationAgentListItem {
+  /** @minimum 1 */
+  id: number;
+  automation_type: LegacyAutomationAgentListItemAutomationType;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9_-]+$
+   */
+  agent_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  agent_name: string;
+  bound_package_key: LegacyAutomationAgentListItemBoundPackageKey;
+  /** @nullable */
+  bound_package_id: LegacyAutomationAgentListItemBoundPackageId;
+  bound_package_name: LegacyAutomationAgentListItemBoundPackageName;
+  fixed_material_summary: LegacyAutomationAgentMaterialSummary;
+  status: LegacyAutomationAgentListItemStatus;
+  updated_at: string;
+}
+
+export interface LegacyAutomationAgentListResponse {
+  ok: boolean;
+  /** @maxItems 200 */
+  items: LegacyAutomationAgentListItem[];
+  /**
+   * @minimum 0
+   * @maximum 200
+   */
+  total: number;
+}
+
+export type LegacyAutomationAgentListErrorError =
+  (typeof LegacyAutomationAgentListErrorError)[keyof typeof LegacyAutomationAgentListErrorError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentListErrorError = {
+  invalid_agent_payload: "invalid_agent_payload",
+  automation_agent_unavailable: "automation_agent_unavailable",
+} as const;
+
+export interface LegacyAutomationAgentListError {
+  ok: boolean;
+  error: LegacyAutomationAgentListErrorError;
+}
+
 export type LegacyExecutionTimelineUnavailableError =
   (typeof LegacyExecutionTimelineUnavailableError)[keyof typeof LegacyExecutionTimelineUnavailableError];
 
@@ -10917,6 +11021,134 @@ export const listAutomationTriggerRuns = async (
     status: res.status,
     headers: res.headers,
   } as listAutomationTriggerRunsResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local automation-agent browser
+ */
+export type getLegacyAutomationAgentListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyAutomationAgentListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAutomationAgentListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAutomationAgentListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyAutomationAgentListPageResponseError = (
+  | getLegacyAutomationAgentListPageResponse302
+  | getLegacyAutomationAgentListPageResponse401
+  | getLegacyAutomationAgentListPageResponse403
+  | getLegacyAutomationAgentListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAutomationAgentListPageResponse =
+  getLegacyAutomationAgentListPageResponseError;
+
+export const getGetLegacyAutomationAgentListPageUrl = () => {
+  return `/admin/automation-agents`;
+};
+
+export const getLegacyAutomationAgentListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyAutomationAgentListPageResponse> => {
+  const res = await fetch(getGetLegacyAutomationAgentListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAutomationAgentListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAutomationAgentListPageResponse;
+};
+
+/**
+ * @summary Read local automation-agent summary metadata without prompts, content, material IDs, bindings, or external calls
+ */
+export type listLegacyAutomationAgentsResponse200 = {
+  data: LegacyAutomationAgentListResponse;
+  status: 200;
+};
+
+export type listLegacyAutomationAgentsResponse400 = {
+  data: LegacyAutomationAgentListError;
+  status: 400;
+};
+
+export type listLegacyAutomationAgentsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyAutomationAgentsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyAutomationAgentsResponse503 = {
+  data: LegacyAutomationAgentListError;
+  status: 503;
+};
+
+export type listLegacyAutomationAgentsResponseSuccess =
+  listLegacyAutomationAgentsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyAutomationAgentsResponseError = (
+  | listLegacyAutomationAgentsResponse400
+  | listLegacyAutomationAgentsResponse401
+  | listLegacyAutomationAgentsResponse403
+  | listLegacyAutomationAgentsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyAutomationAgentsResponse =
+  | listLegacyAutomationAgentsResponseSuccess
+  | listLegacyAutomationAgentsResponseError;
+
+export const getListLegacyAutomationAgentsUrl = () => {
+  return `/api/admin/automation-agents`;
+};
+
+export const listLegacyAutomationAgents = async (
+  options?: RequestInit,
+): Promise<listLegacyAutomationAgentsResponse> => {
+  const res = await fetch(getListLegacyAutomationAgentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyAutomationAgentsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyAutomationAgentsResponse;
 };
 
 /**

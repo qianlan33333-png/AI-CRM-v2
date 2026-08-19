@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -20,11 +21,48 @@ import (
 
 const automationAgentMaxBodyBytes = 256 << 10
 
+const legacyAutomationAgentListPagePath = "/admin/automation-agents"
+
 // The frozen legacy pages are deliberately compatibility shells, not a new UI.
 var automationAgentPageTemplate = template.Must(template.New("automation-agent-compat").Parse("<!doctype html><html lang='zh-CN'><meta charset='utf-8'><title>{{.Title}}</title><main data-automation-agent-id='{{.AgentID}}' data-api-url='{{.APIURL}}'><h1>{{.Title}}</h1></main></html>"))
 
-func (handler *Handler) AutomationAgentListPage(writer http.ResponseWriter, _ *http.Request) {
-	renderAutomationAgentPage(writer, "自动化话术", 0, "/api/admin/automation-agents")
+// AutomationAgentListPage is a carrier only. The SPA owns the intentionally
+// narrow local summary projection; this endpoint never reads agent content or
+// invokes an automation, provider, or publisher.
+func (*Handler) AutomationAgentListPage(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("Cache-Control", "private, no-store")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	if !legacyAutomationAgentListPageAuthorized(request) {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized))
+		return
+	}
+	http.Redirect(writer, request, "/?legacy_admin_path="+url.QueryEscape(legacyAutomationAgentListPagePath), http.StatusFound)
+}
+
+func legacyAutomationAgentListPageAuthorized(request *http.Request) bool {
+	if request == nil {
+		return false
+	}
+	principal, principalOK := authport.PrincipalFromContext(request.Context())
+	authorization, authorizationOK := authport.AuthorizationFromContext(request.Context())
+	return principalOK && principal.AdminUserID > 0 && principal.Role == authport.RoleAdmin &&
+		authorizationOK && authorization.Capability == authport.CapabilityConfigOverviewRead &&
+		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
+}
+
+func legacyAutomationAgentListPageSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Cache-Control", "private, no-store")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		next.ServeHTTP(writer, request)
+	})
+}
+
+func writeLegacyAutomationAgentListPageMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Allow", http.MethodGet)
+	writer.Header().Set("Cache-Control", "private, no-store")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.WriteHeader(http.StatusMethodNotAllowed)
 }
 func (handler *Handler) AutomationAgentEditPage(writer http.ResponseWriter, request *http.Request) {
 	id, err := automationAgentID(request)
@@ -422,10 +460,14 @@ func automationAgentID(r *http.Request) (automationport.AgentID, error) {
 }
 
 func automationAgentSummary(item automationport.Agent) map[string]any {
-	return map[string]any{"id": item.ID, "automation_type": item.AutomationType, "automation_type_label": automationTypeLabel(item.AutomationType), "agent_code": item.AgentCode, "agent_name": item.AgentName, "bound_package_key": "", "bound_package_id": nil, "bound_package_name": "", "fixed_material_summary": automationContentSummary(item.FixedContentPackage), "status": item.Status, "updated_at": item.UpdatedAt}
+	return map[string]any{"id": item.ID, "automation_type": item.AutomationType, "agent_code": item.AgentCode, "agent_name": item.AgentName, "bound_package_key": "", "bound_package_id": nil, "bound_package_name": "", "fixed_material_summary": automationContentSummary(item.FixedContentPackage), "status": item.Status, "updated_at": item.UpdatedAt}
 }
 func automationAgentDetail(item automationport.Agent) map[string]any {
 	result := automationAgentSummary(item)
+	// The old edit endpoint retains its compatibility label; the new local list
+	// summary deliberately has a closed ten-key projection and derives labels
+	// in its own UI from automation_type.
+	result["automation_type_label"] = automationTypeLabel(item.AutomationType)
 	result["draft_role_prompt"] = item.DraftRolePrompt
 	result["draft_task_prompt"] = item.DraftTaskPrompt
 	result["published_role_prompt"] = item.PublishedRolePrompt
