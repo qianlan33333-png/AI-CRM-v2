@@ -9,8 +9,12 @@ import { readCSRFCookie } from "./auth";
 import {
   archiveCoupon,
   canArchiveCoupon,
+  canDeleteCoupon,
+  canPublishCoupon,
+  canStopCoupon,
   createCouponDraft,
   copyCoupon,
+  deleteCoupon,
   couponClaimsPageSize,
   couponProductOptionsPageSize,
   filterCoupons,
@@ -22,6 +26,7 @@ import {
   loadCoupons,
   newCouponArchiveIdempotencyKey,
   newCouponCopyIdempotencyKey,
+  newCouponDeleteIdempotencyKey,
   type CouponAvailabilityFilter,
   type CouponArchiveResult,
   type CouponClaimItem,
@@ -31,6 +36,7 @@ import {
   type CouponDraftMutationResult,
   type CouponDetailResult,
   type CouponListItem,
+  type CouponLifecycleResult,
   type CouponProductOption,
   type CouponProductOptionsResult,
   type CouponRuleDetail,
@@ -39,6 +45,8 @@ import {
   type CouponsFailure,
   type CouponsRole,
   type CouponsTransport,
+  publishCoupon,
+  stopCoupon,
   updateCouponDraft,
 } from "./coupons";
 
@@ -180,6 +188,8 @@ export interface CouponArchiveInput {
   readonly transport: CouponsTransport;
 }
 
+export interface CouponDeleteInput extends CouponArchiveInput {}
+
 export async function performCouponCopy({
   couponID,
   idempotencySource,
@@ -224,6 +234,71 @@ export async function performCouponArchive({
   return archiveCoupon(transport, item, csrf, idempotencyKey);
 }
 
+export async function performCouponPublish({
+  item,
+  readCookie,
+  transport,
+}: Pick<
+  CouponArchiveInput,
+  "item" | "readCookie" | "transport"
+>): Promise<CouponLifecycleResult> {
+  let csrf: string | undefined;
+  try {
+    csrf = readCSRFCookie(readCookie());
+  } catch {
+    csrf = undefined;
+  }
+  if (!csrf) return { status: "forbidden", outcomeUncertain: false };
+  return publishCoupon(transport, item, csrf);
+}
+
+export async function performCouponStop({
+  item,
+  readCookie,
+  transport,
+}: Pick<
+  CouponArchiveInput,
+  "item" | "readCookie" | "transport"
+>): Promise<CouponLifecycleResult> {
+  let csrf: string | undefined;
+  try {
+    csrf = readCSRFCookie(readCookie());
+  } catch {
+    csrf = undefined;
+  }
+  if (!csrf) return { status: "forbidden", outcomeUncertain: false };
+  return stopCoupon(transport, item, csrf);
+}
+
+export async function performCouponDelete({
+  confirm,
+  idempotencySource,
+  item,
+  readCookie,
+  transport,
+}: CouponDeleteInput): Promise<
+  CouponLifecycleResult | { readonly status: "canceled" }
+> {
+  if (!canDeleteCoupon(item))
+    return { status: "invalid", outcomeUncertain: false };
+  try {
+    if (!confirm(`确认删除未领取的本地草稿“${item.name}”吗？`))
+      return { status: "canceled" };
+  } catch {
+    return { status: "canceled" };
+  }
+  let csrf: string | undefined;
+  try {
+    csrf = readCSRFCookie(readCookie());
+  } catch {
+    csrf = undefined;
+  }
+  const idempotencyKey = newCouponDeleteIdempotencyKey(idempotencySource);
+  if (!csrf) return { status: "forbidden", outcomeUncertain: false };
+  if (!idempotencyKey) return { status: "unavailable", outcomeUncertain: true };
+  return deleteCoupon(transport, item, csrf, idempotencyKey);
+}
+
 // This lock is deliberately independent of React state: two synchronous click
 // handlers can run before React commits a disabled button state.
 export function startCouponCopy(
@@ -242,6 +317,13 @@ export function startCouponCopy(
 }
 
 export function startCouponArchive(
+  lock: { current: boolean },
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  return startCouponCopy(lock, execute);
+}
+
+export function startCouponLifecycle(
   lock: { current: boolean },
   execute: () => Promise<void>,
 ): Promise<void> | undefined {
@@ -320,6 +402,24 @@ export function canStartCouponWrite(mutationUncertain: boolean): boolean {
   return !mutationUncertain;
 }
 
+export function lifecycleReloadMatches(
+  result: Extract<
+    CouponLifecycleResult,
+    { readonly status: "published" | "stopped" | "deleted" }
+  >,
+  refreshed: CouponListResult,
+): boolean {
+  if (refreshed.status !== "loaded") return false;
+  const current = refreshed.items.find((item) => item.id === result.item.id);
+  if (result.status === "deleted") return current === undefined;
+  return (
+    current !== undefined &&
+    current.name === result.item.name &&
+    current.status === result.status &&
+    current.issuedCount === result.item.issuedCount
+  );
+}
+
 export function startCouponDetail(
   inFlight: Set<number>,
   couponID: number,
@@ -355,7 +455,7 @@ export function CouponsPage({
   const [state, setState] = useState<CouponsViewState>({ kind: "loading" });
   const [busyID, setBusyID] = useState<number>();
   const [busyAction, setBusyAction] = useState<
-    "copy" | "archive" | "create" | "update"
+    "copy" | "archive" | "create" | "update" | "publish" | "stop" | "delete"
   >();
   const [notice, setNotice] = useState<string>();
   const [claimsState, setClaimsState] = useState<CouponClaimsViewState>({
@@ -498,6 +598,127 @@ export function CouponsPage({
     ],
   );
 
+  const finishLifecycle = useCallback(
+    async (
+      item: CouponListItem,
+      result: CouponLifecycleResult,
+      verb: "发布" | "停止" | "删除",
+    ) => {
+      if (
+        result.status === "published" ||
+        result.status === "stopped" ||
+        result.status === "deleted"
+      ) {
+        setNotice(`本地优惠券“${item.name}”已${verb}，正在刷新列表。`);
+        const refreshed = await reload(true);
+        if (!lifecycleReloadMatches(result, refreshed)) {
+          setMutationUncertain(true);
+          setNotice(
+            `本地优惠券“${item.name}”已${verb}，但列表回读未确认；系统不会重发请求，请刷新后人工确认。`,
+          );
+        }
+        return;
+      }
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      if ("outcomeUncertain" in result && result.outcomeUncertain) {
+        setMutationUncertain(true);
+        setNotice(
+          "本地规则请求结果不确定，系统不会自动重试。请刷新列表后人工确认。",
+        );
+        return;
+      }
+      setNotice(messages[result.status]);
+    },
+    [onUnauthenticated, reload],
+  );
+
+  const onPublish = useCallback(
+    async (item: CouponListItem) => {
+      if (!canStartCouponWrite(mutationUncertain)) {
+        setNotice("上一笔本地规则请求结果不确定，请先刷新列表后再继续。");
+        return;
+      }
+      const operation = startCouponLifecycle(
+        couponMutationInFlight,
+        async () => {
+          setBusyID(item.id);
+          setBusyAction("publish");
+          try {
+            await finishLifecycle(
+              item,
+              await performCouponPublish({ item, readCookie, transport }),
+              "发布",
+            );
+          } finally {
+            setBusyAction(undefined);
+            setBusyID(undefined);
+          }
+        },
+      );
+      if (operation) await operation;
+    },
+    [finishLifecycle, mutationUncertain, readCookie, transport],
+  );
+
+  const onStop = useCallback(
+    async (item: CouponListItem) => {
+      if (!canStartCouponWrite(mutationUncertain)) {
+        setNotice("上一笔本地规则请求结果不确定，请先刷新列表后再继续。");
+        return;
+      }
+      const operation = startCouponLifecycle(
+        couponMutationInFlight,
+        async () => {
+          setBusyID(item.id);
+          setBusyAction("stop");
+          try {
+            await finishLifecycle(
+              item,
+              await performCouponStop({ item, readCookie, transport }),
+              "停止",
+            );
+          } finally {
+            setBusyAction(undefined);
+            setBusyID(undefined);
+          }
+        },
+      );
+      if (operation) await operation;
+    },
+    [finishLifecycle, mutationUncertain, readCookie, transport],
+  );
+
+  const onDelete = useCallback(
+    async (item: CouponListItem) => {
+      if (!canStartCouponWrite(mutationUncertain)) {
+        setNotice("上一笔本地规则请求结果不确定，请先刷新列表后再继续。");
+        return;
+      }
+      const operation = startCouponLifecycle(
+        couponMutationInFlight,
+        async () => {
+          setBusyID(item.id);
+          setBusyAction("delete");
+          try {
+            const result = await performCouponDelete({
+              confirm,
+              item,
+              readCookie,
+              transport,
+            });
+            if (result.status !== "canceled")
+              await finishLifecycle(item, result, "删除");
+          } finally {
+            setBusyAction(undefined);
+            setBusyID(undefined);
+          }
+        },
+      );
+      if (operation) await operation;
+    },
+    [confirm, finishLifecycle, mutationUncertain, readCookie, transport],
+  );
+
   const onClaims = useCallback(
     async (item: CouponListItem, offset = 0) => {
       const key = `${item.id}:${offset}`;
@@ -543,7 +764,9 @@ export function CouponsPage({
         async () => {
           const request = ++productOptionsRequest.current;
           const previous = verifiedProductOptions.current;
-          setProductOptionsState(couponProductOptionsLoadingState(offset, previous));
+          setProductOptionsState(
+            couponProductOptionsLoadingState(offset, previous),
+          );
           const result = await performCouponProductOptionsLoad({
             offset,
             onUnauthenticated,
@@ -780,12 +1003,15 @@ export function CouponsPage({
       notice={notice}
       onCopy={onCopy}
       onArchive={onArchive}
+      onDelete={onDelete}
       onClaims={onClaims}
       onProductOptions={onProductOptions}
       onDetail={onDetail}
       onCreate={onCreate}
       onCancelEditor={onCancelEditor}
       onEdit={onEdit}
+      onPublish={onPublish}
+      onStop={onStop}
       onSubmitDraft={onSubmitDraft}
       onRefreshAfterUncertain={onRefreshAfterUncertain}
       role={role}
@@ -808,12 +1034,15 @@ export function CouponsView({
   notice,
   onCopy,
   onArchive,
+  onDelete,
   onClaims,
   onProductOptions,
   onCancelEditor,
   onCreate,
   onDetail,
   onEdit,
+  onPublish,
+  onStop,
   onRefreshAfterUncertain,
   onCopyShare,
   onShare,
@@ -823,7 +1052,8 @@ export function CouponsView({
   shareState,
   state,
 }: {
-  readonly busyAction?: "copy" | "archive" | "create" | "update";
+  readonly busyAction?:
+    "copy" | "archive" | "create" | "update" | "publish" | "stop" | "delete";
   readonly busyID?: number;
   readonly claimsState?: CouponClaimsViewState;
   readonly detailState?: CouponDetailViewState;
@@ -835,6 +1065,8 @@ export function CouponsView({
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onArchive?: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onDelete?: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onClaims?: (item: CouponListItem, offset?: number) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onProductOptions?: (offset?: number) => void;
@@ -844,6 +1076,10 @@ export function CouponsView({
   readonly onDetail?: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onEdit?: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onPublish?: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onStop?: (item: CouponListItem) => void;
   readonly onRefreshAfterUncertain?: () => void;
   readonly onCopyShare?: () => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
@@ -893,6 +1129,9 @@ export function CouponsView({
       <p className="route-card__eyebrow">本地优惠券规则</p>
       <h1 id="app-title">优惠券列表</h1>
       <p>复制只会创建新的本地草稿，不会领取、核销或调用支付及第三方服务。</p>
+      <p>
+        发布、停止和删除仅改变本地优惠券规则状态，不代表领取、核销、支付或第三方服务成功。
+      </p>
       {notice ? <p role="status">{notice}</p> : null}
       <p>
         <button
@@ -1009,6 +1248,39 @@ export function CouponsView({
                       {busyID === item.id && busyAction === "archive"
                         ? "正在归档…"
                         : "归档"}
+                    </button>
+                  ) : null}
+                  {canPublishCoupon(item) ? (
+                    <button
+                      type="button"
+                      disabled={busyID !== undefined || mutationUncertain}
+                      onClick={() => onPublish?.(item)}
+                    >
+                      {busyID === item.id && busyAction === "publish"
+                        ? "正在发布…"
+                        : "发布本地规则"}
+                    </button>
+                  ) : null}
+                  {canStopCoupon(item) ? (
+                    <button
+                      type="button"
+                      disabled={busyID !== undefined || mutationUncertain}
+                      onClick={() => onStop?.(item)}
+                    >
+                      {busyID === item.id && busyAction === "stop"
+                        ? "正在停止…"
+                        : "停止本地规则"}
+                    </button>
+                  ) : null}
+                  {canDeleteCoupon(item) ? (
+                    <button
+                      type="button"
+                      disabled={busyID !== undefined || mutationUncertain}
+                      onClick={() => onDelete?.(item)}
+                    >
+                      {busyID === item.id && busyAction === "delete"
+                        ? "正在删除…"
+                        : "删除未领取草稿"}
                     </button>
                   ) : null}
                   <button

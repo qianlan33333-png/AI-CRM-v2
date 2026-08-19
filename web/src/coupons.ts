@@ -2,11 +2,14 @@ import {
   archiveLegacyCoupon,
   copyLegacyCoupon,
   createLegacyCoupon,
+  deleteLegacyCoupon,
   getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
   listLegacyCouponProductOptions,
   listLegacyCoupons,
+  publishLegacyCoupon,
+  stopLegacyCoupon,
   updateLegacyCoupon,
   type CouponUpsertRequest,
 } from "./api/generated/health";
@@ -93,6 +96,22 @@ export function canArchiveCoupon(item: CouponListItem): boolean {
   );
 }
 
+export function canPublishCoupon(item: CouponListItem): boolean {
+  return item.status === "draft" && item.availability === "draft";
+}
+
+export function canStopCoupon(item: CouponListItem): boolean {
+  return item.status === "published";
+}
+
+export function canDeleteCoupon(item: CouponListItem): boolean {
+  return (
+    item.status === "draft" &&
+    item.availability === "draft" &&
+    item.issuedCount === 0
+  );
+}
+
 export type CouponsFailure =
   | "unauthenticated"
   | "forbidden"
@@ -140,6 +159,12 @@ export type CouponArchiveResult =
   | { readonly status: "archived"; readonly item: CouponListItem }
   | { readonly status: "canceled" }
   | { readonly status: CouponsFailure };
+export type CouponLifecycleResult =
+  | {
+      readonly status: "published" | "stopped" | "deleted";
+      readonly item: CouponListItem;
+    }
+  | { readonly status: CouponsFailure; readonly outcomeUncertain: boolean };
 
 const couponPageSize = 200;
 export const couponClaimsPageSize = 50;
@@ -214,6 +239,24 @@ async function generatedArchive(couponID: number, options?: RequestInit) {
   });
 }
 
+async function generatedPublish(couponID: number, options?: RequestInit) {
+  return publishLegacyCoupon(couponID, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
+async function generatedStop(couponID: number, options?: RequestInit) {
+  return stopLegacyCoupon(couponID, { credentials: "same-origin", ...options });
+}
+
+async function generatedDelete(couponID: number, options?: RequestInit) {
+  return deleteLegacyCoupon(couponID, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
 export interface CouponsTransport {
   readonly list: typeof generatedList;
   readonly copy: typeof generatedCopy;
@@ -224,6 +267,9 @@ export interface CouponsTransport {
   readonly update: typeof generatedUpdate;
   readonly share: typeof generatedShare;
   readonly archive: typeof generatedArchive;
+  readonly publish: typeof generatedPublish;
+  readonly stop: typeof generatedStop;
+  readonly delete: typeof generatedDelete;
 }
 
 export const generatedCouponsTransport: CouponsTransport = {
@@ -236,6 +282,9 @@ export const generatedCouponsTransport: CouponsTransport = {
   update: generatedUpdate,
   share: generatedShare,
   archive: generatedArchive,
+  publish: generatedPublish,
+  stop: generatedStop,
+  delete: generatedDelete,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -1146,6 +1195,12 @@ export function newCouponArchiveIdempotencyKey(
   return newCouponIdempotencyKey("coupon-archive", source);
 }
 
+export function newCouponDeleteIdempotencyKey(
+  source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
+): string | undefined {
+  return newCouponIdempotencyKey("coupon-delete", source);
+}
+
 function newCouponIdempotencyKey(
   prefix: string,
   source: { readonly randomUUID: () => string } | undefined,
@@ -1260,6 +1315,161 @@ export async function archiveCoupon(
     archived.issuedCount === item.issuedCount
     ? { status: "archived", item: archived }
     : { status: "invalid" };
+}
+
+function knownLifecycleFailure(
+  status: number,
+  body: unknown,
+): Extract<CouponLifecycleResult, { readonly outcomeUncertain: boolean }> {
+  const result = failure(status, body);
+  return { status: result, outcomeUncertain: result === "unavailable" };
+}
+
+function transitionCouponResponse(
+  value: unknown,
+  current: CouponListItem,
+  expected: "published" | "stopped",
+): CouponListItem | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "coupon",
+      "status",
+      "idempotent_same_state",
+      "fallback_used",
+      "real_external_call_executed",
+    ]) ||
+    value.ok !== true ||
+    value.status !== expected ||
+    value.idempotent_same_state !== true ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false
+  ) {
+    return undefined;
+  }
+  const item = coupon(value.coupon);
+  return item &&
+    item.id === current.id &&
+    item.name === current.name &&
+    item.status === expected &&
+    item.issuedCount === current.issuedCount &&
+    (expected !== "stopped" || item.availability === "stopped")
+    ? item
+    : undefined;
+}
+
+function deletedCouponResponse(
+  value: unknown,
+  current: CouponListItem,
+): CouponListItem | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["ok", "coupon"]) ||
+    value.ok !== true ||
+    !record(value.coupon) ||
+    value.coupon.status !== "deleted" ||
+    value.coupon.availability_status !== "deleted"
+  ) {
+    return undefined;
+  }
+  // The local delete receipt is intentionally returned as a Coupon-shaped
+  // tombstone. Reuse the closed full-rule parser after normalizing only the
+  // two documented tombstone markers; every other wire field remains exact.
+  const parsed = coupon({
+    ...value.coupon,
+    status: "draft",
+    availability_status: "draft",
+  });
+  return parsed &&
+    parsed.id === current.id &&
+    parsed.name === current.name &&
+    parsed.issuedCount === 0
+    ? current
+    : undefined;
+}
+
+export async function publishCoupon(
+  transport: CouponsTransport,
+  item: CouponListItem,
+  csrf: string,
+): Promise<CouponLifecycleResult> {
+  if (!canPublishCoupon(item) || !validCSRF(csrf))
+    return { status: "invalid", outcomeUncertain: false };
+  let response: Awaited<ReturnType<CouponsTransport["publish"]>>;
+  try {
+    response = await transport.publish(item.id, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": csrf },
+    });
+  } catch {
+    return { status: "unavailable", outcomeUncertain: true };
+  }
+  if (response.status !== 200)
+    return knownLifecycleFailure(response.status, response.data);
+  const published = transitionCouponResponse(response.data, item, "published");
+  return published
+    ? { status: "published", item: published }
+    : { status: "invalid", outcomeUncertain: true };
+}
+
+export async function stopCoupon(
+  transport: CouponsTransport,
+  item: CouponListItem,
+  csrf: string,
+): Promise<CouponLifecycleResult> {
+  if (!canStopCoupon(item) || !validCSRF(csrf))
+    return { status: "invalid", outcomeUncertain: false };
+  let response: Awaited<ReturnType<CouponsTransport["stop"]>>;
+  try {
+    response = await transport.stop(item.id, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": csrf },
+    });
+  } catch {
+    return { status: "unavailable", outcomeUncertain: true };
+  }
+  if (response.status !== 200)
+    return knownLifecycleFailure(response.status, response.data);
+  const stopped = transitionCouponResponse(response.data, item, "stopped");
+  return stopped
+    ? { status: "stopped", item: stopped }
+    : { status: "invalid", outcomeUncertain: true };
+}
+
+export async function deleteCoupon(
+  transport: CouponsTransport,
+  item: CouponListItem,
+  csrf: string,
+  idempotencyKey: string,
+): Promise<CouponLifecycleResult> {
+  if (
+    !canDeleteCoupon(item) ||
+    !validCSRF(csrf) ||
+    idempotencyKey.length < 16 ||
+    idempotencyKey.length > 128 ||
+    idempotencyKey.trim() !== idempotencyKey
+  ) {
+    return { status: "invalid", outcomeUncertain: false };
+  }
+  let response: Awaited<ReturnType<CouponsTransport["delete"]>>;
+  try {
+    response = await transport.delete(item.id, {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": csrf,
+        "Idempotency-Key": idempotencyKey,
+      },
+    });
+  } catch {
+    return { status: "unavailable", outcomeUncertain: true };
+  }
+  if (response.status !== 200)
+    return knownLifecycleFailure(response.status, response.data);
+  const deleted = deletedCouponResponse(response.data, item);
+  return deleted
+    ? { status: "deleted", item: deleted }
+    : { status: "invalid", outcomeUncertain: true };
 }
 
 export function filterCoupons(
