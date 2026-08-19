@@ -41,6 +41,8 @@ import { WecomTagsPage } from "./wecom-tags-ui";
 import type { WecomTagsTransport } from "./wecom-tags";
 import { ChannelsPage } from "./channels-ui";
 import type { ChannelsTransport } from "./channels";
+import { CouponsPage } from "./coupons-ui";
+import type { CouponsTransport } from "./coupons";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -51,6 +53,7 @@ export const HXC_SENDER_PATH = "/admin/hxc-send-config";
 export const QUESTIONNAIRE_LIST_PATH = "/admin/questionnaires";
 export const WECOM_TAGS_PATH = "/admin/wecom-tags";
 export const CHANNELS_PATH = "/admin/channels";
+export const COUPONS_PATH = "/admin/coupons";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -121,6 +124,12 @@ export const routes = [
     description: "本地渠道资源的只读列表。",
   },
   {
+    path: "/admin/coupons",
+    navigationLabel: "优惠券",
+    title: "优惠券列表",
+    description: "本地优惠券规则的浏览和复制。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -173,6 +182,7 @@ export interface AppProps {
   questionnaireTransport?: QuestionnaireListTransport;
   wecomTagsTransport?: WecomTagsTransport;
   channelsTransport?: ChannelsTransport;
+  couponsTransport?: CouponsTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -225,7 +235,8 @@ export function carrierPathname(pathname: string, search: string): string {
     values[0] === HXC_SENDER_PATH ||
     values[0] === QUESTIONNAIRE_LIST_PATH ||
     values[0] === WECOM_TAGS_PATH ||
-    values[0] === CHANNELS_PATH
+    values[0] === CHANNELS_PATH ||
+    values[0] === COUPONS_PATH
     ? values[0]
     : pathname;
 }
@@ -328,6 +339,7 @@ function PageContent({
   questionnaireTransport,
   wecomTagsTransport,
   channelsTransport,
+  couponsTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -345,6 +357,7 @@ function PageContent({
   questionnaireTransport?: QuestionnaireListTransport;
   wecomTagsTransport?: WecomTagsTransport;
   channelsTransport?: ChannelsTransport;
+  couponsTransport?: CouponsTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -488,6 +501,17 @@ function PageContent({
     );
   }
 
+  if (route.path === COUPONS_PATH) {
+    return (
+      <CouponsPage
+        role={principal.role}
+        transport={couponsTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -545,6 +569,7 @@ export function navigationLinks(
   ) {
     permitted.add(WECOM_TAGS_PATH);
     permitted.add(CHANNELS_PATH);
+    permitted.add(COUPONS_PATH);
   }
   return routes
     .filter((route) => permitted.has(route.path))
@@ -568,6 +593,7 @@ export function App({
   questionnaireTransport,
   wecomTagsTransport,
   channelsTransport,
+  couponsTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -727,6 +753,7 @@ export function App({
             questionnaireTransport={questionnaireTransport}
             wecomTagsTransport={wecomTagsTransport}
             channelsTransport={channelsTransport}
+            couponsTransport={couponsTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />

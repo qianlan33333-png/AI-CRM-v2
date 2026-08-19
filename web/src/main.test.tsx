@@ -9,6 +9,7 @@ import {
   QUESTIONNAIRE_LIST_PATH,
   WECOM_TAGS_PATH,
   CHANNELS_PATH,
+  COUPONS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -29,6 +30,7 @@ import type { CustomerDetailTransport } from "./customer-detail";
 import type { ImageLibraryTransport } from "./image-library";
 import type { WecomTagsTransport } from "./wecom-tags";
 import type { ChannelsTransport } from "./channels";
+import type { CouponsTransport } from "./coupons";
 
 const adminSession = {
   status: "authenticated",
@@ -108,6 +110,14 @@ function wecomTagsTransport(): WecomTagsTransport {
 function channelsTransport(): ChannelsTransport {
   const response = async () => ({ status: 503, data: {} });
   return { read: vi.fn(response) } as unknown as ChannelsTransport;
+}
+
+function couponsTransport(): CouponsTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return {
+    list: vi.fn(response),
+    copy: vi.fn(response),
+  } as unknown as CouponsTransport;
 }
 
 describe("Web shell routes", () => {
@@ -246,6 +256,39 @@ describe("Web shell routes", () => {
     expect(client.read).not.toHaveBeenCalled();
   });
 
+  it("renders the coupon carrier route for admin and ops only", () => {
+    vi.stubGlobal("window", { location: { pathname: COUPONS_PATH } });
+    const client = couponsTransport();
+    expect(
+      renderToStaticMarkup(
+        <App couponsTransport={client} initialSession={adminSession} />,
+      ),
+    ).toContain("正在读取本地优惠券列表。");
+    expect(
+      renderToStaticMarkup(
+        <App
+          couponsTransport={client}
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 8, role: "ops" },
+          }}
+        />,
+      ),
+    ).toContain("正在读取本地优惠券列表。");
+    expect(
+      renderToStaticMarkup(
+        <App
+          couponsTransport={client}
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 9, role: "sales", staffID: 11 },
+          }}
+        />,
+      ),
+    ).toContain("当前账号没有优惠券管理权限。");
+    expect(client.list).not.toHaveBeenCalled();
+  });
+
   it("renders the questionnaire carrier route for admin and keeps non-admins fail-closed", () => {
     vi.stubGlobal("window", {
       location: { pathname: QUESTIONNAIRE_LIST_PATH },
@@ -276,7 +319,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(13);
+    expect(routes).toHaveLength(14);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -404,6 +447,7 @@ describe("Web shell routes", () => {
       "/admin/questionnaires",
       "/admin/wecom-tags",
       "/admin/channels",
+      "/admin/coupons",
       "/settings",
     ]);
     expect(
@@ -418,6 +462,7 @@ describe("Web shell routes", () => {
       "/admin/image-library",
       "/admin/wecom-tags",
       "/admin/channels",
+      "/admin/coupons",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -435,6 +480,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/questionnaires"');
     expect(html).toContain('href="/admin/wecom-tags"');
     expect(html).toContain('href="/admin/channels"');
+    expect(html).toContain('href="/admin/coupons"');
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -473,11 +519,15 @@ describe("legacy admin path carrier", () => {
     expect(carrierPathname("/", `?legacy_admin_path=${CHANNELS_PATH}`)).toBe(
       CHANNELS_PATH,
     );
+    expect(carrierPathname("/", `?legacy_admin_path=${COUPONS_PATH}`)).toBe(
+      COUPONS_PATH,
+    );
 
     for (const search of [
       "?legacy_admin_path=/admin/image-library",
       "?legacy_admin_path=/admin/wecom-tags/extra",
       "?legacy_admin_path=/admin/channels/extra",
+      "?legacy_admin_path=/admin/coupons/extra",
       "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,

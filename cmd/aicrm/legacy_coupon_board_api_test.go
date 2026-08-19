@@ -25,6 +25,8 @@ type legacyCouponBoardStub struct {
 	items   []couponport.Coupon
 	rows    []couponport.SidebarCoupon
 	claim   couponport.ClaimCommand
+	copyID  couponport.ID
+	copyKey string
 	writes  int
 	limit   int32
 	offset  int32
@@ -45,7 +47,8 @@ func (s *legacyCouponBoardStub) Delete(_ context.Context, _ couponport.ID, _ int
 	s.writes++
 	return s.item, nil
 }
-func (s *legacyCouponBoardStub) Copy(_ context.Context, _ couponport.ID, _ int64, _ string) (couponport.Coupon, error) {
+func (s *legacyCouponBoardStub) Copy(_ context.Context, id couponport.ID, _ int64, key string) (couponport.Coupon, error) {
+	s.copyID, s.copyKey = id, key
 	s.writes++
 	return s.item, nil
 }
@@ -196,115 +199,81 @@ func TestCouponBoardAddsAllFifteenMissingRoutes(t *testing.T) {
 	adminRead := func(path string) *http.Request { return legacyRequest(http.MethodGet, path, legacyToken(113)) }
 	publicRead := func(path string) *http.Request { return couponPublicRequest(http.MethodGet, path, nil) }
 	for _, testCase := range []struct {
-		name    string
-		request *http.Request
+		name       string
+		request    *http.Request
+		wantStatus int
 	}{
-		{"admin list page", adminRead("/admin/coupons")},
-		{"admin new page", adminRead("/admin/coupons/new")},
-		{"admin data page", adminRead("/admin/coupons/7/data")},
-		{"admin edit page", adminRead("/admin/coupons/7/edit")},
-		{"product options", adminRead("/api/admin/coupons/product-options?q=%E5%95%86%E5%93%81&product_type=standard_product&limit=20&offset=0")},
-		{"delete", couponBoardAdminWrite(http.MethodDelete, "/api/admin/coupons/7")},
-		{"archive", couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/archive")},
-		{"claims", adminRead("/api/admin/coupons/7/claims?limit=50&offset=0")},
-		{"copy", couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/copy")},
-		{"share", adminRead("/api/admin/coupons/7/share")},
-		{"h5 available", couponPublicRequest(http.MethodGet, "/api/h5/coupons/available?target_ref=standard_product:7", &http.Cookie{Name: paymentIdentityCookieName, Value: payment})},
-		{"h5 coupon", publicRead("/api/h5/coupons/c-7")},
-		{"h5 claim", couponPublicWrite("/api/h5/coupons/c-7/claim", "", &http.Cookie{Name: paymentIdentityCookieName, Value: payment}, "h5-claim-key-0015")},
-		{"sidebar", couponPublicRequest(http.MethodGet, "/api/sidebar/v2/coupons", &http.Cookie{Name: sidebarGrantCookieName, Value: sidebar})},
-		{"public page", publicRead("/c/c-7")},
+		{"admin list page", adminRead("/admin/coupons"), http.StatusFound},
+		{"admin new page", adminRead("/admin/coupons/new"), http.StatusOK},
+		{"admin data page", adminRead("/admin/coupons/7/data"), http.StatusOK},
+		{"admin edit page", adminRead("/admin/coupons/7/edit"), http.StatusOK},
+		{"product options", adminRead("/api/admin/coupons/product-options?q=%E5%95%86%E5%93%81&product_type=standard_product&limit=20&offset=0"), http.StatusOK},
+		{"delete", couponBoardAdminWrite(http.MethodDelete, "/api/admin/coupons/7"), http.StatusOK},
+		{"archive", couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/archive"), http.StatusOK},
+		{"claims", adminRead("/api/admin/coupons/7/claims?limit=50&offset=0"), http.StatusOK},
+		{"copy", couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/copy"), http.StatusOK},
+		{"share", adminRead("/api/admin/coupons/7/share"), http.StatusOK},
+		{"h5 available", couponPublicRequest(http.MethodGet, "/api/h5/coupons/available?target_ref=standard_product:7", &http.Cookie{Name: paymentIdentityCookieName, Value: payment}), http.StatusOK},
+		{"h5 coupon", publicRead("/api/h5/coupons/c-7"), http.StatusOK},
+		{"h5 claim", couponPublicWrite("/api/h5/coupons/c-7/claim", "", &http.Cookie{Name: paymentIdentityCookieName, Value: payment}, "h5-claim-key-0015"), http.StatusOK},
+		{"sidebar", couponPublicRequest(http.MethodGet, "/api/sidebar/v2/coupons", &http.Cookie{Name: sidebarGrantCookieName, Value: sidebar}), http.StatusOK},
+		{"public page", publicRead("/c/c-7"), http.StatusOK},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, testCase.request)
-			if response.Code != http.StatusOK {
+			if response.Code != testCase.wantStatus {
 				t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
 			}
 		})
 	}
 }
 
-func TestCouponListPageFiltersLocallyWithoutChangingCouponBoardContracts(t *testing.T) {
-	unsafeName := `Alpha <img src=x onerror=alert(1)>`
-	items := []couponport.Coupon{
-		{Name: unsafeName, Status: "published", AvailabilityStatus: "scheduled"},
-		{Name: "active coupon", Status: "published", AvailabilityStatus: "active"},
-		{Name: "sold out coupon", Status: "published", AvailabilityStatus: "sold_out"},
-		{Name: "ended coupon", Status: "published", AvailabilityStatus: "ended"},
-		{Name: "draft coupon", Status: "draft"},
-		{Name: "stopped coupon", Status: "stopped"},
-		{Name: "archived coupon", Status: "archived"},
+func TestCouponCopyRejectsCSRFAndInvalidIdempotencyKeysBeforeLocalWrite(t *testing.T) {
+	stub := &legacyCouponBoardStub{legacyCouponStub: legacyCouponStub{item: legacyCouponItem()}}
+	router := legacyCouponBoardRouter(t, stub)
+	for _, request := range []*http.Request{
+		func() *http.Request {
+			r := httptest.NewRequest(http.MethodPost, "/api/admin/coupons/7/copy", nil)
+			r.Header.Set("Origin", "http://example.com")
+			r.Header.Set("Idempotency-Key", "coupon-board-key-0001")
+			r.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(116)})
+			return r
+		}(),
+		func() *http.Request {
+			r := couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/copy")
+			r.Header.Set("Idempotency-Key", "too-short")
+			return r
+		}(),
+		func() *http.Request {
+			r := couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/copy")
+			r.Header.Add("Idempotency-Key", "coupon-board-key-0002")
+			return r
+		}(),
+	} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden && response.Code != http.StatusBadRequest || stub.writes != 0 {
+			t.Fatalf("status/writes=%d/%d body=%s", response.Code, stub.writes, response.Body.String())
+		}
 	}
-	stub := &legacyCouponBoardStub{legacyCouponStub: legacyCouponStub{page: couponport.Page{Items: items, Total: int64(len(items)), Limit: 100}}}
-	router, auth := legacyCouponBoardRouterWithAuth(t, stub)
-	request := legacyRequest(http.MethodGet, "/admin/coupons", legacyToken(114))
-	originalURL := request.URL.String()
-	response := httptest.NewRecorder()
-	router.ServeHTTP(response, request)
-	body := response.Body.String()
 
-	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" || !strings.HasPrefix(response.Header().Get("Content-Type"), "text/html") {
-		t.Fatalf("response=%d headers=%v body=%s", response.Code, response.Header(), body)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, couponBoardAdminWrite(http.MethodPost, "/api/admin/coupons/7/copy"))
+	if response.Code != http.StatusOK || stub.writes != 1 || stub.copyID != 7 || stub.copyKey != "coupon-board-key-0001" {
+		t.Fatalf("status/writes/copy=%d/%d/%d/%q body=%s", response.Code, stub.writes, stub.copyID, stub.copyKey, response.Body.String())
 	}
-	if stub.limit != 100 || stub.offset != 0 || stub.status != "" || stub.query != "" || stub.writes != 0 {
-		t.Fatalf("list arguments limit=%d offset=%d status=%q query=%q writes=%d", stub.limit, stub.offset, stub.status, stub.query, stub.writes)
+}
+
+func TestCouponListPageRedirectsToTheFrozenSPACarrier(t *testing.T) {
+	stub := &legacyCouponBoardStub{}
+	router, auth := legacyCouponBoardRouterWithAuth(t, stub)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyRequest(http.MethodGet, "/admin/coupons", legacyToken(114)))
+	if response.Code != http.StatusFound || response.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Fcoupons" || stub.limit != 0 || stub.writes != 0 {
+		t.Fatalf("response=%d location=%q list-limit=%d writes=%d", response.Code, response.Header().Get("Location"), stub.limit, stub.writes)
 	}
 	if got := auth.capabilities(); len(got) != 1 || got[0] != authport.CapabilityCouponsRead {
 		t.Fatalf("capabilities=%v", got)
 	}
-	if request.URL.String() != originalURL || strings.Contains(body, "fetch(") || strings.Contains(body, "XMLHttpRequest") || strings.Contains(body, "history.") {
-		t.Fatalf("unexpected browser request mutation or remote call body=%s", body)
-	}
-	if !strings.Contains(body, `type="search" id="coupon-search"`) || !strings.Contains(body, `id="coupon-status"`) || !strings.Contains(body, "row.hidden=") || !strings.Contains(body, "row.dataset.name.toLowerCase().includes(needle)") || !strings.Contains(body, `row.dataset.status===wanted`) {
-		t.Fatalf("missing local filter controls body=%s", body)
-	}
-	for _, status := range []string{"draft", "scheduled", "active", "sold_out", "ended", "stopped", "archived"} {
-		if !strings.Contains(body, `value="`+status+`"`) || !strings.Contains(body, `data-status="`+status+`"`) {
-			t.Fatalf("missing status %q body=%s", status, body)
-		}
-	}
-	for _, item := range []struct{ name, status string }{
-		{"active coupon", "active"},
-		{"sold out coupon", "sold_out"},
-		{"ended coupon", "ended"},
-		{"draft coupon", "draft"},
-		{"stopped coupon", "stopped"},
-		{"archived coupon", "archived"},
-	} {
-		if !strings.Contains(body, item.name+" · "+item.status) {
-			t.Fatalf("missing displayed availability state %#v body=%s", item, body)
-		}
-	}
-	if strings.Contains(body, `data-status="published"`) || strings.Contains(body, " · published") {
-		t.Fatalf("stored status leaked instead of availability status body=%s", body)
-	}
-	if !strings.Contains(body, `data-name="Alpha &lt;img src=x onerror=alert(1)&gt;"`) || !strings.Contains(body, `Alpha &lt;img src=x onerror=alert(1)&gt; · scheduled`) || strings.Contains(body, unsafeName) {
-		t.Fatalf("unsafe coupon name was not escaped body=%s", body)
-	}
-	if strings.Contains(renderCouponPageBody(t), `id="coupon-search"`) {
-		t.Fatal("coupon filter leaked into a non-list coupon page")
-	}
-}
-
-func TestCouponListPageFailsClosedForUnexpectedAvailabilityStatus(t *testing.T) {
-	for _, item := range []couponport.Coupon{
-		{Name: "published without availability", Status: "published"},
-		{Name: "deleted availability", Status: "published", AvailabilityStatus: "deleted"},
-	} {
-		stub := &legacyCouponBoardStub{legacyCouponStub: legacyCouponStub{page: couponport.Page{Items: []couponport.Coupon{item}, Total: 1, Limit: 100}}}
-		router := legacyCouponBoardRouter(t, stub)
-		response := httptest.NewRecorder()
-		router.ServeHTTP(response, legacyRequest(http.MethodGet, "/admin/coupons", legacyToken(115)))
-		if response.Code != http.StatusServiceUnavailable || strings.Contains(response.Body.String(), item.Name) {
-			t.Fatalf("unexpected availability status item=%#v response=%d body=%s", item, response.Code, response.Body.String())
-		}
-	}
-}
-
-func renderCouponPageBody(t *testing.T) string {
-	t.Helper()
-	response := httptest.NewRecorder()
-	renderCouponPage(response, "新建优惠券", nil, couponport.Coupon{})
-	return response.Body.String()
 }
