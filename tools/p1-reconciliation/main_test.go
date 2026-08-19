@@ -305,8 +305,11 @@ func register(r router, options options, wrapper *ServerInterfaceWrapper) {
 	} {
 		t.Run(tc.id, func(t *testing.T) {
 			authority := routeFact{Path: tc.path, Owner: tc.owner, Methods: []string{"GET"}}
-			evidence := []apiDecisionEvidence{{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"}}
-			if err := validateIntegratedRoute(tc.id, authority, tc.operation, "GET", tc.path, "P5-DECLARATIVE-"+tc.id[len(tc.id)-4:], "MIGRATE", "APPROVED", "declarative canonical route", evidence, facts); err != nil {
+			evidence := []apiDecisionEvidence{
+				{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"},
+				{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"},
+			}
+			if err := validateIntegratedRoute(tc.id, "A", authority, tc.operation, "GET", tc.path, "P5-DECLARATIVE-"+tc.id[len(tc.id)-4:], "MIGRATE", "APPROVED", "declarative canonical route", evidence, facts); err != nil {
 				t.Fatalf("future declarative route was rejected: %v", err)
 			}
 		})
@@ -316,7 +319,7 @@ func register(r router, options options, wrapper *ServerInterfaceWrapper) {
 func TestIntegratedRouteValidationFailsClosed(t *testing.T) {
 	id := "LEGACY-API-9001"
 	authority := routeFact{Path: "/api/admin/media-fixtures", Owner: "media", Methods: []string{"GET"}}
-	evidence := []apiDecisionEvidence{{DecisionID: "P5-DECLARATIVE", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-17", Decision: "MIGRATE"}}
+	evidence := []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"}}
 	valid := integrationFacts{
 		openAPI:           map[string][]openAPIRoute{id: {{Operation: "listLegacyMediaFixtures", Method: "GET", Path: authority.Path}}},
 		requiresGenerated: map[string]bool{integrationKey("listLegacyMediaFixtures", "GET", authority.Path): true},
@@ -335,10 +338,60 @@ func TestIntegratedRouteValidationFailsClosed(t *testing.T) {
 		{"forged operation", authority, "listLegacyMediaForged", valid},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if err := validateIntegratedRoute(id, tc.authority, tc.operation, "GET", authority.Path, "P5-DECLARATIVE-9001", "MIGRATE", "APPROVED", "declarative canonical route", evidence, tc.facts); err == nil {
+			if err := validateIntegratedRoute(id, "A", tc.authority, tc.operation, "GET", authority.Path, "P5-DECLARATIVE-9001", "MIGRATE", "APPROVED", "declarative canonical route", evidence, tc.facts); err == nil {
 				t.Fatal("unsafe integrated route was accepted")
 			}
 		})
+	}
+}
+
+func TestIntegratedRouteDecisionEvidenceAllowsFrozenOwnerAppend(t *testing.T) {
+	authority := routeFact{Path: "/api/admin/media-fixtures", Owner: "media", Methods: []string{"GET"}}
+	facts := integrationFacts{
+		openAPI:           map[string][]openAPIRoute{"LEGACY-API-9001": {{Operation: "listLegacyMediaFixtures", Method: "GET", Path: authority.Path}}},
+		requiresGenerated: map[string]bool{},
+		generated:         map[string]bool{},
+	}
+	evidence := []apiDecisionEvidence{
+		{DecisionID: "P4-0301-OWNER-FREEZE-2026-08-19", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-19", Decision: "MIGRATE"},
+		{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"},
+	}
+	if err := validateIntegratedRoute("LEGACY-API-9001", "A", authority, "listLegacyMediaFixtures", "GET", authority.Path, "P4-DECLARATIVE-9001", "MIGRATE", "APPROVED", "frozen local route", evidence, facts); err != nil {
+		t.Fatalf("frozen owner evidence was rejected: %v", err)
+	}
+}
+
+func TestIntegratedRouteDecisionEvidenceFailsClosed(t *testing.T) {
+	valid := []apiDecisionEvidence{
+		{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"},
+		{DecisionID: "P4-0301-OWNER-FREEZE-2026-08-19", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-19", Decision: "MIGRATE"},
+	}
+	for _, tc := range []struct {
+		name     string
+		evidence []apiDecisionEvidence
+	}{
+		{"missing fixed G1", []apiDecisionEvidence{{DecisionID: "P4-0301-OWNER-FREEZE-2026-08-19", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-19", Decision: "MIGRATE"}}},
+		{"fixed G1 wrong owner", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "not_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"}}},
+		{"fixed G1 empty date", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", Decision: "MIGRATE"}}},
+		{"fixed G1 wrong decision", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "DEFERRED_POST_LAUNCH"}}},
+		{"duplicate decision", append(append([]apiDecisionEvidence(nil), valid...), valid[1])},
+		{"empty decision ID", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"}, {ApprovedBy: "repository_owner", ApprovedAt: "2026-08-19", Decision: "MIGRATE"}}},
+		{"wrong owner", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"}, {DecisionID: "P4-0301-OWNER-FREEZE-2026-08-19", ApprovedBy: "not_owner", ApprovedAt: "2026-08-19", Decision: "MIGRATE"}}},
+		{"empty date", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"}, {DecisionID: "P4-0301-OWNER-FREEZE-2026-08-19", ApprovedBy: "repository_owner", Decision: "MIGRATE"}}},
+		{"wrong decision", []apiDecisionEvidence{{DecisionID: "G1-D02", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-10", Decision: "MIGRATE"}, {DecisionID: "P4-0301-OWNER-FREEZE-2026-08-19", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-19", Decision: "DEFERRED_POST_LAUNCH"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if validIntegratedDecisionEvidence("A", tc.evidence) {
+				t.Fatal("invalid integrated-route evidence was accepted")
+			}
+		})
+	}
+}
+
+func TestIntegratedRouteTierBAllowsExistingSupersessionEvidence(t *testing.T) {
+	evidence := []apiDecisionEvidence{{DecisionID: "P4-AB-ALL-2026-08-16", ApprovedBy: "repository_owner", ApprovedAt: "2026-08-16", Decision: "MIGRATE"}}
+	if !validIntegratedDecisionEvidence("B", evidence) {
+		t.Fatal("existing tier B supersession evidence was rejected")
 	}
 }
 

@@ -538,7 +538,7 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 		case "A":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "MIGRATE"}
 			if targetMapping != "" {
-				if err := validateIntegratedRoute(id, authority, operation, method, candidatePath, targetMapping, disposition, signoff, reason, evidence, facts); err != nil {
+				if err := validateIntegratedRoute(id, tier, authority, operation, method, candidatePath, targetMapping, disposition, signoff, reason, evidence, facts); err != nil {
 					return counts, decisions, fmt.Errorf("%s has an invalid integrated tier A disposition: %w", id, err)
 				}
 			} else if disposition != "MIGRATE" || signoff != "APPROVED" || operation != "PENDING_HUMAN_DESIGN" || method != "PENDING_HUMAN_DESIGN" || candidatePath != "PENDING_HUMAN_DESIGN" || targetMapping != "" || reason != "G1-D02 approved tier A route for 1:1 legacy semantic migration; target v2 operation remains domain-contract work." || len(evidence) != 1 || evidence[0] != expectedEvidence {
@@ -548,7 +548,7 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 		case "B":
 			expectedEvidence := apiDecisionEvidence{"G1-D02", "repository_owner", "2026-08-10", "DEFERRED_POST_LAUNCH"}
 			if targetMapping != "" {
-				if err := validateIntegratedRoute(id, authority, operation, method, candidatePath, targetMapping, disposition, signoff, reason, evidence, facts); err != nil {
+				if err := validateIntegratedRoute(id, tier, authority, operation, method, candidatePath, targetMapping, disposition, signoff, reason, evidence, facts); err != nil {
 					return counts, decisions, fmt.Errorf("%s has an invalid integrated tier B disposition: %w", id, err)
 				}
 				decisions[0]++
@@ -575,12 +575,12 @@ func reconcileAPI(path string, routes map[string]routeFact, tiers map[string]str
 	return counts, decisions, nil
 }
 
-func validateIntegratedRoute(id string, authority routeFact, operation, method, candidatePath, targetMapping, disposition, signoff, reason string, evidence []apiDecisionEvidence, facts integrationFacts) error {
+func validateIntegratedRoute(id, tier string, authority routeFact, operation, method, candidatePath, targetMapping, disposition, signoff, reason string, evidence []apiDecisionEvidence, facts integrationFacts) error {
 	if authority.Owner == "" || !operationID.MatchString(operation) || !oneOf(method, "GET", "POST", "PUT", "PATCH", "DELETE") ||
 		candidatePath == "" || !strings.HasPrefix(candidatePath, "/") || strings.Contains(candidatePath, "//") || strings.Contains(candidatePath, "..") ||
 		!targetMappingID.MatchString(targetMapping) || disposition != "MIGRATE" || signoff != "APPROVED" ||
-		strings.TrimSpace(reason) == "" || len(reason) > 1200 || strings.ContainsAny(reason, "\r\n") || len(evidence) != 1 ||
-		evidence[0].DecisionID == "" || evidence[0].ApprovedBy != "repository_owner" || evidence[0].ApprovedAt == "" || evidence[0].Decision != "MIGRATE" {
+		strings.TrimSpace(reason) == "" || len(reason) > 1200 || strings.ContainsAny(reason, "\r\n") ||
+		!validIntegratedDecisionEvidence(tier, evidence) {
 		return errors.New("integrated route declaration is incomplete")
 	}
 	if !oneOf(method, authority.Methods...) || candidatePath != authority.Path {
@@ -595,6 +595,27 @@ func validateIntegratedRoute(id string, authority routeFact, operation, method, 
 		return errors.New("integrated route is missing from generated server registration")
 	}
 	return nil
+}
+
+func validIntegratedDecisionEvidence(tier string, evidence []apiDecisionEvidence) bool {
+	if len(evidence) == 0 {
+		return false
+	}
+	if tier != "A" {
+		return len(evidence) == 1 && evidence[0].DecisionID != "" && evidence[0].ApprovedBy == "repository_owner" && strings.TrimSpace(evidence[0].ApprovedAt) != "" && evidence[0].Decision == "MIGRATE"
+	}
+	seen := make(map[string]bool, len(evidence))
+	fixedG1 := 0
+	for _, item := range evidence {
+		if item.DecisionID == "" || seen[item.DecisionID] || item.ApprovedBy != "repository_owner" || strings.TrimSpace(item.ApprovedAt) == "" || item.Decision != "MIGRATE" {
+			return false
+		}
+		if item.DecisionID == "G1-D02" {
+			fixedG1++
+		}
+		seen[item.DecisionID] = true
+	}
+	return fixedG1 == 1
 }
 
 func oneOf(value string, allowed ...string) bool {
