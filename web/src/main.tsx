@@ -61,6 +61,8 @@ import { OrdersPage } from "./orders-ui";
 import type { OrdersTransport } from "./orders";
 import { ProductsPage } from "./products-ui";
 import type { ProductsTransport } from "./products";
+import { AppSettingsPage } from "./app-settings-ui";
+import type { AppSettingsTransport } from "./app-settings";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -214,7 +216,7 @@ export const routes = [
     path: "/settings",
     navigationLabel: "设置",
     title: "系统设置",
-    description: "设置模块边界已预留，尚未提供凭据、权限或配置编辑能力。",
+    description: "管理已持久化的非敏感本地设置，敏感信息仅显示掩码状态。",
   },
 ] as const;
 
@@ -267,6 +269,7 @@ export interface AppProps {
   pushCenterTransport?: PushCenterTransport;
   ordersTransport?: OrdersTransport;
   productsTransport?: ProductsTransport;
+  appSettingsTransport?: AppSettingsTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -437,6 +440,7 @@ function PageContent({
   pushCenterTransport,
   ordersTransport,
   productsTransport,
+  appSettingsTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -464,6 +468,7 @@ function PageContent({
   pushCenterTransport?: PushCenterTransport;
   ordersTransport?: OrdersTransport;
   productsTransport?: ProductsTransport;
+  appSettingsTransport?: AppSettingsTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -698,7 +703,23 @@ function PageContent({
     );
   }
   if (route.path === PRODUCTS_PATH) {
-    return <ProductsPage role={principal.role} transport={productsTransport} onUnauthenticated={onUnauthenticated} />;
+    return (
+      <ProductsPage
+        role={principal.role}
+        transport={productsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+  if (route.path === "/settings") {
+    return (
+      <AppSettingsPage
+        role={principal.role}
+        transport={appSettingsTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
   }
 
   return (
@@ -801,6 +822,7 @@ export function App({
   pushCenterTransport,
   ordersTransport,
   productsTransport,
+  appSettingsTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -970,6 +992,7 @@ export function App({
             pushCenterTransport={pushCenterTransport}
             ordersTransport={ordersTransport}
             productsTransport={productsTransport}
+            appSettingsTransport={appSettingsTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
