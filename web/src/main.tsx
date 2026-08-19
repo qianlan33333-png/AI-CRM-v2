@@ -45,6 +45,8 @@ import { CouponsPage } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
 import { AutomationRunsPage } from "./automation-runs-ui";
 import type { AutomationRunsTransport } from "./automation-runs";
+import { GroupInviteLibraryPage } from "./group-invite-library-ui";
+import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -57,6 +59,7 @@ export const WECOM_TAGS_PATH = "/admin/wecom-tags";
 export const CHANNELS_PATH = "/admin/channels";
 export const COUPONS_PATH = "/admin/coupons";
 export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
+export const GROUP_INVITE_LIBRARY_PATH = "/admin/group-invite-library";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -139,6 +142,12 @@ export const routes = [
     description: "自动化触发记录的脱敏只读视图。",
   },
   {
+    path: "/admin/group-invite-library",
+    navigationLabel: "群邀请素材",
+    title: "群邀请素材库",
+    description: "本地群邀请卡元数据的只读浏览。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -193,6 +202,7 @@ export interface AppProps {
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
+  groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -351,6 +361,7 @@ function PageContent({
   channelsTransport,
   couponsTransport,
   automationRunsTransport,
+  groupInviteLibraryTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -370,6 +381,7 @@ function PageContent({
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
+  groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -534,6 +546,16 @@ function PageContent({
     );
   }
 
+  if (route.path === GROUP_INVITE_LIBRARY_PATH) {
+    return (
+      <GroupInviteLibraryPage
+        role={principal.role}
+        transport={groupInviteLibraryTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -593,6 +615,7 @@ export function navigationLinks(
     permitted.add(WECOM_TAGS_PATH);
     permitted.add(CHANNELS_PATH);
     permitted.add(COUPONS_PATH);
+    permitted.add(GROUP_INVITE_LIBRARY_PATH);
   }
   return routes
     .filter((route) => permitted.has(route.path))
@@ -618,6 +641,7 @@ export function App({
   channelsTransport,
   couponsTransport,
   automationRunsTransport,
+  groupInviteLibraryTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -779,6 +803,7 @@ export function App({
             channelsTransport={channelsTransport}
             couponsTransport={couponsTransport}
             automationRunsTransport={automationRunsTransport}
+            groupInviteLibraryTransport={groupInviteLibraryTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />

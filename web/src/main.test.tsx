@@ -11,6 +11,7 @@ import {
   CHANNELS_PATH,
   COUPONS_PATH,
   AUTOMATION_RUNS_PATH,
+  GROUP_INVITE_LIBRARY_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -33,6 +34,7 @@ import type { WecomTagsTransport } from "./wecom-tags";
 import type { ChannelsTransport } from "./channels";
 import type { CouponsTransport } from "./coupons";
 import type { AutomationRunsTransport } from "./automation-runs";
+import type { GroupInviteLibraryTransport } from "./group-invite-library";
 
 const adminSession = {
   status: "authenticated",
@@ -127,6 +129,11 @@ function automationRunsTransport(): AutomationRunsTransport {
   return { list: vi.fn(response) } as AutomationRunsTransport;
 }
 
+function groupInviteLibraryTransport(): GroupInviteLibraryTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { list: vi.fn(response) } as GroupInviteLibraryTransport;
+}
+
 describe("Web shell routes", () => {
   it("accepts only an exact positive safe OneID customer-detail pathname", () => {
     expect(customerIDForPathname("/customers/1")).toBe(1);
@@ -199,6 +206,39 @@ describe("Web shell routes", () => {
     expect(sales).not.toContain('href="/admin/image-library"');
     expect(client.list).not.toHaveBeenCalled();
     expect(client.facets).not.toHaveBeenCalled();
+  });
+
+  it("renders the group-invite library for admin and ops while sales remains inert", () => {
+    vi.stubGlobal("window", { location: { pathname: GROUP_INVITE_LIBRARY_PATH } });
+    const client = groupInviteLibraryTransport();
+    const admin = renderToStaticMarkup(
+      <App groupInviteLibraryTransport={client} initialSession={adminSession} />,
+    );
+    expect(admin).toContain('<h1 id="app-title">群邀请素材库</h1>');
+    expect(admin).toContain("正在读取本地群邀请素材。");
+    expect(admin).toContain(`href="${GROUP_INVITE_LIBRARY_PATH}"`);
+    const ops = renderToStaticMarkup(
+      <App
+        groupInviteLibraryTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 8, role: "ops" },
+        }}
+      />,
+    );
+    expect(ops).toContain("正在读取本地群邀请素材。");
+    const sales = renderToStaticMarkup(
+      <App
+        groupInviteLibraryTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有群邀请素材库访问权限。");
+    expect(sales).not.toContain(`href="${GROUP_INVITE_LIBRARY_PATH}"`);
+    expect(client.list).not.toHaveBeenCalled();
   });
 
   it("renders the WeCom tags route for global admin and ops only", () => {
@@ -350,7 +390,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(15);
+    expect(routes).toHaveLength(16);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -480,6 +520,7 @@ describe("Web shell routes", () => {
       "/admin/channels",
       "/admin/coupons",
       "/admin/automation-runs",
+      "/admin/group-invite-library",
       "/settings",
     ]);
     expect(
@@ -495,6 +536,7 @@ describe("Web shell routes", () => {
       "/admin/wecom-tags",
       "/admin/channels",
       "/admin/coupons",
+      "/admin/group-invite-library",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -514,6 +556,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/channels"');
     expect(html).toContain('href="/admin/coupons"');
     expect(html).toContain('href="/admin/automation-runs"');
+    expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).not.toContain('href="/outbound"');
   });
 
