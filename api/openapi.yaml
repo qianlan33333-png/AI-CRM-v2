@@ -2942,6 +2942,34 @@ paths:
         "405":
           description: The legacy route only accepts GET.
           headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/customers/profile/tags:
+    get:
+      tags: [p4-customer-profile-tags-compat]
+      operationId: getLegacyCustomerProfileTags
+      summary: Read the Contact-owned local tag-name projection for one resolved customer
+      x-legacy-mapping-ids: [LEGACY-API-0301]
+      x-p4-decision-evidence: P4-0301-OWNER-FREEZE-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: unionid, in: query, required: false, description: Frozen legacy identity hint. When both legal hints are supplied they must resolve to one customer., schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: external_userid, in: query, required: false, description: Frozen WeCom external-user identity hint scoped by the configured corporate ID. When both legal hints are supplied they must resolve to one customer., schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: user_id, in: query, required: false, deprecated: true, description: Legacy ambiguous hint. It is rejected with unsupported_identity_hint and is never resolved., schema: { type: string, maxLength: 1024 } }
+      responses:
+        "200": { description: "Contact-owned local tag names, including an authoritative empty projection", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Neither frozen identity hint resolves to a customer, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsNotFound" } } } }
+        "409": { description: The supplied frozen hints conflict or are ambiguous, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsConflict" } } } }
+        "422": { description: "The request has no legal hint, has an invalid hint, or uses user_id", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsValidationError" } } } }
+        "503": { description: Identity resolution or the Contact-owned local projection is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsUnavailable" } } } }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
   /admin/miniprogram-library:
     get:
       tags: [p4-media-compat]
@@ -5016,6 +5044,51 @@ components:
         ok: { type: boolean, enum: [false] }
         status_code: { type: integer, enum: [503] }
         error_code: { type: string, enum: [delivery_lineage_unavailable] }
+    LegacyCustomerProfileTag:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+    LegacyCustomerProfileTagsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, tags]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        tags: { type: array, items: { $ref: "#/components/schemas/LegacyCustomerProfileTag" } }
+    LegacyCustomerProfileTagsNotFound:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [404] }
+        error_code: { type: string, enum: [customer_not_found] }
+    LegacyCustomerProfileTagsConflict:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [409] }
+        error_code: { type: string, enum: [identity_hint_conflict] }
+    LegacyCustomerProfileTagsValidationError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [422] }
+        error_code: { type: string, enum: [invalid_identity_hint, unsupported_identity_hint] }
+    LegacyCustomerProfileTagsUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [503] }
+        error_code: { type: string, enum: [customer_profile_tags_unavailable] }
     LegacyMiniProgramCreateRequest:
       type: object
       additionalProperties: false

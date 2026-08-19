@@ -3456,6 +3456,108 @@ export interface LegacyDeliveryLineageUnavailable {
   error_code: LegacyDeliveryLineageUnavailableErrorCode;
 }
 
+export interface LegacyCustomerProfileTag {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+}
+
+export interface LegacyCustomerProfileTagsResponse {
+  ok: boolean;
+  tags: LegacyCustomerProfileTag[];
+}
+
+export type LegacyCustomerProfileTagsNotFoundStatusCode =
+  (typeof LegacyCustomerProfileTagsNotFoundStatusCode)[keyof typeof LegacyCustomerProfileTagsNotFoundStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsNotFoundStatusCode = {
+  NUMBER_404: 404,
+} as const;
+
+export type LegacyCustomerProfileTagsNotFoundErrorCode =
+  (typeof LegacyCustomerProfileTagsNotFoundErrorCode)[keyof typeof LegacyCustomerProfileTagsNotFoundErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsNotFoundErrorCode = {
+  customer_not_found: "customer_not_found",
+} as const;
+
+export interface LegacyCustomerProfileTagsNotFound {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsNotFoundStatusCode;
+  error_code: LegacyCustomerProfileTagsNotFoundErrorCode;
+}
+
+export type LegacyCustomerProfileTagsConflictStatusCode =
+  (typeof LegacyCustomerProfileTagsConflictStatusCode)[keyof typeof LegacyCustomerProfileTagsConflictStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsConflictStatusCode = {
+  NUMBER_409: 409,
+} as const;
+
+export type LegacyCustomerProfileTagsConflictErrorCode =
+  (typeof LegacyCustomerProfileTagsConflictErrorCode)[keyof typeof LegacyCustomerProfileTagsConflictErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsConflictErrorCode = {
+  identity_hint_conflict: "identity_hint_conflict",
+} as const;
+
+export interface LegacyCustomerProfileTagsConflict {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsConflictStatusCode;
+  error_code: LegacyCustomerProfileTagsConflictErrorCode;
+}
+
+export type LegacyCustomerProfileTagsValidationErrorStatusCode =
+  (typeof LegacyCustomerProfileTagsValidationErrorStatusCode)[keyof typeof LegacyCustomerProfileTagsValidationErrorStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsValidationErrorStatusCode = {
+  NUMBER_422: 422,
+} as const;
+
+export type LegacyCustomerProfileTagsValidationErrorErrorCode =
+  (typeof LegacyCustomerProfileTagsValidationErrorErrorCode)[keyof typeof LegacyCustomerProfileTagsValidationErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsValidationErrorErrorCode = {
+  invalid_identity_hint: "invalid_identity_hint",
+  unsupported_identity_hint: "unsupported_identity_hint",
+} as const;
+
+export interface LegacyCustomerProfileTagsValidationError {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsValidationErrorStatusCode;
+  error_code: LegacyCustomerProfileTagsValidationErrorErrorCode;
+}
+
+export type LegacyCustomerProfileTagsUnavailableStatusCode =
+  (typeof LegacyCustomerProfileTagsUnavailableStatusCode)[keyof typeof LegacyCustomerProfileTagsUnavailableStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsUnavailableStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyCustomerProfileTagsUnavailableErrorCode =
+  (typeof LegacyCustomerProfileTagsUnavailableErrorCode)[keyof typeof LegacyCustomerProfileTagsUnavailableErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsUnavailableErrorCode = {
+  customer_profile_tags_unavailable: "customer_profile_tags_unavailable",
+} as const;
+
+export interface LegacyCustomerProfileTagsUnavailable {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsUnavailableStatusCode;
+  error_code: LegacyCustomerProfileTagsUnavailableErrorCode;
+}
+
 export type LegacyMiniProgramCreateRequest =
   | (unknown & {
       /** @maxLength 200 */
@@ -7030,6 +7132,26 @@ export type GetLegacyDeliveryLineageParams = {
    * @maximum 1000000
    */
   offset?: number;
+};
+
+export type GetLegacyCustomerProfileTagsParams = {
+  /**
+   * Frozen legacy identity hint. When both legal hints are supplied they must resolve to one customer.
+   * @minLength 1
+   * @maxLength 1024
+   */
+  unionid?: string;
+  /**
+   * Frozen WeCom external-user identity hint scoped by the configured corporate ID. When both legal hints are supplied they must resolve to one customer.
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid?: string;
+  /**
+   * Legacy ambiguous hint. It is rejected with unsupported_identity_hint and is never resolved.
+   * @maxLength 1024
+   */
+  user_id?: string;
 };
 
 export type ListLegacyMiniProgramsParams = {
@@ -17008,6 +17130,108 @@ export const getLegacyDeliveryLineage = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyDeliveryLineageResponse;
+};
+
+/**
+ * @summary Read the Contact-owned local tag-name projection for one resolved customer
+ */
+export type getLegacyCustomerProfileTagsResponse200 = {
+  data: LegacyCustomerProfileTagsResponse;
+  status: 200;
+};
+
+export type getLegacyCustomerProfileTagsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCustomerProfileTagsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCustomerProfileTagsResponse404 = {
+  data: LegacyCustomerProfileTagsNotFound;
+  status: 404;
+};
+
+export type getLegacyCustomerProfileTagsResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyCustomerProfileTagsResponse409 = {
+  data: LegacyCustomerProfileTagsConflict;
+  status: 409;
+};
+
+export type getLegacyCustomerProfileTagsResponse422 = {
+  data: LegacyCustomerProfileTagsValidationError;
+  status: 422;
+};
+
+export type getLegacyCustomerProfileTagsResponse503 = {
+  data: LegacyCustomerProfileTagsUnavailable;
+  status: 503;
+};
+
+export type getLegacyCustomerProfileTagsResponseSuccess =
+  getLegacyCustomerProfileTagsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyCustomerProfileTagsResponseError = (
+  | getLegacyCustomerProfileTagsResponse401
+  | getLegacyCustomerProfileTagsResponse403
+  | getLegacyCustomerProfileTagsResponse404
+  | getLegacyCustomerProfileTagsResponse405
+  | getLegacyCustomerProfileTagsResponse409
+  | getLegacyCustomerProfileTagsResponse422
+  | getLegacyCustomerProfileTagsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCustomerProfileTagsResponse =
+  | getLegacyCustomerProfileTagsResponseSuccess
+  | getLegacyCustomerProfileTagsResponseError;
+
+export const getGetLegacyCustomerProfileTagsUrl = (
+  params?: GetLegacyCustomerProfileTagsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/customers/profile/tags?${stringifiedParams}`
+    : `/api/admin/customers/profile/tags`;
+};
+
+export const getLegacyCustomerProfileTags = async (
+  params?: GetLegacyCustomerProfileTagsParams,
+  options?: RequestInit,
+): Promise<getLegacyCustomerProfileTagsResponse> => {
+  const res = await fetch(getGetLegacyCustomerProfileTagsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCustomerProfileTagsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCustomerProfileTagsResponse;
 };
 
 /**
