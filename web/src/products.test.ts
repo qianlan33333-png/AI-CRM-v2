@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadProductDetail, loadProducts, parseProductDetail, parseProductPage } from "./products";
+import { createLocalProduct, loadProductDetail, loadProducts, newProductIdempotencyKey, parseProductDetail, parseProductPage, productCreateRequest } from "./products";
 
 const product = { id: 1, product_code: "SKU-1", name: "商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: ["opaque-image-value"], created_by: 7, created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T00:00:00Z" };
 describe("products", () => {
@@ -28,5 +28,44 @@ describe("products", () => {
     expect((await loadProductDetail({ list: async () => ({ status: 200, data: { items: [] } }), get: async (id: number, options: RequestInit) => { calls.push([id, options.credentials]); return { status: 200, data: product }; } }, 1)).status).toBe("loaded");
     expect(calls.at(-1)).toEqual([1, "same-origin"]);
     expect((await loadProductDetail({ list: async () => ({ status: 200, data: { items: [] } }), get: async () => ({ status: 401, data: {} }) }, 1)).status).toBe("unauthenticated");
+  });
+  it("creates only the normalized local record with an empty image list and a mirrored 201 receipt", async () => {
+    const draft = { productCode: " SKU-2 ", name: " 本地商品 ", description: " 本地描述 ", priceMinor: " 1990 ", currency: " cny ", stockQuantity: " 3 " };
+    expect(productCreateRequest(draft)).toEqual({ product_code: "SKU-2", name: "本地商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: [] });
+    const calls: unknown[] = [];
+    const created = { ...product, id: 2, product_code: "SKU-2", name: "本地商品", description: "本地描述", images: [] };
+    const result = await createLocalProduct({ list: async () => ({ status: 200, data: { items: [] } }), get: async () => ({ status: 200, data: product }), create: async (request, options) => { calls.push([request, options]); return { status: 201, data: created }; } }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000");
+    expect(result).toMatchObject({ status: "created", product: { id: 2, productCode: "SKU-2", currency: "CNY" } });
+    expect(calls).toEqual([[{ product_code: "SKU-2", name: "本地商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: [] }, { credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRF-Token": "c".repeat(43), "Idempotency-Key": "product-create:123e4567-e89b-42d3-a456-426614174000" } }]]);
+  });
+  it("fails closed before POST for malformed drafts, CSRF, or idempotency and rejects malformed 201 mirrors", async () => {
+    const draft = { productCode: "SKU", name: "商品", description: "", priceMinor: "1", currency: "CNY", stockQuantity: "0" };
+    expect(productCreateRequest({ ...draft, stockQuantity: "2147483648" })).toBeUndefined();
+    expect(productCreateRequest({ ...draft, priceMinor: "01" })).toBeUndefined();
+    expect(productCreateRequest({ ...draft, currency: "CNYX" })).toBeUndefined();
+    expect(productCreateRequest({ ...draft, name: "x".repeat(201) })).toBeUndefined();
+    let posts = 0;
+    const transport = { list: async () => ({ status: 200, data: { items: [] } }), get: async () => ({ status: 200, data: product }), create: async () => { posts++; return { status: 201, data: product }; } };
+    expect((await createLocalProduct(transport, draft, "bad", "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("invalid");
+    expect((await createLocalProduct(transport, draft, "c".repeat(43), "bad")).status).toBe("invalid");
+    expect(posts).toBe(0);
+    const badReceipt = { ...product, product_code: "SKU", images: ["opaque-image-value"] };
+    const receiptTransport = { ...transport, create: async () => ({ status: 201, data: badReceipt }) };
+    expect((await createLocalProduct(receiptTransport, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("unknown");
+    expect((await createLocalProduct({ ...transport, create: async () => ({ status: 201, data: { ...product, product_code: "SKU", images: [], unexpected: true } }) }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("unknown");
+    for (const invalidTime of ["2026-02-30T00:00:00Z", "2026-01-01T24:00:00Z", "2026-01-01T00:60:00+24:60"]) {
+      expect((await createLocalProduct({ ...transport, create: async () => ({ status: 201, data: { ...product, product_code: "SKU", images: [], created_at: invalidTime } }) }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("unknown");
+      expect((await createLocalProduct({ ...transport, create: async () => ({ status: 201, data: { ...product, product_code: "SKU", images: [], updated_at: invalidTime } }) }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("unknown");
+    }
+  });
+  it("maps closed write failures without retries and makes a valid unique key", async () => {
+    const draft = { productCode: "SKU", name: "商品", description: "", priceMinor: "1", currency: "CNY", stockQuantity: "0" };
+    const base = { list: async () => ({ status: 200, data: { items: [] } }), get: async () => ({ status: 200, data: product }) };
+    for (const [status, expected] of [[400, "invalid"], [401, "unauthenticated"], [403, "forbidden"], [409, "conflict"], [503, "unknown"]] as const) {
+      expect((await createLocalProduct({ ...base, create: async () => ({ status, data: {} }) }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe(expected);
+    }
+    expect((await createLocalProduct({ ...base, create: async () => { throw new Error("offline"); } }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("unknown");
+    expect(newProductIdempotencyKey({ randomUUID: () => "123e4567-e89b-42d3-a456-426614174000" })).toBe("product-create:123e4567-e89b-42d3-a456-426614174000");
+    expect(newProductIdempotencyKey({ randomUUID: () => "not-a-uuid" })).toBeUndefined();
   });
 });
