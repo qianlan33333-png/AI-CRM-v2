@@ -3,11 +3,13 @@ import {
   firstPageQuery,
   formatFileSize,
   IMAGE_LIBRARY_PAGE_SIZE,
+  loadImageDetail,
   loadFacets,
   loadImages,
   MAX_IMAGE_FILE_SIZE,
   nextPageOffset,
   normalizeTagsInput,
+  parseImageDetail,
   parseImageItem,
   previousPageOffset,
   uploadIdempotencyKey,
@@ -66,6 +68,35 @@ const facetsPage = {
   tags: ["活动"],
   ...flags,
 };
+const detailItem = {
+  id: 11,
+  name: "封面",
+  file_name: "cover.png",
+  mime_type: "image/png",
+  file_size: 1024,
+  description: "首页封面",
+  category: "banner",
+  width: 400,
+  height: 300,
+  created_at: "2026-08-17T12:00:00Z",
+  updated_at: "2026-08-18T12:00:00Z",
+  content_type: "image/png",
+  tags: ["活动"],
+  enabled: false,
+  source: "upload",
+  source_url: "",
+  thumb_media_id: "",
+  thumb_media_id_expires_at: "",
+  ai_metadata: {},
+  thumb_160_url: "/api/admin/image-library/11/variants/thumb_160",
+  thumb_320_url: "/api/admin/image-library/11/variants/thumb_320",
+  thumb_url: "/api/admin/image-library/11/variants/thumb_320",
+  preview_url: "/api/admin/image-library/11/variants/mobile_1080",
+  mobile_1080_url: "/api/admin/image-library/11/variants/mobile_1080",
+  large_1440_url: "/api/admin/image-library/11/variants/large_1440",
+  original_url: "/api/admin/image-library/11/variants/original",
+};
+const detailSuccess = { ok: true, item: detailItem, ...flags };
 const uploadSuccess = {
   ok: true,
   item: {
@@ -110,6 +141,7 @@ function transport(
   const reply = async () => response;
   return {
     list: vi.fn(reply),
+    detail: vi.fn(reply),
     facets: vi.fn(reply),
     upload: vi.fn(reply),
   } as unknown as ImageLibraryTransport;
@@ -282,6 +314,109 @@ describe("image item strict parser", () => {
         large_1440_url: "/api/admin/image-library/11/variants/large_1440/extra",
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("image detail strict parser and local read", () => {
+  it("accepts only the exact no-query detail projection", () => {
+    expect(parseImageDetail(detailItem)).toEqual({
+      id: 11,
+      name: "封面",
+      fileName: "cover.png",
+      mimeType: "image/png",
+      fileSize: 1024,
+      enabled: false,
+      description: "首页封面",
+      tags: ["活动"],
+      category: "banner",
+      width: 400,
+      height: 300,
+      createdAt: "2026-08-17T12:00:00Z",
+      updatedAt: "2026-08-18T12:00:00Z",
+      previewURL: "/api/admin/image-library/11/variants/mobile_1080",
+      originalURL: "/api/admin/image-library/11/variants/original",
+    });
+  });
+
+  it("rejects data, external URLs, mismatched IDs, and malformed detail fields", () => {
+    const cases = [
+      { ...detailItem, data_url: "data:image/png;base64,AA==" },
+      { ...detailItem, data_base64: "AA==" },
+      { ...detailItem, variant_url: detailItem.preview_url },
+      {
+        ...detailItem,
+        preview_url: "https://evil.example/image.png",
+      },
+      {
+        ...detailItem,
+        original_url: "/api/admin/image-library/12/variants/original",
+      },
+      { ...detailItem, content_type: "image/jpeg" },
+      { ...detailItem, source_url: "/unexpected" },
+      { ...detailItem, ai_metadata: { provider: "unexpected" } },
+      { ...detailItem, enabled: "true" },
+      { ...detailItem, name: "cover\x00.png" },
+      { ...detailItem, updated_at: "not-a-date" },
+      { ...detailItem, extra: true },
+    ];
+    for (const value of cases) {
+      expect(parseImageDetail(value)).toBeUndefined();
+    }
+  });
+
+  it("performs exactly one parameter-free detail read and validates the full envelope", async () => {
+    const client = transport({ status: 200, data: detailSuccess });
+    await expect(loadImageDetail(client, 11)).resolves.toEqual({
+      status: "loaded",
+      image: expect.objectContaining({ id: 11 }),
+    });
+    expect(client.detail).toHaveBeenCalledOnce();
+    expect(client.detail).toHaveBeenCalledWith("11");
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.facets).not.toHaveBeenCalled();
+    expect(client.upload).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for envelope, status, invalid IDs, and network errors without retrying", async () => {
+    const malformed = transport({
+      status: 200,
+      data: { ...detailSuccess, fallback_used: true },
+    });
+    await expect(loadImageDetail(malformed, 11)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(malformed.detail).toHaveBeenCalledOnce();
+
+    for (const [status, expected] of [
+      [401, "unauthenticated"],
+      [403, "forbidden"],
+      [404, "unavailable"],
+      [422, "invalid"],
+      [503, "unavailable"],
+    ] as const) {
+      const client = transport({ status, data: {} });
+      await expect(loadImageDetail(client, 11)).resolves.toEqual({
+        status: expected,
+      });
+      expect(client.detail).toHaveBeenCalledOnce();
+    }
+
+    const throwing: ImageLibraryTransport = {
+      list: vi.fn(),
+      detail: vi.fn(async () => {
+        throw new Error("network down");
+      }),
+      facets: vi.fn(),
+      upload: vi.fn(),
+    } as unknown as ImageLibraryTransport;
+    await expect(loadImageDetail(throwing, 11)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(throwing.detail).toHaveBeenCalledOnce();
+    await expect(loadImageDetail(throwing, 0)).resolves.toEqual({
+      status: "invalid",
+    });
+    expect(throwing.detail).toHaveBeenCalledOnce();
   });
 });
 

@@ -3,6 +3,7 @@ import {
   firstPageQuery,
   formatFileSize,
   generatedImageLibraryTransport,
+  loadImageDetail,
   loadFacets,
   loadImages,
   nextPageOffset,
@@ -12,6 +13,7 @@ import {
   uploadImage,
   uploadMetadataProblem,
   type ImageItem,
+  type ImageDetail,
   type ImageLibraryFailure,
   type ImageLibraryRole,
   type ImageLibraryTransport,
@@ -48,6 +50,15 @@ type FacetsState =
       readonly tags: readonly string[];
     }
   | { readonly kind: "error"; readonly failure: ImageLibraryFailure };
+type DetailState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly imageID: number }
+  | { readonly kind: "ready"; readonly image: ImageDetail }
+  | {
+      readonly kind: "error";
+      readonly imageID: number;
+      readonly failure: ImageLibraryFailure;
+    };
 
 const readMessages: Record<ImageLibraryFailure, string> = {
   unauthenticated: "登录状态已失效，请重新登录。",
@@ -142,6 +153,8 @@ export function ImageLibraryPage({
   }>();
   const listGeneration = useRef(0);
   const facetsGeneration = useRef(0);
+  const detailGeneration = useRef(0);
+  const [detail, setDetail] = useState<DetailState>({ kind: "idle" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadList = useCallback(
@@ -208,6 +221,26 @@ export function ImageLibraryPage({
   const reloadLibrary = () => {
     setQuery((current) => firstPageQuery(current));
     void loadFacetData();
+  };
+
+  const showDetail = (imageID: number) => {
+    const generation = ++detailGeneration.current;
+    setDetail({ kind: "loading", imageID });
+    void loadImageDetail(transport, imageID).then((result) => {
+      // A later selection (or close) wins over an older local read result.
+      if (generation !== detailGeneration.current) return;
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      setDetail(
+        result.status === "loaded"
+          ? { kind: "ready", image: result.image }
+          : { kind: "error", imageID, failure: result.status },
+      );
+    });
+  };
+
+  const closeDetail = () => {
+    detailGeneration.current += 1;
+    setDetail({ kind: "idle" });
   };
 
   const submitUpload = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -460,9 +493,102 @@ export function ImageLibraryPage({
                           <dd>#{item.id}</dd>
                         </div>
                       </dl>
+                      <button
+                        type="button"
+                        disabled={
+                          detail.kind === "loading" &&
+                          detail.imageID === item.id
+                        }
+                        onClick={() => showDetail(item.id)}
+                      >
+                        {detail.kind === "loading" &&
+                        detail.imageID === item.id
+                          ? "正在读取详情…"
+                          : "查看详情"}
+                      </button>
                     </li>
                   ))}
                 </ul>
+              )}
+              {detail.kind !== "idle" && (
+                <section
+                  className="image-library__panel"
+                  aria-live="polite"
+                  aria-labelledby="image-detail-title"
+                >
+                  <div className="image-library__heading">
+                    <h2 id="image-detail-title">图片详情</h2>
+                    <button type="button" onClick={closeDetail}>
+                      关闭详情
+                    </button>
+                  </div>
+                  {detail.kind === "loading" && (
+                    <p role="status">正在读取本地素材详情…</p>
+                  )}
+                  {detail.kind === "error" && (
+                    <p role="alert">
+                      {readMessages[detail.failure]}
+                      详情未加载；当前列表保持不变。
+                    </p>
+                  )}
+                  {detail.kind === "ready" && (
+                    <>
+                      <img
+                        alt={
+                          detail.image.name !== ""
+                            ? detail.image.name
+                            : detail.image.fileName
+                        }
+                        src={detail.image.previewURL}
+                      />
+                      <dl className="image-card__meta">
+                        <div>
+                          <dt>名称</dt>
+                          <dd>
+                            {detail.image.name !== ""
+                              ? detail.image.name
+                              : "（未命名）"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>文件名</dt>
+                          <dd>{detail.image.fileName}</dd>
+                        </div>
+                        <div>
+                          <dt>描述</dt>
+                          <dd>
+                            {detail.image.description !== ""
+                              ? detail.image.description
+                              : "无描述"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>分类</dt>
+                          <dd>
+                            {detail.image.category !== ""
+                              ? detail.image.category
+                              : "未分类"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>标签</dt>
+                          <dd>
+                            {detail.image.tags.length > 0
+                              ? detail.image.tags.join("、")
+                              : "无标签"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>状态</dt>
+                          <dd>{detail.image.enabled ? "已启用" : "已停用"}</dd>
+                        </div>
+                      </dl>
+                      <p className="image-library__meta">
+                        预览只读取已验证的本地变体，不证明公开访问、对象访问或真实外发可用。
+                      </p>
+                    </>
+                  )}
+                </section>
               )}
               <div className="image-pagination">
                 <p role="status">

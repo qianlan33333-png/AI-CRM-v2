@@ -1,4 +1,5 @@
 import {
+  getLegacyImage,
   getLegacyImageFacets,
   getLegacyImageList,
   uploadLegacyImage,
@@ -31,6 +32,24 @@ export interface ImageItem {
   readonly height: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+export interface ImageDetail {
+  readonly id: number;
+  readonly name: string;
+  readonly fileName: string;
+  readonly mimeType: string;
+  readonly fileSize: number;
+  readonly enabled: boolean;
+  readonly description: string;
+  readonly tags: readonly string[];
+  readonly category: string;
+  readonly width: number;
+  readonly height: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly previewURL: string;
+  readonly originalURL: string;
 }
 
 export interface ImageFacets {
@@ -68,6 +87,11 @@ async function generatedList(
 ) {
   return getLegacyImageList(params, options);
 }
+async function generatedDetail(imageID: string) {
+  // The detail contract deliberately omits both optional compatibility
+  // parameters: this UI never asks for a data URL or a selected variant.
+  return getLegacyImage(imageID, undefined, { credentials: "same-origin" });
+}
 async function generatedFacets(options: RequestInit) {
   return getLegacyImageFacets(options);
 }
@@ -80,12 +104,14 @@ async function generatedUpload(
 
 export interface ImageLibraryTransport {
   readonly list: typeof generatedList;
+  readonly detail: typeof generatedDetail;
   readonly facets: typeof generatedFacets;
   readonly upload: typeof generatedUpload;
 }
 
 export const generatedImageLibraryTransport: ImageLibraryTransport = {
   list: generatedList,
+  detail: generatedDetail,
   facets: generatedFacets,
   upload: generatedUpload,
 };
@@ -111,6 +137,9 @@ export type ImageListResult =
   | { readonly status: ImageLibraryFailure };
 export type ImageFacetsResult =
   | { readonly status: "loaded"; readonly facets: ImageFacets }
+  | { readonly status: ImageLibraryFailure };
+export type ImageDetailResult =
+  | { readonly status: "loaded"; readonly image: ImageDetail }
   | { readonly status: ImageLibraryFailure };
 export type ImageUploadResult =
   | { readonly status: "uploaded"; readonly image: UploadedImage }
@@ -139,6 +168,13 @@ function frozenText(
     (allowEmpty || value.length > 0) &&
     runeLength(value) <= limit &&
     value.trim() === value &&
+    !value.includes("\x00")
+  );
+}
+function boundedSafeText(value: unknown, limit: number): value is string {
+  return (
+    typeof value === "string" &&
+    runeLength(value) <= limit &&
     !value.includes("\x00")
   );
 }
@@ -308,6 +344,124 @@ export function parseImageItem(value: unknown): ImageItem | undefined {
   };
 }
 
+const IMAGE_DETAIL_ITEM_KEYS: readonly string[] = [
+  "id",
+  "name",
+  "file_name",
+  "mime_type",
+  "file_size",
+  "description",
+  "category",
+  "width",
+  "height",
+  "created_at",
+  "updated_at",
+  "content_type",
+  "tags",
+  "enabled",
+  "source",
+  "source_url",
+  "thumb_media_id",
+  "thumb_media_id_expires_at",
+  "ai_metadata",
+  "thumb_160_url",
+  "thumb_320_url",
+  "thumb_url",
+  "preview_url",
+  "mobile_1080_url",
+  "large_1440_url",
+  "original_url",
+];
+
+// This view always omits include_data and variant, so their conditional fields
+// must not be accepted from a purported success response.
+export function parseImageDetail(value: unknown): ImageDetail | undefined {
+  if (!record(value) || !exactKeys(value, IMAGE_DETAIL_ITEM_KEYS)) {
+    return undefined;
+  }
+  if (!positive(value.id)) return undefined;
+  if (!boundedSafeText(value.name, 200)) {
+    return undefined;
+  }
+  if (!frozenText(value.file_name, 255, false)) return undefined;
+  if (
+    typeof value.mime_type !== "string" ||
+    !IMAGE_MIME_TYPES.has(value.mime_type) ||
+    value.content_type !== value.mime_type
+  ) {
+    return undefined;
+  }
+  if (!positive(value.file_size) || value.file_size > MAX_IMAGE_FILE_SIZE) {
+    return undefined;
+  }
+  if (typeof value.enabled !== "boolean") return undefined;
+  if (
+    !boundedSafeText(value.description, 10000) ||
+    !boundedSafeText(value.category, 200)
+  ) {
+    return undefined;
+  }
+  if (
+    !Array.isArray(value.tags) ||
+    value.tags.length > 50 ||
+    value.tags.some(
+      (tag) => !boundedSafeText(tag, 64),
+    )
+  ) {
+    return undefined;
+  }
+  if (
+    !positive(value.width) ||
+    value.width > 10000 ||
+    !positive(value.height) ||
+    value.height > 10000 ||
+    !timestampText(value.created_at) ||
+    !timestampText(value.updated_at)
+  ) {
+    return undefined;
+  }
+  if (
+    value.source !== "upload" ||
+    value.source_url !== "" ||
+    value.thumb_media_id !== "" ||
+    value.thumb_media_id_expires_at !== "" ||
+    !record(value.ai_metadata) ||
+    !exactKeys(value.ai_metadata, [])
+  ) {
+    return undefined;
+  }
+  const id = value.id;
+  const expectations: readonly [unknown, string][] = [
+    [value.thumb_160_url, expectedVariantURL(id, "thumb_160")],
+    [value.thumb_320_url, expectedVariantURL(id, "thumb_320")],
+    [value.thumb_url, expectedVariantURL(id, "thumb_320")],
+    [value.preview_url, expectedVariantURL(id, "mobile_1080")],
+    [value.mobile_1080_url, expectedVariantURL(id, "mobile_1080")],
+    [value.large_1440_url, expectedVariantURL(id, "large_1440")],
+    [value.original_url, expectedVariantURL(id, "original")],
+  ];
+  if (expectations.some(([actual, expected]) => actual !== expected)) {
+    return undefined;
+  }
+  return {
+    id,
+    name: value.name,
+    fileName: value.file_name,
+    mimeType: value.mime_type,
+    fileSize: value.file_size,
+    enabled: value.enabled,
+    description: value.description,
+    tags: value.tags as string[],
+    category: value.category,
+    width: value.width,
+    height: value.height,
+    createdAt: value.created_at,
+    updatedAt: value.updated_at,
+    previewURL: value.preview_url as string,
+    originalURL: value.original_url as string,
+  };
+}
+
 const IMAGE_LIST_KEYS: readonly string[] = [
   "ok",
   "items",
@@ -399,6 +553,27 @@ const IMAGE_FACETS_KEYS: readonly string[] = [
   "storage_adapter_mode",
   "adapter_mode",
 ];
+
+const IMAGE_DETAIL_SUCCESS_KEYS: readonly string[] = [
+  "ok",
+  "item",
+  "source_status",
+  "route_owner",
+  "fallback_used",
+  "real_external_call_executed",
+  "storage_adapter_mode",
+  "adapter_mode",
+];
+
+function parseImageDetailResponse(data: unknown): ImageDetail | undefined {
+  if (!record(data) || !exactKeys(data, IMAGE_DETAIL_SUCCESS_KEYS)) {
+    return undefined;
+  }
+  if (data.ok !== true || !frozenEnvelopeFlags(data, "next_media_library")) {
+    return undefined;
+  }
+  return parseImageDetail(data.item);
+}
 
 function parseImageFacets(data: unknown): ImageFacets | undefined {
   if (!record(data) || !exactKeys(data, IMAGE_FACETS_KEYS)) return undefined;
@@ -588,6 +763,24 @@ export async function loadImages(
             : {}),
         }
       : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadImageDetail(
+  transport: ImageLibraryTransport,
+  imageID: number,
+): Promise<ImageDetailResult> {
+  if (!positive(imageID)) return { status: "invalid" };
+  try {
+    // Deliberately no query parameters, request body, CSRF header, retry, or
+    // mutation: the generated adapter pins this to a same-origin GET.
+    const response = await transport.detail(String(imageID));
+    if (response.status !== 200) return { status: failure(response.status) };
+    const image = parseImageDetailResponse(response.data);
+    if (!image || image.id !== imageID) return { status: "unavailable" };
+    return { status: "loaded", image };
   } catch {
     return { status: "unavailable" };
   }
