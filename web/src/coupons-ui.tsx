@@ -12,9 +12,11 @@ import {
   createCouponDraft,
   copyCoupon,
   couponClaimsPageSize,
+  couponProductOptionsPageSize,
   filterCoupons,
   generatedCouponsTransport,
   loadCouponClaims,
+  loadCouponProductOptions,
   loadCouponDetail,
   loadCouponShare,
   loadCoupons,
@@ -29,6 +31,8 @@ import {
   type CouponDraftMutationResult,
   type CouponDetailResult,
   type CouponListItem,
+  type CouponProductOption,
+  type CouponProductOptionsResult,
   type CouponRuleDetail,
   type CouponShareResult,
   type CouponListResult,
@@ -93,6 +97,27 @@ export type CouponClaimsViewState =
       readonly coupon: CouponListItem;
       readonly failure: CouponsFailure;
       readonly previous?: CouponClaimsPage;
+    };
+
+type CouponProductOptionsPage = {
+  readonly items: readonly CouponProductOption[];
+  readonly total: number;
+  readonly offset: number;
+};
+
+export type CouponProductOptionsViewState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly offset: number;
+      readonly previous?: CouponProductOptionsPage;
+    }
+  | { readonly kind: "ready"; readonly page: CouponProductOptionsPage }
+  | {
+      readonly kind: "error";
+      readonly offset: number;
+      readonly failure: CouponsFailure;
+      readonly previous?: CouponProductOptionsPage;
     };
 
 export type CouponShareViewState =
@@ -223,6 +248,74 @@ export function startCouponArchive(
   return startCouponCopy(lock, execute);
 }
 
+export function startCouponProductOptions(
+  lock: { current: boolean },
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  return startCouponCopy(lock, execute);
+}
+
+export async function performCouponProductOptionsLoad({
+  offset,
+  onUnauthenticated,
+  transport,
+}: {
+  readonly offset: number;
+  readonly onUnauthenticated?: () => void;
+  readonly transport: CouponsTransport;
+}): Promise<CouponProductOptionsResult> {
+  const result = await loadCouponProductOptions(transport, offset);
+  if (result.status === "unauthenticated") onUnauthenticated?.();
+  return result;
+}
+
+export function couponProductOptionsLoadingState(
+  offset: number,
+  previous?: CouponProductOptionsPage,
+): CouponProductOptionsViewState {
+  return { kind: "loading", offset, previous };
+}
+
+export function couponProductOptionsResultState(
+  result: CouponProductOptionsResult,
+  offset: number,
+  previous?: CouponProductOptionsPage,
+): CouponProductOptionsViewState {
+  return result.status === "loaded"
+    ? {
+        kind: "ready",
+        page: {
+          items: result.items,
+          total: result.total,
+          offset: result.offset,
+        },
+      }
+    : { kind: "error", offset, failure: result.status, previous };
+}
+
+export function isCurrentCouponProductOptionsGeneration(
+  request: number,
+  generation: number,
+): boolean {
+  return request === generation;
+}
+
+export function previousCouponProductOptionsOffset(
+  page: CouponProductOptionsPage,
+): number | undefined {
+  return page.offset >= couponProductOptionsPageSize
+    ? page.offset - couponProductOptionsPageSize
+    : undefined;
+}
+
+export function nextCouponProductOptionsOffset(
+  page: CouponProductOptionsPage,
+): number | undefined {
+  return page.offset + page.items.length < page.total
+    ? page.offset + couponProductOptionsPageSize
+    : undefined;
+}
+
 export function canStartCouponWrite(mutationUncertain: boolean): boolean {
   return !mutationUncertain;
 }
@@ -268,6 +361,8 @@ export function CouponsPage({
   const [claimsState, setClaimsState] = useState<CouponClaimsViewState>({
     kind: "idle",
   });
+  const [productOptionsState, setProductOptionsState] =
+    useState<CouponProductOptionsViewState>({ kind: "idle" });
   const [shareState, setShareState] = useState<CouponShareViewState>({
     kind: "idle",
   });
@@ -279,6 +374,9 @@ export function CouponsPage({
   const couponMutationInFlight = useRef(false);
   const claimsRequest = useRef(0);
   const claimsInFlight = useRef<string>();
+  const productOptionsRequest = useRef(0);
+  const productOptionsInFlight = useRef(false);
+  const verifiedProductOptions = useRef<CouponProductOptionsPage>();
   const shareRequest = useRef(0);
   const shareInFlight = useRef<number>();
   const detailRequest = useRef(0);
@@ -315,6 +413,13 @@ export function CouponsPage({
       active = false;
     };
   }, [canAccess, onUnauthenticated, transport]);
+
+  useEffect(
+    () => () => {
+      productOptionsRequest.current += 1;
+    },
+    [],
+  );
 
   const onCopy = useCallback(
     async (item: CouponListItem) => {
@@ -429,6 +534,48 @@ export function CouponsPage({
       );
     },
     [claimsState, onUnauthenticated, transport],
+  );
+
+  const onProductOptions = useCallback(
+    async (offset = 0) => {
+      const operation = startCouponProductOptions(
+        productOptionsInFlight,
+        async () => {
+          const request = ++productOptionsRequest.current;
+          const previous = verifiedProductOptions.current;
+          setProductOptionsState(couponProductOptionsLoadingState(offset, previous));
+          const result = await performCouponProductOptionsLoad({
+            offset,
+            onUnauthenticated,
+            transport,
+          });
+          if (
+            !isCurrentCouponProductOptionsGeneration(
+              request,
+              productOptionsRequest.current,
+            )
+          ) {
+            return;
+          }
+          if (result.status === "loaded") {
+            verifiedProductOptions.current = {
+              items: result.items,
+              total: result.total,
+              offset: result.offset,
+            };
+          }
+          setProductOptionsState(
+            couponProductOptionsResultState(
+              result,
+              offset,
+              verifiedProductOptions.current,
+            ),
+          );
+        },
+      );
+      if (operation) await operation;
+    },
+    [onUnauthenticated, transport],
   );
 
   const onShare = useCallback(
@@ -634,6 +781,7 @@ export function CouponsPage({
       onCopy={onCopy}
       onArchive={onArchive}
       onClaims={onClaims}
+      onProductOptions={onProductOptions}
       onDetail={onDetail}
       onCreate={onCreate}
       onCancelEditor={onCancelEditor}
@@ -641,6 +789,7 @@ export function CouponsPage({
       onSubmitDraft={onSubmitDraft}
       onRefreshAfterUncertain={onRefreshAfterUncertain}
       role={role}
+      productOptionsState={productOptionsState}
       shareState={shareState}
       onShare={onShare}
       onCopyShare={onCopyShare}
@@ -660,6 +809,7 @@ export function CouponsView({
   onCopy,
   onArchive,
   onClaims,
+  onProductOptions,
   onCancelEditor,
   onCreate,
   onDetail,
@@ -669,6 +819,7 @@ export function CouponsView({
   onShare,
   onSubmitDraft,
   role,
+  productOptionsState,
   shareState,
   state,
 }: {
@@ -685,6 +836,8 @@ export function CouponsView({
   readonly onArchive?: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onClaims?: (item: CouponListItem, offset?: number) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onProductOptions?: (offset?: number) => void;
   readonly onCancelEditor?: () => void;
   readonly onCreate?: () => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
@@ -698,6 +851,7 @@ export function CouponsView({
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onSubmitDraft?: (input: CouponDraftInput) => void;
   readonly role: CouponsRole;
+  readonly productOptionsState?: CouponProductOptionsViewState;
   readonly shareState?: CouponShareViewState;
   readonly state: CouponsViewState;
 }): React.ReactElement {
@@ -747,6 +901,15 @@ export function CouponsView({
           onClick={onCreate}
         >
           新建本地草稿
+        </button>
+      </p>
+      <p>
+        <button
+          type="button"
+          disabled={productOptionsState?.kind === "loading"}
+          onClick={() => onProductOptions?.(0)}
+        >
+          查看本地普通商品选项
         </button>
       </p>
       {mutationUncertain ? (
@@ -895,6 +1058,12 @@ export function CouponsView({
       )}
       {claimsState && claimsState.kind !== "idle" ? (
         <CouponClaimsPanel claimsState={claimsState} onClaims={onClaims} />
+      ) : null}
+      {productOptionsState && productOptionsState.kind !== "idle" ? (
+        <CouponProductOptionsPanel
+          onLoad={onProductOptions}
+          productOptionsState={productOptionsState}
+        />
       ) : null}
       {detailState && detailState.kind !== "idle" ? (
         <CouponDetailPanel detailState={detailState} />
@@ -1318,6 +1487,96 @@ function CouponClaimsPanel({
                   page.offset + couponClaimsPageSize,
                 )
               }
+            >
+              下一页
+            </button>
+          </p>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+function CouponProductOptionsPanel({
+  onLoad,
+  productOptionsState,
+}: {
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onLoad?: (offset?: number) => void;
+  readonly productOptionsState: Exclude<
+    CouponProductOptionsViewState,
+    { readonly kind: "idle" }
+  >;
+}): React.ReactElement {
+  const page =
+    productOptionsState.kind === "ready"
+      ? productOptionsState.page
+      : productOptionsState.previous;
+  const loading = productOptionsState.kind === "loading";
+  const error =
+    productOptionsState.kind === "error"
+      ? productOptionsState.failure
+      : undefined;
+  const previousOffset = page
+    ? previousCouponProductOptionsOffset(page)
+    : undefined;
+  const nextOffset = page ? nextCouponProductOptionsOffset(page) : undefined;
+  return (
+    <section aria-label="优惠券本地普通商品选项">
+      <h2>本地普通商品选项</h2>
+      <p>
+        仅显示本地商品投影；价格（分）不代表当前价格、库存、支付或权益可用。
+      </p>
+      {loading ? <p role="status">正在读取本地普通商品选项。</p> : null}
+      {error ? <p role="alert">{messages[error]}</p> : null}
+      {page ? (
+        <>
+          <p>
+            共 {page.total} 条，当前第 {page.offset + 1} 至{" "}
+            {page.offset + page.items.length} 条。
+          </p>
+          {page.items.length === 0 ? (
+            <p>当前没有本地普通商品选项。</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>商品 ID</th>
+                  <th>商品引用</th>
+                  <th>名称</th>
+                  <th>价格（分）</th>
+                  <th>币种</th>
+                </tr>
+              </thead>
+              <tbody>
+                {page.items.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.id}</td>
+                    <td>{item.targetRef}</td>
+                    <td>{item.name}</td>
+                    <td>{item.priceMinor}</td>
+                    <td>{item.currency}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p>
+            <button
+              type="button"
+              disabled={loading || previousOffset === undefined}
+              onClick={() => {
+                if (previousOffset !== undefined) onLoad?.(previousOffset);
+              }}
+            >
+              上一页
+            </button>
+            <button
+              type="button"
+              disabled={loading || nextOffset === undefined}
+              onClick={() => {
+                if (nextOffset !== undefined) onLoad?.(nextOffset);
+              }}
             >
               下一页
             </button>

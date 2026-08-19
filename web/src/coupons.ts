@@ -5,6 +5,7 @@ import {
   getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
+  listLegacyCouponProductOptions,
   listLegacyCoupons,
   updateLegacyCoupon,
   type CouponUpsertRequest,
@@ -76,6 +77,14 @@ export interface CouponShare {
   readonly url: string;
 }
 
+export interface CouponProductOption {
+  readonly id: number;
+  readonly targetRef: string;
+  readonly name: string;
+  readonly priceMinor: number;
+  readonly currency: "CNY";
+}
+
 export function canArchiveCoupon(item: CouponListItem): boolean {
   return (
     item.status === "draft" ||
@@ -106,6 +115,14 @@ export type CouponClaimsResult =
       readonly offset: number;
     }
   | { readonly status: CouponsFailure };
+export type CouponProductOptionsResult =
+  | {
+      readonly status: "loaded";
+      readonly items: readonly CouponProductOption[];
+      readonly total: number;
+      readonly offset: number;
+    }
+  | { readonly status: CouponsFailure };
 export type CouponShareResult =
   | { readonly status: "loaded"; readonly share: CouponShare }
   | { readonly status: CouponsFailure };
@@ -126,6 +143,7 @@ export type CouponArchiveResult =
 
 const couponPageSize = 200;
 export const couponClaimsPageSize = 50;
+export const couponProductOptionsPageSize = 20;
 const maximumCouponOffset = 1_000_000;
 
 async function generatedList(
@@ -145,6 +163,16 @@ async function generatedClaims(
   options?: RequestInit,
 ) {
   return listLegacyCouponClaims(couponID, params, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
+async function generatedProductOptions(
+  params: Parameters<typeof listLegacyCouponProductOptions>[0],
+  options?: RequestInit,
+) {
+  return listLegacyCouponProductOptions(params, {
     credentials: "same-origin",
     ...options,
   });
@@ -190,6 +218,7 @@ export interface CouponsTransport {
   readonly list: typeof generatedList;
   readonly copy: typeof generatedCopy;
   readonly claims: typeof generatedClaims;
+  readonly productOptions: typeof generatedProductOptions;
   readonly detail: typeof generatedDetail;
   readonly create: typeof generatedCreate;
   readonly update: typeof generatedUpdate;
@@ -201,6 +230,7 @@ export const generatedCouponsTransport: CouponsTransport = {
   list: generatedList,
   copy: generatedCopy,
   claims: generatedClaims,
+  productOptions: generatedProductOptions,
   detail: generatedDetail,
   create: generatedCreate,
   update: generatedUpdate,
@@ -693,6 +723,27 @@ function claim(value: unknown): CouponClaimItem | undefined {
   };
 }
 
+function couponProductOption(value: unknown): CouponProductOption | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["id", "target_ref", "name", "price_minor", "currency"]) ||
+    !positive(value.id) ||
+    value.target_ref !== `standard_product:${value.id}` ||
+    !text(value.name, 200) ||
+    !nonnegative(value.price_minor) ||
+    value.currency !== "CNY"
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.id,
+    targetRef: value.target_ref,
+    name: value.name,
+    priceMinor: value.price_minor,
+    currency: "CNY",
+  };
+}
+
 function sameItems(
   left: readonly CouponListItem[],
   right: readonly CouponListItem[],
@@ -779,6 +830,42 @@ function couponClaimsPage(
     return undefined;
   }
   return { items: items as readonly CouponClaimItem[], total: value.total };
+}
+
+function couponProductOptionsPage(
+  value: unknown,
+  offset: number,
+):
+  | { readonly items: readonly CouponProductOption[]; readonly total: number }
+  | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["ok", "items", "total", "limit", "offset"]) ||
+    value.ok !== true ||
+    !Array.isArray(value.items) ||
+    !nonnegative(value.total) ||
+    value.limit !== couponProductOptionsPageSize ||
+    value.offset !== offset ||
+    offset % couponProductOptionsPageSize !== 0 ||
+    value.items.length > couponProductOptionsPageSize ||
+    value.total < offset + value.items.length ||
+    (value.items.length < couponProductOptionsPageSize &&
+      offset + value.items.length < value.total)
+  ) {
+    return undefined;
+  }
+  const items = value.items.map(couponProductOption);
+  if (
+    items.includes(undefined) ||
+    new Set((items as readonly CouponProductOption[]).map((item) => item.id))
+      .size !== items.length ||
+    new Set(
+      (items as readonly CouponProductOption[]).map((item) => item.targetRef),
+    ).size !== items.length
+  ) {
+    return undefined;
+  }
+  return { items: items as readonly CouponProductOption[], total: value.total };
 }
 
 function platformError(value: unknown, code: string): boolean {
@@ -895,6 +982,36 @@ export async function loadCouponClaims(
   if (response.status !== 200)
     return { status: failure(response.status, response.data) };
   const page = couponClaimsPage(response.data, offset);
+  return page ? { status: "loaded", ...page, offset } : { status: "invalid" };
+}
+
+export async function loadCouponProductOptions(
+  transport: CouponsTransport,
+  offset: number,
+): Promise<CouponProductOptionsResult> {
+  if (
+    !nonnegative(offset) ||
+    offset % couponProductOptionsPageSize !== 0 ||
+    offset > maximumCouponOffset
+  ) {
+    return { status: "invalid" };
+  }
+  let response: Awaited<ReturnType<CouponsTransport["productOptions"]>>;
+  try {
+    response = await transport.productOptions(
+      {
+        product_type: "standard_product",
+        limit: couponProductOptionsPageSize,
+        offset,
+      },
+      { credentials: "same-origin" },
+    );
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status !== 200)
+    return { status: failure(response.status, response.data) };
+  const page = couponProductOptionsPage(response.data, offset);
   return page ? { status: "loaded", ...page, offset } : { status: "invalid" };
 }
 

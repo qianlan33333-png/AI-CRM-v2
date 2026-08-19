@@ -5,12 +5,19 @@ import {
   CouponsPage,
   CouponsView,
   canStartCouponWrite,
+  couponProductOptionsLoadingState,
+  couponProductOptionsResultState,
   copyCouponShareURL,
+  isCurrentCouponProductOptionsGeneration,
+  nextCouponProductOptionsOffset,
   performCouponArchive,
   performCouponCopy,
+  performCouponProductOptionsLoad,
+  previousCouponProductOptionsOffset,
   startCouponArchive,
   startCouponCopy,
   startCouponDetail,
+  startCouponProductOptions,
   submitCouponDraftForm,
 } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
@@ -30,6 +37,7 @@ function transport(): CouponsTransport {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     copy: vi.fn(async () => ({ status: 503, data: {} })),
     claims: vi.fn(async () => ({ status: 503, data: {} })),
+    productOptions: vi.fn(async () => ({ status: 503, data: {} })),
     detail: vi.fn(async () => ({ status: 503, data: {} })),
     create: vi.fn(async () => ({ status: 503, data: {} })),
     update: vi.fn(async () => ({ status: 503, data: {} })),
@@ -111,10 +119,124 @@ describe("CouponsView", () => {
     expect(client.copy).not.toHaveBeenCalled();
     expect(client.archive).not.toHaveBeenCalled();
     expect(client.claims).not.toHaveBeenCalled();
+    expect(client.productOptions).not.toHaveBeenCalled();
     expect(client.detail).not.toHaveBeenCalled();
     expect(client.create).not.toHaveBeenCalled();
     expect(client.update).not.toHaveBeenCalled();
     expect(client.share).not.toHaveBeenCalled();
+  });
+
+  it("renders a separate local product projection without changing the coupon draft", () => {
+    const html = renderToStaticMarkup(
+      <CouponsView
+        onCopy={vi.fn()}
+        onProductOptions={vi.fn()}
+        productOptionsState={{
+          kind: "ready",
+          page: {
+            items: [
+              {
+                id: 7,
+                targetRef: "standard_product:7",
+                name: '<img src=x onerror="bad">',
+                priceMinor: 9900,
+                currency: "CNY",
+              },
+            ],
+            total: 21,
+            offset: 0,
+          },
+        }}
+        role="ops"
+        state={{ kind: "ready", items: [item] }}
+      />,
+    );
+    expect(html).toContain("本地普通商品选项");
+    expect(html).toContain("价格（分）不代表当前价格、库存、支付或权益可用。");
+    expect(html).toContain("standard_product:7");
+    expect(html).toContain("9900");
+    expect(html).toContain("CNY");
+    expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain('name="targetRefs"');
+    expect(html).toContain(
+      '<button type="button">下一页</button>',
+    );
+  });
+
+  it("single-flights product reads, discards stale generations, retains a verified page, and reports 401 once", async () => {
+    const lock = { current: false };
+    let release: (() => void) | undefined;
+    const first = startCouponProductOptions(lock, async () => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    });
+    const duplicate = startCouponProductOptions(lock, async () => {
+      throw new Error("must not execute");
+    });
+    expect(first).toBeInstanceOf(Promise);
+    expect(duplicate).toBeUndefined();
+    release?.();
+    await first;
+    expect(lock.current).toBe(false);
+
+    const page = {
+      items: [
+        {
+          id: 7,
+          targetRef: "standard_product:7",
+          name: "本地普通商品",
+          priceMinor: 9900,
+          currency: "CNY" as const,
+        },
+      ],
+      total: 41,
+      offset: 20,
+    };
+    expect(couponProductOptionsLoadingState(20, page)).toEqual({
+      kind: "loading",
+      offset: 20,
+      previous: page,
+    });
+    expect(
+      couponProductOptionsResultState({ status: "unavailable" }, 20, page),
+    ).toEqual({
+      kind: "error",
+      offset: 20,
+      failure: "unavailable",
+      previous: page,
+    });
+    expect(isCurrentCouponProductOptionsGeneration(3, 3)).toBe(true);
+    expect(isCurrentCouponProductOptionsGeneration(3, 4)).toBe(false);
+    expect(previousCouponProductOptionsOffset(page)).toBe(0);
+    expect(nextCouponProductOptionsOffset(page)).toBe(40);
+    expect(
+      previousCouponProductOptionsOffset({ ...page, offset: 0 }),
+    ).toBeUndefined();
+    expect(
+      nextCouponProductOptionsOffset({ ...page, total: 21, offset: 20 }),
+    ).toBeUndefined();
+
+    const unauthenticated = transport();
+    vi.mocked(unauthenticated.productOptions).mockResolvedValue({
+      status: 401,
+      data: {
+        code: "UNAUTHENTICATED",
+        message: "登录失效",
+        request_id: "req-product-options-1",
+      },
+    } as never);
+    const onUnauthenticated = vi.fn();
+    await expect(
+      performCouponProductOptionsLoad({
+        offset: 0,
+        onUnauthenticated,
+        transport: unauthenticated,
+      }),
+    ).resolves.toEqual({ status: "unauthenticated" });
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(unauthenticated.productOptions).toHaveBeenCalledOnce();
   });
 
   it("locks every coupon write entry point while a draft outcome is uncertain", () => {

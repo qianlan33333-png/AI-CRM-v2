@@ -7,6 +7,7 @@ import {
   filterCoupons,
   loadCouponClaims,
   loadCouponDetail,
+  loadCouponProductOptions,
   loadCouponShare,
   loadCoupons,
   newCouponArchiveIdempotencyKey,
@@ -21,6 +22,7 @@ import {
   getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
+  listLegacyCouponProductOptions,
   updateLegacyCoupon,
 } from "./api/generated/health";
 
@@ -105,6 +107,22 @@ function claimsEnvelope(
   offset = 0,
 ) {
   return { ok: true, items, total, limit: 50, offset };
+}
+
+const sourceProductOption = {
+  id: 7,
+  target_ref: "standard_product:7",
+  name: "本地普通商品",
+  price_minor: 9900,
+  currency: "CNY",
+} as const;
+
+function productOptionsEnvelope(
+  items: readonly Record<string, unknown>[] = [sourceProductOption],
+  total = items.length,
+  offset = 0,
+) {
+  return { ok: true, items, total, limit: 20, offset };
 }
 
 function shareEnvelope(extra: Record<string, unknown> = {}) {
@@ -207,11 +225,16 @@ function transport(
   detailData: unknown = detailEnvelope(),
   createData: unknown = createdEnvelope(),
   updateData: unknown = updatedEnvelope(),
+  productOptionsData: unknown = productOptionsEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
     copy: vi.fn(async () => ({ status: 200, data: copyData })),
     claims: vi.fn(async () => ({ status: 200, data: claimsData })),
+    productOptions: vi.fn(async () => ({
+      status: 200,
+      data: productOptionsData,
+    })),
     detail: vi.fn(async () => ({ status: 200, data: detailData })),
     create: vi.fn(async () => ({ status: 200, data: createData })),
     update: vi.fn(async () => ({ status: 200, data: updateData })),
@@ -769,6 +792,79 @@ describe("coupon list and copy local boundary", () => {
       status: "invalid",
     });
     expect(invalidOffset.claims).not.toHaveBeenCalled();
+  });
+
+  it("reads exactly one same-origin standard-product page without a query or a write", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(productOptionsEnvelope([], 0)), {
+          status: 200,
+        }),
+      );
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(
+      loadCouponProductOptions(
+        { productOptions: listLegacyCouponProductOptions } as CouponsTransport,
+        0,
+      ),
+    ).resolves.toEqual({ status: "loaded", items: [], total: 0, offset: 0 });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/coupons/product-options?product_type=standard_product&limit=20&offset=0",
+      expect.objectContaining({ credentials: "same-origin", method: "GET" }),
+    );
+  });
+
+  it("fails closed for product-option envelope, item, duplicate, and page drift without retry", async () => {
+    for (const data of [
+      { ...productOptionsEnvelope(), unexpected: true },
+      productOptionsEnvelope([{ ...sourceProductOption, id: 0 }]),
+      productOptionsEnvelope([
+        { ...sourceProductOption, target_ref: "standard_product:8" },
+      ]),
+      productOptionsEnvelope([{ ...sourceProductOption, currency: "USD" }]),
+      productOptionsEnvelope([{ ...sourceProductOption, price_minor: -1 }]),
+      productOptionsEnvelope([
+        { ...sourceProductOption, price_minor: 9007199254740992 },
+      ]),
+      productOptionsEnvelope([
+        sourceProductOption,
+        { ...sourceProductOption, name: "重复商品" },
+      ], 2),
+      productOptionsEnvelope([sourceProductOption], 2),
+      productOptionsEnvelope([], 1),
+    ]) {
+      await expect(
+        loadCouponProductOptions(
+          transport(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            data,
+          ),
+          0,
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    const unavailable = transport();
+    vi.mocked(unavailable.productOptions).mockRejectedValue(new Error("network"));
+    await expect(loadCouponProductOptions(unavailable, 0)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(unavailable.productOptions).toHaveBeenCalledOnce();
+
+    const invalidOffset = transport();
+    await expect(loadCouponProductOptions(invalidOffset, 1)).resolves.toEqual({
+      status: "invalid",
+    });
+    expect(invalidOffset.productOptions).not.toHaveBeenCalled();
   });
 
   it("reads one same-origin coupon rule detail through the generated GET only", async () => {
