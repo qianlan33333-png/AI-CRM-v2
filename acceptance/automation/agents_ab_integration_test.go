@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	mediafixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/mediafixture"
 	automationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/app"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -44,8 +46,12 @@ func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	if err != nil || published.PublishedVersion != published.DraftVersion {
 		t.Fatalf("publish=%+v err=%v", published, err)
 	}
-	fixed, err := service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "content"), ContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{4, 4}}})
-	if err != nil || len(fixed.FixedContentPackage.ImageLibraryIDs) != 1 || fixed.FixedContentPackage.ImageLibraryIDs[0] != 4 {
+	imageID, err := mediafixture.CreateImage(ctx, pool, "P4 Automation Agent Image")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixed, err := service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "content"), ContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{imageID, imageID}}})
+	if err != nil || len(fixed.FixedContentPackage.ImageLibraryIDs) != 1 || fixed.FixedContentPackage.ImageLibraryIDs[0] != imageID {
 		t.Fatalf("fixed=%+v err=%v", fixed, err)
 	}
 	emptied, err := service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "empty-content")})
@@ -144,7 +150,7 @@ func TestP4AutomationAgentsABStorageHasNoTenantOrCrossDomainOwnership(t *testing
 }
 
 func newP4AutomationAgentService(pool *pgxpool.Pool) *automationapp.Service {
-	return automationapp.NewAgentService(platformstore.NewUnitOfWork(pool), automationstore.NewAgentRepository(), eventstore.NewAppender())
+	return automationapp.NewAgentServiceWithImageReferences(platformstore.NewUnitOfWork(pool), automationstore.NewAgentRepository(), mediastore.NewUploadRepository(), eventstore.NewAppender())
 }
 
 var errP4AutomationAppender = errors.New("forced event append failure")

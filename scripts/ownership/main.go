@@ -199,6 +199,8 @@ func sourceModule(rel string) string {
 			return "contact"
 		case "automationfixture":
 			return "automation"
+		case "mediafixture":
+			return "media"
 		}
 	}
 	if len(parts) >= 2 {

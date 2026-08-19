@@ -16,7 +16,7 @@ seed() {
     "$root/internal/media/store/queries" \
     "$root/internal/automation/store/queries" "$root/internal/stats/store/queries" \
     "$root/acceptance/fixtures" "$root/acceptance/contactfixture" \
-    "$root/acceptance/automationfixture"
+    "$root/acceptance/automationfixture" "$root/acceptance/mediafixture"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
   printf '%s\n' 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/media/store/queries/write.sql"
@@ -33,6 +33,9 @@ seed() {
   printf '%s\n' 'package automationfixture' \
     'const dml = "INSERT INTO automation_agent_configurations (agent_name) VALUES ($1)"' \
     >"$root/acceptance/automationfixture/agent.go"
+  printf '%s\n' 'package mediafixture' \
+    'const dml = "INSERT INTO media_images (name) VALUES ($1)"' \
+    >"$root/acceptance/mediafixture/image.go"
   printf '%s\n' \
     'INSERT INTO event_log (event_type) VALUES ($1)' \
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
@@ -70,6 +73,7 @@ mutate() {
     contact-auth-session) echo 'UPDATE admin_sessions SET revoked_reason = '\''bypass'\'';' >"$root/internal/contact/store/queries/write.sql" ;;
     contact-media-delete-receipt) echo 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql" ;;
     automationfixture-contact-write) echo 'package automationfixture; const dml = "INSERT INTO customers (name) VALUES ($1)"' >"$root/acceptance/automationfixture/agent.go" ;;
+    mediafixture-automation-write) echo 'package mediafixture; const dml = "INSERT INTO automation_agent_configurations (agent_name) VALUES ($1)"' >"$root/acceptance/mediafixture/image.go" ;;
     unknown-table) echo 'TRUNCATE TABLE ONLY mystery_table;' >"$root/internal/contact/store/queries/write.sql" ;;
     update-unknown-table) echo 'UPDATE mystery_table AS target SET id = 2;' >"$root/internal/contact/store/queries/write.sql" ;;
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
@@ -90,6 +94,7 @@ reject acceptance-event-delivery 'table write ownership violation'
 reject contact-auth-session 'table write ownership violation'
 reject contact-media-delete-receipt 'table write ownership violation'
 reject automationfixture-contact-write 'table write ownership violation'
+reject mediafixture-automation-write 'table write ownership violation'
 reject unknown-table 'write to unknown table'
 reject update-unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'
