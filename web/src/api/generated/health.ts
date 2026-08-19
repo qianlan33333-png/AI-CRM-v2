@@ -763,6 +763,101 @@ export interface LegacyTagGroupCreateValidatedSuccess {
   dry_run: boolean;
 }
 
+export interface LegacyTagUpdateSuccessTag {
+  /** @minimum 1 */
+  tag_id: number;
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tag_name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export type LegacyTagUpdateSuccessReason =
+  (typeof LegacyTagUpdateSuccessReason)[keyof typeof LegacyTagUpdateSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagUpdateSuccessReason = {
+  tag_updated: "tag_updated",
+} as const;
+
+export type LegacyTagUpdateSuccessSourceStatus =
+  (typeof LegacyTagUpdateSuccessSourceStatus)[keyof typeof LegacyTagUpdateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagUpdateSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagUpdateSuccessRouteOwner =
+  (typeof LegacyTagUpdateSuccessRouteOwner)[keyof typeof LegacyTagUpdateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagUpdateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagUpdateSuccess {
+  ok: boolean;
+  reason: LegacyTagUpdateSuccessReason;
+  source_status: LegacyTagUpdateSuccessSourceStatus;
+  route_owner: LegacyTagUpdateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+  tag: LegacyTagUpdateSuccessTag;
+}
+
+export type LegacyTagUpdateValidatedSuccessReason =
+  (typeof LegacyTagUpdateValidatedSuccessReason)[keyof typeof LegacyTagUpdateValidatedSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagUpdateValidatedSuccessReason = {
+  tag_update_validated: "tag_update_validated",
+} as const;
+
+export type LegacyTagUpdateValidatedSuccessSourceStatus =
+  (typeof LegacyTagUpdateValidatedSuccessSourceStatus)[keyof typeof LegacyTagUpdateValidatedSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagUpdateValidatedSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagUpdateValidatedSuccessRouteOwner =
+  (typeof LegacyTagUpdateValidatedSuccessRouteOwner)[keyof typeof LegacyTagUpdateValidatedSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagUpdateValidatedSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagUpdateValidatedSuccess {
+  ok: boolean;
+  reason: LegacyTagUpdateValidatedSuccessReason;
+  source_status: LegacyTagUpdateValidatedSuccessSourceStatus;
+  route_owner: LegacyTagUpdateValidatedSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+}
+
+export type LegacyTagUpdateResponse =
+  LegacyTagUpdateSuccess | LegacyTagUpdateValidatedSuccess;
+
 export type LegacyTagGroupsResponseSourceStatus =
   (typeof LegacyTagGroupsResponseSourceStatus)[keyof typeof LegacyTagGroupsResponseSourceStatus];
 
@@ -11507,7 +11602,7 @@ export const updateLegacyWecomTagPut = async (
  * @summary Update one local tag name using the frozen PATCH compatibility method
  */
 export type updateLegacyWecomTagPatchResponse200 = {
-  data: void;
+  data: LegacyTagUpdateResponse;
   status: 200;
 };
 

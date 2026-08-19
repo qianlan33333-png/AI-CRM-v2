@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   copyWecomTagID,
   startWecomTagGroupCreate,
+  startWecomTagMutation,
   WecomTagDetails,
   WecomTagsPage,
   WecomTagsView,
@@ -122,8 +123,10 @@ describe("WecomTagsView", () => {
         onCopy={vi.fn()}
         tag={{
           id: 10,
+          groupID: 1,
           name: '<img src=x onerror="bad">',
           groupName: "意向",
+          sortOrder: 0,
         }}
       />,
     );
@@ -135,6 +138,60 @@ describe("WecomTagsView", () => {
     expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
     expect(html).not.toContain("<img");
     expect(html).not.toMatch(/usage_count|使用次数/i);
+  });
+
+  it("renders the local rename form only when the permitted catalog supplies a tag", () => {
+    const rename = vi.fn(async () => ({
+      status: "confirmed" as const,
+      tag: catalog.tags[0],
+    }));
+    const admin = renderToStaticMarkup(
+      <WecomTagDetails
+        copyStatus="idle"
+        onCopy={vi.fn()}
+        onRename={rename}
+        tag={{
+          id: 10,
+          groupID: 1,
+          groupName: "意向",
+          name: "高意向",
+          sortOrder: 0,
+        }}
+      />,
+    );
+    expect(admin).toContain("本地标签名称");
+    expect(admin).toContain("保存本地名称");
+    expect(admin).not.toMatch(/sync|live|provider/i);
+
+    const sales = renderToStaticMarkup(
+      <WecomTagsView
+        onRenameTag={rename}
+        role="sales"
+        state={{ kind: "ready", catalog }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有企微标签目录访问权限。");
+    expect(sales).not.toContain("保存本地名称");
+  });
+
+  it("renders an uncertain rename as a read-only local form", () => {
+    const html = renderToStaticMarkup(
+      <WecomTagDetails
+        copyStatus="idle"
+        mutationLocked
+        onCopy={vi.fn()}
+        onRename={vi.fn(async () => undefined)}
+        tag={{
+          id: 10,
+          groupID: 1,
+          groupName: "意向",
+          name: "高意向",
+          sortOrder: 0,
+        }}
+      />,
+    );
+    expect(html).toMatch(/<fieldset disabled=""/);
+    expect(html).toContain("保存本地名称");
   });
 
   it("reports copy success or failure once and leaves the displayed ID available for manual copy", async () => {
@@ -156,7 +213,13 @@ describe("WecomTagsView", () => {
       <WecomTagDetails
         copyStatus="failed"
         onCopy={vi.fn()}
-        tag={{ id: 10, name: "高意向", groupName: "意向" }}
+        tag={{
+          id: 10,
+          groupID: 1,
+          name: "高意向",
+          groupName: "意向",
+          sortOrder: 0,
+        }}
       />,
     );
     expect(failed).toContain("<dd>10</dd>");
@@ -184,6 +247,24 @@ describe("local tag-group creation lock", () => {
         throw new Error("local failure");
       }),
     ).rejects.toThrow("local failure");
+    expect(lock.current).toBe(false);
+  });
+
+  it("shares one same-tick mutation lock across create and rename paths", async () => {
+    const lock = { current: false };
+    let release: (() => void) | undefined;
+    const first = startWecomTagGroupCreate(
+      lock,
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    const second = startWecomTagMutation(lock, async () => "second");
+    expect(first).toBeInstanceOf(Promise);
+    expect(second).toBeUndefined();
+    release?.();
+    await expect(first).resolves.toBeUndefined();
     expect(lock.current).toBe(false);
   });
 });

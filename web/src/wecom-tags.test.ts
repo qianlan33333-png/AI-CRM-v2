@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   confirmsCreatedWecomTagGroup,
+  confirmsRenamedWecomTag,
   createWecomTagGroup,
   filterWecomTagGroups,
   loadWecomTagCatalog,
   nextWecomTagPage,
   previousWecomTagPage,
+  renameWecomTag,
   wecomTagPage,
   wecomTagPageCount,
   wecomTagSearchState,
@@ -100,6 +102,25 @@ const created = {
     group_id: 31,
     group_name: "客户阶段",
     tag_name: "新客",
+    sort_order: 0,
+  },
+} as const;
+
+const renamed = {
+  ok: true,
+  reason: "tag_updated",
+  source_status: "local_catalog",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  sync_executed: false,
+  fixture_used: false,
+  dry_run: false,
+  tag: {
+    tag_id: 10,
+    group_id: 1,
+    group_name: "意向",
+    tag_name: "重点跟进",
     sort_order: 0,
   },
 } as const;
@@ -422,10 +443,7 @@ describe("WeCom local tag-group creation boundary", () => {
     };
     expect(confirmsCreatedWecomTagGroup(confirmed, result)).toBe(true);
     expect(
-      confirmsCreatedWecomTagGroup(
-        { ...confirmed, groups: [] },
-        result,
-      ),
+      confirmsCreatedWecomTagGroup({ ...confirmed, groups: [] }, result),
     ).toBe(false);
     expect(
       confirmsCreatedWecomTagGroup(
@@ -435,6 +453,119 @@ describe("WeCom local tag-group creation boundary", () => {
         },
         result,
       ),
+    ).toBe(false);
+  });
+});
+
+describe("WeCom local tag rename boundary", () => {
+  it("sends only a normalized tag name with same-origin CSRF and a unique key", async () => {
+    const client = {
+      ...transport(200, catalog),
+      rename: vi.fn(async () => ({
+        status: 200,
+        data: renamed,
+        headers: new Headers(),
+      })),
+    } as unknown as WecomTagsTransport;
+    const target = {
+      id: 10,
+      groupID: 1,
+      groupName: "意向",
+      name: "高意向",
+      sortOrder: 0,
+    } as const;
+
+    await expect(
+      renameWecomTag(client, target, " 重点跟进 ", CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({
+      status: "confirmed",
+      tag: {
+        id: 10,
+        groupID: 1,
+        groupName: "意向",
+        name: "重点跟进",
+        sortOrder: 0,
+      },
+    });
+    expect(client.rename).toHaveBeenCalledOnce();
+    expect(client.rename).toHaveBeenCalledWith(
+      10,
+      { tag_name: "重点跟进" },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": CSRF_TOKEN,
+          "Idempotency-Key": IDEMPOTENCY_KEY,
+        },
+      },
+    );
+  });
+
+  it("fails closed on malformed, drifting, or wrong-target rename results", async () => {
+    const target = {
+      id: 10,
+      groupID: 1,
+      groupName: "意向",
+      name: "高意向",
+      sortOrder: 0,
+    } as const;
+    for (const data of [
+      { ...renamed, unknown: true },
+      { ...renamed, tag: { ...renamed.tag, tag_id: 11 } },
+      { ...renamed, tag: { ...renamed.tag, group_id: 2 } },
+      { ...renamed, tag: { ...renamed.tag, tag_name: "已漂移" } },
+    ]) {
+      const client = {
+        ...transport(200, catalog),
+        rename: vi.fn(async () => ({
+          status: 200,
+          data,
+          headers: new Headers(),
+        })),
+      } as unknown as WecomTagsTransport;
+      await expect(
+        renameWecomTag(client, target, "重点跟进", CSRF_TOKEN, IDEMPOTENCY_KEY),
+      ).resolves.toEqual({ status: "unknown" });
+    }
+  });
+
+  it("does not send invalid local input or security metadata", async () => {
+    const client = {
+      ...transport(200, catalog),
+      rename: vi.fn(),
+    } as unknown as WecomTagsTransport;
+    const target = {
+      id: 10,
+      groupID: 1,
+      groupName: "意向",
+      name: "高意向",
+      sortOrder: 0,
+    } as const;
+    await expect(
+      renameWecomTag(client, target, " ", CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "invalid" });
+    await expect(
+      renameWecomTag(client, target, "重点跟进", "bad", IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(client.rename).not.toHaveBeenCalled();
+  });
+
+  it("requires the refreshed catalog to mirror every renamed tag field", async () => {
+    const loaded = await loadWecomTagCatalog(transport(200, catalog));
+    if (loaded.status !== "loaded") throw new Error("fixture must load");
+    const result = {
+      id: 10,
+      groupID: 1,
+      groupName: "意向",
+      name: "高意向",
+      sortOrder: 0,
+    };
+    expect(confirmsRenamedWecomTag(loaded.catalog, result)).toBe(true);
+    expect(
+      confirmsRenamedWecomTag(loaded.catalog, { ...result, name: "已漂移" }),
+    ).toBe(false);
+    expect(
+      confirmsRenamedWecomTag(loaded.catalog, { ...result, groupID: 2 }),
     ).toBe(false);
   });
 });

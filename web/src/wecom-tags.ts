@@ -1,6 +1,7 @@
 import {
   createLegacyWecomTagGroup,
   listLegacyWecomTags,
+  updateLegacyWecomTagPatch,
   type LegacyTagGroupCreateRequest,
 } from "./api/generated/health";
 
@@ -48,6 +49,11 @@ export type WecomTagGroupCreateResult =
   | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
   | { readonly status: "unknown" };
 
+export type WecomTagRenameResult =
+  | { readonly status: "confirmed"; readonly tag: WecomTag }
+  | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
+  | { readonly status: "unknown" };
+
 async function generatedRead(options?: RequestInit) {
   return listLegacyWecomTags({ credentials: "same-origin", ...options });
 }
@@ -62,14 +68,28 @@ async function generatedCreate(
   });
 }
 
+async function generatedRename(
+  tagID: number,
+  request: { readonly tag_name: string },
+  options?: RequestInit,
+) {
+  const response = await updateLegacyWecomTagPatch(tagID, request, {
+    credentials: "same-origin",
+    ...options,
+  });
+  return { status: response.status, data: response.data };
+}
+
 export interface WecomTagsTransport {
   readonly read: typeof generatedRead;
   readonly create: typeof generatedCreate;
+  readonly rename: typeof generatedRename;
 }
 
 export const generatedWecomTagsTransport: WecomTagsTransport = {
   read: generatedRead,
   create: generatedCreate,
+  rename: generatedRename,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -220,7 +240,9 @@ function parseCreatedTag(value: unknown): WecomTag | undefined {
 
 export function parseWecomTagGroupCreateSuccess(
   value: unknown,
-): Extract<WecomTagGroupCreateResult, { readonly status: "created" }> | undefined {
+):
+  | Extract<WecomTagGroupCreateResult, { readonly status: "created" }>
+  | undefined {
   if (
     !record(value) ||
     !exact(value, [
@@ -259,6 +281,38 @@ export function parseWecomTagGroupCreateSuccess(
     return undefined;
   }
   return { status: "created", group, tag };
+}
+
+export function parseWecomTagRenameSuccess(
+  value: unknown,
+): WecomTag | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "reason",
+      "source_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+      "dry_run",
+      "tag",
+    ]) ||
+    value.ok !== true ||
+    value.reason !== "tag_updated" ||
+    value.source_status !== "local_catalog" ||
+    value.route_owner !== "ai_crm_next" ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false ||
+    value.sync_executed !== false ||
+    value.fixture_used !== false ||
+    value.dry_run !== false
+  ) {
+    return undefined;
+  }
+  return parseCreatedTag(value.tag);
 }
 
 function sameTags(
@@ -460,6 +514,66 @@ export async function createWecomTagGroup(
     : { status: "unknown" };
 }
 
+function validRenameTarget(tag: WecomTag): boolean {
+  return (
+    positiveInteger(tag.id) &&
+    positiveInteger(tag.groupID) &&
+    frozenText(tag.groupName) &&
+    frozenText(tag.name) &&
+    validSortOrder(tag.sortOrder)
+  );
+}
+
+export async function renameWecomTag(
+  transport: WecomTagsTransport,
+  tag: WecomTag,
+  rawName: string,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<WecomTagRenameResult> {
+  const tag_name = normalizedCreateText(rawName);
+  if (
+    !validRenameTarget(tag) ||
+    !tag_name ||
+    !validCSRFToken(csrfToken) ||
+    !validIdempotencyKey(idempotencyKey)
+  ) {
+    return { status: "invalid" };
+  }
+
+  let response: Awaited<ReturnType<WecomTagsTransport["rename"]>>;
+  try {
+    response = await transport.rename(
+      tag.id,
+      { tag_name },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
+    );
+  } catch {
+    return { status: "unknown" };
+  }
+
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status === 400 || response.status === 404)
+    return { status: "invalid" };
+  if (response.status !== 200) return { status: "unknown" };
+  const renamed = parseWecomTagRenameSuccess(response.data);
+  return renamed &&
+    renamed.id === tag.id &&
+    renamed.groupID === tag.groupID &&
+    renamed.groupName === tag.groupName &&
+    renamed.sortOrder === tag.sortOrder &&
+    renamed.name === tag_name
+    ? { status: "confirmed", tag: renamed }
+    : { status: "unknown" };
+}
+
 export function newWecomTagIdempotencyKey(): string | undefined {
   if (
     typeof globalThis.crypto === "undefined" ||
@@ -472,7 +586,8 @@ export function newWecomTagIdempotencyKey(): string | undefined {
   globalThis.crypto.getRandomValues(bytes);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return globalThis.btoa(binary)
+  return globalThis
+    .btoa(binary)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replace(/=+$/, "");
@@ -498,6 +613,31 @@ export function confirmsCreatedWecomTagGroup(
         item.groupName === created.tag.groupName &&
         item.name === created.tag.name &&
         item.sortOrder === created.tag.sortOrder,
+    )
+  );
+}
+
+export function confirmsRenamedWecomTag(
+  catalog: WecomTagCatalog,
+  renamed: WecomTag,
+): boolean {
+  const tag = catalog.tags.find((item) => item.id === renamed.id);
+  const group = catalog.groups.find((item) => item.id === renamed.groupID);
+  return (
+    tag?.groupID === renamed.groupID &&
+    tag.groupName === renamed.groupName &&
+    tag.name === renamed.name &&
+    tag.sortOrder === renamed.sortOrder &&
+    group !== undefined &&
+    group.name === renamed.groupName &&
+    group.sortOrder >= 0 &&
+    group.tags.some(
+      (item) =>
+        item.id === renamed.id &&
+        item.groupID === renamed.groupID &&
+        item.groupName === renamed.groupName &&
+        item.name === renamed.name &&
+        item.sortOrder === renamed.sortOrder,
     )
   );
 }
