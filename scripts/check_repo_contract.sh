@@ -160,4 +160,71 @@ for token in "${metadata_tokens[@]}"; do
   done <<<"$policy_paths"
 done
 
+python3 - <<'PY'
+import json
+import subprocess
+import sys
+
+
+def staged(path: str) -> str:
+    return subprocess.check_output(["git", "show", f":{path}"], text=True)
+
+
+def fail(message: str) -> None:
+    print(f"repo-contract: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+ci_map = json.loads(staged(".github/ci-map.yml"))
+rules = {rule["name"]: rule for rule in ci_map["rules"]}
+events = rules.get("domain-events", {})
+expected_effects = {
+    "go": True,
+    "go_groups": ["events"],
+    "go_mode": "selected",
+}
+if events.get("effects") != expected_effects:
+    fail("Events paths must select the Events database gate")
+for name in ("selected-domain-database", "database-events"):
+    patterns = rules.get(name, {}).get("patterns", [])
+    if "internal/events/store/**" not in patterns or "acceptance/events/**" not in patterns:
+        fail(f"Events database classifier is incomplete: {name}")
+if rules["selected-domain-database"].get("effects") != {
+    "database": True,
+    "database_mode": "selected",
+    "sqlc": True,
+}:
+    fail("Events database classifier must retain selected database checks")
+if rules["database-events"].get("effects") != {
+    "database": True,
+    "database_groups": ["events"],
+    "database_mode": "selected",
+}:
+    fail("Events database classifier must retain the Events group")
+if "internal/events/store/**" not in rules.get("other-domain-store", {}).get("exclude", []):
+    fail("Events store must not fall back to the full database gate")
+
+runner = staged("scripts/ci/run_selected_database.sh")
+migration_anchor = "run_migration_checks\n\n# A migration-only"
+events_command = '''    events)
+      run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance
+      ;;'''
+if migration_anchor not in runner or events_command not in runner:
+    fail("selected Events acceptance must run after migration checks without skipping")
+if runner.index(migration_anchor) > runner.index(events_command):
+    fail("selected Events acceptance must follow migration checks")
+
+makefile = staged("Makefile")
+events_target = '''p4-internal-events-0367-0368-acceptance:
+	@test -n "$${P4INTERNAL_EVENTS_TEST_DATABASE_URL:-}" || { echo "P4INTERNAL_EVENTS_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s ./acceptance/events -args -database-url "$$P4INTERNAL_EVENTS_TEST_DATABASE_URL"'''
+if events_target not in makefile:
+    fail("Events Make acceptance must run the real acceptance/events package")
+
+manifest = staged("docs/ci/go-acceptance-manifest.tsv").splitlines()
+expected_row = "internal-events-0367-0368|0052|P4INTERNAL_EVENTS_TEST_DATABASE_URL|legacy-make|p4-internal-events-0367-0368-acceptance|-"
+if not manifest or manifest[-1] != expected_row:
+    fail("nightly Events acceptance must be the immutable appended manifest row")
+PY
+
 printf 'repo-contract: PASS (relevance CI only)\n'
