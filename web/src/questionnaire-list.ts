@@ -2,6 +2,7 @@ import {
   deleteLegacyQuestionnaire,
   disableLegacyQuestionnaire,
   duplicateLegacyQuestionnaire,
+  getLegacyQuestionnaire,
   getLegacyQuestionnairePreflight,
   getLegacyQuestionnaireResults,
   listLegacyQuestionnaires,
@@ -23,8 +24,32 @@ export interface QuestionnaireItem {
   readonly updatedAt: string;
 }
 
+export interface QuestionnaireDefinitionOption {
+  readonly text: string;
+  readonly isOther: boolean;
+  readonly otherPlaceholder: string;
+  readonly sortOrder: number;
+}
+
+export interface QuestionnaireDefinitionQuestion {
+  readonly type: "single_choice" | "multi_choice" | "textarea" | "mobile";
+  readonly title: string;
+  readonly required: boolean;
+  readonly placeholderText: string;
+  readonly sortOrder: number;
+  readonly options: readonly QuestionnaireDefinitionOption[];
+}
+
+export interface QuestionnaireDefinition {
+  readonly item: QuestionnaireItem;
+  readonly description: string;
+  readonly answerDisplayMode: "all_in_one" | "one_by_one";
+  readonly questions: readonly QuestionnaireDefinitionQuestion[];
+}
+
 export interface QuestionnaireListTransport {
   readonly list: typeof listLegacyQuestionnaires;
+  readonly definition: typeof getLegacyQuestionnaire;
   readonly disable: typeof disableLegacyQuestionnaire;
   readonly duplicate: typeof duplicateLegacyQuestionnaire;
   readonly remove: typeof deleteLegacyQuestionnaire;
@@ -34,6 +59,7 @@ export interface QuestionnaireListTransport {
 
 export const generatedQuestionnaireListTransport: QuestionnaireListTransport = {
   list: listLegacyQuestionnaires,
+  definition: getLegacyQuestionnaire,
   disable: disableLegacyQuestionnaire,
   duplicate: duplicateLegacyQuestionnaire,
   remove: deleteLegacyQuestionnaire,
@@ -86,6 +112,9 @@ export type QuestionnaireResultsResult =
       readonly status: "loaded";
       readonly aggregate: QuestionnaireSubmissionAggregate;
     }
+  | { readonly status: QuestionnaireFailure };
+export type QuestionnaireDefinitionResult =
+  | { readonly status: "loaded"; readonly definition: QuestionnaireDefinition }
   | { readonly status: QuestionnaireFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -182,8 +211,17 @@ function validation(value: unknown): boolean {
       (positive(value.max_length) && value.max_length <= 10000))
   );
 }
+function strictlyOrdered(value: readonly unknown[]): boolean {
+  let previous = -1;
+  return value.every((entry) => {
+    if (!record(entry) || !nonnegative(entry.sort_order)) return false;
+    if (entry.sort_order <= previous) return false;
+    previous = entry.sort_order;
+    return true;
+  });
+}
 function frozenQuestions(value: readonly unknown[]): boolean {
-  return value.every((question) => {
+  return strictlyOrdered(value) && value.every((question) => {
     if (
       !record(question) ||
       !allowed(
@@ -213,7 +251,8 @@ function frozenQuestions(value: readonly unknown[]): boolean {
       !text(question.placeholder_text, 500, true) ||
       !validation(question.validation) ||
       !Array.isArray(question.options) ||
-      question.options.length > 100
+      question.options.length > 100 ||
+      !strictlyOrdered(question.options)
     )
       return false;
     return question.options.every(
@@ -250,7 +289,9 @@ function frozenQuestions(value: readonly unknown[]): boolean {
   });
 }
 
-function questionnaire(value: unknown): QuestionnaireItem | undefined {
+function questionnaireDefinition(
+  value: unknown,
+): QuestionnaireDefinition | undefined {
   if (
     !record(value) ||
     !exact(value, [
@@ -310,17 +351,42 @@ function questionnaire(value: unknown): QuestionnaireItem | undefined {
     !text(value.submitted_path, Number.MAX_SAFE_INTEGER, true)
   )
     return undefined;
+  const questions = value.questions as readonly Record<string, unknown>[];
   return {
-    id: value.id,
-    name: value.name,
-    title: value.title,
-    publicPath: value.public_path,
-    isDisabled: value.is_disabled,
-    status: value.status,
-    questionCount: value.question_count,
-    submissionCount: value.submission_count,
-    updatedAt: value.updated_at,
+    item: {
+      id: value.id,
+      name: value.name,
+      title: value.title,
+      publicPath: value.public_path,
+      isDisabled: value.is_disabled,
+      status: value.status,
+      questionCount: value.question_count,
+      submissionCount: value.submission_count,
+      updatedAt: value.updated_at,
+    },
+    description: value.description,
+    answerDisplayMode: value.answer_display_mode,
+    questions: questions.map((question) => {
+      const options = question.options as readonly Record<string, unknown>[];
+      return {
+        type: question.type as QuestionnaireDefinitionQuestion["type"],
+        title: question.title as string,
+        required: question.required as boolean,
+        placeholderText: question.placeholder_text as string,
+        sortOrder: question.sort_order as number,
+        options: options.map((option) => ({
+          text: option.option_text as string,
+          isOther: option.is_other as boolean,
+          otherPlaceholder: option.other_placeholder as string,
+          sortOrder: option.sort_order as number,
+        })),
+      };
+    }),
   };
+}
+
+function questionnaire(value: unknown): QuestionnaireItem | undefined {
+  return questionnaireDefinition(value)?.item;
 }
 
 function failure(status: number): QuestionnaireFailure {
@@ -529,6 +595,40 @@ export async function loadQuestionnaireResults(
     const mirrored = aggregate(body.data.results);
     return parsed && mirrored && equalAggregate(parsed, mirrored)
       ? { status: "loaded", aggregate: parsed }
+      : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadQuestionnaireDefinition(
+  transport: QuestionnaireListTransport,
+  item: QuestionnaireItem,
+): Promise<QuestionnaireDefinitionResult> {
+  if (!positive(item.id)) return { status: "invalid" };
+  try {
+    const response = await transport.definition(item.id, {
+      credentials: "same-origin",
+    });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const body: unknown = response.data;
+    if (
+      !record(body) ||
+      !exact(body, ["ok", "questionnaire", "questions", "data"]) ||
+      body.ok !== true ||
+      !record(body.questionnaire) ||
+      !Array.isArray(body.questions) ||
+      !record(body.data) ||
+      !exact(body.data, ["questionnaire"]) ||
+      JSON.stringify(body.questions) !==
+        JSON.stringify(body.questionnaire.questions) ||
+      JSON.stringify(body.data.questionnaire) !==
+        JSON.stringify(body.questionnaire)
+    )
+      return { status: "invalid" };
+    const definition = questionnaireDefinition(body.questionnaire);
+    return definition && definition.item.id === item.id
+      ? { status: "loaded", definition }
       : { status: "invalid" };
   } catch {
     return { status: "unavailable" };

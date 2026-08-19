@@ -8,6 +8,7 @@ import {
   QuestionnaireListPage,
 } from "./questionnaire-list-ui";
 import type {
+  QuestionnaireDefinition,
   QuestionnaireItem,
   QuestionnaireListTransport,
 } from "./questionnaire-list";
@@ -75,6 +76,28 @@ const disabled: QuestionnaireItem = {
   isDisabled: true,
   status: "disabled",
 };
+const definition: QuestionnaireDefinition = {
+  item: active,
+  description: "问卷说明",
+  answerDisplayMode: "all_in_one",
+  questions: [
+    {
+      type: "single_choice",
+      title: "目标",
+      required: true,
+      placeholderText: "请选择",
+      sortOrder: 0,
+      options: [
+        {
+          text: "增长",
+          isOther: false,
+          otherPlaceholder: "",
+          sortOrder: 0,
+        },
+      ],
+    },
+  ],
+};
 
 function response(
   disabledValue: boolean,
@@ -133,6 +156,15 @@ function transport(
         total: 1,
         limit: 50,
         offset: 0,
+      },
+    })),
+    definition: vi.fn(async () => ({
+      status: 200,
+      data: {
+        ok: true,
+        questionnaire: item,
+        questions: item.questions,
+        data: { questionnaire: item },
       },
     })),
     disable: vi.fn(async (_id, body) => ({
@@ -238,7 +270,7 @@ describe("QuestionnaireListPage UI", () => {
       />,
     );
     expect(page).toContain(">复制问卷<");
-    expect(busy.match(/disabled=""/g)).toHaveLength(11);
+    expect(busy.match(/disabled=""/g)).toHaveLength(13);
   });
 
   it("renders only the local submission aggregate and retains it on a local result read failure", () => {
@@ -286,6 +318,44 @@ describe("QuestionnaireListPage UI", () => {
       />,
     );
     expect(failed).toContain("1.5");
+    expect(failed).toContain("问卷服务暂时不可用，请稍后重试。");
+  });
+
+  it("renders a local questionnaire definition and never turns its public path into a link", () => {
+    const ready = renderToStaticMarkup(
+      <QuestionnaireListContent
+        busy={undefined}
+        onLoad={vi.fn()}
+        onMutate={vi.fn()}
+        onLoadDefinition={vi.fn()}
+        definition={{ kind: "ready", item: active, definition }}
+        state={{ kind: "ready", items: [active], total: 1, offset: 0 }}
+      />,
+    );
+    expect(ready).toContain('data-testid="questionnaire-definition"');
+    expect(ready).toContain("问卷定义：欢迎问卷");
+    expect(ready).toContain("问卷说明");
+    expect(ready).toContain("第 1 题：目标");
+    expect(ready).toContain("1. 增长");
+    expect(ready).toContain(">查看问卷定义<");
+    expect(ready).not.toContain('href="/q/welcome"');
+    expect(ready).not.toContain("/q/welcome");
+
+    const failed = renderToStaticMarkup(
+      <QuestionnaireListContent
+        busy={undefined}
+        onLoad={vi.fn()}
+        onMutate={vi.fn()}
+        definition={{
+          kind: "error",
+          item: active,
+          failure: "unavailable",
+          previous: definition,
+        }}
+        state={{ kind: "ready", items: [active], total: 1, offset: 0 }}
+      />,
+    );
+    expect(failed).toContain("问卷说明");
     expect(failed).toContain("问卷服务暂时不可用，请稍后重试。");
   });
 
