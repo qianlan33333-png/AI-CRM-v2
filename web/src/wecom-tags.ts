@@ -1,6 +1,7 @@
 import {
   createLegacyWecomTagGroup,
   listLegacyWecomTags,
+  updateLegacyWecomTagGroupPatch,
   updateLegacyWecomTagPatch,
   type LegacyTagGroupCreateRequest,
 } from "./api/generated/health";
@@ -54,6 +55,14 @@ export type WecomTagRenameResult =
   | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
   | { readonly status: "unknown" };
 
+export type WecomTagGroupRenameResult =
+  | {
+      readonly status: "confirmed";
+      readonly group: Omit<WecomTagGroup, "tags">;
+    }
+  | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
+  | { readonly status: "unknown" };
+
 async function generatedRead(options?: RequestInit) {
   return listLegacyWecomTags({ credentials: "same-origin", ...options });
 }
@@ -80,16 +89,30 @@ async function generatedRename(
   return { status: response.status, data: response.data };
 }
 
+async function generatedGroupRename(
+  groupID: number,
+  request: { readonly group_name: string },
+  options?: RequestInit,
+) {
+  const response = await updateLegacyWecomTagGroupPatch(groupID, request, {
+    credentials: "same-origin",
+    ...options,
+  });
+  return { status: response.status, data: response.data };
+}
+
 export interface WecomTagsTransport {
   readonly read: typeof generatedRead;
   readonly create: typeof generatedCreate;
   readonly rename: typeof generatedRename;
+  readonly renameGroup: typeof generatedGroupRename;
 }
 
 export const generatedWecomTagsTransport: WecomTagsTransport = {
   read: generatedRead,
   create: generatedCreate,
   rename: generatedRename,
+  renameGroup: generatedGroupRename,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -313,6 +336,38 @@ export function parseWecomTagRenameSuccess(
     return undefined;
   }
   return parseCreatedTag(value.tag);
+}
+
+export function parseWecomTagGroupRenameSuccess(
+  value: unknown,
+): Omit<WecomTagGroup, "tags"> | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "reason",
+      "source_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+      "dry_run",
+      "group",
+    ]) ||
+    value.ok !== true ||
+    value.reason !== "group_updated" ||
+    value.source_status !== "local_catalog" ||
+    value.route_owner !== "ai_crm_next" ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false ||
+    value.sync_executed !== false ||
+    value.fixture_used !== false ||
+    value.dry_run !== false
+  ) {
+    return undefined;
+  }
+  return parseCreatedGroup(value.group);
 }
 
 function sameTags(
@@ -574,6 +629,62 @@ export async function renameWecomTag(
     : { status: "unknown" };
 }
 
+function validRenameGroupTarget(group: Omit<WecomTagGroup, "tags">): boolean {
+  return (
+    positiveInteger(group.id) &&
+    frozenText(group.name) &&
+    validSortOrder(group.sortOrder)
+  );
+}
+
+export async function renameWecomTagGroup(
+  transport: WecomTagsTransport,
+  group: Omit<WecomTagGroup, "tags">,
+  rawName: string,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<WecomTagGroupRenameResult> {
+  const group_name = normalizedCreateText(rawName);
+  if (
+    !validRenameGroupTarget(group) ||
+    !group_name ||
+    !validCSRFToken(csrfToken) ||
+    !validIdempotencyKey(idempotencyKey)
+  ) {
+    return { status: "invalid" };
+  }
+
+  let response: Awaited<ReturnType<WecomTagsTransport["renameGroup"]>>;
+  try {
+    response = await transport.renameGroup(
+      group.id,
+      { group_name },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
+    );
+  } catch {
+    return { status: "unknown" };
+  }
+
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status === 400 || response.status === 404)
+    return { status: "invalid" };
+  if (response.status !== 200) return { status: "unknown" };
+  const renamed = parseWecomTagGroupRenameSuccess(response.data);
+  return renamed &&
+    renamed.id === group.id &&
+    renamed.sortOrder === group.sortOrder &&
+    renamed.name === group_name
+    ? { status: "confirmed", group: renamed }
+    : { status: "unknown" };
+}
+
 export function newWecomTagIdempotencyKey(): string | undefined {
   if (
     typeof globalThis.crypto === "undefined" ||
@@ -639,6 +750,26 @@ export function confirmsRenamedWecomTag(
         item.name === renamed.name &&
         item.sortOrder === renamed.sortOrder,
     )
+  );
+}
+
+export function confirmsRenamedWecomTagGroup(
+  catalog: WecomTagCatalog,
+  renamed: Omit<WecomTagGroup, "tags">,
+): boolean {
+  const group = catalog.groups.find((item) => item.id === renamed.id);
+  const catalogTags = catalog.tags.filter(
+    (item) => item.groupID === renamed.id,
+  );
+  return (
+    group !== undefined &&
+    group.name === renamed.name &&
+    group.sortOrder === renamed.sortOrder &&
+    group.tags.length === catalogTags.length &&
+    group.tags.every(
+      (item) => item.groupID === renamed.id && item.groupName === renamed.name,
+    ) &&
+    catalogTags.every((item) => item.groupName === renamed.name)
   );
 }
 

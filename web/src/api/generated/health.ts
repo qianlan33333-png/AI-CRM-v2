@@ -763,6 +763,94 @@ export interface LegacyTagGroupCreateValidatedSuccess {
   dry_run: boolean;
 }
 
+export interface LegacyTagGroupUpdateSuccessGroup {
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export type LegacyTagGroupUpdateSuccessReason =
+  (typeof LegacyTagGroupUpdateSuccessReason)[keyof typeof LegacyTagGroupUpdateSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupUpdateSuccessReason = {
+  group_updated: "group_updated",
+} as const;
+
+export type LegacyTagGroupUpdateSuccessSourceStatus =
+  (typeof LegacyTagGroupUpdateSuccessSourceStatus)[keyof typeof LegacyTagGroupUpdateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupUpdateSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagGroupUpdateSuccessRouteOwner =
+  (typeof LegacyTagGroupUpdateSuccessRouteOwner)[keyof typeof LegacyTagGroupUpdateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupUpdateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagGroupUpdateSuccess {
+  ok: boolean;
+  reason: LegacyTagGroupUpdateSuccessReason;
+  source_status: LegacyTagGroupUpdateSuccessSourceStatus;
+  route_owner: LegacyTagGroupUpdateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+  group: LegacyTagGroupUpdateSuccessGroup;
+}
+
+export type LegacyTagGroupUpdateValidatedSuccessReason =
+  (typeof LegacyTagGroupUpdateValidatedSuccessReason)[keyof typeof LegacyTagGroupUpdateValidatedSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupUpdateValidatedSuccessReason = {
+  group_update_validated: "group_update_validated",
+} as const;
+
+export type LegacyTagGroupUpdateValidatedSuccessSourceStatus =
+  (typeof LegacyTagGroupUpdateValidatedSuccessSourceStatus)[keyof typeof LegacyTagGroupUpdateValidatedSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupUpdateValidatedSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagGroupUpdateValidatedSuccessRouteOwner =
+  (typeof LegacyTagGroupUpdateValidatedSuccessRouteOwner)[keyof typeof LegacyTagGroupUpdateValidatedSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupUpdateValidatedSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagGroupUpdateValidatedSuccess {
+  ok: boolean;
+  reason: LegacyTagGroupUpdateValidatedSuccessReason;
+  source_status: LegacyTagGroupUpdateValidatedSuccessSourceStatus;
+  route_owner: LegacyTagGroupUpdateValidatedSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+}
+
+export type LegacyTagGroupUpdateResponse =
+  LegacyTagGroupUpdateSuccess | LegacyTagGroupUpdateValidatedSuccess;
+
 export interface LegacyTagUpdateSuccessTag {
   /** @minimum 1 */
   tag_id: number;
@@ -11303,7 +11391,7 @@ export const updateLegacyWecomTagGroupPut = async (
  * @summary Update one local group name using the frozen PATCH compatibility method
  */
 export type updateLegacyWecomTagGroupPatchResponse200 = {
-  data: void;
+  data: LegacyTagGroupUpdateResponse;
   status: 200;
 };
 
