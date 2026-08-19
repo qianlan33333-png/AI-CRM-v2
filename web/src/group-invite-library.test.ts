@@ -3,8 +3,10 @@ import {
   GROUP_INVITE_PAGE_SIZE,
   archiveGroupInvite,
   createGroupInvite,
+  loadGroupInviteDetail,
   loadGroupInviteLibrary,
   nextGroupInvitePage,
+  parseGroupInviteLibraryDetail,
   parseGroupInviteLibraryItem,
   parseGroupInviteLibraryPage,
   previousGroupInvitePage,
@@ -43,6 +45,15 @@ function envelope(
   };
 }
 
+function detailEnvelope(item: Record<string, unknown> = invite) {
+  return {
+    ok: true,
+    item,
+    group_invite: item,
+    provider_call_executed: false,
+  };
+}
+
 function mutation(item: Record<string, unknown> = invite) {
   return {
     ok: true,
@@ -71,6 +82,7 @@ function transport(
 ): GroupInviteLibraryTransport {
   return {
     list: vi.fn(async () => ({ status: 503, data: {} })),
+    detail: vi.fn(async () => ({ status: 503, data: {} })),
     create: vi.fn(async () => ({ status: 503, data: {} })),
     update: vi.fn(async () => ({ status: 503, data: {} })),
     archive: vi.fn(async () => ({ status: 503, data: {} })),
@@ -118,10 +130,29 @@ describe("group-invite library local read contract", () => {
       expect(parseGroupInviteLibraryPage(value, 0)).toBeUndefined();
     }
   });
+
+  it("accepts only an exact, ID-bound, mirrored local detail receipt", () => {
+    expect(parseGroupInviteLibraryDetail(detailEnvelope(), 7)).toMatchObject({
+      id: 7,
+      title: "加入体验群",
+    });
+    expect(parseGroupInviteLibraryDetail(detailEnvelope({ ...invite, cover_image_id: 0 }), 7))
+      .toMatchObject({ id: 7 });
+    for (const value of [
+      { ...detailEnvelope(), local_only: true },
+      { ...detailEnvelope(), provider_call_executed: true },
+      { ...detailEnvelope(), group_invite: { ...invite, title: "漂移" } },
+      { ...detailEnvelope(), item: { ...invite, id: 8 } },
+      detailEnvelope({ ...invite, cover_image_id: -1 }),
+      detailEnvelope({ ...invite, join_url: "https://outside.example/gm/unsafe" }),
+    ]) {
+      expect(parseGroupInviteLibraryDetail(value, 7)).toBeUndefined();
+    }
+  });
 });
 
 describe("group-invite library local transport", () => {
-  it("uses one fixed same-origin list GET without a detail or write", async () => {
+  it("uses one fixed same-origin list GET without a detail request or write", async () => {
     const client = transport({
       list: vi.fn(async () => ({ status: 200, data: envelope() })),
     });
@@ -133,6 +164,26 @@ describe("group-invite library local transport", () => {
       { limit: 100, offset: 0, enabled_only: false },
       { credentials: "same-origin" },
     );
+    expect(client.detail).not.toHaveBeenCalled();
+  });
+
+  it("uses one ID-bound same-origin detail GET and never retries", async () => {
+    const client = transport({
+      detail: vi
+        .fn()
+        .mockResolvedValueOnce({ status: 200, data: detailEnvelope() })
+        .mockResolvedValueOnce({ status: 401, data: {} }),
+    });
+    await expect(loadGroupInviteDetail(client, 7)).resolves.toMatchObject({
+      status: "loaded",
+      item: { id: 7 },
+    });
+    expect(client.detail).toHaveBeenCalledOnce();
+    expect(client.detail).toHaveBeenCalledWith(7, { credentials: "same-origin" });
+    await expect(loadGroupInviteDetail(client, 7)).resolves.toEqual({ status: "unauthenticated" });
+    expect(client.detail).toHaveBeenCalledTimes(2);
+    await expect(loadGroupInviteDetail(client, 0)).resolves.toEqual({ status: "invalid" });
+    expect(client.detail).toHaveBeenCalledTimes(2);
   });
 
   it("fails closed for invalid offsets, response statuses, and network failure without retry", async () => {
