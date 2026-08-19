@@ -39,6 +39,7 @@ const snapshot: CustomerDetailSnapshot = {
     },
   ],
   eventsHaveMore: true,
+  eventsNextCursor: "next-page",
 };
 
 function transport(): CustomerDetailTransport {
@@ -69,7 +70,7 @@ describe("CustomerDetailPage", () => {
     expect(html).toContain("添加标签");
     expect(html).toContain("时间线");
     expect(html).toContain("后台账号 #1");
-    expect(html).toContain("仅展示最近 50 条，更多记录待后续加载。");
+    expect(html).toContain("加载更多时间线");
     expect(html).toContain("<fieldset");
     expect(html).toContain("<label");
     expect(html).not.toContain("aicrm_csrf");
@@ -124,13 +125,29 @@ describe("CustomerDetailPage", () => {
           tags: [],
           events: [],
           eventsHaveMore: false,
+          eventsNextCursor: undefined,
         }}
         transport={transport()}
       />,
     );
     expect(html).toContain("暂无标签。");
     expect(html).toContain("暂无时间线记录。");
-    expect(html).not.toContain("更多记录待后续加载");
+    expect(html).not.toContain("加载更多时间线");
+  });
+
+  it("does not offer timeline pagination without a server cursor", () => {
+    const html = renderToStaticMarkup(
+      <CustomerDetailPage
+        customerID={7}
+        initialSnapshot={{
+          ...snapshot,
+          eventsHaveMore: true,
+          eventsNextCursor: undefined,
+        }}
+        transport={transport()}
+      />,
+    );
+    expect(html).not.toContain("加载更多时间线");
   });
 });
 

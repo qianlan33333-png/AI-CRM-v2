@@ -5,6 +5,7 @@ import {
   isCustomerGender,
   isSafeAvatarURL,
   loadCustomerDetail,
+  loadCustomerTimelinePage,
   submitCustomerProfileUpdate,
   submitCustomerStageChange,
   submitCustomerTagAdd,
@@ -199,10 +200,16 @@ export function CustomerDetailPage({
   const [stageValue, setStageValue] = useState("");
   const [selectedTagID, setSelectedTagID] = useState("");
   const [mutationPending, setMutationPending] = useState(false);
+  const [timelinePending, setTimelinePending] = useState(false);
   const mutationInFlight = useRef(false);
   const loadSequence = useRef(0);
+  const timelineLoadSequence = useRef(0);
+  const latestCustomerID = useRef(customerID);
+  latestCustomerID.current = customerID;
 
   const refresh = useCallback(async () => {
+    timelineLoadSequence.current += 1;
+    setTimelinePending(false);
     const sequence = loadSequence.current + 1;
     loadSequence.current = sequence;
     setPage({ kind: "loading" });
@@ -249,6 +256,8 @@ export function CustomerDetailPage({
       loadCustomerDetail(transport, customerID),
     );
     if (!operation) return;
+    timelineLoadSequence.current += 1;
+    setTimelinePending(false);
     loadSequence.current += 1;
     setMutationPending(true);
     setNotice(undefined);
@@ -267,6 +276,63 @@ export function CustomerDetailPage({
       setNotice(successMessage);
     } finally {
       setMutationPending(false);
+    }
+  };
+
+  const loadMoreTimeline = async () => {
+    if (page.kind !== "ready" || timelinePending || mutationPending) return;
+    const cursor = page.snapshot.eventsNextCursor;
+    if (!cursor) return;
+    const sequence = timelineLoadSequence.current + 1;
+    timelineLoadSequence.current = sequence;
+    setTimelinePending(true);
+    setNotice(undefined);
+    try {
+      const result = await loadCustomerTimelinePage(
+        transport,
+        customerID,
+        cursor,
+        new Set(page.snapshot.events.map((event) => event.id)),
+      );
+      if (
+        sequence !== timelineLoadSequence.current ||
+        latestCustomerID.current !== customerID
+      ) {
+        return;
+      }
+      if (result.status !== "loaded") {
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setNotice(
+          result.status === "unauthenticated"
+            ? "登录状态已失效，请重新登录。"
+            : result.status === "forbidden"
+              ? "当前账号没有查看更多时间线记录的权限。"
+              : result.status === "not_found"
+                ? "客户已不可见，请刷新资料确认。"
+                : "时间线暂时无法继续加载，已显示的记录保持不变。",
+        );
+        return;
+      }
+      setPage((current) => {
+        if (
+          current.kind !== "ready" ||
+          current.snapshot.customer.id !== customerID ||
+          current.snapshot.eventsNextCursor !== cursor
+        ) {
+          return current;
+        }
+        return {
+          kind: "ready",
+          snapshot: {
+            ...current.snapshot,
+            events: [...current.snapshot.events, ...result.events],
+            eventsHaveMore: result.nextCursor !== undefined,
+            eventsNextCursor: result.nextCursor,
+          },
+        };
+      });
+    } finally {
+      if (sequence === timelineLoadSequence.current) setTimelinePending(false);
     }
   };
 
@@ -396,7 +462,14 @@ export function CustomerDetailPage({
     );
   }
 
-  const { customer, tags, tagCatalog, events, eventsHaveMore } = page.snapshot;
+  const {
+    customer,
+    tags,
+    tagCatalog,
+    events,
+    eventsHaveMore,
+    eventsNextCursor,
+  } = page.snapshot;
   const attachedTagIDs = new Set(tags.map((tag) => tag.id));
   const availableTags = tagCatalog.filter((tag) => !attachedTagIDs.has(tag.id));
 
@@ -603,9 +676,15 @@ export function CustomerDetailPage({
             ))}
           </ol>
         )}
-        {eventsHaveMore && (
+        {eventsHaveMore && eventsNextCursor && (
           <p className="customer-detail-page__meta" role="status">
-            仅展示最近 50 条，更多记录待后续加载。
+            <button
+              type="button"
+              disabled={timelinePending || mutationPending}
+              onClick={() => void loadMoreTimeline()}
+            >
+              {timelinePending ? "正在加载…" : "加载更多时间线"}
+            </button>
           </p>
         )}
       </section>

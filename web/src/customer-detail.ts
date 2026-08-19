@@ -46,6 +46,7 @@ export interface CustomerDetailSnapshot {
   readonly tagCatalog: readonly CustomerTag[];
   readonly events: readonly CustomerTimelineEvent[];
   readonly eventsHaveMore: boolean;
+  readonly eventsNextCursor?: string;
 }
 
 export interface CustomerProfileUpdate {
@@ -152,6 +153,14 @@ type CustomerDetailReadFailure = Exclude<
   CustomerDetailLoadResult,
   { readonly status: "loaded" }
 >;
+
+export type CustomerTimelineLoadResult =
+  | {
+      readonly status: "loaded";
+      readonly events: readonly CustomerTimelineEvent[];
+      readonly nextCursor?: string;
+    }
+  | CustomerDetailReadFailure;
 
 export type CustomerMutationFailure =
   | "unauthenticated"
@@ -414,7 +423,7 @@ function parseEventPage(
 ):
   | {
       readonly events: readonly CustomerTimelineEvent[];
-      readonly haveMore: boolean;
+      readonly nextCursor?: string;
     }
   | undefined {
   if (!exactObject(value, ["items", "next_cursor"], ["items", "next_cursor"])) {
@@ -441,7 +450,12 @@ function parseEventPage(
     seen.add(event.id);
     events.push(event);
   }
-  return { events, haveMore: typeof value.next_cursor === "string" };
+  return {
+    events,
+    ...(typeof value.next_cursor === "string"
+      ? { nextCursor: value.next_cursor }
+      : {}),
+  };
 }
 
 export function parseCustomerDetailResponse(
@@ -509,9 +523,56 @@ export async function loadCustomerDetail(
         ...parsedDetail,
         tagCatalog: parsedCatalog,
         events: parsedEvents.events,
-        eventsHaveMore: parsedEvents.haveMore,
+        eventsHaveMore: parsedEvents.nextCursor !== undefined,
+        ...(parsedEvents.nextCursor !== undefined
+          ? { eventsNextCursor: parsedEvents.nextCursor }
+          : {}),
       },
     };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+function validKnownEventIDs(value: ReadonlySet<number>): boolean {
+  for (const id of value) {
+    if (!positiveInteger(id)) return false;
+  }
+  return true;
+}
+
+export async function loadCustomerTimelinePage(
+  transport: CustomerDetailTransport,
+  customerID: number,
+  cursor: string,
+  knownEventIDs: ReadonlySet<number>,
+): Promise<CustomerTimelineLoadResult> {
+  if (
+    !positiveInteger(customerID) ||
+    typeof cursor !== "string" ||
+    cursor.length === 0 ||
+    cursor.length > 512 ||
+    !validKnownEventIDs(knownEventIDs)
+  ) {
+    return { status: "unavailable" };
+  }
+
+  try {
+    const response = await transport.listEvents(
+      customerID,
+      { cursor, limit: EVENT_PAGE_SIZE },
+      SAME_ORIGIN,
+    );
+    const failure = readFailure([response.status]);
+    if (failure) return failure;
+    const parsed = parseEventPage(response.data, customerID);
+    if (
+      parsed === undefined ||
+      parsed.events.some((event) => knownEventIDs.has(event.id))
+    ) {
+      return { status: "unavailable" };
+    }
+    return { status: "loaded", ...parsed };
   } catch {
     return { status: "unavailable" };
   }
