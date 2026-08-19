@@ -6,7 +6,9 @@ import {
   OrdersPage,
   canReadOrders,
   startOrderDetailLoad,
+  startLocalRefundLoad,
   startOrdersLoad,
+  type LocalRefundViewState,
   type OrderDetailViewState,
   type OrdersViewState,
 } from "./orders-ui";
@@ -27,19 +29,30 @@ function detail(extra: Record<string, unknown> = {}) {
   };
 }
 
+const refunds = {
+  items: [{
+    id: 23, orderID: 17, provider: "wechat" as const, orderNo: "M-1", transactionID: "WX-1",
+    refundID: "rfd_provider-1", outRefundNo: "rfd_local-1", refundAmountTotal: 1990,
+    currency: "CNY" as const, reason: "重复支付", status: "completed" as const,
+    externalEffectID: 31, externalEffectState: "completed" as const,
+    autoRetryAllowed: false as const, createdAt: "2026-08-19T00:00:00Z",
+  }], total: 1, offset: 0, hasMore: false,
+} as const;
+
 type TransportResponse = { status: number; data: unknown };
 
 function client(
   response: () => Promise<TransportResponse>,
   detailResponse: () => Promise<TransportResponse> = async () => ({ status: 200, data: detail() }),
+  refundResponse: () => Promise<TransportResponse> = async () => ({ status: 200, data: {} }),
 ): OrdersTransport {
-  return { list: vi.fn(response), detail: vi.fn(detailResponse) } as unknown as OrdersTransport;
+  return { list: vi.fn(response), detail: vi.fn(detailResponse), refunds: vi.fn(refundResponse) } as unknown as OrdersTransport;
 }
 
 describe("order overview UI boundary", () => {
   it("renders only approved order fields and never turns a local projection into a link", () => {
     const state: OrdersViewState = { kind: "ready", page };
-    const html = renderToStaticMarkup(<OrdersContent state={state} detail={{ kind: "idle" }} onLoad={vi.fn()} onLoadDetail={vi.fn()} />);
+    const html = renderToStaticMarkup(<OrdersContent state={state} detail={{ kind: "idle" }} refunds={{ kind: "loading" }} onLoad={vi.fn()} onLoadDetail={vi.fn()} onLoadRefunds={vi.fn()} />);
     expect(html).toContain("订单号");
     expect(html).toContain("M-1");
     expect(html).toContain("张三");
@@ -51,13 +64,38 @@ describe("order overview UI boundary", () => {
     expect(html).not.toContain("<a");
   });
 
+  it("renders a local refund record without creating a refund or claiming provider success", () => {
+    const state: OrdersViewState = { kind: "ready", page };
+    const refundState: LocalRefundViewState = { kind: "ready", page: refunds };
+    const html = renderToStaticMarkup(
+      <OrdersContent
+        state={state}
+        detail={{ kind: "idle" }}
+        refunds={refundState}
+        onLoad={vi.fn()}
+        onLoadDetail={vi.fn()}
+        onLoadRefunds={vi.fn()}
+      />,
+    );
+    expect(html).toContain("本地退款意图历史");
+    expect(html).toContain("rfd_provider-1");
+    expect(html).toContain("本地外效状态");
+    expect(html).toContain("不代表支付渠道已执行、送达或退款成功");
+    expect(html).not.toContain("transaction_id");
+    expect(html).not.toContain("退款申请");
+    expect(html).not.toContain("重试退款");
+    expect(html).not.toContain("<a");
+  });
+
   it("keeps the previous button enabled when offset 50 returns to offset 0", () => {
     const html = renderToStaticMarkup(
       <OrdersContent
         state={{ kind: "ready", page: { ...page, offset: 50, total: 51 } }}
         detail={{ kind: "idle" }}
+        refunds={{ kind: "loading" }}
         onLoad={vi.fn()}
         onLoadDetail={vi.fn()}
+        onLoadRefunds={vi.fn()}
       />,
     );
     expect(html).toContain('<button type="button">上一页</button>');
@@ -254,12 +292,158 @@ describe("local order detail transition", () => {
         providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z", refundableAmountTotal: 1990,
       },
     };
-    const html = renderToStaticMarkup(<OrdersContent state={{ kind: "ready", page }} detail={detailState} onLoad={vi.fn()} onLoadDetail={vi.fn()} />);
+    const html = renderToStaticMarkup(<OrdersContent state={{ kind: "ready", page }} detail={detailState} refunds={{ kind: "loading" }} onLoad={vi.fn()} onLoadDetail={vi.fn()} onLoadRefunds={vi.fn()} />);
     expect(html).toContain("本地可退金额（分）");
     expect(html).toContain("不代表退款已经执行");
     expect(html).not.toContain("detail_url");
     expect(html).not.toContain("external_userid");
     expect(html).not.toContain("<a");
     expect(html).not.toContain("退款申请");
+  });
+});
+
+describe("local refund-history transition", () => {
+  function controller(
+    role: "admin" | "ops" | "sales",
+    transport: OrdersTransport,
+    previous = undefined as typeof refunds | undefined,
+  ) {
+    return {
+      role,
+      offset: 0,
+      transport,
+      generation: { current: 0 },
+      inFlight: { current: undefined as symbol | undefined },
+      verified: { current: previous },
+      setState: vi.fn(),
+    };
+  }
+
+  it.each(["admin", "ops"] as const)("issues one fixed local refund GET for %s", async (role) => {
+    const transport = client(
+      async () => ({ status: 200, data: { items: [], total: 0, limit: 50, has_more: false } }),
+      async () => ({ status: 200, data: detail() }),
+      async () => ({
+        status: 200,
+        data: {
+          items: [{
+            id: 23, order_id: 17, provider: "wechat", order_no: "M-1", transaction_id: "WX-1",
+            refund_id: "rfd_provider-1", out_refund_no: "rfd_local-1", refund_amount_total: 1990,
+            currency: "CNY", reason: "重复支付", status: "completed", external_effect_id: 31,
+            external_effect_state: "completed", auto_retry_allowed: false, created_at: "2026-08-19T00:00:00Z",
+          }], total: 1, limit: 50, has_more: false,
+        },
+      }),
+    );
+    const state = controller(role, transport);
+    await startLocalRefundLoad(state);
+    expect(transport.refunds).toHaveBeenCalledWith(
+      { provider: "all", limit: 50, offset: 0 },
+      { credentials: "same-origin" },
+    );
+    expect(state.setState).toHaveBeenLastCalledWith({ kind: "ready", page: refunds });
+  });
+
+  it("keeps sales fail-closed with no refund transport call", () => {
+    const transport = client(async () => ({ status: 200, data: {} }));
+    const state = controller("sales", transport);
+    expect(startLocalRefundLoad(state)).toBeUndefined();
+    expect(transport.refunds).not.toHaveBeenCalled();
+  });
+
+  it("locks same-tick reads, discards stale responses, and retains verified state on 401 or unavailable", async () => {
+    // eslint-disable-next-line no-unused-vars -- resolver parameter is intentionally supplied by Promise resolution.
+    let resolve: ((value: TransportResponse) => void) | undefined;
+    const transport = client(
+      async () => ({ status: 200, data: { items: [], total: 0, limit: 50, has_more: false } }),
+      async () => ({ status: 200, data: detail() }),
+      () => new Promise((done) => { resolve = done; }),
+    );
+    const state = controller("admin", transport);
+    const first = startLocalRefundLoad(state);
+    expect(startLocalRefundLoad(state)).toBeUndefined();
+    expect(transport.refunds).toHaveBeenCalledOnce();
+    state.generation.current += 1;
+    resolve?.({ status: 503, data: {} });
+    await first;
+    expect(state.setState).toHaveBeenCalledTimes(1);
+    expect(state.inFlight.current).toBeUndefined();
+
+    const previous = refunds;
+    const unavailable = controller(
+      "admin",
+      client(async () => ({ status: 200, data: {} }), async () => ({ status: 200, data: detail() }), async () => ({ status: 503, data: {} })),
+      previous,
+    );
+    await startLocalRefundLoad(unavailable);
+    expect(unavailable.setState).toHaveBeenLastCalledWith({ kind: "error", failure: "unavailable", previous });
+
+    const onUnauthenticated = vi.fn();
+    const unauthenticated = {
+      ...controller(
+        "admin",
+        client(async () => ({ status: 200, data: {} }), async () => ({ status: 200, data: detail() }), async () => ({ status: 401, data: {} })),
+        previous,
+      ),
+      onUnauthenticated,
+    };
+    await startLocalRefundLoad(unauthenticated);
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(unauthenticated.setState).toHaveBeenLastCalledWith({ kind: "error", failure: "unauthenticated", previous });
+  });
+
+  it("keeps a reload token after cleanup while an old transport finally resolves", async () => {
+    // eslint-disable-next-line no-unused-vars -- resolver parameter is intentionally supplied by Promise resolution.
+    let resolveA: ((value: TransportResponse) => void) | undefined;
+    // eslint-disable-next-line no-unused-vars -- resolver parameter is intentionally supplied by Promise resolution.
+    let resolveB: ((value: TransportResponse) => void) | undefined;
+    const transportA = client(
+      async () => ({ status: 200, data: {} }),
+      async () => ({ status: 200, data: detail() }),
+      () => new Promise((done) => { resolveA = done; }),
+    );
+    const transportB = client(
+      async () => ({ status: 200, data: {} }),
+      async () => ({ status: 200, data: detail() }),
+      () => new Promise((done) => { resolveB = done; }),
+    );
+    const generation = { current: 0 };
+    const inFlight = { current: undefined as symbol | undefined };
+    const verified = { current: undefined as typeof refunds | undefined };
+    const first = startLocalRefundLoad({
+      role: "admin", offset: 0, transport: transportA, generation, inFlight, verified, setState: vi.fn(),
+    });
+    expect(inFlight.current).toBeDefined();
+
+    // Mirrors effect cleanup before a role/transport reload: invalidate A and
+    // release only A's lock so the next effect can begin B.
+    generation.current += 1;
+    inFlight.current = undefined;
+    const setStateB = vi.fn();
+    const second = startLocalRefundLoad({
+      role: "admin", offset: 0, transport: transportB, generation, inFlight, verified, setState: setStateB,
+    });
+    const tokenB = inFlight.current;
+    expect(tokenB).toBeDefined();
+    expect(transportB.refunds).toHaveBeenCalledOnce();
+
+    resolveA?.({ status: 503, data: {} });
+    await first;
+    expect(inFlight.current).toBe(tokenB);
+
+    resolveB?.({
+      status: 200,
+      data: {
+        items: [{
+          id: 23, order_id: 17, provider: "wechat", order_no: "M-1", transaction_id: "WX-1",
+          refund_id: "rfd_provider-1", out_refund_no: "rfd_local-1", refund_amount_total: 1990,
+          currency: "CNY", reason: "重复支付", status: "completed", external_effect_id: 31,
+          external_effect_state: "completed", auto_retry_allowed: false, created_at: "2026-08-19T00:00:00Z",
+        }], total: 1, limit: 50, has_more: false,
+      },
+    });
+    await second;
+    expect(setStateB).toHaveBeenLastCalledWith({ kind: "ready", page: refunds });
+    expect(inFlight.current).toBeUndefined();
   });
 });
