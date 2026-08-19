@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   loadCustomerDetail,
+  loadCustomerTimelinePage,
   parseCustomerDetailResponse,
   parseTagCatalog,
   submitCustomerProfileUpdate,
@@ -189,12 +190,13 @@ describe("customer detail loading", () => {
         customer: { id: 7, name: "林小姐" },
         events: [{ id: 12, actor: "后台账号 #1" }],
         eventsHaveMore: true,
+        eventsNextCursor: "next-page",
       },
     });
     const result = await loadCustomerDetail(transport, 7);
     expect(result).toMatchObject({ status: "loaded" });
     if (result.status === "loaded") {
-      expect(result.snapshot).not.toHaveProperty("nextEventCursor");
+      expect(result.snapshot.eventsNextCursor).toBe("next-page");
     }
     expect(transport.get).toHaveBeenCalledWith(7, {
       credentials: "same-origin",
@@ -222,6 +224,73 @@ describe("customer detail loading", () => {
       snapshot: { eventsHaveMore: false },
     });
   });
+
+  it("loads only the server cursor, then rejects an overlapping or malformed next page", async () => {
+    const nextEvent = { ...rawEvent, id: 11 };
+    const transport = client({
+      events: {
+        status: 200,
+        data: { items: [nextEvent], next_cursor: null },
+      },
+    });
+    await expect(
+      loadCustomerTimelinePage(transport, 7, "next-page", new Set([12])),
+    ).resolves.toEqual({
+      status: "loaded",
+      events: [
+        {
+          id: 11,
+          eventType: "stage_changed",
+          actor: "后台账号 #1",
+          occurredAt: "2026-08-12T03:00:00Z",
+        },
+      ],
+    });
+    expect(transport.listEvents).toHaveBeenCalledWith(
+      7,
+      { cursor: "next-page", limit: 50 },
+      { credentials: "same-origin" },
+    );
+
+    await expect(
+      loadCustomerTimelinePage(
+        client({
+          events: {
+            status: 200,
+            data: { items: [rawEvent], next_cursor: null },
+          },
+        }),
+        7,
+        "next-page",
+        new Set([12]),
+      ),
+    ).resolves.toEqual({ status: "unavailable" });
+    await expect(
+      loadCustomerTimelinePage(transport, 7, "", new Set([12])),
+    ).resolves.toEqual({ status: "unavailable" });
+    await expect(
+      loadCustomerTimelinePage(transport, 7, "next-page", new Set([0])),
+    ).resolves.toEqual({ status: "unavailable" });
+  });
+
+  it.each([
+    [401, "unauthenticated"],
+    [403, "forbidden"],
+    [404, "not_found"],
+    [400, "unavailable"],
+  ] as const)(
+    "classifies a next timeline page %i as %s",
+    async (status, want) => {
+      await expect(
+        loadCustomerTimelinePage(
+          client({ events: { status, data: {} } }),
+          7,
+          "next-page",
+          new Set([12]),
+        ),
+      ).resolves.toEqual({ status: want });
+    },
+  );
 
   it.each([
     ["get", 401, "unauthenticated"],
