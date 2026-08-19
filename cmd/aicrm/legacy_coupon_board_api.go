@@ -22,13 +22,20 @@ const (
 
 var couponPageTemplate = template.Must(template.New("coupon-compat").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>优惠券</title><main><h1>{{.Title}}</h1>{{if .Coupon}}<p>{{.Coupon.Name}}</p>{{end}}{{range .Items}}<p>{{.Name}} · {{.Status}}</p>{{end}}{{range .Claims}}<p>{{.ClaimRef}} · {{.Status}}</p>{{end}}</main></html>`))
 
+var couponListPageTemplate = template.Must(template.New("coupon-list-compat").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>优惠券</title><main><h1>优惠券</h1><label>名称 <input type="search" id="coupon-search" autocomplete="off"></label><label>状态 <select id="coupon-status"><option value="">全部状态</option><option value="draft">draft</option><option value="scheduled">scheduled</option><option value="active">active</option><option value="sold_out">sold_out</option><option value="ended">ended</option><option value="stopped">stopped</option><option value="archived">archived</option></select></label><section id="coupon-list">{{range .Items}}<p data-coupon-row data-name="{{.Name}}" data-status="{{.Status}}">{{.Name}} · {{.Status}}</p>{{end}}</section></main><script>(function(){const search=document.getElementById("coupon-search"),status=document.getElementById("coupon-status"),rows=document.querySelectorAll("[data-coupon-row]");function filter(){const needle=search.value.toLowerCase(),wanted=status.value;rows.forEach(function(row){row.hidden=!(row.dataset.name.toLowerCase().includes(needle)&&(wanted===""||row.dataset.status===wanted));});}search.addEventListener("input",filter);status.addEventListener("change",filter);}());</script></html>`))
+
 func (h *Handler) CouponListPage(w http.ResponseWriter, r *http.Request) {
 	page, e := h.coupons.List(r.Context(), 100, 0, "", "")
 	if e != nil {
 		writeCouponError(w, e)
 		return
 	}
-	renderCouponPage(w, "优惠券", page.Items, couponport.Coupon{})
+	items, e := couponListItems(page.Items)
+	if e != nil {
+		writeCouponError(w, e)
+		return
+	}
+	renderCouponListPage(w, items)
 }
 func (h *Handler) CouponNewPage(w http.ResponseWriter, _ *http.Request) {
 	renderCouponPage(w, "新建优惠券", nil, couponport.Coupon{})
@@ -66,6 +73,36 @@ func renderCouponPage(w http.ResponseWriter, title string, items []couponport.Co
 		Items  []couponport.Coupon
 		Coupon couponport.Coupon
 	}{Title: title, Items: items, Coupon: item})
+}
+
+type couponListItem struct {
+	Name   string
+	Status string
+}
+
+func couponListItems(coupons []couponport.Coupon) ([]couponListItem, error) {
+	items := make([]couponListItem, 0, len(coupons))
+	for _, coupon := range coupons {
+		status := coupon.AvailabilityStatus
+		if status == "" {
+			status = coupon.Status
+		}
+		switch status {
+		case "draft", "scheduled", "active", "sold_out", "ended", "stopped", "archived":
+			items = append(items, couponListItem{Name: coupon.Name, Status: status})
+		default:
+			return nil, couponapp.ErrUnavailable
+		}
+	}
+	return items, nil
+}
+
+func renderCouponListPage(w http.ResponseWriter, items []couponListItem) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_ = couponListPageTemplate.Execute(w, struct {
+		Items []couponListItem
+	}{Items: items})
 }
 func renderCouponDataPage(w http.ResponseWriter, item couponport.Coupon, claims []couponport.Claim) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
