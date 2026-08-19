@@ -54,9 +54,21 @@ export interface ImageDetail {
   readonly originalURL: string;
 }
 
+export type ImagePreviewMode = "standard" | "original";
+
 export interface ImageFacets {
   readonly categories: readonly string[];
   readonly tags: readonly string[];
+}
+
+// Both URLs come only from the exact, ID-bound detail projection. Do not
+// construct a variant path in the UI: that would weaken the decoder's
+// same-origin and variant-key checks.
+export function imagePreviewURL(
+  image: ImageDetail,
+  mode: ImagePreviewMode,
+): string {
+  return mode === "original" ? image.originalURL : image.previewURL;
 }
 
 export interface UploadedImage {

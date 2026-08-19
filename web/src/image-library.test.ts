@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   firstPageQuery,
   formatFileSize,
+  imagePreviewURL,
   IMAGE_LIBRARY_PAGE_SIZE,
   imageMetadataRequest,
   loadImageDetail,
@@ -341,6 +342,17 @@ describe("image item strict parser", () => {
 });
 
 describe("image detail strict parser and local read", () => {
+  it("uses only the validated detail URLs for explicit local preview modes", () => {
+    const image = parseImageDetail(detailItem);
+    expect(image).toBeDefined();
+    expect(imagePreviewURL(image!, "standard")).toBe(
+      "/api/admin/image-library/11/variants/mobile_1080",
+    );
+    expect(imagePreviewURL(image!, "original")).toBe(
+      "/api/admin/image-library/11/variants/original",
+    );
+  });
+
   it("accepts only the exact no-query detail projection", () => {
     expect(parseImageDetail(detailItem)).toEqual({
       id: 11,
