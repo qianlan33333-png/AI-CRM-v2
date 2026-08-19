@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  filterSafeOrders,
+  filterSafeRefunds,
   loadOrderDetail,
+  loadOrderItems,
   loadLocalRefunds,
   loadOrders,
   nextLocalRefundOffset,
@@ -44,10 +47,13 @@ function transport(
   detailData = data,
   refundStatus = status,
   refundData = data,
+  itemStatus = detailStatus,
+  itemData = detailData,
 ): OrdersTransport {
   return {
     list: vi.fn(async () => ({ status, data })),
     detail: vi.fn(async () => ({ status: detailStatus, data: detailData })),
+    items: vi.fn(async () => ({ status: itemStatus, data: itemData })),
     refunds: vi.fn(async () => ({ status: refundStatus, data: refundData })),
   } as unknown as OrdersTransport;
 }
@@ -67,7 +73,7 @@ describe("local order overview read boundary", () => {
     await expect(loadOrders(client)).resolves.toEqual({
       status: "loaded",
       page: {
-        items: [{ orderNo: "M-1", merchantOrderNo: "M-1", outTradeNo: "M-1", platformTransactionNo: "WX-1", transactionId: "WX-1", detailUrl: "/api/admin/orders/1", identity: { kind: "external_userid", value: "wmid-1" }, provider: "wechat", status: "paid", payerName: "张三", mobile: "13800000000", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z" }],
+        items: [{ orderNo: "M-1", provider: "wechat", status: "paid", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z" }],
         total: 1, offset: 0, hasMore: false,
       },
     });
@@ -104,7 +110,7 @@ describe("local order overview read boundary", () => {
     await expect(loadOrderDetail(client, loaded.page.items[0])).resolves.toEqual({
       status: "loaded",
       detail: {
-        id: 17, orderNo: "M-1", provider: "wechat", payerName: "张三", mobile: "13800000000",
+        id: 17, orderNo: "M-1", provider: "wechat",
         productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY",
         statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z",
         refundableAmountTotal: 1990,
@@ -117,7 +123,7 @@ describe("local order overview read boundary", () => {
     );
   });
 
-  it("fails closed for direct-detail envelopes, unsafe fields, and non-mirrored local records", async () => {
+  it("fails closed for direct-detail envelopes, malformed fields, and safe-record drift", async () => {
     const loaded = await loadOrders(transport(200, page()));
     if (loaded.status !== "loaded") throw new Error("expected local item");
     const missingId: Record<string, unknown> = detail();
@@ -125,11 +131,8 @@ describe("local order overview read boundary", () => {
     for (const data of [
       { order: detail() }, missingId, detail({ unexpected: true }), detail({ id: 0 }),
       detail({ refundable_amount_total: 1991 }), detail({ refundable_amount_total: -1 }),
-      detail({ order_no: "M-2" }), detail({ merchant_order_no: "M-2" }),
+      detail({ order_no: "M-2" }),
       detail({ provider: "alipay" }), detail({ status: "created" }),
-      detail({ payer_name: "李四" }), detail({ detail_url: "//outside.example/order" }),
-      detail({ platform_transaction_no: "WX-2" }), detail({ transaction_id: "WX-2" }),
-      detail({ detail_url: "/api/admin/orders/2" }),
       detail({ external_userid: "wmid-1", unionid: "u-1" }),
     ]) {
       await expect(loadOrderDetail(transport(200, page(), 200, data), loaded.page.items[0]))
@@ -137,13 +140,11 @@ describe("local order overview read boundary", () => {
     }
   });
 
-  it("rejects identity kind or value drift from the validated list projection", async () => {
+  it("drops opaque identity fields from the validated list and detail projection", async () => {
     const listed = await loadOrders(transport(200, page([item({ external_userid: "wmid-1" })])));
     if (listed.status !== "loaded") throw new Error("expected local item");
-    for (const data of [detail({ userid: "u-1" }), detail({ external_userid: "wmid-2" })]) {
-      await expect(loadOrderDetail(transport(200, page(), 200, data), listed.page.items[0]))
-        .resolves.toEqual({ status: "invalid" });
-    }
+    await expect(loadOrderDetail(transport(200, page(), 200, detail({ external_userid: "wmid-2" })), listed.page.items[0]))
+      .resolves.toMatchObject({ status: "loaded" });
   });
 
   it("keeps accepted local detail-url text inert without inventing stricter URL semantics", async () => {
@@ -171,11 +172,9 @@ describe("local order overview read boundary", () => {
       status: "loaded",
       page: {
         items: [{
-          id: 23, orderID: 17, provider: "wechat", orderNo: "M-1", transactionID: "WX-1",
-          refundID: "rfd_provider-1", outRefundNo: "rfd_local-1", refundAmountTotal: 1990,
-          currency: "CNY", reason: "重复支付", status: "pending_external_gate",
-          externalEffectID: 31, externalEffectState: "pending_external_gate",
-          autoRetryAllowed: false, createdAt: "2026-08-19T00:00:00Z",
+          id: 23, provider: "wechat", orderNo: "M-1", refundAmountTotal: 1990,
+          currency: "CNY", status: "pending_external_gate", externalEffectState: "pending_external_gate",
+          createdAt: "2026-08-19T00:00:00Z",
         }],
         total: 1, offset: 0, hasMore: false,
       },
@@ -184,6 +183,29 @@ describe("local order overview read boundary", () => {
       { provider: "all", limit: 50, offset: 0 },
       { credentials: "same-origin" },
     );
+  });
+
+  it("reads the existing one-item snapshot and projects only safe product fields", async () => {
+    const client = transport(200, page(), 200, detail(), 200, refundPage(), 200, { items: [item({ external_userid: "wmid-hidden" })] });
+    const listed = await loadOrders(client);
+    if (listed.status !== "loaded") throw new Error("expected order");
+    await expect(loadOrderItems(client, listed.page.items[0])).resolves.toEqual({
+      status: "loaded",
+      item: { orderNo: "M-1", provider: "wechat", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", createdAt: "2026-08-19T00:00:00Z" },
+    });
+    expect(client.items).toHaveBeenCalledWith("M-1", { provider: "wechat" }, { credentials: "same-origin" });
+  });
+
+  it("fails closed for item-envelope drift and filters only existing safe page facts", async () => {
+    const client = transport(200, page());
+    const listed = await loadOrders(client);
+    if (listed.status !== "loaded") throw new Error("expected order");
+    await expect(loadOrderItems(transport(200, page(), 200, detail(), 200, refundPage(), 200, { items: [item()], extra: true }), listed.page.items[0])).resolves.toEqual({ status: "invalid" });
+    expect(filterSafeOrders(listed.page.items, { keyword: "SKU", provider: "wechat", status: "paid" })).toHaveLength(1);
+    expect(filterSafeOrders(listed.page.items, { keyword: "张三", provider: "all", status: "" })).toHaveLength(0);
+    const local = await loadLocalRefunds(transport(200, page(), 200, detail(), 200, refundPage()));
+    if (local.status !== "loaded") throw new Error("expected refunds");
+    expect(filterSafeRefunds(local.page.items, { keyword: "M-1", provider: "wechat", status: "pending_external_gate" })).toHaveLength(1);
   });
 
   it("fails closed for all local refund DTO, page, and external-effect contract drift", async () => {

@@ -6,6 +6,7 @@ import {
   OrdersPage,
   canReadOrders,
   startOrderDetailLoad,
+  startOrderItemsLoad,
   startLocalRefundLoad,
   startOrdersLoad,
   type LocalRefundViewState,
@@ -29,6 +30,18 @@ function detail(extra: Record<string, unknown> = {}) {
   };
 }
 
+function itemSnapshot(extra: Record<string, unknown> = {}) {
+  return {
+    items: [{
+      created_at: "2026-08-19T00:00:00Z", merchant_order_no: "M-1", out_trade_no: "M-1",
+      order_no: "M-1", platform_transaction_no: "WX-1", transaction_id: "WX-1", payer_name: "张三",
+      mobile: "13800000000", product_code: "SKU-1", product_name: "商品", amount_yuan: "19.90",
+      currency: "CNY", status: "paid", status_label: "已支付", provider: "wechat", provider_label: "微信支付",
+      detail_url: "/api/admin/orders/M-1", ...extra,
+    }],
+  };
+}
+
 const refunds = {
   items: [{
     id: 23, orderID: 17, provider: "wechat" as const, orderNo: "M-1", transactionID: "WX-1",
@@ -45,8 +58,9 @@ function client(
   response: () => Promise<TransportResponse>,
   detailResponse: () => Promise<TransportResponse> = async () => ({ status: 200, data: detail() }),
   refundResponse: () => Promise<TransportResponse> = async () => ({ status: 200, data: {} }),
+  itemResponse: () => Promise<TransportResponse> = async () => ({ status: 200, data: itemSnapshot() }),
 ): OrdersTransport {
-  return { list: vi.fn(response), detail: vi.fn(detailResponse), refunds: vi.fn(refundResponse) } as unknown as OrdersTransport;
+  return { list: vi.fn(response), detail: vi.fn(detailResponse), items: vi.fn(itemResponse), refunds: vi.fn(refundResponse) } as unknown as OrdersTransport;
 }
 
 describe("order overview UI boundary", () => {
@@ -55,8 +69,8 @@ describe("order overview UI boundary", () => {
     const html = renderToStaticMarkup(<OrdersContent state={state} detail={{ kind: "idle" }} refunds={{ kind: "loading" }} onLoad={vi.fn()} onLoadDetail={vi.fn()} onLoadRefunds={vi.fn()} />);
     expect(html).toContain("订单号");
     expect(html).toContain("M-1");
-    expect(html).toContain("张三");
-    expect(html).toContain("13800000000");
+    expect(html).not.toContain("张三");
+    expect(html).not.toContain("13800000000");
     expect(html).not.toContain("detail_url");
     expect(html).not.toContain("external_userid");
     expect(html).not.toContain("transaction_id");
@@ -78,13 +92,32 @@ describe("order overview UI boundary", () => {
       />,
     );
     expect(html).toContain("本地退款意图历史");
-    expect(html).toContain("rfd_provider-1");
+    expect(html).not.toContain("rfd_provider-1");
     expect(html).toContain("本地外效状态");
     expect(html).toContain("不代表支付渠道已执行、送达或退款成功");
     expect(html).not.toContain("transaction_id");
+    expect(html).not.toContain("重复支付");
     expect(html).not.toContain("退款申请");
     expect(html).not.toContain("重试退款");
     expect(html).not.toContain("<a");
+  });
+
+  it("renders the local product snapshot without retaining identity or provider metadata", () => {
+    const html = renderToStaticMarkup(
+      <OrdersContent
+        state={{ kind: "ready", page }}
+        detail={{ kind: "idle" }}
+        items={{ kind: "ready", item: { orderNo: "M-1", provider: "wechat", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", createdAt: "2026-08-19T00:00:00Z" } }}
+        refunds={{ kind: "loading" }}
+        onLoad={vi.fn()} onLoadDetail={vi.fn()} onLoadItems={vi.fn()} onLoadRefunds={vi.fn()}
+      />,
+    );
+    expect(html).toContain("本地购买商品项");
+    expect(html).toContain("商品项仅为已持久化的本地购买快照");
+    expect(html).not.toContain("张三");
+    expect(html).not.toContain("13800000000");
+    expect(html).not.toContain("external_userid");
+    expect(html).not.toContain("detail_url");
   });
 
   it("keeps the previous button enabled when offset 50 returns to offset 0", () => {
@@ -183,7 +216,7 @@ describe("local order detail transition", () => {
   function controller(
     role: "admin" | "ops" | "sales",
     transport: OrdersTransport,
-    previous = undefined as undefined | { readonly id: number; readonly orderNo: string; readonly provider: "wechat"; readonly payerName: string; readonly mobile: string; readonly productCode: string; readonly productName: string; readonly amountYuan: string; readonly currency: string; readonly statusLabel: string; readonly providerLabel: string; readonly createdAt: string; readonly refundableAmountTotal: number },
+    previous = undefined as undefined | { readonly id: number; readonly orderNo: string; readonly provider: "wechat"; readonly productCode: string; readonly productName: string; readonly amountYuan: string; readonly currency: string; readonly statusLabel: string; readonly providerLabel: string; readonly createdAt: string; readonly refundableAmountTotal: number },
   ) {
     return {
       role,
@@ -208,7 +241,7 @@ describe("local order detail transition", () => {
     expect(state.setState).toHaveBeenLastCalledWith({
       kind: "ready",
       detail: {
-        id: 17, orderNo: "M-1", provider: "wechat", payerName: "张三", mobile: "13800000000",
+        id: 17, orderNo: "M-1", provider: "wechat",
         productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY",
         statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z",
         refundableAmountTotal: 1990,
@@ -268,7 +301,7 @@ describe("local order detail transition", () => {
 
   it("retains a verified same-order detail on failure and calls back on 401", async () => {
     const previous = {
-      id: 17, orderNo: "M-1", provider: "wechat" as const, payerName: "张三", mobile: "13800000000",
+      id: 17, orderNo: "M-1", provider: "wechat" as const,
       productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", statusLabel: "已支付",
       providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z", refundableAmountTotal: 1990,
     };
@@ -287,7 +320,7 @@ describe("local order detail transition", () => {
     const detailState: OrderDetailViewState = {
       kind: "ready",
       detail: {
-        id: 17, orderNo: "M-1", provider: "wechat", payerName: "张三", mobile: "13800000000",
+        id: 17, orderNo: "M-1", provider: "wechat",
         productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", statusLabel: "已支付",
         providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z", refundableAmountTotal: 1990,
       },
@@ -299,6 +332,35 @@ describe("local order detail transition", () => {
     expect(html).not.toContain("external_userid");
     expect(html).not.toContain("<a");
     expect(html).not.toContain("退款申请");
+  });
+});
+
+describe("local purchased-product transition", () => {
+  it.each(["admin", "ops"] as const)("issues one same-origin item GET for %s", async (role) => {
+    const transport = client(async () => ({ status: 200, data: { items: [], total: 0, limit: 50, has_more: false } }));
+    const state = {
+      role, item: page.items[0], transport, generation: { current: 0 },
+      inFlight: { current: new Map<string, symbol>() }, verified: { current: undefined }, setState: vi.fn(),
+    };
+    await startOrderItemsLoad(state);
+    expect(transport.items).toHaveBeenCalledWith("M-1", { provider: "wechat" }, { credentials: "same-origin" });
+    expect(state.setState).toHaveBeenLastCalledWith({
+      kind: "ready", item: { orderNo: "M-1", provider: "wechat", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", createdAt: "2026-08-19T00:00:00Z" },
+    });
+  });
+
+  it("keeps sales fail-closed and preserves a verified snapshot on a 401", async () => {
+    const salesTransport = client(async () => ({ status: 200, data: {} }));
+    const sales = { role: "sales" as const, item: page.items[0], transport: salesTransport, generation: { current: 0 }, inFlight: { current: new Map<string, symbol>() }, verified: { current: undefined }, setState: vi.fn() };
+    expect(startOrderItemsLoad(sales)).toBeUndefined();
+    expect(salesTransport.items).not.toHaveBeenCalled();
+
+    const onUnauthenticated = vi.fn();
+    const previous = { orderNo: "M-1", provider: "wechat" as const, productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", createdAt: "2026-08-19T00:00:00Z" };
+    const admin = { role: "admin" as const, item: page.items[0], transport: client(async () => ({ status: 200, data: {} }), async () => ({ status: 200, data: detail() }), async () => ({ status: 200, data: {} }), async () => ({ status: 401, data: {} })), generation: { current: 0 }, inFlight: { current: new Map<string, symbol>() }, verified: { current: previous }, setState: vi.fn(), onUnauthenticated };
+    await startOrderItemsLoad(admin);
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(admin.setState).toHaveBeenLastCalledWith({ kind: "error", orderNo: "M-1", failure: "unauthenticated", previous });
   });
 });
 
@@ -341,7 +403,9 @@ describe("local refund-history transition", () => {
       { provider: "all", limit: 50, offset: 0 },
       { credentials: "same-origin" },
     );
-    expect(state.setState).toHaveBeenLastCalledWith({ kind: "ready", page: refunds });
+    expect(state.setState).toHaveBeenLastCalledWith({ kind: "ready", page: {
+      items: [{ id: 23, provider: "wechat", orderNo: "M-1", refundAmountTotal: 1990, currency: "CNY", status: "completed", externalEffectState: "completed", createdAt: "2026-08-19T00:00:00Z" }], total: 1, offset: 0, hasMore: false,
+    } });
   });
 
   it("keeps sales fail-closed with no refund transport call", () => {
@@ -443,7 +507,9 @@ describe("local refund-history transition", () => {
       },
     });
     await second;
-    expect(setStateB).toHaveBeenLastCalledWith({ kind: "ready", page: refunds });
+    expect(setStateB).toHaveBeenLastCalledWith({ kind: "ready", page: {
+      items: [{ id: 23, provider: "wechat", orderNo: "M-1", refundAmountTotal: 1990, currency: "CNY", status: "completed", externalEffectState: "completed", createdAt: "2026-08-19T00:00:00Z" }], total: 1, offset: 0, hasMore: false,
+    } });
     expect(inFlight.current).toBeUndefined();
   });
 });
