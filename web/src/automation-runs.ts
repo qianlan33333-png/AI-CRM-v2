@@ -1,4 +1,5 @@
 import {
+  getLegacyInternalEvent,
   listAutomationTriggerRuns,
   type ListAutomationTriggerRunsParams,
 } from "./api/generated/health";
@@ -28,6 +29,32 @@ export interface AutomationRunsPage {
   readonly pageSize: number;
 }
 
+export type AutomationSourceEventConsumer =
+  | "automation.tag-trigger.v1"
+  | "stats.tag-applied.v1";
+export type AutomationSourceEventDeliveryStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "final_failed"
+  | "outcome_unknown";
+
+export interface AutomationSourceEventDelivery {
+  readonly consumer: AutomationSourceEventConsumer;
+  readonly status: AutomationSourceEventDeliveryStatus;
+  readonly attemptCount: number;
+  readonly completedAt: string | null;
+}
+
+export interface AutomationSourceEvent {
+  readonly eventID: number;
+  readonly eventType: "customer.tag_applied";
+  readonly occurredAt: string;
+  readonly dispatched: boolean;
+  readonly deliveries: readonly AutomationSourceEventDelivery[];
+  readonly observedAt: string;
+}
+
 export interface AutomationRunsTransportResponse {
   readonly status: number;
   readonly data: unknown;
@@ -40,12 +67,23 @@ async function generatedList(
   return listAutomationTriggerRuns(params, options);
 }
 
+async function generatedSourceEvent(
+  eventID: number,
+  options: RequestInit,
+): Promise<AutomationRunsTransportResponse> {
+  return getLegacyInternalEvent(String(eventID), options);
+}
+
 export interface AutomationRunsTransport {
   readonly list: typeof generatedList;
+  // Optional only to preserve existing injected list-only test transports;
+  // production always supplies the generated same-origin reader below.
+  readonly sourceEvent?: typeof generatedSourceEvent;
 }
 
 export const generatedAutomationRunsTransport: AutomationRunsTransport = {
   list: generatedList,
+  sourceEvent: generatedSourceEvent,
 };
 
 export type AutomationRunsFailure =
@@ -57,6 +95,17 @@ export type AutomationRunsFailure =
 export type AutomationRunsResult =
   | { readonly status: "loaded"; readonly page: AutomationRunsPage }
   | { readonly status: AutomationRunsFailure };
+
+export type AutomationSourceEventFailure =
+  | "unauthenticated"
+  | "forbidden"
+  | "not_found"
+  | "invalid"
+  | "unavailable";
+
+export type AutomationSourceEventResult =
+  | { readonly status: "loaded"; readonly sourceEvent: AutomationSourceEvent }
+  | { readonly status: AutomationSourceEventFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
   return (
@@ -103,6 +152,126 @@ function timestamp(value: unknown): value is string {
     date.getUTCMinutes() === minute &&
     date.getUTCSeconds() === second
   );
+}
+
+const SOURCE_EVENT_CONSUMERS: ReadonlySet<AutomationSourceEventConsumer> =
+  new Set(["automation.tag-trigger.v1", "stats.tag-applied.v1"]);
+const SOURCE_EVENT_DELIVERY_STATUSES: ReadonlySet<AutomationSourceEventDeliveryStatus> =
+  new Set([
+    "pending",
+    "processing",
+    "completed",
+    "final_failed",
+    "outcome_unknown",
+  ]);
+const MAX_INT32 = 2_147_483_647;
+
+function terminalSourceEventDelivery(
+  status: AutomationSourceEventDeliveryStatus,
+): boolean {
+  return (
+    status === "completed" ||
+    status === "final_failed" ||
+    status === "outcome_unknown"
+  );
+}
+
+function parseAutomationSourceEventDelivery(
+  value: unknown,
+): AutomationSourceEventDelivery | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["consumer", "status", "attempt_count", "completed_at"]) ||
+    typeof value.consumer !== "string" ||
+    !SOURCE_EVENT_CONSUMERS.has(value.consumer as AutomationSourceEventConsumer) ||
+    typeof value.status !== "string" ||
+    !SOURCE_EVENT_DELIVERY_STATUSES.has(
+      value.status as AutomationSourceEventDeliveryStatus,
+    ) ||
+    !nonnegative(value.attempt_count) ||
+    value.attempt_count > MAX_INT32 ||
+    (terminalSourceEventDelivery(
+      value.status as AutomationSourceEventDeliveryStatus,
+    )
+      ? !timestamp(value.completed_at)
+      : value.completed_at !== null)
+  ) {
+    return undefined;
+  }
+  return {
+    consumer: value.consumer as AutomationSourceEventConsumer,
+    status: value.status as AutomationSourceEventDeliveryStatus,
+    attemptCount: value.attempt_count,
+    completedAt: terminalSourceEventDelivery(
+      value.status as AutomationSourceEventDeliveryStatus,
+    )
+      ? (value.completed_at as string)
+      : null,
+  };
+}
+
+export function parseAutomationSourceEvent(
+  value: unknown,
+  expectedEventID: number,
+): AutomationSourceEvent | undefined {
+  if (
+    !positive(expectedEventID) ||
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "item",
+      "observed_at",
+      "registry_id",
+      "source_status",
+      "delivery_observation_available",
+      "external_delivery",
+      "route_owner",
+      "real_external_call_executed",
+    ]) ||
+    value.ok !== true ||
+    !record(value.item) ||
+    !exact(value.item, [
+      "event_id",
+      "event_type",
+      "occurred_at",
+      "dispatched",
+      "deliveries",
+    ]) ||
+    value.item.event_id !== expectedEventID ||
+    value.item.event_type !== "customer.tag_applied" ||
+    !timestamp(value.item.occurred_at) ||
+    typeof value.item.dispatched !== "boolean" ||
+    !Array.isArray(value.item.deliveries) ||
+    value.item.deliveries.length > SOURCE_EVENT_CONSUMERS.size ||
+    !timestamp(value.observed_at) ||
+    value.registry_id !== "v2-internal-events.v1" ||
+    value.source_status !== "local_read_model" ||
+    value.delivery_observation_available !== true ||
+    value.external_delivery !== "unknown" ||
+    value.route_owner !== "ai_crm_next" ||
+    value.real_external_call_executed !== false
+  ) {
+    return undefined;
+  }
+  const deliveries = value.item.deliveries.map(parseAutomationSourceEventDelivery);
+  if (
+    deliveries.includes(undefined) ||
+    new Set(
+      (deliveries as readonly AutomationSourceEventDelivery[]).map(
+        (delivery) => delivery.consumer,
+      ),
+    ).size !== deliveries.length
+  ) {
+    return undefined;
+  }
+  return {
+    eventID: expectedEventID,
+    eventType: "customer.tag_applied",
+    occurredAt: value.item.occurred_at,
+    dispatched: value.item.dispatched,
+    deliveries: deliveries as readonly AutomationSourceEventDelivery[],
+    observedAt: value.observed_at,
+  };
 }
 
 export function parseAutomationRun(value: unknown): AutomationRunRecord | undefined {
@@ -199,6 +368,14 @@ function failure(status: number): AutomationRunsFailure {
   return "unavailable";
 }
 
+function sourceEventFailure(status: number): AutomationSourceEventFailure {
+  if (status === 401) return "unauthenticated";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status === 400) return "invalid";
+  return "unavailable";
+}
+
 export async function loadAutomationRuns(
   transport: AutomationRunsTransport,
   page = 1,
@@ -215,6 +392,46 @@ export async function loadAutomationRuns(
   } catch {
     return { status: "unavailable" };
   }
+}
+
+export async function loadAutomationSourceEvent(
+  transport: AutomationRunsTransport,
+  eventID: number,
+): Promise<AutomationSourceEventResult> {
+  if (!positive(eventID)) return { status: "invalid" };
+  if (!transport.sourceEvent) return { status: "unavailable" };
+  try {
+    const response = await transport.sourceEvent(eventID, {
+      credentials: "same-origin",
+    });
+    if (response.status !== 200) {
+      return { status: sourceEventFailure(response.status) };
+    }
+    const sourceEvent = parseAutomationSourceEvent(response.data, eventID);
+    return sourceEvent
+      ? { status: "loaded", sourceEvent }
+      : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+// React does not commit a disabled button between two synchronous clicks. The
+// ref gate prevents a second local GET while the first source-event read is
+// still pending; it never retries or mutates state on its own.
+export function startAutomationSourceEventRead(
+  lock: { current: boolean },
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  if (lock.current) return undefined;
+  lock.current = true;
+  return (async () => {
+    try {
+      await execute();
+    } finally {
+      lock.current = false;
+    }
+  })();
 }
 
 export function previousAutomationRunsPage(
