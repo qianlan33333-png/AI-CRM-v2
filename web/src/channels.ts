@@ -1,4 +1,7 @@
-import { listLegacyChannels } from "./api/generated/health";
+import {
+  listLegacyChannels,
+  updateLegacyChannel,
+} from "./api/generated/health";
 
 export type ChannelsRole = "admin" | "ops" | "sales";
 export type ChannelStatus = "active" | "inactive" | "archived";
@@ -16,13 +19,18 @@ export interface ChannelListItem {
 }
 
 export type ChannelsFailure =
-  | "unauthenticated"
-  | "forbidden"
-  | "unavailable"
-  | "invalid";
+  "unauthenticated" | "forbidden" | "unavailable" | "invalid";
 
 export type ChannelListResult =
   | { readonly status: "loaded"; readonly items: readonly ChannelListItem[] }
+  | { readonly status: ChannelsFailure };
+
+export type ChannelStatusUpdateResult =
+  | {
+      readonly status: "confirmed";
+      readonly items: readonly ChannelListItem[];
+    }
+  | { readonly status: "unknown" }
   | { readonly status: ChannelsFailure };
 
 const channelListParams = { limit: 300, include_archived: true } as const;
@@ -34,19 +42,36 @@ async function generatedRead(options?: RequestInit) {
   });
 }
 
+async function generatedWrite(
+  channelID: number,
+  status: ChannelStatus,
+  options?: RequestInit,
+) {
+  return updateLegacyChannel(
+    channelID,
+    { status },
+    { ...options, credentials: "same-origin" },
+  );
+}
+
 export interface ChannelsTransport {
   readonly read: typeof generatedRead;
+  readonly write: typeof generatedWrite;
 }
 
 export const generatedChannelsTransport: ChannelsTransport = {
   read: generatedRead,
+  write: generatedWrite,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function exact(value: Record<string, unknown>, keys: readonly string[]): boolean {
+function exact(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
   const actual = Object.keys(value);
   return (
     actual.length === keys.length && actual.every((key) => keys.includes(key))
@@ -154,8 +179,8 @@ export function parseChannelList(
   const items = value.channels.map(parseChannel);
   if (
     items.includes(undefined) ||
-    new Set((items as readonly ChannelListItem[]).map((item) => item.id)).size !==
-      items.length
+    new Set((items as readonly ChannelListItem[]).map((item) => item.id))
+      .size !== items.length
   ) {
     return undefined;
   }
@@ -215,6 +240,78 @@ export async function loadChannels(
   }
   const items = parseChannelList(response.data);
   return items ? { status: "loaded", items } : { status: "invalid" };
+}
+
+export function newChannelStatusIdempotencyKey(
+  source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
+): string | undefined {
+  try {
+    const uuid = source?.randomUUID();
+    if (
+      typeof uuid !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        uuid,
+      )
+    ) {
+      return undefined;
+    }
+    return `channel-status:${uuid}`;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function updateChannelStatus(
+  transport: ChannelsTransport,
+  channelID: number,
+  status: ChannelStatus,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<ChannelStatusUpdateResult> {
+  if (
+    !positiveInteger(channelID) ||
+    !/^[A-Za-z0-9_-]{43}$/.test(csrfToken) ||
+    (status !== "active" && status !== "inactive" && status !== "archived") ||
+    idempotencyKey.length < 16 ||
+    idempotencyKey.length > 128 ||
+    idempotencyKey.trim() !== idempotencyKey
+  ) {
+    return { status: "invalid" };
+  }
+
+  let response: Awaited<ReturnType<ChannelsTransport["write"]>>;
+  try {
+    response = await transport.write(channelID, status, {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Idempotency-Key": idempotencyKey,
+      },
+    });
+  } catch {
+    return { status: "unknown" };
+  }
+
+  if (response.status !== 200) {
+    const result = failure(response.status, response.data);
+    return result === "unauthenticated"
+      ? { status: result }
+      : { status: "unknown" };
+  }
+
+  // A successful mutation response includes an unfrozen legacy projection.
+  // Do not read it; the strict local list is the only confirmation source.
+  const reloaded = await loadChannels(transport);
+  if (reloaded.status !== "loaded") {
+    return reloaded.status === "unauthenticated"
+      ? reloaded
+      : { status: "unknown" };
+  }
+  return reloaded.items.some(
+    (item) => item.id === channelID && item.status === status,
+  )
+    ? { status: "confirmed", items: reloaded.items }
+    : { status: "unknown" };
 }
 
 export function filterChannels(
