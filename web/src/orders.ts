@@ -1,14 +1,26 @@
 import {
+  getLegacyOrder,
   listLegacyOrders,
+  type GetLegacyOrderParams,
   type ListLegacyOrdersParams,
 } from "./api/generated/health";
 
 export type OrdersRole = "admin" | "ops" | "sales";
 export const ORDER_PAGE_SIZE = 50;
 const MAXIMUM_OFFSET = 1_000_000;
+export type OrderProvider = "wechat" | "alipay" | "wechat_shop";
+export type OrderIdentityKind = "userid" | "external_userid" | "unionid";
 
 export interface OrderListItem {
   readonly orderNo: string;
+  readonly merchantOrderNo: string;
+  readonly outTradeNo: string;
+  readonly platformTransactionNo: string;
+  readonly transactionId: string;
+  readonly detailUrl: string;
+  readonly identity?: Readonly<{ readonly kind: OrderIdentityKind; readonly value: string }>;
+  readonly provider: OrderProvider;
+  readonly status: string;
   readonly payerName: string;
   readonly mobile: string;
   readonly productCode: string;
@@ -32,6 +44,22 @@ export interface OrdersTransportResponse {
   readonly data: unknown;
 }
 
+export interface OrderDetail {
+  readonly id: number;
+  readonly orderNo: string;
+  readonly provider: OrderProvider;
+  readonly payerName: string;
+  readonly mobile: string;
+  readonly productCode: string;
+  readonly productName: string;
+  readonly amountYuan: string;
+  readonly currency: string;
+  readonly statusLabel: string;
+  readonly providerLabel: string;
+  readonly createdAt: string;
+  readonly refundableAmountTotal: number;
+}
+
 async function generatedList(
   params: ListLegacyOrdersParams,
   options: RequestInit,
@@ -39,11 +67,23 @@ async function generatedList(
   return listLegacyOrders(params, options);
 }
 
-export interface OrdersTransport {
-  readonly list: typeof generatedList;
+async function generatedDetail(
+  orderNo: string,
+  params: GetLegacyOrderParams,
+  options: RequestInit,
+): Promise<OrdersTransportResponse> {
+  return getLegacyOrder(orderNo, params, options);
 }
 
-export const generatedOrdersTransport: OrdersTransport = { list: generatedList };
+export interface OrdersTransport {
+  readonly list: typeof generatedList;
+  readonly detail: typeof generatedDetail;
+}
+
+export const generatedOrdersTransport: OrdersTransport = {
+  list: generatedList,
+  detail: generatedDetail,
+};
 
 export type OrdersFailure =
   | "unauthenticated"
@@ -52,6 +92,9 @@ export type OrdersFailure =
   | "unavailable";
 export type OrdersResult =
   | { readonly status: "loaded"; readonly page: OrderListPage }
+  | { readonly status: OrdersFailure };
+export type OrderDetailResult =
+  | { readonly status: "loaded"; readonly detail: OrderDetail }
   | { readonly status: OrdersFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -111,6 +154,20 @@ function safeDetailPath(value: unknown): value is string {
   );
 }
 
+function provider(value: unknown): value is OrderProvider {
+  return value === "wechat" || value === "alipay" || value === "wechat_shop";
+}
+
+function amountMinor(value: string): bigint | undefined {
+  const match = /^(?:0|[1-9]\d*)\.(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  try {
+    return BigInt(value.slice(0, -3)) * 100n + BigInt(match[1]);
+  } catch {
+    return undefined;
+  }
+}
+
 const REQUIRED_ITEM_KEYS = [
   "created_at", "merchant_order_no", "out_trade_no", "order_no",
   "platform_transaction_no", "transaction_id", "payer_name", "mobile",
@@ -142,12 +199,23 @@ function parseOrderItem(value: unknown): OrderListItem | undefined {
     typeof value.currency !== "string" || !/^[A-Z]{3}$/.test(value.currency) ||
     !text(value.status, 80, true) ||
     !text(value.status_label, 80, true) ||
-    (value.provider !== "wechat" && value.provider !== "alipay" && value.provider !== "wechat_shop") ||
+    !provider(value.provider) ||
     !text(value.provider_label, 80, true) ||
     !safeDetailPath(value.detail_url)
   ) return undefined;
+  const identity = identityKeys.length === 1
+    ? { kind: identityKeys[0] as OrderIdentityKind, value: value[identityKeys[0]] as string }
+    : undefined;
   return {
     orderNo: value.order_no,
+    merchantOrderNo: value.merchant_order_no,
+    outTradeNo: value.out_trade_no,
+    platformTransactionNo: value.platform_transaction_no,
+    transactionId: value.transaction_id,
+    detailUrl: value.detail_url,
+    identity,
+    provider: value.provider,
+    status: value.status,
     payerName: value.payer_name,
     mobile: value.mobile,
     productCode: value.product_code,
@@ -157,6 +225,78 @@ function parseOrderItem(value: unknown): OrderListItem | undefined {
     statusLabel: value.status_label,
     providerLabel: value.provider_label,
     createdAt: value.created_at,
+  };
+}
+
+const REQUIRED_DETAIL_KEYS = [
+  ...REQUIRED_ITEM_KEYS,
+  "id",
+  "refundable_amount_total",
+] as const;
+const DETAIL_KEYS: readonly string[] = [
+  ...REQUIRED_DETAIL_KEYS,
+  ...OPTIONAL_IDENTITY_KEYS,
+];
+
+function parseOrderDetail(
+  value: unknown,
+  expected: OrderListItem,
+): OrderDetail | undefined {
+  if (
+    !record(value) ||
+    !Object.keys(value).every((key) => DETAIL_KEYS.includes(key)) ||
+    !REQUIRED_DETAIL_KEYS.every((key) => key in value)
+  ) return undefined;
+  const itemProjection: Record<string, unknown> = {};
+  for (const key of ITEM_KEYS) {
+    if (key in value) itemProjection[key] = value[key];
+  }
+  const item = parseOrderItem(itemProjection);
+  const total = typeof value.amount_yuan === "string"
+    ? amountMinor(value.amount_yuan)
+    : undefined;
+  if (
+    !item ||
+    typeof value.id !== "number" || !Number.isSafeInteger(value.id) || value.id < 1 ||
+    !nonnegative(value.refundable_amount_total) ||
+    total === undefined || BigInt(value.refundable_amount_total) > total ||
+    value.merchant_order_no !== expected.orderNo ||
+    value.out_trade_no !== expected.orderNo ||
+    value.order_no !== expected.orderNo ||
+    item.orderNo !== expected.orderNo ||
+    item.merchantOrderNo !== expected.merchantOrderNo ||
+    item.outTradeNo !== expected.outTradeNo ||
+    item.platformTransactionNo !== expected.platformTransactionNo ||
+    item.transactionId !== expected.transactionId ||
+    item.detailUrl !== expected.detailUrl ||
+    item.identity?.kind !== expected.identity?.kind ||
+    item.identity?.value !== expected.identity?.value ||
+    item.provider !== expected.provider ||
+    item.status !== expected.status ||
+    item.payerName !== expected.payerName ||
+    item.mobile !== expected.mobile ||
+    item.productCode !== expected.productCode ||
+    item.productName !== expected.productName ||
+    item.amountYuan !== expected.amountYuan ||
+    item.currency !== expected.currency ||
+    item.statusLabel !== expected.statusLabel ||
+    item.providerLabel !== expected.providerLabel ||
+    item.createdAt !== expected.createdAt
+  ) return undefined;
+  return {
+    id: value.id,
+    orderNo: item.orderNo,
+    provider: item.provider,
+    payerName: item.payerName,
+    mobile: item.mobile,
+    productCode: item.productCode,
+    productName: item.productName,
+    amountYuan: item.amountYuan,
+    currency: item.currency,
+    statusLabel: item.statusLabel,
+    providerLabel: item.providerLabel,
+    createdAt: item.createdAt,
+    refundableAmountTotal: value.refundable_amount_total,
   };
 }
 
@@ -196,6 +336,24 @@ export async function loadOrders(
     if (response.status !== 200) return { status: failure(response.status) };
     const page = parseOrderPage(response.data, offset);
     return page ? { status: "loaded", page } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadOrderDetail(
+  transport: OrdersTransport,
+  item: OrderListItem,
+): Promise<OrderDetailResult> {
+  try {
+    const response = await transport.detail(
+      item.orderNo,
+      { provider: item.provider },
+      { credentials: "same-origin" },
+    );
+    if (response.status !== 200) return { status: failure(response.status) };
+    const detail = parseOrderDetail(response.data, item);
+    return detail ? { status: "loaded", detail } : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }
