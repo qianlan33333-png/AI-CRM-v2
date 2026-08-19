@@ -3,12 +3,14 @@ import {
   copyCoupon,
   filterCoupons,
   loadCouponClaims,
+  loadCouponShare,
   loadCoupons,
   newCouponCopyIdempotencyKey,
   type CouponsTransport,
 } from "./coupons";
 import {
   copyLegacyCoupon,
+  getLegacyCouponShare,
   listLegacyCouponClaims,
 } from "./api/generated/health";
 
@@ -83,15 +85,21 @@ function claimsEnvelope(
   return { ok: true, items, total, limit: 50, offset };
 }
 
+function shareEnvelope(extra: Record<string, unknown> = {}) {
+  return { ok: true, public_slug: "c-7", url: "/c/c-7", ...extra };
+}
+
 function transport(
   listData: unknown = envelope(),
   copyData: unknown = copiedEnvelope(),
   claimsData: unknown = claimsEnvelope(),
+  shareData: unknown = shareEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
     copy: vi.fn(async () => ({ status: 200, data: copyData })),
     claims: vi.fn(async () => ({ status: 200, data: claimsData })),
+    share: vi.fn(async () => ({ status: 200, data: shareData })),
   } as unknown as CouponsTransport;
 }
 
@@ -218,6 +226,7 @@ describe("coupon list and copy local boundary", () => {
       item: {
         id: 8,
         name: "满减券 副本",
+        status: "draft",
         availability: "draft",
         createdAt: "2026-08-19T01:02:04Z",
         updatedAt: "2026-08-19T01:02:04Z",
@@ -318,5 +327,77 @@ describe("coupon list and copy local boundary", () => {
       status: "invalid",
     });
     expect(invalidOffset.claims).not.toHaveBeenCalled();
+  });
+
+  it("reads exactly one same-origin local share URL for a published coupon", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(shareEnvelope()), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const item = {
+      id: 7,
+      name: "满减券",
+      status: "published" as const,
+      availability: "active" as const,
+      createdAt: "2026-08-19T00:00:00Z",
+      updatedAt: "2026-08-19T01:02:03Z",
+    };
+    await expect(
+      loadCouponShare(
+        {
+          list: vi.fn(),
+          copy: vi.fn(),
+          claims: vi.fn(),
+          share: getLegacyCouponShare,
+        } as unknown as CouponsTransport,
+        item,
+      ),
+    ).resolves.toEqual({
+      status: "loaded",
+      share: { publicSlug: "c-7", url: "/c/c-7" },
+    });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/coupons/7/share",
+      expect.objectContaining({ credentials: "same-origin", method: "GET" }),
+    );
+  });
+
+  it("rejects non-published coupons and every non-local share response without retry", async () => {
+    const published = {
+      id: 7,
+      name: "满减券",
+      status: "published" as const,
+      availability: "active" as const,
+      createdAt: "2026-08-19T00:00:00Z",
+      updatedAt: "2026-08-19T01:02:03Z",
+    };
+    const draft = { ...published, status: "draft" as const };
+    const client = transport();
+    await expect(loadCouponShare(client, draft)).resolves.toEqual({
+      status: "invalid",
+    });
+    expect(client.share).not.toHaveBeenCalled();
+
+    for (const response of [
+      shareEnvelope({ url: "https://outside.example/c/c-7" }),
+      shareEnvelope({ public_slug: "c-8" }),
+      shareEnvelope({ unexpected: true }),
+    ]) {
+      await expect(
+        loadCouponShare(
+          transport(envelope(), copiedEnvelope(), claimsEnvelope(), response),
+          published,
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    const unavailable = transport();
+    vi.mocked(unavailable.share).mockRejectedValue(new Error("network"));
+    await expect(loadCouponShare(unavailable, published)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(unavailable.share).toHaveBeenCalledOnce();
   });
 });

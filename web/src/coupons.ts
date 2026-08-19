@@ -1,5 +1,6 @@
 import {
   copyLegacyCoupon,
+  getLegacyCouponShare,
   listLegacyCouponClaims,
   listLegacyCoupons,
 } from "./api/generated/health";
@@ -14,10 +15,12 @@ export type CouponAvailability =
   | "stopped"
   | "archived";
 export type CouponAvailabilityFilter = "all" | CouponAvailability;
+export type CouponStatus = "draft" | "published" | "stopped" | "archived";
 
 export interface CouponListItem {
   readonly id: number;
   readonly name: string;
+  readonly status: CouponStatus;
   readonly availability: CouponAvailability;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -27,6 +30,11 @@ export interface CouponClaimItem {
   readonly id: number;
   readonly claimRef: string;
   readonly claimedAt: string;
+}
+
+export interface CouponShare {
+  readonly publicSlug: string;
+  readonly url: string;
 }
 
 export type CouponsFailure =
@@ -50,6 +58,9 @@ export type CouponClaimsResult =
       readonly total: number;
       readonly offset: number;
     }
+  | { readonly status: CouponsFailure };
+export type CouponShareResult =
+  | { readonly status: "loaded"; readonly share: CouponShare }
   | { readonly status: CouponsFailure };
 
 const couponPageSize = 200;
@@ -78,16 +89,25 @@ async function generatedClaims(
   });
 }
 
+async function generatedShare(couponID: number, options?: RequestInit) {
+  return getLegacyCouponShare(couponID, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
 export interface CouponsTransport {
   readonly list: typeof generatedList;
   readonly copy: typeof generatedCopy;
   readonly claims: typeof generatedClaims;
+  readonly share: typeof generatedShare;
 }
 
 export const generatedCouponsTransport: CouponsTransport = {
   list: generatedList,
   copy: generatedCopy,
   claims: generatedClaims,
+  share: generatedShare,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -260,6 +280,7 @@ function coupon(value: unknown): CouponListItem | undefined {
   return {
     id: value.id,
     name: value.name,
+    status: value.status,
     availability: availabilityStatus,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
@@ -295,6 +316,7 @@ function sameItems(
       (item, index) =>
         item.id === right[index]?.id &&
         item.name === right[index]?.name &&
+        item.status === right[index]?.status &&
         item.availability === right[index]?.availability &&
         item.createdAt === right[index]?.createdAt &&
         item.updatedAt === right[index]?.updatedAt,
@@ -486,6 +508,35 @@ export async function loadCouponClaims(
     return { status: failure(response.status, response.data) };
   const page = couponClaimsPage(response.data, offset);
   return page ? { status: "loaded", ...page, offset } : { status: "invalid" };
+}
+
+export async function loadCouponShare(
+  transport: CouponsTransport,
+  item: CouponListItem,
+): Promise<CouponShareResult> {
+  if (!positive(item.id) || item.status !== "published")
+    return { status: "invalid" };
+  let response: Awaited<ReturnType<CouponsTransport["share"]>>;
+  try {
+    response = await transport.share(item.id, { credentials: "same-origin" });
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status !== 200)
+    return { status: failure(response.status, response.data) };
+  const data = response.data;
+  const expectedSlug = `c-${item.id}`;
+  const expectedURL = `/c/${expectedSlug}`;
+  return record(data) &&
+    exact(data, ["ok", "public_slug", "url"]) &&
+    data.ok === true &&
+    data.public_slug === expectedSlug &&
+    data.url === expectedURL
+    ? {
+        status: "loaded",
+        share: { publicSlug: expectedSlug, url: expectedURL },
+      }
+    : { status: "invalid" };
 }
 
 export function newCouponCopyIdempotencyKey(
