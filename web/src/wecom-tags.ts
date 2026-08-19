@@ -1,0 +1,348 @@
+import { listLegacyWecomTags } from "./api/generated/health";
+
+export type WecomTagsRole = "admin" | "ops" | "sales";
+export const WECOM_TAGS_PAGE_SIZE = 20;
+const WECOM_TAG_LIMIT = 1000;
+const MAX_WECOM_TAG_SORT_ORDER = 2_147_483_647;
+
+export interface WecomTag {
+  readonly id: number;
+  readonly groupID: number;
+  readonly groupName: string;
+  readonly name: string;
+  readonly sortOrder: number;
+}
+
+export interface WecomTagGroup {
+  readonly id: number;
+  readonly name: string;
+  readonly sortOrder: number;
+  readonly tags: readonly WecomTag[];
+}
+
+export interface WecomTagCatalog {
+  readonly totalTags: number;
+  readonly tagLimit: number;
+  readonly snapshotAt: string;
+  readonly groups: readonly WecomTagGroup[];
+  readonly tags: readonly WecomTag[];
+}
+
+export type WecomTagsFailure =
+  "unauthenticated" | "forbidden" | "unavailable" | "invalid";
+
+export type WecomTagCatalogResult =
+  | { readonly status: "loaded"; readonly catalog: WecomTagCatalog }
+  | { readonly status: WecomTagsFailure };
+
+async function generatedRead(options?: RequestInit) {
+  return listLegacyWecomTags({ credentials: "same-origin", ...options });
+}
+
+export interface WecomTagsTransport {
+  readonly read: typeof generatedRead;
+}
+
+export const generatedWecomTagsTransport: WecomTagsTransport = {
+  read: generatedRead,
+};
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function exact(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  const actual = Object.keys(value);
+  return (
+    actual.length === keys.length && actual.every((key) => keys.includes(key))
+  );
+}
+
+function nonnegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function positiveInteger(value: unknown): value is number {
+  return nonnegativeInteger(value) && value > 0;
+}
+
+function validSortOrder(value: unknown): value is number {
+  return nonnegativeInteger(value) && value <= MAX_WECOM_TAG_SORT_ORDER;
+}
+
+function frozenText(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    [...value].length <= 200 &&
+    value.trim() === value &&
+    !value.includes("\x00")
+  );
+}
+
+function frozenTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const parts = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/,
+  );
+  if (parts === null) return false;
+  const [year, month, day, hour, minute, second] = parts
+    .slice(1, 7)
+    .map(Number);
+  const offset = parts[7];
+  if (
+    hour > 23 ||
+    minute > 59 ||
+    second > 59 ||
+    (offset !== "Z" &&
+      (Number(offset.slice(1, 3)) > 23 || Number(offset.slice(4, 6)) > 59))
+  ) {
+    return false;
+  }
+  const calendar = new Date(0);
+  calendar.setUTCFullYear(year, month - 1, day);
+  calendar.setUTCHours(hour, minute, second, 0);
+  return (
+    calendar.getUTCFullYear() === year &&
+    calendar.getUTCMonth() === month - 1 &&
+    calendar.getUTCDate() === day &&
+    calendar.getUTCHours() === hour &&
+    calendar.getUTCMinutes() === minute &&
+    calendar.getUTCSeconds() === second &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
+function parseTag(value: unknown): WecomTag | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "tag_id",
+      "id",
+      "group_id",
+      "group_name",
+      "tag_name",
+      "name",
+      "sort_order",
+    ]) ||
+    !positiveInteger(value.tag_id) ||
+    value.id !== value.tag_id ||
+    !positiveInteger(value.group_id) ||
+    !frozenText(value.group_name) ||
+    !frozenText(value.tag_name) ||
+    value.name !== value.tag_name ||
+    !validSortOrder(value.sort_order)
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.tag_id,
+    groupID: value.group_id,
+    groupName: value.group_name,
+    name: value.tag_name,
+    sortOrder: value.sort_order,
+  };
+}
+
+function sameTags(
+  left: readonly WecomTag[],
+  right: readonly WecomTag[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (tag, index) =>
+        tag.id === right[index]?.id &&
+        tag.groupID === right[index]?.groupID &&
+        tag.groupName === right[index]?.groupName &&
+        tag.name === right[index]?.name &&
+        tag.sortOrder === right[index]?.sortOrder,
+    )
+  );
+}
+
+function parseGroup(value: unknown): WecomTagGroup | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["group_id", "group_name", "name", "sort_order", "tags"]) ||
+    !positiveInteger(value.group_id) ||
+    !frozenText(value.group_name) ||
+    value.name !== value.group_name ||
+    !validSortOrder(value.sort_order) ||
+    !Array.isArray(value.tags)
+  ) {
+    return undefined;
+  }
+  const tags = value.tags.map(parseTag);
+  if (
+    tags.includes(undefined) ||
+    (tags as readonly WecomTag[]).some(
+      (tag) =>
+        tag.groupID !== value.group_id || tag.groupName !== value.group_name,
+    )
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.group_id,
+    name: value.group_name,
+    sortOrder: value.sort_order,
+    tags: tags as readonly WecomTag[],
+  };
+}
+
+export function parseWecomTagCatalog(
+  value: unknown,
+): WecomTagCatalog | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "items",
+      "tags",
+      "groups",
+      "count",
+      "total_tags",
+      "tag_limit",
+      "synced_at",
+      "source_status",
+      "read_model_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+    ]) ||
+    value.ok !== true ||
+    !Array.isArray(value.items) ||
+    !Array.isArray(value.tags) ||
+    !Array.isArray(value.groups) ||
+    !nonnegativeInteger(value.count) ||
+    !nonnegativeInteger(value.total_tags) ||
+    value.tag_limit !== WECOM_TAG_LIMIT ||
+    value.total_tags > value.tag_limit ||
+    !frozenTimestamp(value.synced_at) ||
+    value.source_status !== "local_catalog" ||
+    value.read_model_status !== "ready" ||
+    value.route_owner !== "ai_crm_next" ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false ||
+    value.sync_executed !== false ||
+    value.fixture_used !== false
+  ) {
+    return undefined;
+  }
+
+  const groups = value.groups.map(parseGroup);
+  const tags = value.tags.map(parseTag);
+  const items = value.items.map(parseTag);
+  if (
+    groups.includes(undefined) ||
+    tags.includes(undefined) ||
+    items.includes(undefined) ||
+    value.count !== value.total_tags ||
+    value.total_tags !== tags.length ||
+    !sameTags(tags as readonly WecomTag[], items as readonly WecomTag[]) ||
+    new Set((groups as readonly WecomTagGroup[]).map((group) => group.id))
+      .size !== groups.length ||
+    new Set((tags as readonly WecomTag[]).map((tag) => tag.id)).size !==
+      tags.length ||
+    !sameTags(
+      (groups as readonly WecomTagGroup[]).flatMap((group) => group.tags),
+      tags as readonly WecomTag[],
+    )
+  ) {
+    return undefined;
+  }
+  return {
+    totalTags: value.total_tags,
+    tagLimit: value.tag_limit,
+    snapshotAt: value.synced_at,
+    groups: groups as readonly WecomTagGroup[],
+    tags: tags as readonly WecomTag[],
+  };
+}
+
+export async function loadWecomTagCatalog(
+  transport: WecomTagsTransport = generatedWecomTagsTransport,
+): Promise<WecomTagCatalogResult> {
+  let response: Awaited<ReturnType<WecomTagsTransport["read"]>>;
+  try {
+    response = await transport.read();
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status !== 200) return { status: "unavailable" };
+  const catalog = parseWecomTagCatalog(response.data);
+  return catalog ? { status: "loaded", catalog } : { status: "invalid" };
+}
+
+function matches(value: string, query: string): boolean {
+  return value.toLocaleLowerCase().includes(query);
+}
+
+export function filterWecomTagGroups(
+  catalog: WecomTagCatalog,
+  rawQuery: string,
+): readonly WecomTagGroup[] {
+  const query = rawQuery.trim().toLocaleLowerCase();
+  if (query === "") return catalog.groups;
+  return catalog.groups.flatMap((group) => {
+    if (matches(group.name, query)) return [group];
+    const tags = group.tags.filter(
+      (tag) => matches(tag.name, query) || String(tag.id).includes(query),
+    );
+    return tags.length === 0 ? [] : [{ ...group, tags }];
+  });
+}
+
+export function firstMatchingWecomTagGroupID(
+  groups: readonly WecomTagGroup[],
+): number | undefined {
+  return groups[0]?.id;
+}
+
+export function wecomTagSearchState(
+  catalog: WecomTagCatalog,
+  query: string,
+): {
+  readonly groups: readonly WecomTagGroup[];
+  readonly selectedGroupID: number | undefined;
+  readonly page: 0;
+} {
+  const groups = filterWecomTagGroups(catalog, query);
+  return {
+    groups,
+    selectedGroupID: firstMatchingWecomTagGroupID(groups),
+    page: 0,
+  };
+}
+
+export function wecomTagPageCount(tags: readonly WecomTag[]): number {
+  return Math.max(1, Math.ceil(tags.length / WECOM_TAGS_PAGE_SIZE));
+}
+
+export function wecomTagPage(
+  tags: readonly WecomTag[],
+  page: number,
+): readonly WecomTag[] {
+  const bounded = Math.min(Math.max(0, page), wecomTagPageCount(tags) - 1);
+  const start = bounded * WECOM_TAGS_PAGE_SIZE;
+  return tags.slice(start, start + WECOM_TAGS_PAGE_SIZE);
+}
+
+export function previousWecomTagPage(page: number): number {
+  return Math.max(0, page - 1);
+}
+
+export function nextWecomTagPage(
+  page: number,
+  tags: readonly WecomTag[],
+): number | undefined {
+  return page + 1 < wecomTagPageCount(tags) ? page + 1 : undefined;
+}

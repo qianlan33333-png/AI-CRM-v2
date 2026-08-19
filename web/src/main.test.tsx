@@ -7,6 +7,7 @@ import {
   IMAGE_LIBRARY_PATH,
   HXC_SENDER_PATH,
   QUESTIONNAIRE_LIST_PATH,
+  WECOM_TAGS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -25,6 +26,7 @@ import {
 } from "./main";
 import type { CustomerDetailTransport } from "./customer-detail";
 import type { ImageLibraryTransport } from "./image-library";
+import type { WecomTagsTransport } from "./wecom-tags";
 
 const adminSession = {
   status: "authenticated",
@@ -94,6 +96,11 @@ function imageLibraryTransport(): ImageLibraryTransport {
     facets: vi.fn(response),
     upload: vi.fn(response),
   } as unknown as ImageLibraryTransport;
+}
+
+function wecomTagsTransport(): WecomTagsTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { read: vi.fn(response) } as unknown as WecomTagsTransport;
 }
 
 describe("Web shell routes", () => {
@@ -170,6 +177,37 @@ describe("Web shell routes", () => {
     expect(client.facets).not.toHaveBeenCalled();
   });
 
+  it("renders the WeCom tags route for global admin and ops only", () => {
+    vi.stubGlobal("window", { location: { pathname: WECOM_TAGS_PATH } });
+    const client = wecomTagsTransport();
+    const admin = renderToStaticMarkup(
+      <App wecomTagsTransport={client} initialSession={adminSession} />,
+    );
+    expect(admin).toContain('<h1 id="app-title">企微标签目录</h1>');
+    expect(admin).toContain("正在读取企微标签目录。");
+    const ops = renderToStaticMarkup(
+      <App
+        wecomTagsTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 8, role: "ops" },
+        }}
+      />,
+    );
+    expect(ops).toContain("正在读取企微标签目录。");
+    const sales = renderToStaticMarkup(
+      <App
+        wecomTagsTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有企微标签目录访问权限。");
+    expect(client.read).not.toHaveBeenCalled();
+  });
+
   it("renders the questionnaire carrier route for admin and keeps non-admins fail-closed", () => {
     vi.stubGlobal("window", {
       location: { pathname: QUESTIONNAIRE_LIST_PATH },
@@ -200,7 +238,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(11);
+    expect(routes).toHaveLength(12);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -326,6 +364,7 @@ describe("Web shell routes", () => {
       "/admin/image-library",
       "/admin/hxc-send-config",
       "/admin/questionnaires",
+      "/admin/wecom-tags",
       "/settings",
     ]);
     expect(
@@ -338,6 +377,7 @@ describe("Web shell routes", () => {
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
       "/admin/image-library",
+      "/admin/wecom-tags",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -353,6 +393,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/miniprogram-library"');
     expect(html).toContain('href="/admin/image-library"');
     expect(html).toContain('href="/admin/questionnaires"');
+    expect(html).toContain('href="/admin/wecom-tags"');
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -385,10 +426,14 @@ describe("legacy admin path carrier", () => {
     expect(
       carrierPathname("/", `?legacy_admin_path=${QUESTIONNAIRE_LIST_PATH}`),
     ).toBe(QUESTIONNAIRE_LIST_PATH);
+    expect(carrierPathname("/", `?legacy_admin_path=${WECOM_TAGS_PATH}`)).toBe(
+      WECOM_TAGS_PATH,
+    );
 
     for (const search of [
-      "?legacy_admin_path=/admin/wecom-tags",
       "?legacy_admin_path=/admin/image-library",
+      "?legacy_admin_path=/admin/wecom-tags/extra",
+      "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,
       "?legacy_admin_path=https://evil.example",
@@ -424,7 +469,7 @@ describe("legacy admin path carrier", () => {
     );
   });
 
-  it("ignores any non-whitelist carrier value and keeps the overview route", () => {
+  it("lands on the WeCom tags page after a carrier refresh", () => {
     vi.stubGlobal("window", {
       location: {
         pathname: "/",
@@ -432,8 +477,8 @@ describe("legacy admin path carrier", () => {
       },
     });
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
-    expect(html).toContain("AI-CRM 运营指挥台");
-    expect(html).not.toContain("小程序素材库");
+    expect(html).toContain('<h1 id="app-title">企微标签目录</h1>');
+    expect(html).not.toContain("AI-CRM 运营指挥台");
   });
 });
 

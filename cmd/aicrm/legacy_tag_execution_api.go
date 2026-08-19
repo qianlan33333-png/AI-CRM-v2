@@ -21,7 +21,8 @@ import (
 // tag-page body; redirecting to the generic shell preserves the route and
 // session boundary without inventing a second tag-management UI.
 func (*Handler) LegacyWecomTagsPage(writer http.ResponseWriter, request *http.Request) {
-	if request == nil {
+	if !legacyWecomTagsGlobalReadAuthorized(request) {
+		writeLegacyTagError(writer, authport.ErrUnauthorized)
 		return
 	}
 	http.Redirect(writer, request, "/?legacy_admin_path="+url.QueryEscape("/admin/wecom-tags"), http.StatusFound)

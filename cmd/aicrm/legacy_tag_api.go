@@ -28,6 +28,10 @@ type legacyTagBody struct {
 }
 
 func (handler *Handler) ListLegacyTags(w http.ResponseWriter, r *http.Request) {
+	if !legacyWecomTagsGlobalReadAuthorized(r) {
+		writeLegacyTagError(w, authport.ErrUnauthorized)
+		return
+	}
 	if handler == nil || nilLegacyDependency(handler.legacyTags) || r == nil {
 		writeLegacyTagCatalog(w, contactapp.LegacyTagCatalog{}, true)
 		return
@@ -38,6 +42,22 @@ func (handler *Handler) ListLegacyTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeLegacyTagCatalog(w, catalog, false)
+}
+
+// legacyWecomTagsGlobalReadAuthorized narrows the browser catalog routes to
+// the global customers.read grant already issued to admin and ops. Sales may
+// receive customers.read with an owner scope for customer records, but a shared
+// tag directory has no owner-scoped projection and must fail closed.
+func legacyWecomTagsGlobalReadAuthorized(request *http.Request) bool {
+	if request == nil {
+		return false
+	}
+	principal, principalOK := authport.PrincipalFromContext(request.Context())
+	authorization, authorizationOK := authport.AuthorizationFromContext(request.Context())
+	return principalOK && principal.AdminUserID > 0 &&
+		(principal.Role == authport.RoleAdmin || principal.Role == authport.RoleOps) &&
+		authorizationOK && authorization.Capability == authport.CapabilityCustomersRead &&
+		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
 }
 
 func writeLegacyTagCatalog(w http.ResponseWriter, c contactapp.LegacyTagCatalog, degraded bool) {
