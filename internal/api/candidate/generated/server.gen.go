@@ -230,6 +230,54 @@ func (e CreateSegmentRequestRefreshMode) Valid() bool {
 	}
 }
 
+// Defines values for CustomerContextChatEntryChatType.
+const (
+	Group   CustomerContextChatEntryChatType = "group"
+	Private CustomerContextChatEntryChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the CustomerContextChatEntryChatType enum.
+func (e CustomerContextChatEntryChatType) Valid() bool {
+	switch e {
+	case Group:
+		return true
+	case Private:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerContextResponseNonAtomicSnapshot.
+const (
+	CustomerContextResponseNonAtomicSnapshotTrue CustomerContextResponseNonAtomicSnapshot = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerContextResponseNonAtomicSnapshot enum.
+func (e CustomerContextResponseNonAtomicSnapshot) Valid() bool {
+	switch e {
+	case CustomerContextResponseNonAtomicSnapshotTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerContextResponseRealExternalCallExecuted.
+const (
+	CustomerContextResponseRealExternalCallExecutedFalse CustomerContextResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerContextResponseRealExternalCallExecuted enum.
+func (e CustomerContextResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerContextResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityMergeReviewStatus.
 const (
 	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
@@ -1300,13 +1348,13 @@ func (e LegacyPushCenterStatsResponseCapabilityOwner) Valid() bool {
 
 // Defines values for LegacyPushCenterStatsResponseOk.
 const (
-	LegacyPushCenterStatsResponseOkTrue LegacyPushCenterStatsResponseOk = true
+	True LegacyPushCenterStatsResponseOk = true
 )
 
 // Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseOk enum.
 func (e LegacyPushCenterStatsResponseOk) Valid() bool {
 	switch e {
-	case LegacyPushCenterStatsResponseOkTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -1420,13 +1468,13 @@ func (e LegacyRuntimeHealthSnapshotDatabaseMode) Valid() bool {
 
 // Defines values for LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled.
 const (
-	False LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled = false
+	LegacyRuntimeHealthSnapshotLegacyRuntimeEnabledFalse LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled = false
 )
 
 // Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled enum.
 func (e LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled) Valid() bool {
 	switch e {
-	case False:
+	case LegacyRuntimeHealthSnapshotLegacyRuntimeEnabledFalse:
 		return true
 	default:
 		return false
@@ -1887,6 +1935,68 @@ type Customer struct {
 	OwnerStaffId   *int64                 `json:"owner_staff_id,omitempty"`
 	StageId        *int64                 `json:"stage_id,omitempty"`
 	UpdatedAt      time.Time              `json:"updated_at"`
+}
+
+// CustomerContextChatEntry defines model for CustomerContextChatEntry.
+type CustomerContextChatEntry struct {
+	ChatType    CustomerContextChatEntryChatType `json:"chat_type"`
+	MessageType string                           `json:"message_type"`
+	SentAt      time.Time                        `json:"sent_at"`
+}
+
+// CustomerContextChatEntryChatType defines model for CustomerContextChatEntry.ChatType.
+type CustomerContextChatEntryChatType string
+
+// CustomerContextChatSummary defines model for CustomerContextChatSummary.
+type CustomerContextChatSummary struct {
+	Items                 []CustomerContextChatEntry `json:"items"`
+	LocalArchiveAvailable bool                       `json:"local_archive_available"`
+	Total                 int64                      `json:"total"`
+}
+
+// CustomerContextCustomer defines model for CustomerContextCustomer.
+type CustomerContextCustomer struct {
+	AddedAt        *time.Time `json:"added_at,omitempty"`
+	ChannelId      *int64     `json:"channel_id,omitempty"`
+	Id             int64      `json:"id"`
+	LastInteractAt *time.Time `json:"last_interact_at,omitempty"`
+	Name           string     `json:"name"`
+	OwnerStaffId   *int64     `json:"owner_staff_id,omitempty"`
+	StageId        *int64     `json:"stage_id,omitempty"`
+}
+
+// CustomerContextResponse defines model for CustomerContextResponse.
+type CustomerContextResponse struct {
+	Chat                     CustomerContextChatSummary                      `json:"chat"`
+	Customer                 CustomerContextCustomer                         `json:"customer"`
+	NonAtomicSnapshot        CustomerContextResponseNonAtomicSnapshot        `json:"non_atomic_snapshot"`
+	RealExternalCallExecuted CustomerContextResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Tags                     []CustomerContextTag                            `json:"tags"`
+	Timeline                 []CustomerContextTimelineEntry                  `json:"timeline"`
+	TimelineNextCursor       *string                                         `json:"timeline_next_cursor"`
+}
+
+// CustomerContextResponseNonAtomicSnapshot defines model for CustomerContextResponse.NonAtomicSnapshot.
+type CustomerContextResponseNonAtomicSnapshot bool
+
+// CustomerContextResponseRealExternalCallExecuted defines model for CustomerContextResponse.RealExternalCallExecuted.
+type CustomerContextResponseRealExternalCallExecuted bool
+
+// CustomerContextTag defines model for CustomerContextTag.
+type CustomerContextTag struct {
+	GroupId        *int64  `json:"group_id,omitempty"`
+	GroupName      *string `json:"group_name,omitempty"`
+	GroupSortOrder int32   `json:"group_sort_order"`
+	Id             int64   `json:"id"`
+	Name           string  `json:"name"`
+	SortOrder      int32   `json:"sort_order"`
+}
+
+// CustomerContextTimelineEntry defines model for CustomerContextTimelineEntry.
+type CustomerContextTimelineEntry struct {
+	EventType  string    `json:"event_type"`
+	Id         int64     `json:"id"`
+	OccurredAt time.Time `json:"occurred_at"`
 }
 
 // CustomerDetailResponse defines model for CustomerDetailResponse.
@@ -2989,6 +3099,13 @@ type UpdateCustomerParams struct {
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 
+// GetCustomerContextParams defines parameters for GetCustomerContext.
+type GetCustomerContextParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListCustomerEventsParams defines parameters for ListCustomerEvents.
 type ListCustomerEventsParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
@@ -3829,6 +3946,9 @@ type ServerInterface interface {
 	// Update customer-owned profile fields
 	// (PATCH /api/v1/customers/{customer_id})
 	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams)
+	// Read a safe local Customer 360 context without external identities or message bodies
+	// (GET /api/v1/customers/{customer_id}/context)
+	GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams)
 	// List append-only customer events using a keyset cursor
 	// (GET /api/v1/customers/{customer_id}/events)
 	ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams)
@@ -3979,6 +4099,12 @@ func (_ Unimplemented) GetCustomer(w http.ResponseWriter, r *http.Request, custo
 // Update customer-owned profile fields
 // (PATCH /api/v1/customers/{customer_id})
 func (_ Unimplemented) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a safe local Customer 360 context without external identities or message bodies
+// (GET /api/v1/customers/{customer_id}/context)
+func (_ Unimplemented) GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -4923,6 +5049,56 @@ func (siw *ServerInterfaceWrapper) UpdateCustomer(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateCustomer(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerContext operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerContext(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCustomerContextParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerContext(w, r, customerId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6390,6 +6566,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/api/v1/customers/{customer_id}", wrapper.UpdateCustomer)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/context", wrapper.GetCustomerContext)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/events", wrapper.ListCustomerEvents)
 	})
 	r.Group(func(r chi.Router) {
@@ -7018,6 +7197,69 @@ type UpdateCustomer422JSONResponse struct {
 func (response UpdateCustomer422JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContextRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     GetCustomerContextParams
+}
+
+type GetCustomerContextResponseObject interface {
+	VisitGetCustomerContextResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerContext200JSONResponse CustomerContextResponse
+
+func (response GetCustomerContext200JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerContext400JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerContext401JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerContext403JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomerContext404JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerContext503JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -8619,6 +8861,9 @@ type StrictServerInterface interface {
 	// Update customer-owned profile fields
 	// (PATCH /api/v1/customers/{customer_id})
 	UpdateCustomer(ctx context.Context, request UpdateCustomerRequestObject) (UpdateCustomerResponseObject, error)
+	// Read a safe local Customer 360 context without external identities or message bodies
+	// (GET /api/v1/customers/{customer_id}/context)
+	GetCustomerContext(ctx context.Context, request GetCustomerContextRequestObject) (GetCustomerContextResponseObject, error)
 	// List append-only customer events using a keyset cursor
 	// (GET /api/v1/customers/{customer_id}/events)
 	ListCustomerEvents(ctx context.Context, request ListCustomerEventsRequestObject) (ListCustomerEventsResponseObject, error)
@@ -9030,6 +9275,33 @@ func (sh *strictHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateCustomerResponseObject); ok {
 		if err := validResponse.VisitUpdateCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerContext operation middleware
+func (sh *strictHandler) GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams) {
+	var request GetCustomerContextRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerContext(ctx, request.(GetCustomerContextRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerContext")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerContextResponseObject); ok {
+		if err := validResponse.VisitGetCustomerContextResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

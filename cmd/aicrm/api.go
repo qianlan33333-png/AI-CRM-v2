@@ -31,6 +31,8 @@ import (
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponstore "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/store"
+	customer360app "github.com/qianlan33333-png/AI-CRM-v2/internal/customer360/app"
+	customer360http "github.com/qianlan33333-png/AI-CRM-v2/internal/customer360/http"
 	eventapp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/app"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
@@ -106,6 +108,7 @@ type candidateHandler struct {
 	customers       *contacthttp.CustomerListHandler
 	customerDetail  *contacthttp.CustomerDetailHandler
 	customerEvents  *contacthttp.CustomerEventHandler
+	customerContext *customer360http.CustomerContextHandler
 	mutations       *contacthttp.CustomerMutationHandler
 	tags            *contacthttp.TagCatalogHandler
 	stages          *contacthttp.Handler
@@ -134,6 +137,10 @@ func (handler *candidateHandler) GetCustomer(writer http.ResponseWriter, request
 
 func (handler *candidateHandler) ListCustomerEvents(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.ListCustomerEventsParams) {
 	handler.customerEvents.ListCustomerEvents(writer, request, customerID, params)
+}
+
+func (handler *candidateHandler) GetCustomerContext(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.GetCustomerContextParams) {
+	handler.customerContext.GetCustomerContext(writer, request, customerID, params)
 }
 
 func (handler *candidateHandler) ListTags(writer http.ResponseWriter, request *http.Request) {
@@ -411,6 +418,18 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	messageArchiveService := wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
+	customerContextHandler, err := customer360http.NewCustomerContextHandler(customer360app.NewCustomerContextService(
+		contactapp.NewCustomer360ReaderService(
+			contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository()),
+			contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
+		),
+		messageArchiveService,
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	tagCatalogHandler, err := contacthttp.NewTagCatalogHandler(contactapp.NewTagCatalogService(
 		uow, contactstore.NewTagCatalogRepository(),
 	))
@@ -479,7 +498,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
-		customerDetail: customerDetailHandler, customerEvents: customerEventHandler,
+		customerDetail: customerDetailHandler, customerEvents: customerEventHandler, customerContext: customerContextHandler,
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
 		segments:           segmentCRUDHandler,
 		products:           productHandler,
@@ -533,7 +552,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
 	legacyHandler.automationAgents = automationAgentService
-	legacyHandler.messageArchive = wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
+	legacyHandler.messageArchive = messageArchiveService
 	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
@@ -800,6 +819,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
 		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}/context", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.GetCustomerContext)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/stage", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)},
 		{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)},

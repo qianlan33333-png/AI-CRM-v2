@@ -2,13 +2,16 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 func TestMessageArchiveSyncAcceptsOnceInOneUoWWithoutExternalDispatch(t *testing.T) {
@@ -94,6 +97,7 @@ type messageArchiveTestStore struct {
 	accepted    bool
 	acceptCalls int
 	records     []ArchiveMessage
+	listQueries []ArchiveQuery
 }
 
 func (store *messageArchiveTestStore) ReserveMessageArchiveSync(_ context.Context, _ ArchiveSyncCommand, digest []byte) (ArchiveSyncReceipt, []byte, error) {
@@ -116,8 +120,55 @@ func (store *messageArchiveTestStore) MessageArchiveHealth(context.Context) (Arc
 	return ArchiveHealth{}, nil
 }
 
-func (store *messageArchiveTestStore) ListMessageArchive(_ context.Context, _ ArchiveQuery) ([]ArchiveMessage, int64, error) {
+func (store *messageArchiveTestStore) ListMessageArchive(_ context.Context, query ArchiveQuery) ([]ArchiveMessage, int64, error) {
+	store.listQueries = append(store.listQueries, query)
 	return append([]ArchiveMessage(nil), store.records...), int64(len(store.records)), nil
+}
+
+func TestMessageArchiveCustomerChatSummaryProjectsNoMessageBodyOrIdentity(t *testing.T) {
+	sentAt := time.Date(2026, time.August, 20, 11, 0, 0, 0, time.UTC)
+	store := &messageArchiveTestStore{records: []ArchiveMessage{{
+		ID: "archive-local-1", SourceMessageID: "provider-message-id", ExternalUserID: "external-user-id", ChatType: "private",
+		WithUserID: "staff-7", Sender: "external-user-id", Receiver: "staff-7", ChatID: "chat-id", RoomID: "room-id",
+		GroupName: "group-name", MessageType: "text", Content: "sensitive body must not leak", SentAt: sentAt,
+	}}}
+	service := NewMessageArchiveService(messageArchiveTestUoW{}, store, nil)
+	page, err := service.ListCustomerChatSummaries(context.Background(), wecomport.CustomerChatSummaryQuery{CustomerID: 41, Limit: 20, Offset: 0})
+	if err != nil {
+		t.Fatalf("ListCustomerChatSummaries() error = %v", err)
+	}
+	if len(page.Items) != 1 || page.Items[0] != (wecomport.CustomerChatSummary{ChatType: "private", MessageType: "text", SentAt: sentAt}) ||
+		page.Total != 1 || page.Limit != 20 || page.Offset != 0 {
+		t.Fatalf("safe page = %#v", page)
+	}
+	if len(store.listQueries) != 1 || store.listQueries[0] != (ArchiveQuery{CustomerID: 41, Limit: 20, Offset: 0}) {
+		t.Fatalf("archive query = %#v", store.listQueries)
+	}
+	encoded, marshalErr := json.Marshal(page)
+	if marshalErr != nil {
+		t.Fatalf("marshal safe page: %v", marshalErr)
+	}
+	for _, forbidden := range []string{"sensitive body", "external-user-id", "provider-message-id", "chat-id", "room-id", "staff-7"} {
+		if strings.Contains(string(encoded), forbidden) {
+			t.Fatalf("safe page leaked %q: %s", forbidden, encoded)
+		}
+	}
+}
+
+func TestMessageArchiveCustomerChatSummaryRejectsInvalidInputBeforeArchiveRead(t *testing.T) {
+	store := &messageArchiveTestStore{}
+	service := NewMessageArchiveService(messageArchiveTestUoW{}, store, nil)
+	for _, query := range []wecomport.CustomerChatSummaryQuery{
+		{CustomerID: 0, Limit: 20}, {CustomerID: 1, Limit: 0}, {CustomerID: 1, Limit: MessageArchiveMaximumLimit + 1}, {CustomerID: 1, Limit: 20, Offset: -1},
+	} {
+		page, err := service.ListCustomerChatSummaries(context.Background(), query)
+		if !errors.Is(err, wecomport.ErrInvalidCustomerChatSummaryQuery) || !reflect.DeepEqual(page, wecomport.CustomerChatSummaryPage{}) {
+			t.Fatalf("query=%#v page=%#v err=%v", query, page, err)
+		}
+	}
+	if len(store.listQueries) != 0 {
+		t.Fatalf("unexpected archive queries: %#v", store.listQueries)
+	}
 }
 
 var _ MessageArchiveStore = (*messageArchiveTestStore)(nil)

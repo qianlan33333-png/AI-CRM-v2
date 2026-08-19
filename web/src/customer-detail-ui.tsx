@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
+import { CustomerContextPanel } from "./customer-context-ui";
+import type { CustomerContextTransport } from "./customer-context";
 import {
   generatedCustomerDetailTransport,
   isCustomerGender,
@@ -24,6 +26,7 @@ import "./customer-detail.css";
 export interface CustomerDetailPageProps {
   readonly customerID: number;
   readonly transport?: CustomerDetailTransport;
+  readonly contextTransport?: CustomerContextTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerDetailSnapshot;
@@ -176,6 +179,7 @@ export function startCustomerMutation(
 export function CustomerDetailPage({
   customerID,
   transport = generatedCustomerDetailTransport,
+  contextTransport,
   readCookie = browserCookie,
   onUnauthenticated,
   initialSnapshot,
@@ -498,6 +502,12 @@ export function CustomerDetailPage({
           {notice}
         </p>
       )}
+
+      <CustomerContextPanel
+        customerID={customerID}
+        transport={contextTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
 
       <div className="customer-detail-page__grid">
         <form
