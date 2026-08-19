@@ -46,6 +46,7 @@ import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
 import type { DataHealthTransport } from "./data-health";
 import type { OrdersTransport } from "./orders";
+import type { AppSettingsTransport } from "./app-settings";
 
 const adminSession = {
   status: "authenticated",
@@ -158,6 +159,14 @@ function deliveryLineageTransport(): DeliveryLineageTransport {
 function ordersTransport(): OrdersTransport {
   const response = async () => ({ status: 503, data: {} });
   return { list: vi.fn(response) } as unknown as OrdersTransport;
+}
+
+function appSettingsTransport(): AppSettingsTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return {
+    read: vi.fn(response),
+    save: vi.fn(response),
+  } as unknown as AppSettingsTransport;
 }
 
 describe("Web shell routes", () => {
@@ -450,14 +459,20 @@ describe("Web shell routes", () => {
     const client = automationAgentsTransport();
     expect(
       renderToStaticMarkup(
-        <App automationAgentsTransport={client} initialSession={adminSession} />,
+        <App
+          automationAgentsTransport={client}
+          initialSession={adminSession}
+        />,
       ),
     ).toContain("正在读取本地自动化话术摘要。");
     for (const role of ["ops", "sales"] as const) {
       const html = renderToStaticMarkup(
         <App
           automationAgentsTransport={client}
-          initialSession={{ status: "authenticated", principal: { adminUserID: 8, role } }}
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 8, role },
+          }}
         />,
       );
       expect(html).toContain("当前账号没有自动化话术目录访问权限。");
@@ -524,6 +539,35 @@ describe("Web shell routes", () => {
     expect(sales).toContain("当前账号没有订单总览访问权限。");
     expect(sales).not.toContain(`href="${ORDERS_PATH}"`);
     expect(client.list).not.toHaveBeenCalled();
+  });
+
+  it("connects the admin-only settings route to the local settings page", () => {
+    vi.stubGlobal("window", { location: { pathname: "/settings" } });
+    const client = appSettingsTransport();
+    const admin = renderToStaticMarkup(
+      <App appSettingsTransport={client} initialSession={adminSession} />,
+    );
+    expect(admin).toContain("本地应用设置");
+    expect(admin).toContain("正在读取本地应用设置");
+
+    for (const role of ["ops", "sales"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          appSettingsTransport={client}
+          initialSession={{
+            status: "authenticated",
+            principal:
+              role === "sales"
+                ? { adminUserID: 9, role, staffID: 11 }
+                : { adminUserID: 8, role },
+          }}
+        />,
+      );
+      expect(html).toContain("当前账号没有本地应用设置管理权限");
+      expect(html).not.toContain('href="/settings"');
+    }
+    expect(client.read).not.toHaveBeenCalled();
+    expect(client.save).not.toHaveBeenCalled();
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
