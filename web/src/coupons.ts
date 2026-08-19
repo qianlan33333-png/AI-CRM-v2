@@ -1,6 +1,7 @@
 import {
   archiveLegacyCoupon,
   copyLegacyCoupon,
+  getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
   listLegacyCoupons,
@@ -26,6 +27,24 @@ export interface CouponListItem {
   readonly issuedCount: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+export interface CouponRuleDetail extends CouponListItem {
+  readonly discountAmountTotal: number;
+  readonly currency: "CNY";
+  readonly totalIssueLimit: number;
+  readonly perUserIssueLimit: number;
+  readonly claimStartsAt: string;
+  readonly claimEndsAt: string;
+  readonly validityMode: "fixed_range" | "relative_days";
+  readonly useStartsAt?: string;
+  readonly useEndsAt?: string;
+  readonly relativeValidityDays?: number;
+  readonly instructions: string;
+  readonly targetRefs: readonly string[];
+  readonly createdBy: number;
+  readonly updatedBy: number;
+  readonly version: number;
 }
 
 export interface CouponClaimItem {
@@ -72,6 +91,9 @@ export type CouponClaimsResult =
 export type CouponShareResult =
   | { readonly status: "loaded"; readonly share: CouponShare }
   | { readonly status: CouponsFailure };
+export type CouponDetailResult =
+  | { readonly status: "loaded"; readonly detail: CouponRuleDetail }
+  | { readonly status: CouponsFailure };
 export type CouponArchiveResult =
   | { readonly status: "archived"; readonly item: CouponListItem }
   | { readonly status: "canceled" }
@@ -110,6 +132,10 @@ async function generatedShare(couponID: number, options?: RequestInit) {
   });
 }
 
+async function generatedDetail(couponID: number, options?: RequestInit) {
+  return getLegacyCoupon(couponID, { credentials: "same-origin", ...options });
+}
+
 async function generatedArchive(couponID: number, options?: RequestInit) {
   return archiveLegacyCoupon(couponID, {
     credentials: "same-origin",
@@ -121,6 +147,7 @@ export interface CouponsTransport {
   readonly list: typeof generatedList;
   readonly copy: typeof generatedCopy;
   readonly claims: typeof generatedClaims;
+  readonly detail: typeof generatedDetail;
   readonly share: typeof generatedShare;
   readonly archive: typeof generatedArchive;
 }
@@ -129,6 +156,7 @@ export const generatedCouponsTransport: CouponsTransport = {
   list: generatedList,
   copy: generatedCopy,
   claims: generatedClaims,
+  detail: generatedDetail,
   share: generatedShare,
   archive: generatedArchive,
 };
@@ -223,7 +251,7 @@ function targetRefs(value: unknown): value is readonly string[] {
   );
 }
 
-function coupon(value: unknown): CouponListItem | undefined {
+function couponDetail(value: unknown): CouponRuleDetail | undefined {
   if (
     !record(value) ||
     !exact(value, [
@@ -300,15 +328,117 @@ function coupon(value: unknown): CouponListItem | undefined {
   ) {
     return undefined;
   }
-  return {
+  const base: CouponListItem = {
     id: value.id,
     name: value.name,
-    status: value.status,
+    status: value.status as CouponStatus,
     availability: availabilityStatus,
     issuedCount: value.issued_count,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
   };
+  if (value.validity_mode === "fixed_range") {
+    return {
+      ...base,
+      discountAmountTotal: value.discount_amount_total,
+      currency: "CNY",
+      totalIssueLimit: value.total_issue_limit,
+      perUserIssueLimit: value.per_user_issue_limit,
+      claimStartsAt: value.claim_starts_at,
+      claimEndsAt: value.claim_ends_at,
+      validityMode: "fixed_range",
+      useStartsAt: value.use_starts_at as string,
+      useEndsAt: value.use_ends_at as string,
+      instructions: value.instructions,
+      targetRefs: [...value.target_refs],
+      createdBy: value.created_by,
+      updatedBy: value.updated_by,
+      version: value.version,
+    };
+  }
+  return {
+    ...base,
+    discountAmountTotal: value.discount_amount_total,
+    currency: "CNY",
+    totalIssueLimit: value.total_issue_limit,
+    perUserIssueLimit: value.per_user_issue_limit,
+    claimStartsAt: value.claim_starts_at,
+    claimEndsAt: value.claim_ends_at,
+    validityMode: "relative_days",
+    relativeValidityDays: value.relative_validity_days as number,
+    instructions: value.instructions,
+    targetRefs: [...value.target_refs],
+    createdBy: value.created_by,
+    updatedBy: value.updated_by,
+    version: value.version,
+  };
+}
+
+function coupon(value: unknown): CouponListItem | undefined {
+  const detail = couponDetail(value);
+  return detail
+    ? {
+        id: detail.id,
+        name: detail.name,
+        status: detail.status,
+        availability: detail.availability,
+        issuedCount: detail.issuedCount,
+        createdAt: detail.createdAt,
+        updatedAt: detail.updatedAt,
+      }
+    : undefined;
+}
+
+function sameCouponDetail(
+  left: CouponRuleDetail,
+  right: CouponRuleDetail,
+): boolean {
+  return (
+    left.id === right.id &&
+    left.name === right.name &&
+    left.status === right.status &&
+    left.availability === right.availability &&
+    left.issuedCount === right.issuedCount &&
+    left.createdAt === right.createdAt &&
+    left.updatedAt === right.updatedAt &&
+    left.discountAmountTotal === right.discountAmountTotal &&
+    left.currency === right.currency &&
+    left.totalIssueLimit === right.totalIssueLimit &&
+    left.perUserIssueLimit === right.perUserIssueLimit &&
+    left.claimStartsAt === right.claimStartsAt &&
+    left.claimEndsAt === right.claimEndsAt &&
+    left.validityMode === right.validityMode &&
+    left.useStartsAt === right.useStartsAt &&
+    left.useEndsAt === right.useEndsAt &&
+    left.relativeValidityDays === right.relativeValidityDays &&
+    left.instructions === right.instructions &&
+    left.createdBy === right.createdBy &&
+    left.updatedBy === right.updatedBy &&
+    left.version === right.version &&
+    left.targetRefs.length === right.targetRefs.length &&
+    left.targetRefs.every((target, index) => target === right.targetRefs[index])
+  );
+}
+
+function couponDetailResponse(
+  value: unknown,
+  couponID: number,
+): CouponRuleDetail | undefined {
+  if (
+    !positive(couponID) ||
+    !record(value) ||
+    !exact(value, ["ok", "coupon", "data"]) ||
+    value.ok !== true ||
+    !record(value.data) ||
+    !exact(value.data, ["coupon"])
+  ) {
+    return undefined;
+  }
+  const primary = couponDetail(value.coupon);
+  const mirror = couponDetail(value.data.coupon);
+  return primary && mirror && primary.id === couponID && sameCouponDetail(primary, mirror)
+    ? primary
+    : undefined;
 }
 
 function claim(value: unknown): CouponClaimItem | undefined {
@@ -533,6 +663,23 @@ export async function loadCouponClaims(
     return { status: failure(response.status, response.data) };
   const page = couponClaimsPage(response.data, offset);
   return page ? { status: "loaded", ...page, offset } : { status: "invalid" };
+}
+
+export async function loadCouponDetail(
+  transport: CouponsTransport,
+  couponID: number,
+): Promise<CouponDetailResult> {
+  if (!positive(couponID)) return { status: "invalid" };
+  let response: Awaited<ReturnType<CouponsTransport["detail"]>>;
+  try {
+    response = await transport.detail(couponID, { credentials: "same-origin" });
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status !== 200)
+    return { status: failure(response.status, response.data) };
+  const detail = couponDetailResponse(response.data, couponID);
+  return detail ? { status: "loaded", detail } : { status: "invalid" };
 }
 
 export async function loadCouponShare(

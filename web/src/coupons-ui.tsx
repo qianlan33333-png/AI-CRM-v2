@@ -14,6 +14,7 @@ import {
   filterCoupons,
   generatedCouponsTransport,
   loadCouponClaims,
+  loadCouponDetail,
   loadCouponShare,
   loadCoupons,
   newCouponArchiveIdempotencyKey,
@@ -23,7 +24,9 @@ import {
   type CouponClaimItem,
   type CouponClaimsResult,
   type CouponCopyResult,
+  type CouponDetailResult,
   type CouponListItem,
+  type CouponRuleDetail,
   type CouponShareResult,
   type CouponListResult,
   type CouponsFailure,
@@ -50,6 +53,11 @@ const archiveMessages: Record<CouponsFailure, string> = {
   ...messages,
   not_found: "要归档的优惠券已不存在，请刷新后重试。",
   conflict: "该优惠券当前不能归档，请刷新后重试。",
+};
+
+const detailMessages: Record<CouponsFailure, string> = {
+  ...messages,
+  not_found: "该优惠券规则已不存在，请刷新列表后重试。",
 };
 
 export type CouponsViewState =
@@ -101,6 +109,25 @@ export type CouponShareViewState =
       readonly coupon: CouponListItem;
       readonly failure: CouponsFailure;
       readonly previous?: string;
+    };
+
+export type CouponDetailViewState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly coupon: CouponListItem;
+      readonly previous?: CouponRuleDetail;
+    }
+  | {
+      readonly kind: "ready";
+      readonly coupon: CouponListItem;
+      readonly detail: CouponRuleDetail;
+    }
+  | {
+      readonly kind: "error";
+      readonly coupon: CouponListItem;
+      readonly failure: CouponsFailure;
+      readonly previous?: CouponRuleDetail;
     };
 
 export interface CouponCopyInput {
@@ -187,6 +214,23 @@ export function startCouponArchive(
   return startCouponCopy(lock, execute);
 }
 
+export function startCouponDetail(
+  inFlight: Set<number>,
+  couponID: number,
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  if (!Number.isSafeInteger(couponID) || couponID < 1 || inFlight.has(couponID))
+    return undefined;
+  inFlight.add(couponID);
+  return (async () => {
+    try {
+      await execute();
+    } finally {
+      inFlight.delete(couponID);
+    }
+  })();
+}
+
 export function CouponsPage({
   confirm = runtimeConfirm,
   role,
@@ -212,11 +256,16 @@ export function CouponsPage({
   const [shareState, setShareState] = useState<CouponShareViewState>({
     kind: "idle",
   });
+  const [detailState, setDetailState] = useState<CouponDetailViewState>({
+    kind: "idle",
+  });
   const couponMutationInFlight = useRef(false);
   const claimsRequest = useRef(0);
   const claimsInFlight = useRef<string>();
   const shareRequest = useRef(0);
   const shareInFlight = useRef<number>();
+  const detailRequest = useRef(0);
+  const detailInFlight = useRef(new Set<number>());
 
   const reload = useCallback(async (preserveReady = false): Promise<CouponListResult> => {
     const result = await loadCoupons(transport);
@@ -377,6 +426,31 @@ export function CouponsPage({
     [onUnauthenticated, shareState, transport],
   );
 
+  const onDetail = useCallback(
+    async (item: CouponListItem) => {
+      const operation = startCouponDetail(detailInFlight.current, item.id, async () => {
+        const request = ++detailRequest.current;
+        const previous =
+          detailState.kind === "ready" && detailState.coupon.id === item.id
+            ? detailState.detail
+            : detailState.kind === "error" && detailState.coupon.id === item.id
+              ? detailState.previous
+              : undefined;
+        setDetailState({ kind: "loading", coupon: item, previous });
+        const result: CouponDetailResult = await loadCouponDetail(transport, item.id);
+        if (request !== detailRequest.current) return;
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setDetailState(
+          result.status === "loaded"
+            ? { kind: "ready", coupon: item, detail: result.detail }
+            : { kind: "error", coupon: item, failure: result.status, previous },
+        );
+      });
+      if (operation) await operation;
+    },
+    [detailState, onUnauthenticated, transport],
+  );
+
   const onCopyShare = useCallback(async () => {
     if (shareState.kind !== "ready") return;
     const copyStatus = await copyCouponShareURL(shareState.url);
@@ -388,10 +462,12 @@ export function CouponsPage({
       busyAction={busyAction}
       busyID={busyID}
       claimsState={claimsState}
+      detailState={detailState}
       notice={notice}
       onCopy={onCopy}
       onArchive={onArchive}
       onClaims={onClaims}
+      onDetail={onDetail}
       role={role}
       shareState={shareState}
       onShare={onShare}
@@ -405,10 +481,12 @@ export function CouponsView({
   busyAction,
   busyID,
   claimsState,
+  detailState,
   notice,
   onCopy,
   onArchive,
   onClaims,
+  onDetail,
   onCopyShare,
   onShare,
   role,
@@ -418,6 +496,7 @@ export function CouponsView({
   readonly busyAction?: "copy" | "archive";
   readonly busyID?: number;
   readonly claimsState?: CouponClaimsViewState;
+  readonly detailState?: CouponDetailViewState;
   readonly notice?: string;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onCopy: (item: CouponListItem) => void;
@@ -425,6 +504,8 @@ export function CouponsView({
   readonly onArchive?: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onClaims?: (item: CouponListItem, offset?: number) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onDetail?: (item: CouponListItem) => void;
   readonly onCopyShare?: () => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onShare?: (item: CouponListItem) => void;
@@ -555,6 +636,19 @@ export function CouponsView({
                   >
                     查看领取数据
                   </button>
+                  <button
+                    type="button"
+                    disabled={
+                      detailState?.kind === "loading" &&
+                      detailState.coupon.id === item.id
+                    }
+                    onClick={() => onDetail?.(item)}
+                  >
+                    {detailState?.kind === "loading" &&
+                    detailState.coupon.id === item.id
+                      ? "正在读取规则…"
+                      : "查看规则详情"}
+                  </button>
                   {item.status === "published" ? (
                     <button
                       type="button"
@@ -572,6 +666,9 @@ export function CouponsView({
       )}
       {claimsState && claimsState.kind !== "idle" ? (
         <CouponClaimsPanel claimsState={claimsState} onClaims={onClaims} />
+      ) : null}
+      {detailState && detailState.kind !== "idle" ? (
+        <CouponDetailPanel detailState={detailState} />
       ) : null}
       {shareState && shareState.kind !== "idle" ? (
         <CouponSharePanel onCopyShare={onCopyShare} shareState={shareState} />
@@ -625,6 +722,52 @@ function CouponSharePanel({
             <p role="status">无法访问剪贴板，请手工复制上方链接。</p>
           ) : null}
         </>
+      ) : null}
+    </section>
+  );
+}
+
+function CouponDetailPanel({
+  detailState,
+}: {
+  readonly detailState: Exclude<
+    CouponDetailViewState,
+    { readonly kind: "idle" }
+  >;
+}): React.ReactElement {
+  const detail =
+    detailState.kind === "ready"
+      ? detailState.detail
+      : detailState.previous;
+  const loading = detailState.kind === "loading";
+  const error = detailState.kind === "error" ? detailState.failure : undefined;
+  return (
+    <section aria-label="优惠券本地规则详情">
+      <h2>规则详情：{detailState.coupon.name}</h2>
+      <p>仅显示已保存的本地规则，不代表可领取、可用或已发生外部效果。</p>
+      {loading ? <p role="status">正在读取本地优惠券规则。</p> : null}
+      {error ? <p role="alert">{detailMessages[error]}</p> : null}
+      {detail ? (
+        <dl>
+          <dt>优惠金额（分）</dt>
+          <dd>{detail.discountAmountTotal} {detail.currency}</dd>
+          <dt>总发放上限</dt>
+          <dd>{detail.totalIssueLimit}</dd>
+          <dt>每人上限</dt>
+          <dd>{detail.perUserIssueLimit}</dd>
+          <dt>领取时间</dt>
+          <dd>{detail.claimStartsAt} 至 {detail.claimEndsAt}</dd>
+          <dt>有效期规则</dt>
+          <dd>
+            {detail.validityMode === "fixed_range"
+              ? `${detail.useStartsAt} 至 ${detail.useEndsAt}`
+              : `${detail.relativeValidityDays} 天`}
+          </dd>
+          <dt>适用商品引用</dt>
+          <dd>{detail.targetRefs.join(", ")}</dd>
+          <dt>使用说明</dt>
+          <dd>{detail.instructions || "—"}</dd>
+        </dl>
       ) : null}
     </section>
   );
