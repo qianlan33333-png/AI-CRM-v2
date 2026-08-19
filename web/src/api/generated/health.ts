@@ -12676,7 +12676,7 @@ export const listLegacyChannels = async (
 };
 
 /**
- * @summary Create one local channel resource without QR, welcome, assignment, or provider execution
+ * @summary Create one complete local channel configuration without provider execution
  */
 export type createLegacyChannelResponse201 = {
   data: LegacyChannelMutationResponse;

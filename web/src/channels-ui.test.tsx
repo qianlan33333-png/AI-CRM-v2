@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ChannelsPage,
   ChannelsView,
+  channelConfigurationFromForm,
   performChannelStatusUpdate,
   startChannelStatusUpdate,
 } from "./channels-ui";
@@ -42,7 +43,7 @@ describe("ChannelsView", () => {
       expect(html).toContain("本地分配人数");
       expect(html).toContain("本地进入人数");
       expect(html).toContain("更新本地状态");
-      expect(html).toContain("状态更新仅写入本地渠道，不执行外部渠道能力。");
+      expect(html).toContain("二维码、获客链接、回调、发布和任何外部调用均未执行（provider=false）。");
       expect(html).toContain("2026-08-19T00:00:00Z");
       expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
       expect(html).not.toContain("<img");
@@ -90,8 +91,12 @@ describe("ChannelsView", () => {
           item: items[0],
           detail: {
             item: items[0], channelType: "qrcode", carrierType: "qrcode",
-            sceneValue: "scene-1", welcomeMessage: "欢迎", hasAssignmentConfig: true,
-            imageMaterialCount: 1, miniProgramMaterialCount: 0,
+            sceneValue: "scene-1", qrURL: "", ownerStaffID: "", customerChannel: "",
+            linkURL: "", finalURL: "", welcomeMessage: "欢迎", imageMaterialIDs: [9],
+            miniProgramMaterialIDs: [], attachmentMaterialIDs: [], groupInviteMaterialIDs: [],
+            autoAcceptFriend: false, entryTagID: "", entryTagName: "", entryTagGroupName: "",
+            assignmentMode: "single_owner", assignmentStrategy: "ratio", overflowPolicy: "least_loaded",
+            hasAssignmentConfig: true, imageMaterialCount: 1, miniProgramMaterialCount: 0,
             attachmentMaterialCount: 0, groupInviteMaterialCount: 0,
           },
         }}
@@ -101,6 +106,22 @@ describe("ChannelsView", () => {
     expect(html).toContain("本地配置：&lt;img src=x onerror=&quot;bad&quot;&gt;");
     expect(html).toContain("图片 1，小程序 0，附件 0，群邀请 0");
     expect(html).not.toMatch(/href=|qr_url|share_url|copy_text|assignment_config_json/i);
+  });
+
+  it("renders the complete local-only editor without activating QR or acquisition-link configuration", () => {
+    const html = renderToStaticMarkup(
+      <ChannelsView
+        role="admin"
+        state={{ kind: "ready", items }}
+        editor={{ kind: "create" }}
+      />,
+    );
+    expect(html).toContain('data-testid="channel-configuration-form"');
+    expect(html).toContain("本地二维码配置（纯文本，未发布）");
+    expect(html).toContain("入渠标签 ID");
+    expect(html).toContain("分配模式");
+    expect(html).toContain("provider=false");
+    expect(html).not.toMatch(/<a\b|href=|target=|window\.open|navigator\.clipboard/i);
   });
 
   it("keeps sales fail-closed without issuing a read", () => {
@@ -146,7 +167,36 @@ describe("ChannelsView", () => {
       })),
       write: vi.fn(async () => ({
         status: 200,
-        data: {},
+        data: {
+          ok: true,
+          channel: {
+            schema_version: 1, id: 1, channel_name: "渠道", channel_code: "course", status: "inactive",
+            created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T01:02:03Z",
+            assignees: [], assignment_stats_24h: [], assignee_count: 0, channel_contact_count: 0,
+            latest_channel_entered_at: "", qrcode_asset_id: 0, qrcode_status: "not_generated", qr_download_url: "", share_url: "", copy_text: "",
+            channel_type: "qrcode", carrier_type: "qrcode", scene_value: "", qr_url: "", owner_staff_id: "", customer_channel: "", link_url: "", final_url: "", welcome_message: "",
+            welcome_image_library_ids: [], welcome_miniprogram_library_ids: [], welcome_attachment_library_ids: [], welcome_group_invite_library_ids: [],
+            auto_accept_friend: false, entry_tag_id: "", entry_tag_name: "", entry_tag_group_name: "", assignment_mode: "single_owner", assignment_strategy: "ratio", overflow_policy: "least_loaded", assignment_config_json: {},
+          },
+          reason: "channel_updated", source: "ai_crm_next", fallback_used: false, real_external_call_executed: false,
+        },
+        headers: new Headers(),
+      })),
+      detail: vi.fn(async () => ({
+        status: 200,
+        data: {
+          ok: true,
+          channel: {
+            schema_version: 1, id: 1, channel_name: "渠道", channel_code: "course", status: "inactive",
+            created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T01:02:03Z",
+            assignees: [], assignment_stats_24h: [], assignee_count: 0, channel_contact_count: 0,
+            latest_channel_entered_at: "", qrcode_asset_id: 0, qrcode_status: "not_generated", qr_download_url: "", share_url: "", copy_text: "",
+            channel_type: "qrcode", carrier_type: "qrcode", scene_value: "", qr_url: "", owner_staff_id: "", customer_channel: "", link_url: "", final_url: "", welcome_message: "",
+            welcome_image_library_ids: [], welcome_miniprogram_library_ids: [], welcome_attachment_library_ids: [], welcome_group_invite_library_ids: [],
+            auto_accept_friend: false, entry_tag_id: "", entry_tag_name: "", entry_tag_group_name: "", assignment_mode: "single_owner", assignment_strategy: "ratio", overflow_policy: "least_loaded", assignment_config_json: {},
+          },
+          reason: "channel_loaded", source: "ai_crm_next",
+        },
         headers: new Headers(),
       })),
     } as unknown as ChannelsTransport;
@@ -187,5 +237,25 @@ describe("ChannelsView", () => {
       }),
     ).resolves.toEqual({ status: "forbidden" });
     expect(client.write).toHaveBeenCalledTimes(1);
+  });
+
+  it("serializes only canonical local configuration references and rejects malformed IDs", () => {
+    const base = {
+      channelType: "qrcode" as const, carrierType: "qrcode" as const,
+      channelName: " 本地渠道 ", channelCode: " local-code ", status: "active" as const,
+      sceneValue: " scene ", qrURL: " https://local.example/qr ", ownerStaffID: " staff-1 ",
+      customerChannel: " intake ", linkURL: " https://local.example/link ", finalURL: " /local ",
+      welcomeMessage: " 欢迎 ", imageMaterialIDs: "2,7", miniProgramMaterialIDs: "",
+      attachmentMaterialIDs: "4", groupInviteMaterialIDs: "", autoAcceptFriend: false,
+      entryTagID: "3", entryTagName: " 新客 ", entryTagGroupName: " 来源 ",
+      assignmentMode: "single_owner" as const, assignmentStrategy: "ratio" as const,
+      overflowPolicy: " least_loaded ",
+    };
+    expect(channelConfigurationFromForm(base)).toMatchObject({
+      channelName: "本地渠道", channelCode: "local-code", qrURL: "https://local.example/qr",
+      imageMaterialIDs: [2, 7], attachmentMaterialIDs: [4], entryTagName: "新客",
+    });
+    expect(channelConfigurationFromForm({ ...base, imageMaterialIDs: "02,7" })).toBeUndefined();
+    expect(channelConfigurationFromForm({ ...base, imageMaterialIDs: "2,2" })).toBeUndefined();
   });
 });
