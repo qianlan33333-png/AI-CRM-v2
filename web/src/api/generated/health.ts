@@ -49,6 +49,217 @@ export interface LegacyInternalEventItem {
   deliveries: LegacyInternalEventDelivery[];
 }
 
+export interface LegacyOutboundFailure {
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  kind: string;
+  /** @maxLength 256 */
+  code: string;
+}
+
+export interface LegacyOutboundProviderReceipt {
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  message_id: string;
+  confirmed_at: string;
+}
+
+export type LegacyOutboundQueueJobKind =
+  (typeof LegacyOutboundQueueJobKind)[keyof typeof LegacyOutboundQueueJobKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundQueueJobKind = {
+  outbound_enqueue_one: "outbound_enqueue_one",
+  outbound_enqueue_batch_task: "outbound_enqueue_batch_task",
+} as const;
+
+export interface LegacyOutboundQueueJob {
+  /** @minimum 1 */
+  river_job_id: number;
+  /** @minimum 1 */
+  generation: number;
+  kind: LegacyOutboundQueueJobKind;
+}
+
+export type LegacyOutboundJobStatus =
+  (typeof LegacyOutboundJobStatus)[keyof typeof LegacyOutboundJobStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobStatus = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+} as const;
+
+export interface LegacyOutboundJob {
+  /** @minimum 1 */
+  job_id: number;
+  /** @minimum 1 */
+  task_id: number;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  owner_staff_id?: number;
+  /** @minimum 1 */
+  business_id?: number;
+  /** @minimum 0 */
+  batch_chunk_index?: number;
+  status: LegacyOutboundJobStatus;
+  /** @minimum 0 */
+  attempt_count: number;
+  failure?: LegacyOutboundFailure;
+  provider_receipt?: LegacyOutboundProviderReceipt;
+  delivery_proven: boolean;
+  queue_job: LegacyOutboundQueueJob;
+  created_at: string;
+  status_updated_at: string;
+}
+
+export type LegacyOutboundAttemptState =
+  (typeof LegacyOutboundAttemptState)[keyof typeof LegacyOutboundAttemptState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundAttemptState = {
+  reserved: "reserved",
+  dispatching: "dispatching",
+  succeeded: "succeeded",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export interface LegacyOutboundAttempt {
+  /** @minimum 1 */
+  attempt_id: number;
+  /** @minimum 1 */
+  history_id: number;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  river_job_id: number;
+  /** @minimum 1 */
+  attempt: number;
+  /** @minimum 1 */
+  max_attempts: number;
+  state: LegacyOutboundAttemptState;
+  failure?: LegacyOutboundFailure;
+  provider_receipt?: LegacyOutboundProviderReceipt;
+  dispatch_started_at?: string;
+  completed_at?: string;
+}
+
+export type LegacyOutboundControlReceiptOperation =
+  (typeof LegacyOutboundControlReceiptOperation)[keyof typeof LegacyOutboundControlReceiptOperation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundControlReceiptOperation = {
+  cancel: "cancel",
+  manual_retry: "manual_retry",
+} as const;
+
+export type LegacyOutboundControlReceiptState =
+  (typeof LegacyOutboundControlReceiptState)[keyof typeof LegacyOutboundControlReceiptState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundControlReceiptState = {
+  completed: "completed",
+} as const;
+
+export type LegacyOutboundControlReceiptJobKind =
+  (typeof LegacyOutboundControlReceiptJobKind)[keyof typeof LegacyOutboundControlReceiptJobKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundControlReceiptJobKind = {
+  outbound_enqueue_one: "outbound_enqueue_one",
+  outbound_enqueue_batch_task: "outbound_enqueue_batch_task",
+} as const;
+
+export type LegacyOutboundControlReceiptTaskStatus =
+  (typeof LegacyOutboundControlReceiptTaskStatus)[keyof typeof LegacyOutboundControlReceiptTaskStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundControlReceiptTaskStatus = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+} as const;
+
+export interface LegacyOutboundControlReceipt {
+  /** @minimum 1 */
+  receipt_id: number;
+  /** @minimum 1 */
+  task_id: number;
+  operation: LegacyOutboundControlReceiptOperation;
+  state: LegacyOutboundControlReceiptState;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  river_job_id: number;
+  job_kind: LegacyOutboundControlReceiptJobKind;
+  /** @minimum 1 */
+  event_id: number;
+  task_status: LegacyOutboundControlReceiptTaskStatus;
+  completed_at: string;
+}
+
+export type LegacyOutboundJobListResponseSourceStatus =
+  (typeof LegacyOutboundJobListResponseSourceStatus)[keyof typeof LegacyOutboundJobListResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobListResponseSourceStatus = {
+  v2_outbound_service: "v2_outbound_service",
+} as const;
+
+export interface LegacyOutboundJobListResponse {
+  ok: boolean;
+  jobs: LegacyOutboundJob[];
+  items: LegacyOutboundJob[];
+  /** @minimum 0 */
+  count: number;
+  has_more: boolean;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  source_status: LegacyOutboundJobListResponseSourceStatus;
+  fallback_used: boolean;
+}
+
+export type LegacyOutboundJobReconciliationResponseSourceStatus =
+  (typeof LegacyOutboundJobReconciliationResponseSourceStatus)[keyof typeof LegacyOutboundJobReconciliationResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobReconciliationResponseSourceStatus = {
+  v2_outbound_service: "v2_outbound_service",
+} as const;
+
+export interface LegacyOutboundJobReconciliationResponse {
+  ok: boolean;
+  job: LegacyOutboundJob;
+  attempts: LegacyOutboundAttempt[];
+  control_receipts: LegacyOutboundControlReceipt[];
+  source_status: LegacyOutboundJobReconciliationResponseSourceStatus;
+  fallback_used: boolean;
+}
+
 export type LegacyInternalEventListResponseRegistryId =
   (typeof LegacyInternalEventListResponseRegistryId)[keyof typeof LegacyInternalEventListResponseRegistryId];
 
@@ -8209,6 +8420,42 @@ export type GetLegacyPushCenterStatsParams = {
 
 export type GetLegacyPushCenterStats200 =
   LegacyPushCenterStatsResponse | LegacyPushCenterStatsDegradedResponse;
+
+export type ListLegacyOutboundJobsParams = {
+  status?: ListLegacyOutboundJobsStatus;
+  /**
+   * @minimum 1
+   */
+  business_id?: number;
+  /**
+   * @minimum 1
+   */
+  owner_userid?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyOutboundJobsStatus =
+  (typeof ListLegacyOutboundJobsStatus)[keyof typeof ListLegacyOutboundJobsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyOutboundJobsStatus = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+} as const;
 
 export type ListLegacyInternalEventsParams = {
   /**
@@ -20633,6 +20880,165 @@ export const getLegacyPushCenterStats = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyPushCenterStatsResponse;
+};
+
+/**
+ * @summary Read bounded local outbound-job projections without starting a worker or provider call
+ */
+export type listLegacyOutboundJobsResponse200 = {
+  data: LegacyOutboundJobListResponse;
+  status: 200;
+};
+
+export type listLegacyOutboundJobsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyOutboundJobsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyOutboundJobsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyOutboundJobsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyOutboundJobsResponseSuccess =
+  listLegacyOutboundJobsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyOutboundJobsResponseError = (
+  | listLegacyOutboundJobsResponse400
+  | listLegacyOutboundJobsResponse401
+  | listLegacyOutboundJobsResponse403
+  | listLegacyOutboundJobsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyOutboundJobsResponse =
+  listLegacyOutboundJobsResponseSuccess | listLegacyOutboundJobsResponseError;
+
+export const getListLegacyOutboundJobsUrl = (
+  params?: ListLegacyOutboundJobsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/push-center/jobs?${stringifiedParams}`
+    : `/api/admin/push-center/jobs`;
+};
+
+export const listLegacyOutboundJobs = async (
+  params?: ListLegacyOutboundJobsParams,
+  options?: RequestInit,
+): Promise<listLegacyOutboundJobsResponse> => {
+  const res = await fetch(getListLegacyOutboundJobsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyOutboundJobsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyOutboundJobsResponse;
+};
+
+/**
+ * @summary Reconcile persisted local attempts and local control receipts without a provider call
+ */
+export type getLegacyOutboundJobReconciliationResponse200 = {
+  data: LegacyOutboundJobReconciliationResponse;
+  status: 200;
+};
+
+export type getLegacyOutboundJobReconciliationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyOutboundJobReconciliationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyOutboundJobReconciliationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyOutboundJobReconciliationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyOutboundJobReconciliationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyOutboundJobReconciliationResponseSuccess =
+  getLegacyOutboundJobReconciliationResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyOutboundJobReconciliationResponseError = (
+  | getLegacyOutboundJobReconciliationResponse400
+  | getLegacyOutboundJobReconciliationResponse401
+  | getLegacyOutboundJobReconciliationResponse403
+  | getLegacyOutboundJobReconciliationResponse404
+  | getLegacyOutboundJobReconciliationResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyOutboundJobReconciliationResponse =
+  | getLegacyOutboundJobReconciliationResponseSuccess
+  | getLegacyOutboundJobReconciliationResponseError;
+
+export const getGetLegacyOutboundJobReconciliationUrl = (jobId: number) => {
+  return `/api/admin/push-center/jobs/${jobId}/reconciliation`;
+};
+
+export const getLegacyOutboundJobReconciliation = async (
+  jobId: number,
+  options?: RequestInit,
+): Promise<getLegacyOutboundJobReconciliationResponse> => {
+  const res = await fetch(getGetLegacyOutboundJobReconciliationUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyOutboundJobReconciliationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyOutboundJobReconciliationResponse;
 };
 
 /**
