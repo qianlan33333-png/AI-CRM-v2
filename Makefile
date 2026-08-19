@@ -498,7 +498,7 @@ p4-admin-shell-ab-acceptance:
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s -run '^TestA01HumanOAuthSessionRBACCSRFFullChainOnPostgreSQL$$' ./cmd/aicrm -args -p4-a01-database-url "$$P4ADMINSHELL_TEST_DATABASE_URL"
 
 p4-execution-runtime-ab-acceptance:
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/adminops/app ./internal/auth/app ./internal/auth/port ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/adminops/app ./internal/auth/app ./internal/auth/port
 
 p4-si00b-auth-acceptance:
 	@test -n "$${P4SI00B_AUTH_TEST_DATABASE_URL:-}" || { echo "P4SI00B_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }
@@ -510,17 +510,22 @@ p4-si00b-auth-acceptance:
 p4-i01a-product-acceptance:
 	@test -n "$${P4I01A_PRODUCT_TEST_DATABASE_URL:-}" || { echo "P4I01A_PRODUCT_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/product/i01a_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/product/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/product/...
 
 p4-h01a1-media-acceptance:
 	@test -n "$${P4H01A1_MEDIA_TEST_DATABASE_URL:-}" || { echo "P4H01A1_MEDIA_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/media/h01a1_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/media/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/media/... ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-h03-media-acceptance:
 	@test -n "$${P4H03_MEDIA_TEST_DATABASE_URL:-}" || { echo "P4H03_MEDIA_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/media/h03_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/media/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/media/... ./internal/events/store ./internal/platform/http ./internal/auth/...
+
+p4-image-delete-0362-acceptance:
+	@test -n "$${P4IMAGEDELETE_TEST_DATABASE_URL:-}" || { echo "P4IMAGEDELETE_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$${P4IMAGEDELETE_TEST_DATABASE_URL}" up
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s -run '^TestImageDelete0362' ./acceptance/media -args -database-url "$${P4IMAGEDELETE_TEST_DATABASE_URL}"
 
 p4-miniprogram-library-ab-acceptance:
 	@test -n "$${P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL:-}" || { echo "P4MINIPROGRAMLIBRARY_TEST_DATABASE_URL is required" >&2; exit 2; }
@@ -529,28 +534,28 @@ p4-miniprogram-library-ab-acceptance:
 p4-hxc-sender-read-acceptance:
 	@test -n "$${P4HXC_SENDER_TEST_DATABASE_URL:-}" || { echo "P4HXC_SENDER_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/hxc/sender_read_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/hxc/... ./internal/contact/store ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/hxc/... ./internal/contact/store
 
 p4-delivery-lineage-0308-acceptance:
 	@test -n "$${P4DELIVERYLINEAGE_TEST_DATABASE_URL:-}" || { echo "P4DELIVERYLINEAGE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$P4DELIVERYLINEAGE_TEST_DATABASE_URL" up
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/outbound/app ./internal/outbound/store ./internal/events/app ./internal/events/store ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/outbound/app ./internal/outbound/store ./internal/events/app ./internal/events/store
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./acceptance/deliverylineage -args -database-url "$$P4DELIVERYLINEAGE_TEST_DATABASE_URL"
 
 p4-f01a-survey-acceptance:
 	@test -n "$${P4F01A_SURVEY_TEST_DATABASE_URL:-}" || { echo "P4F01A_SURVEY_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/survey/f01a_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-f01ab-survey-acceptance:
 	@test -n "$${P4F01AB_SURVEY_TEST_DATABASE_URL:-}" || { echo "P4F01AB_SURVEY_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/survey/f01ab_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm ./acceptance/survey
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./acceptance/survey
 
 p4-c01-channel-acceptance:
 	@test -n "$${P4C01_CHANNEL_TEST_DATABASE_URL:-}" || { echo "P4C01_CHANNEL_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/contact/c01_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/contact/app ./internal/contact/store ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/contact/app ./internal/contact/store ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-b02ab-tag-acceptance:
 	@test -n "$${P4B02AB_TAG_TEST_DATABASE_URL:-}" || { echo "P4B02AB_TAG_TEST_DATABASE_URL is required" >&2; exit 2; }
@@ -560,48 +565,48 @@ p4-b02ab-tag-acceptance:
 p4-j01-coupon-acceptance:
 	@test -n "$${P4J01_COUPON_TEST_DATABASE_URL:-}" || { echo "P4J01_COUPON_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/coupon/j01_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/coupon/... ./internal/product/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/coupon/... ./internal/product/... ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-coupon-ab-acceptance:
 	@test -n "$${P4COUPONAB_TEST_DATABASE_URL:-}" || { echo "P4COUPONAB_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/coupon/ab_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/coupon/... ./internal/product/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/coupon/... ./internal/product/... ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-i03-order-acceptance:
 	@test -n "$${P4I03_ORDER_TEST_DATABASE_URL:-}" || { echo "P4I03_ORDER_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/order/i03_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/order/... ./internal/contact/store ./internal/product/store ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/order/... ./internal/contact/store ./internal/product/store ./internal/auth/...
 
 p4-order-ab-acceptance:
 	@test -n "$${P4ORDERAB_TEST_DATABASE_URL:-}" || { echo "P4ORDERAB_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/order/ab_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/order/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/order/... ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-message-archive-ab-acceptance:
 	@test -n "$${P4MESSAGEARCHIVE_TEST_DATABASE_URL:-}" || { echo "P4MESSAGEARCHIVE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" /usr/bin/env bash acceptance/wecom/message_archive_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/wecom/app ./internal/wecom/store ./internal/identity/app ./internal/identity/store ./internal/events/store ./internal/platform/store ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/wecom/app ./internal/wecom/store ./internal/identity/app ./internal/identity/store ./internal/events/store ./internal/platform/store ./internal/auth/...
 
 p4-operation-cycle-ab-acceptance:
 	@test -n "$${P4OPERATIONCYCLE_TEST_DATABASE_URL:-}" || { echo "P4OPERATIONCYCLE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}" up
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/operationcycle/... ./internal/events/store ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/operationcycle/... ./internal/events/store ./internal/auth/...
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./acceptance/operationcycle -args -database-url "$${P4OPERATIONCYCLE_TEST_DATABASE_URL}"
 
 p4-automation-agents-ab-acceptance:
 	@test -n "$${P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL:-}" || { echo "P4AUTOMATIONAGENTSAB_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/automation/agents_ab_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/automation/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/automation/... ./internal/events/store ./internal/platform/http ./internal/auth/...
 
 p4-adminops-jobs-ab-acceptance:
 	@test -n "$${P4ADMINOPS_TEST_DATABASE_URL:-}" || { echo "P4ADMINOPS_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/adminops/control_plane_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/adminops/... ./internal/platform/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/adminops/... ./internal/platform/store ./internal/platform/http ./internal/auth/...
 
 p4-push-center-0421-0422-acceptance:
 	@test -n "$${P4PUSHCENTER_TEST_DATABASE_URL:-}" || { echo "P4PUSHCENTER_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/pushcenter/sections_stats_migration_compatibility.sh
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/pushcenter/... ./internal/platform/store ./internal/platform/http ./internal/auth/... ./cmd/aicrm
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/pushcenter/... ./internal/platform/store ./internal/platform/http ./internal/auth/...
 
 p3-c02a-acceptance:
 	@test -n "$${ACCEPTANCE_FIXTURES_TEST_DATABASE_URL:-}" || { echo "ACCEPTANCE_FIXTURES_TEST_DATABASE_URL is required" >&2; exit 2; }

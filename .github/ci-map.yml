@@ -40,7 +40,7 @@
     {
       "name": "migrations",
       "patterns": ["migrations/**"],
-      "effects": {"database": true,"database_mode": "full","sqlc": true}
+      "effects": {"database": true,"database_mode": "selected","sqlc": true}
     },
     {
       "name": "sqlc-root",
@@ -51,6 +51,11 @@
       "name": "go-dependencies",
       "patterns": ["go.mod","go.sum","tools/**"],
       "effects": {"go": true,"go_mode": "full","shared": true,"vulnerability": true}
+    },
+    {
+      "name": "ci-go-tools",
+      "patterns": ["scripts/ownership/**"],
+      "effects": {"go": true,"go_mode": "full","shared": true}
     },
     {
       "name": "shared-platform",
@@ -76,6 +81,21 @@
       "name": "media-database",
       "patterns": ["internal/media/store/**","acceptance/media/**"],
       "effects": {"database": true,"database_groups": ["media"],"database_mode": "selected","sqlc": true}
+    },
+    {
+      "name": "acceptance-automation-fixture",
+      "patterns": ["acceptance/automationfixture/**"],
+      "effects": {"go": true,"go_groups": ["automation"],"go_mode": "selected","database": true,"database_groups": ["automation"],"database_mode": "selected"}
+    },
+    {
+      "name": "acceptance-contact-fixture",
+      "patterns": ["acceptance/contactfixture/**"],
+      "effects": {"go": true,"go_groups": ["contact"],"go_mode": "selected","database": true,"database_groups": ["contact"],"database_mode": "selected"}
+    },
+    {
+      "name": "acceptance-media-fixture",
+      "patterns": ["acceptance/mediafixture/**"],
+      "effects": {"go": true,"go_groups": ["automation","contact","media"],"go_mode": "selected","database": true,"database_groups": ["automation","contact","media"],"database_mode": "selected"}
     },
     {
       "name": "domain-adminops",
@@ -178,9 +198,112 @@
       "effects": {"go": true,"go_groups": ["wecom"],"go_mode": "selected"}
     },
     {
+      "name": "selected-domain-database",
+      "patterns": [
+        "internal/adminops/store/**","acceptance/adminops/**",
+        "internal/auth/store/**","acceptance/auth/**",
+        "internal/automation/store/**","acceptance/automation/**",
+        "internal/contact/store/**","acceptance/contact/**",
+        "internal/coupon/store/**","acceptance/coupon/**",
+        "internal/identity/store/**","acceptance/identity/**",
+        "internal/operationcycle/store/**","acceptance/operationcycle/**",
+        "internal/order/store/**","acceptance/order/**",
+        "internal/outbound/store/**","acceptance/outbound/**",
+        "internal/product/store/**","acceptance/product/**",
+        "internal/pushcenter/store/**","acceptance/pushcenter/**",
+        "internal/segment/store/**","acceptance/segment/**",
+        "internal/stats/store/**","acceptance/stats/**",
+        "internal/survey/store/**","acceptance/survey/**",
+        "internal/wecom/store/**","acceptance/wecom/**"
+      ],
+      "effects": {"database": true,"database_mode": "selected","sqlc": true}
+    },
+    {
+      "name": "database-adminops",
+      "patterns": ["internal/adminops/store/**","acceptance/adminops/**"],
+      "effects": {"database": true,"database_groups": ["adminops"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-auth",
+      "patterns": ["internal/auth/store/**","acceptance/auth/**"],
+      "effects": {"database": true,"database_groups": ["auth"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-automation",
+      "patterns": ["internal/automation/store/**","acceptance/automation/**"],
+      "effects": {"database": true,"database_groups": ["automation"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-contact",
+      "patterns": ["internal/contact/store/**","acceptance/contact/**"],
+      "effects": {"database": true,"database_groups": ["contact"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-coupon",
+      "patterns": ["internal/coupon/store/**","acceptance/coupon/**"],
+      "effects": {"database": true,"database_groups": ["coupon"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-identity",
+      "patterns": ["internal/identity/store/**","acceptance/identity/**"],
+      "effects": {"database": true,"database_groups": ["identity"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-operationcycle",
+      "patterns": ["internal/operationcycle/store/**","acceptance/operationcycle/**"],
+      "effects": {"database": true,"database_groups": ["operationcycle"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-order",
+      "patterns": ["internal/order/store/**","acceptance/order/**"],
+      "effects": {"database": true,"database_groups": ["order"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-outbound",
+      "patterns": ["internal/outbound/store/**","acceptance/outbound/**"],
+      "effects": {"database": true,"database_groups": ["outbound"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-product",
+      "patterns": ["internal/product/store/**","acceptance/product/**"],
+      "effects": {"database": true,"database_groups": ["product"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-pushcenter",
+      "patterns": ["internal/pushcenter/store/**","acceptance/pushcenter/**"],
+      "effects": {"database": true,"database_groups": ["pushcenter"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-segment",
+      "patterns": ["internal/segment/store/**","acceptance/segment/**"],
+      "effects": {"database": true,"database_groups": ["segment"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-stats",
+      "patterns": ["internal/stats/store/**","acceptance/stats/**"],
+      "effects": {"database": true,"database_groups": ["stats"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-survey",
+      "patterns": ["internal/survey/store/**","acceptance/survey/**"],
+      "effects": {"database": true,"database_groups": ["survey"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-wecom",
+      "patterns": ["internal/wecom/store/**","acceptance/wecom/**"],
+      "effects": {"database": true,"database_groups": ["wecom"],"database_mode": "selected"}
+    },
+    {
       "name": "other-domain-store",
       "patterns": ["internal/*/store/**"],
-      "exclude": ["internal/media/store/**"],
+      "exclude": [
+        "internal/adminops/store/**","internal/auth/store/**","internal/automation/store/**",
+        "internal/contact/store/**","internal/coupon/store/**","internal/identity/store/**",
+        "internal/media/store/**","internal/operationcycle/store/**","internal/order/store/**",
+        "internal/outbound/store/**","internal/product/store/**","internal/pushcenter/store/**",
+        "internal/segment/store/**","internal/stats/store/**","internal/survey/store/**",
+        "internal/wecom/store/**"
+      ],
       "effects": {"database": true,"database_mode": "full","sqlc": true}
     },
     {

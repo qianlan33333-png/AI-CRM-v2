@@ -50,6 +50,7 @@ add_domain_group() {
   local domain_name="$1"
   add_package "./internal/${domain_name}/..."
   add_package "./acceptance/${domain_name}/..."
+  add_package "./acceptance/${domain_name}fixture/..."
   add_package "./cmd/aicrm"
 }
 
