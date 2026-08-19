@@ -12,6 +12,7 @@ import {
   filterCoupons,
   generatedCouponsTransport,
   loadCouponClaims,
+  loadCouponShare,
   loadCoupons,
   newCouponCopyIdempotencyKey,
   type CouponAvailabilityFilter,
@@ -19,6 +20,7 @@ import {
   type CouponClaimsResult,
   type CouponCopyResult,
   type CouponListItem,
+  type CouponShareResult,
   type CouponListResult,
   type CouponsFailure,
   type CouponsRole,
@@ -32,6 +34,12 @@ const messages: Record<CouponsFailure, string> = {
   conflict: "复制请求与已有操作冲突，请刷新后重试。",
   invalid: "优惠券响应或请求不符合已冻结合同。",
   unavailable: "本地优惠券服务暂不可用，请稍后重试。",
+};
+
+const shareMessages: Record<CouponsFailure, string> = {
+  ...messages,
+  not_found: "要生成链接的优惠券已不存在，请刷新后重试。",
+  conflict: "只有已发布的本地优惠券可以生成分享链接。",
 };
 
 export type CouponsViewState =
@@ -63,6 +71,26 @@ export type CouponClaimsViewState =
       readonly coupon: CouponListItem;
       readonly failure: CouponsFailure;
       readonly previous?: CouponClaimsPage;
+    };
+
+export type CouponShareViewState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly coupon: CouponListItem;
+      readonly previous?: string;
+    }
+  | {
+      readonly kind: "ready";
+      readonly coupon: CouponListItem;
+      readonly url: string;
+      readonly copyStatus?: "copied" | "manual";
+    }
+  | {
+      readonly kind: "error";
+      readonly coupon: CouponListItem;
+      readonly failure: CouponsFailure;
+      readonly previous?: string;
     };
 
 export interface CouponCopyInput {
@@ -125,9 +153,14 @@ export function CouponsPage({
   const [claimsState, setClaimsState] = useState<CouponClaimsViewState>({
     kind: "idle",
   });
+  const [shareState, setShareState] = useState<CouponShareViewState>({
+    kind: "idle",
+  });
   const copyInFlight = useRef(false);
   const claimsRequest = useRef(0);
   const claimsInFlight = useRef<string>();
+  const shareRequest = useRef(0);
+  const shareInFlight = useRef<number>();
 
   const reload = useCallback(async (): Promise<CouponListResult> => {
     const result = await loadCoupons(transport);
@@ -221,6 +254,43 @@ export function CouponsPage({
     [claimsState, onUnauthenticated, transport],
   );
 
+  const onShare = useCallback(
+    async (item: CouponListItem) => {
+      if (item.status !== "published" || shareInFlight.current === item.id)
+        return;
+      shareInFlight.current = item.id;
+      const request = ++shareRequest.current;
+      const previous =
+        shareState.kind === "ready" && shareState.coupon.id === item.id
+          ? shareState.url
+          : shareState.kind === "error" && shareState.coupon.id === item.id
+            ? shareState.previous
+            : undefined;
+      setShareState({ kind: "loading", coupon: item, previous });
+      let result: CouponShareResult;
+      try {
+        result = await loadCouponShare(transport, item);
+      } finally {
+        if (shareInFlight.current === item.id)
+          shareInFlight.current = undefined;
+      }
+      if (request !== shareRequest.current) return;
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      setShareState(
+        result.status === "loaded"
+          ? { kind: "ready", coupon: item, url: result.share.url }
+          : { kind: "error", coupon: item, failure: result.status, previous },
+      );
+    },
+    [onUnauthenticated, shareState, transport],
+  );
+
+  const onCopyShare = useCallback(async () => {
+    if (shareState.kind !== "ready") return;
+    const copyStatus = await copyCouponShareURL(shareState.url);
+    setShareState({ ...shareState, copyStatus });
+  }, [shareState]);
+
   return (
     <CouponsView
       busyID={busyID}
@@ -229,6 +299,9 @@ export function CouponsPage({
       onCopy={onCopy}
       onClaims={onClaims}
       role={role}
+      shareState={shareState}
+      onShare={onShare}
+      onCopyShare={onCopyShare}
       state={state}
     />
   );
@@ -240,7 +313,10 @@ export function CouponsView({
   notice,
   onCopy,
   onClaims,
+  onCopyShare,
+  onShare,
   role,
+  shareState,
   state,
 }: {
   readonly busyID?: number;
@@ -250,7 +326,11 @@ export function CouponsView({
   readonly onCopy: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onClaims?: (item: CouponListItem, offset?: number) => void;
+  readonly onCopyShare?: () => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onShare?: (item: CouponListItem) => void;
   readonly role: CouponsRole;
+  readonly shareState?: CouponShareViewState;
   readonly state: CouponsViewState;
 }): React.ReactElement {
   const canAccess = role === "admin" || role === "ops";
@@ -363,6 +443,15 @@ export function CouponsView({
                   >
                     查看领取数据
                   </button>
+                  {item.status === "published" ? (
+                    <button
+                      type="button"
+                      disabled={shareState?.kind === "loading"}
+                      onClick={() => onShare?.(item)}
+                    >
+                      分享链接
+                    </button>
+                  ) : null}
                 </td>
               </tr>
             ))}
@@ -371,6 +460,59 @@ export function CouponsView({
       )}
       {claimsState && claimsState.kind !== "idle" ? (
         <CouponClaimsPanel claimsState={claimsState} onClaims={onClaims} />
+      ) : null}
+      {shareState && shareState.kind !== "idle" ? (
+        <CouponSharePanel onCopyShare={onCopyShare} shareState={shareState} />
+      ) : null}
+    </section>
+  );
+}
+
+export async function copyCouponShareURL(
+  url: string,
+  clipboard: Pick<Clipboard, "writeText"> | undefined = runtimeClipboard(),
+): Promise<"copied" | "manual"> {
+  if (!/^\/c\/c-[1-9][0-9]*$/.test(url)) return "manual";
+  try {
+    await clipboard?.writeText(url);
+    return clipboard ? "copied" : "manual";
+  } catch {
+    return "manual";
+  }
+}
+
+function CouponSharePanel({
+  onCopyShare,
+  shareState,
+}: {
+  readonly onCopyShare?: () => void;
+  readonly shareState: Exclude<CouponShareViewState, { readonly kind: "idle" }>;
+}): React.ReactElement {
+  const url =
+    shareState.kind === "ready" ? shareState.url : shareState.previous;
+  const loading = shareState.kind === "loading";
+  const error = shareState.kind === "error" ? shareState.failure : undefined;
+  const copyStatus =
+    shareState.kind === "ready" ? shareState.copyStatus : undefined;
+  return (
+    <section aria-label="优惠券本地分享链接">
+      <h2>本地分享链接：{shareState.coupon.name}</h2>
+      <p>仅显示本地相对链接，不代表二维码、领取、核销或外部发送已发生。</p>
+      {loading ? <p role="status">正在读取本地分享链接。</p> : null}
+      {error ? <p role="alert">{shareMessages[error]}</p> : null}
+      {url ? (
+        <>
+          <p>
+            <code>{url}</code>
+          </p>
+          <button type="button" disabled={loading} onClick={onCopyShare}>
+            复制链接
+          </button>
+          {copyStatus === "copied" ? <p role="status">链接已复制。</p> : null}
+          {copyStatus === "manual" ? (
+            <p role="status">无法访问剪贴板，请手工复制上方链接。</p>
+          ) : null}
+        </>
       ) : null}
     </section>
   );
@@ -464,4 +606,12 @@ function CouponClaimsPanel({
 
 function runtimeCookieHeader(): string {
   return typeof document === "undefined" ? "" : document.cookie;
+}
+
+function runtimeClipboard(): Pick<Clipboard, "writeText"> | undefined {
+  try {
+    return typeof navigator === "undefined" ? undefined : navigator.clipboard;
+  } catch {
+    return undefined;
+  }
 }

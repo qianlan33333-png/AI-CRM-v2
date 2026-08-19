@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   CouponsPage,
   CouponsView,
+  copyCouponShareURL,
   performCouponCopy,
   startCouponCopy,
 } from "./coupons-ui";
@@ -12,6 +13,7 @@ import type { CouponsTransport } from "./coupons";
 const item = {
   id: 7,
   name: '<img src=x onerror="bad">',
+  status: "published" as const,
   availability: "active" as const,
   createdAt: "2026-08-19T00:00:00Z",
   updatedAt: "2026-08-19T01:02:03Z",
@@ -22,6 +24,7 @@ function transport(): CouponsTransport {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     copy: vi.fn(async () => ({ status: 503, data: {} })),
     claims: vi.fn(async () => ({ status: 503, data: {} })),
+    share: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as CouponsTransport;
 }
 
@@ -51,6 +54,7 @@ describe("CouponsView", () => {
         expect(html).toContain(`value="${status}"`);
       }
       expect(html).toContain("复制只会创建新的本地草稿");
+      expect(html).toContain("分享链接");
       expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
       expect(html).not.toContain("<img");
       expect(html).not.toMatch(/payment|provider|redeem|share/i);
@@ -68,6 +72,52 @@ describe("CouponsView", () => {
     expect(client.list).not.toHaveBeenCalled();
     expect(client.copy).not.toHaveBeenCalled();
     expect(client.claims).not.toHaveBeenCalled();
+    expect(client.share).not.toHaveBeenCalled();
+  });
+
+  it("shows a local share URL only for a published coupon and retains it for manual copy", () => {
+    const html = renderToStaticMarkup(
+      <CouponsView
+        onCopy={vi.fn()}
+        onCopyShare={vi.fn()}
+        onShare={vi.fn()}
+        role="admin"
+        shareState={{
+          kind: "ready",
+          coupon: item,
+          url: "/c/c-7",
+          copyStatus: "manual",
+        }}
+        state={{
+          kind: "ready",
+          items: [item, { ...item, id: 8, status: "draft" }],
+        }}
+      />,
+    );
+    expect(html).toContain('aria-label="优惠券本地分享链接"');
+    expect(html).toContain("/c/c-7");
+    expect(html).toContain("无法访问剪贴板，请手工复制上方链接。");
+    expect(html.match(/>分享链接</g)).toHaveLength(1);
+    expect(html).not.toMatch(/qrcode|payment|provider|redeem|send/i);
+  });
+
+  it("copies only a validated local URL and leaves it manually available when clipboard fails", async () => {
+    const clipboard = { writeText: vi.fn(async () => undefined) };
+    await expect(copyCouponShareURL("/c/c-7", clipboard)).resolves.toBe(
+      "copied",
+    );
+    expect(clipboard.writeText).toHaveBeenCalledWith("/c/c-7");
+
+    const rejected = {
+      writeText: vi.fn(async () => Promise.reject(new Error("denied"))),
+    };
+    await expect(copyCouponShareURL("/c/c-7", rejected)).resolves.toBe(
+      "manual",
+    );
+    await expect(
+      copyCouponShareURL("https://outside.example/c/c-7", clipboard),
+    ).resolves.toBe("manual");
+    expect(clipboard.writeText).toHaveBeenCalledOnce();
   });
 
   it("renders only the frozen opaque claim projection and bounded pagination", () => {
