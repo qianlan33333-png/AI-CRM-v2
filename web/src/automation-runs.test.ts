@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   AUTOMATION_RUNS_PAGE_SIZE,
+  loadAutomationDiagnostics,
   loadAutomationRuns,
   loadAutomationSourceEvent,
   nextAutomationRunsPage,
   parseAutomationSourceEvent,
+  parseAutomationDiagnostics,
   parseAutomationRun,
   parseAutomationRunsPage,
   previousAutomationRunsPage,
@@ -58,12 +60,36 @@ const sourceEvent = {
   real_external_call_executed: false,
 };
 
+const diagnostics = {
+  ok: true,
+  filters: { event_type: "", consumer: "", status: "" },
+  event_count: 2,
+  undispatched_event_count: 1,
+  delivery_counts: {
+    pending: 1, processing: 2, completed: 3, final_failed: 4, outcome_unknown: 5,
+  },
+  consumer_registry: [
+    { consumer: "automation.tag-trigger.v1", event_types: ["customer.tag_applied"] },
+    { consumer: "stats.tag-applied.v1", event_types: ["customer.tag_applied"] },
+    { consumer: "operation-cycle.fact.v1", event_types: ["operation_cycle.fact_recorded"] },
+  ],
+  observed_at: "2026-08-19T08:00:02Z",
+  registry_id: "v2-internal-events.v1",
+  source_status: "local_read_model",
+  observed_domains: ["event_log", "event_deliveries"],
+  unobserved_domains: ["river_queue", "outbound_provider", "external_delivery"],
+  external_delivery: "unknown",
+  route_owner: "ai_crm_next",
+  real_external_call_executed: false,
+};
+
 function transport(
   overrides: Partial<AutomationRunsTransport> = {},
 ): AutomationRunsTransport {
   return {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     sourceEvent: vi.fn(async () => ({ status: 503, data: {} })),
+    diagnostics: vi.fn(async () => ({ status: 503, data: {} })),
     ...overrides,
   } as AutomationRunsTransport;
 }
@@ -122,6 +148,49 @@ describe("automation run receipt contract", () => {
     expect(
       parseAutomationRunsPage({ ...valid, items: [run, run], total: 2 }, 1),
     ).toBeUndefined();
+  });
+});
+
+describe("automation internal-event diagnostics contract", () => {
+  it("accepts only the exact unfiltered local diagnostic summary", () => {
+    expect(parseAutomationDiagnostics(diagnostics)).toMatchObject({
+      eventCount: 2,
+      undispatchedEventCount: 1,
+      deliveryCounts: { completed: 3, outcome_unknown: 5 },
+      observedDomains: ["event_log", "event_deliveries"],
+      unobservedDomains: ["river_queue", "outbound_provider", "external_delivery"],
+    });
+  });
+
+  it.each([
+    { ...diagnostics, extra: true },
+    { ...diagnostics, filters: { ...diagnostics.filters, status: "completed" } },
+    { ...diagnostics, event_count: -1 },
+    { ...diagnostics, undispatched_event_count: 3 },
+    { ...diagnostics, delivery_counts: { ...diagnostics.delivery_counts, extra: 1 } },
+    { ...diagnostics, consumer_registry: [...diagnostics.consumer_registry].reverse() },
+    { ...diagnostics, consumer_registry: [{ ...diagnostics.consumer_registry[0], event_types: ["operation_cycle.fact_recorded"] }, ...diagnostics.consumer_registry.slice(1)] },
+    { ...diagnostics, observed_domains: ["event_deliveries", "event_log"] },
+    { ...diagnostics, unobserved_domains: ["river_queue", "external_delivery", "outbound_provider"] },
+    { ...diagnostics, external_delivery: "sent" },
+    { ...diagnostics, real_external_call_executed: true },
+  ])("fails closed when diagnostic facts drift %#", (value) => {
+    expect(parseAutomationDiagnostics(value)).toBeUndefined();
+  });
+
+  it("uses only one fixed-empty-filter same-origin GET and never retries", async () => {
+    const client = transport({
+      diagnostics: vi
+        .fn()
+        .mockResolvedValueOnce({ status: 200, data: diagnostics })
+        .mockResolvedValueOnce({ status: 401, data: {} })
+        .mockRejectedValueOnce(new Error("offline")),
+    });
+    await expect(loadAutomationDiagnostics(client)).resolves.toMatchObject({ status: "loaded" });
+    expect(client.diagnostics).toHaveBeenCalledWith({}, { credentials: "same-origin" });
+    await expect(loadAutomationDiagnostics(client)).resolves.toEqual({ status: "unauthenticated" });
+    await expect(loadAutomationDiagnostics(client)).resolves.toEqual({ status: "unavailable" });
+    expect(client.diagnostics).toHaveBeenCalledTimes(3);
   });
 });
 

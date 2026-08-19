@@ -3,15 +3,39 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   AutomationRunsPage,
+  AutomationDiagnosticsPanel,
   AutomationSourceEventPanel,
+  loadAutomationDiagnosticsState,
   loadAutomationSourceEventState,
   RunRows,
   type AutomationSourceEventState,
 } from "./automation-runs-ui";
 import type {
+  AutomationDiagnostics,
   AutomationRunsPage as AutomationRunsPageData,
   AutomationRunsTransport,
 } from "./automation-runs";
+
+const diagnostics = {
+  ok: true,
+  filters: { event_type: "", consumer: "", status: "" },
+  event_count: 2,
+  undispatched_event_count: 1,
+  delivery_counts: { pending: 1, processing: 2, completed: 3, final_failed: 4, outcome_unknown: 5 },
+  consumer_registry: [
+    { consumer: "automation.tag-trigger.v1", event_types: ["customer.tag_applied"] },
+    { consumer: "stats.tag-applied.v1", event_types: ["customer.tag_applied"] },
+    { consumer: "operation-cycle.fact.v1", event_types: ["operation_cycle.fact_recorded"] },
+  ],
+  observed_at: "2026-08-19T08:00:02Z",
+  registry_id: "v2-internal-events.v1",
+  source_status: "local_read_model",
+  observed_domains: ["event_log", "event_deliveries"],
+  unobserved_domains: ["river_queue", "outbound_provider", "external_delivery"],
+  external_delivery: "unknown",
+  route_owner: "ai_crm_next",
+  real_external_call_executed: false,
+};
 
 const sourceEvent = {
   ok: true,
@@ -42,7 +66,32 @@ function transport(): AutomationRunsTransport {
   return {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     sourceEvent: vi.fn(async () => ({ status: 503, data: {} })),
+    diagnostics: vi.fn(async () => ({ status: 503, data: {} })),
   } as AutomationRunsTransport;
+}
+
+function diagnosticsReader(client: AutomationRunsTransport) {
+  if (!client.diagnostics) throw new Error("diagnostics reader required");
+  return vi.mocked(client.diagnostics);
+}
+
+function diagnosticsController(
+  client: AutomationRunsTransport,
+  onUnauthenticated?: () => void,
+) {
+  const state = { current: { kind: "loading" } as const } as { current: import("./automation-runs-ui").AutomationDiagnosticsState };
+  const generation = { current: 0 };
+  const inFlight = { current: undefined as symbol | undefined };
+  const onState = vi.fn((next: import("./automation-runs-ui").AutomationDiagnosticsState) => {
+    state.current = next;
+  });
+  return {
+    generation,
+    inFlight,
+    load: () => loadAutomationDiagnosticsState({ generation, inFlight, onState, onUnauthenticated, state, transport: client }),
+    onState,
+    state,
+  };
 }
 
 function sourceEventReader(client: AutomationRunsTransport) {
@@ -139,6 +188,7 @@ describe("AutomationRunsPage shell", () => {
       expect(html).not.toContain("正在读取自动化运行记录。");
       expect(client.list).not.toHaveBeenCalled();
       expect(client.sourceEvent).not.toHaveBeenCalled();
+      expect(client.diagnostics).not.toHaveBeenCalled();
     },
   );
 
@@ -218,6 +268,90 @@ describe("AutomationRunsPage shell", () => {
     expect(html).not.toMatch(
       /external_delivery|real_external_call_executed|unionid|external_userid|mobile/i,
     );
+  });
+
+  it("renders only local diagnostic counts and never claims external delivery", () => {
+    const parsed: AutomationDiagnostics = {
+      eventCount: 2, undispatchedEventCount: 1,
+      deliveryCounts: { pending: 1, processing: 2, completed: 3, final_failed: 4, outcome_unknown: 5 },
+      consumerRegistry: [
+        { consumer: "automation.tag-trigger.v1", eventType: "customer.tag_applied" },
+        { consumer: "stats.tag-applied.v1", eventType: "customer.tag_applied" },
+        { consumer: "operation-cycle.fact.v1", eventType: "operation_cycle.fact_recorded" },
+      ],
+      observedAt: "2026-08-19T08:00:02Z",
+      observedDomains: ["event_log", "event_deliveries"],
+      unobservedDomains: ["river_queue", "outbound_provider", "external_delivery"],
+    };
+    const html = renderToStaticMarkup(<AutomationDiagnosticsPanel state={{ kind: "ready", diagnostics: parsed }} />);
+    expect(html).toContain("内部事件诊断摘要");
+    expect(html).toContain("内部处理完成");
+    expect(html).toContain("外部投递状态为 unknown");
+    expect(html).toContain("未执行真实外部调用");
+    expect(html).not.toMatch(/provider 已执行|外部投递成功|已送达/i);
+  });
+
+  it("single-flights diagnostics, retains a verified summary, and invalidates unmounted results", async () => {
+    let release: (() => void) | undefined;
+    const client = transport();
+    diagnosticsReader(client).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ status: 200, data: diagnostics }); }),
+    );
+    const controller = diagnosticsController(client);
+    const first = controller.load();
+    expect(controller.load()).toBeUndefined();
+    expect(diagnosticsReader(client)).toHaveBeenCalledWith({}, { credentials: "same-origin" });
+    release?.();
+    await first;
+    expect(controller.state.current).toMatchObject({ kind: "ready", diagnostics: { eventCount: 2 } });
+
+    diagnosticsReader(client).mockResolvedValueOnce({ status: 503, data: {} });
+    await controller.load();
+    expect(controller.state.current).toMatchObject({ kind: "error", failure: "unavailable", previous: { eventCount: 2 } });
+
+    diagnosticsReader(client).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ status: 200, data: diagnostics }); }),
+    );
+    const stale = controller.load();
+    const statesBeforeUnmount = controller.onState.mock.calls.length;
+    controller.generation.current += 1;
+    release?.();
+    await stale;
+    expect(controller.onState).toHaveBeenCalledTimes(statesBeforeUnmount);
+  });
+
+  it("notifies an expired session after the active diagnostics read", async () => {
+    const client = transport();
+    diagnosticsReader(client).mockResolvedValue({ status: 401, data: {} });
+    const onUnauthenticated = vi.fn();
+    const controller = diagnosticsController(client, onUnauthenticated);
+    await controller.load();
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(controller.state.current).toMatchObject({ kind: "error", failure: "unauthenticated" });
+  });
+
+  it("lets a replacement effect read while an old diagnostic request is stale without unlocking it", async () => {
+    // eslint-disable-next-line no-unused-vars -- the Promise resolver receives the synthetic transport response.
+    const resolvers: ((value: { status: number; data: unknown }) => void)[] = [];
+    const client = transport();
+    diagnosticsReader(client).mockImplementation(
+      () => new Promise((resolve) => { resolvers.push(resolve); }),
+    );
+    const controller = diagnosticsController(client);
+    const oldRequest = controller.load();
+    controller.generation.current += 1;
+    controller.inFlight.current = undefined;
+    const replacement = controller.load();
+    expect(diagnosticsReader(client)).toHaveBeenCalledTimes(2);
+
+    resolvers[0]?.({ status: 200, data: diagnostics });
+    await oldRequest;
+    expect(controller.inFlight.current).toBeDefined();
+
+    resolvers[1]?.({ status: 200, data: diagnostics });
+    await replacement;
+    expect(controller.state.current).toMatchObject({ kind: "ready", diagnostics: { eventCount: 2 } });
+    expect(controller.inFlight.current).toBeUndefined();
   });
 
   it("runs the page source-event controller with the row event ID only once per tick", async () => {
