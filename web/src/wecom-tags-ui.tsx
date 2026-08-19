@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
+  archiveWecomTagGroup,
+  confirmsArchivedWecomTagGroup,
   confirmsCreatedWecomTagGroup,
   confirmsRenamedWecomTag,
   confirmsRenamedWecomTagGroup,
@@ -18,6 +20,7 @@ import {
   wecomTagSearchState,
   type WecomTagCatalog,
   type WecomTagGroupCreateResult,
+  type WecomTagGroupArchiveResult,
   type WecomTagGroupRenameResult,
   type WecomTagRenameResult,
   type WecomTagsRole,
@@ -156,6 +159,68 @@ export function submitWecomTagGroupRename(
   });
 }
 
+export interface WecomTagGroupArchiveController {
+  readonly transport: WecomTagsTransport;
+  readonly readCookie: () => string;
+  readonly onUnauthenticated?: () => void;
+  readonly mutationInFlight: { current: boolean };
+  readonly mutationLocked: { current: boolean };
+  readonly lockMutations: () => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setArchiving: (value: boolean) => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setCatalog: (catalog: WecomTagCatalog) => void;
+}
+
+export function submitWecomTagGroupArchive(
+  controller: WecomTagGroupArchiveController,
+  group: WecomTagGroup,
+): Promise<WecomTagGroupArchiveResult | undefined> | undefined {
+  if (controller.mutationLocked.current) return undefined;
+  return startWecomTagMutation(controller.mutationInFlight, async () => {
+    let csrfToken: string | undefined;
+    try {
+      csrfToken = readCSRFCookie(controller.readCookie());
+    } catch {
+      csrfToken = undefined;
+    }
+    const idempotencyKey = newWecomTagIdempotencyKey();
+    if (!csrfToken || !idempotencyKey) return { status: "invalid" };
+
+    controller.setArchiving(true);
+    try {
+      const result = await archiveWecomTagGroup(
+        controller.transport,
+        group,
+        csrfToken,
+        idempotencyKey,
+      );
+      if (result.status !== "archived") {
+        if (result.status === "unauthenticated") {
+          controller.onUnauthenticated?.();
+        }
+        if (result.status === "unknown") controller.lockMutations();
+        return result;
+      }
+      const refreshed = await loadWecomTagCatalog(controller.transport);
+      if (refreshed.status === "unauthenticated") {
+        controller.onUnauthenticated?.();
+      }
+      if (
+        refreshed.status === "loaded" &&
+        confirmsArchivedWecomTagGroup(refreshed.catalog, result, group)
+      ) {
+        controller.setCatalog(refreshed.catalog);
+        return result;
+      }
+      controller.lockMutations();
+      return { status: "unknown" };
+    } finally {
+      controller.setArchiving(false);
+    }
+  });
+}
+
 export async function copyWecomTagID(
   tagID: number,
   clipboard: ClipboardWriter | undefined = typeof navigator === "undefined"
@@ -185,6 +250,7 @@ export function WecomTagsPage({
   const [firstTagName, setFirstTagName] = useState("");
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [mutationUncertain, setMutationUncertain] = useState(false);
   const [createNotice, setCreateNotice] = useState<string>();
   const mutationInFlight = useRef(false);
@@ -269,7 +335,7 @@ export function WecomTagsPage({
       <h2 id="wecom-tag-create-title">创建本地标签组</h2>
       <p>仅创建本地标签目录记录，不会同步或操作企微联系人。</p>
       <form onSubmit={submitCreate}>
-        <fieldset disabled={creating || renaming || mutationUncertain}>
+        <fieldset disabled={creating || renaming || archiving || mutationUncertain}>
           <label>
             标签组名称
             <input
@@ -363,14 +429,35 @@ export function WecomTagsPage({
     );
   };
 
+  const onArchiveGroup = async (
+    group: WecomTagGroup,
+  ): Promise<WecomTagGroupArchiveResult | undefined> => {
+    if (!canAccess) return undefined;
+    return submitWecomTagGroupArchive(
+      {
+        transport,
+        readCookie,
+        onUnauthenticated,
+        mutationInFlight,
+        mutationLocked,
+        lockMutations,
+        setArchiving,
+        setCatalog: (catalog) => setState({ kind: "ready", catalog }),
+      },
+      group,
+    );
+  };
+
   return (
     <WecomTagsView
       createPanel={createPanel}
-      mutationBusy={creating || renaming}
+      mutationBusy={creating || renaming || archiving}
       mutationLocked={mutationUncertain}
+      onArchiveGroup={onArchiveGroup}
       onRenameGroup={onRenameGroup}
       onRenameTag={onRenameTag}
       renaming={renaming}
+      archiving={archiving}
       role={role}
       state={state}
     />
@@ -383,15 +470,21 @@ export function WecomTagsView({
   createPanel,
   mutationBusy = false,
   mutationLocked = false,
+  onArchiveGroup,
   onRenameGroup,
   onRenameTag,
   renaming = false,
+  archiving = false,
 }: {
   readonly role: WecomTagsRole;
   readonly state: WecomTagsViewState;
   readonly createPanel?: React.ReactNode;
   readonly mutationBusy?: boolean;
   readonly mutationLocked?: boolean;
+  readonly onArchiveGroup?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    group: WecomTagGroup,
+  ) => Promise<WecomTagGroupArchiveResult | undefined>;
   readonly onRenameGroup?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     group: WecomTagGroup,
@@ -405,6 +498,7 @@ export function WecomTagsView({
     tagName: string,
   ) => Promise<WecomTagRenameResult | undefined>;
   readonly renaming?: boolean;
+  readonly archiving?: boolean;
 }): React.ReactElement {
   const canAccess = role === "admin" || role === "ops";
   const [query, setQuery] = useState("");
@@ -520,8 +614,10 @@ export function WecomTagsView({
             group={selected}
             mutationBusy={mutationBusy}
             mutationLocked={mutationLocked}
+            onArchive={onArchiveGroup}
             onRename={onRenameGroup}
             renaming={renaming}
+            archiving={archiving}
           />
           {visibleTags.length === 0 ? (
             <p>当前筛选下没有标签。</p>
@@ -594,12 +690,18 @@ export function WecomTagGroupDetails({
   group,
   mutationBusy = false,
   mutationLocked = false,
+  onArchive,
   onRename,
   renaming = false,
+  archiving = false,
 }: {
   readonly group: WecomTagGroup;
   readonly mutationBusy?: boolean;
   readonly mutationLocked?: boolean;
+  readonly onArchive?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    group: WecomTagGroup,
+  ) => Promise<WecomTagGroupArchiveResult | undefined>;
   readonly onRename?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     group: WecomTagGroup,
@@ -607,13 +709,18 @@ export function WecomTagGroupDetails({
     groupName: string,
   ) => Promise<WecomTagGroupRenameResult | undefined>;
   readonly renaming?: boolean;
+  readonly archiving?: boolean;
 }): React.ReactElement {
   const [groupName, setGroupName] = useState(group.name);
   const [renameNotice, setRenameNotice] = useState<string>();
+  const [archiveConfirmation, setArchiveConfirmation] = useState(false);
+  const [archiveNotice, setArchiveNotice] = useState<string>();
 
   useEffect(() => {
     setGroupName(group.name);
     setRenameNotice(undefined);
+    setArchiveConfirmation(false);
+    setArchiveNotice(undefined);
   }, [group.id, group.name]);
 
   return (
@@ -665,6 +772,63 @@ export function WecomTagGroupDetails({
         <p aria-live="polite" role={mutationLocked ? "alert" : "status"}>
           {renameNotice}
         </p>
+      ) : null}
+      {onArchive ? (
+        <section aria-labelledby="wecom-tag-group-archive-title">
+          <h4 id="wecom-tag-group-archive-title">归档本地标签组</h4>
+          {archiveConfirmation ? (
+            <>
+              <p>确认归档本地标签组“{group.name}”及其本地标签？</p>
+              <button
+                type="button"
+                disabled={mutationLocked || mutationBusy}
+                onClick={() => {
+                  if (mutationLocked || mutationBusy) return;
+                  void onArchive(group).then((result) => {
+                    if (!result) return;
+                    const notices: Record<
+                      WecomTagGroupArchiveResult["status"],
+                      string
+                    > = {
+                      archived: "本地标签组已归档。",
+                      unauthenticated: "登录状态已失效，请重新登录。",
+                      forbidden: "当前账号没有本地标签组归档权限。",
+                      invalid: "本地标签组归档请求未通过校验。",
+                      unknown:
+                        "本地归档结果未确认，系统不会自动重试；请人工刷新页面后核对目录。",
+                    };
+                    if (result.status === "archived") {
+                      setArchiveConfirmation(false);
+                    }
+                    setArchiveNotice(notices[result.status]);
+                  });
+                }}
+              >
+                {archiving ? "正在归档…" : "确认归档本地标签组"}
+              </button>
+              <button
+                type="button"
+                disabled={mutationLocked || mutationBusy}
+                onClick={() => setArchiveConfirmation(false)}
+              >
+                取消
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={mutationLocked || mutationBusy}
+              onClick={() => setArchiveConfirmation(true)}
+            >
+              归档本地标签组
+            </button>
+          )}
+          {archiveNotice ? (
+            <p aria-live="polite" role={mutationLocked ? "alert" : "status"}>
+              {archiveNotice}
+            </p>
+          ) : null}
+        </section>
       ) : null}
     </section>
   );

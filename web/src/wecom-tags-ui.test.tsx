@@ -5,6 +5,7 @@ import {
   copyWecomTagID,
   startWecomTagGroupCreate,
   startWecomTagMutation,
+  submitWecomTagGroupArchive,
   submitWecomTagGroupRename,
   WecomTagDetails,
   WecomTagGroupDetails,
@@ -99,6 +100,41 @@ function groupUpdated(groupName: string) {
   };
 }
 
+function groupArchived() {
+  return {
+    ok: true,
+    reason: "group_archived",
+    source_status: "local_catalog",
+    route_owner: "ai_crm_next",
+    fallback_used: false,
+    real_external_call_executed: false,
+    sync_executed: false,
+    fixture_used: false,
+    dry_run: false,
+    group: { group_id: 1, group_name: "archived:1", sort_order: 0 },
+  };
+}
+
+function rawArchivedCatalog() {
+  return {
+    ok: true,
+    items: [],
+    tags: [],
+    groups: [],
+    count: 0,
+    total_tags: 0,
+    tag_limit: 1000,
+    synced_at: "2026-08-19T00:00:00Z",
+    source_status: "local_catalog",
+    read_model_status: "ready",
+    route_owner: "ai_crm_next",
+    fallback_used: false,
+    real_external_call_executed: false,
+    sync_executed: false,
+    fixture_used: false,
+  };
+}
+
 function groupRenameController(
   client: WecomTagsTransport,
   options: {
@@ -129,6 +165,35 @@ function groupRenameController(
     mutationLocked,
     lockMutations,
     setRenaming,
+    setCatalog,
+  };
+}
+
+function groupArchiveController(
+  client: WecomTagsTransport,
+  onUnauthenticated?: () => void,
+) {
+  const mutationInFlight = { current: false };
+  const mutationLocked = { current: false };
+  const setArchiving = vi.fn();
+  const setCatalog = vi.fn();
+  const lockMutations = vi.fn(() => {
+    mutationLocked.current = true;
+  });
+  return {
+    controller: {
+      transport: client,
+      readCookie: () => `aicrm_csrf=${"c".repeat(43)}`,
+      onUnauthenticated,
+      mutationInFlight,
+      mutationLocked,
+      lockMutations,
+      setArchiving,
+      setCatalog,
+    },
+    mutationLocked,
+    lockMutations,
+    setArchiving,
     setCatalog,
   };
 }
@@ -291,6 +356,19 @@ describe("WecomTagsView", () => {
     );
     expect(sales).toContain("当前账号没有企微标签目录访问权限。");
     expect(sales).not.toContain("保存本地标签组名称");
+  });
+
+  it("renders only an explicit local archive confirmation control for permitted groups", () => {
+    const archive = vi.fn(async () => ({
+      status: "archived" as const,
+      group: { id: 1, name: "archived:1", sortOrder: 0 },
+    }));
+    const html = renderToStaticMarkup(
+      <WecomTagGroupDetails group={catalog.groups[0]} onArchive={archive} />,
+    );
+    expect(html).toContain("归档本地标签组");
+    expect(html).not.toContain("确认归档本地标签组");
+    expect(html).not.toMatch(/企微删除|sync|live|provider/i);
   });
 
   it("renders an uncertain group rename as a read-only local form", () => {
@@ -550,5 +628,96 @@ describe("WecomTagsPage group rename controller", () => {
       ),
     ).toBeUndefined();
     expect(driftClient.renameGroup).toHaveBeenCalledOnce();
+  });
+});
+
+describe("WecomTagsPage group archive controller", () => {
+  it("sends one same-tick local archive, rereads the catalog, and publishes only after group and tags disappear", async () => {
+    const client = {
+      read: vi.fn(async () => ({ status: 200, data: rawArchivedCatalog() })),
+      archiveGroup: vi.fn(async () => ({ status: 200, data: groupArchived() })),
+    } as unknown as WecomTagsTransport;
+    const fixture = groupArchiveController(client);
+
+    await expect(
+      submitWecomTagGroupArchive(fixture.controller, catalog.groups[0]),
+    ).resolves.toEqual({
+      status: "archived",
+      group: { id: 1, name: "archived:1", sortOrder: 0 },
+    });
+    expect(client.archiveGroup).toHaveBeenCalledWith(
+      1,
+      {},
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "c".repeat(43),
+          "Idempotency-Key": expect.stringMatching(/^[A-Za-z0-9_-]{43}$/),
+        }),
+      }),
+    );
+    expect(client.read).toHaveBeenCalledOnce();
+    expect(fixture.setCatalog).toHaveBeenCalledOnce();
+    expect(fixture.lockMutations).not.toHaveBeenCalled();
+    expect(fixture.setArchiving).toHaveBeenNthCalledWith(1, true);
+    expect(fixture.setArchiving).toHaveBeenLastCalledWith(false);
+  });
+
+  it("locks every write after uncertain archive outcomes but preserves the current catalog for deterministic failures", async () => {
+    // eslint-disable-next-line no-unused-vars -- named resolver parameter is required by TS function-type syntax.
+    let release: ((value: { status: number; data: unknown }) => void) | undefined;
+    const unknownClient = {
+      read: vi.fn(),
+      archiveGroup: vi.fn(
+        () =>
+          new Promise<{ status: number; data: unknown }>((resolve) => {
+            release = resolve;
+          }),
+      ),
+    } as unknown as WecomTagsTransport;
+    const unknown = groupArchiveController(unknownClient);
+    const first = submitWecomTagGroupArchive(
+      unknown.controller,
+      catalog.groups[0],
+    );
+    const second = submitWecomTagGroupArchive(
+      unknown.controller,
+      catalog.groups[0],
+    );
+    expect(second).toBeUndefined();
+    release?.({ status: 503, data: {} });
+    await expect(first).resolves.toEqual({ status: "unknown" });
+    expect(unknown.mutationLocked.current).toBe(true);
+    expect(unknown.lockMutations).toHaveBeenCalledOnce();
+    expect(unknown.setCatalog).not.toHaveBeenCalled();
+    expect(
+      submitWecomTagGroupArchive(unknown.controller, catalog.groups[0]),
+    ).toBeUndefined();
+
+    const invalidClient = {
+      read: vi.fn(),
+      archiveGroup: vi.fn(async () => ({ status: 404, data: {} })),
+    } as unknown as WecomTagsTransport;
+    const invalid = groupArchiveController(invalidClient);
+    await expect(
+      submitWecomTagGroupArchive(invalid.controller, catalog.groups[0]),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(invalid.mutationLocked.current).toBe(false);
+    expect(invalid.setCatalog).not.toHaveBeenCalled();
+  });
+
+  it("calls the 401 callback once and does not reread after authentication expiry", async () => {
+    const onUnauthenticated = vi.fn();
+    const client = {
+      read: vi.fn(),
+      archiveGroup: vi.fn(async () => ({ status: 401, data: {} })),
+    } as unknown as WecomTagsTransport;
+    const fixture = groupArchiveController(client, onUnauthenticated);
+    await expect(
+      submitWecomTagGroupArchive(fixture.controller, catalog.groups[0]),
+    ).resolves.toEqual({ status: "unauthenticated" });
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(client.read).not.toHaveBeenCalled();
+    expect(fixture.setCatalog).not.toHaveBeenCalled();
   });
 });
