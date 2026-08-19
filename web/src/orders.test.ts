@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  loadOrderDetail,
   loadOrders,
   nextOrderOffset,
   previousOrderOffset,
@@ -18,8 +19,19 @@ function item(extra: Record<string, unknown> = {}) {
 function page(items: unknown[] = [item()], extra: Record<string, unknown> = {}) {
   return { items, total: items.length, limit: 50, has_more: false, ...extra };
 }
-function transport(status: number, data: unknown): OrdersTransport {
-  return { list: vi.fn(async () => ({ status, data })) } as unknown as OrdersTransport;
+function detail(extra: Record<string, unknown> = {}) {
+  return { id: 17, ...item(), refundable_amount_total: 1990, ...extra };
+}
+function transport(
+  status: number,
+  data: unknown,
+  detailStatus = status,
+  detailData = data,
+): OrdersTransport {
+  return {
+    list: vi.fn(async () => ({ status, data })),
+    detail: vi.fn(async () => ({ status: detailStatus, data: detailData })),
+  } as unknown as OrdersTransport;
 }
 
 describe("local order overview read boundary", () => {
@@ -37,7 +49,7 @@ describe("local order overview read boundary", () => {
     await expect(loadOrders(client)).resolves.toEqual({
       status: "loaded",
       page: {
-        items: [{ orderNo: "M-1", payerName: "张三", mobile: "13800000000", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z" }],
+        items: [{ orderNo: "M-1", merchantOrderNo: "M-1", outTradeNo: "M-1", platformTransactionNo: "WX-1", transactionId: "WX-1", detailUrl: "/api/admin/orders/1", identity: { kind: "external_userid", value: "wmid-1" }, provider: "wechat", status: "paid", payerName: "张三", mobile: "13800000000", productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY", statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z" }],
         total: 1, offset: 0, hasMore: false,
       },
     });
@@ -65,5 +77,73 @@ describe("local order overview read boundary", () => {
     await expect(loadOrders(transport(200, page()), 1)).resolves.toEqual({ status: "invalid" });
     expect(previousOrderOffset({ items: [], total: 100, offset: 50, hasMore: true })).toBe(0);
     expect(nextOrderOffset({ items: [], total: 100, offset: 0, hasMore: true })).toBe(50);
+  });
+
+  it("uses one canonical same-origin detail GET and retains only mirrored local facts", async () => {
+    const client = transport(200, page([item({ external_userid: "wmid-1" })]), 200, detail({ external_userid: "wmid-1" }));
+    const loaded = await loadOrders(client);
+    if (loaded.status !== "loaded") throw new Error("expected local item");
+    await expect(loadOrderDetail(client, loaded.page.items[0])).resolves.toEqual({
+      status: "loaded",
+      detail: {
+        id: 17, orderNo: "M-1", provider: "wechat", payerName: "张三", mobile: "13800000000",
+        productCode: "SKU-1", productName: "商品", amountYuan: "19.90", currency: "CNY",
+        statusLabel: "已支付", providerLabel: "微信支付", createdAt: "2026-08-19T00:00:00Z",
+        refundableAmountTotal: 1990,
+      },
+    });
+    expect(client.detail).toHaveBeenCalledWith(
+      "M-1",
+      { provider: "wechat" },
+      { credentials: "same-origin" },
+    );
+  });
+
+  it("fails closed for direct-detail envelopes, unsafe fields, and non-mirrored local records", async () => {
+    const loaded = await loadOrders(transport(200, page()));
+    if (loaded.status !== "loaded") throw new Error("expected local item");
+    const missingId: Record<string, unknown> = detail();
+    delete missingId.id;
+    for (const data of [
+      { order: detail() }, missingId, detail({ unexpected: true }), detail({ id: 0 }),
+      detail({ refundable_amount_total: 1991 }), detail({ refundable_amount_total: -1 }),
+      detail({ order_no: "M-2" }), detail({ merchant_order_no: "M-2" }),
+      detail({ provider: "alipay" }), detail({ status: "created" }),
+      detail({ payer_name: "李四" }), detail({ detail_url: "//outside.example/order" }),
+      detail({ platform_transaction_no: "WX-2" }), detail({ transaction_id: "WX-2" }),
+      detail({ detail_url: "/api/admin/orders/2" }),
+      detail({ external_userid: "wmid-1", unionid: "u-1" }),
+    ]) {
+      await expect(loadOrderDetail(transport(200, page(), 200, data), loaded.page.items[0]))
+        .resolves.toEqual({ status: "invalid" });
+    }
+  });
+
+  it("rejects identity kind or value drift from the validated list projection", async () => {
+    const listed = await loadOrders(transport(200, page([item({ external_userid: "wmid-1" })])));
+    if (listed.status !== "loaded") throw new Error("expected local item");
+    for (const data of [detail({ userid: "u-1" }), detail({ external_userid: "wmid-2" })]) {
+      await expect(loadOrderDetail(transport(200, page(), 200, data), listed.page.items[0]))
+        .resolves.toEqual({ status: "invalid" });
+    }
+  });
+
+  it("keeps accepted local detail-url text inert without inventing stricter URL semantics", async () => {
+    for (const detailUrl of ["/api/orders?cursor=1", "/api/orders#local", "/api/%2ftext", "/api\\local", "/api/../local"]) {
+      const loaded = await loadOrders(transport(200, page([item({ detail_url: detailUrl })])));
+      if (loaded.status !== "loaded") throw new Error("expected local item");
+      await expect(loadOrderDetail(transport(200, page(), 200, detail({ detail_url: detailUrl })), loaded.page.items[0]))
+        .resolves.toMatchObject({ status: "loaded" });
+    }
+  });
+
+  it("maps detail failures without retries", async () => {
+    const loaded = await loadOrders(transport(200, page()));
+    if (loaded.status !== "loaded") throw new Error("expected local item");
+    for (const [status, expected] of [[401, "unauthenticated"], [403, "forbidden"], [404, "invalid"], [503, "unavailable"]] as const) {
+      const client = transport(200, page(), status, {});
+      await expect(loadOrderDetail(client, loaded.page.items[0])).resolves.toEqual({ status: expected });
+      expect(client.detail).toHaveBeenCalledOnce();
+    }
   });
 });

@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   generatedOrdersTransport,
+  loadOrderDetail,
   loadOrders,
   nextOrderOffset,
   previousOrderOffset,
+  type OrderDetail,
   type OrderListPage,
+  type OrderListItem,
   type OrdersFailure,
   type OrdersRole,
   type OrdersTransport,
@@ -22,6 +25,12 @@ export type OrdersViewState =
   | { readonly kind: "ready"; readonly page: OrderListPage }
   | { readonly kind: "error"; readonly failure: OrdersFailure; readonly previous?: OrderListPage };
 
+export type OrderDetailViewState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly orderNo: string; readonly previous?: OrderDetail }
+  | { readonly kind: "ready"; readonly detail: OrderDetail }
+  | { readonly kind: "error"; readonly orderNo: string; readonly failure: OrdersFailure; readonly previous?: OrderDetail };
+
 export interface OrdersLoadController {
   readonly role: OrdersRole;
   readonly offset: number;
@@ -31,6 +40,18 @@ export interface OrdersLoadController {
   readonly verified: { current: OrderListPage | undefined };
   // eslint-disable-next-line no-unused-vars -- named transition value documents the state sink.
   readonly setState: (state: OrdersViewState) => void;
+  readonly onUnauthenticated?: () => void;
+}
+
+export interface OrderDetailLoadController {
+  readonly role: OrdersRole;
+  readonly item: OrderListItem;
+  readonly transport: OrdersTransport;
+  readonly generation: { current: number };
+  readonly inFlight: { current: ReadonlyMap<string, symbol> };
+  readonly verified: { current: OrderDetail | undefined };
+  // eslint-disable-next-line no-unused-vars -- named transition value documents the detail state sink.
+  readonly setState: (state: OrderDetailViewState) => void;
   readonly onUnauthenticated?: () => void;
 }
 
@@ -67,6 +88,46 @@ export function startOrdersLoad(
     });
 }
 
+// startOrderDetailLoad permits one read per order identity and makes a list
+// change or unmount invalidate any response that was started before it.
+export function startOrderDetailLoad(
+  controller: OrderDetailLoadController,
+): Promise<void> | undefined {
+  if (!canReadOrders(controller.role) || controller.inFlight.current.has(controller.item.orderNo)) return undefined;
+  const token = Symbol(controller.item.orderNo);
+  const nextInFlight = new Map(controller.inFlight.current);
+  nextInFlight.set(controller.item.orderNo, token);
+  controller.inFlight.current = nextInFlight;
+  const currentGeneration = ++controller.generation.current;
+  const previous = controller.verified.current?.orderNo === controller.item.orderNo
+    ? controller.verified.current
+    : undefined;
+  controller.setState({ kind: "loading", orderNo: controller.item.orderNo, previous });
+  return loadOrderDetail(controller.transport, controller.item)
+    .then((result) => {
+      if (currentGeneration !== controller.generation.current) return;
+      if (result.status === "loaded") {
+        controller.verified.current = result.detail;
+        controller.setState({ kind: "ready", detail: result.detail });
+        return;
+      }
+      if (result.status === "unauthenticated") controller.onUnauthenticated?.();
+      controller.setState({
+        kind: "error",
+        orderNo: controller.item.orderNo,
+        failure: result.status,
+        previous,
+      });
+    })
+    .finally(() => {
+      if (controller.inFlight.current.get(controller.item.orderNo) === token) {
+        const next = new Map(controller.inFlight.current);
+        next.delete(controller.item.orderNo);
+        controller.inFlight.current = next;
+      }
+    });
+}
+
 function displayDate(value: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
     dateStyle: "medium",
@@ -74,7 +135,16 @@ function displayDate(value: string): string {
   }).format(new Date(value));
 }
 
-function OrderRows({ page }: { readonly page: OrderListPage }): React.ReactElement {
+function OrderRows({
+  page,
+  detail,
+  onLoadDetail,
+}: {
+  readonly page: OrderListPage;
+  readonly detail: OrderDetailViewState;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter identifies the selected local order.
+  readonly onLoadDetail: (item: OrderListItem) => void;
+}): React.ReactElement {
   return (
     <>
       <p>已验证的本地订单投影：共 {page.total} 条，当前从第 {page.offset + 1} 条开始。</p>
@@ -82,7 +152,7 @@ function OrderRows({ page }: { readonly page: OrderListPage }): React.ReactEleme
         <table>
           <thead>
             <tr>
-              <th>订单号</th><th>支付渠道</th><th>状态</th><th>商品</th><th>金额</th><th>创建时间</th><th>付款人</th><th>手机号</th>
+              <th>订单号</th><th>支付渠道</th><th>状态</th><th>商品</th><th>金额</th><th>创建时间</th><th>付款人</th><th>手机号</th><th>本地详情</th>
             </tr>
           </thead>
           <tbody>
@@ -92,6 +162,11 @@ function OrderRows({ page }: { readonly page: OrderListPage }): React.ReactEleme
                 <td>{item.productName === "" ? item.productCode : `${item.productName}（${item.productCode}）`}</td>
                 <td>{item.amountYuan} {item.currency}</td><td>{displayDate(item.createdAt)}</td>
                 <td>{item.payerName === "" ? "—" : item.payerName}</td><td>{item.mobile === "" ? "—" : item.mobile}</td>
+                <td><button
+                  type="button"
+                  disabled={detail.kind === "loading" && detail.orderNo === item.orderNo}
+                  onClick={() => onLoadDetail(item)}
+                >查看本地详情</button></td>
               </tr>
             ))}
           </tbody>
@@ -101,12 +176,42 @@ function OrderRows({ page }: { readonly page: OrderListPage }): React.ReactEleme
   );
 }
 
+function OrderDetailPanel({ state }: { readonly state: OrderDetailViewState }): React.ReactElement | null {
+  const detail = state.kind === "ready" ? state.detail : state.kind === "loading" || state.kind === "error" ? state.previous : undefined;
+  if (state.kind === "idle") return null;
+  return (
+    <section aria-label="本地订单详情" data-testid="order-detail">
+      <h2>本地订单详情</h2>
+      {detail ? <dl>
+        <dt>本地订单 ID</dt><dd>{detail.id}</dd>
+        <dt>订单号</dt><dd>{detail.orderNo}</dd>
+        <dt>支付渠道</dt><dd>{detail.providerLabel}</dd>
+        <dt>状态</dt><dd>{detail.statusLabel}</dd>
+        <dt>商品</dt><dd>{detail.productName === "" ? detail.productCode : `${detail.productName}（${detail.productCode}）`}</dd>
+        <dt>订单金额</dt><dd>{detail.amountYuan} {detail.currency}</dd>
+        <dt>本地可退金额（分）</dt><dd>{detail.refundableAmountTotal}</dd>
+        <dt>创建时间</dt><dd>{displayDate(detail.createdAt)}</dd>
+        <dt>付款人</dt><dd>{detail.payerName === "" ? "—" : detail.payerName}</dd>
+        <dt>手机号</dt><dd>{detail.mobile === "" ? "—" : detail.mobile}</dd>
+      </dl> : null}
+      {state.kind === "loading" ? <p role="status">正在读取本地订单详情。</p> : null}
+      {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+      <p>详情仅来自本地订单投影；可退金额不代表退款已经执行，也不会发起退款。</p>
+    </section>
+  );
+}
+
 export function OrdersContent({
   onLoad,
+  onLoadDetail,
+  detail,
   state,
 }: {
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onLoad: (offset: number) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter identifies the selected local order.
+  readonly onLoadDetail: (item: OrderListItem) => void;
+  readonly detail: OrderDetailViewState;
   readonly state: OrdersViewState;
 }): React.ReactElement {
   const page = state.kind === "ready" ? state.page : state.previous;
@@ -115,9 +220,10 @@ export function OrdersContent({
       <p className="route-card__eyebrow">交易权益 · 本地只读投影</p>
       <h1 id="app-title">订单总览</h1>
       <p>仅显示已持久化的本地订单投影，不会查询支付渠道、创建退款、导出数据或触发任何外部操作。</p>
-      {page ? <OrderRows page={page} /> : null}
+      {page ? <OrderRows page={page} detail={detail} onLoadDetail={onLoadDetail} /> : null}
       {state.kind === "loading" ? <p role="status">正在读取本地订单总览。</p> : null}
       {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+      <OrderDetailPanel state={detail} />
       {page ? (
         <p>
           <button
@@ -155,22 +261,47 @@ export function OrdersPage({
   const generation = useRef(0);
   const inFlight = useRef(false);
   const verified = useRef<OrderListPage>();
+  const detailGeneration = useRef(0);
+  const detailInFlight = useRef<ReadonlyMap<string, symbol>>(new Map());
+  const verifiedDetail = useRef<OrderDetail>();
   const [state, setState] = useState<OrdersViewState>({ kind: "loading" });
+  const [detail, setDetail] = useState<OrderDetailViewState>({ kind: "idle" });
 
-  const load = useCallback((offset: number) => startOrdersLoad({
+  const load = useCallback((offset: number) => {
+    detailGeneration.current += 1;
+    detailInFlight.current = new Map();
+    verifiedDetail.current = undefined;
+    setDetail({ kind: "idle" });
+    return startOrdersLoad({
+      role,
+      offset,
+      transport,
+      generation,
+      inFlight,
+      verified,
+      setState,
+      onUnauthenticated,
+    });
+  }, [onUnauthenticated, role, transport]);
+
+  const loadDetail = useCallback((item: OrderListItem) => startOrderDetailLoad({
     role,
-    offset,
+    item,
     transport,
-    generation,
-    inFlight,
-    verified,
-    setState,
+    generation: detailGeneration,
+    inFlight: detailInFlight,
+    verified: verifiedDetail,
+    setState: setDetail,
     onUnauthenticated,
   }), [onUnauthenticated, role, transport]);
 
   useEffect(() => {
     if (canRead) void load(0);
-    return () => { generation.current += 1; };
+    return () => {
+      generation.current += 1;
+      detailGeneration.current += 1;
+      detailInFlight.current = new Map();
+    };
   }, [canRead, load]);
 
   if (!canRead) return (
@@ -179,5 +310,10 @@ export function OrdersPage({
       <p>当前账号没有订单总览访问权限。</p>
     </section>
   );
-  return <OrdersContent state={state} onLoad={(offset) => void load(offset)} />;
+  return <OrdersContent
+    state={state}
+    detail={detail}
+    onLoad={(offset) => void load(offset)}
+    onLoadDetail={(item) => void loadDetail(item)}
+  />;
 }
