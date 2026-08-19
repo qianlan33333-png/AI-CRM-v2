@@ -21,8 +21,10 @@ import {
   type ImageListQuery,
   type ImageMetadataDraft,
   type ImageMetadataUpdateResult,
+  type ImagePreviewMode,
   type ImageUploadMetadata,
   type ImageUploadResult,
+  imagePreviewURL,
 } from "./image-library";
 import "./image-library.css";
 
@@ -170,6 +172,57 @@ export function startImageMetadataSave(
   })();
 }
 
+export function ImagePreviewPanel({
+  image,
+  mode,
+  errorMode,
+  onSelectMode,
+  onPreviewError,
+}: {
+  readonly image: ImageDetail;
+  readonly mode: ImagePreviewMode;
+  readonly errorMode?: ImagePreviewMode;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onSelectMode: (mode: ImagePreviewMode) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onPreviewError: (mode: ImagePreviewMode) => void;
+}): React.ReactElement {
+  const selectedURL = imagePreviewURL(image, mode);
+  const label = image.name !== "" ? image.name : image.fileName;
+  return (
+    <>
+      <img
+        key={`${image.id}:${mode}`}
+        alt={label}
+        src={selectedURL}
+        onError={() => onPreviewError(mode)}
+      />
+      <div aria-label="本地预览模式">
+        <button
+          type="button"
+          disabled={mode === "standard"}
+          onClick={() => onSelectMode("standard")}
+        >
+          标准预览
+        </button>
+        <button
+          type="button"
+          disabled={mode === "original"}
+          onClick={() => onSelectMode("original")}
+        >
+          查看原图
+        </button>
+      </div>
+      {errorMode !== undefined ? (
+        <p role="alert">
+          {errorMode === "original" ? "原图" : "标准"}
+          本地预览未能加载；已保留当前图片详情，系统不会自动重试。
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function ImageLibraryPage({
   role,
   transport = generatedImageLibraryTransport,
@@ -207,6 +260,10 @@ export function ImageLibraryPage({
   const detailGeneration = useRef(0);
   const metadataSaveInFlight = useRef(false);
   const [detail, setDetail] = useState<DetailState>({ kind: "idle" });
+  const [previewMode, setPreviewMode] =
+    useState<ImagePreviewMode>("standard");
+  const [previewErrorMode, setPreviewErrorMode] =
+    useState<ImagePreviewMode>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadList = useCallback(
@@ -277,6 +334,8 @@ export function ImageLibraryPage({
 
   const showDetail = (imageID: number) => {
     const generation = ++detailGeneration.current;
+    setPreviewMode("standard");
+    setPreviewErrorMode(undefined);
     setDetail({ kind: "loading", imageID });
     void loadImageDetail(transport, imageID).then((result) => {
       // A later selection (or close) wins over an older local read result.
@@ -301,7 +360,14 @@ export function ImageLibraryPage({
   const closeDetail = () => {
     detailGeneration.current += 1;
     setMetadataDraft(undefined);
+    setPreviewMode("standard");
+    setPreviewErrorMode(undefined);
     setDetail({ kind: "idle" });
+  };
+
+  const selectPreviewMode = (mode: ImagePreviewMode) => {
+    setPreviewMode(mode);
+    setPreviewErrorMode(undefined);
   };
 
   const submitMetadata = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -638,13 +704,12 @@ export function ImageLibraryPage({
                   )}
                   {detail.kind === "ready" && (
                     <>
-                      <img
-                        alt={
-                          detail.image.name !== ""
-                            ? detail.image.name
-                            : detail.image.fileName
-                        }
-                        src={detail.image.previewURL}
+                      <ImagePreviewPanel
+                        image={detail.image}
+                        mode={previewMode}
+                        errorMode={previewErrorMode}
+                        onSelectMode={selectPreviewMode}
+                        onPreviewError={setPreviewErrorMode}
                       />
                       <dl className="image-card__meta">
                         <div>

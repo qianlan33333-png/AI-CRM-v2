@@ -4,11 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import {
   handleSearchKeyDown,
   ImageLibraryPage,
+  ImagePreviewPanel,
   saveMetadataThenReload,
   startImageMetadataSave,
   uploadThenReload,
 } from "./image-library-ui";
-import type { ImageLibraryTransport } from "./image-library";
+import type { ImageDetail, ImageLibraryTransport } from "./image-library";
 
 const CSRF_TOKEN = "b".repeat(43);
 
@@ -77,6 +78,24 @@ const metadataSuccess = {
   real_external_call_executed: false,
   storage_adapter_mode: "postgresql",
   adapter_mode: "postgresql",
+};
+
+const detail: ImageDetail = {
+  id: 11,
+  name: "封面",
+  fileName: "cover.png",
+  mimeType: "image/png",
+  fileSize: 1024,
+  enabled: true,
+  description: "首页主图",
+  tags: ["活动"],
+  category: "banner",
+  width: 400,
+  height: 300,
+  createdAt: "2026-08-17T12:00:00Z",
+  updatedAt: "2026-08-19T12:00:00Z",
+  previewURL: "/api/admin/image-library/11/variants/mobile_1080",
+  originalURL: "/api/admin/image-library/11/variants/original",
 };
 
 function transport(): ImageLibraryTransport {
@@ -172,6 +191,41 @@ describe("ImageLibraryPage shell", () => {
       expect(other.stopPropagation).not.toHaveBeenCalled();
     }
     expect(search).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ImagePreviewPanel", () => {
+  it("keeps the default preview local and switches only to the validated original URL", () => {
+    const standard = renderToStaticMarkup(
+      <ImagePreviewPanel
+        image={detail}
+        mode="standard"
+        onSelectMode={vi.fn()}
+        onPreviewError={vi.fn()}
+      />,
+    );
+    expect(standard).toContain(
+      'src="/api/admin/image-library/11/variants/mobile_1080"',
+    );
+    expect(standard).toContain("查看原图");
+    expect(standard).not.toContain("<a");
+    expect(standard).not.toContain("href=");
+
+    const original = renderToStaticMarkup(
+      <ImagePreviewPanel
+        image={detail}
+        mode="original"
+        errorMode="original"
+        onSelectMode={vi.fn()}
+        onPreviewError={vi.fn()}
+      />,
+    );
+    expect(original).toContain(
+      'src="/api/admin/image-library/11/variants/original"',
+    );
+    expect(original).toContain("原图本地预览未能加载");
+    expect(original).not.toContain("https://");
+    expect(original).not.toContain("href=");
   });
 });
 
