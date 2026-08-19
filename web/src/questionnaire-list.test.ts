@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   deleteQuestionnaire,
   duplicateQuestionnaire,
+  loadQuestionnaireDefinition,
   loadQuestionnaires,
   loadQuestionnairePreflight,
   loadQuestionnaireResults,
@@ -122,6 +123,10 @@ function transport(
         offset: 0,
       },
     })),
+    definition: vi.fn(async () => ({
+      status: 200,
+      data: definitionResponse(),
+    })),
     disable: vi.fn(async (_id, body) => ({
       status: 200,
       data: mutationResponse(
@@ -175,6 +180,15 @@ function resultsResponse(extra: Record<string, unknown> = {}) {
     ...extra,
   };
 }
+function definitionResponse(extra: Record<string, unknown> = {}) {
+  return {
+    ok: true,
+    questionnaire: item,
+    questions: item.questions,
+    data: { questionnaire: item },
+    ...extra,
+  };
+}
 function listResponse(questionnaire: Record<string, unknown>) {
   return {
     status: 200,
@@ -202,6 +216,174 @@ const parsed: QuestionnaireItem = {
 };
 
 describe("questionnaire list transport", () => {
+  it("reads one strict questionnaire definition by its requested id only", async () => {
+    const client = transport();
+    await expect(loadQuestionnaireDefinition(client, parsed)).resolves.toEqual({
+      status: "loaded",
+      definition: {
+        item: parsed,
+        description: "",
+        answerDisplayMode: "all_in_one",
+        questions: [
+          {
+            type: "single_choice",
+            title: "目标",
+            required: true,
+            placeholderText: "",
+            sortOrder: 0,
+            options: [
+              {
+                text: "增长",
+                isOther: false,
+                otherPlaceholder: "",
+                sortOrder: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(client.definition).toHaveBeenCalledWith(41, {
+      credentials: "same-origin",
+    });
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.results).not.toHaveBeenCalled();
+    expect(client.disable).not.toHaveBeenCalled();
+    expect(client.duplicate).not.toHaveBeenCalled();
+    expect(client.remove).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for a malformed definition envelope, mirror, id, or question ordering", async () => {
+    const secondQuestion = {
+      ...item.questions[0],
+      id: 2,
+      title: "第二题",
+      sort_order: 1,
+    };
+    const twoQuestionnaire = {
+      ...item,
+      question_count: 2,
+      questions: [item.questions[0], secondQuestion],
+    };
+    const unorderedQuestionnaire = {
+      ...twoQuestionnaire,
+      questions: [secondQuestion, item.questions[0]],
+    };
+    const duplicateQuestionOrder = {
+      ...secondQuestion,
+      sort_order: 0,
+    };
+    const secondOption = {
+      ...item.questions[0].options[0],
+      id: 2,
+      option_text: "第二项",
+      sort_order: 1,
+    };
+    const unorderedOptions = {
+      ...item,
+      questions: [
+        {
+          ...item.questions[0],
+          options: [secondOption, item.questions[0].options[0]],
+        },
+      ],
+    };
+    const duplicateOptionOrder = {
+      ...item,
+      questions: [
+        {
+          ...item.questions[0],
+          options: [
+            item.questions[0].options[0],
+            { ...secondOption, sort_order: 0 },
+          ],
+        },
+      ],
+    };
+    for (const data of [
+      definitionResponse({ unexpected: true }),
+      definitionResponse({ questionnaire: { ...item, id: 42 } }),
+      definitionResponse({ questions: [] }),
+      definitionResponse({ data: { questionnaire: { ...item, title: "错误" } } }),
+      definitionResponse({
+        questionnaire: twoQuestionnaire,
+        questions: [secondQuestion, item.questions[0]],
+        data: { questionnaire: twoQuestionnaire },
+      }),
+      definitionResponse({
+        questions: [{ ...item.questions[0], unexpected: true }],
+      }),
+      {
+        ok: true,
+        questionnaire: unorderedQuestionnaire,
+        questions: unorderedQuestionnaire.questions,
+        data: { questionnaire: unorderedQuestionnaire },
+      },
+      {
+        ok: true,
+        questionnaire: {
+          ...twoQuestionnaire,
+          questions: [item.questions[0], duplicateQuestionOrder],
+        },
+        questions: [item.questions[0], duplicateQuestionOrder],
+        data: {
+          questionnaire: {
+            ...twoQuestionnaire,
+            questions: [item.questions[0], duplicateQuestionOrder],
+          },
+        },
+      },
+      {
+        ok: true,
+        questionnaire: unorderedOptions,
+        questions: unorderedOptions.questions,
+        data: { questionnaire: unorderedOptions },
+      },
+      {
+        ok: true,
+        questionnaire: duplicateOptionOrder,
+        questions: duplicateOptionOrder.questions,
+        data: { questionnaire: duplicateOptionOrder },
+      },
+    ]) {
+      await expect(
+        loadQuestionnaireDefinition(
+          transport({
+            definition: vi.fn(async () => ({ status: 200, data })) as never,
+          }),
+          parsed,
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+  });
+
+  it("maps each definition read failure once without retry", async () => {
+    for (const [status, expected] of [
+      [400, "invalid"],
+      [401, "unauthenticated"],
+      [403, "forbidden"],
+      [404, "not_found"],
+      [503, "unavailable"],
+    ] as const) {
+      const client = transport({
+        definition: vi.fn(async () => ({ status, data: {} })) as never,
+      });
+      await expect(loadQuestionnaireDefinition(client, parsed)).resolves.toEqual({
+        status: expected,
+      });
+      expect(client.definition).toHaveBeenCalledTimes(1);
+    }
+    const offline = transport({
+      definition: vi.fn(async () => {
+        throw new Error("offline");
+      }) as never,
+    });
+    await expect(
+      loadQuestionnaireDefinition(offline, parsed),
+    ).resolves.toEqual({ status: "unavailable" });
+    expect(offline.definition).toHaveBeenCalledTimes(1);
+  });
+
   it("reads only the strict local submission aggregate with no query or write options", async () => {
     const client = transport();
     await expect(loadQuestionnaireResults(client, parsed)).resolves.toEqual({

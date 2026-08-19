@@ -4,6 +4,7 @@ import {
   deleteQuestionnaire,
   duplicateQuestionnaire,
   generatedQuestionnaireListTransport,
+  loadQuestionnaireDefinition,
   loadQuestionnaires,
   loadQuestionnairePreflight,
   loadQuestionnaireResults,
@@ -11,6 +12,8 @@ import {
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
   setQuestionnaireEnabled,
+  type QuestionnaireDefinition,
+  type QuestionnaireDefinitionResult,
   type QuestionnaireFailure,
   type QuestionnaireItem,
   type QuestionnaireListResult,
@@ -62,6 +65,25 @@ export type QuestionnaireResultsState =
       readonly item: QuestionnaireItem;
       readonly failure: QuestionnaireFailure;
       readonly previous?: QuestionnaireSubmissionAggregate;
+    };
+
+export type QuestionnaireDefinitionState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly item: QuestionnaireItem;
+      readonly previous?: QuestionnaireDefinition;
+    }
+  | {
+      readonly kind: "ready";
+      readonly item: QuestionnaireItem;
+      readonly definition: QuestionnaireDefinition;
+    }
+  | {
+      readonly kind: "error";
+      readonly item: QuestionnaireItem;
+      readonly failure: QuestionnaireFailure;
+      readonly previous?: QuestionnaireDefinition;
     };
 
 export type QuestionnaireMutationAction = "toggle" | "delete" | "duplicate";
@@ -157,6 +179,11 @@ export interface QuestionnaireListContentProps {
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     item: QuestionnaireItem,
   ) => void;
+  readonly onLoadDefinition?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    item: QuestionnaireItem,
+  ) => void;
+  readonly definition?: QuestionnaireDefinitionState;
   readonly preflight?: QuestionnairePreflightState;
   readonly results?: QuestionnaireResultsState;
   readonly state: QuestionnaireListState;
@@ -254,12 +281,87 @@ function QuestionnaireResultsPanel({
   );
 }
 
+function DefinitionValues({
+  definition,
+}: {
+  readonly definition: QuestionnaireDefinition;
+}): React.ReactElement {
+  return (
+    <>
+      <dl>
+        <dt>说明</dt>
+        <dd>{definition.description || "暂无"}</dd>
+        <dt>答题方式</dt>
+        <dd>{definition.answerDisplayMode}</dd>
+        <dt>状态</dt>
+        <dd>{definition.item.isDisabled ? "已停用" : "已启用"}</dd>
+      </dl>
+      <ol>
+        {definition.questions.map((question, index) => (
+          <li key={`${question.sortOrder}-${question.title}`}>
+            <p>
+              第 {index + 1} 题：{question.title}（{question.type}，
+              {question.required ? "必答" : "选答"}）
+            </p>
+            {question.placeholderText ? <p>{question.placeholderText}</p> : null}
+            {question.options.length > 0 ? (
+              <ol>
+                {question.options.map((option, optionIndex) => (
+                  <li key={`${option.sortOrder}-${option.text}`}>
+                    {optionIndex + 1}. {option.text}
+                    {option.isOther && option.otherPlaceholder
+                      ? `（其他：${option.otherPlaceholder}）`
+                      : ""}
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+function QuestionnaireDefinitionPanel({
+  state,
+}: {
+  readonly state: QuestionnaireDefinitionState;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const title = `问卷定义：${state.item.title}`;
+  if (state.kind === "loading")
+    return (
+      <section data-testid="questionnaire-definition">
+        <h2>{title}</h2>
+        {state.previous ? <DefinitionValues definition={state.previous} /> : null}
+        <p>{state.previous ? "正在刷新问卷定义。" : "正在读取问卷定义。"}</p>
+      </section>
+    );
+  if (state.kind === "error")
+    return (
+      <section data-testid="questionnaire-definition">
+        <h2>{title}</h2>
+        {state.previous ? <DefinitionValues definition={state.previous} /> : null}
+        <p role="alert">{messages[state.failure]}</p>
+      </section>
+    );
+  return (
+    <section data-testid="questionnaire-definition">
+      <h2>{title}</h2>
+      <DefinitionValues definition={state.definition} />
+    </section>
+  );
+}
+
 export function QuestionnaireListContent({
   busy,
   notice,
   onLoad,
+  onLoadDefinition = noopLoadDefinition,
   onMutate,
   onLoadResults = noopLoadResults,
+  definition = { kind: "idle" },
   preflight,
   results = { kind: "idle" },
   state,
@@ -308,6 +410,7 @@ export function QuestionnaireListContent({
         <p role="status">{notice ?? copyNotice}</p>
       ) : null}
       <QuestionnaireResultsPanel state={results} />
+      <QuestionnaireDefinitionPanel state={definition} />
       {state.items.length === 0 ? (
         <p>当前没有问卷。</p>
       ) : (
@@ -339,6 +442,17 @@ export function QuestionnaireListContent({
                     onClick={() => void copyPublicLink(item)}
                   >
                     复制公开链接
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      busy !== undefined ||
+                      (definition.kind === "loading" &&
+                        definition.item.id === item.id)
+                    }
+                    onClick={() => onLoadDefinition(item)}
+                  >
+                    查看问卷定义
                   </button>
                   <button
                     type="button"
@@ -412,6 +526,7 @@ export function QuestionnaireListContent({
 }
 
 function noopLoadResults(): void {}
+function noopLoadDefinition(): void {}
 
 export function QuestionnaireListPage({
   role,
@@ -435,11 +550,18 @@ export function QuestionnaireListPage({
   const [results, setResults] = useState<QuestionnaireResultsState>({
     kind: "idle",
   });
+  const [definition, setDefinition] = useState<QuestionnaireDefinitionState>({
+    kind: "idle",
+  });
   const resultsGeneration = useRef(0);
+  const definitionGeneration = useRef(0);
+  const definitionInflight = useRef(new Set<number>());
   const load = useCallback(
     (offset: number) => {
       ++resultsGeneration.current;
+      ++definitionGeneration.current;
       setResults({ kind: "idle" });
+      setDefinition({ kind: "idle" });
       setState({ kind: "loading" });
       void loadQuestionnaires(transport, offset).then(
         (result: QuestionnaireListResult) => {
@@ -489,6 +611,27 @@ export function QuestionnaireListPage({
     },
     [onUnauthenticated, results, transport],
   );
+  const loadDefinition = useCallback(
+    (item: QuestionnaireItem) => {
+      if (definitionInflight.current.has(item.id)) return;
+      definitionInflight.current.add(item.id);
+      const generation = ++definitionGeneration.current;
+      const previous = retainedDefinition(definition, item.id);
+      setDefinition({ kind: "loading", item, previous });
+      void loadQuestionnaireDefinition(transport, item)
+        .then((result: QuestionnaireDefinitionResult) => {
+          if (generation !== definitionGeneration.current) return;
+          if (result.status === "loaded") {
+            setDefinition({ kind: "ready", item, definition: result.definition });
+            return;
+          }
+          if (result.status === "unauthenticated") onUnauthenticated?.();
+          setDefinition({ kind: "error", item, failure: result.status, previous });
+        })
+        .finally(() => definitionInflight.current.delete(item.id));
+    },
+    [definition, onUnauthenticated, transport],
+  );
   useEffect(() => {
     if (role === "admin") {
       load(0);
@@ -532,9 +675,11 @@ export function QuestionnaireListPage({
       busy={busy}
       notice={mutationNotice}
       onLoad={load}
+      onLoadDefinition={loadDefinition}
       onLoadResults={loadResults}
       onMutate={({ item, action }) => void mutate(item, action)}
       preflight={preflight}
+      definition={definition}
       results={results}
       state={state}
     />
@@ -549,6 +694,19 @@ function retainedAggregate(
     return undefined;
   return state.kind === "ready"
     ? state.aggregate
+    : state.kind === "loading" || state.kind === "error"
+      ? state.previous
+      : undefined;
+}
+
+function retainedDefinition(
+  state: QuestionnaireDefinitionState,
+  questionnaireID: number,
+): QuestionnaireDefinition | undefined {
+  if (state.kind === "idle" || state.item.id !== questionnaireID)
+    return undefined;
+  return state.kind === "ready"
+    ? state.definition
     : state.kind === "loading" || state.kind === "error"
       ? state.previous
       : undefined;
