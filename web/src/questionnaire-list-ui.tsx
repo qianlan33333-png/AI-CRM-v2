@@ -689,7 +689,27 @@ export function QuestionnaireListPage({
   const definitionGeneration = useRef(0);
   const editorGeneration = useRef(0);
   const editorSaveToken = useRef<symbol>();
+  const editorLifetime = useRef<symbol>();
   const definitionInflight = useRef(new Set<number>());
+  useEffect(() => {
+    const lifetime = Symbol("questionnaire-editor-lifetime");
+    const replacing = editorLifetime.current !== undefined;
+    editorLifetime.current = lifetime;
+    if (replacing) {
+      // This is a mounted replacement lifetime (role/transport changed), not
+      // the cleanup of the old instance.
+      setEditor({ kind: "idle" });
+      setEditorWriteLocked(false);
+    }
+    return () => {
+      if (editorLifetime.current !== lifetime) return;
+      // A route/transport lifetime boundary must not let an old save or its
+      // confirmation read mutate a replacement page instance. Cleanup never
+      // sets React state: it also runs for a real unmount.
+      ++editorGeneration.current;
+      editorSaveToken.current = undefined;
+    };
+  }, [role, transport]);
   const load = useCallback(
     (offset: number) => {
       ++resultsGeneration.current;

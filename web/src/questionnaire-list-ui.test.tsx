@@ -436,6 +436,153 @@ describe("QuestionnaireListPage UI", () => {
     await act(async () => { mounted.root.unmount(); });
   });
 
+  it("invalidates a pending editor confirmation at a transport boundary without letting A unlock B", async () => {
+    const aConfirmation = deferred<{ status: number; data: unknown }>();
+    const bConfirmation = deferred<{ status: number; data: unknown }>();
+    const saved = (request: Record<string, unknown>) => ({
+      ...item,
+      ...request,
+      id: item.id,
+      enabled: !(request.is_disabled as boolean),
+      status: request.is_disabled ? "disabled" : "active",
+      question_count: (request.questions as readonly unknown[]).length,
+      questions: request.questions,
+    });
+    const detail = (questionnaire: Record<string, unknown>) => ({
+      ok: true,
+      questionnaire,
+      questions: questionnaire.questions,
+      data: { questionnaire },
+    });
+    let aSaved: Record<string, unknown> = item;
+    let aDefinitionCalls = 0;
+    const clientA = transport({
+      definition: vi.fn(() => {
+        aDefinitionCalls++;
+        return aDefinitionCalls === 1
+          ? Promise.resolve({ status: 200, data: detail(item) })
+          : aConfirmation.promise;
+      }) as never,
+      replace: vi.fn(async (_id: number, request: Record<string, unknown>) => {
+        aSaved = saved(request);
+        return {
+          status: 200,
+          data: { ...detail(aSaved), questionnaire_id: item.id, write_model_status: "updated" },
+        };
+      }) as never,
+    });
+    let bSaved: Record<string, unknown> = item;
+    let bDefinitionCalls = 0;
+    const clientB = transport({
+      definition: vi.fn(() => {
+        bDefinitionCalls++;
+        return bDefinitionCalls === 1
+          ? Promise.resolve({ status: 200, data: detail(item) })
+          : bConfirmation.promise;
+      }) as never,
+      replace: vi.fn(async (_id: number, request: Record<string, unknown>) => {
+        bSaved = saved(request);
+        return {
+          status: 200,
+          data: { ...detail(bSaved), questionnaire_id: item.id, write_model_status: "updated" },
+        };
+      }) as never,
+    });
+    const mounted = mountedRoot();
+    const byText = (text: string) => {
+      const button = buttons(mounted.container).find((candidate) => candidate.textContent === text);
+      if (!button) throw new Error(`missing ${text}`);
+      return button;
+    };
+    const render = async (transport: QuestionnaireListTransport) => {
+      await act(async () => {
+        mounted.root.render(
+          <QuestionnaireListPage role="admin" readCookie={() => `aicrm_csrf=${csrf}`} transport={transport} />,
+        );
+        await Promise.resolve();
+      });
+    };
+
+    await render(clientA);
+    await act(async () => { click(byText("编辑问卷")); await Promise.resolve(); });
+    await act(async () => { click(byText("保存完整定义")); await Promise.resolve(); });
+    expect(clientA.replace).toHaveBeenCalledOnce();
+    expect(clientA.definition).toHaveBeenCalledTimes(2);
+
+    await render(clientB);
+    expect(mounted.container.textContent).not.toContain("正在保存");
+    await act(async () => { click(byText("编辑问卷")); await Promise.resolve(); });
+    await act(async () => { click(byText("保存完整定义")); await Promise.resolve(); });
+    expect(clientB.replace).toHaveBeenCalledOnce();
+    expect(clientB.definition).toHaveBeenCalledTimes(2);
+    expect(byText("停用").hasAttribute("disabled")).toBe(true);
+
+    await act(async () => { aConfirmation.resolve({ status: 200, data: detail(aSaved) }); await Promise.resolve(); });
+    expect(clientA.list).toHaveBeenCalledOnce();
+    expect(byText("停用").hasAttribute("disabled")).toBe(true);
+
+    await act(async () => { bConfirmation.resolve({ status: 200, data: detail(bSaved) }); await Promise.resolve(); });
+    expect(mounted.container.textContent).toContain("问卷定义已保存，已重新读取确认。");
+    expect(byText("停用").hasAttribute("disabled")).toBe(false);
+    await act(async () => { mounted.root.unmount(); });
+  });
+
+  it("drops an unmounted editor confirmation without loading or reporting stale 401", async () => {
+    const confirmation = deferred<{ status: number; data: unknown }>();
+    let definitionCalls = 0;
+    const unauthenticated = vi.fn();
+    const client = transport({
+      definition: vi.fn(() => {
+        definitionCalls++;
+        return definitionCalls === 1
+          ? Promise.resolve({ status: 200, data: { ok: true, questionnaire: item, questions: item.questions, data: { questionnaire: item } } })
+          : confirmation.promise;
+      }) as never,
+      replace: vi.fn(async (_id: number, request: Record<string, unknown>) => {
+        const questionnaire = {
+          ...item,
+          ...request,
+          id: item.id,
+          enabled: !(request.is_disabled as boolean),
+          status: request.is_disabled ? "disabled" : "active",
+          question_count: (request.questions as readonly unknown[]).length,
+          questions: request.questions,
+        };
+        return {
+          status: 200,
+          data: {
+            ok: true,
+            questionnaire_id: item.id,
+            questionnaire,
+            questions: questionnaire.questions,
+            data: { questionnaire },
+            write_model_status: "updated",
+          },
+        };
+      }) as never,
+    });
+    const mounted = mountedRoot();
+    const byText = (text: string) => {
+      const button = buttons(mounted.container).find((candidate) => candidate.textContent === text);
+      if (!button) throw new Error(`missing ${text}`);
+      return button;
+    };
+    await act(async () => {
+      mounted.root.render(
+        <QuestionnaireListPage role="admin" readCookie={() => `aicrm_csrf=${csrf}`} transport={client} onUnauthenticated={unauthenticated} />,
+      );
+      await Promise.resolve();
+    });
+    await act(async () => { click(byText("编辑问卷")); await Promise.resolve(); });
+    await act(async () => { click(byText("保存完整定义")); await Promise.resolve(); });
+    expect(client.replace).toHaveBeenCalledOnce();
+    expect(client.definition).toHaveBeenCalledTimes(2);
+    await act(async () => { mounted.root.unmount(); });
+    await act(async () => { confirmation.resolve({ status: 401, data: {} }); await Promise.resolve(); });
+    expect(client.list).toHaveBeenCalledOnce();
+    expect(unauthenticated).not.toHaveBeenCalled();
+  });
+
   it("keeps every local write locked after an invalid or unavailable editor receipt", async () => {
     for (const response of [
       { status: 503, data: {} },
