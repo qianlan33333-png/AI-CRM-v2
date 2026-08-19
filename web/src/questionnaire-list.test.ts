@@ -4,6 +4,7 @@ import {
   duplicateQuestionnaire,
   loadQuestionnaires,
   loadQuestionnairePreflight,
+  loadQuestionnaireResults,
   nextQuestionnaireOffset,
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
@@ -154,8 +155,25 @@ function transport(
         status: "partial",
       },
     })),
+    results: vi.fn(async () => ({ status: 200, data: resultsResponse() })),
     ...overrides,
   } as unknown as QuestionnaireListTransport;
+}
+function resultsResponse(extra: Record<string, unknown> = {}) {
+  const results = {
+    submission_count: 0,
+    latest_submitted_at: null,
+    average_score: 0,
+    rules: [],
+  };
+  return {
+    ok: true,
+    questionnaire_id: item.id,
+    results,
+    data: { results },
+    side_effect_executed: false,
+    ...extra,
+  };
 }
 function listResponse(questionnaire: Record<string, unknown>) {
   return {
@@ -184,6 +202,128 @@ const parsed: QuestionnaireItem = {
 };
 
 describe("questionnaire list transport", () => {
+  it("reads only the strict local submission aggregate with no query or write options", async () => {
+    const client = transport();
+    await expect(loadQuestionnaireResults(client, parsed)).resolves.toEqual({
+      status: "loaded",
+      aggregate: {
+        submissionCount: 0,
+        latestSubmittedAt: null,
+        averageScore: 0,
+      },
+    });
+    expect(client.results).toHaveBeenCalledWith(41, {
+      credentials: "same-origin",
+    });
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.disable).not.toHaveBeenCalled();
+    expect(client.duplicate).not.toHaveBeenCalled();
+    expect(client.remove).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for PII, unfrozen aggregate shapes, side effects, and invalid result invariants", async () => {
+    const aggregate = {
+      submission_count: 2,
+      latest_submitted_at: "2026-08-19T01:02:03Z",
+      average_score: 1.5,
+      rules: [],
+    };
+    const accepted = resultsResponse({
+      results: aggregate,
+      data: { results: aggregate },
+    });
+    await expect(
+      loadQuestionnaireResults(
+        transport({
+          results: vi.fn(async () => ({
+            status: 200,
+            data: accepted,
+          })) as never,
+        }),
+        parsed,
+      ),
+    ).resolves.toEqual({
+      status: "loaded",
+      aggregate: {
+        submissionCount: 2,
+        latestSubmittedAt: "2026-08-19T01:02:03Z",
+        averageScore: 1.5,
+      },
+    });
+
+    for (const data of [
+      resultsResponse({ side_effect_executed: true }),
+      resultsResponse({ questionnaire_id: 42 }),
+      resultsResponse({
+        data: { results: { ...aggregate, average_score: 3 } },
+      }),
+      resultsResponse({
+        results: { ...aggregate, openid: "must-not-enter-ui" },
+      }),
+      resultsResponse({ results: { ...aggregate, rules: [{}] } }),
+      resultsResponse({ results: { ...aggregate, average_score: -1.5 } }),
+      resultsResponse({ results: { ...aggregate, latest_submitted_at: null } }),
+      resultsResponse({
+        results: {
+          submission_count: 0,
+          latest_submitted_at: "2026-08-19T01:02:03Z",
+          average_score: 0,
+          rules: [],
+        },
+      }),
+      resultsResponse({
+        results: {
+          submission_count: 0,
+          latest_submitted_at: null,
+          average_score: 1,
+          rules: [],
+        },
+      }),
+      resultsResponse({
+        results: {
+          ...aggregate,
+          latest_submitted_at: "2026-02-31T01:02:03Z",
+        },
+      }),
+    ]) {
+      await expect(
+        loadQuestionnaireResults(
+          transport({
+            results: vi.fn(async () => ({ status: 200, data })) as never,
+          }),
+          parsed,
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+  });
+
+  it("maps aggregate read failures once without retry", async () => {
+    for (const [status, expected] of [
+      [400, "invalid"],
+      [401, "unauthenticated"],
+      [403, "forbidden"],
+      [404, "not_found"],
+      [503, "unavailable"],
+    ] as const) {
+      const client = transport({
+        results: vi.fn(async () => ({ status, data: {} })) as never,
+      });
+      await expect(loadQuestionnaireResults(client, parsed)).resolves.toEqual({
+        status: expected,
+      });
+      expect(client.results).toHaveBeenCalledTimes(1);
+    }
+    const offline = transport({
+      results: vi.fn(async () => {
+        throw new Error("offline");
+      }) as never,
+    });
+    await expect(loadQuestionnaireResults(offline, parsed)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(offline.results).toHaveBeenCalledTimes(1);
+  });
+
   it("strictly accepts the local declaration-only preflight snapshot", async () => {
     const client = transport();
     await expect(loadQuestionnairePreflight(client)).resolves.toEqual({
