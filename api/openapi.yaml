@@ -1105,7 +1105,7 @@ paths:
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupCreateRequest" } } } }
-      responses: { "200": { description: Local group mutation envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+      responses: { "200": { description: Closed local group-created or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyTagGroupCreateSuccess" }, { $ref: "#/components/schemas/LegacyTagGroupCreateValidatedSuccess" }] } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/wecom/tag-groups/{group_id}:
     parameters: [{ name: group_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
     get:
@@ -3944,6 +3944,14 @@ components:
         group_id: { type: integer, format: int64, minimum: 1 }
         group_name: { type: string, minLength: 1, maxLength: 200 }
         sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupCreateSuccessGroup:
+      type: object
+      additionalProperties: false
+      required: [group_id, group_name, sort_order]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
     LegacyTag:
       type: object
       required: [tag_id, group_id, group_name, tag_name, sort_order]
@@ -3953,6 +3961,46 @@ components:
         group_name: { type: string, minLength: 1, maxLength: 200 }
         tag_name: { type: string, minLength: 1, maxLength: 200 }
         sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupCreateSuccessTag:
+      type: object
+      additionalProperties: false
+      required: [tag_id, group_id, group_name, tag_name, sort_order]
+      properties:
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        tag_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupCreateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, group, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_created] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        group: { $ref: "#/components/schemas/LegacyTagGroupCreateSuccessGroup" }
+        tag: { $ref: "#/components/schemas/LegacyTagGroupCreateSuccessTag" }
+    LegacyTagGroupCreateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_create_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
     LegacyTagGroupsResponse:
       type: object
       required: [ok, groups, items, count, source_status, real_external_call_executed, sync_executed]

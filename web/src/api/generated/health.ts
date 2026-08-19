@@ -639,6 +639,18 @@ export interface LegacyTagGroup {
   sort_order: number;
 }
 
+export interface LegacyTagGroupCreateSuccessGroup {
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
 export interface LegacyTag {
   /** @minimum 1 */
   tag_id: number;
@@ -656,6 +668,99 @@ export interface LegacyTag {
   tag_name: string;
   /** @minimum 0 */
   sort_order: number;
+}
+
+export interface LegacyTagGroupCreateSuccessTag {
+  /** @minimum 1 */
+  tag_id: number;
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  tag_name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export type LegacyTagGroupCreateSuccessReason =
+  (typeof LegacyTagGroupCreateSuccessReason)[keyof typeof LegacyTagGroupCreateSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupCreateSuccessReason = {
+  group_created: "group_created",
+} as const;
+
+export type LegacyTagGroupCreateSuccessSourceStatus =
+  (typeof LegacyTagGroupCreateSuccessSourceStatus)[keyof typeof LegacyTagGroupCreateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupCreateSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagGroupCreateSuccessRouteOwner =
+  (typeof LegacyTagGroupCreateSuccessRouteOwner)[keyof typeof LegacyTagGroupCreateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupCreateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagGroupCreateSuccess {
+  ok: boolean;
+  reason: LegacyTagGroupCreateSuccessReason;
+  source_status: LegacyTagGroupCreateSuccessSourceStatus;
+  route_owner: LegacyTagGroupCreateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+  group: LegacyTagGroupCreateSuccessGroup;
+  tag: LegacyTagGroupCreateSuccessTag;
+}
+
+export type LegacyTagGroupCreateValidatedSuccessReason =
+  (typeof LegacyTagGroupCreateValidatedSuccessReason)[keyof typeof LegacyTagGroupCreateValidatedSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupCreateValidatedSuccessReason = {
+  group_create_validated: "group_create_validated",
+} as const;
+
+export type LegacyTagGroupCreateValidatedSuccessSourceStatus =
+  (typeof LegacyTagGroupCreateValidatedSuccessSourceStatus)[keyof typeof LegacyTagGroupCreateValidatedSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupCreateValidatedSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagGroupCreateValidatedSuccessRouteOwner =
+  (typeof LegacyTagGroupCreateValidatedSuccessRouteOwner)[keyof typeof LegacyTagGroupCreateValidatedSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagGroupCreateValidatedSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagGroupCreateValidatedSuccess {
+  ok: boolean;
+  reason: LegacyTagGroupCreateValidatedSuccessReason;
+  source_status: LegacyTagGroupCreateValidatedSuccessSourceStatus;
+  route_owner: LegacyTagGroupCreateValidatedSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
 }
 
 export type LegacyTagGroupsResponseSourceStatus =
@@ -6719,6 +6824,9 @@ export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
 
+export type CreateLegacyWecomTagGroup200 =
+  LegacyTagGroupCreateSuccess | LegacyTagGroupCreateValidatedSuccess;
+
 export type ListLegacyChannelsParams = {
   /**
    * @minimum 1
@@ -10796,7 +10904,7 @@ export const listLegacyWecomTagGroups = async (
  * @summary Create one local tag group and its required first tag
  */
 export type createLegacyWecomTagGroupResponse200 = {
-  data: void;
+  data: CreateLegacyWecomTagGroup200;
   status: 200;
 };
 

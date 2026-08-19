@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -57,6 +55,21 @@ func legacyWecomTagsGlobalReadAuthorized(request *http.Request) bool {
 	return principalOK && principal.AdminUserID > 0 &&
 		(principal.Role == authport.RoleAdmin || principal.Role == authport.RoleOps) &&
 		authorizationOK && authorization.Capability == authport.CapabilityCustomersRead &&
+		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
+}
+
+// legacyWecomTagsGlobalWriteAuthorized keeps the shared tag catalog out of
+// sales' owner-scoped customer write grant. A tag group has no owner-scoped
+// projection, so only global admin and ops grants can change it.
+func legacyWecomTagsGlobalWriteAuthorized(request *http.Request) bool {
+	if request == nil {
+		return false
+	}
+	principal, principalOK := authport.PrincipalFromContext(request.Context())
+	authorization, authorizationOK := authport.AuthorizationFromContext(request.Context())
+	return principalOK && principal.AdminUserID > 0 &&
+		(principal.Role == authport.RoleAdmin || principal.Role == authport.RoleOps) &&
+		authorizationOK && authorization.Capability == authport.CapabilityCustomersWrite &&
 		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
 }
 
@@ -211,6 +224,10 @@ func (handler *Handler) MutateLegacyTag(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler *Handler) legacyTagCommand(w http.ResponseWriter, r *http.Request) (legacyTagBody, contactapp.LegacyTagCommand, bool) {
+	if !legacyWecomTagsGlobalWriteAuthorized(r) {
+		writeLegacyTagError(w, authport.ErrUnauthorized)
+		return legacyTagBody{}, contactapp.LegacyTagCommand{}, false
+	}
 	if handler == nil || nilLegacyDependency(handler.legacyTags) || r == nil {
 		writeLegacyTagError(w, contactapp.ErrLegacyTagUnavailable)
 		return legacyTagBody{}, contactapp.LegacyTagCommand{}, false
@@ -220,6 +237,11 @@ func (handler *Handler) legacyTagCommand(w http.ResponseWriter, r *http.Request)
 		writeLegacyTagError(w, authport.ErrUnauthorized)
 		return legacyTagBody{}, contactapp.LegacyTagCommand{}, false
 	}
+	key, keyOK := legacyTagIdempotencyKey(r)
+	if !keyOK {
+		writeLegacyTagError(w, contactapp.ErrInvalidLegacyTag)
+		return legacyTagBody{}, contactapp.LegacyTagCommand{}, false
+	}
 	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
 	d.DisallowUnknownFields()
 	var b legacyTagBody
@@ -227,19 +249,22 @@ func (handler *Handler) legacyTagCommand(w http.ResponseWriter, r *http.Request)
 		writeLegacyTagError(w, contactapp.ErrInvalidLegacyTag)
 		return b, contactapp.LegacyTagCommand{}, false
 	}
-	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
-	if key == "" {
-		key = strings.TrimSpace(b.IdempotencyKey)
-	}
-	if key == "" {
-		var v [16]byte
-		if _, e := rand.Read(v[:]); e != nil {
-			writeLegacyTagError(w, contactapp.ErrLegacyTagUnavailable)
-			return b, contactapp.LegacyTagCommand{}, false
-		}
-		key = "legacy-tag:" + hex.EncodeToString(v[:])
-	}
 	return b, contactapp.LegacyTagCommand{Actor: p.AdminUserID, IdempotencyKey: key, TraceID: b.TraceID, GroupName: b.GroupName, FirstTagName: b.FirstTagName, GroupID: b.GroupID, TagName: b.TagName}, true
+}
+
+// legacyTagIdempotencyKey accepts one explicitly supplied, already-trimmed
+// business key. Legacy request bodies may still carry idempotency_key for
+// compatibility, but it cannot stand in for the replay-safe header.
+func legacyTagIdempotencyKey(request *http.Request) (string, bool) {
+	if request == nil {
+		return "", false
+	}
+	values := request.Header.Values("Idempotency-Key")
+	if len(values) != 1 {
+		return "", false
+	}
+	key := values[0]
+	return key, key == strings.TrimSpace(key) && len(key) >= 16 && len(key) <= 128
 }
 func parseLegacyTagID(raw string) (int64, error) {
 	id, e := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)

@@ -1,4 +1,8 @@
-import { listLegacyWecomTags } from "./api/generated/health";
+import {
+  createLegacyWecomTagGroup,
+  listLegacyWecomTags,
+  type LegacyTagGroupCreateRequest,
+} from "./api/generated/health";
 
 export type WecomTagsRole = "admin" | "ops" | "sales";
 export const WECOM_TAGS_PAGE_SIZE = 20;
@@ -35,16 +39,37 @@ export type WecomTagCatalogResult =
   | { readonly status: "loaded"; readonly catalog: WecomTagCatalog }
   | { readonly status: WecomTagsFailure };
 
+export type WecomTagGroupCreateResult =
+  | {
+      readonly status: "created";
+      readonly group: Omit<WecomTagGroup, "tags">;
+      readonly tag: WecomTag;
+    }
+  | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
+  | { readonly status: "unknown" };
+
 async function generatedRead(options?: RequestInit) {
   return listLegacyWecomTags({ credentials: "same-origin", ...options });
 }
 
+async function generatedCreate(
+  request: LegacyTagGroupCreateRequest,
+  options?: RequestInit,
+) {
+  return createLegacyWecomTagGroup(request, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
 export interface WecomTagsTransport {
   readonly read: typeof generatedRead;
+  readonly create: typeof generatedCreate;
 }
 
 export const generatedWecomTagsTransport: WecomTagsTransport = {
   read: generatedRead,
+  create: generatedCreate,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -145,6 +170,95 @@ function parseTag(value: unknown): WecomTag | undefined {
     name: value.tag_name,
     sortOrder: value.sort_order,
   };
+}
+
+function parseCreatedGroup(
+  value: unknown,
+): Omit<WecomTagGroup, "tags"> | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["group_id", "group_name", "sort_order"]) ||
+    !positiveInteger(value.group_id) ||
+    !frozenText(value.group_name) ||
+    !validSortOrder(value.sort_order)
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.group_id,
+    name: value.group_name,
+    sortOrder: value.sort_order,
+  };
+}
+
+function parseCreatedTag(value: unknown): WecomTag | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "tag_id",
+      "group_id",
+      "group_name",
+      "tag_name",
+      "sort_order",
+    ]) ||
+    !positiveInteger(value.tag_id) ||
+    !positiveInteger(value.group_id) ||
+    !frozenText(value.group_name) ||
+    !frozenText(value.tag_name) ||
+    !validSortOrder(value.sort_order)
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.tag_id,
+    groupID: value.group_id,
+    groupName: value.group_name,
+    name: value.tag_name,
+    sortOrder: value.sort_order,
+  };
+}
+
+export function parseWecomTagGroupCreateSuccess(
+  value: unknown,
+): Extract<WecomTagGroupCreateResult, { readonly status: "created" }> | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "reason",
+      "source_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+      "dry_run",
+      "group",
+      "tag",
+    ]) ||
+    value.ok !== true ||
+    value.reason !== "group_created" ||
+    value.source_status !== "local_catalog" ||
+    value.route_owner !== "ai_crm_next" ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false ||
+    value.sync_executed !== false ||
+    value.fixture_used !== false ||
+    value.dry_run !== false
+  ) {
+    return undefined;
+  }
+  const group = parseCreatedGroup(value.group);
+  const tag = parseCreatedTag(value.tag);
+  if (
+    !group ||
+    !tag ||
+    tag.groupID !== group.id ||
+    tag.groupName !== group.name
+  ) {
+    return undefined;
+  }
+  return { status: "created", group, tag };
 }
 
 function sameTags(
@@ -280,6 +394,112 @@ export async function loadWecomTagCatalog(
   if (response.status !== 200) return { status: "unavailable" };
   const catalog = parseWecomTagCatalog(response.data);
   return catalog ? { status: "loaded", catalog } : { status: "invalid" };
+}
+
+function normalizedCreateText(value: string): string | undefined {
+  const normalized = value.trim();
+  return frozenText(normalized) ? normalized : undefined;
+}
+
+function validCSRFToken(value: string): boolean {
+  return /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+
+function validIdempotencyKey(value: string): boolean {
+  return (
+    value.length >= 16 &&
+    value.length <= 128 &&
+    value.trim() === value &&
+    /^[A-Za-z0-9_-]+$/.test(value)
+  );
+}
+
+export async function createWecomTagGroup(
+  transport: WecomTagsTransport,
+  groupName: string,
+  firstTagName: string,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<WecomTagGroupCreateResult> {
+  const group_name = normalizedCreateText(groupName);
+  const first_tag_name = normalizedCreateText(firstTagName);
+  if (
+    !group_name ||
+    !first_tag_name ||
+    !validCSRFToken(csrfToken) ||
+    !validIdempotencyKey(idempotencyKey)
+  ) {
+    return { status: "invalid" };
+  }
+
+  let response: Awaited<ReturnType<WecomTagsTransport["create"]>>;
+  try {
+    response = await transport.create(
+      { group_name, first_tag_name },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
+    );
+  } catch {
+    return { status: "unknown" };
+  }
+
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status === 400) return { status: "invalid" };
+  if (response.status !== 200) return { status: "unknown" };
+  const created = parseWecomTagGroupCreateSuccess(response.data);
+  return created &&
+    created.group.name === group_name &&
+    created.tag.name === first_tag_name
+    ? created
+    : { status: "unknown" };
+}
+
+export function newWecomTagIdempotencyKey(): string | undefined {
+  if (
+    typeof globalThis.crypto === "undefined" ||
+    typeof globalThis.crypto.getRandomValues !== "function" ||
+    typeof globalThis.btoa !== "function"
+  ) {
+    return undefined;
+  }
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return globalThis.btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
+}
+
+export function confirmsCreatedWecomTagGroup(
+  catalog: WecomTagCatalog,
+  created: Extract<WecomTagGroupCreateResult, { readonly status: "created" }>,
+): boolean {
+  const group = catalog.groups.find((item) => item.id === created.group.id);
+  const tag = catalog.tags.find((item) => item.id === created.tag.id);
+  return (
+    group?.name === created.group.name &&
+    group.sortOrder === created.group.sortOrder &&
+    tag?.groupID === created.tag.groupID &&
+    tag.groupName === created.tag.groupName &&
+    tag.name === created.tag.name &&
+    tag.sortOrder === created.tag.sortOrder &&
+    group.tags.some(
+      (item) =>
+        item.id === created.tag.id &&
+        item.groupID === created.tag.groupID &&
+        item.groupName === created.tag.groupName &&
+        item.name === created.tag.name &&
+        item.sortOrder === created.tag.sortOrder,
+    )
+  );
 }
 
 function matches(value: string, query: string): boolean {

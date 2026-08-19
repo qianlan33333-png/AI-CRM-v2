@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   copyWecomTagID,
+  startWecomTagGroupCreate,
   WecomTagDetails,
   WecomTagsPage,
   WecomTagsView,
@@ -160,5 +161,29 @@ describe("WecomTagsView", () => {
     );
     expect(failed).toContain("<dd>10</dd>");
     expect(failed).toContain("复制失败，请手工复制上方标签 ID。");
+  });
+});
+
+describe("local tag-group creation lock", () => {
+  it("permits one same-tick submission and always releases its ref lock", async () => {
+    const lock = { current: false };
+    const execute = vi.fn(async () => undefined);
+    const first = startWecomTagGroupCreate(lock, execute);
+    const second = startWecomTagGroupCreate(lock, execute);
+    expect(first).toBeInstanceOf(Promise);
+    expect(second).toBeUndefined();
+    expect(execute).toHaveBeenCalledOnce();
+    await first;
+    expect(lock.current).toBe(false);
+  });
+
+  it("releases the ref lock when a local failure escapes", async () => {
+    const lock = { current: false };
+    await expect(
+      startWecomTagGroupCreate(lock, async () => {
+        throw new Error("local failure");
+      }),
+    ).rejects.toThrow("local failure");
+    expect(lock.current).toBe(false);
   });
 });

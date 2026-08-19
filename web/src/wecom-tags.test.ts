@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  confirmsCreatedWecomTagGroup,
+  createWecomTagGroup,
   filterWecomTagGroups,
   loadWecomTagCatalog,
   nextWecomTagPage,
@@ -9,6 +11,9 @@ import {
   wecomTagSearchState,
   type WecomTagsTransport,
 } from "./wecom-tags";
+
+const CSRF_TOKEN = "c".repeat(43);
+const IDEMPOTENCY_KEY = "k".repeat(43);
 
 const tags = [
   {
@@ -78,6 +83,26 @@ function transport(status: number, data: unknown): WecomTagsTransport {
     read: vi.fn(async () => ({ status, data, headers: new Headers() })),
   } as unknown as WecomTagsTransport;
 }
+
+const created = {
+  ok: true,
+  reason: "group_created",
+  source_status: "local_catalog",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  sync_executed: false,
+  fixture_used: false,
+  dry_run: false,
+  group: { group_id: 31, group_name: "客户阶段", sort_order: 0 },
+  tag: {
+    tag_id: 41,
+    group_id: 31,
+    group_name: "客户阶段",
+    tag_name: "新客",
+    sort_order: 0,
+  },
+} as const;
 
 describe("WeCom tag catalog read boundary", () => {
   it("accepts only the frozen ready catalog", async () => {
@@ -241,5 +266,175 @@ describe("WeCom tag catalog read boundary", () => {
     expect(previousWecomTagPage(2)).toBe(1);
     expect(nextWecomTagPage(1, many)).toBe(2);
     expect(nextWecomTagPage(2, many)).toBeUndefined();
+  });
+});
+
+describe("WeCom local tag-group creation boundary", () => {
+  it("sends only normalized local names with same-origin CSRF and a unique key", async () => {
+    const client = {
+      ...transport(200, catalog),
+      create: vi.fn(async () => ({
+        status: 200,
+        data: created,
+        headers: new Headers(),
+      })),
+    } as unknown as WecomTagsTransport;
+
+    await expect(
+      createWecomTagGroup(
+        client,
+        " 客户阶段 ",
+        " 新客 ",
+        CSRF_TOKEN,
+        IDEMPOTENCY_KEY,
+      ),
+    ).resolves.toMatchObject({
+      status: "created",
+      group: { id: 31, name: "客户阶段" },
+      tag: { id: 41, groupID: 31, name: "新客" },
+    });
+    expect(client.create).toHaveBeenCalledOnce();
+    expect(client.create).toHaveBeenCalledWith(
+      { group_name: "客户阶段", first_tag_name: "新客" },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": CSRF_TOKEN,
+          "Idempotency-Key": IDEMPOTENCY_KEY,
+        },
+      },
+    );
+  });
+
+  it("fails closed when either created name drifts from this request", async () => {
+    for (const response of [
+      {
+        ...created,
+        group: { ...created.group, group_name: "其他组" },
+        tag: { ...created.tag, group_name: "其他组" },
+      },
+      { ...created, tag: { ...created.tag, tag_name: "其他标签" } },
+    ]) {
+      const client = {
+        ...transport(200, catalog),
+        create: vi.fn(async () => ({
+          status: 200,
+          data: response,
+          headers: new Headers(),
+        })),
+      } as unknown as WecomTagsTransport;
+      await expect(
+        createWecomTagGroup(
+          client,
+          "客户阶段",
+          "新客",
+          CSRF_TOKEN,
+          IDEMPOTENCY_KEY,
+        ),
+      ).resolves.toEqual({ status: "unknown" });
+    }
+  });
+
+  it("does not send malformed local input or a bad security header", async () => {
+    const client = {
+      ...transport(200, catalog),
+      create: vi.fn(),
+    } as unknown as WecomTagsTransport;
+    await expect(
+      createWecomTagGroup(client, " ", "新客", CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "invalid" });
+    await expect(
+      createWecomTagGroup(client, "组", "标签", "bad", IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(client.create).not.toHaveBeenCalled();
+  });
+
+  it("counts Unicode runes, not UTF-16 code units, at the 200-rune boundary", async () => {
+    const supplementary = "\u{1F600}".repeat(200);
+    const client = {
+      ...transport(200, catalog),
+      create: vi.fn(async () => ({
+        status: 200,
+        data: {
+          ...created,
+          group: { ...created.group, group_name: supplementary },
+          tag: {
+            ...created.tag,
+            group_name: supplementary,
+            tag_name: supplementary,
+          },
+        },
+        headers: new Headers(),
+      })),
+    } as unknown as WecomTagsTransport;
+    await expect(
+      createWecomTagGroup(
+        client,
+        supplementary,
+        supplementary,
+        CSRF_TOKEN,
+        IDEMPOTENCY_KEY,
+      ),
+    ).resolves.toMatchObject({ status: "created" });
+    expect(client.create).toHaveBeenCalledOnce();
+
+    const rejected = {
+      ...transport(200, catalog),
+      create: vi.fn(),
+    } as unknown as WecomTagsTransport;
+    await expect(
+      createWecomTagGroup(
+        rejected,
+        "\u{1F600}".repeat(201),
+        "新客",
+        CSRF_TOKEN,
+        IDEMPOTENCY_KEY,
+      ),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(rejected.create).not.toHaveBeenCalled();
+  });
+
+  it("requires the refreshed local catalog to mirror the confirmed group and tag", () => {
+    const result = {
+      status: "created" as const,
+      group: { id: 31, name: "客户阶段", sortOrder: 0 },
+      tag: {
+        id: 41,
+        groupID: 31,
+        groupName: "客户阶段",
+        name: "新客",
+        sortOrder: 0,
+      },
+    };
+    const confirmed = {
+      totalTags: 1,
+      tagLimit: 1000,
+      snapshotAt: "2026-08-19T00:00:00Z",
+      groups: [
+        {
+          id: 31,
+          name: "客户阶段",
+          sortOrder: 0,
+          tags: [result.tag],
+        },
+      ],
+      tags: [result.tag],
+    };
+    expect(confirmsCreatedWecomTagGroup(confirmed, result)).toBe(true);
+    expect(
+      confirmsCreatedWecomTagGroup(
+        { ...confirmed, groups: [] },
+        result,
+      ),
+    ).toBe(false);
+    expect(
+      confirmsCreatedWecomTagGroup(
+        {
+          ...confirmed,
+          tags: [{ ...result.tag, name: "已漂移" }],
+        },
+        result,
+      ),
+    ).toBe(false);
   });
 });
