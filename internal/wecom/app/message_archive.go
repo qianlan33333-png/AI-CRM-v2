@@ -16,6 +16,7 @@ import (
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 const (
@@ -105,7 +106,7 @@ func (service *MessageArchiveService) List(ctx context.Context, query ArchiveQue
 	if !validArchiveQuery(query) {
 		return nil, 0, ErrInvalidMessageArchiveQuery
 	}
-	if !messageArchiveReady(service) || ctx == nil {
+	if !messageArchiveReadReady(service) || ctx == nil {
 		return nil, 0, ErrMessageArchiveUnavailable
 	}
 	var records []ArchiveMessage
@@ -122,6 +123,34 @@ func (service *MessageArchiveService) List(ctx context.Context, query ArchiveQue
 		return nil, 0, ErrMessageArchiveUnavailable
 	}
 	return cloneArchiveMessages(records), total, nil
+}
+
+// ListCustomerChatSummaries projects the local archive into a deliberately
+// zero-body, customer-bound read model. It performs no sync, provider, or
+// event operation and never exposes archive identity or content fields.
+func (service *MessageArchiveService) ListCustomerChatSummaries(
+	ctx context.Context,
+	query wecomport.CustomerChatSummaryQuery,
+) (wecomport.CustomerChatSummaryPage, error) {
+	if ctx == nil || query.CustomerID <= 0 || query.Limit < 1 || query.Limit > MessageArchiveMaximumLimit || query.Offset < 0 {
+		return wecomport.CustomerChatSummaryPage{}, wecomport.ErrInvalidCustomerChatSummaryQuery
+	}
+	records, total, err := service.List(ctx, ArchiveQuery{CustomerID: query.CustomerID, Limit: query.Limit, Offset: query.Offset})
+	if err != nil || total < int64(len(records)) {
+		return wecomport.CustomerChatSummaryPage{}, errors.Join(wecomport.ErrCustomerChatSummaryUnavailable, err)
+	}
+	page := wecomport.CustomerChatSummaryPage{
+		Items: make([]wecomport.CustomerChatSummary, len(records)), Total: total, Limit: query.Limit, Offset: query.Offset,
+	}
+	for index, record := range records {
+		if (record.ChatType != "private" && record.ChatType != "group") || record.MessageType == "" || record.SentAt.IsZero() {
+			return wecomport.CustomerChatSummaryPage{}, wecomport.ErrCustomerChatSummaryUnavailable
+		}
+		page.Items[index] = wecomport.CustomerChatSummary{
+			ChatType: record.ChatType, MessageType: record.MessageType, SentAt: record.SentAt.UTC(),
+		}
+	}
+	return page, nil
 }
 
 // RequestSync records only the accepted command boundary. It deliberately has
@@ -257,9 +286,14 @@ func cloneArchiveHealth(health ArchiveHealth) ArchiveHealth {
 }
 
 func messageArchiveReady(service *MessageArchiveService) bool {
-	return service != nil && !nilMessageArchiveDependency(service.uow) && !nilMessageArchiveDependency(service.store) &&
-		!nilMessageArchiveDependency(service.events) && service.now != nil
+	return messageArchiveReadReady(service) && !nilMessageArchiveDependency(service.events) && service.now != nil
 }
+
+func messageArchiveReadReady(service *MessageArchiveService) bool {
+	return service != nil && !nilMessageArchiveDependency(service.uow) && !nilMessageArchiveDependency(service.store)
+}
+
+var _ wecomport.CustomerChatSummaryReader = (*MessageArchiveService)(nil)
 
 func nilMessageArchiveDependency(value any) bool {
 	if value == nil {

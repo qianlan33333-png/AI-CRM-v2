@@ -5456,6 +5456,102 @@ export interface CustomerEventListResponse {
   next_cursor: string | null;
 }
 
+export interface CustomerContextCustomer {
+  /** @minimum 1 */
+  id: number;
+  name: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  stage_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  /** @nullable */
+  added_at?: string | null;
+  /** @nullable */
+  last_interact_at?: string | null;
+}
+
+export interface CustomerContextTag {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_id?: number | null;
+  /** @nullable */
+  group_name?: string | null;
+  group_sort_order: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  sort_order: number;
+}
+
+export interface CustomerContextTimelineEntry {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  occurred_at: string;
+}
+
+export type CustomerContextChatEntryChatType =
+  (typeof CustomerContextChatEntryChatType)[keyof typeof CustomerContextChatEntryChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerContextChatEntryChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CustomerContextChatEntry {
+  chat_type: CustomerContextChatEntryChatType;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  message_type: string;
+  sent_at: string;
+}
+
+export interface CustomerContextChatSummary {
+  local_archive_available: boolean;
+  /** @maxItems 20 */
+  items: CustomerContextChatEntry[];
+  /** @minimum 0 */
+  total: number;
+}
+
+export interface CustomerContextResponse {
+  customer: CustomerContextCustomer;
+  tags: CustomerContextTag[];
+  timeline: CustomerContextTimelineEntry[];
+  /**
+   * @minLength 1
+   * @nullable
+   */
+  timeline_next_cursor: string | null;
+  chat: CustomerContextChatSummary;
+  non_atomic_snapshot: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface Tag {
   /** @minimum 1 */
   id: number;
@@ -7310,6 +7406,20 @@ export type ListCustomersParams = {
 };
 
 export type ListCustomerEventsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type GetCustomerContextParams = {
   /**
    * Opaque keyset cursor; clients must not parse or synthesize it.
    * @minLength 1
@@ -9461,6 +9571,95 @@ export const listCustomerEvents = async (
     status: res.status,
     headers: res.headers,
   } as listCustomerEventsResponse;
+};
+
+/**
+ * @summary Read a safe local Customer 360 context without external identities or message bodies
+ */
+export type getCustomerContextResponse200 = {
+  data: CustomerContextResponse;
+  status: 200;
+};
+
+export type getCustomerContextResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCustomerContextResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCustomerContextResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCustomerContextResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getCustomerContextResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCustomerContextResponseSuccess =
+  getCustomerContextResponse200 & {
+    headers: Headers;
+  };
+export type getCustomerContextResponseError = (
+  | getCustomerContextResponse400
+  | getCustomerContextResponse401
+  | getCustomerContextResponse403
+  | getCustomerContextResponse404
+  | getCustomerContextResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCustomerContextResponse =
+  getCustomerContextResponseSuccess | getCustomerContextResponseError;
+
+export const getGetCustomerContextUrl = (
+  customerId: number,
+  params?: GetCustomerContextParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/customers/${customerId}/context?${stringifiedParams}`
+    : `/api/v1/customers/${customerId}/context`;
+};
+
+export const getCustomerContext = async (
+  customerId: number,
+  params?: GetCustomerContextParams,
+  options?: RequestInit,
+): Promise<getCustomerContextResponse> => {
+  const res = await fetch(getGetCustomerContextUrl(customerId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCustomerContextResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCustomerContextResponse;
 };
 
 /**

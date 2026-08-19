@@ -67,6 +67,10 @@ var p4AutomationAgentManagementOperations = map[string]bool{
 	"saveLegacyAutomationAgentFixedContent": true, "pauseLegacyAutomationAgent": true, "publishLegacyAutomationAgent": true,
 }
 
+var p4Customer360Operations = map[string]bool{
+	"getCustomerContext": true,
+}
+
 var p4ProductOperations = map[string]bool{
 	"listProducts": true, "createProduct": true, "getProduct": true, "getLegacyProductListPage": true,
 }
@@ -339,6 +343,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"getCustomer":                               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"updateCustomer":                            {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listCustomerEvents":                        {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getCustomerContext":                        {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"resolveIdentity":                           {"identity.resolve", map[string]string{"admin": "global", "ops": "global"}},
 	"bindIdentity":                              {"identity.bind", map[string]string{"admin": "global", "ops": "global"}},
 	"ingestIdentityEvent":                       {"identity.ingest", map[string]string{"admin": "global", "ops": "global"}},
@@ -473,6 +478,7 @@ const p3SegmentDecisionEvidence = "P3-S00-2026-08-12"
 const p4AutomationDecisionEvidence = "P4-W0-D01-2026-08-14"
 const p4AutomationAgentDecisionEvidence = "P4-AUTOMATION-AGENT-BROWSER-061-2026-08-20"
 const p4AutomationAgentManagementDecisionEvidence = "P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20"
+const p4Customer360DecisionEvidence = "P4-CUSTOMER-360-READ-2026-08-20"
 const p4ProductDecisionEvidence = "P4-I01A-2026-08-14"
 const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
 const p4GroupInviteDecisionEvidence = "P4-H03-2026-08-15"
@@ -563,7 +569,7 @@ func load(spec, mapping string) (*openapi3.T, mappingInventory, error) {
 func isRunnerDeclaredOperation(operationID string) bool {
 	return p1CandidateOperations[operationID] || p2StageOperations[operationID] ||
 		p3ContactOperations[operationID] || p3IdentityOperations[operationID] || p3SegmentOperations[operationID] ||
-		p4AutomationOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4ProductOperations[operationID] || p4MediaOperations[operationID] ||
+		p4AutomationOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
@@ -659,7 +665,7 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -766,6 +772,22 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 					}
 				} else if op.Extensions["x-aicrm-session-bound-csrf"] != "required" {
 					return fmt.Errorf("%s write must require CSRF", op.OperationID)
+				}
+			} else if p4Customer360Operations[op.OperationID] {
+				seenP4Customer360[op.OperationID] = true
+				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
+				if !ok || evidence != p4Customer360DecisionEvidence {
+					return fmt.Errorf("%s has missing or forged P4 Customer 360 evidence", op.OperationID)
+				}
+				if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
+					return fmt.Errorf("%s must not claim a legacy Customer mapping", op.OperationID)
+				}
+				if op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != "none" ||
+					op.Extensions["x-aicrm-data-classification"] != "internal_pii" || op.Extensions["x-aicrm-data-source"] != "local_read_model" ||
+					op.Extensions["x-aicrm-external-effect"] != "none" || !operationResponseUsesLocalSchema(op, "CustomerContextResponse") ||
+					op.Responses.Value("400") == nil || op.Responses.Value("401") == nil || op.Responses.Value("403") == nil ||
+					op.Responses.Value("404") == nil || op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s safe local Customer 360 contract drifted", op.OperationID)
 				}
 			} else if p4ProductOperations[op.OperationID] {
 				seenP4Product[op.OperationID] = true
@@ -1051,7 +1073,7 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	}
 	if len(seenP1) != len(p1CandidateOperations) || len(seenP2) != len(p2StageOperations) ||
 		len(seenP3Contact) != len(p3ContactOperations) || len(seenP3Identity) != len(p3IdentityOperations) || len(seenP3Segment) != len(p3SegmentOperations) ||
-		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4Media) != len(p4MediaOperations) ||
+		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4Media) != len(p4MediaOperations) ||
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
@@ -1098,6 +1120,11 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	for id := range p4AutomationAgentManagementOperations {
 		if !seenP4AutomationAgentManagement[id] {
 			return fmt.Errorf("missing P4 Automation Agent management operation: %s", id)
+		}
+	}
+	for id := range p4Customer360Operations {
+		if !seenP4Customer360[id] {
+			return fmt.Errorf("missing P4 Customer 360 operation: %s", id)
 		}
 	}
 	for id := range p4ProductOperations {
