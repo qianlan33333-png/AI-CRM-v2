@@ -850,6 +850,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if wrapErr != nil {
 				return wrapErr
 			}
+			if pattern == legacyCustomerProfileTagsPath {
+				tail = legacyCustomerProfileTagsSecurityHeaders(tail)
+			}
 			if (method == http.MethodPut || method == http.MethodDelete) && pattern == legacyImageDetailPath {
 				tail = legacyImageUpdateSecurityHeaders(tail)
 			}
@@ -859,7 +862,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -879,6 +882,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyInternalEventsMethodNotAllowed))
+					}
+					if pattern == legacyCustomerProfileTagsPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyCustomerProfileTagsMethodNotAllowed))
 					}
 					strictLegacyMethodRouters[pattern] = methodRouter
 					router.Handle(pattern, methodRouter)
@@ -904,6 +910,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, legacyInternalEventsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventsHandler(adminReadRepository).List)},
 			{http.MethodGet, legacyInternalEventsDiagnosticsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventsHandler(adminReadRepository).Diagnostics)},
 			{http.MethodGet, legacyInternalEventDetailPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventDetailHandler(adminDetailRepository).Get)},
+			{http.MethodGet, legacyCustomerProfileTagsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCustomerProfileTags)},
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
