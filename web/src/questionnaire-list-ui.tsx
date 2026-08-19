@@ -4,6 +4,7 @@ import {
   deleteQuestionnaire,
   generatedQuestionnaireListTransport,
   loadQuestionnaires,
+  loadQuestionnairePreflight,
   nextQuestionnaireOffset,
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
@@ -13,6 +14,8 @@ import {
   type QuestionnaireListResult,
   type QuestionnaireListTransport,
   type QuestionnaireMutationResult,
+  type QuestionnairePreflight,
+  type QuestionnairePreflightResult,
 } from "./questionnaire-list";
 
 const messages: Record<QuestionnaireFailure, string> = {
@@ -32,6 +35,11 @@ export type QuestionnaireListState =
       readonly total: number;
       readonly offset: number;
     }
+  | { readonly kind: "error"; readonly failure: QuestionnaireFailure };
+
+export type QuestionnairePreflightState =
+  | { readonly kind: "loading" }
+  | { readonly kind: "ready"; readonly preflight: QuestionnairePreflight }
   | { readonly kind: "error"; readonly failure: QuestionnaireFailure };
 
 export type QuestionnaireMutationAction = "toggle" | "delete";
@@ -91,19 +99,67 @@ export interface QuestionnaireListContentProps {
   readonly busy: number | undefined;
   readonly onLoad: React.Dispatch<number>;
   readonly onMutate: React.Dispatch<QuestionnaireMutationRequest>;
+  readonly preflight?: QuestionnairePreflightState;
   readonly state: QuestionnaireListState;
+}
+
+function QuestionnairePreflightPanel({
+  state,
+}: {
+  readonly state: QuestionnairePreflightState;
+}): React.ReactElement {
+  if (state.kind === "loading")
+    return (
+      <section data-testid="questionnaire-preflight">
+        <h2>问卷预检</h2>
+        <p>正在读取问卷预检。</p>
+      </section>
+    );
+  if (state.kind === "error")
+    return (
+      <section data-testid="questionnaire-preflight">
+        <h2>问卷预检</h2>
+        <p>{messages[state.failure]}</p>
+      </section>
+    );
+  const { checks } = state.preflight;
+  return (
+    <section data-testid="questionnaire-preflight">
+      <h2>问卷预检</h2>
+      <p>状态：{state.preflight.status}</p>
+      <dl>
+        <dt>wechat_oauth_configured</dt>
+        <dd>{String(checks.wechatOAuthConfigured)}</dd>
+        <dt>wecom_contact_configured</dt>
+        <dd>{String(checks.wecomContactConfigured)}</dd>
+        <dt>debug_session_api_enabled</dt>
+        <dd>{String(checks.debugSessionAPIEnabled)}</dd>
+        <dt>wecom_tags_api_available</dt>
+        <dd>{String(checks.wecomTagsAPIAvailable)}</dd>
+        <dt>questionnaire_admin_ui_enabled</dt>
+        <dd>{String(checks.questionnaireAdminUIEnabled)}</dd>
+        <dt>identity_map_available</dt>
+        <dd>{String(checks.identityMapAvailable)}</dd>
+      </dl>
+    </section>
+  );
 }
 
 export function QuestionnaireListContent({
   busy,
   onLoad,
   onMutate,
+  preflight,
   state,
 }: QuestionnaireListContentProps): React.ReactElement {
+  const preflightPanel = preflight ? (
+    <QuestionnairePreflightPanel state={preflight} />
+  ) : null;
   if (state.kind === "loading")
     return (
       <section className="route-card">
         <h1 id="app-title">问卷列表</h1>
+        {preflightPanel}
         <p>正在读取问卷列表。</p>
       </section>
     );
@@ -111,6 +167,7 @@ export function QuestionnaireListContent({
     return (
       <section className="route-card">
         <h1 id="app-title">问卷列表</h1>
+        {preflightPanel}
         <p>{messages[state.failure]}</p>
         <button type="button" onClick={() => onLoad(0)}>
           重新加载
@@ -121,6 +178,7 @@ export function QuestionnaireListContent({
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">Survey 本地管理</p>
       <h1 id="app-title">问卷列表</h1>
+      {preflightPanel}
       <p>共 {state.total} 条问卷。写入成功后会重新加载列表。</p>
       {state.items.length === 0 ? (
         <p>当前没有问卷。</p>
@@ -218,6 +276,9 @@ export function QuestionnaireListPage({
   const [state, setState] = useState<QuestionnaireListState>({
     kind: "loading",
   });
+  const [preflight, setPreflight] = useState<QuestionnairePreflightState>({
+    kind: "loading",
+  });
   const [busy, setBusy] = useState<number>();
   const load = useCallback(
     (offset: number) => {
@@ -240,9 +301,25 @@ export function QuestionnaireListPage({
     },
     [onUnauthenticated, transport],
   );
+  const loadPreflight = useCallback(() => {
+    setPreflight({ kind: "loading" });
+    void loadQuestionnairePreflight(transport).then(
+      (result: QuestionnairePreflightResult) => {
+        if (result.status === "loaded") {
+          setPreflight({ kind: "ready", preflight: result.preflight });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setPreflight({ kind: "error", failure: result.status });
+      },
+    );
+  }, [onUnauthenticated, transport]);
   useEffect(() => {
-    if (role === "admin") load(0);
-  }, [load, role]);
+    if (role === "admin") {
+      load(0);
+      loadPreflight();
+    }
+  }, [load, loadPreflight, role]);
   const mutate = async (
     item: QuestionnaireItem,
     action: QuestionnaireMutationAction,
@@ -277,6 +354,7 @@ export function QuestionnaireListPage({
       busy={busy}
       onLoad={load}
       onMutate={({ item, action }) => void mutate(item, action)}
+      preflight={preflight}
       state={state}
     />
   );
