@@ -43,6 +43,8 @@ import { ChannelsPage } from "./channels-ui";
 import type { ChannelsTransport } from "./channels";
 import { CouponsPage } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
+import { AutomationRunsPage } from "./automation-runs-ui";
+import type { AutomationRunsTransport } from "./automation-runs";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -54,6 +56,7 @@ export const QUESTIONNAIRE_LIST_PATH = "/admin/questionnaires";
 export const WECOM_TAGS_PATH = "/admin/wecom-tags";
 export const CHANNELS_PATH = "/admin/channels";
 export const COUPONS_PATH = "/admin/coupons";
+export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -130,6 +133,12 @@ export const routes = [
     description: "本地优惠券规则的浏览和复制。",
   },
   {
+    path: "/admin/automation-runs",
+    navigationLabel: "自动化运行",
+    title: "自动化运行记录",
+    description: "自动化触发记录的脱敏只读视图。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -183,6 +192,7 @@ export interface AppProps {
   wecomTagsTransport?: WecomTagsTransport;
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
+  automationRunsTransport?: AutomationRunsTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -340,6 +350,7 @@ function PageContent({
   wecomTagsTransport,
   channelsTransport,
   couponsTransport,
+  automationRunsTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -358,6 +369,7 @@ function PageContent({
   wecomTagsTransport?: WecomTagsTransport;
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
+  automationRunsTransport?: AutomationRunsTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -512,6 +524,16 @@ function PageContent({
     );
   }
 
+  if (route.path === AUTOMATION_RUNS_PATH) {
+    return (
+      <AutomationRunsPage
+        role={principal.role}
+        transport={automationRunsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -562,6 +584,7 @@ export function navigationLinks(
   }
   if (base.length > 0 && principal.role === "admin") {
     permitted.add(QUESTIONNAIRE_LIST_PATH);
+    permitted.add(AUTOMATION_RUNS_PATH);
   }
   if (
     base.length > 0 &&
@@ -594,6 +617,7 @@ export function App({
   wecomTagsTransport,
   channelsTransport,
   couponsTransport,
+  automationRunsTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -754,6 +778,7 @@ export function App({
             wecomTagsTransport={wecomTagsTransport}
             channelsTransport={channelsTransport}
             couponsTransport={couponsTransport}
+            automationRunsTransport={automationRunsTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
