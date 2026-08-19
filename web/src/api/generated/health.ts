@@ -571,6 +571,250 @@ export interface LegacyAutomationAgentListError {
   error: LegacyAutomationAgentListErrorError;
 }
 
+export interface LegacyAutomationAgentDynamicCard {
+  schema_version?: unknown;
+  appid?: unknown;
+  title?: unknown;
+  pagepath?: unknown;
+  card_id?: unknown;
+  cid?: unknown;
+  cover_image_id?: unknown;
+}
+
+export interface LegacyAutomationAgentFixedContent {
+  /** @maxLength 4000 */
+  content_text: string;
+  /** @maxItems 3 */
+  image_library_ids: number[];
+  /** @maxItems 1 */
+  miniprogram_library_ids: number[];
+  /** @maxItems 9 */
+  attachment_library_ids: number[];
+  /** @maxItems 1 */
+  group_invite_library_ids: number[];
+  dynamic_miniprogram_card?: LegacyAutomationAgentDynamicCard;
+}
+
+export interface LegacyAutomationAgentFixedContentPreview {
+  /** @maxLength 4000 */
+  content_text: string;
+  material_summary: LegacyAutomationAgentMaterialSummary;
+  /** @maxItems 0 */
+  materials: unknown[];
+}
+
+export type LegacyAutomationAgentDetailAutomationType =
+  (typeof LegacyAutomationAgentDetailAutomationType)[keyof typeof LegacyAutomationAgentDetailAutomationType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentDetailAutomationType = {
+  agent: "agent",
+  fixed_script: "fixed_script",
+} as const;
+
+export type LegacyAutomationAgentDetailBoundPackageKey =
+  (typeof LegacyAutomationAgentDetailBoundPackageKey)[keyof typeof LegacyAutomationAgentDetailBoundPackageKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentDetailBoundPackageKey = {
+  "": "",
+} as const;
+
+/**
+ * @nullable
+ */
+export type LegacyAutomationAgentDetailBoundPackageId =
+  | (typeof LegacyAutomationAgentDetailBoundPackageId)[keyof typeof LegacyAutomationAgentDetailBoundPackageId]
+  | null;
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentDetailBoundPackageId = {} as const;
+
+export type LegacyAutomationAgentDetailBoundPackageName =
+  (typeof LegacyAutomationAgentDetailBoundPackageName)[keyof typeof LegacyAutomationAgentDetailBoundPackageName];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentDetailBoundPackageName = {
+  "": "",
+} as const;
+
+export type LegacyAutomationAgentDetailStatus =
+  (typeof LegacyAutomationAgentDetailStatus)[keyof typeof LegacyAutomationAgentDetailStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentDetailStatus = {
+  active: "active",
+  paused: "paused",
+} as const;
+
+export type LegacyAutomationAgentDetailAutomationTypeLabel =
+  (typeof LegacyAutomationAgentDetailAutomationTypeLabel)[keyof typeof LegacyAutomationAgentDetailAutomationTypeLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentDetailAutomationTypeLabel = {
+  Agent_机器人: "Agent 机器人",
+  固定话术: "固定话术",
+} as const;
+
+export interface LegacyAutomationAgentDetail {
+  /** @minimum 1 */
+  id: number;
+  automation_type: LegacyAutomationAgentDetailAutomationType;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9_-]+$
+   */
+  agent_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  agent_name: string;
+  bound_package_key: LegacyAutomationAgentDetailBoundPackageKey;
+  /** @nullable */
+  bound_package_id: LegacyAutomationAgentDetailBoundPackageId;
+  bound_package_name: LegacyAutomationAgentDetailBoundPackageName;
+  fixed_material_summary: LegacyAutomationAgentMaterialSummary;
+  status: LegacyAutomationAgentDetailStatus;
+  updated_at: string;
+  automation_type_label: LegacyAutomationAgentDetailAutomationTypeLabel;
+  /** @maxLength 20000 */
+  draft_role_prompt: string;
+  /** @maxLength 20000 */
+  draft_task_prompt: string;
+  /** @maxLength 20000 */
+  published_role_prompt: string;
+  /** @maxLength 20000 */
+  published_task_prompt: string;
+  /** @minimum 1 */
+  draft_version: number;
+  /** @minimum 1 */
+  published_version: number;
+  has_unpublished_changes: boolean;
+  fixed_content_package: LegacyAutomationAgentFixedContent;
+  fixed_content_package_preview: LegacyAutomationAgentFixedContentPreview;
+}
+
+export interface LegacyAutomationAgentDetailResponse {
+  ok: boolean;
+  agent: LegacyAutomationAgentDetail;
+}
+
+export type LegacyAutomationAgentCreateRequestAutomationType =
+  (typeof LegacyAutomationAgentCreateRequestAutomationType)[keyof typeof LegacyAutomationAgentCreateRequestAutomationType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentCreateRequestAutomationType = {
+  agent: "agent",
+  fixed_script: "fixed_script",
+} as const;
+
+export type LegacyAutomationAgentCreateRequestStatus =
+  (typeof LegacyAutomationAgentCreateRequestStatus)[keyof typeof LegacyAutomationAgentCreateRequestStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentCreateRequestStatus = {
+  active: "active",
+  paused: "paused",
+} as const;
+
+export interface LegacyAutomationAgentCreateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  agent_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9_-]+$
+   */
+  agent_code: string;
+  automation_type?: LegacyAutomationAgentCreateRequestAutomationType;
+  status?: LegacyAutomationAgentCreateRequestStatus;
+  /** @maxLength 20000 */
+  role_prompt?: string;
+  /** @maxLength 20000 */
+  task_prompt?: string;
+  fixed_content_package?: LegacyAutomationAgentFixedContent;
+}
+
+export type LegacyAutomationAgentUpdateRequestAutomationType =
+  (typeof LegacyAutomationAgentUpdateRequestAutomationType)[keyof typeof LegacyAutomationAgentUpdateRequestAutomationType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentUpdateRequestAutomationType = {
+  agent: "agent",
+  fixed_script: "fixed_script",
+} as const;
+
+export type LegacyAutomationAgentUpdateRequestStatus =
+  (typeof LegacyAutomationAgentUpdateRequestStatus)[keyof typeof LegacyAutomationAgentUpdateRequestStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentUpdateRequestStatus = {
+  active: "active",
+  paused: "paused",
+} as const;
+
+export interface LegacyAutomationAgentUpdateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  agent_name?: string;
+  automation_type?: LegacyAutomationAgentUpdateRequestAutomationType;
+  status?: LegacyAutomationAgentUpdateRequestStatus;
+  /** @maxLength 20000 */
+  role_prompt?: string;
+  /** @maxLength 20000 */
+  task_prompt?: string;
+  fixed_content_package?: LegacyAutomationAgentFixedContent;
+}
+
+export interface LegacyAutomationAgentFixedContentRequest {
+  content_package: LegacyAutomationAgentFixedContent;
+}
+
+export type LegacyAutomationAgentArchiveResultStatus =
+  (typeof LegacyAutomationAgentArchiveResultStatus)[keyof typeof LegacyAutomationAgentArchiveResultStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentArchiveResultStatus = {
+  archived: "archived",
+} as const;
+
+export interface LegacyAutomationAgentArchiveResult {
+  /** @minimum 1 */
+  id: number;
+  status: LegacyAutomationAgentArchiveResultStatus;
+}
+
+export interface LegacyAutomationAgentArchiveResponse {
+  ok: boolean;
+  agent: LegacyAutomationAgentArchiveResult;
+}
+
+export type LegacyAutomationAgentErrorError =
+  (typeof LegacyAutomationAgentErrorError)[keyof typeof LegacyAutomationAgentErrorError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentErrorError = {
+  invalid_agent_payload: "invalid_agent_payload",
+  agent_not_found: "agent_not_found",
+  automation_agent_conflict: "automation_agent_conflict",
+  authentication_required: "authentication_required",
+  permission_denied: "permission_denied",
+  automation_agent_unavailable: "automation_agent_unavailable",
+  webhook_configuration_retired: "webhook_configuration_retired",
+} as const;
+
+export interface LegacyAutomationAgentError {
+  ok: boolean;
+  error: LegacyAutomationAgentErrorError;
+}
+
 export type LegacyExecutionTimelineUnavailableError =
   (typeof LegacyExecutionTimelineUnavailableError)[keyof typeof LegacyExecutionTimelineUnavailableError];
 
@@ -11237,6 +11481,751 @@ export const listLegacyAutomationAgents = async (
     status: res.status,
     headers: res.headers,
   } as listLegacyAutomationAgentsResponse;
+};
+
+/**
+ * @summary Create one local automation-agent configuration without running or sending it
+ */
+export type createLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type createLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type createLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type createLegacyAutomationAgentResponse410 = {
+  data: LegacyAutomationAgentError;
+  status: 410;
+};
+
+export type createLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type createLegacyAutomationAgentResponseSuccess =
+  createLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyAutomationAgentResponseError = (
+  | createLegacyAutomationAgentResponse400
+  | createLegacyAutomationAgentResponse401
+  | createLegacyAutomationAgentResponse403
+  | createLegacyAutomationAgentResponse409
+  | createLegacyAutomationAgentResponse410
+  | createLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyAutomationAgentResponse =
+  | createLegacyAutomationAgentResponseSuccess
+  | createLegacyAutomationAgentResponseError;
+
+export const getCreateLegacyAutomationAgentUrl = () => {
+  return `/api/admin/automation-agents`;
+};
+
+export const createLegacyAutomationAgent = async (
+  legacyAutomationAgentCreateRequest: LegacyAutomationAgentCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyAutomationAgentResponse> => {
+  const res = await fetch(getCreateLegacyAutomationAgentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAutomationAgentCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Read one complete local automation-agent configuration
+ */
+export type getLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type getLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type getLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type getLegacyAutomationAgentResponseSuccess =
+  getLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAutomationAgentResponseError = (
+  | getLegacyAutomationAgentResponse401
+  | getLegacyAutomationAgentResponse403
+  | getLegacyAutomationAgentResponse404
+  | getLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAutomationAgentResponse =
+  | getLegacyAutomationAgentResponseSuccess
+  | getLegacyAutomationAgentResponseError;
+
+export const getGetLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}`;
+};
+
+export const getLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<getLegacyAutomationAgentResponse> => {
+  const res = await fetch(getGetLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Update the local automation-agent draft without running or sending it
+ */
+export type updateLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type updateLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type updateLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type updateLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type updateLegacyAutomationAgentResponse410 = {
+  data: LegacyAutomationAgentError;
+  status: 410;
+};
+
+export type updateLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type updateLegacyAutomationAgentResponseSuccess =
+  updateLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyAutomationAgentResponseError = (
+  | updateLegacyAutomationAgentResponse400
+  | updateLegacyAutomationAgentResponse401
+  | updateLegacyAutomationAgentResponse403
+  | updateLegacyAutomationAgentResponse404
+  | updateLegacyAutomationAgentResponse409
+  | updateLegacyAutomationAgentResponse410
+  | updateLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyAutomationAgentResponse =
+  | updateLegacyAutomationAgentResponseSuccess
+  | updateLegacyAutomationAgentResponseError;
+
+export const getUpdateLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}`;
+};
+
+export const updateLegacyAutomationAgent = async (
+  agentId: number,
+  legacyAutomationAgentUpdateRequest: LegacyAutomationAgentUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyAutomationAgentResponse> => {
+  const res = await fetch(getUpdateLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAutomationAgentUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Archive one local automation-agent configuration
+ */
+export type archiveLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentArchiveResponse;
+  status: 200;
+};
+
+export type archiveLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type archiveLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type archiveLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type archiveLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type archiveLegacyAutomationAgentResponseSuccess =
+  archiveLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyAutomationAgentResponseError = (
+  | archiveLegacyAutomationAgentResponse400
+  | archiveLegacyAutomationAgentResponse401
+  | archiveLegacyAutomationAgentResponse403
+  | archiveLegacyAutomationAgentResponse404
+  | archiveLegacyAutomationAgentResponse409
+  | archiveLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyAutomationAgentResponse =
+  | archiveLegacyAutomationAgentResponseSuccess
+  | archiveLegacyAutomationAgentResponseError;
+
+export const getArchiveLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}`;
+};
+
+export const archiveLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<archiveLegacyAutomationAgentResponse> => {
+  const res = await fetch(getArchiveLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Save local fixed content and validated local media references
+ */
+export type saveLegacyAutomationAgentFixedContentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponseSuccess =
+  saveLegacyAutomationAgentFixedContentResponse200 & {
+    headers: Headers;
+  };
+export type saveLegacyAutomationAgentFixedContentResponseError = (
+  | saveLegacyAutomationAgentFixedContentResponse400
+  | saveLegacyAutomationAgentFixedContentResponse401
+  | saveLegacyAutomationAgentFixedContentResponse403
+  | saveLegacyAutomationAgentFixedContentResponse404
+  | saveLegacyAutomationAgentFixedContentResponse409
+  | saveLegacyAutomationAgentFixedContentResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse =
+  | saveLegacyAutomationAgentFixedContentResponseSuccess
+  | saveLegacyAutomationAgentFixedContentResponseError;
+
+export const getSaveLegacyAutomationAgentFixedContentUrl = (
+  agentId: number,
+) => {
+  return `/api/admin/automation-agents/${agentId}/fixed-content`;
+};
+
+export const saveLegacyAutomationAgentFixedContent = async (
+  agentId: number,
+  legacyAutomationAgentFixedContentRequest: LegacyAutomationAgentFixedContentRequest,
+  options?: RequestInit,
+): Promise<saveLegacyAutomationAgentFixedContentResponse> => {
+  const res = await fetch(
+    getSaveLegacyAutomationAgentFixedContentUrl(agentId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(legacyAutomationAgentFixedContentRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveLegacyAutomationAgentFixedContentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveLegacyAutomationAgentFixedContentResponse;
+};
+
+/**
+ * @summary Activate one local automation-agent configuration without running it
+ */
+export type activateLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type activateLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type activateLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type activateLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type activateLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type activateLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type activateLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type activateLegacyAutomationAgentResponseSuccess =
+  activateLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type activateLegacyAutomationAgentResponseError = (
+  | activateLegacyAutomationAgentResponse400
+  | activateLegacyAutomationAgentResponse401
+  | activateLegacyAutomationAgentResponse403
+  | activateLegacyAutomationAgentResponse404
+  | activateLegacyAutomationAgentResponse409
+  | activateLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type activateLegacyAutomationAgentResponse =
+  | activateLegacyAutomationAgentResponseSuccess
+  | activateLegacyAutomationAgentResponseError;
+
+export const getActivateLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}/activate`;
+};
+
+export const activateLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<activateLegacyAutomationAgentResponse> => {
+  const res = await fetch(getActivateLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: activateLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as activateLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Copy one local automation-agent configuration without running it
+ */
+export type copyLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type copyLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type copyLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type copyLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type copyLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type copyLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type copyLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type copyLegacyAutomationAgentResponseSuccess =
+  copyLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type copyLegacyAutomationAgentResponseError = (
+  | copyLegacyAutomationAgentResponse400
+  | copyLegacyAutomationAgentResponse401
+  | copyLegacyAutomationAgentResponse403
+  | copyLegacyAutomationAgentResponse404
+  | copyLegacyAutomationAgentResponse409
+  | copyLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type copyLegacyAutomationAgentResponse =
+  | copyLegacyAutomationAgentResponseSuccess
+  | copyLegacyAutomationAgentResponseError;
+
+export const getCopyLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}/copy`;
+};
+
+export const copyLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<copyLegacyAutomationAgentResponse> => {
+  const res = await fetch(getCopyLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: copyLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as copyLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Pause one local automation-agent configuration
+ */
+export type pauseLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type pauseLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type pauseLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pauseLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pauseLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type pauseLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type pauseLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type pauseLegacyAutomationAgentResponseSuccess =
+  pauseLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type pauseLegacyAutomationAgentResponseError = (
+  | pauseLegacyAutomationAgentResponse400
+  | pauseLegacyAutomationAgentResponse401
+  | pauseLegacyAutomationAgentResponse403
+  | pauseLegacyAutomationAgentResponse404
+  | pauseLegacyAutomationAgentResponse409
+  | pauseLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type pauseLegacyAutomationAgentResponse =
+  | pauseLegacyAutomationAgentResponseSuccess
+  | pauseLegacyAutomationAgentResponseError;
+
+export const getPauseLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}/pause`;
+};
+
+export const pauseLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<pauseLegacyAutomationAgentResponse> => {
+  const res = await fetch(getPauseLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: pauseLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as pauseLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Publish the local draft version without running or sending it
+ */
+export type publishLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type publishLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type publishLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type publishLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type publishLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type publishLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type publishLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type publishLegacyAutomationAgentResponseSuccess =
+  publishLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type publishLegacyAutomationAgentResponseError = (
+  | publishLegacyAutomationAgentResponse400
+  | publishLegacyAutomationAgentResponse401
+  | publishLegacyAutomationAgentResponse403
+  | publishLegacyAutomationAgentResponse404
+  | publishLegacyAutomationAgentResponse409
+  | publishLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type publishLegacyAutomationAgentResponse =
+  | publishLegacyAutomationAgentResponseSuccess
+  | publishLegacyAutomationAgentResponseError;
+
+export const getPublishLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}/publish`;
+};
+
+export const publishLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<publishLegacyAutomationAgentResponse> => {
+  const res = await fetch(getPublishLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: publishLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as publishLegacyAutomationAgentResponse;
 };
 
 /**

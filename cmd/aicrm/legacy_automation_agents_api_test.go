@@ -185,6 +185,39 @@ func TestP4AutomationAgentsABBoundaryAndErrorFailClosed(t *testing.T) {
 	if invalidType.Code != http.StatusBadRequest || !strings.Contains(invalidType.Body.String(), "invalid_agent_payload") {
 		t.Fatalf("invalid type=%d body=%s", invalidType.Code, invalidType.Body.String())
 	}
+	for _, test := range []struct {
+		name    string
+		request func() *http.Request
+	}{
+		{name: "missing idempotency key", request: func() *http.Request {
+			request := legacyAutomationAgentWriteRequest(http.MethodPost, "/api/admin/automation-agents", `{"agent_name":"话术","agent_code":"agent_1"}`)
+			request.Header.Del("Idempotency-Key")
+			return request
+		}},
+		{name: "repeated idempotency key", request: func() *http.Request {
+			request := legacyAutomationAgentWriteRequest(http.MethodPost, "/api/admin/automation-agents", `{"agent_name":"话术","agent_code":"agent_1"}`)
+			request.Header.Add("Idempotency-Key", "automation-agent-idempotency-key-0002")
+			return request
+		}},
+		{name: "unknown create field", request: func() *http.Request {
+			return legacyAutomationAgentWriteRequest(http.MethodPost, "/api/admin/automation-agents", `{"agent_name":"话术","agent_code":"agent_1","unexpected":true}`)
+		}},
+		{name: "empty update", request: func() *http.Request {
+			return legacyAutomationAgentWriteRequest(http.MethodPatch, "/api/admin/automation-agents/7", `{}`)
+		}},
+		{name: "unknown fixed content field", request: func() *http.Request {
+			return legacyAutomationAgentWriteRequest(http.MethodPut, "/api/admin/automation-agents/7/fixed-content", `{"unexpected":true}`)
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			before := stub.mutationCalls
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, test.request())
+			if response.Code != http.StatusBadRequest || stub.mutationCalls != before || !strings.Contains(response.Body.String(), "invalid_agent_payload") {
+				t.Fatalf("status=%d writes=%d/%d body=%s", response.Code, stub.mutationCalls, before, response.Body.String())
+			}
+		})
+	}
 }
 
 func legacyAutomationAgentRouter(t *testing.T, agents automationport.AgentService) (http.Handler, *recordingAuth) {

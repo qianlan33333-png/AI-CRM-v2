@@ -2779,6 +2779,9 @@ type AddedAfterFilter = time.Time
 // AddedBeforeFilter defines model for AddedBeforeFilter.
 type AddedBeforeFilter = time.Time
 
+// AutomationAgentID defines model for AutomationAgentID.
+type AutomationAgentID = int64
+
 // CSRFToken defines model for CSRFToken.
 type CSRFToken = string
 

@@ -143,6 +143,9 @@ type SegmentDefinitionPredicateField string
 // SegmentDefinitionPredicateOp defines model for SegmentDefinitionPredicate.Op.
 type SegmentDefinitionPredicateOp string
 
+// AutomationAgentID defines model for AutomationAgentID.
+type AutomationAgentID = int64
+
 // CustomerID defines model for CustomerID.
 type CustomerID = int64
 
