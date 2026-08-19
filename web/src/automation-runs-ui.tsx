@@ -2,8 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   generatedAutomationRunsTransport,
   loadAutomationRuns,
+  loadAutomationSourceEvent,
   nextAutomationRunsPage,
   previousAutomationRunsPage,
+  startAutomationSourceEventRead,
+  type AutomationSourceEvent,
+  type AutomationSourceEventFailure,
   type AutomationRunsFailure,
   type AutomationRunsPage,
   type AutomationRunsRole,
@@ -17,6 +21,14 @@ const messages: Record<AutomationRunsFailure, string> = {
   unavailable: "自动化运行记录暂时不可用，请稍后重试。",
 };
 
+const sourceEventMessages: Record<AutomationSourceEventFailure, string> = {
+  unauthenticated: "登录状态已失效，请重新登录。",
+  forbidden: "当前账号没有读取源内部事件的权限。",
+  not_found: "该运行关联的本地源内部事件已不存在。",
+  invalid: "源内部事件响应不符合已冻结的本地只读契约。",
+  unavailable: "源内部事件暂时不可用，请稍后重试。",
+};
+
 export type AutomationRunsState =
   | { readonly kind: "loading"; readonly previous?: AutomationRunsPage }
   | { readonly kind: "ready"; readonly page: AutomationRunsPage }
@@ -26,6 +38,31 @@ export type AutomationRunsState =
       readonly previous?: AutomationRunsPage;
     };
 
+export type AutomationSourceEventState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly eventID: number;
+      readonly previous?: AutomationSourceEvent;
+    }
+  | { readonly kind: "ready"; readonly sourceEvent: AutomationSourceEvent }
+  | {
+      readonly kind: "error";
+      readonly eventID: number;
+      readonly failure: AutomationSourceEventFailure;
+      readonly previous?: AutomationSourceEvent;
+    };
+
+export interface AutomationSourceEventReadController {
+  readonly generation: { current: number };
+  readonly inFlight: { current: boolean };
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onState: (state: AutomationSourceEventState) => void;
+  readonly onUnauthenticated?: () => void;
+  readonly state: { current: AutomationSourceEventState };
+  readonly transport: AutomationRunsTransport;
+}
+
 function displayDate(value: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
     dateStyle: "medium",
@@ -33,7 +70,16 @@ function displayDate(value: string): string {
   }).format(new Date(value));
 }
 
-function RunRows({ page }: { readonly page: AutomationRunsPage }): React.ReactElement {
+export function RunRows({
+  page,
+  sourceEventBusy,
+  onLoadSourceEvent,
+}: {
+  readonly page: AutomationRunsPage;
+  readonly sourceEventBusy: boolean;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onLoadSourceEvent: (eventID: number) => void;
+}): React.ReactElement {
   return (
     <>
       <p>
@@ -51,6 +97,7 @@ function RunRows({ page }: { readonly page: AutomationRunsPage }): React.ReactEl
               <th>标签 ID</th>
               <th>开始时间</th>
               <th>完成时间</th>
+              <th>源内部事件</th>
             </tr>
           </thead>
           <tbody>
@@ -62,6 +109,15 @@ function RunRows({ page }: { readonly page: AutomationRunsPage }): React.ReactEl
                 <td>{run.tagID}</td>
                 <td>{displayDate(run.startedAt)}</td>
                 <td>{displayDate(run.completedAt)}</td>
+                <td>
+                  <button
+                    type="button"
+                    disabled={sourceEventBusy}
+                    onClick={() => onLoadSourceEvent(run.sourceEventID)}
+                  >
+                    查看源事件
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -71,12 +127,116 @@ function RunRows({ page }: { readonly page: AutomationRunsPage }): React.ReactEl
   );
 }
 
+export function AutomationSourceEventPanel({
+  state,
+}: {
+  readonly state: AutomationSourceEventState;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const sourceEvent =
+    state.kind === "ready" ? state.sourceEvent : state.previous;
+  return (
+    <section aria-live="polite" data-testid="automation-source-event">
+      <h2>源内部事件</h2>
+      <p>
+        仅展示本地内部事件和处理观测；外部投递为 unknown，不能据此推断任何
+        provider 已执行、送达或成功。
+      </p>
+      {sourceEvent ? (
+        <>
+          <dl>
+            <dt>事件 ID</dt>
+            <dd>{sourceEvent.eventID}</dd>
+            <dt>事件类型</dt>
+            <dd>{sourceEvent.eventType}</dd>
+            <dt>发生时间</dt>
+            <dd>{displayDate(sourceEvent.occurredAt)}</dd>
+            <dt>已调度</dt>
+            <dd>{sourceEvent.dispatched ? "是" : "否"}</dd>
+            <dt>观测时间</dt>
+            <dd>{displayDate(sourceEvent.observedAt)}</dd>
+          </dl>
+          {sourceEvent.deliveries.length === 0 ? (
+            <p>当前没有本地 consumer 处理记录。</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>本地 consumer</th>
+                  <th>内部状态</th>
+                  <th>尝试次数</th>
+                  <th>完成时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sourceEvent.deliveries.map((delivery) => (
+                  <tr key={delivery.consumer}>
+                    <td>{delivery.consumer}</td>
+                    <td>{delivery.status}</td>
+                    <td>{delivery.attemptCount}</td>
+                    <td>
+                      {delivery.completedAt
+                        ? displayDate(delivery.completedAt)
+                        : "未完成"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      ) : null}
+      {state.kind === "loading" ? (
+        <p role="status">正在读取源内部事件。</p>
+      ) : null}
+      {state.kind === "error" ? (
+        <p role="alert">{sourceEventMessages[state.failure]}</p>
+      ) : null}
+    </section>
+  );
+}
+
+// The page calls this controller directly.  Keeping its mutable state in refs
+// makes the same-tick gate and the unmount generation boundary executable in
+// tests without adding a DOM test dependency.
+export function loadAutomationSourceEventState(
+  controller: AutomationSourceEventReadController,
+  eventID: number,
+): Promise<void> | undefined {
+  return startAutomationSourceEventRead(controller.inFlight, async () => {
+    const currentGeneration = ++controller.generation.current;
+    const previous = retainedSourceEvent(controller.state.current, eventID);
+    controller.onState({ kind: "loading", eventID, previous });
+    const result = await loadAutomationSourceEvent(
+      controller.transport,
+      eventID,
+    );
+    if (currentGeneration !== controller.generation.current) return;
+    if (result.status === "loaded") {
+      controller.onState({ kind: "ready", sourceEvent: result.sourceEvent });
+      return;
+    }
+    if (result.status === "unauthenticated") controller.onUnauthenticated?.();
+    controller.onState({
+      kind: "error",
+      eventID,
+      failure: result.status,
+      previous,
+    });
+  });
+}
+
 function AutomationRunsContent({
   onLoad,
+  onLoadSourceEvent,
+  sourceEvent,
   state,
 }: {
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onLoad: (page: number) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onLoadSourceEvent: (eventID: number) => void;
+  readonly sourceEvent: AutomationSourceEventState;
   readonly state: AutomationRunsState;
 }): React.ReactElement {
   const page = state.kind === "ready" ? state.page : state.previous;
@@ -87,11 +247,20 @@ function AutomationRunsContent({
       <p>
         仅显示服务端返回的脱敏触发收据。该记录不代表任何企业微信、支付或其他外部效果已经执行或成功。
       </p>
-      {page ? <RunRows page={page} /> : null}
+      <AutomationSourceEventPanel state={sourceEvent} />
+      {page ? (
+        <RunRows
+          page={page}
+          sourceEventBusy={sourceEvent.kind === "loading"}
+          onLoadSourceEvent={onLoadSourceEvent}
+        />
+      ) : null}
       {state.kind === "loading" ? (
         <p role="status">正在读取自动化运行记录。</p>
       ) : null}
-      {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+      {state.kind === "error" ? (
+        <p role="alert">{messages[state.failure]}</p>
+      ) : null}
       {state.kind === "error" && !page ? (
         <button type="button" onClick={() => onLoad(1)}>
           重试读取
@@ -101,7 +270,9 @@ function AutomationRunsContent({
         <p>
           <button
             type="button"
-            disabled={state.kind === "loading" || !previousAutomationRunsPage(page)}
+            disabled={
+              state.kind === "loading" || !previousAutomationRunsPage(page)
+            }
             onClick={() => {
               const previous = previousAutomationRunsPage(page);
               if (previous) onLoad(previous);
@@ -144,7 +315,21 @@ export function AutomationRunsPage({
   const canRead = role === "admin";
   const generation = useRef(0);
   const verified = useRef<AutomationRunsPage>();
+  const sourceEventGeneration = useRef(0);
+  const sourceEventInFlight = useRef(false);
   const [state, setState] = useState<AutomationRunsState>({ kind: "loading" });
+  const [sourceEvent, setSourceEvent] = useState<AutomationSourceEventState>({
+    kind: "idle",
+  });
+  const sourceEventState = useRef<AutomationSourceEventState>({ kind: "idle" });
+
+  const setSourceEventState = useCallback(
+    (next: AutomationSourceEventState) => {
+      sourceEventState.current = next;
+      setSourceEvent(next);
+    },
+    [],
+  );
 
   const load = useCallback(
     async (page: number) => {
@@ -171,8 +356,27 @@ export function AutomationRunsPage({
     if (canRead) void load(1);
     return () => {
       generation.current += 1;
+      sourceEventGeneration.current += 1;
     };
   }, [canRead, load]);
+
+  const loadSourceEvent = useCallback(
+    (eventID: number) => {
+      const operation = loadAutomationSourceEventState(
+        {
+          generation: sourceEventGeneration,
+          inFlight: sourceEventInFlight,
+          onState: setSourceEventState,
+          onUnauthenticated,
+          state: sourceEventState,
+          transport,
+        },
+        eventID,
+      );
+      if (operation) void operation;
+    },
+    [onUnauthenticated, setSourceEventState, transport],
+  );
 
   if (!canRead)
     return (
@@ -182,5 +386,22 @@ export function AutomationRunsPage({
       </section>
     );
 
-  return <AutomationRunsContent onLoad={(page) => void load(page)} state={state} />;
+  return (
+    <AutomationRunsContent
+      onLoad={(page) => void load(page)}
+      onLoadSourceEvent={loadSourceEvent}
+      sourceEvent={sourceEvent}
+      state={state}
+    />
+  );
+}
+
+function retainedSourceEvent(
+  state: AutomationSourceEventState,
+  eventID: number,
+): AutomationSourceEvent | undefined {
+  if (state.kind === "idle") return undefined;
+  const sourceEvent =
+    state.kind === "ready" ? state.sourceEvent : state.previous;
+  return sourceEvent?.eventID === eventID ? sourceEvent : undefined;
 }
