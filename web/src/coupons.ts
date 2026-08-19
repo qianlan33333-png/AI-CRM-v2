@@ -1,4 +1,5 @@
 import {
+  archiveLegacyCoupon,
   copyLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
@@ -22,6 +23,7 @@ export interface CouponListItem {
   readonly name: string;
   readonly status: CouponStatus;
   readonly availability: CouponAvailability;
+  readonly issuedCount: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -35,6 +37,14 @@ export interface CouponClaimItem {
 export interface CouponShare {
   readonly publicSlug: string;
   readonly url: string;
+}
+
+export function canArchiveCoupon(item: CouponListItem): boolean {
+  return (
+    item.status === "draft" ||
+    item.status === "published" ||
+    item.status === "stopped"
+  );
 }
 
 export type CouponsFailure =
@@ -61,6 +71,10 @@ export type CouponClaimsResult =
   | { readonly status: CouponsFailure };
 export type CouponShareResult =
   | { readonly status: "loaded"; readonly share: CouponShare }
+  | { readonly status: CouponsFailure };
+export type CouponArchiveResult =
+  | { readonly status: "archived"; readonly item: CouponListItem }
+  | { readonly status: "canceled" }
   | { readonly status: CouponsFailure };
 
 const couponPageSize = 200;
@@ -96,11 +110,19 @@ async function generatedShare(couponID: number, options?: RequestInit) {
   });
 }
 
+async function generatedArchive(couponID: number, options?: RequestInit) {
+  return archiveLegacyCoupon(couponID, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
 export interface CouponsTransport {
   readonly list: typeof generatedList;
   readonly copy: typeof generatedCopy;
   readonly claims: typeof generatedClaims;
   readonly share: typeof generatedShare;
+  readonly archive: typeof generatedArchive;
 }
 
 export const generatedCouponsTransport: CouponsTransport = {
@@ -108,6 +130,7 @@ export const generatedCouponsTransport: CouponsTransport = {
   copy: generatedCopy,
   claims: generatedClaims,
   share: generatedShare,
+  archive: generatedArchive,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -282,6 +305,7 @@ function coupon(value: unknown): CouponListItem | undefined {
     name: value.name,
     status: value.status,
     availability: availabilityStatus,
+    issuedCount: value.issued_count,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
   };
@@ -318,6 +342,7 @@ function sameItems(
         item.name === right[index]?.name &&
         item.status === right[index]?.status &&
         item.availability === right[index]?.availability &&
+        item.issuedCount === right[index]?.issuedCount &&
         item.createdAt === right[index]?.createdAt &&
         item.updatedAt === right[index]?.updatedAt,
     )
@@ -542,6 +567,19 @@ export async function loadCouponShare(
 export function newCouponCopyIdempotencyKey(
   source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
 ): string | undefined {
+  return newCouponIdempotencyKey("coupon-copy", source);
+}
+
+export function newCouponArchiveIdempotencyKey(
+  source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
+): string | undefined {
+  return newCouponIdempotencyKey("coupon-archive", source);
+}
+
+function newCouponIdempotencyKey(
+  prefix: string,
+  source: { readonly randomUUID: () => string } | undefined,
+): string | undefined {
   try {
     const uuid = source?.randomUUID();
     if (
@@ -552,7 +590,7 @@ export function newCouponCopyIdempotencyKey(
     ) {
       return undefined;
     }
-    return `coupon-copy:${uuid}`;
+    return `${prefix}:${uuid}`;
   } catch {
     return undefined;
   }
@@ -604,6 +642,53 @@ export async function copyCoupon(
     raw.status === "draft" &&
     raw.issued_count === 0
     ? { status: "copied", item }
+    : { status: "invalid" };
+}
+
+export async function archiveCoupon(
+  transport: CouponsTransport,
+  item: CouponListItem,
+  csrf: string,
+  idempotencyKey: string,
+): Promise<CouponArchiveResult> {
+  if (
+    !positive(item.id) ||
+    !canArchiveCoupon(item) ||
+    !/^[A-Za-z0-9_-]{43}$/.test(csrf) ||
+    idempotencyKey.length < 16 ||
+    idempotencyKey.length > 128 ||
+    idempotencyKey.trim() !== idempotencyKey
+  ) {
+    return { status: "invalid" };
+  }
+  let response: Awaited<ReturnType<CouponsTransport["archive"]>>;
+  try {
+    response = await transport.archive(item.id, {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": csrf,
+        "Idempotency-Key": idempotencyKey,
+      },
+    });
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status !== 200)
+    return { status: failure(response.status, response.data) };
+  if (
+    !record(response.data) ||
+    !exact(response.data, ["ok", "coupon"]) ||
+    response.data.ok !== true
+  ) {
+    return { status: "invalid" };
+  }
+  const rawCoupon: unknown = response.data.coupon;
+  const archived = coupon(rawCoupon);
+  return archived &&
+    archived.id === item.id &&
+    archived.status === "archived" &&
+    archived.issuedCount === item.issuedCount
+    ? { status: "archived", item: archived }
     : { status: "invalid" };
 }
 
