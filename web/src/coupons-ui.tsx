@@ -1,12 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { readCSRFCookie } from "./auth";
 import {
   copyCoupon,
+  couponClaimsPageSize,
   filterCoupons,
   generatedCouponsTransport,
+  loadCouponClaims,
   loadCoupons,
   newCouponCopyIdempotencyKey,
   type CouponAvailabilityFilter,
+  type CouponClaimItem,
+  type CouponClaimsResult,
   type CouponCopyResult,
   type CouponListItem,
   type CouponListResult,
@@ -28,6 +38,32 @@ export type CouponsViewState =
   | { readonly kind: "loading" }
   | { readonly kind: "ready"; readonly items: readonly CouponListItem[] }
   | { readonly kind: "error"; readonly failure: CouponsFailure };
+
+type CouponClaimsPage = {
+  readonly items: readonly CouponClaimItem[];
+  readonly total: number;
+  readonly offset: number;
+};
+
+export type CouponClaimsViewState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly coupon: CouponListItem;
+      readonly offset: number;
+      readonly previous?: CouponClaimsPage;
+    }
+  | {
+      readonly kind: "ready";
+      readonly coupon: CouponListItem;
+      readonly page: CouponClaimsPage;
+    }
+  | {
+      readonly kind: "error";
+      readonly coupon: CouponListItem;
+      readonly failure: CouponsFailure;
+      readonly previous?: CouponClaimsPage;
+    };
 
 export interface CouponCopyInput {
   readonly couponID: number;
@@ -86,7 +122,12 @@ export function CouponsPage({
   const [state, setState] = useState<CouponsViewState>({ kind: "loading" });
   const [busyID, setBusyID] = useState<number>();
   const [notice, setNotice] = useState<string>();
+  const [claimsState, setClaimsState] = useState<CouponClaimsViewState>({
+    kind: "idle",
+  });
   const copyInFlight = useRef(false);
+  const claimsRequest = useRef(0);
+  const claimsInFlight = useRef<string>();
 
   const reload = useCallback(async (): Promise<CouponListResult> => {
     const result = await loadCoupons(transport);
@@ -142,11 +183,51 @@ export function CouponsPage({
     [onUnauthenticated, readCookie, reload, transport],
   );
 
+  const onClaims = useCallback(
+    async (item: CouponListItem, offset = 0) => {
+      const key = `${item.id}:${offset}`;
+      if (claimsInFlight.current === key) return;
+      claimsInFlight.current = key;
+      const request = ++claimsRequest.current;
+      const previous =
+        claimsState.kind === "ready" && claimsState.coupon.id === item.id
+          ? claimsState.page
+          : claimsState.kind === "error" && claimsState.coupon.id === item.id
+            ? claimsState.previous
+            : undefined;
+      setClaimsState({ kind: "loading", coupon: item, offset, previous });
+      let result: CouponClaimsResult;
+      try {
+        result = await loadCouponClaims(transport, item.id, offset);
+      } finally {
+        if (claimsInFlight.current === key) claimsInFlight.current = undefined;
+      }
+      if (request !== claimsRequest.current) return;
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      setClaimsState(
+        result.status === "loaded"
+          ? {
+              kind: "ready",
+              coupon: item,
+              page: {
+                items: result.items,
+                total: result.total,
+                offset: result.offset,
+              },
+            }
+          : { kind: "error", coupon: item, failure: result.status, previous },
+      );
+    },
+    [claimsState, onUnauthenticated, transport],
+  );
+
   return (
     <CouponsView
       busyID={busyID}
+      claimsState={claimsState}
       notice={notice}
       onCopy={onCopy}
+      onClaims={onClaims}
       role={role}
       state={state}
     />
@@ -155,15 +236,20 @@ export function CouponsPage({
 
 export function CouponsView({
   busyID,
+  claimsState,
   notice,
   onCopy,
+  onClaims,
   role,
   state,
 }: {
   readonly busyID?: number;
+  readonly claimsState?: CouponClaimsViewState;
   readonly notice?: string;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onCopy: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onClaims?: (item: CouponListItem, offset?: number) => void;
   readonly role: CouponsRole;
   readonly state: CouponsViewState;
 }): React.ReactElement {
@@ -270,12 +356,108 @@ export function CouponsView({
                   >
                     {busyID === item.id ? "正在复制…" : "复制"}
                   </button>
+                  <button
+                    type="button"
+                    disabled={claimsState?.kind === "loading"}
+                    onClick={() => onClaims?.(item)}
+                  >
+                    查看领取数据
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      {claimsState && claimsState.kind !== "idle" ? (
+        <CouponClaimsPanel claimsState={claimsState} onClaims={onClaims} />
+      ) : null}
+    </section>
+  );
+}
+
+function CouponClaimsPanel({
+  claimsState,
+  onClaims,
+}: {
+  readonly claimsState: Exclude<
+    CouponClaimsViewState,
+    { readonly kind: "idle" }
+  >;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onClaims?: (item: CouponListItem, offset?: number) => void;
+}): React.ReactElement {
+  const page =
+    claimsState.kind === "ready" ? claimsState.page : claimsState.previous;
+  const loading = claimsState.kind === "loading";
+  const error = claimsState.kind === "error" ? claimsState.failure : undefined;
+  const canGoPrevious = Boolean(page && page.offset >= couponClaimsPageSize);
+  const canGoNext = Boolean(
+    page && page.offset + page.items.length < page.total,
+  );
+  return (
+    <section aria-label="优惠券领取数据">
+      <h2>领取数据：{claimsState.coupon.name}</h2>
+      {loading ? <p role="status">正在读取本地领取记录。</p> : null}
+      {error ? <p role="alert">{messages[error]}</p> : null}
+      {page ? (
+        <>
+          <p>
+            共 {page.total} 条，当前第 {page.offset + 1} 至{" "}
+            {page.offset + page.items.length} 条。
+          </p>
+          {page.items.length === 0 ? (
+            <p>当前没有本地领取记录。</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>领取记录 ID</th>
+                  <th>领取凭据</th>
+                  <th>状态</th>
+                  <th>领取时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {page.items.map((claim) => (
+                  <tr key={claim.id}>
+                    <td>{claim.id}</td>
+                    <td>{claim.claimRef}</td>
+                    <td>claimed</td>
+                    <td>{claim.claimedAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p>
+            <button
+              type="button"
+              disabled={loading || !canGoPrevious}
+              onClick={() =>
+                onClaims?.(
+                  claimsState.coupon,
+                  page.offset - couponClaimsPageSize,
+                )
+              }
+            >
+              上一页
+            </button>
+            <button
+              type="button"
+              disabled={loading || !canGoNext}
+              onClick={() =>
+                onClaims?.(
+                  claimsState.coupon,
+                  page.offset + couponClaimsPageSize,
+                )
+              }
+            >
+              下一页
+            </button>
+          </p>
+        </>
+      ) : null}
     </section>
   );
 }

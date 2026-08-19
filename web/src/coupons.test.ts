@@ -2,11 +2,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   copyCoupon,
   filterCoupons,
+  loadCouponClaims,
   loadCoupons,
   newCouponCopyIdempotencyKey,
   type CouponsTransport,
 } from "./coupons";
-import { copyLegacyCoupon } from "./api/generated/health";
+import {
+  copyLegacyCoupon,
+  listLegacyCouponClaims,
+} from "./api/generated/health";
 
 const sourceCoupon = {
   id: 7,
@@ -64,13 +68,30 @@ function copiedEnvelope(extra: Record<string, unknown> = {}) {
   };
 }
 
+const sourceClaim = {
+  id: 9,
+  claim_ref: "cp_1234567890abcdef",
+  status: "claimed",
+  claimed_at: "2026-08-19T02:03:04Z",
+} as const;
+
+function claimsEnvelope(
+  items: readonly Record<string, unknown>[] = [sourceClaim],
+  total = items.length,
+  offset = 0,
+) {
+  return { ok: true, items, total, limit: 50, offset };
+}
+
 function transport(
   listData: unknown = envelope(),
   copyData: unknown = copiedEnvelope(),
+  claimsData: unknown = claimsEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
     copy: vi.fn(async () => ({ status: 200, data: copyData })),
+    claims: vi.fn(async () => ({ status: 200, data: claimsData })),
   } as unknown as CouponsTransport;
 }
 
@@ -241,5 +262,61 @@ describe("coupon list and copy local boundary", () => {
     expect(
       newCouponCopyIdempotencyKey({ randomUUID: () => "bad" }),
     ).toBeUndefined();
+  });
+
+  it("reads one same-origin, fixed-size opaque claim page without a write", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(claimsEnvelope([], 0)), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(
+      loadCouponClaims(
+        {
+          list: vi.fn(),
+          copy: vi.fn(),
+          claims: listLegacyCouponClaims,
+        } as unknown as CouponsTransport,
+        7,
+        0,
+      ),
+    ).resolves.toEqual({ status: "loaded", items: [], total: 0, offset: 0 });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/coupons/7/claims?limit=50&offset=0",
+      expect.objectContaining({ credentials: "same-origin", method: "GET" }),
+    );
+  });
+
+  it("fails closed for a non-opaque claim DTO, a bad page, and a transport failure without retry", async () => {
+    for (const data of [
+      claimsEnvelope([{ ...sourceClaim, customer_id: 7 }]),
+      claimsEnvelope([{ ...sourceClaim, claim_ref: "cp_short" }]),
+      claimsEnvelope([{ ...sourceClaim, status: "redeemed" }]),
+      claimsEnvelope([{ ...sourceClaim, claimed_at: "not-a-time" }]),
+      claimsEnvelope([sourceClaim, sourceClaim]),
+      claimsEnvelope([sourceClaim], 0),
+      { ...claimsEnvelope(), unexpected: true },
+    ]) {
+      await expect(
+        loadCouponClaims(transport(envelope(), copiedEnvelope(), data), 7, 0),
+      ).resolves.toEqual({
+        status: "invalid",
+      });
+    }
+    const unavailable = transport();
+    vi.mocked(unavailable.claims).mockRejectedValue(new Error("network"));
+    await expect(loadCouponClaims(unavailable, 7, 0)).resolves.toEqual({
+      status: "unavailable",
+    });
+    expect(unavailable.claims).toHaveBeenCalledOnce();
+
+    const invalidOffset = transport();
+    await expect(loadCouponClaims(invalidOffset, 7, 25)).resolves.toEqual({
+      status: "invalid",
+    });
+    expect(invalidOffset.claims).not.toHaveBeenCalled();
   });
 });

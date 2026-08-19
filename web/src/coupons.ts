@@ -1,4 +1,8 @@
-import { copyLegacyCoupon, listLegacyCoupons } from "./api/generated/health";
+import {
+  copyLegacyCoupon,
+  listLegacyCouponClaims,
+  listLegacyCoupons,
+} from "./api/generated/health";
 
 export type CouponsRole = "admin" | "ops" | "sales";
 export type CouponAvailability =
@@ -19,6 +23,12 @@ export interface CouponListItem {
   readonly updatedAt: string;
 }
 
+export interface CouponClaimItem {
+  readonly id: number;
+  readonly claimRef: string;
+  readonly claimedAt: string;
+}
+
 export type CouponsFailure =
   | "unauthenticated"
   | "forbidden"
@@ -33,8 +43,17 @@ export type CouponListResult =
 export type CouponCopyResult =
   | { readonly status: "copied"; readonly item: CouponListItem }
   | { readonly status: CouponsFailure };
+export type CouponClaimsResult =
+  | {
+      readonly status: "loaded";
+      readonly items: readonly CouponClaimItem[];
+      readonly total: number;
+      readonly offset: number;
+    }
+  | { readonly status: CouponsFailure };
 
 const couponPageSize = 200;
+export const couponClaimsPageSize = 50;
 const maximumCouponOffset = 1_000_000;
 
 async function generatedList(
@@ -48,14 +67,27 @@ async function generatedCopy(couponID: number, options?: RequestInit) {
   return copyLegacyCoupon(couponID, { credentials: "same-origin", ...options });
 }
 
+async function generatedClaims(
+  couponID: number,
+  params: Parameters<typeof listLegacyCouponClaims>[1],
+  options?: RequestInit,
+) {
+  return listLegacyCouponClaims(couponID, params, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
 export interface CouponsTransport {
   readonly list: typeof generatedList;
   readonly copy: typeof generatedCopy;
+  readonly claims: typeof generatedClaims;
 }
 
 export const generatedCouponsTransport: CouponsTransport = {
   list: generatedList,
   copy: generatedCopy,
+  claims: generatedClaims,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -234,6 +266,25 @@ function coupon(value: unknown): CouponListItem | undefined {
   };
 }
 
+function claim(value: unknown): CouponClaimItem | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["id", "claim_ref", "status", "claimed_at"]) ||
+    !positive(value.id) ||
+    !text(value.claim_ref, 67) ||
+    !/^cp_[A-Za-z0-9_-]{16,64}$/.test(value.claim_ref) ||
+    value.status !== "claimed" ||
+    !timestamp(value.claimed_at)
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.id,
+    claimRef: value.claim_ref,
+    claimedAt: value.claimed_at,
+  };
+}
+
 function sameItems(
   left: readonly CouponListItem[],
   right: readonly CouponListItem[],
@@ -283,6 +334,41 @@ function couponPage(
     return undefined;
   }
   return { items: items as readonly CouponListItem[], total: value.total };
+}
+
+function couponClaimsPage(
+  value: unknown,
+  offset: number,
+):
+  | { readonly items: readonly CouponClaimItem[]; readonly total: number }
+  | undefined {
+  if (
+    !record(value) ||
+    !exact(value, ["ok", "items", "total", "limit", "offset"]) ||
+    value.ok !== true ||
+    !Array.isArray(value.items) ||
+    !nonnegative(value.total) ||
+    value.limit !== couponClaimsPageSize ||
+    value.offset !== offset ||
+    offset % couponClaimsPageSize !== 0 ||
+    value.items.length > couponClaimsPageSize ||
+    value.total < offset + value.items.length ||
+    (value.items.length < couponClaimsPageSize &&
+      offset + value.items.length < value.total)
+  ) {
+    return undefined;
+  }
+  const items = value.items.map(claim);
+  if (
+    items.includes(undefined) ||
+    new Set((items as readonly CouponClaimItem[]).map((item) => item.id))
+      .size !== items.length ||
+    new Set((items as readonly CouponClaimItem[]).map((item) => item.claimRef))
+      .size !== items.length
+  ) {
+    return undefined;
+  }
+  return { items: items as readonly CouponClaimItem[], total: value.total };
 }
 
 function platformError(value: unknown, code: string): boolean {
@@ -371,6 +457,35 @@ export async function loadCoupons(
   } catch {
     return { status: "unavailable" };
   }
+}
+
+export async function loadCouponClaims(
+  transport: CouponsTransport,
+  couponID: number,
+  offset: number,
+): Promise<CouponClaimsResult> {
+  if (
+    !positive(couponID) ||
+    !nonnegative(offset) ||
+    offset % couponClaimsPageSize !== 0 ||
+    offset > maximumCouponOffset
+  ) {
+    return { status: "invalid" };
+  }
+  let response: Awaited<ReturnType<CouponsTransport["claims"]>>;
+  try {
+    response = await transport.claims(
+      couponID,
+      { limit: couponClaimsPageSize, offset },
+      { credentials: "same-origin" },
+    );
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status !== 200)
+    return { status: failure(response.status, response.data) };
+  const page = couponClaimsPage(response.data, offset);
+  return page ? { status: "loaded", ...page, offset } : { status: "invalid" };
 }
 
 export function newCouponCopyIdempotencyKey(
