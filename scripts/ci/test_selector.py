@@ -146,9 +146,31 @@ class ClassificationMatrixTests(unittest.TestCase):
         self.assert_flags(
             ["migrations/00047_example.sql"],
             database="true",
-            database_mode="full",
+            database_mode="selected",
+            database_groups="",
             sqlc="true",
         )
+
+    def test_domain_stores_select_database_consumers(self) -> None:
+        self.assert_flags(
+            ["internal/automation/store/agents.go", "internal/contact/store/channels.go"],
+            database="true",
+            database_mode="selected",
+            database_groups="automation,contact",
+            sqlc="true",
+        )
+
+    def test_shared_acceptance_fixture_has_known_consumers(self) -> None:
+        values = self.assert_flags(
+            ["acceptance/mediafixture/image.go"],
+            go="true",
+            go_mode="selected",
+            go_groups="automation,contact,media",
+            database="true",
+            database_mode="selected",
+            database_groups="automation,contact,media",
+        )
+        self.assertEqual(values["fallback_reasons"], "")
 
     def test_go_dependencies(self) -> None:
         self.assert_flags(
@@ -159,6 +181,15 @@ class ClassificationMatrixTests(unittest.TestCase):
             shared="true",
             vulnerability="true",
         )
+
+    def test_repository_go_tool_is_known(self) -> None:
+        values = self.assert_flags(
+            ["scripts/ownership/main.go"],
+            go="true",
+            go_mode="full",
+            shared="true",
+        )
+        self.assertEqual(values["fallback_reasons"], "")
 
     def test_platform_and_public_port(self) -> None:
         self.assert_flags(

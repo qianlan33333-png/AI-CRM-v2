@@ -146,6 +146,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     fi
   fi
 
+  entry_started="$SECONDS"
+  printf 'ci-acceptance-manifest: START id=%s sequence=%s\n' "$identifier" "$sequence"
   case "$executor" in
     legacy-make)
       [[ "$subject" =~ ^[a-z0-9][a-z0-9-]*(acceptance|integration)$ && "$selector" = "-" ]] ||
@@ -189,6 +191,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       fail "line $line_number has an unknown executor"
       ;;
   esac
+  printf 'ci-acceptance-manifest: PASS id=%s duration_seconds=%s\n' \
+    "$identifier" "$((SECONDS - entry_started))"
 
   count=$((count + 1))
   current_identifiers["$identifier"]=1
