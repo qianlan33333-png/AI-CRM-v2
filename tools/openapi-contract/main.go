@@ -271,7 +271,7 @@ var p4PushCenterOperations = map[string]bool{
 }
 
 var p4ExecutionRuntimeOperations = map[string]bool{
-	"getLegacyExecutionRuntime": true, "getLegacyExecutionTimeline": true,
+	"getLegacyExecutionRuntimePage": true, "getLegacyExecutionRuntime": true, "getLegacyExecutionTimeline": true,
 }
 
 var p4AdminShellOperations = map[string]bool{
@@ -380,6 +380,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listLegacyWecomTags":                       {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyPushCenterSections":               {"operations.read", map[string]string{"admin": "global"}},
 	"getLegacyPushCenterStats":                  {"operations.read", map[string]string{"admin": "global"}},
+	"getLegacyExecutionRuntimePage":             {"admin.read", map[string]string{"admin": "global"}},
 	"getLegacyExecutionRuntime":                 {"admin.read", map[string]string{"admin": "global"}},
 	"getLegacyExecutionTimeline":                {"admin.read", map[string]string{"admin": "global"}},
 	"createLegacyWecomTagGroup":                 {"customers.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -835,9 +836,15 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 				if !ok || evidence != p4ExecutionRuntimeDecisionEvidence {
 					return fmt.Errorf("%s has missing or forged P4 Execution Runtime evidence", op.OperationID)
 				}
-				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
-				if linkErr != nil || !reflect.DeepEqual(ids, p4ExecutionRuntimeLegacyMappings[op.OperationID]) {
-					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				if op.OperationID == "getLegacyExecutionRuntimePage" {
+					if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
+						return fmt.Errorf("%s must not duplicate the LEGACY-API-0314 API mapping", op.OperationID)
+					}
+				} else {
+					ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+					if linkErr != nil || !reflect.DeepEqual(ids, p4ExecutionRuntimeLegacyMappings[op.OperationID]) {
+						return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+					}
 				}
 				if op.Extensions["x-aicrm-capability"] != "admin.read" || op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != "none" || op.Extensions["x-aicrm-data-classification"] != "internal_pii" || op.Extensions["x-aicrm-external-effect"] != "none" {
 					return fmt.Errorf("%s Execution Runtime authorization or observation contract drifted", op.OperationID)

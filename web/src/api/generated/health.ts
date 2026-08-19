@@ -18248,6 +18248,65 @@ export const testResolveLegacyMiniProgram = async (
 };
 
 /**
+ * @summary Carry the safe local execution-runtime observation into the existing admin shell
+ */
+export type getLegacyExecutionRuntimePageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyExecutionRuntimePageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyExecutionRuntimePageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyExecutionRuntimePageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyExecutionRuntimePageResponseError = (
+  | getLegacyExecutionRuntimePageResponse302
+  | getLegacyExecutionRuntimePageResponse401
+  | getLegacyExecutionRuntimePageResponse403
+  | getLegacyExecutionRuntimePageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyExecutionRuntimePageResponse =
+  getLegacyExecutionRuntimePageResponseError;
+
+export const getGetLegacyExecutionRuntimePageUrl = () => {
+  return `/admin/execution-runtime`;
+};
+
+export const getLegacyExecutionRuntimePage = async (
+  options?: RequestInit,
+): Promise<getLegacyExecutionRuntimePageResponse> => {
+  const res = await fetch(getGetLegacyExecutionRuntimePageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyExecutionRuntimePageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyExecutionRuntimePageResponse;
+};
+
+/**
  * @summary Read the frozen observed execution runtime without invoking a worker or provider
  */
 export type getLegacyExecutionRuntimeResponse200 = {

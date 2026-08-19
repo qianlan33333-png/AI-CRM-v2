@@ -3790,6 +3790,9 @@ func (t *SegmentDefinition) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Carry the safe local execution-runtime observation into the existing admin shell
+	// (GET /admin/execution-runtime)
+	GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
@@ -3903,6 +3906,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Carry the safe local execution-runtime observation into the existing admin shell
+// (GET /admin/execution-runtime)
+func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // List real D01 Automation trigger receipts through the frozen legacy path
 // (GET /api/admin/automation-conversion/agent-runs)
@@ -4128,6 +4137,26 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetLegacyExecutionRuntimePage operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyExecutionRuntimePage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListAutomationTriggerRuns operation middleware
 func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request) {
@@ -6322,6 +6351,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/execution-runtime", wrapper.GetLegacyExecutionRuntimePage)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
 	})
 	r.Group(func(r chi.Router) {
@@ -6446,6 +6478,67 @@ type ServiceUnavailableJSONResponse ErrorResponse
 type UnauthorizedJSONResponse ErrorResponse
 
 type UnprocessableEntityJSONResponse ErrorResponse
+
+type GetLegacyExecutionRuntimePageRequestObject struct {
+}
+
+type GetLegacyExecutionRuntimePageResponseObject interface {
+	VisitGetLegacyExecutionRuntimePageResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyExecutionRuntimePage302ResponseHeaders struct {
+	CacheControl        string
+	Location            string
+	XContentTypeOptions string
+}
+
+type GetLegacyExecutionRuntimePage302Response struct {
+	Headers GetLegacyExecutionRuntimePage302ResponseHeaders
+}
+
+func (response GetLegacyExecutionRuntimePage302Response) VisitGetLegacyExecutionRuntimePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.Header().Set("X-Content-Type-Options", fmt.Sprint(response.Headers.XContentTypeOptions))
+	w.WriteHeader(302)
+	return nil
+}
+
+type GetLegacyExecutionRuntimePage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyExecutionRuntimePage401JSONResponse) VisitGetLegacyExecutionRuntimePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionRuntimePage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyExecutionRuntimePage403JSONResponse) VisitGetLegacyExecutionRuntimePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyExecutionRuntimePage405ResponseHeaders struct {
+	Allow               string
+	CacheControl        string
+	XContentTypeOptions string
+}
+
+type GetLegacyExecutionRuntimePage405Response struct {
+	Headers GetLegacyExecutionRuntimePage405ResponseHeaders
+}
+
+func (response GetLegacyExecutionRuntimePage405Response) VisitGetLegacyExecutionRuntimePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("X-Content-Type-Options", fmt.Sprint(response.Headers.XContentTypeOptions))
+	w.WriteHeader(405)
+	return nil
+}
 
 type ListAutomationTriggerRunsRequestObject struct {
 	Params ListAutomationTriggerRunsParams
@@ -8469,6 +8562,9 @@ func (response GetDomainVerificationFile404JSONResponse) VisitGetDomainVerificat
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Carry the safe local execution-runtime observation into the existing admin shell
+	// (GET /admin/execution-runtime)
+	GetLegacyExecutionRuntimePage(ctx context.Context, request GetLegacyExecutionRuntimePageRequestObject) (GetLegacyExecutionRuntimePageResponseObject, error)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
@@ -8606,6 +8702,30 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetLegacyExecutionRuntimePage operation middleware
+func (sh *strictHandler) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+	var request GetLegacyExecutionRuntimePageRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyExecutionRuntimePage(ctx, request.(GetLegacyExecutionRuntimePageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyExecutionRuntimePage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyExecutionRuntimePageResponseObject); ok {
+		if err := validResponse.VisitGetLegacyExecutionRuntimePageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListAutomationTriggerRuns operation middleware
