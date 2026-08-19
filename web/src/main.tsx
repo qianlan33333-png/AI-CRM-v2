@@ -53,6 +53,8 @@ import { DataHealthPage } from "./data-health-ui";
 import type { DataHealthTransport } from "./data-health";
 import { ExecutionRuntimePage } from "./execution-runtime-ui";
 import type { ExecutionRuntimeTransport } from "./execution-runtime";
+import { PushCenterPage } from "./push-center-ui";
+import type { PushCenterTransport } from "./push-center";
 import { OrdersPage } from "./orders-ui";
 import type { OrdersTransport } from "./orders";
 import "./shell.css";
@@ -72,6 +74,7 @@ export const DELIVERY_LINEAGE_PATH = "/admin/delivery-lineage";
 export const DATA_HEALTH_PATH = "/admin/data-health";
 export const EXECUTION_RUNTIME_PATH = "/admin/execution-runtime";
 export const ORDERS_PATH = "/admin/orders";
+export const OUTBOUND_PATH = "/outbound";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -242,6 +245,7 @@ export interface AppProps {
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
   executionRuntimeTransport?: ExecutionRuntimeTransport;
+  pushCenterTransport?: PushCenterTransport;
   ordersTransport?: OrdersTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
@@ -407,6 +411,7 @@ function PageContent({
   deliveryLineageTransport,
   dataHealthTransport,
   executionRuntimeTransport,
+  pushCenterTransport,
   ordersTransport,
   cookieHeader,
   onUnauthenticated,
@@ -431,6 +436,7 @@ function PageContent({
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
   executionRuntimeTransport?: ExecutionRuntimeTransport;
+  pushCenterTransport?: PushCenterTransport;
   ordersTransport?: OrdersTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
@@ -636,6 +642,16 @@ function PageContent({
     );
   }
 
+  if (route.path === OUTBOUND_PATH) {
+    return (
+      <PushCenterPage
+        role={principal.role}
+        transport={pushCenterTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   if (route.path === ORDERS_PATH) {
     return (
       <OrdersPage
@@ -700,6 +716,7 @@ export function navigationLinks(
     permitted.add(DELIVERY_LINEAGE_PATH);
     permitted.add(DATA_HEALTH_PATH);
     permitted.add(EXECUTION_RUNTIME_PATH);
+    permitted.add(OUTBOUND_PATH);
   }
   if (
     base.length > 0 &&
@@ -739,6 +756,7 @@ export function App({
   deliveryLineageTransport,
   dataHealthTransport,
   executionRuntimeTransport,
+  pushCenterTransport,
   ordersTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
@@ -905,6 +923,7 @@ export function App({
             deliveryLineageTransport={deliveryLineageTransport}
             dataHealthTransport={dataHealthTransport}
             executionRuntimeTransport={executionRuntimeTransport}
+            pushCenterTransport={pushCenterTransport}
             ordersTransport={ordersTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
