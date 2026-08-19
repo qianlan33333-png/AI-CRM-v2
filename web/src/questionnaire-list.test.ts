@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   deleteQuestionnaire,
+  duplicateQuestionnaire,
   loadQuestionnaires,
   loadQuestionnairePreflight,
   nextQuestionnaireOffset,
@@ -57,9 +58,16 @@ const item = {
   public_path: "/q/welcome",
   submitted_path: "/admin/questionnaires/41/submissions",
 };
-function responseQuestionnaire(disabled: boolean) {
+function responseQuestionnaire(
+  disabled: boolean,
+  id = item.id,
+  slug = item.slug,
+) {
   return {
     ...item,
+    id,
+    slug,
+    public_path: `/q/${slug}`,
     is_disabled: disabled,
     enabled: !disabled,
     status: disabled ? "disabled" : "active",
@@ -78,6 +86,22 @@ function mutationResponse(
     questions: questionnaire.questions,
     data: { questionnaire },
     write_model_status,
+    ...extra,
+  };
+}
+function duplicateMutationResponse(
+  extra: Record<string, unknown> = {},
+  disabled = true,
+) {
+  const questionnaire = responseQuestionnaire(disabled, 42, "welcome-copy");
+  return {
+    ok: true,
+    questionnaire_id: questionnaire.id,
+    source_questionnaire_id: item.id,
+    questionnaire,
+    questions: questionnaire.questions,
+    data: { questionnaire },
+    write_model_status: "duplicated",
     ...extra,
   };
 }
@@ -103,6 +127,10 @@ function transport(
         body.is_disabled,
         body.is_disabled ? "disabled" : "enabled",
       ),
+    })),
+    duplicate: vi.fn(async () => ({
+      status: 200,
+      data: duplicateMutationResponse(),
     })),
     remove: vi.fn(async () => ({
       status: 200,
@@ -380,6 +408,74 @@ describe("questionnaire list transport", () => {
       deleteQuestionnaire(client, parsed, "x".repeat(43)),
     ).resolves.toEqual({ status: "invalid" });
     expect(client.remove).toHaveBeenCalledTimes(1);
+  });
+  it("duplicates once with an empty request body and a bounded idempotency key", async () => {
+    const client = transport();
+    await expect(
+      duplicateQuestionnaire(client, parsed, "x".repeat(43)),
+    ).resolves.toEqual({ status: "saved" });
+    expect(client.duplicate).toHaveBeenCalledTimes(1);
+    expect(client.duplicate).toHaveBeenCalledWith(
+      parsed.id,
+      undefined,
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "x".repeat(43),
+          "Idempotency-Key": expect.stringMatching(/^questionnaire-duplicate-/),
+        }),
+      }),
+    );
+    const options = vi.mocked(client.duplicate).mock.calls[0][2] as RequestInit;
+    const key = (options.headers as Record<string, string>)["Idempotency-Key"];
+    expect(key.length).toBeGreaterThanOrEqual(16);
+    expect(key.length).toBeLessThanOrEqual(128);
+    expect(questionnaireMutationReloadOffset({ status: "saved" })).toBe(0);
+  });
+  it("fails closed for malformed duplicate receipts and maps every failure without retry", async () => {
+    for (const data of [
+      duplicateMutationResponse({ questionnaire_id: item.id }),
+      duplicateMutationResponse({ source_questionnaire_id: 42 }),
+      duplicateMutationResponse({ write_model_status: "disabled" }),
+      duplicateMutationResponse({}, false),
+    ]) {
+      await expect(
+        duplicateQuestionnaire(
+          transport({
+            duplicate: vi.fn(async () => ({ status: 200, data })) as never,
+          }),
+          parsed,
+          "x".repeat(43),
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    for (const [status, result] of [
+      [400, "invalid"],
+      [401, "unauthenticated"],
+      [403, "forbidden"],
+      [404, "not_found"],
+      [409, "conflict"],
+      [503, "unavailable"],
+    ] as const) {
+      const client = transport({
+        duplicate: vi.fn(async () => ({ status, data: {} })) as never,
+      });
+      await expect(
+        duplicateQuestionnaire(client, parsed, "x".repeat(43)),
+      ).resolves.toEqual({ status: result });
+      expect(client.duplicate).toHaveBeenCalledTimes(1);
+    }
+    await expect(
+      duplicateQuestionnaire(
+        transport({
+          duplicate: vi.fn(async () => {
+            throw new Error("offline");
+          }) as never,
+        }),
+        parsed,
+        "x".repeat(43),
+      ),
+    ).resolves.toEqual({ status: "unavailable" });
   });
   it("fails closed when a 200 mutation response does not prove the requested change", async () => {
     const client = transport({

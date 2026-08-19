@@ -98,6 +98,27 @@ function response(
   };
 }
 
+function duplicateResponse() {
+  const questionnaire = {
+    ...item,
+    id: 42,
+    slug: "welcome-copy",
+    public_path: "/q/welcome-copy",
+    is_disabled: true,
+    enabled: false,
+    status: "disabled",
+  };
+  return {
+    ok: true,
+    questionnaire_id: 42,
+    source_questionnaire_id: item.id,
+    questionnaire,
+    questions: questionnaire.questions,
+    data: { questionnaire },
+    write_model_status: "duplicated",
+  };
+}
+
 function transport(
   overrides: Partial<QuestionnaireListTransport> = {},
 ): QuestionnaireListTransport {
@@ -120,6 +141,10 @@ function transport(
         body.is_disabled,
         body.is_disabled ? "disabled" : "enabled",
       ),
+    })),
+    duplicate: vi.fn(async () => ({
+      status: 200,
+      data: duplicateResponse(),
     })),
     remove: vi.fn(async () => ({
       status: 200,
@@ -212,7 +237,8 @@ describe("QuestionnaireListPage UI", () => {
         }}
       />,
     );
-    expect(busy.match(/disabled=""/g)).toHaveLength(7);
+    expect(page).toContain(">复制问卷<");
+    expect(busy.match(/disabled=""/g)).toHaveLength(9);
   });
 
   it("copies the parsed same-origin public link without using transport", async () => {
@@ -308,6 +334,7 @@ describe("QuestionnaireListPage UI", () => {
       ),
     ).resolves.toEqual({ status: "forbidden" });
     expect(client.disable).not.toHaveBeenCalled();
+    expect(client.duplicate).not.toHaveBeenCalled();
     expect(client.remove).not.toHaveBeenCalled();
   });
 
@@ -337,6 +364,25 @@ describe("QuestionnaireListPage UI", () => {
       expect.any(Object),
     );
     expect(busy.mock.calls).toEqual([[41], [undefined], [41], [undefined]]);
+  });
+
+  it("duplicates without confirmation, balances busy, and does not open an editor", async () => {
+    const client = transport();
+    const busy = vi.fn();
+    const confirmDelete = vi.fn(() => true);
+    await expect(
+      performQuestionnairePageMutation(
+        mutationArgs({
+          action: "duplicate",
+          confirmDelete,
+          onBusy: busy,
+          transport: client,
+        }),
+      ),
+    ).resolves.toEqual({ status: "saved" });
+    expect(confirmDelete).not.toHaveBeenCalled();
+    expect(client.duplicate).toHaveBeenCalledTimes(1);
+    expect(busy.mock.calls).toEqual([[41], [undefined]]);
   });
 
   it("requires delete confirmation and performs one confirmed delete", async () => {

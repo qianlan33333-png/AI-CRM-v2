@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
   deleteQuestionnaire,
+  duplicateQuestionnaire,
   generatedQuestionnaireListTransport,
   loadQuestionnaires,
   loadQuestionnairePreflight,
@@ -42,7 +43,7 @@ export type QuestionnairePreflightState =
   | { readonly kind: "ready"; readonly preflight: QuestionnairePreflight }
   | { readonly kind: "error"; readonly failure: QuestionnaireFailure };
 
-export type QuestionnaireMutationAction = "toggle" | "delete";
+export type QuestionnaireMutationAction = "toggle" | "delete" | "duplicate";
 export type QuestionnairePageMutationResult =
   QuestionnaireMutationResult | { readonly status: "cancelled" };
 
@@ -82,7 +83,9 @@ export async function performQuestionnairePageMutation({
     const result =
       action === "delete"
         ? await deleteQuestionnaire(transport, item, csrf)
-        : await setQuestionnaireEnabled(transport, item, csrf);
+        : action === "duplicate"
+          ? await duplicateQuestionnaire(transport, item, csrf)
+          : await setQuestionnaireEnabled(transport, item, csrf);
     if (result.status === "unauthenticated") onUnauthenticated?.();
     return result;
   } finally {
@@ -126,6 +129,7 @@ export async function copyQuestionnairePublicLink(
 
 export interface QuestionnaireListContentProps {
   readonly busy: number | undefined;
+  readonly notice?: string;
   readonly onLoad: React.Dispatch<number>;
   readonly onMutate: React.Dispatch<QuestionnaireMutationRequest>;
   readonly preflight?: QuestionnairePreflightState;
@@ -176,6 +180,7 @@ function QuestionnairePreflightPanel({
 
 export function QuestionnaireListContent({
   busy,
+  notice,
   onLoad,
   onMutate,
   preflight,
@@ -220,7 +225,9 @@ export function QuestionnaireListContent({
       <h1 id="app-title">问卷列表</h1>
       {preflightPanel}
       <p>共 {state.total} 条问卷。写入成功后会重新加载列表。</p>
-      {copyNotice ? <p role="status">{copyNotice}</p> : null}
+      {(notice ?? copyNotice) ? (
+        <p role="status">{notice ?? copyNotice}</p>
+      ) : null}
       {state.items.length === 0 ? (
         <p>当前没有问卷。</p>
       ) : (
@@ -252,6 +259,13 @@ export function QuestionnaireListContent({
                     onClick={() => void copyPublicLink(item)}
                   >
                     复制公开链接
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined}
+                    onClick={() => onMutate({ item, action: "duplicate" })}
+                  >
+                    复制问卷
                   </button>
                   <button
                     type="button"
@@ -328,6 +342,7 @@ export function QuestionnaireListPage({
     kind: "loading",
   });
   const [busy, setBusy] = useState<number>();
+  const [mutationNotice, setMutationNotice] = useState<string>();
   const load = useCallback(
     (offset: number) => {
       setState({ kind: "loading" });
@@ -373,6 +388,7 @@ export function QuestionnaireListPage({
     action: QuestionnaireMutationAction,
   ) => {
     if (busy !== undefined) return;
+    setMutationNotice(undefined);
     const result = await performQuestionnairePageMutation({
       action,
       confirmDelete: (message) =>
@@ -385,6 +401,8 @@ export function QuestionnaireListPage({
     });
     if (result.status === "cancelled") return;
     if (result.status === "saved") {
+      if (action === "duplicate")
+        setMutationNotice("问卷副本已创建，列表已刷新。");
       load(questionnaireMutationReloadOffset(result) ?? 0);
       return;
     }
@@ -400,6 +418,7 @@ export function QuestionnaireListPage({
   return (
     <QuestionnaireListContent
       busy={busy}
+      notice={mutationNotice}
       onLoad={load}
       onMutate={({ item, action }) => void mutate(item, action)}
       preflight={preflight}
