@@ -4,11 +4,13 @@ import {
   archiveGroupInvite,
   createGroupInvite,
   generatedGroupInviteLibraryTransport,
+  loadGroupInviteDetail,
   loadGroupInviteLibrary,
   nextGroupInvitePage,
   previousGroupInvitePage,
   updateGroupInvite,
   type GroupInviteLibraryDraft,
+  type GroupInviteLibraryDetailResult,
   type GroupInviteLibraryFailure,
   type GroupInviteLibraryItem,
   type GroupInviteLibraryPageData,
@@ -40,6 +42,17 @@ export type GroupInviteLibraryState =
       readonly kind: "error";
       readonly failure: GroupInviteLibraryFailure;
       readonly previous?: GroupInviteLibraryPageData;
+    };
+
+export type GroupInviteLibraryDetailState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly itemID: number; readonly previous?: GroupInviteLibraryItem }
+  | { readonly kind: "ready"; readonly item: GroupInviteLibraryItem }
+  | {
+      readonly kind: "error";
+      readonly itemID: number;
+      readonly failure: GroupInviteLibraryFailure;
+      readonly previous?: GroupInviteLibraryItem;
     };
 
 type Editor =
@@ -75,6 +88,7 @@ function InviteRows({
   page,
   busy = false,
   onArchive,
+  onDetail,
   onEdit,
 }: {
   readonly page: GroupInviteLibraryPageData;
@@ -82,9 +96,11 @@ function InviteRows({
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onArchive?: (item: GroupInviteLibraryItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onDetail?: (item: GroupInviteLibraryItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onEdit?: (item: GroupInviteLibraryItem) => void;
 }): React.ReactElement {
-  const actions = onArchive !== undefined || onEdit !== undefined;
+  const actions = onArchive !== undefined || onDetail !== undefined || onEdit !== undefined;
   return page.items.length === 0 ? (
     <p role="status">当前页没有本地群邀请素材。</p>
   ) : (
@@ -115,6 +131,15 @@ function InviteRows({
             <td>{item.updatedAt}</td>
             {actions ? (
               <td>
+                {onDetail ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onDetail(item)}
+                  >
+                    查看本地详情
+                  </button>
+                ) : null}{" "}
                 {onEdit ? (
                   <button
                     type="button"
@@ -144,14 +169,19 @@ function InviteRows({
 
 export function GroupInviteLibraryView({
   busy = false,
+  detailState = { kind: "idle" },
   onArchive,
+  onDetail,
   onEdit,
   onLoad,
   state,
 }: {
   readonly busy?: boolean;
+  readonly detailState?: GroupInviteLibraryDetailState;
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onArchive?: (item: GroupInviteLibraryItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onDetail?: (item: GroupInviteLibraryItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onEdit?: (item: GroupInviteLibraryItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
@@ -169,7 +199,13 @@ export function GroupInviteLibraryView({
       {page ? (
         <>
           <p>共 {page.total} 条本地未归档素材，当前从第 {page.offset + 1} 条开始。</p>
-          <InviteRows page={page} busy={busy} onEdit={onEdit} onArchive={onArchive} />
+          <InviteRows
+            page={page}
+            busy={busy}
+            onDetail={onDetail}
+            onEdit={onEdit}
+            onArchive={onArchive}
+          />
         </>
       ) : null}
       {state.kind === "loading" ? <p role="status">正在读取本地群邀请素材。</p> : null}
@@ -201,6 +237,35 @@ export function GroupInviteLibraryView({
           </button>
         </p>
       ) : null}
+      <GroupInviteLibraryDetailView state={detailState} />
+    </section>
+  );
+}
+
+export function GroupInviteLibraryDetailView({
+  state,
+}: {
+  readonly state: GroupInviteLibraryDetailState;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const item = state.kind === "ready" ? state.item : state.previous;
+  return (
+    <section aria-label="群邀请素材本地详情">
+      <h2>本地素材详情</h2>
+      {item ? (
+        <dl>
+          <dt>素材 ID</dt><dd>{item.id}</dd>
+          <dt>名称</dt><dd>{item.name}</dd>
+          <dt>标题</dt><dd>{item.title}</dd>
+          <dt>说明</dt><dd>{item.description || "—"}</dd>
+          <dt>封面素材 ID</dt><dd>{item.coverImageID ?? "—"}</dd>
+          <dt>状态</dt><dd>{item.enabled ? "enabled" : "disabled"}</dd>
+          <dt>创建时间</dt><dd>{item.createdAt}</dd>
+          <dt>更新时间</dt><dd>{item.updatedAt}</dd>
+        </dl>
+      ) : null}
+      {state.kind === "loading" ? <p role="status">正在读取本地素材详情。</p> : null}
+      {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
     </section>
   );
 }
@@ -278,8 +343,13 @@ export function GroupInviteLibraryPage({
   const generation = useRef(0);
   const inFlight = useRef(false);
   const verified = useRef<GroupInviteLibraryPageData>();
+  const detailGeneration = useRef(0);
+  const detailInFlight = useRef(false);
+  const verifiedDetail = useRef<GroupInviteLibraryItem>();
   const [state, setState] = useState<GroupInviteLibraryState>({ kind: "loading" });
+  const [detailState, setDetailState] = useState<GroupInviteLibraryDetailState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
+  const [detailBusy, setDetailBusy] = useState(false);
   const [editor, setEditor] = useState<Editor>({ mode: "create", draft: emptyDraft });
   const [notice, setNotice] = useState<string>();
 
@@ -317,6 +387,38 @@ export function GroupInviteLibraryPage({
       return undefined;
     }
   };
+
+  const loadDetail = useCallback(
+    async (itemID: number) => {
+      if (detailInFlight.current) return;
+      detailInFlight.current = true;
+      setDetailBusy(true);
+      const currentGeneration = ++detailGeneration.current;
+      setDetailState({ kind: "loading", itemID, previous: verifiedDetail.current });
+      try {
+        const result: GroupInviteLibraryDetailResult = await loadGroupInviteDetail(transport, itemID);
+        if (currentGeneration !== detailGeneration.current) return;
+        if (result.status === "loaded") {
+          verifiedDetail.current = result.item;
+          setDetailState({ kind: "ready", item: result.item });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setDetailState({
+          kind: "error",
+          itemID,
+          failure: result.status,
+          previous: verifiedDetail.current,
+        });
+      } finally {
+        if (currentGeneration === detailGeneration.current) {
+          detailInFlight.current = false;
+          setDetailBusy(false);
+        }
+      }
+    },
+    [onUnauthenticated, transport],
+  );
 
   const refreshAfterMutation = useCallback(async () => {
     await load(0);
@@ -378,6 +480,7 @@ export function GroupInviteLibraryPage({
     if (canRead) void load(0);
     return () => {
       generation.current += 1;
+      detailGeneration.current += 1;
     };
   }, [canRead, load]);
 
@@ -392,8 +495,10 @@ export function GroupInviteLibraryPage({
   return (
     <>
       <GroupInviteLibraryView
-        busy={busy}
+        busy={busy || detailBusy}
+        detailState={detailState}
         onLoad={(offset) => void load(offset)}
+        onDetail={(item) => void loadDetail(item.id)}
         onEdit={(item) => {
           if (!inFlight.current) setEditor({ mode: "edit", item, draft: draftFor(item) });
         }}

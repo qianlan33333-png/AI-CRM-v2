@@ -1,6 +1,7 @@
 import {
   archiveLegacyGroupInvite,
   createLegacyGroupInvite,
+  getLegacyGroupInvite,
   listLegacyGroupInvites,
   updateLegacyGroupInvite,
   type LegacyGroupInviteCreateRequest,
@@ -55,6 +56,13 @@ async function generatedList(
   return listLegacyGroupInvites(params, options);
 }
 
+async function generatedDetail(
+  itemID: number,
+  options: RequestInit,
+): Promise<GroupInviteLibraryTransportResponse> {
+  return getLegacyGroupInvite(itemID, options);
+}
+
 async function generatedCreate(
   request: LegacyGroupInviteCreateRequest,
   options: RequestInit,
@@ -79,6 +87,7 @@ async function generatedArchive(
 
 export interface GroupInviteLibraryTransport {
   readonly list: typeof generatedList;
+  readonly detail?: typeof generatedDetail;
   readonly create?: typeof generatedCreate;
   readonly update?: typeof generatedUpdate;
   readonly archive?: typeof generatedArchive;
@@ -86,6 +95,7 @@ export interface GroupInviteLibraryTransport {
 
 export const generatedGroupInviteLibraryTransport: GroupInviteLibraryTransport = {
   list: generatedList,
+  detail: generatedDetail,
   create: generatedCreate,
   update: generatedUpdate,
   archive: generatedArchive,
@@ -101,6 +111,10 @@ export type GroupInviteLibraryFailure =
 
 export type GroupInviteLibraryResult =
   | { readonly status: "loaded"; readonly page: GroupInviteLibraryPageData }
+  | { readonly status: GroupInviteLibraryFailure };
+
+export type GroupInviteLibraryDetailResult =
+  | { readonly status: "loaded"; readonly item: GroupInviteLibraryItem }
   | { readonly status: GroupInviteLibraryFailure };
 
 export type GroupInviteLibraryMutationResult =
@@ -390,6 +404,30 @@ export function parseGroupInviteLibraryPage(
   };
 }
 
+export function parseGroupInviteLibraryDetail(
+  value: unknown,
+  expectedItemID: number,
+): GroupInviteLibraryItem | undefined {
+  if (
+    !positive(expectedItemID) ||
+    !record(value) ||
+    !exact(value, ["ok", "item", "group_invite", "provider_call_executed"]) ||
+    value.ok !== true ||
+    value.provider_call_executed !== false
+  ) {
+    return undefined;
+  }
+  const item = parseGroupInviteLibraryItem(value.item);
+  const mirrored = parseGroupInviteLibraryItem(value.group_invite);
+  return item &&
+    mirrored &&
+    item.id === expectedItemID &&
+    mirrored.id === expectedItemID &&
+    sameItems([item], [mirrored])
+    ? item
+    : undefined;
+}
+
 function failure(status: number): GroupInviteLibraryFailure {
   if (status === 401) return "unauthenticated";
   if (status === 403) return "forbidden";
@@ -418,6 +456,23 @@ export async function loadGroupInviteLibrary(
     if (response.status !== 200) return { status: failure(response.status) };
     const page = parseGroupInviteLibraryPage(response.data, offset);
     return page ? { status: "loaded", page } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function loadGroupInviteDetail(
+  transport: GroupInviteLibraryTransport,
+  itemID: number,
+): Promise<GroupInviteLibraryDetailResult> {
+  if (!positive(itemID)) return { status: "invalid" };
+  const detail = transport.detail;
+  if (!detail) return { status: "unavailable" };
+  try {
+    const response = await detail(itemID, { credentials: "same-origin" });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const item = parseGroupInviteLibraryDetail(response.data, itemID);
+    return item ? { status: "loaded", item } : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }
