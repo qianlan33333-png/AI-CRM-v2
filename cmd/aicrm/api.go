@@ -71,6 +71,29 @@ import (
 
 var errInvalidAPIComponent = errors.New("invalid API component")
 
+func runtimeConfigDeclarationFromConfig(config appconfig.Root) runtimeConfigDeclaration {
+	releaseSHA := strings.TrimSpace(config.Release.SHA)
+	if releaseSHA == "" {
+		releaseSHA = "unknown"
+	}
+	callbackStatus := "missing"
+	if config.WeCom.Callback.Enabled {
+		callbackStatus = "configured"
+	}
+	oauthStatus := "missing"
+	if config.WeCom.OAuth.Enabled {
+		oauthStatus = "configured"
+	}
+	return runtimeConfigDeclaration{
+		DatabaseMode:        "postgres",
+		ProductionDataReady: "unknown",
+		ReleaseSHA:          releaseSHA,
+		WeChatCallbackToken: callbackStatus,
+		WeChatPayConfig:     "unknown",
+		OAuthConfig:         oauthStatus,
+	}
+}
+
 type apiComponent struct {
 	server  *http.Server
 	pool    *pgxpool.Pool
@@ -503,6 +526,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
+	legacyHandler.runtimeConfig = runtimeConfigDeclarationFromConfig(config)
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),
 	)
@@ -868,7 +892,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -894,6 +918,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyQuestionnaireMethodNotAllowed))
+					}
+					if pattern == legacyRuntimeConfigPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyRuntimeConfigMethodNotAllowed))
 					}
 					strictLegacyMethodRouters[pattern] = methodRouter
 					router.Handle(pattern, methodRouter)
@@ -940,7 +967,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/admin/config/releases/{release_id}/validate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/admin/config/releases/{release_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/admin/config/releases/{release_id}/rollback", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
-			{http.MethodGet, "/admin/runtime-config", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, legacyRuntimeConfigPath, authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, legacyApiDocsPath, authport.CapabilityConfigOverviewRead, false, legacyAPIDocs},
 			{http.MethodGet, legacyMcpToolsPath, authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacyMcpToolsRedirect)},
 			{http.MethodGet, "/admin/config/checklist", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
