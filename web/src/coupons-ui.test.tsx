@@ -21,6 +21,7 @@ function transport(): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 503, data: {} })),
     copy: vi.fn(async () => ({ status: 503, data: {} })),
+    claims: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as CouponsTransport;
 }
 
@@ -52,7 +53,7 @@ describe("CouponsView", () => {
       expect(html).toContain("复制只会创建新的本地草稿");
       expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
       expect(html).not.toContain("<img");
-      expect(html).not.toMatch(/payment|provider|claim|redeem|share/i);
+      expect(html).not.toMatch(/payment|provider|redeem|share/i);
     },
   );
 
@@ -66,6 +67,39 @@ describe("CouponsView", () => {
     expect(html).not.toContain(">复制<");
     expect(client.list).not.toHaveBeenCalled();
     expect(client.copy).not.toHaveBeenCalled();
+    expect(client.claims).not.toHaveBeenCalled();
+  });
+
+  it("renders only the frozen opaque claim projection and bounded pagination", () => {
+    const html = renderToStaticMarkup(
+      <CouponsView
+        claimsState={{
+          kind: "ready",
+          coupon: item,
+          page: {
+            items: [
+              {
+                id: 9,
+                claimRef: "cp_1234567890abcdef",
+                claimedAt: "2026-08-19T02:03:04Z",
+              },
+            ],
+            total: 51,
+            offset: 0,
+          },
+        }}
+        onClaims={vi.fn()}
+        onCopy={vi.fn()}
+        role="ops"
+        state={{ kind: "ready", items: [item] }}
+      />,
+    );
+    expect(html).toContain('aria-label="优惠券领取数据"');
+    expect(html).toContain("领取记录 ID");
+    expect(html).toContain("领取凭据");
+    expect(html).toContain("claimed");
+    expect(html).toContain("下一页");
+    expect(html).not.toMatch(/customer|identity|mobile|payment|provider/i);
   });
 
   it("makes one same-click copy request with the CSRF cookie and no redirect", async () => {
