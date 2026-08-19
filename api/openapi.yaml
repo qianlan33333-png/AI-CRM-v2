@@ -1078,6 +1078,53 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/automation-agents:
+    get:
+      tags: [p4-automation-agents]
+      operationId: getLegacyAutomationAgentListPage
+      summary: Carry an authorized administrator to the local automation-agent browser
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-BROWSER-061-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier redirect; it neither reads agent content nor invokes automation, publishing, or a provider.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fautomation-agents"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /api/admin/automation-agents:
+    get:
+      tags: [p4-automation-agents]
+      operationId: listLegacyAutomationAgents
+      summary: Read local automation-agent summary metadata without prompts, content, material IDs, bindings, or external calls
+      x-legacy-mapping-ids: [LEGACY-API-0129]
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-BROWSER-061-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Complete bounded local automation-agent summary list, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListResponse" } } } }
+        "400": { description: Unsupported legacy automation_type query value, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListError" } } } }
   /api/admin/wecom/tags:
     get:
       tags: [p4-tag-compat]
@@ -3951,6 +3998,45 @@ components:
         ok: { type: boolean, enum: [false] }
         error: { type: string, enum: [execution_runtime_unavailable] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyAutomationAgentMaterialSummary:
+      type: object
+      additionalProperties: false
+      required: [image_count, miniprogram_count, attachment_count, group_invite_count]
+      properties:
+        image_count: { type: integer, minimum: 0 }
+        miniprogram_count: { type: integer, minimum: 0 }
+        attachment_count: { type: integer, minimum: 0 }
+        group_invite_count: { type: integer, minimum: 0 }
+    LegacyAutomationAgentListItem:
+      type: object
+      additionalProperties: false
+      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        automation_type: { type: string, enum: [agent, fixed_script] }
+        agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        bound_package_key: { type: string, enum: [""] }
+        bound_package_id: { type: integer, format: int64, nullable: true, enum: [null] }
+        bound_package_name: { type: string, enum: [""] }
+        fixed_material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
+        status: { type: string, enum: [active, paused] }
+        updated_at: { type: string, format: date-time }
+    LegacyAutomationAgentListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/LegacyAutomationAgentListItem" } }
+        total: { type: integer, minimum: 0, maximum: 200 }
+    LegacyAutomationAgentListError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [invalid_agent_payload, automation_agent_unavailable] }
     LegacyExecutionTimelineUnavailable:
       type: object
       additionalProperties: false

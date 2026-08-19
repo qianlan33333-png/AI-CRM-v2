@@ -45,6 +45,8 @@ import { CouponsPage } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
 import { AutomationRunsPage } from "./automation-runs-ui";
 import type { AutomationRunsTransport } from "./automation-runs";
+import { AutomationAgentsPage } from "./automation-agents-ui";
+import type { AutomationAgentsTransport } from "./automation-agents";
 import { GroupInviteLibraryPage } from "./group-invite-library-ui";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import { DeliveryLineagePage } from "./delivery-lineage-ui";
@@ -71,6 +73,7 @@ export const WECOM_TAGS_PATH = "/admin/wecom-tags";
 export const CHANNELS_PATH = "/admin/channels";
 export const COUPONS_PATH = "/admin/coupons";
 export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
+export const AUTOMATION_AGENTS_PATH = "/admin/automation-agents";
 export const GROUP_INVITE_LIBRARY_PATH = "/admin/group-invite-library";
 export const DELIVERY_LINEAGE_PATH = "/admin/delivery-lineage";
 export const DATA_HEALTH_PATH = "/admin/data-health";
@@ -158,6 +161,12 @@ export const routes = [
     navigationLabel: "自动化运行",
     title: "自动化运行记录",
     description: "自动化触发记录的脱敏只读视图。",
+  },
+  {
+    path: "/admin/automation-agents",
+    navigationLabel: "自动化话术",
+    title: "自动化话术",
+    description: "本地自动化话术配置摘要的只读浏览。",
   },
   {
     path: "/admin/group-invite-library",
@@ -250,6 +259,7 @@ export interface AppProps {
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
+  automationAgentsTransport?: AutomationAgentsTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
@@ -311,6 +321,7 @@ export function carrierPathname(pathname: string, search: string): string {
     values[0] === WECOM_TAGS_PATH ||
     values[0] === CHANNELS_PATH ||
     values[0] === COUPONS_PATH ||
+    values[0] === AUTOMATION_AGENTS_PATH ||
     values[0] === EXECUTION_RUNTIME_PATH ||
     values[0] === ORDERS_PATH ||
     values[0] === PRODUCTS_PATH
@@ -418,6 +429,7 @@ function PageContent({
   channelsTransport,
   couponsTransport,
   automationRunsTransport,
+  automationAgentsTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
@@ -444,6 +456,7 @@ function PageContent({
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
+  automationAgentsTransport?: AutomationAgentsTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
@@ -615,6 +628,16 @@ function PageContent({
     );
   }
 
+  if (route.path === AUTOMATION_AGENTS_PATH) {
+    return (
+      <AutomationAgentsPage
+        role={principal.role}
+        transport={automationAgentsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   if (route.path === GROUP_INVITE_LIBRARY_PATH) {
     return (
       <GroupInviteLibraryPage
@@ -729,6 +752,7 @@ export function navigationLinks(
   if (base.length > 0 && principal.role === "admin") {
     permitted.add(QUESTIONNAIRE_LIST_PATH);
     permitted.add(AUTOMATION_RUNS_PATH);
+    permitted.add(AUTOMATION_AGENTS_PATH);
     permitted.add(DELIVERY_LINEAGE_PATH);
     permitted.add(DATA_HEALTH_PATH);
     permitted.add(EXECUTION_RUNTIME_PATH);
@@ -769,6 +793,7 @@ export function App({
   channelsTransport,
   couponsTransport,
   automationRunsTransport,
+  automationAgentsTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
@@ -937,6 +962,7 @@ export function App({
             channelsTransport={channelsTransport}
             couponsTransport={couponsTransport}
             automationRunsTransport={automationRunsTransport}
+            automationAgentsTransport={automationAgentsTransport}
             groupInviteLibraryTransport={groupInviteLibraryTransport}
             deliveryLineageTransport={deliveryLineageTransport}
             dataHealthTransport={dataHealthTransport}

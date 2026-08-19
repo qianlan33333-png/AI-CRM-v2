@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -75,17 +76,29 @@ func TestP4AutomationAgentsABTwelveRoutesSessionCSRFRBACAndNoExternalEffect(t *t
 	item := legacyAutomationAgentItem()
 	stub := &legacyAutomationAgentStub{item: item, page: automationport.Page{Items: []automationport.Agent{item}, Total: 1}}
 	router, auth := legacyAutomationAgentRouter(t, stub)
-	for _, path := range []string{"/admin/automation-agents", "/admin/automation-agents/7/edit"} {
-		response := httptest.NewRecorder()
-		router.ServeHTTP(response, legacyRequest(http.MethodGet, path, legacyToken(131)))
-		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "自动化话术") {
-			t.Fatalf("page %s=%d body=%s", path, response.Code, response.Body.String())
-		}
+	carrier := httptest.NewRecorder()
+	router.ServeHTTP(carrier, legacyRequest(http.MethodGet, legacyAutomationAgentListPagePath, legacyToken(131)))
+	if carrier.Code != http.StatusFound || carrier.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Fautomation-agents" || carrier.Header().Get("Cache-Control") != "private, no-store" || carrier.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("carrier=%d headers=%v body=%s", carrier.Code, carrier.Header(), carrier.Body.String())
+	}
+	edit := httptest.NewRecorder()
+	router.ServeHTTP(edit, legacyRequest(http.MethodGet, "/admin/automation-agents/7/edit", legacyToken(131)))
+	if edit.Code != http.StatusOK || !strings.Contains(edit.Body.String(), "编辑自动化话术") {
+		t.Fatalf("edit=%d body=%s", edit.Code, edit.Body.String())
 	}
 	list := httptest.NewRecorder()
-	router.ServeHTTP(list, legacyRequest(http.MethodGet, "/api/admin/automation-agents?automation_type=fixed_script", legacyToken(132)))
-	if list.Code != http.StatusOK || stub.listKind != automationport.AutomationTypeFixedScript || !strings.Contains(list.Body.String(), "\"total\":1") {
+	router.ServeHTTP(list, legacyRequest(http.MethodGet, "/api/admin/automation-agents", legacyToken(132)))
+	if list.Code != http.StatusOK || stub.listKind != "" || !strings.Contains(list.Body.String(), "\"total\":1") {
 		t.Fatalf("list=%d kind=%q body=%s", list.Code, stub.listKind, list.Body.String())
+	}
+	var listBody struct {
+		Items []map[string]any `json:"items"`
+	}
+	if err := json.Unmarshal(list.Body.Bytes(), &listBody); err != nil || len(listBody.Items) != 1 {
+		t.Fatalf("decode list err=%v body=%s", err, list.Body.String())
+	}
+	if got := listBody.Items[0]; len(got) != 10 || got["bound_package_key"] != "" || got["bound_package_id"] != nil || got["bound_package_name"] != "" || got["automation_type_label"] != nil || got["draft_role_prompt"] != nil || got["fixed_content_package"] != nil {
+		t.Fatalf("unsafe or incomplete list item=%#v", got)
 	}
 	detail := httptest.NewRecorder()
 	router.ServeHTTP(detail, legacyRequest(http.MethodGet, "/api/admin/automation-agents/7", legacyToken(133)))
@@ -122,6 +135,36 @@ func TestP4AutomationAgentsABTwelveRoutesSessionCSRFRBACAndNoExternalEffect(t *t
 	}
 }
 
+func TestP4AutomationAgentListCarrierIsAdminOnlyAndStrictBeforeAuth(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		principal authport.Principal
+		want      int
+	}{
+		{name: "admin", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, want: http.StatusFound},
+		{name: "ops", principal: authport.Principal{AdminUserID: 8, Role: authport.RoleOps}, want: http.StatusForbidden},
+		{name: "sales", principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales}, want: http.StatusForbidden},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			router := legacyAutomationAgentRouterWithAuth(t, &legacyAuthStub{principal: test.principal}, &legacyAutomationAgentStub{item: legacyAutomationAgentItem()})
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, legacyRequest(http.MethodGet, legacyAutomationAgentListPagePath, legacyToken(140)))
+			if response.Code != test.want || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+				t.Fatalf("status/headers=%d/%q body=%s", response.Code, response.Header().Get("X-Content-Type-Options"), response.Body.String())
+			}
+		})
+	}
+
+	router := legacyAutomationAgentRouterWithAuth(t, &legacyAuthStub{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}}, &legacyAutomationAgentStub{item: legacyAutomationAgentItem()})
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead, http.MethodOptions} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(method, legacyAutomationAgentListPagePath, nil))
+		if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet || response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+			t.Fatalf("method/status/headers=%s/%d/%q/%q/%q", method, response.Code, response.Header().Get("Allow"), response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"))
+		}
+	}
+}
+
 func TestP4AutomationAgentsABBoundaryAndErrorFailClosed(t *testing.T) {
 	stub := &legacyAutomationAgentStub{item: legacyAutomationAgentItem()}
 	router, _ := legacyAutomationAgentRouter(t, stub)
@@ -147,6 +190,11 @@ func TestP4AutomationAgentsABBoundaryAndErrorFailClosed(t *testing.T) {
 func legacyAutomationAgentRouter(t *testing.T, agents automationport.AgentService) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
+	return legacyAutomationAgentRouterWithAuth(t, service, agents), service
+}
+
+func legacyAutomationAgentRouterWithAuth(t *testing.T, service authport.Service, agents automationport.AgentService) http.Handler {
+	t.Helper()
 	legacy, err := NewHandlerWithOutboundProductsMediaAndSurvey(service, &legacyCustomerStub{result: legacyCustomerResult()}, &legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, &legacyMediaStub{}, &legacySurveyStub{})
 	if err != nil {
 		t.Fatal(err)
@@ -160,7 +208,7 @@ func legacyAutomationAgentRouter(t *testing.T, agents automationport.AgentServic
 	if err != nil {
 		t.Fatal(err)
 	}
-	return router, service
+	return router
 }
 func legacyAutomationAgentWriteRequest(method, path, body string) *http.Request {
 	request := legacyChannelWriteRequest(method, path, body)
