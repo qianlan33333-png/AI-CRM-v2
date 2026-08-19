@@ -12205,6 +12205,65 @@ export const updateLegacyChannel = async (
 };
 
 /**
+ * @summary Redirect the frozen legacy orders entrypoint to the exact local SPA carrier
+ */
+export type getLegacyOrderListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyOrderListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyOrderListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyOrderListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyOrderListPageResponseError = (
+  | getLegacyOrderListPageResponse302
+  | getLegacyOrderListPageResponse401
+  | getLegacyOrderListPageResponse403
+  | getLegacyOrderListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyOrderListPageResponse =
+  getLegacyOrderListPageResponseError;
+
+export const getGetLegacyOrderListPageUrl = () => {
+  return `/admin/orders`;
+};
+
+export const getLegacyOrderListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyOrderListPageResponse> => {
+  const res = await fetch(getGetLegacyOrderListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyOrderListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyOrderListPageResponse;
+};
+
+/**
  * @summary List persisted unified order projections without provider execution
  */
 export type listLegacyOrdersResponse200 = {

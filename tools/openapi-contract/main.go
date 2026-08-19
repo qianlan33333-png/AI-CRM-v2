@@ -223,7 +223,7 @@ var couponPublicAccessContracts = map[string]couponPublicAccessContract{
 }
 
 var p4OrderOperations = map[string]bool{
-	"listLegacyOrders": true, "getLegacyOrder": true, "getLegacyOrderItems": true,
+	"getLegacyOrderListPage": true, "listLegacyOrders": true, "getLegacyOrder": true, "getLegacyOrderItems": true,
 	"listLegacyAlipayTransactions": true, "getLegacyAlipayTransaction": true,
 	"listLegacyRefunds": true, "createLegacyRefundIntent": true,
 	"createLegacyOrderExport": true, "getLegacyOrderExport": true,
@@ -234,7 +234,7 @@ var p4OrderOperations = map[string]bool{
 }
 
 var p4OrderLegacyMappings = map[string][]string{
-	"listLegacyOrders": {"LEGACY-API-0405"}, "getLegacyOrder": {"LEGACY-API-0406"},
+	"getLegacyOrderListPage": {"LEGACY-API-0058"}, "listLegacyOrders": {"LEGACY-API-0405"}, "getLegacyOrder": {"LEGACY-API-0406"},
 	"getLegacyOrderItems": {"LEGACY-API-0407"}, "listLegacyAlipayTransactions": {"LEGACY-API-0119"},
 	"getLegacyAlipayTransaction": {"LEGACY-API-0120"}, "listLegacyRefunds": {"LEGACY-API-0463"},
 	"createLegacyRefundIntent": {"LEGACY-API-0464"}, "createLegacyOrderExport": {"LEGACY-API-0316"},
@@ -415,6 +415,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listLegacyCouponClaims":                    {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
 	"copyLegacyCoupon":                          {"coupons.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyCouponShare":                      {"coupons.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyOrderListPage":                    {"order.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyOrders":                          {"order.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyOrder":                            {"order.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyOrderItems":                       {"order.read", map[string]string{"admin": "global", "ops": "global"}},

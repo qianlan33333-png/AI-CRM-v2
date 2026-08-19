@@ -14,6 +14,7 @@ import {
   GROUP_INVITE_LIBRARY_PATH,
   DELIVERY_LINEAGE_PATH,
   DATA_HEALTH_PATH,
+  ORDERS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -39,6 +40,7 @@ import type { AutomationRunsTransport } from "./automation-runs";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
 import type { DataHealthTransport } from "./data-health";
+import type { OrdersTransport } from "./orders";
 
 const adminSession = {
   status: "authenticated",
@@ -141,6 +143,11 @@ function groupInviteLibraryTransport(): GroupInviteLibraryTransport {
 function deliveryLineageTransport(): DeliveryLineageTransport {
   const response = async () => ({ status: 503, data: {} });
   return { list: vi.fn(response) } as DeliveryLineageTransport;
+}
+
+function ordersTransport(): OrdersTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { list: vi.fn(response) } as unknown as OrdersTransport;
 }
 
 describe("Web shell routes", () => {
@@ -458,8 +465,30 @@ describe("Web shell routes", () => {
     expect(client.detail).not.toHaveBeenCalled();
   });
 
+  it("renders the local order overview for admin and ops while sales remains inert", () => {
+    vi.stubGlobal("window", { location: { pathname: ORDERS_PATH } });
+    const client = ordersTransport();
+    for (const role of ["admin", "ops"] as const) {
+      expect(renderToStaticMarkup(
+        <App
+          ordersTransport={client}
+          initialSession={{ status: "authenticated", principal: { adminUserID: 8, role } }}
+        />,
+      )).toContain("正在读取本地订单总览。");
+    }
+    const sales = renderToStaticMarkup(
+      <App
+        ordersTransport={client}
+        initialSession={{ status: "authenticated", principal: { adminUserID: 9, role: "sales", staffID: 11 } }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有订单总览访问权限。");
+    expect(sales).not.toContain(`href="${ORDERS_PATH}"`);
+    expect(client.list).not.toHaveBeenCalled();
+  });
+
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(18);
+    expect(routes).toHaveLength(19);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -592,6 +621,7 @@ describe("Web shell routes", () => {
       "/admin/group-invite-library",
       "/admin/delivery-lineage",
       "/admin/data-health",
+      "/admin/orders",
       "/settings",
     ]);
     expect(
@@ -608,6 +638,7 @@ describe("Web shell routes", () => {
       "/admin/channels",
       "/admin/coupons",
       "/admin/group-invite-library",
+      "/admin/orders",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -630,6 +661,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).toContain('href="/admin/delivery-lineage"');
     expect(html).toContain('href="/admin/data-health"');
+    expect(html).toContain(`href="${ORDERS_PATH}"`);
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -671,15 +703,20 @@ describe("legacy admin path carrier", () => {
     expect(carrierPathname("/", `?legacy_admin_path=${COUPONS_PATH}`)).toBe(
       COUPONS_PATH,
     );
+    expect(carrierPathname("/", `?legacy_admin_path=${ORDERS_PATH}`)).toBe(
+      ORDERS_PATH,
+    );
 
     for (const search of [
       "?legacy_admin_path=/admin/image-library",
       "?legacy_admin_path=/admin/wecom-tags/extra",
       "?legacy_admin_path=/admin/channels/extra",
       "?legacy_admin_path=/admin/coupons/extra",
+      "?legacy_admin_path=/admin/orders/extra",
       "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,
+      `?legacy_admin_path=${ORDERS_PATH}&legacy_admin_path=${ORDERS_PATH}`,
       "?legacy_admin_path=https://evil.example",
       "?legacy_admin_path=//evil.example",
       "?legacy_admin_path=/admin/miniprogram-library/extra",

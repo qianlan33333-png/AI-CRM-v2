@@ -1376,6 +1376,38 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/orders:
+    get:
+      tags: [p4-order-compat]
+      operationId: getLegacyOrderListPage
+      summary: Redirect the frozen legacy orders entrypoint to the exact local SPA carrier
+      x-legacy-mapping-ids: [LEGACY-API-0058]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier redirect; it does not read orders or invoke payment providers.
+          headers:
+            Location:
+              required: true
+              schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Forders"] }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow:
+              required: true
+              schema: { type: string, enum: [GET] }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
   /api/admin/orders:
     get:
       tags: [p4-order-compat]

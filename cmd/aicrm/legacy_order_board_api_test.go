@@ -17,6 +17,7 @@ import (
 
 type legacyOrderBoardStub struct {
 	filter        orderport.BoardFilter
+	listCalls     int
 	refundCommand orderport.RefundCommand
 	retryID       int64
 	page          orderport.Page
@@ -24,6 +25,7 @@ type legacyOrderBoardStub struct {
 }
 
 func (s *legacyOrderBoardStub) ListOrders(_ context.Context, filter orderport.BoardFilter) (orderport.Page, error) {
+	s.listCalls++
 	s.filter = filter
 	return s.page, nil
 }
@@ -63,6 +65,106 @@ func TestOrderABRootFiltersAliasesAndUsesOrderRead(t *testing.T) {
 	if got := auth.capabilities(); len(got) != 1 || got[0] != authport.CapabilityOrderRead {
 		t.Fatalf("capabilities=%v", got)
 	}
+}
+
+func TestOrderListPageIsAnAuthorizedCarrierOnly(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		principal authport.Principal
+		token     bool
+		want      int
+	}{
+		{name: "admin", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, token: true, want: http.StatusFound},
+		{name: "ops", principal: authport.Principal{AdminUserID: 8, Role: authport.RoleOps}, token: true, want: http.StatusFound},
+		{name: "sales", principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales}, token: true, want: http.StatusForbidden},
+		{name: "anonymous", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, want: http.StatusUnauthorized},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			board := &legacyOrderBoardStub{}
+			auth := &orderPageAuthSpy{principal: test.principal}
+			router := orderPageRouter(t, auth, board)
+			request := httptest.NewRequest(http.MethodGet, legacyOrderPagePath, nil)
+			if test.token {
+				request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(171)})
+			}
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+			wantCache := "no-store"
+			if test.want == http.StatusFound {
+				wantCache = "private, no-store"
+			}
+			if response.Code != test.want || response.Header().Get("Cache-Control") != wantCache || response.Header().Get("X-Content-Type-Options") != "nosniff" || auth.csrfCalls != 0 || board.listCalls != 0 {
+				t.Fatalf("status/headers/csrf/list=%d/%q/%q/%d/%d", response.Code, response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"), auth.csrfCalls, board.listCalls)
+			}
+			if test.want == http.StatusFound && (response.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Forders" || auth.authenticateCalls != 1 || auth.authorizeCalls != 1 || len(auth.capabilities) != 1 || auth.capabilities[0] != authport.CapabilityOrderRead) {
+				t.Fatalf("location/auth/capability=%q/%d/%d/%v", response.Header().Get("Location"), auth.authenticateCalls, auth.authorizeCalls, auth.capabilities)
+			}
+		})
+	}
+}
+
+func TestOrderListPageRejectsOtherMethodsBeforeAuthentication(t *testing.T) {
+	auth := &orderPageAuthSpy{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}}
+	router := orderPageRouter(t, auth, &legacyOrderBoardStub{})
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead, http.MethodOptions} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(method, legacyOrderPagePath, nil))
+		if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet || response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+			t.Fatalf("method/status/headers=%s/%d/%q/%q/%q", method, response.Code, response.Header().Get("Allow"), response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"))
+		}
+	}
+	if auth.authenticateCalls != 0 || auth.authorizeCalls != 0 || auth.csrfCalls != 0 {
+		t.Fatalf("authenticate/authorize/csrf=%d/%d/%d", auth.authenticateCalls, auth.authorizeCalls, auth.csrfCalls)
+	}
+}
+
+type orderPageAuthSpy struct {
+	principal         authport.Principal
+	authenticateCalls int
+	authorizeCalls    int
+	csrfCalls         int
+	capabilities      []authport.Capability
+}
+
+func (spy *orderPageAuthSpy) Authenticate(_ context.Context, _ authport.SessionRef) (authport.Principal, error) {
+	spy.authenticateCalls++
+	return spy.principal, nil
+}
+
+func (spy *orderPageAuthSpy) Authorize(_ context.Context, principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {
+	spy.authorizeCalls++
+	spy.capabilities = append(spy.capabilities, capability)
+	if principal.AdminUserID < 1 || (principal.Role != authport.RoleAdmin && principal.Role != authport.RoleOps) || capability != authport.CapabilityOrderRead {
+		return authport.Authorization{}, authport.ErrUnauthorized
+	}
+	return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
+}
+
+func (spy *orderPageAuthSpy) ValidateCSRF(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	spy.csrfCalls++
+	return nil
+}
+
+func (*orderPageAuthSpy) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
+}
+
+func orderPageRouter(t *testing.T, service authport.Service, board legacyOrderBoardApplication) http.Handler {
+	t.Helper()
+	legacy, err := NewHandlerWithOutboundProductsMediaAndSurvey(service, &legacyCustomerStub{result: legacyCustomerResult()}, &legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, &legacyMediaStub{}, &legacySurveyStub{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy.orderBoard = board
+	authHandler, err := authhttp.NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	router, err := newAPIHandlerWithCallbackAndLegacy(slog.New(slog.NewJSONHandler(io.Discard, nil)), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), authHandler, authHandler, legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return router
 }
 
 func TestOrderABRefundUsesServerActorIdempotencyAndOrderWrite(t *testing.T) {
