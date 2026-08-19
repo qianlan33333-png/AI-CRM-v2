@@ -67,9 +67,19 @@ function mountedRoot(): { readonly root: Root; readonly container: TestElement }
 function buttons(root: TestNode): TestElement[] {
   return [root, ...root.childNodes.flatMap(buttons)].filter((node): node is TestElement => node instanceof TestElement && node.tagName === "BUTTON");
 }
+function elements(root: TestNode, tagName: string): TestElement[] {
+  return [root, ...root.childNodes.flatMap((node) => elements(node, tagName))].filter((node): node is TestElement => node instanceof TestElement && node.tagName === tagName);
+}
+function formFields(root: TestNode): TestElement[] {
+  return [root, ...root.childNodes.flatMap(formFields)].filter((node): node is TestElement => node instanceof TestElement && (node.tagName === "INPUT" || node.tagName === "TEXTAREA"));
+}
+function reactProps<T extends Record<string, unknown>>(element: TestElement): T {
+  const key = Object.keys(element).find((candidate) => candidate.startsWith("__reactProps"));
+  if (key === undefined) throw new Error("mounted element is missing React props");
+  return (element as unknown as Record<string, T>)[key];
+}
 function click(button: TestElement): void {
-  const key = Object.keys(button).find((candidate) => candidate.startsWith("__reactProps"));
-  const props = key === undefined ? undefined : (button as unknown as Record<string, { onClick?: () => void }>)[key];
+  const props = reactProps<{ onClick?: () => void }>(button);
   if (!props?.onClick) throw new Error("mounted button is missing its React click handler");
   props.onClick();
 }
@@ -87,6 +97,63 @@ describe("ProductsPage", () => {
     const html = renderToStaticMarkup(<ProductsPage role="admin" transport={{ list: async () => ({ status: 503, data: {} }), get: async () => ({ status: 503, data: {} }) }} />);
     expect(html).toContain("不展示图片链接");
     expect(html).toContain("不执行支付");
+  });
+  it("mounts product creation with one POST, the closed request, root refresh, failure retention, and one 401 callback", async () => {
+    const initial = deferred<{ status: number; data: unknown }>();
+    const createPending = deferred<{ status: number; data: unknown }>();
+    const refresh = deferred<{ status: number; data: unknown }>();
+    const create = vi.fn(() => createPending.promise);
+    const list = vi.fn(() => list.mock.calls.length === 1 ? initial.promise : refresh.promise);
+    const onUnauthenticated = vi.fn(); const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<ProductsPage role="admin" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} onUnauthenticated={onUnauthenticated} transport={{ list: async () => list(), get: async () => ({ status: 200, data: product }), create }} />); });
+    await act(async () => { initial.resolve({ status: 200, data: { items: [product] } }); await Promise.resolve(); });
+    const values = ["SKU-2", "本地商品", "本地描述", "1990", "cny", "3"];
+    expect(formFields(mounted.container)).toHaveLength(6);
+    for (const [index, value] of values.entries()) {
+      await act(async () => { reactProps<{ onChange?: (event: { currentTarget: { value: string } }) => void }>(formFields(mounted.container)[index]).onChange?.({ currentTarget: { value } }); });
+    }
+    const form = elements(mounted.container, "FORM")[0];
+    await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(form).onSubmit?.({ preventDefault() {} }); reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(form).onSubmit?.({ preventDefault() {} }); });
+    expect(create).toHaveBeenCalledTimes(1);
+    expect((create.mock.calls as unknown[][])[0]?.[0]).toEqual({ product_code: "SKU-2", name: "本地商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: [] });
+    expect((create.mock.calls as unknown[][])[0]?.[1]).toMatchObject({ credentials: "same-origin", headers: { "X-CSRF-Token": "c".repeat(43) } });
+    await act(async () => { createPending.resolve({ status: 201, data: { ...product, id: 2, product_code: "SKU-2", name: "本地商品", description: "本地描述", images: [] } }); await Promise.resolve(); });
+    expect(mounted.container.textContent).toContain("已创建本地产品：SKU-2");
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalledTimes(1);
+    await act(async () => { mounted.root.unmount(); refresh.resolve({ status: 401, data: {} }); await Promise.resolve(); });
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+  });
+  it("keeps the draft and locks a local create after an outcome-unknown response", async () => {
+    const list = vi.fn(async () => ({ status: 200, data: { items: [product] } }));
+    const create = vi.fn(async () => ({ status: 201, data: { ...product, id: 3, product_code: "SKU-3", name: "本地商品", description: "保留的草稿", images: [], created_at: "2026-02-30T00:00:00Z" } }));
+    const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<ProductsPage role="ops" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} transport={{ list: async () => list(), get: async () => ({ status: 200, data: product }), create }} />); await Promise.resolve(); });
+    const values = ["SKU-3", "本地商品", "保留的草稿", "1990", "CNY", "3"];
+    for (const [index, value] of values.entries()) {
+      await act(async () => { reactProps<{ onChange?: (event: { currentTarget: { value: string } }) => void }>(formFields(mounted.container)[index]).onChange?.({ currentTarget: { value } }); });
+    }
+    const submit = () => reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(elements(mounted.container, "FORM")[0]).onSubmit?.({ preventDefault() {} });
+    await act(async () => { submit(); await Promise.resolve(); });
+    expect(mounted.container.textContent).toContain("创建结果未知");
+    expect(reactProps<{ value?: string }>(formFields(mounted.container)[2]).value).toBe("保留的草稿");
+    expect(list).toHaveBeenCalledTimes(1);
+    await act(async () => { submit(); await Promise.resolve(); });
+    expect(create).toHaveBeenCalledTimes(1);
+    await act(async () => { mounted.root.unmount(); });
+  });
+  it("calls the unauthenticated callback once for an active product create", async () => {
+    const onUnauthenticated = vi.fn(); const create = vi.fn(async () => ({ status: 401, data: {} })); const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<ProductsPage role="admin" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} onUnauthenticated={onUnauthenticated} transport={{ list: async () => ({ status: 200, data: { items: [] } }), get: async () => ({ status: 200, data: product }), create }} />); await Promise.resolve(); });
+    const values = ["SKU-4", "本地商品", "", "1", "CNY", "0"];
+    for (const [index, value] of values.entries()) {
+      await act(async () => { reactProps<{ onChange?: (event: { currentTarget: { value: string } }) => void }>(formFields(mounted.container)[index]).onChange?.({ currentTarget: { value } }); });
+    }
+    await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(elements(mounted.container, "FORM")[0]).onSubmit?.({ preventDefault() {} }); await Promise.resolve(); });
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(onUnauthenticated).toHaveBeenCalledTimes(1);
+    await act(async () => { mounted.root.unmount(); });
   });
   it("mounts the detail state machine with exact IDs, singleflight, stale-response, failure-retention, and one 401 callback", async () => {
     const initial = deferred<{ status: number; data: unknown }>();
