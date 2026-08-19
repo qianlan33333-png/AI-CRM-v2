@@ -7,6 +7,8 @@ import React, {
 } from "react";
 import { readCSRFCookie } from "./auth";
 import {
+  archiveCoupon,
+  canArchiveCoupon,
   copyCoupon,
   couponClaimsPageSize,
   filterCoupons,
@@ -14,8 +16,10 @@ import {
   loadCouponClaims,
   loadCouponShare,
   loadCoupons,
+  newCouponArchiveIdempotencyKey,
   newCouponCopyIdempotencyKey,
   type CouponAvailabilityFilter,
+  type CouponArchiveResult,
   type CouponClaimItem,
   type CouponClaimsResult,
   type CouponCopyResult,
@@ -40,6 +44,12 @@ const shareMessages: Record<CouponsFailure, string> = {
   ...messages,
   not_found: "要生成链接的优惠券已不存在，请刷新后重试。",
   conflict: "只有已发布的本地优惠券可以生成分享链接。",
+};
+
+const archiveMessages: Record<CouponsFailure, string> = {
+  ...messages,
+  not_found: "要归档的优惠券已不存在，请刷新后重试。",
+  conflict: "该优惠券当前不能归档，请刷新后重试。",
 };
 
 export type CouponsViewState =
@@ -100,6 +110,15 @@ export interface CouponCopyInput {
   readonly transport: CouponsTransport;
 }
 
+export interface CouponArchiveInput {
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly confirm: (message: string) => boolean;
+  readonly idempotencySource?: { readonly randomUUID: () => string };
+  readonly item: CouponListItem;
+  readonly readCookie: () => string;
+  readonly transport: CouponsTransport;
+}
+
 export async function performCouponCopy({
   couponID,
   idempotencySource,
@@ -116,6 +135,32 @@ export async function performCouponCopy({
   if (!csrf) return { status: "forbidden" };
   if (!idempotencyKey) return { status: "unavailable" };
   return copyCoupon(transport, couponID, csrf, idempotencyKey);
+}
+
+export async function performCouponArchive({
+  confirm,
+  idempotencySource,
+  item,
+  readCookie,
+  transport,
+}: CouponArchiveInput): Promise<CouponArchiveResult> {
+  if (!canArchiveCoupon(item)) return { status: "invalid" };
+  try {
+    if (!confirm(`确认归档本地优惠券“${item.name}”吗？`))
+      return { status: "canceled" };
+  } catch {
+    return { status: "canceled" };
+  }
+  let csrf: string | undefined;
+  try {
+    csrf = readCSRFCookie(readCookie());
+  } catch {
+    csrf = undefined;
+  }
+  const idempotencyKey = newCouponArchiveIdempotencyKey(idempotencySource);
+  if (!csrf) return { status: "forbidden" };
+  if (!idempotencyKey) return { status: "unavailable" };
+  return archiveCoupon(transport, item, csrf, idempotencyKey);
 }
 
 // This lock is deliberately independent of React state: two synchronous click
@@ -135,12 +180,22 @@ export function startCouponCopy(
   })();
 }
 
+export function startCouponArchive(
+  lock: { current: boolean },
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  return startCouponCopy(lock, execute);
+}
+
 export function CouponsPage({
+  confirm = runtimeConfirm,
   role,
   transport = generatedCouponsTransport,
   readCookie = runtimeCookieHeader,
   onUnauthenticated,
 }: {
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly confirm?: (message: string) => boolean;
   readonly role: CouponsRole;
   readonly transport?: CouponsTransport;
   readonly readCookie?: () => string;
@@ -149,6 +204,7 @@ export function CouponsPage({
   const canAccess = role === "admin" || role === "ops";
   const [state, setState] = useState<CouponsViewState>({ kind: "loading" });
   const [busyID, setBusyID] = useState<number>();
+  const [busyAction, setBusyAction] = useState<"copy" | "archive">();
   const [notice, setNotice] = useState<string>();
   const [claimsState, setClaimsState] = useState<CouponClaimsViewState>({
     kind: "idle",
@@ -156,20 +212,20 @@ export function CouponsPage({
   const [shareState, setShareState] = useState<CouponShareViewState>({
     kind: "idle",
   });
-  const copyInFlight = useRef(false);
+  const couponMutationInFlight = useRef(false);
   const claimsRequest = useRef(0);
   const claimsInFlight = useRef<string>();
   const shareRequest = useRef(0);
   const shareInFlight = useRef<number>();
 
-  const reload = useCallback(async (): Promise<CouponListResult> => {
+  const reload = useCallback(async (preserveReady = false): Promise<CouponListResult> => {
     const result = await loadCoupons(transport);
     if (result.status === "unauthenticated") onUnauthenticated?.();
-    setState(
-      result.status === "loaded"
-        ? { kind: "ready", items: result.items }
-        : { kind: "error", failure: result.status },
-    );
+    if (result.status === "loaded") {
+      setState({ kind: "ready", items: result.items });
+    } else if (!preserveReady) {
+      setState({ kind: "error", failure: result.status });
+    }
     return result;
   }, [onUnauthenticated, transport]);
 
@@ -192,8 +248,9 @@ export function CouponsPage({
 
   const onCopy = useCallback(
     async (item: CouponListItem) => {
-      const operation = startCouponCopy(copyInFlight, async () => {
+      const operation = startCouponCopy(couponMutationInFlight, async () => {
         setBusyID(item.id);
+        setBusyAction("copy");
         try {
           const result = await performCouponCopy({
             couponID: item.id,
@@ -208,12 +265,47 @@ export function CouponsPage({
             setNotice(messages[result.status]);
           }
         } finally {
+          setBusyAction(undefined);
           setBusyID(undefined);
         }
       });
       if (operation) await operation;
     },
     [onUnauthenticated, readCookie, reload, transport],
+  );
+
+  const onArchive = useCallback(
+    async (item: CouponListItem) => {
+      const operation = startCouponArchive(couponMutationInFlight, async () => {
+        setBusyID(item.id);
+        setBusyAction("archive");
+        try {
+          const result = await performCouponArchive({
+            confirm,
+            item,
+            readCookie,
+            transport,
+          });
+          if (result.status === "archived") {
+            setNotice(`已归档本地优惠券“${result.item.name}”，正在刷新列表。`);
+            const refreshed = await reload(true);
+            if (refreshed.status !== "loaded") {
+              setNotice(
+                `已归档本地优惠券“${result.item.name}”，${messages[refreshed.status]}列表保留原数据。`,
+              );
+            }
+          } else if (result.status !== "canceled") {
+            if (result.status === "unauthenticated") onUnauthenticated?.();
+            setNotice(archiveMessages[result.status]);
+          }
+        } finally {
+          setBusyAction(undefined);
+          setBusyID(undefined);
+        }
+      });
+      if (operation) await operation;
+    },
+    [confirm, onUnauthenticated, readCookie, reload, transport],
   );
 
   const onClaims = useCallback(
@@ -293,10 +385,12 @@ export function CouponsPage({
 
   return (
     <CouponsView
+      busyAction={busyAction}
       busyID={busyID}
       claimsState={claimsState}
       notice={notice}
       onCopy={onCopy}
+      onArchive={onArchive}
       onClaims={onClaims}
       role={role}
       shareState={shareState}
@@ -308,10 +402,12 @@ export function CouponsPage({
 }
 
 export function CouponsView({
+  busyAction,
   busyID,
   claimsState,
   notice,
   onCopy,
+  onArchive,
   onClaims,
   onCopyShare,
   onShare,
@@ -319,11 +415,14 @@ export function CouponsView({
   shareState,
   state,
 }: {
+  readonly busyAction?: "copy" | "archive";
   readonly busyID?: number;
   readonly claimsState?: CouponClaimsViewState;
   readonly notice?: string;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onCopy: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onArchive?: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onClaims?: (item: CouponListItem, offset?: number) => void;
   readonly onCopyShare?: () => void;
@@ -434,8 +533,21 @@ export function CouponsView({
                     disabled={busyID !== undefined}
                     onClick={() => onCopy(item)}
                   >
-                    {busyID === item.id ? "正在复制…" : "复制"}
+                    {busyID === item.id && busyAction === "copy"
+                      ? "正在复制…"
+                      : "复制"}
                   </button>
+                  {canArchiveCoupon(item) ? (
+                    <button
+                      type="button"
+                      disabled={busyID !== undefined}
+                      onClick={() => onArchive?.(item)}
+                    >
+                      {busyID === item.id && busyAction === "archive"
+                        ? "正在归档…"
+                        : "归档"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     disabled={claimsState?.kind === "loading"}
@@ -606,6 +718,14 @@ function CouponClaimsPanel({
 
 function runtimeCookieHeader(): string {
   return typeof document === "undefined" ? "" : document.cookie;
+}
+
+function runtimeConfirm(message: string): boolean {
+  try {
+    return typeof window !== "undefined" && window.confirm(message);
+  } catch {
+    return false;
+  }
 }
 
 function runtimeClipboard(): Pick<Clipboard, "writeText"> | undefined {

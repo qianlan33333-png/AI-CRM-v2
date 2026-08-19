@@ -5,7 +5,9 @@ import {
   CouponsPage,
   CouponsView,
   copyCouponShareURL,
+  performCouponArchive,
   performCouponCopy,
+  startCouponArchive,
   startCouponCopy,
 } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
@@ -15,6 +17,7 @@ const item = {
   name: '<img src=x onerror="bad">',
   status: "published" as const,
   availability: "active" as const,
+  issuedCount: 0,
   createdAt: "2026-08-19T00:00:00Z",
   updatedAt: "2026-08-19T01:02:03Z",
 };
@@ -25,7 +28,35 @@ function transport(): CouponsTransport {
     copy: vi.fn(async () => ({ status: 503, data: {} })),
     claims: vi.fn(async () => ({ status: 503, data: {} })),
     share: vi.fn(async () => ({ status: 503, data: {} })),
+    archive: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as CouponsTransport;
+}
+
+function archivedCoupon() {
+  return {
+    id: 7,
+    name: item.name,
+    discount_amount_total: 100,
+    currency: "CNY",
+    status: "archived",
+    availability_status: "archived",
+    total_issue_limit: 20,
+    per_user_issue_limit: 1,
+    issued_count: 0,
+    claim_starts_at: "2026-08-19T00:00:00Z",
+    claim_ends_at: "2026-08-20T00:00:00Z",
+    validity_mode: "relative_days",
+    use_starts_at: null,
+    use_ends_at: null,
+    relative_validity_days: 30,
+    instructions: "",
+    target_refs: ["standard_product:7"],
+    created_by: 1,
+    updated_by: 1,
+    version: 1,
+    created_at: "2026-08-19T00:00:00Z",
+    updated_at: "2026-08-19T01:02:03Z",
+  };
 }
 
 describe("CouponsView", () => {
@@ -55,6 +86,7 @@ describe("CouponsView", () => {
       }
       expect(html).toContain("复制只会创建新的本地草稿");
       expect(html).toContain("分享链接");
+      expect(html).toContain(">归档<");
       expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
       expect(html).not.toContain("<img");
       expect(html).not.toMatch(/payment|provider|redeem|share/i);
@@ -71,6 +103,7 @@ describe("CouponsView", () => {
     expect(html).not.toContain(">复制<");
     expect(client.list).not.toHaveBeenCalled();
     expect(client.copy).not.toHaveBeenCalled();
+    expect(client.archive).not.toHaveBeenCalled();
     expect(client.claims).not.toHaveBeenCalled();
     expect(client.share).not.toHaveBeenCalled();
   });
@@ -90,7 +123,12 @@ describe("CouponsView", () => {
         }}
         state={{
           kind: "ready",
-          items: [item, { ...item, id: 8, status: "draft" }],
+          items: [
+            item,
+            { ...item, id: 8, status: "draft" },
+            { ...item, id: 9, status: "stopped" },
+            { ...item, id: 10, status: "archived" },
+          ],
         }}
       />,
     );
@@ -98,6 +136,7 @@ describe("CouponsView", () => {
     expect(html).toContain("/c/c-7");
     expect(html).toContain("无法访问剪贴板，请手工复制上方链接。");
     expect(html.match(/>分享链接</g)).toHaveLength(1);
+    expect(html.match(/>归档</g)).toHaveLength(3);
     expect(html).not.toMatch(/qrcode|payment|provider|redeem|send/i);
   });
 
@@ -208,6 +247,51 @@ describe("CouponsView", () => {
     );
   });
 
+  it("requires confirmation then archives once with the CSRF cookie and a unique key", async () => {
+    const client = transport();
+    vi.mocked(client.archive).mockResolvedValue({
+      status: 200,
+      data: { ok: true, coupon: archivedCoupon() },
+    } as never);
+    const confirm = vi.fn(() => true);
+
+    await expect(
+      performCouponArchive({
+        confirm,
+        idempotencySource: {
+          randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
+        },
+        item,
+        readCookie: () => `aicrm_csrf=${"x".repeat(43)}`,
+        transport: client,
+      }),
+    ).resolves.toMatchObject({ status: "archived", item: { id: 7 } });
+    expect(confirm).toHaveBeenCalledWith(
+      `确认归档本地优惠券“${item.name}”吗？`,
+    );
+    expect(client.archive).toHaveBeenCalledOnce();
+    expect(client.archive).toHaveBeenCalledWith(
+      item.id,
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": "x".repeat(43),
+          "Idempotency-Key": "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+        },
+      }),
+    );
+
+    await expect(
+      performCouponArchive({
+        confirm: () => false,
+        item,
+        readCookie: () => `aicrm_csrf=${"x".repeat(43)}`,
+        transport: client,
+      }),
+    ).resolves.toEqual({ status: "canceled" });
+    expect(client.archive).toHaveBeenCalledOnce();
+  });
+
   it("allows only one copy when two clicks arrive in the same render tick", async () => {
     const lock = { current: false };
     const client = transport();
@@ -230,6 +314,35 @@ describe("CouponsView", () => {
     expect(client.copy).toHaveBeenCalledOnce();
     expect(lock.current).toBe(true);
 
+    await first;
+    expect(lock.current).toBe(false);
+  });
+
+  it("allows only one confirmed archive when two clicks arrive in the same render tick", async () => {
+    const lock = { current: false };
+    const client = transport();
+    vi.mocked(client.archive).mockResolvedValue({
+      status: 200,
+      data: { ok: true, coupon: archivedCoupon() },
+    } as never);
+    const execute = vi.fn(async () => {
+      await performCouponArchive({
+        confirm: () => true,
+        idempotencySource: {
+          randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
+        },
+        item,
+        readCookie: () => `aicrm_csrf=${"x".repeat(43)}`,
+        transport: client,
+      });
+    });
+
+    const first = startCouponArchive(lock, execute);
+    const second = startCouponArchive(lock, execute);
+    expect(first).toBeInstanceOf(Promise);
+    expect(second).toBeUndefined();
+    expect(execute).toHaveBeenCalledOnce();
+    expect(client.archive).toHaveBeenCalledOnce();
     await first;
     expect(lock.current).toBe(false);
   });

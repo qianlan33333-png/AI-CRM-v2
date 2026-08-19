@@ -1,14 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  archiveCoupon,
   copyCoupon,
   filterCoupons,
   loadCouponClaims,
   loadCouponShare,
   loadCoupons,
+  newCouponArchiveIdempotencyKey,
   newCouponCopyIdempotencyKey,
   type CouponsTransport,
 } from "./coupons";
 import {
+  archiveLegacyCoupon,
   copyLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
@@ -70,6 +73,18 @@ function copiedEnvelope(extra: Record<string, unknown> = {}) {
   };
 }
 
+function archivedEnvelope(extra: Record<string, unknown> = {}) {
+  return {
+    ok: true,
+    coupon: {
+      ...sourceCoupon,
+      status: "archived",
+      availability_status: "archived",
+      ...extra,
+    },
+  };
+}
+
 const sourceClaim = {
   id: 9,
   claim_ref: "cp_1234567890abcdef",
@@ -94,12 +109,14 @@ function transport(
   copyData: unknown = copiedEnvelope(),
   claimsData: unknown = claimsEnvelope(),
   shareData: unknown = shareEnvelope(),
+  archiveData: unknown = archivedEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
     copy: vi.fn(async () => ({ status: 200, data: copyData })),
     claims: vi.fn(async () => ({ status: 200, data: claimsData })),
     share: vi.fn(async () => ({ status: 200, data: shareData })),
+    archive: vi.fn(async () => ({ status: 200, data: archiveData })),
   } as unknown as CouponsTransport;
 }
 
@@ -228,6 +245,7 @@ describe("coupon list and copy local boundary", () => {
         name: "满减券 副本",
         status: "draft",
         availability: "draft",
+        issuedCount: 0,
         createdAt: "2026-08-19T01:02:04Z",
         updatedAt: "2026-08-19T01:02:04Z",
       },
@@ -271,6 +289,107 @@ describe("coupon list and copy local boundary", () => {
     expect(
       newCouponCopyIdempotencyKey({ randomUUID: () => "bad" }),
     ).toBeUndefined();
+    expect(
+      newCouponArchiveIdempotencyKey({
+        randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
+      }),
+    ).toBe("coupon-archive:123e4567-e89b-42d3-a456-426614174000");
+  });
+
+  it("archives one eligible local coupon through the existing same-origin Orval endpoint", async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(archivedEnvelope()), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const item = {
+      id: 7,
+      name: "满减券",
+      status: "published" as const,
+      availability: "active" as const,
+      issuedCount: 0,
+      createdAt: "2026-08-19T00:00:00Z",
+      updatedAt: "2026-08-19T01:02:03Z",
+    };
+
+    await expect(
+      archiveCoupon(
+        {
+          list: vi.fn(),
+          copy: vi.fn(),
+          archive: archiveLegacyCoupon,
+        } as unknown as CouponsTransport,
+        item,
+        "x".repeat(43),
+        "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+      ),
+    ).resolves.toMatchObject({ status: "archived", item: { id: 7 } });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/coupons/7/archive",
+      expect.objectContaining({
+        credentials: "same-origin",
+        method: "POST",
+        headers: {
+          "X-CSRF-Token": "x".repeat(43),
+          "Idempotency-Key": "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+        },
+      }),
+    );
+  });
+
+  it("fails closed for ineligible source, bad CSRF or key, and any non-identical archive response", async () => {
+    const item = {
+      id: 7,
+      name: "满减券",
+      status: "published" as const,
+      availability: "active" as const,
+      issuedCount: 0,
+      createdAt: "2026-08-19T00:00:00Z",
+      updatedAt: "2026-08-19T01:02:03Z",
+    };
+    const client = transport();
+    await expect(
+      archiveCoupon(
+        client,
+        { ...item, status: "archived" as const },
+        "x".repeat(43),
+        "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+      ),
+    ).resolves.toEqual({ status: "invalid" });
+    await expect(
+      archiveCoupon(client, item, "invalid", "coupon-archive:123e4567-e89b-42d3-a456-426614174000"),
+    ).resolves.toEqual({ status: "invalid" });
+    await expect(
+      archiveCoupon(client, item, "x".repeat(43), "too-short"),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(client.archive).not.toHaveBeenCalled();
+
+    for (const body of [
+      { ...archivedEnvelope(), unknown: true },
+      archivedEnvelope({ id: 8 }),
+      archivedEnvelope({ status: "published", availability_status: "active" }),
+      archivedEnvelope({ issued_count: 1 }),
+    ]) {
+      await expect(
+        archiveCoupon(
+          transport(envelope(), copiedEnvelope(), claimsEnvelope(), shareEnvelope(), body),
+          item,
+          "x".repeat(43),
+          "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+        ),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    const unavailable = transport();
+    vi.mocked(unavailable.archive).mockRejectedValue(new Error("network"));
+    await expect(
+      archiveCoupon(
+        unavailable,
+        item,
+        "x".repeat(43),
+        "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+      ),
+    ).resolves.toEqual({ status: "unavailable" });
+    expect(unavailable.archive).toHaveBeenCalledOnce();
   });
 
   it("reads one same-origin, fixed-size opaque claim page without a write", async () => {
@@ -341,6 +460,7 @@ describe("coupon list and copy local boundary", () => {
       name: "满减券",
       status: "published" as const,
       availability: "active" as const,
+      issuedCount: 0,
       createdAt: "2026-08-19T00:00:00Z",
       updatedAt: "2026-08-19T01:02:03Z",
     };
@@ -371,6 +491,7 @@ describe("coupon list and copy local boundary", () => {
       name: "满减券",
       status: "published" as const,
       availability: "active" as const,
+      issuedCount: 0,
       createdAt: "2026-08-19T00:00:00Z",
       updatedAt: "2026-08-19T01:02:03Z",
     };
