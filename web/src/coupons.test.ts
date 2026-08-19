@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   archiveCoupon,
+  canDeleteCoupon,
+  canPublishCoupon,
+  canStopCoupon,
   couponUpsertRequest,
   copyCoupon,
   createCouponDraft,
+  deleteCoupon,
   filterCoupons,
   loadCouponClaims,
   loadCouponDetail,
@@ -12,6 +16,9 @@ import {
   loadCoupons,
   newCouponArchiveIdempotencyKey,
   newCouponCopyIdempotencyKey,
+  newCouponDeleteIdempotencyKey,
+  publishCoupon,
+  stopCoupon,
   updateCouponDraft,
   type CouponsTransport,
 } from "./coupons";
@@ -19,10 +26,13 @@ import {
   archiveLegacyCoupon,
   copyLegacyCoupon,
   createLegacyCoupon,
+  deleteLegacyCoupon,
   getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
   listLegacyCouponProductOptions,
+  publishLegacyCoupon,
+  stopLegacyCoupon,
   updateLegacyCoupon,
 } from "./api/generated/health";
 
@@ -89,6 +99,38 @@ function archivedEnvelope(extra: Record<string, unknown> = {}) {
       ...sourceCoupon,
       status: "archived",
       availability_status: "archived",
+      ...extra,
+    },
+  };
+}
+
+function transitionedEnvelope(
+  status: "published" | "stopped",
+  availability: "active" | "stopped",
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    ok: true,
+    coupon: {
+      ...sourceCoupon,
+      status,
+      availability_status: availability,
+      ...extra,
+    },
+    status,
+    idempotent_same_state: true,
+    fallback_used: false,
+    real_external_call_executed: false,
+  };
+}
+
+function deletedEnvelope(extra: Record<string, unknown> = {}) {
+  return {
+    ok: true,
+    coupon: {
+      ...sourceCoupon,
+      status: "deleted",
+      availability_status: "deleted",
       ...extra,
     },
   };
@@ -226,6 +268,9 @@ function transport(
   createData: unknown = createdEnvelope(),
   updateData: unknown = updatedEnvelope(),
   productOptionsData: unknown = productOptionsEnvelope(),
+  publishData: unknown = transitionedEnvelope("published", "active"),
+  stopData: unknown = transitionedEnvelope("stopped", "stopped"),
+  deleteData: unknown = deletedEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
@@ -240,6 +285,9 @@ function transport(
     update: vi.fn(async () => ({ status: 200, data: updateData })),
     share: vi.fn(async () => ({ status: 200, data: shareData })),
     archive: vi.fn(async () => ({ status: 200, data: archiveData })),
+    publish: vi.fn(async () => ({ status: 200, data: publishData })),
+    stop: vi.fn(async () => ({ status: 200, data: stopData })),
+    delete: vi.fn(async () => ({ status: 200, data: deleteData })),
   } as unknown as CouponsTransport;
 }
 
@@ -626,6 +674,11 @@ describe("coupon list and copy local boundary", () => {
         randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
       }),
     ).toBe("coupon-archive:123e4567-e89b-42d3-a456-426614174000");
+    expect(
+      newCouponDeleteIdempotencyKey({
+        randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
+      }),
+    ).toBe("coupon-delete:123e4567-e89b-42d3-a456-426614174000");
   });
 
   it("archives one eligible local coupon through the existing same-origin Orval endpoint", async () => {
@@ -738,6 +791,168 @@ describe("coupon list and copy local boundary", () => {
     expect(unavailable.archive).toHaveBeenCalledOnce();
   });
 
+  it("uses the closed local-only publish, stop, and delete endpoints with their actual CSRF and key contracts", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(transitionedEnvelope("published", "active")),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(transitionedEnvelope("stopped", "stopped")),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(deletedEnvelope()), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const draft = { ...draftDetail };
+    const published = {
+      ...draft,
+      status: "published" as const,
+      availability: "active" as const,
+    };
+
+    await expect(
+      publishCoupon(
+        { publish: publishLegacyCoupon } as CouponsTransport,
+        draft,
+        "x".repeat(43),
+      ),
+    ).resolves.toMatchObject({ status: "published", item: { id: 7 } });
+    await expect(
+      stopCoupon(
+        { stop: stopLegacyCoupon } as CouponsTransport,
+        published,
+        "x".repeat(43),
+      ),
+    ).resolves.toMatchObject({ status: "stopped", item: { id: 7 } });
+    await expect(
+      deleteCoupon(
+        { delete: deleteLegacyCoupon } as CouponsTransport,
+        draft,
+        "x".repeat(43),
+        "coupon-delete:123e4567-e89b-42d3-a456-426614174000",
+      ),
+    ).resolves.toMatchObject({ status: "deleted", item: { id: 7 } });
+
+    expect(fetch.mock.calls).toEqual([
+      [
+        "/api/admin/coupons/7/publish",
+        expect.objectContaining({
+          credentials: "same-origin",
+          method: "POST",
+          headers: { "X-CSRF-Token": "x".repeat(43) },
+        }),
+      ],
+      [
+        "/api/admin/coupons/7/stop",
+        expect.objectContaining({
+          credentials: "same-origin",
+          method: "POST",
+          headers: { "X-CSRF-Token": "x".repeat(43) },
+        }),
+      ],
+      [
+        "/api/admin/coupons/7",
+        expect.objectContaining({
+          credentials: "same-origin",
+          method: "DELETE",
+          headers: {
+            "X-CSRF-Token": "x".repeat(43),
+            "Idempotency-Key":
+              "coupon-delete:123e4567-e89b-42d3-a456-426614174000",
+          },
+        }),
+      ],
+    ]);
+  });
+
+  it("allows only eligible local states and fails closed for receipt drift or unknown outcomes", async () => {
+    const draft = { ...draftDetail };
+    const published = {
+      ...draft,
+      status: "published" as const,
+      availability: "active" as const,
+    };
+    expect(canPublishCoupon(draft)).toBe(true);
+    expect(canStopCoupon(published)).toBe(true);
+    expect(canDeleteCoupon(draft)).toBe(true);
+    expect(canDeleteCoupon({ ...draft, issuedCount: 1 })).toBe(false);
+
+    const client = transport(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { ...transitionedEnvelope("published", "active"), status: "stopped" },
+      transitionedEnvelope("stopped", "stopped", { issued_count: 1 }),
+      { ...deletedEnvelope(), coupon: { ...deletedEnvelope().coupon, id: 8 } },
+    );
+    await expect(publishCoupon(client, draft, "x".repeat(43))).resolves.toEqual(
+      {
+        status: "invalid",
+        outcomeUncertain: true,
+      },
+    );
+    await expect(
+      stopCoupon(client, published, "x".repeat(43)),
+    ).resolves.toEqual({
+      status: "invalid",
+      outcomeUncertain: true,
+    });
+    await expect(
+      deleteCoupon(
+        client,
+        draft,
+        "x".repeat(43),
+        "coupon-delete:123e4567-e89b-42d3-a456-426614174000",
+      ),
+    ).resolves.toEqual({ status: "invalid", outcomeUncertain: true });
+
+    const invalid = transport();
+    await expect(
+      publishCoupon(invalid, published, "x".repeat(43)),
+    ).resolves.toEqual({
+      status: "invalid",
+      outcomeUncertain: false,
+    });
+    await expect(stopCoupon(invalid, draft, "bad")).resolves.toEqual({
+      status: "invalid",
+      outcomeUncertain: false,
+    });
+    await expect(
+      deleteCoupon(
+        invalid,
+        { ...draft, issuedCount: 1 },
+        "x".repeat(43),
+        "bad",
+      ),
+    ).resolves.toEqual({
+      status: "invalid",
+      outcomeUncertain: false,
+    });
+    expect(invalid.publish).not.toHaveBeenCalled();
+    expect(invalid.stop).not.toHaveBeenCalled();
+    expect(invalid.delete).not.toHaveBeenCalled();
+
+    const unavailable = transport();
+    vi.mocked(unavailable.publish).mockRejectedValue(new Error("network"));
+    await expect(
+      publishCoupon(unavailable, draft, "x".repeat(43)),
+    ).resolves.toEqual({ status: "unavailable", outcomeUncertain: true });
+    expect(unavailable.publish).toHaveBeenCalledOnce();
+  });
+
   it("reads one same-origin, fixed-size opaque claim page without a write", async () => {
     const fetch = vi
       .fn()
@@ -795,13 +1010,11 @@ describe("coupon list and copy local boundary", () => {
   });
 
   it("reads exactly one same-origin standard-product page without a query or a write", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify(productOptionsEnvelope([], 0)), {
-          status: 200,
-        }),
-      );
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(productOptionsEnvelope([], 0)), {
+        status: 200,
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
 
     await expect(
@@ -829,10 +1042,10 @@ describe("coupon list and copy local boundary", () => {
       productOptionsEnvelope([
         { ...sourceProductOption, price_minor: 9007199254740992 },
       ]),
-      productOptionsEnvelope([
-        sourceProductOption,
-        { ...sourceProductOption, name: "重复商品" },
-      ], 2),
+      productOptionsEnvelope(
+        [sourceProductOption, { ...sourceProductOption, name: "重复商品" }],
+        2,
+      ),
       productOptionsEnvelope([sourceProductOption], 2),
       productOptionsEnvelope([], 1),
     ]) {
@@ -854,7 +1067,9 @@ describe("coupon list and copy local boundary", () => {
       ).resolves.toEqual({ status: "invalid" });
     }
     const unavailable = transport();
-    vi.mocked(unavailable.productOptions).mockRejectedValue(new Error("network"));
+    vi.mocked(unavailable.productOptions).mockRejectedValue(
+      new Error("network"),
+    );
     await expect(loadCouponProductOptions(unavailable, 0)).resolves.toEqual({
       status: "unavailable",
     });

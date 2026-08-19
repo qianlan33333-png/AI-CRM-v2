@@ -1,4 +1,6 @@
-import React from "react";
+/* eslint-disable no-unused-vars -- the minimal DOM shim exposes React DOM structural fields. */
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -9,14 +11,19 @@ import {
   couponProductOptionsResultState,
   copyCouponShareURL,
   isCurrentCouponProductOptionsGeneration,
+  lifecycleReloadMatches,
   nextCouponProductOptionsOffset,
   performCouponArchive,
   performCouponCopy,
+  performCouponDelete,
+  performCouponPublish,
   performCouponProductOptionsLoad,
+  performCouponStop,
   previousCouponProductOptionsOffset,
   startCouponArchive,
   startCouponCopy,
   startCouponDetail,
+  startCouponLifecycle,
   startCouponProductOptions,
   submitCouponDraftForm,
 } from "./coupons-ui";
@@ -43,6 +50,9 @@ function transport(): CouponsTransport {
     update: vi.fn(async () => ({ status: 503, data: {} })),
     share: vi.fn(async () => ({ status: 503, data: {} })),
     archive: vi.fn(async () => ({ status: 503, data: {} })),
+    publish: vi.fn(async () => ({ status: 503, data: {} })),
+    stop: vi.fn(async () => ({ status: 503, data: {} })),
+    delete: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as CouponsTransport;
 }
 
@@ -73,6 +83,229 @@ function archivedCoupon() {
   };
 }
 
+function lifecycleCoupon(
+  status: "draft" | "published" | "stopped" | "deleted",
+  availability: "draft" | "active" | "stopped" | "deleted",
+  id = 7,
+) {
+  return {
+    ...archivedCoupon(),
+    id,
+    status,
+    availability_status: availability,
+  };
+}
+
+function transitionReceipt(status: "published" | "stopped", id = 7) {
+  return {
+    ok: true,
+    coupon: lifecycleCoupon(
+      status,
+      status === "published" ? "active" : "stopped",
+      id,
+    ),
+    status,
+    idempotent_same_state: true,
+    fallback_used: false,
+    real_external_call_executed: false,
+  };
+}
+
+class TestNode {
+  parentNode: TestNode | null = null;
+  childNodes: TestNode[] = [];
+  ownerDocument!: TestDocument;
+  constructor(
+    readonly nodeType: number,
+    readonly nodeName: string,
+  ) {}
+  appendChild(node: TestNode): TestNode {
+    node.parentNode = this;
+    this.childNodes.push(node);
+    return node;
+  }
+  insertBefore(node: TestNode, before: TestNode | null): TestNode {
+    if (before === null) return this.appendChild(node);
+    node.parentNode = this;
+    this.childNodes.splice(this.childNodes.indexOf(before), 0, node);
+    return node;
+  }
+  removeChild(node: TestNode): TestNode {
+    this.childNodes.splice(this.childNodes.indexOf(node), 1);
+    node.parentNode = null;
+    return node;
+  }
+  get firstChild(): TestNode | null {
+    return this.childNodes[0] ?? null;
+  }
+  get nextSibling(): TestNode | null {
+    if (!this.parentNode) return null;
+    return (
+      this.parentNode.childNodes[
+        this.parentNode.childNodes.indexOf(this) + 1
+      ] ?? null
+    );
+  }
+  get textContent(): string {
+    return this.childNodes.map((node) => node.textContent).join("");
+  }
+  set textContent(value: string) {
+    this.childNodes =
+      value === "" ? [] : [new TestText(value, this.ownerDocument)];
+  }
+  addEventListener(): void {}
+  removeEventListener(): void {}
+  contains(node: TestNode | null): boolean {
+    return (
+      node === this || this.childNodes.some((child) => child.contains(node))
+    );
+  }
+}
+class TestText extends TestNode {
+  constructor(
+    private data: string,
+    ownerDocument: TestDocument,
+  ) {
+    super(3, "#text");
+    this.ownerDocument = ownerDocument;
+  }
+  override get textContent(): string {
+    return this.data;
+  }
+  override set textContent(value: string) {
+    this.data = value;
+  }
+}
+class TestElement extends TestNode {
+  readonly tagName: string;
+  readonly namespaceURI = "http://www.w3.org/1999/xhtml";
+  readonly style: Record<string, string> = {};
+  private readonly attributes = new Map<string, string>();
+  constructor(tagName: string, ownerDocument: TestDocument) {
+    super(1, tagName.toUpperCase());
+    this.tagName = tagName.toUpperCase();
+    this.ownerDocument = ownerDocument;
+  }
+  get options(): TestElement[] {
+    return this.childNodes.filter(
+      (node): node is TestElement =>
+        node instanceof TestElement && node.tagName === "OPTION",
+    );
+  }
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value);
+  }
+  removeAttribute(name: string): void {
+    this.attributes.delete(name);
+  }
+  getAttribute(name: string): string | null {
+    return this.attributes.get(name) ?? null;
+  }
+  hasAttribute(name: string): boolean {
+    return this.attributes.has(name);
+  }
+}
+class TestDocument extends TestNode {
+  readonly nodeType = 9;
+  readonly documentElement: TestElement;
+  readonly body: TestElement;
+  readonly defaultView: Record<string, unknown>;
+  activeElement: TestElement | null;
+  constructor() {
+    super(9, "#document");
+    this.ownerDocument = this;
+    this.documentElement = this.createElement("html");
+    this.body = this.createElement("body");
+    this.documentElement.appendChild(this.body);
+    this.appendChild(this.documentElement);
+    this.activeElement = this.body;
+    this.defaultView = { document: this, navigator: { userAgent: "node" } };
+  }
+  createElement(tagName: string): TestElement {
+    return new TestElement(tagName, this);
+  }
+  createElementNS(_namespace: string, tagName: string): TestElement {
+    return this.createElement(tagName);
+  }
+  createTextNode(value: string): TestText {
+    return new TestText(value, this);
+  }
+  createComment(value: string): TestText {
+    return new TestText(value, this);
+  }
+}
+function mountedRoot(): {
+  readonly root: Root;
+  readonly container: TestElement;
+} {
+  const document = new TestDocument();
+  const window = document.defaultView as Record<string, unknown>;
+  Object.assign(window, {
+    Node: TestNode,
+    Element: TestElement,
+    HTMLElement: TestElement,
+    HTMLIFrameElement: TestElement,
+    getSelection: () => null,
+  });
+  Object.assign(globalThis, {
+    document,
+    window,
+    Node: TestNode,
+    Element: TestElement,
+    HTMLElement: TestElement,
+    HTMLIFrameElement: TestElement,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  });
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  return { root: createRoot(container as unknown as Element), container };
+}
+function buttons(root: TestNode): TestElement[] {
+  return [root, ...root.childNodes.flatMap(buttons)].filter(
+    (node): node is TestElement =>
+      node instanceof TestElement && node.tagName === "BUTTON",
+  );
+}
+function reactProps<T extends Record<string, unknown>>(
+  element: TestElement,
+): T {
+  const key = Object.keys(element).find((candidate) =>
+    candidate.startsWith("__reactProps"),
+  );
+  if (key === undefined)
+    throw new Error("mounted element is missing React props");
+  return (element as unknown as Record<string, T>)[key];
+}
+function click(button: TestElement): void {
+  const props = reactProps<{ onClick?: () => void }>(button);
+  if (!props?.onClick)
+    throw new Error("mounted button is missing React click handler");
+  props.onClick();
+}
+function deferred<T>(): {
+  readonly promise: Promise<T>;
+  resolve(value: T): void;
+} {
+  let resolve!: (value: T) => void;
+  return {
+    promise: new Promise<T>((done) => {
+      resolve = done;
+    }),
+    resolve,
+  };
+}
+
+function listEnvelope(items: readonly Record<string, unknown>[]) {
+  return {
+    ok: true,
+    coupons: items,
+    items,
+    total: items.length,
+    limit: 200,
+    offset: 0,
+  };
+}
+
 describe("CouponsView", () => {
   it.each(["admin", "ops"] as const)(
     "renders the local list and copy action for %s only",
@@ -99,8 +332,10 @@ describe("CouponsView", () => {
         expect(html).toContain(`value="${status}"`);
       }
       expect(html).toContain("复制只会创建新的本地草稿");
+      expect(html).toContain("发布、停止和删除仅改变本地优惠券规则状态");
       expect(html).toContain("分享链接");
       expect(html).toContain(">归档<");
+      expect(html).toContain("停止本地规则");
       expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
       expect(html).not.toContain("<img");
       expect(html).not.toMatch(/payment|provider|redeem|share/i);
@@ -124,6 +359,99 @@ describe("CouponsView", () => {
     expect(client.create).not.toHaveBeenCalled();
     expect(client.update).not.toHaveBeenCalled();
     expect(client.share).not.toHaveBeenCalled();
+    expect(client.publish).not.toHaveBeenCalled();
+    expect(client.stop).not.toHaveBeenCalled();
+    expect(client.delete).not.toHaveBeenCalled();
+  });
+
+  it("renders only the eligible local lifecycle controls without claiming payment or provider effects", () => {
+    const draftHTML = renderToStaticMarkup(
+      <CouponsView
+        onCopy={vi.fn()}
+        onDelete={vi.fn()}
+        onPublish={vi.fn()}
+        role="admin"
+        state={{
+          kind: "ready",
+          items: [{ ...item, status: "draft", availability: "draft" }],
+        }}
+      />,
+    );
+    expect(draftHTML).toContain("发布本地规则");
+    expect(draftHTML).toContain("删除未领取草稿");
+    expect(draftHTML).not.toContain("停止本地规则");
+    expect(draftHTML).not.toMatch(/payment|provider|redeem/i);
+
+    const stoppedHTML = renderToStaticMarkup(
+      <CouponsView
+        onCopy={vi.fn()}
+        onStop={vi.fn()}
+        role="ops"
+        state={{
+          kind: "ready",
+          items: [{ ...item, status: "stopped", availability: "stopped" }],
+        }}
+      />,
+    );
+    expect(stoppedHTML).not.toContain("发布本地规则");
+    expect(stoppedHTML).not.toContain("停止本地规则");
+    expect(stoppedHTML).not.toContain("删除未领取草稿");
+  });
+
+  it("mounts the row lifecycle state machine with the clicked ID, same-tick singleflight, and a local readback", async () => {
+    const initial = deferred<{ status: number; data: unknown }>();
+    const publish = deferred<{ status: number; data: unknown }>();
+    const first = lifecycleCoupon("draft", "draft", 7);
+    const second = lifecycleCoupon("draft", "draft", 8);
+    const list = vi.fn(() =>
+      list.mock.calls.length === 1
+        ? initial.promise
+        : Promise.resolve({
+            status: 200,
+            data: listEnvelope([
+              first,
+              lifecycleCoupon("published", "active", 8),
+            ]),
+          }),
+    );
+    const publishRule = vi.fn((_id: number) => publish.promise);
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(
+        <CouponsPage
+          readCookie={() => `aicrm_csrf=${"x".repeat(43)}`}
+          role="admin"
+          transport={{
+            ...transport(),
+            list: async () => list() as never,
+            publish: async (id) => publishRule(id) as never,
+          }}
+        />,
+      );
+    });
+    await act(async () => {
+      initial.resolve({ status: 200, data: listEnvelope([first, second]) });
+      await Promise.resolve();
+    });
+    const publishButtons = buttons(mounted.container).filter(
+      (button) => button.textContent === "发布本地规则",
+    );
+    expect(publishButtons).toHaveLength(2);
+    await act(async () => {
+      click(publishButtons[1]);
+      click(publishButtons[1]);
+    });
+    expect(publishRule).toHaveBeenCalledTimes(1);
+    expect(publishRule).toHaveBeenCalledWith(8);
+    await act(async () => {
+      publish.resolve({ status: 200, data: transitionReceipt("published", 8) });
+      await Promise.resolve();
+    });
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(mounted.container.textContent).toContain("已发布");
+    await act(async () => {
+      mounted.root.unmount();
+    });
   });
 
   it("renders a separate local product projection without changing the coupon draft", () => {
@@ -159,9 +487,7 @@ describe("CouponsView", () => {
     expect(html).toContain("&lt;img src=x onerror=&quot;bad&quot;&gt;");
     expect(html).not.toContain("<img");
     expect(html).not.toContain('name="targetRefs"');
-    expect(html).toContain(
-      '<button type="button">下一页</button>',
-    );
+    expect(html).toContain('<button type="button">下一页</button>');
   });
 
   it("single-flights product reads, discards stale generations, retains a verified page, and reports 401 once", async () => {
@@ -534,6 +860,83 @@ describe("CouponsView", () => {
     expect(client.archive).toHaveBeenCalledOnce();
   });
 
+  it("executes only the eligible local publish, stop, or confirmed draft delete with exact request guards", async () => {
+    const client = transport();
+    const draft = {
+      ...item,
+      status: "draft" as const,
+      availability: "draft" as const,
+    };
+    vi.mocked(client.publish).mockResolvedValue({
+      status: 200,
+      data: transitionReceipt("published"),
+    } as never);
+    vi.mocked(client.stop).mockResolvedValue({
+      status: 200,
+      data: transitionReceipt("stopped"),
+    } as never);
+    vi.mocked(client.delete).mockResolvedValue({
+      status: 200,
+      data: {
+        ok: true,
+        coupon: lifecycleCoupon("deleted", "deleted"),
+      },
+    } as never);
+    const readCookie = () => `aicrm_csrf=${"x".repeat(43)}`;
+
+    await expect(
+      performCouponPublish({ item: draft, readCookie, transport: client }),
+    ).resolves.toMatchObject({ status: "published", item: { id: 7 } });
+    await expect(
+      performCouponStop({ item, readCookie, transport: client }),
+    ).resolves.toMatchObject({ status: "stopped", item: { id: 7 } });
+    await expect(
+      performCouponDelete({
+        confirm: () => true,
+        idempotencySource: {
+          randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
+        },
+        item: draft,
+        readCookie,
+        transport: client,
+      }),
+    ).resolves.toMatchObject({ status: "deleted", item: { id: 7 } });
+    expect(client.publish).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": "x".repeat(43) },
+      }),
+    );
+    expect(client.stop).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": "x".repeat(43) },
+      }),
+    );
+    expect(client.delete).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": "x".repeat(43),
+          "Idempotency-Key":
+            "coupon-delete:123e4567-e89b-42d3-a456-426614174000",
+        },
+      }),
+    );
+    await expect(
+      performCouponDelete({
+        confirm: () => false,
+        item: draft,
+        readCookie,
+        transport: client,
+      }),
+    ).resolves.toEqual({ status: "canceled" });
+    expect(client.delete).toHaveBeenCalledOnce();
+  });
+
   it("allows only one copy when two clicks arrive in the same render tick", async () => {
     const lock = { current: false };
     const client = transport();
@@ -587,6 +990,64 @@ describe("CouponsView", () => {
     expect(client.archive).toHaveBeenCalledOnce();
     await first;
     expect(lock.current).toBe(false);
+  });
+
+  it("single-flights all local lifecycle writes with the same ref lock", async () => {
+    const lock = { current: false };
+    let release: (() => void) | undefined;
+    const first = startCouponLifecycle(lock, async () => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    });
+    const duplicate = startCouponLifecycle(lock, async () => {
+      throw new Error("must not execute");
+    });
+    expect(first).toBeInstanceOf(Promise);
+    expect(duplicate).toBeUndefined();
+    release?.();
+    await first;
+    expect(lock.current).toBe(false);
+  });
+
+  it("requires the post-mutation local list readback to bind the returned rule or confirm deletion", () => {
+    const published = {
+      status: "published" as const,
+      item: {
+        ...item,
+        status: "published" as const,
+        availability: "active" as const,
+      },
+    };
+    const deleted = {
+      status: "deleted" as const,
+      item: {
+        ...item,
+        status: "draft" as const,
+        availability: "draft" as const,
+      },
+    };
+    expect(
+      lifecycleReloadMatches(published, {
+        status: "loaded",
+        items: [published.item],
+      }),
+    ).toBe(true);
+    expect(
+      lifecycleReloadMatches(published, {
+        status: "loaded",
+        items: [{ ...published.item, issuedCount: 1 }],
+      }),
+    ).toBe(false);
+    expect(
+      lifecycleReloadMatches(deleted, { status: "loaded", items: [] }),
+    ).toBe(true);
+    expect(
+      lifecycleReloadMatches(deleted, {
+        status: "loaded",
+        items: [deleted.item],
+      }),
+    ).toBe(false);
   });
 
   it("allows one in-flight detail request per coupon and releases each local lock", async () => {
