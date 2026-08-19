@@ -1736,6 +1736,23 @@ export interface LegacyCouponMutationResponse {
   [key: string]: unknown;
 }
 
+export interface LegacyCouponCreateResponse {
+  ok: boolean;
+  coupon: Coupon;
+  /** @minimum 1 */
+  coupon_id: number;
+  fallback_used: boolean;
+  create_replay_safe: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyCouponUpdateResponse {
+  ok: boolean;
+  coupon: Coupon;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface LegacyCouponBoardMutationResponse {
   ok: boolean;
   coupon: Coupon;
@@ -13540,7 +13557,7 @@ export const listLegacyCoupons = async (
  * @summary Create a draft coupon rule; this legacy route is not replay-safe
  */
 export type createLegacyCouponResponse200 = {
-  data: LegacyCouponMutationResponse;
+  data: LegacyCouponCreateResponse;
   status: 200;
 };
 
@@ -13675,7 +13692,7 @@ export const getLegacyCoupon = async (
 };
 
 export type updateLegacyCouponResponse200 = {
-  data: LegacyCouponMutationResponse;
+  data: LegacyCouponUpdateResponse;
   status: 200;
 };
 

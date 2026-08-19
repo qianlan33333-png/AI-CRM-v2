@@ -250,6 +250,7 @@ type legacyCouponApplication interface {
 	Get(context.Context, couponport.ID) (couponport.Coupon, error)
 	Create(context.Context, couponport.UpsertCommand) (couponport.Coupon, error)
 	Update(context.Context, couponport.UpsertCommand) (couponport.Coupon, error)
+	UpdateDraft(context.Context, couponport.UpsertCommand) (couponport.Coupon, error)
 	Publish(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
 	Stop(context.Context, couponport.ID, int64, string) (couponport.Coupon, error)
 }

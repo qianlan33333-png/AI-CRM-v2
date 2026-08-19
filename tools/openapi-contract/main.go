@@ -1493,7 +1493,7 @@ func validateCouponContract(doc *openapi3.T) error {
 		listPage == nil || listPage.Get == nil || newPage == nil || newPage.Get == nil || dataPage == nil || dataPage.Get == nil || editPage == nil || editPage.Get == nil || options == nil || options.Get == nil || archive == nil || archive.Post == nil || claims == nil || claims.Get == nil || copyPage == nil || copyPage.Post == nil || share == nil || share.Get == nil || h5Available == nil || h5Available.Get == nil || h5Coupon == nil || h5Coupon.Get == nil || h5Claim == nil || h5Claim.Post == nil || sidebar == nil || sidebar.Get == nil || publicPage == nil || publicPage.Get == nil {
 		return errors.New("P4 Coupon A+B compatibility operations are incomplete")
 	}
-	if !operationResponseUsesLocalSchema(collection.Get, "LegacyCouponListResponse") || !operationRequestUsesLocalSchema(collection.Post, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(collection.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(detail.Get, "LegacyCouponDetailResponse") || !operationRequestUsesLocalSchema(detail.Put, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(detail.Put, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(publish.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(stop.Post, "LegacyCouponMutationResponse") ||
+	if !operationResponseUsesLocalSchema(collection.Get, "LegacyCouponListResponse") || !operationRequestUsesLocalSchema(collection.Post, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(collection.Post, "LegacyCouponCreateResponse") || !operationResponseUsesLocalSchema(detail.Get, "LegacyCouponDetailResponse") || !operationRequestUsesLocalSchema(detail.Put, "CouponUpsertRequest") || !operationResponseUsesLocalSchema(detail.Put, "LegacyCouponUpdateResponse") || !operationResponseUsesLocalSchema(publish.Post, "LegacyCouponMutationResponse") || !operationResponseUsesLocalSchema(stop.Post, "LegacyCouponMutationResponse") ||
 		!operationResponseUsesLocalSchema(detail.Delete, "LegacyCouponBoardMutationResponse") || !operationResponseUsesLocalSchema(options.Get, "LegacyCouponProductOptionsResponse") || !operationResponseUsesLocalSchema(archive.Post, "LegacyCouponBoardMutationResponse") || !operationResponseUsesLocalSchema(claims.Get, "LegacyCouponClaimListResponse") || !operationResponseUsesLocalSchema(copyPage.Post, "LegacyCouponBoardMutationResponse") || !operationResponseUsesLocalSchema(share.Get, "LegacyCouponShareResponse") || !operationResponseUsesLocalSchema(h5Available.Get, "H5CouponAvailableResponse") || !operationResponseUsesLocalSchema(h5Coupon.Get, "H5CouponDetailResponse") || !operationResponseUsesLocalSchema(h5Claim.Post, "H5CouponClaimResponse") || !operationResponseUsesLocalSchema(sidebar.Get, "SidebarCouponListResponse") {
 		return errors.New("P4 Coupon A+B request or response schema drifted")
 	}
@@ -1540,6 +1540,21 @@ func validateCouponContract(doc *openapi3.T) error {
 	perUser, instructions := request.Value.Properties["per_user_issue_limit"], request.Value.Properties["instructions"]
 	if perUser == nil || perUser.Value == nil || fmt.Sprint(perUser.Value.Default) != "1" || instructions == nil || instructions.Value == nil || fmt.Sprint(instructions.Value.Default) != "" {
 		return errors.New("CouponUpsertRequest defaults drifted")
+	}
+	for name, required := range map[string][]string{
+		"LegacyCouponCreateResponse": {"ok", "coupon", "coupon_id", "fallback_used", "create_replay_safe", "real_external_call_executed"},
+		"LegacyCouponUpdateResponse": {"ok", "coupon", "fallback_used", "real_external_call_executed"},
+	} {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil || schema.Value.AdditionalProperties.Has == nil || *schema.Value.AdditionalProperties.Has || len(schema.Value.Properties) != len(required) {
+			return fmt.Errorf("%s must be closed with exact fields", name)
+		}
+		actual := append([]string(nil), schema.Value.Required...)
+		sort.Strings(actual)
+		sort.Strings(required)
+		if !reflect.DeepEqual(actual, required) {
+			return fmt.Errorf("%s required=%v", name, actual)
+		}
 	}
 	for _, name := range []string{"LegacyCouponProductOptionsResponse", "LegacyCouponClaimListResponse", "LegacyCouponShareResponse", "H5CouponAvailableResponse", "H5CouponDetailResponse", "H5CouponClaimResponse", "SidebarCouponListResponse"} {
 		schema := doc.Components.Schemas[name]

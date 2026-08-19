@@ -4,12 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 import {
   CouponsPage,
   CouponsView,
+  canStartCouponWrite,
   copyCouponShareURL,
   performCouponArchive,
   performCouponCopy,
   startCouponArchive,
   startCouponCopy,
   startCouponDetail,
+  submitCouponDraftForm,
 } from "./coupons-ui";
 import type { CouponsTransport } from "./coupons";
 
@@ -29,6 +31,8 @@ function transport(): CouponsTransport {
     copy: vi.fn(async () => ({ status: 503, data: {} })),
     claims: vi.fn(async () => ({ status: 503, data: {} })),
     detail: vi.fn(async () => ({ status: 503, data: {} })),
+    create: vi.fn(async () => ({ status: 503, data: {} })),
+    update: vi.fn(async () => ({ status: 503, data: {} })),
     share: vi.fn(async () => ({ status: 503, data: {} })),
     archive: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as CouponsTransport;
@@ -108,7 +112,83 @@ describe("CouponsView", () => {
     expect(client.archive).not.toHaveBeenCalled();
     expect(client.claims).not.toHaveBeenCalled();
     expect(client.detail).not.toHaveBeenCalled();
+    expect(client.create).not.toHaveBeenCalled();
+    expect(client.update).not.toHaveBeenCalled();
     expect(client.share).not.toHaveBeenCalled();
+  });
+
+  it("locks every coupon write entry point while a draft outcome is uncertain", () => {
+    const submit = vi.fn();
+    const html = renderToStaticMarkup(
+      <CouponsView
+        editor={{ kind: "new" }}
+        mutationUncertain
+        onArchive={vi.fn()}
+        onCopy={vi.fn()}
+        onCreate={vi.fn()}
+        onEdit={vi.fn()}
+        onSubmitDraft={submit}
+        role="admin"
+        state={{
+          kind: "ready",
+          items: [{ ...item, status: "draft", availability: "draft" }],
+        }}
+      />,
+    );
+    expect(canStartCouponWrite(true)).toBe(false);
+    expect(canStartCouponWrite(false)).toBe(true);
+    expect(html).toContain("系统不会自动重试。请刷新列表后人工确认。");
+    expect(html).toContain("草稿表单已只读；刷新本地列表成功前不能保存。");
+    expect(html).toMatch(/<input[^>]*disabled=""/);
+    expect(html).toMatch(/<select[^>]*disabled=""/);
+    expect(html).toMatch(/<textarea[^>]*disabled=""/);
+    expect(html).toContain('<button type="submit" disabled="">');
+    expect(html.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(14);
+    submitCouponDraftForm(
+      true,
+      {
+        name: "本地草稿",
+        discountAmountTotal: "100",
+        totalIssueLimit: "20",
+        perUserIssueLimit: "1",
+        claimStartsAt: "2026-08-19T00:00:00Z",
+        claimEndsAt: "2026-08-20T00:00:00Z",
+        validityMode: "relative_days",
+        useStartsAt: "",
+        useEndsAt: "",
+        relativeValidityDays: "30",
+        instructions: "",
+        targetRefs: "standard_product:7",
+      },
+      submit,
+    );
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("renders the complete local-draft form without product lookup, publish, claim, payment, or provider controls", () => {
+    const html = renderToStaticMarkup(
+      <CouponsView
+        editor={{ kind: "new" }}
+        onCopy={vi.fn()}
+        onCreate={vi.fn()}
+        onSubmitDraft={vi.fn()}
+        role="ops"
+        state={{
+          kind: "ready",
+          items: [{ ...item, status: "draft", availability: "draft" }],
+        }}
+      />,
+    );
+    expect(html).toContain('aria-label="新建本地优惠券草稿"');
+    expect(html).toContain("优惠金额（分）");
+    expect(html).toContain("领取开始时间（RFC3339）");
+    expect(html).toContain("相对有效天数");
+    expect(html).toContain("canonical standard_product:ID");
+    expect(html).toContain(
+      "只保存本地草稿；不会发布、停止、领取、支付或调用第三方服务。",
+    );
+    expect(html).toContain(">编辑本地草稿<");
+    expect(html).not.toMatch(/product-options|Idempotency-Key|provider|href=/i);
   });
 
   it("renders only a validated local rule detail, preserves it while a same-card refresh is loading, and has no external action", () => {
@@ -140,7 +220,9 @@ describe("CouponsView", () => {
     expect(html).toContain("正在读取规则…");
     expect(html).toContain('aria-label="优惠券本地规则详情"');
     expect(html).toContain("正在读取本地优惠券规则。");
-    expect(html).toContain("仅显示已保存的本地规则，不代表可领取、可用或已发生外部效果。");
+    expect(html).toContain(
+      "仅显示已保存的本地规则，不代表可领取、可用或已发生外部效果。",
+    );
     expect(html).toContain("standard_product:7");
     expect(html).not.toMatch(/provider|payment|redeem|send|href=/i);
   });
@@ -313,7 +395,8 @@ describe("CouponsView", () => {
         credentials: "same-origin",
         headers: {
           "X-CSRF-Token": "x".repeat(43),
-          "Idempotency-Key": "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+          "Idempotency-Key":
+            "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
         },
       }),
     );
@@ -403,7 +486,9 @@ describe("CouponsView", () => {
     releaseFirst?.();
     await first;
     expect(inFlight).toEqual(new Set());
-    expect(startCouponDetail(inFlight, 0, async () => undefined)).toBeUndefined();
+    expect(
+      startCouponDetail(inFlight, 0, async () => undefined),
+    ).toBeUndefined();
   });
 
   it("releases the single-flight lock when the copy flow throws", async () => {

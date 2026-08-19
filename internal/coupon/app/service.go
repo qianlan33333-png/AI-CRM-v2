@@ -141,19 +141,29 @@ func (s *Service) Get(ctx context.Context, id couponport.ID) (couponport.Coupon,
 
 func (s *Service) Create(ctx context.Context, input couponport.UpsertCommand) (couponport.Coupon, error) {
 	input.ID = 0
-	return s.mutate(ctx, "create", input, "")
+	return s.mutate(ctx, "create", input, "", false)
 }
 func (s *Service) Update(ctx context.Context, input couponport.UpsertCommand) (couponport.Coupon, error) {
 	if input.ID < 1 {
 		return couponport.Coupon{}, ErrNotFound
 	}
-	return s.mutate(ctx, "update", input, "")
+	return s.mutate(ctx, "update", input, "", false)
+}
+
+// UpdateDraft is the browser-admin mutation boundary. It deliberately keeps
+// the broader internal Update semantics (including claimed-rule limits) out
+// of the legacy PUT route: the locked row must still be an unissued draft.
+func (s *Service) UpdateDraft(ctx context.Context, input couponport.UpsertCommand) (couponport.Coupon, error) {
+	if input.ID < 1 {
+		return couponport.Coupon{}, ErrNotFound
+	}
+	return s.mutate(ctx, "update", input, "", true)
 }
 func (s *Service) Publish(ctx context.Context, id couponport.ID, actor int64, key string) (couponport.Coupon, error) {
-	return s.mutate(ctx, "publish", couponport.UpsertCommand{Coupon: couponport.Coupon{ID: id}, Actor: actor, IdempotencyKey: key}, "published")
+	return s.mutate(ctx, "publish", couponport.UpsertCommand{Coupon: couponport.Coupon{ID: id}, Actor: actor, IdempotencyKey: key}, "published", false)
 }
 func (s *Service) Stop(ctx context.Context, id couponport.ID, actor int64, key string) (couponport.Coupon, error) {
-	return s.mutate(ctx, "stop", couponport.UpsertCommand{Coupon: couponport.Coupon{ID: id}, Actor: actor, IdempotencyKey: key}, "stopped")
+	return s.mutate(ctx, "stop", couponport.UpsertCommand{Coupon: couponport.Coupon{ID: id}, Actor: actor, IdempotencyKey: key}, "stopped", false)
 }
 
 func (s *Service) Archive(ctx context.Context, id couponport.ID, actor int64, key string) (couponport.Coupon, error) {
@@ -490,7 +500,7 @@ func (s *Service) appendBoardEvent(ctx context.Context, operation string, item c
 	return e
 }
 
-func (s *Service) mutate(ctx context.Context, operation string, input couponport.UpsertCommand, desired string) (couponport.Coupon, error) {
+func (s *Service) mutate(ctx context.Context, operation string, input couponport.UpsertCommand, desired string, draftOnly bool) (couponport.Coupon, error) {
 	minimumKeyLength := 1
 	if operation == "create" || operation == "update" {
 		minimumKeyLength = 16
@@ -541,11 +551,17 @@ func (s *Service) mutate(ctx context.Context, operation string, input couponport
 		case "update":
 			var old couponport.Coupon
 			old, e = s.store.Lock(tx, command.ID)
-			if e == nil && old.Status != "draft" && old.IssuedCount == 0 {
-				e = ErrConflict
-			}
-			if e == nil && old.IssuedCount > 0 && !claimedUpdateAllowed(old, command.Coupon) {
-				e = ErrRulesFrozen
+			if e == nil && draftOnly {
+				if old.Status != "draft" || old.IssuedCount != 0 {
+					e = ErrConflict
+				}
+			} else if e == nil {
+				if old.Status != "draft" && old.IssuedCount == 0 {
+					e = ErrConflict
+				}
+				if e == nil && old.IssuedCount > 0 && !claimedUpdateAllowed(old, command.Coupon) {
+					e = ErrRulesFrozen
+				}
 			}
 			if e == nil {
 				result, e = s.store.Update(tx, command, productIDs, now)

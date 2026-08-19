@@ -9,6 +9,7 @@ import { readCSRFCookie } from "./auth";
 import {
   archiveCoupon,
   canArchiveCoupon,
+  createCouponDraft,
   copyCoupon,
   couponClaimsPageSize,
   filterCoupons,
@@ -24,6 +25,8 @@ import {
   type CouponClaimItem,
   type CouponClaimsResult,
   type CouponCopyResult,
+  type CouponDraftInput,
+  type CouponDraftMutationResult,
   type CouponDetailResult,
   type CouponListItem,
   type CouponRuleDetail,
@@ -32,6 +35,7 @@ import {
   type CouponsFailure,
   type CouponsRole,
   type CouponsTransport,
+  updateCouponDraft,
 } from "./coupons";
 
 const messages: Record<CouponsFailure, string> = {
@@ -130,6 +134,11 @@ export type CouponDetailViewState =
       readonly previous?: CouponRuleDetail;
     };
 
+export type CouponEditorState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "new" }
+  | { readonly kind: "edit"; readonly detail: CouponRuleDetail };
+
 export interface CouponCopyInput {
   readonly couponID: number;
   readonly idempotencySource?: { readonly randomUUID: () => string };
@@ -214,6 +223,10 @@ export function startCouponArchive(
   return startCouponCopy(lock, execute);
 }
 
+export function canStartCouponWrite(mutationUncertain: boolean): boolean {
+  return !mutationUncertain;
+}
+
 export function startCouponDetail(
   inFlight: Set<number>,
   couponID: number,
@@ -248,7 +261,9 @@ export function CouponsPage({
   const canAccess = role === "admin" || role === "ops";
   const [state, setState] = useState<CouponsViewState>({ kind: "loading" });
   const [busyID, setBusyID] = useState<number>();
-  const [busyAction, setBusyAction] = useState<"copy" | "archive">();
+  const [busyAction, setBusyAction] = useState<
+    "copy" | "archive" | "create" | "update"
+  >();
   const [notice, setNotice] = useState<string>();
   const [claimsState, setClaimsState] = useState<CouponClaimsViewState>({
     kind: "idle",
@@ -259,6 +274,8 @@ export function CouponsPage({
   const [detailState, setDetailState] = useState<CouponDetailViewState>({
     kind: "idle",
   });
+  const [editor, setEditor] = useState<CouponEditorState>({ kind: "idle" });
+  const [mutationUncertain, setMutationUncertain] = useState(false);
   const couponMutationInFlight = useRef(false);
   const claimsRequest = useRef(0);
   const claimsInFlight = useRef<string>();
@@ -266,17 +283,21 @@ export function CouponsPage({
   const shareInFlight = useRef<number>();
   const detailRequest = useRef(0);
   const detailInFlight = useRef(new Set<number>());
+  const editRequest = useRef(0);
 
-  const reload = useCallback(async (preserveReady = false): Promise<CouponListResult> => {
-    const result = await loadCoupons(transport);
-    if (result.status === "unauthenticated") onUnauthenticated?.();
-    if (result.status === "loaded") {
-      setState({ kind: "ready", items: result.items });
-    } else if (!preserveReady) {
-      setState({ kind: "error", failure: result.status });
-    }
-    return result;
-  }, [onUnauthenticated, transport]);
+  const reload = useCallback(
+    async (preserveReady = false): Promise<CouponListResult> => {
+      const result = await loadCoupons(transport);
+      if (result.status === "unauthenticated") onUnauthenticated?.();
+      if (result.status === "loaded") {
+        setState({ kind: "ready", items: result.items });
+      } else if (!preserveReady) {
+        setState({ kind: "error", failure: result.status });
+      }
+      return result;
+    },
+    [onUnauthenticated, transport],
+  );
 
   useEffect(() => {
     if (!canAccess) return undefined;
@@ -297,6 +318,10 @@ export function CouponsPage({
 
   const onCopy = useCallback(
     async (item: CouponListItem) => {
+      if (!canStartCouponWrite(mutationUncertain)) {
+        setNotice("上一笔本地草稿请求结果不确定，请先刷新列表后再继续。");
+        return;
+      }
       const operation = startCouponCopy(couponMutationInFlight, async () => {
         setBusyID(item.id);
         setBusyAction("copy");
@@ -320,11 +345,15 @@ export function CouponsPage({
       });
       if (operation) await operation;
     },
-    [onUnauthenticated, readCookie, reload, transport],
+    [mutationUncertain, onUnauthenticated, readCookie, reload, transport],
   );
 
   const onArchive = useCallback(
     async (item: CouponListItem) => {
+      if (!canStartCouponWrite(mutationUncertain)) {
+        setNotice("上一笔本地草稿请求结果不确定，请先刷新列表后再继续。");
+        return;
+      }
       const operation = startCouponArchive(couponMutationInFlight, async () => {
         setBusyID(item.id);
         setBusyAction("archive");
@@ -354,7 +383,14 @@ export function CouponsPage({
       });
       if (operation) await operation;
     },
-    [confirm, onUnauthenticated, readCookie, reload, transport],
+    [
+      confirm,
+      mutationUncertain,
+      onUnauthenticated,
+      readCookie,
+      reload,
+      transport,
+    ],
   );
 
   const onClaims = useCallback(
@@ -428,28 +464,157 @@ export function CouponsPage({
 
   const onDetail = useCallback(
     async (item: CouponListItem) => {
-      const operation = startCouponDetail(detailInFlight.current, item.id, async () => {
-        const request = ++detailRequest.current;
-        const previous =
-          detailState.kind === "ready" && detailState.coupon.id === item.id
-            ? detailState.detail
-            : detailState.kind === "error" && detailState.coupon.id === item.id
-              ? detailState.previous
-              : undefined;
-        setDetailState({ kind: "loading", coupon: item, previous });
-        const result: CouponDetailResult = await loadCouponDetail(transport, item.id);
-        if (request !== detailRequest.current) return;
-        if (result.status === "unauthenticated") onUnauthenticated?.();
-        setDetailState(
-          result.status === "loaded"
-            ? { kind: "ready", coupon: item, detail: result.detail }
-            : { kind: "error", coupon: item, failure: result.status, previous },
-        );
-      });
+      const operation = startCouponDetail(
+        detailInFlight.current,
+        item.id,
+        async () => {
+          const request = ++detailRequest.current;
+          const previous =
+            detailState.kind === "ready" && detailState.coupon.id === item.id
+              ? detailState.detail
+              : detailState.kind === "error" &&
+                  detailState.coupon.id === item.id
+                ? detailState.previous
+                : undefined;
+          setDetailState({ kind: "loading", coupon: item, previous });
+          const result: CouponDetailResult = await loadCouponDetail(
+            transport,
+            item.id,
+          );
+          if (request !== detailRequest.current) return;
+          if (result.status === "unauthenticated") onUnauthenticated?.();
+          setDetailState(
+            result.status === "loaded"
+              ? { kind: "ready", coupon: item, detail: result.detail }
+              : {
+                  kind: "error",
+                  coupon: item,
+                  failure: result.status,
+                  previous,
+                },
+          );
+        },
+      );
       if (operation) await operation;
     },
     [detailState, onUnauthenticated, transport],
   );
+
+  const onCreate = useCallback(() => {
+    if (!canStartCouponWrite(mutationUncertain)) {
+      setNotice("上一笔本地草稿请求结果不确定，请先刷新列表后再继续。");
+      return;
+    }
+    setEditor({ kind: "new" });
+  }, [mutationUncertain]);
+
+  const onCancelEditor = useCallback(() => setEditor({ kind: "idle" }), []);
+
+  const onEdit = useCallback(
+    async (item: CouponListItem) => {
+      if (mutationUncertain || item.status !== "draft") return;
+      const operation = startCouponDetail(
+        detailInFlight.current,
+        item.id,
+        async () => {
+          const request = ++editRequest.current;
+          const result = await loadCouponDetail(transport, item.id);
+          if (request !== editRequest.current) return;
+          if (result.status === "unauthenticated") onUnauthenticated?.();
+          if (result.status === "loaded" && result.detail.status === "draft") {
+            setEditor({ kind: "edit", detail: result.detail });
+            return;
+          }
+          setNotice(
+            result.status === "loaded"
+              ? "该规则已不再是本地草稿，请刷新列表后重试。"
+              : detailMessages[result.status],
+          );
+        },
+      );
+      if (operation) await operation;
+    },
+    [mutationUncertain, onUnauthenticated, transport],
+  );
+
+  const onSubmitDraft = useCallback(
+    async (input: CouponDraftInput) => {
+      if (editor.kind === "idle") return;
+      if (!canStartCouponWrite(mutationUncertain)) {
+        setNotice("上一笔本地草稿请求结果不确定，请先刷新列表后再继续。");
+        return;
+      }
+      const target = editor;
+      const operation = startCouponCopy(couponMutationInFlight, async () => {
+        setBusyAction(target.kind === "new" ? "create" : "update");
+        setBusyID(target.kind === "edit" ? target.detail.id : 0);
+        let csrf: string | undefined;
+        try {
+          csrf = readCSRFCookie(readCookie());
+        } catch {
+          csrf = undefined;
+        }
+        let result: CouponDraftMutationResult;
+        if (!csrf) {
+          result = { status: "forbidden", outcomeUncertain: false };
+        } else if (target.kind === "new") {
+          result = await createCouponDraft(transport, input, csrf);
+        } else {
+          result = await updateCouponDraft(
+            transport,
+            target.detail,
+            input,
+            csrf,
+          );
+        }
+        try {
+          if (result.status === "created" || result.status === "updated") {
+            const verb = result.status === "created" ? "创建" : "更新";
+            setEditor({ kind: "idle" });
+            setNotice(`本地草稿“${result.item.name}”已${verb}，正在刷新列表。`);
+            const refreshed = await reload(true);
+            if (refreshed.status !== "loaded") {
+              setNotice(
+                `本地草稿“${result.item.name}”已${verb}，${messages[refreshed.status]}列表保留原数据。`,
+              );
+            }
+          } else {
+            if (result.status === "unauthenticated") onUnauthenticated?.();
+            if (result.outcomeUncertain) {
+              setMutationUncertain(true);
+              setNotice(
+                "本地草稿请求结果不确定，未自动重试。请刷新列表后人工确认是否已创建或更新。",
+              );
+            } else {
+              setNotice(messages[result.status]);
+            }
+          }
+        } finally {
+          setBusyAction(undefined);
+          setBusyID(undefined);
+        }
+      });
+      if (operation) await operation;
+    },
+    [
+      editor,
+      mutationUncertain,
+      onUnauthenticated,
+      readCookie,
+      reload,
+      transport,
+    ],
+  );
+
+  const onRefreshAfterUncertain = useCallback(async () => {
+    if (!mutationUncertain) return;
+    const refreshed = await reload(true);
+    if (refreshed.status === "loaded") {
+      setMutationUncertain(false);
+      setEditor({ kind: "idle" });
+      setNotice("本地列表已刷新，请人工确认后再继续操作。");
+    }
+  }, [mutationUncertain, reload]);
 
   const onCopyShare = useCallback(async () => {
     if (shareState.kind !== "ready") return;
@@ -463,11 +628,18 @@ export function CouponsPage({
       busyID={busyID}
       claimsState={claimsState}
       detailState={detailState}
+      editor={editor}
+      mutationUncertain={mutationUncertain}
       notice={notice}
       onCopy={onCopy}
       onArchive={onArchive}
       onClaims={onClaims}
       onDetail={onDetail}
+      onCreate={onCreate}
+      onCancelEditor={onCancelEditor}
+      onEdit={onEdit}
+      onSubmitDraft={onSubmitDraft}
+      onRefreshAfterUncertain={onRefreshAfterUncertain}
       role={role}
       shareState={shareState}
       onShare={onShare}
@@ -482,21 +654,30 @@ export function CouponsView({
   busyID,
   claimsState,
   detailState,
+  editor,
+  mutationUncertain,
   notice,
   onCopy,
   onArchive,
   onClaims,
+  onCancelEditor,
+  onCreate,
   onDetail,
+  onEdit,
+  onRefreshAfterUncertain,
   onCopyShare,
   onShare,
+  onSubmitDraft,
   role,
   shareState,
   state,
 }: {
-  readonly busyAction?: "copy" | "archive";
+  readonly busyAction?: "copy" | "archive" | "create" | "update";
   readonly busyID?: number;
   readonly claimsState?: CouponClaimsViewState;
   readonly detailState?: CouponDetailViewState;
+  readonly editor?: CouponEditorState;
+  readonly mutationUncertain?: boolean;
   readonly notice?: string;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onCopy: (item: CouponListItem) => void;
@@ -504,11 +685,18 @@ export function CouponsView({
   readonly onArchive?: (item: CouponListItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onClaims?: (item: CouponListItem, offset?: number) => void;
+  readonly onCancelEditor?: () => void;
+  readonly onCreate?: () => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onDetail?: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onEdit?: (item: CouponListItem) => void;
+  readonly onRefreshAfterUncertain?: () => void;
   readonly onCopyShare?: () => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
   readonly onShare?: (item: CouponListItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onSubmitDraft?: (input: CouponDraftInput) => void;
   readonly role: CouponsRole;
   readonly shareState?: CouponShareViewState;
   readonly state: CouponsViewState;
@@ -552,6 +740,37 @@ export function CouponsView({
       <h1 id="app-title">优惠券列表</h1>
       <p>复制只会创建新的本地草稿，不会领取、核销或调用支付及第三方服务。</p>
       {notice ? <p role="status">{notice}</p> : null}
+      <p>
+        <button
+          type="button"
+          disabled={busyAction !== undefined || mutationUncertain}
+          onClick={onCreate}
+        >
+          新建本地草稿
+        </button>
+      </p>
+      {mutationUncertain ? (
+        <p role="alert">
+          本地草稿请求结果不确定，系统不会自动重试。请刷新列表后人工确认。
+          <button type="button" onClick={onRefreshAfterUncertain}>
+            刷新本地列表
+          </button>
+        </p>
+      ) : null}
+      {editor && editor.kind !== "idle" ? (
+        <CouponDraftForm
+          key={
+            editor.kind === "new"
+              ? "new"
+              : `edit-${editor.detail.id}-${editor.detail.version}`
+          }
+          busy={busyAction === "create" || busyAction === "update"}
+          detail={editor.kind === "edit" ? editor.detail : undefined}
+          locked={mutationUncertain === true}
+          onCancel={onCancelEditor}
+          onSubmit={onSubmitDraft}
+        />
+      ) : null}
       <p>
         <label>
           搜索优惠券名称
@@ -611,7 +830,7 @@ export function CouponsView({
                 <td>
                   <button
                     type="button"
-                    disabled={busyID !== undefined}
+                    disabled={busyID !== undefined || mutationUncertain}
                     onClick={() => onCopy(item)}
                   >
                     {busyID === item.id && busyAction === "copy"
@@ -621,7 +840,7 @@ export function CouponsView({
                   {canArchiveCoupon(item) ? (
                     <button
                       type="button"
-                      disabled={busyID !== undefined}
+                      disabled={busyID !== undefined || mutationUncertain}
                       onClick={() => onArchive?.(item)}
                     >
                       {busyID === item.id && busyAction === "archive"
@@ -639,8 +858,9 @@ export function CouponsView({
                   <button
                     type="button"
                     disabled={
-                      detailState?.kind === "loading" &&
-                      detailState.coupon.id === item.id
+                      mutationUncertain ||
+                      (detailState?.kind === "loading" &&
+                        detailState.coupon.id === item.id)
                     }
                     onClick={() => onDetail?.(item)}
                   >
@@ -649,6 +869,15 @@ export function CouponsView({
                       ? "正在读取规则…"
                       : "查看规则详情"}
                   </button>
+                  {item.status === "draft" ? (
+                    <button
+                      type="button"
+                      disabled={busyAction !== undefined || mutationUncertain}
+                      onClick={() => onEdit?.(item)}
+                    >
+                      编辑本地草稿
+                    </button>
+                  ) : null}
                   {item.status === "published" ? (
                     <button
                       type="button"
@@ -727,6 +956,244 @@ function CouponSharePanel({
   );
 }
 
+function draftInput(detail?: CouponRuleDetail): CouponDraftInput {
+  return {
+    name: detail?.name ?? "",
+    discountAmountTotal: detail ? String(detail.discountAmountTotal) : "",
+    totalIssueLimit: detail ? String(detail.totalIssueLimit) : "",
+    perUserIssueLimit: detail ? String(detail.perUserIssueLimit) : "1",
+    claimStartsAt: detail?.claimStartsAt ?? "",
+    claimEndsAt: detail?.claimEndsAt ?? "",
+    validityMode: detail?.validityMode ?? "relative_days",
+    useStartsAt: detail?.useStartsAt ?? "",
+    useEndsAt: detail?.useEndsAt ?? "",
+    relativeValidityDays: detail?.relativeValidityDays
+      ? String(detail.relativeValidityDays)
+      : "",
+    instructions: detail?.instructions ?? "",
+    targetRefs: detail?.targetRefs.join("\n") ?? "",
+  };
+}
+
+function CouponDraftForm({
+  busy,
+  detail,
+  locked,
+  onCancel,
+  onSubmit,
+}: {
+  readonly busy: boolean;
+  readonly detail?: CouponRuleDetail;
+  readonly locked: boolean;
+  readonly onCancel?: () => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameters are required by TS function-type syntax.
+  readonly onSubmit?: (input: CouponDraftInput) => void;
+}): React.ReactElement {
+  const [input, setInput] = useState<CouponDraftInput>(() =>
+    draftInput(detail),
+  );
+  const update = <K extends keyof CouponDraftInput>(
+    key: K,
+    value: CouponDraftInput[K],
+  ) => {
+    if (locked) return;
+    setInput((current) => ({ ...current, [key]: value }));
+  };
+  return (
+    <form
+      aria-label={detail ? "编辑本地优惠券草稿" : "新建本地优惠券草稿"}
+      onSubmit={(event) => {
+        event.preventDefault();
+        submitCouponDraftForm(locked, input, onSubmit);
+      }}
+    >
+      <h2>{detail ? `编辑本地草稿：${detail.name}` : "新建本地草稿"}</h2>
+      <p>只保存本地草稿；不会发布、停止、领取、支付或调用第三方服务。</p>
+      {locked ? (
+        <p role="status">
+          请求结果不确定，草稿表单已只读；刷新本地列表成功前不能保存。
+        </p>
+      ) : null}
+      <p>
+        <label>
+          名称
+          <input
+            required
+            maxLength={45}
+            disabled={busy || locked}
+            value={input.name}
+            onChange={(event) => update("name", event.currentTarget.value)}
+          />
+        </label>
+      </p>
+      <p>
+        <label>
+          优惠金额（分）
+          <input
+            required
+            inputMode="numeric"
+            disabled={busy || locked}
+            value={input.discountAmountTotal}
+            onChange={(event) =>
+              update("discountAmountTotal", event.currentTarget.value)
+            }
+          />
+        </label>
+        <label>
+          总发放上限
+          <input
+            required
+            inputMode="numeric"
+            disabled={busy || locked}
+            value={input.totalIssueLimit}
+            onChange={(event) =>
+              update("totalIssueLimit", event.currentTarget.value)
+            }
+          />
+        </label>
+        <label>
+          每人上限
+          <input
+            required
+            inputMode="numeric"
+            disabled={busy || locked}
+            value={input.perUserIssueLimit}
+            onChange={(event) =>
+              update("perUserIssueLimit", event.currentTarget.value)
+            }
+          />
+        </label>
+      </p>
+      <p>
+        <label>
+          领取开始时间（RFC3339）
+          <input
+            required
+            disabled={busy || locked}
+            value={input.claimStartsAt}
+            onChange={(event) =>
+              update("claimStartsAt", event.currentTarget.value)
+            }
+          />
+        </label>
+        <label>
+          领取结束时间（RFC3339）
+          <input
+            required
+            disabled={busy || locked}
+            value={input.claimEndsAt}
+            onChange={(event) =>
+              update("claimEndsAt", event.currentTarget.value)
+            }
+          />
+        </label>
+      </p>
+      <p>
+        <label>
+          有效期规则
+          <select
+            disabled={busy || locked}
+            value={input.validityMode}
+            onChange={(event) =>
+              update(
+                "validityMode",
+                event.currentTarget.value as CouponDraftInput["validityMode"],
+              )
+            }
+          >
+            <option value="relative_days">relative_days</option>
+            <option value="fixed_range">fixed_range</option>
+          </select>
+        </label>
+      </p>
+      {input.validityMode === "fixed_range" ? (
+        <p>
+          <label>
+            使用开始时间（RFC3339）
+            <input
+              required
+              disabled={busy || locked}
+              value={input.useStartsAt}
+              onChange={(event) =>
+                update("useStartsAt", event.currentTarget.value)
+              }
+            />
+          </label>
+          <label>
+            使用结束时间（RFC3339）
+            <input
+              required
+              disabled={busy || locked}
+              value={input.useEndsAt}
+              onChange={(event) =>
+                update("useEndsAt", event.currentTarget.value)
+              }
+            />
+          </label>
+        </p>
+      ) : (
+        <p>
+          <label>
+            相对有效天数
+            <input
+              required
+              inputMode="numeric"
+              disabled={busy || locked}
+              value={input.relativeValidityDays}
+              onChange={(event) =>
+                update("relativeValidityDays", event.currentTarget.value)
+              }
+            />
+          </label>
+        </p>
+      )}
+      <p>
+        <label>
+          使用说明
+          <textarea
+            maxLength={200}
+            disabled={busy || locked}
+            value={input.instructions}
+            onChange={(event) =>
+              update("instructions", event.currentTarget.value)
+            }
+          />
+        </label>
+      </p>
+      <p>
+        <label>
+          适用商品引用（每行一个 canonical standard_product:ID）
+          <textarea
+            required
+            disabled={busy || locked}
+            value={input.targetRefs}
+            onChange={(event) =>
+              update("targetRefs", event.currentTarget.value)
+            }
+          />
+        </label>
+      </p>
+      <p>
+        <button type="submit" disabled={busy || locked}>
+          {busy ? "正在保存本地草稿…" : "保存本地草稿"}
+        </button>
+        <button type="button" disabled={busy} onClick={onCancel}>
+          取消
+        </button>
+      </p>
+    </form>
+  );
+}
+
+export function submitCouponDraftForm(
+  locked: boolean,
+  input: CouponDraftInput,
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by the public helper type.
+  onSubmit?: (input: CouponDraftInput) => void,
+): void {
+  if (!locked) onSubmit?.(input);
+}
+
 function CouponDetailPanel({
   detailState,
 }: {
@@ -736,9 +1203,7 @@ function CouponDetailPanel({
   >;
 }): React.ReactElement {
   const detail =
-    detailState.kind === "ready"
-      ? detailState.detail
-      : detailState.previous;
+    detailState.kind === "ready" ? detailState.detail : detailState.previous;
   const loading = detailState.kind === "loading";
   const error = detailState.kind === "error" ? detailState.failure : undefined;
   return (
@@ -750,13 +1215,17 @@ function CouponDetailPanel({
       {detail ? (
         <dl>
           <dt>优惠金额（分）</dt>
-          <dd>{detail.discountAmountTotal} {detail.currency}</dd>
+          <dd>
+            {detail.discountAmountTotal} {detail.currency}
+          </dd>
           <dt>总发放上限</dt>
           <dd>{detail.totalIssueLimit}</dd>
           <dt>每人上限</dt>
           <dd>{detail.perUserIssueLimit}</dd>
           <dt>领取时间</dt>
-          <dd>{detail.claimStartsAt} 至 {detail.claimEndsAt}</dd>
+          <dd>
+            {detail.claimStartsAt} 至 {detail.claimEndsAt}
+          </dd>
           <dt>有效期规则</dt>
           <dd>
             {detail.validityMode === "fixed_range"
