@@ -5,6 +5,296 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type LegacyInternalEventDeliveryConsumer =
+  (typeof LegacyInternalEventDeliveryConsumer)[keyof typeof LegacyInternalEventDeliveryConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDeliveryConsumer = {
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type LegacyInternalEventDeliveryStatus =
+  (typeof LegacyInternalEventDeliveryStatus)[keyof typeof LegacyInternalEventDeliveryStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDeliveryStatus = {
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export interface LegacyInternalEventDelivery {
+  consumer: LegacyInternalEventDeliveryConsumer;
+  status: LegacyInternalEventDeliveryStatus;
+  /** @minimum 0 */
+  attempt_count: number;
+  /** @nullable */
+  completed_at: string | null;
+}
+
+export interface LegacyInternalEventItem {
+  /** @minimum 1 */
+  event_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  occurred_at: string;
+  dispatched: boolean;
+  deliveries: LegacyInternalEventDelivery[];
+}
+
+export type LegacyInternalEventListResponseRegistryId =
+  (typeof LegacyInternalEventListResponseRegistryId)[keyof typeof LegacyInternalEventListResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventListResponseRegistryId = {
+  "v2-internal-eventsv1": "v2-internal-events.v1",
+} as const;
+
+export type LegacyInternalEventListResponseSourceStatus =
+  (typeof LegacyInternalEventListResponseSourceStatus)[keyof typeof LegacyInternalEventListResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventListResponseSourceStatus = {
+  local_read_model: "local_read_model",
+} as const;
+
+export type LegacyInternalEventListResponseExternalDelivery =
+  (typeof LegacyInternalEventListResponseExternalDelivery)[keyof typeof LegacyInternalEventListResponseExternalDelivery];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventListResponseExternalDelivery = {
+  unknown: "unknown",
+} as const;
+
+export type LegacyInternalEventListResponseRouteOwner =
+  (typeof LegacyInternalEventListResponseRouteOwner)[keyof typeof LegacyInternalEventListResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventListResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyInternalEventListResponse {
+  ok: boolean;
+  items: LegacyInternalEventItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  offset: number;
+  observed_at: string;
+  registry_id: LegacyInternalEventListResponseRegistryId;
+  source_status: LegacyInternalEventListResponseSourceStatus;
+  delivery_observation_available: boolean;
+  external_delivery: LegacyInternalEventListResponseExternalDelivery;
+  route_owner: LegacyInternalEventListResponseRouteOwner;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyInternalEventFiltersConsumer =
+  (typeof LegacyInternalEventFiltersConsumer)[keyof typeof LegacyInternalEventFiltersConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventFiltersConsumer = {
+  "": "",
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type LegacyInternalEventFiltersStatus =
+  (typeof LegacyInternalEventFiltersStatus)[keyof typeof LegacyInternalEventFiltersStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventFiltersStatus = {
+  "": "",
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export interface LegacyInternalEventFilters {
+  /** @maxLength 200 */
+  event_type: string;
+  consumer: LegacyInternalEventFiltersConsumer;
+  status: LegacyInternalEventFiltersStatus;
+}
+
+export interface LegacyInternalEventDeliveryCounts {
+  /** @minimum 0 */
+  pending: number;
+  /** @minimum 0 */
+  processing: number;
+  /** @minimum 0 */
+  completed: number;
+  /** @minimum 0 */
+  final_failed: number;
+  /** @minimum 0 */
+  outcome_unknown: number;
+}
+
+export type LegacyInternalEventConsumerBindingConsumer =
+  (typeof LegacyInternalEventConsumerBindingConsumer)[keyof typeof LegacyInternalEventConsumerBindingConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventConsumerBindingConsumer = {
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type LegacyInternalEventConsumerBindingEventTypesItem =
+  (typeof LegacyInternalEventConsumerBindingEventTypesItem)[keyof typeof LegacyInternalEventConsumerBindingEventTypesItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventConsumerBindingEventTypesItem = {
+  customertag_applied: "customer.tag_applied",
+  operation_cyclefact_recorded: "operation_cycle.fact_recorded",
+} as const;
+
+export interface LegacyInternalEventConsumerBinding {
+  consumer: LegacyInternalEventConsumerBindingConsumer;
+  /** @minItems 1 */
+  event_types: LegacyInternalEventConsumerBindingEventTypesItem[];
+}
+
+export type LegacyInternalEventDiagnosticsResponseRegistryId =
+  (typeof LegacyInternalEventDiagnosticsResponseRegistryId)[keyof typeof LegacyInternalEventDiagnosticsResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDiagnosticsResponseRegistryId = {
+  "v2-internal-eventsv1": "v2-internal-events.v1",
+} as const;
+
+export type LegacyInternalEventDiagnosticsResponseSourceStatus =
+  (typeof LegacyInternalEventDiagnosticsResponseSourceStatus)[keyof typeof LegacyInternalEventDiagnosticsResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDiagnosticsResponseSourceStatus = {
+  local_read_model: "local_read_model",
+} as const;
+
+export type LegacyInternalEventDiagnosticsResponseObservedDomainsItem =
+  (typeof LegacyInternalEventDiagnosticsResponseObservedDomainsItem)[keyof typeof LegacyInternalEventDiagnosticsResponseObservedDomainsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDiagnosticsResponseObservedDomainsItem = {
+  event_log: "event_log",
+  event_deliveries: "event_deliveries",
+} as const;
+
+export type LegacyInternalEventDiagnosticsResponseUnobservedDomainsItem =
+  (typeof LegacyInternalEventDiagnosticsResponseUnobservedDomainsItem)[keyof typeof LegacyInternalEventDiagnosticsResponseUnobservedDomainsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDiagnosticsResponseUnobservedDomainsItem = {
+  river_queue: "river_queue",
+  outbound_provider: "outbound_provider",
+  external_delivery: "external_delivery",
+} as const;
+
+export type LegacyInternalEventDiagnosticsResponseExternalDelivery =
+  (typeof LegacyInternalEventDiagnosticsResponseExternalDelivery)[keyof typeof LegacyInternalEventDiagnosticsResponseExternalDelivery];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDiagnosticsResponseExternalDelivery = {
+  unknown: "unknown",
+} as const;
+
+export type LegacyInternalEventDiagnosticsResponseRouteOwner =
+  (typeof LegacyInternalEventDiagnosticsResponseRouteOwner)[keyof typeof LegacyInternalEventDiagnosticsResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventDiagnosticsResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyInternalEventDiagnosticsResponse {
+  ok: boolean;
+  filters: LegacyInternalEventFilters;
+  /** @minimum 0 */
+  event_count: number;
+  /** @minimum 0 */
+  undispatched_event_count: number;
+  delivery_counts: LegacyInternalEventDeliveryCounts;
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  consumer_registry: LegacyInternalEventConsumerBinding[];
+  observed_at: string;
+  registry_id: LegacyInternalEventDiagnosticsResponseRegistryId;
+  source_status: LegacyInternalEventDiagnosticsResponseSourceStatus;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  observed_domains: LegacyInternalEventDiagnosticsResponseObservedDomainsItem[];
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  unobserved_domains: LegacyInternalEventDiagnosticsResponseUnobservedDomainsItem[];
+  external_delivery: LegacyInternalEventDiagnosticsResponseExternalDelivery;
+  route_owner: LegacyInternalEventDiagnosticsResponseRouteOwner;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyInternalEventErrorStatusCode =
+  (typeof LegacyInternalEventErrorStatusCode)[keyof typeof LegacyInternalEventErrorStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventErrorStatusCode = {
+  NUMBER_400: 400,
+  NUMBER_401: 401,
+  NUMBER_403: 403,
+  NUMBER_405: 405,
+  NUMBER_500: 500,
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyInternalEventErrorErrorCode =
+  (typeof LegacyInternalEventErrorErrorCode)[keyof typeof LegacyInternalEventErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyInternalEventErrorErrorCode = {
+  internal_event_query_invalid: "internal_event_query_invalid",
+  authentication_required: "authentication_required",
+  forbidden: "forbidden",
+  route_not_found: "route_not_found",
+  method_not_allowed: "method_not_allowed",
+  internal_event_observation_unavailable:
+    "internal_event_observation_unavailable",
+  internal_event_observation_failed: "internal_event_observation_failed",
+} as const;
+
+export interface LegacyInternalEventError {
+  ok: boolean;
+  status_code: LegacyInternalEventErrorStatusCode;
+  error_code: LegacyInternalEventErrorErrorCode;
+  /** @minLength 1 */
+  message: string;
+  /** @minLength 1 */
+  request_id: string;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyExecutionRuntimeControlDetails = { [key: string]: string };
 
 export interface LegacyExecutionRuntimeControl {
@@ -6749,6 +7039,82 @@ export type GetLegacyPushCenterStatsParams = {
 
 export type GetLegacyPushCenterStats200 =
   LegacyPushCenterStatsResponse | LegacyPushCenterStatsDegradedResponse;
+
+export type ListLegacyInternalEventsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type?: string;
+  consumer?: ListLegacyInternalEventsConsumer;
+  status?: ListLegacyInternalEventsStatus;
+  /**
+   * @minLength 1
+   * @maxLength 3
+   * @pattern ^[1-9][0-9]*$
+   */
+  limit?: string;
+  /**
+   * @minLength 1
+   * @maxLength 6
+   * @pattern ^(0|[1-9][0-9]*)$
+   */
+  offset?: string;
+};
+
+export type ListLegacyInternalEventsConsumer =
+  (typeof ListLegacyInternalEventsConsumer)[keyof typeof ListLegacyInternalEventsConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyInternalEventsConsumer = {
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type ListLegacyInternalEventsStatus =
+  (typeof ListLegacyInternalEventsStatus)[keyof typeof ListLegacyInternalEventsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyInternalEventsStatus = {
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export type GetLegacyInternalEventDiagnosticsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type?: string;
+  consumer?: GetLegacyInternalEventDiagnosticsConsumer;
+  status?: GetLegacyInternalEventDiagnosticsStatus;
+};
+
+export type GetLegacyInternalEventDiagnosticsConsumer =
+  (typeof GetLegacyInternalEventDiagnosticsConsumer)[keyof typeof GetLegacyInternalEventDiagnosticsConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyInternalEventDiagnosticsConsumer = {
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type GetLegacyInternalEventDiagnosticsStatus =
+  (typeof GetLegacyInternalEventDiagnosticsStatus)[keyof typeof GetLegacyInternalEventDiagnosticsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyInternalEventDiagnosticsStatus = {
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
 
 /**
  * @summary List ordinary products using a keyset cursor
@@ -17590,4 +17956,196 @@ export const getLegacyPushCenterStats = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyPushCenterStatsResponse;
+};
+
+/**
+ * @summary Read the bounded local internal-event and delivery projection
+ */
+export type listLegacyInternalEventsResponse200 = {
+  data: LegacyInternalEventListResponse;
+  status: 200;
+};
+
+export type listLegacyInternalEventsResponse400 = {
+  data: LegacyInternalEventError;
+  status: 400;
+};
+
+export type listLegacyInternalEventsResponse401 = {
+  data: LegacyInternalEventError;
+  status: 401;
+};
+
+export type listLegacyInternalEventsResponse403 = {
+  data: LegacyInternalEventError;
+  status: 403;
+};
+
+export type listLegacyInternalEventsResponse405 = {
+  data: LegacyInternalEventError;
+  status: 405;
+};
+
+export type listLegacyInternalEventsResponse500 = {
+  data: LegacyInternalEventError;
+  status: 500;
+};
+
+export type listLegacyInternalEventsResponse503 = {
+  data: LegacyInternalEventError;
+  status: 503;
+};
+
+export type listLegacyInternalEventsResponseSuccess =
+  listLegacyInternalEventsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyInternalEventsResponseError = (
+  | listLegacyInternalEventsResponse400
+  | listLegacyInternalEventsResponse401
+  | listLegacyInternalEventsResponse403
+  | listLegacyInternalEventsResponse405
+  | listLegacyInternalEventsResponse500
+  | listLegacyInternalEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyInternalEventsResponse =
+  | listLegacyInternalEventsResponseSuccess
+  | listLegacyInternalEventsResponseError;
+
+export const getListLegacyInternalEventsUrl = (
+  params?: ListLegacyInternalEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/internal-events?${stringifiedParams}`
+    : `/api/admin/internal-events`;
+};
+
+export const listLegacyInternalEvents = async (
+  params?: ListLegacyInternalEventsParams,
+  options?: RequestInit,
+): Promise<listLegacyInternalEventsResponse> => {
+  const res = await fetch(getListLegacyInternalEventsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyInternalEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyInternalEventsResponse;
+};
+
+/**
+ * @summary Read local internal-event and delivery diagnostic counts
+ */
+export type getLegacyInternalEventDiagnosticsResponse200 = {
+  data: LegacyInternalEventDiagnosticsResponse;
+  status: 200;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse400 = {
+  data: LegacyInternalEventError;
+  status: 400;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse401 = {
+  data: LegacyInternalEventError;
+  status: 401;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse403 = {
+  data: LegacyInternalEventError;
+  status: 403;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse405 = {
+  data: LegacyInternalEventError;
+  status: 405;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse500 = {
+  data: LegacyInternalEventError;
+  status: 500;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse503 = {
+  data: LegacyInternalEventError;
+  status: 503;
+};
+
+export type getLegacyInternalEventDiagnosticsResponseSuccess =
+  getLegacyInternalEventDiagnosticsResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyInternalEventDiagnosticsResponseError = (
+  | getLegacyInternalEventDiagnosticsResponse400
+  | getLegacyInternalEventDiagnosticsResponse401
+  | getLegacyInternalEventDiagnosticsResponse403
+  | getLegacyInternalEventDiagnosticsResponse405
+  | getLegacyInternalEventDiagnosticsResponse500
+  | getLegacyInternalEventDiagnosticsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyInternalEventDiagnosticsResponse =
+  | getLegacyInternalEventDiagnosticsResponseSuccess
+  | getLegacyInternalEventDiagnosticsResponseError;
+
+export const getGetLegacyInternalEventDiagnosticsUrl = (
+  params?: GetLegacyInternalEventDiagnosticsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/internal-events/diagnostics?${stringifiedParams}`
+    : `/api/admin/internal-events/diagnostics`;
+};
+
+export const getLegacyInternalEventDiagnostics = async (
+  params?: GetLegacyInternalEventDiagnosticsParams,
+  options?: RequestInit,
+): Promise<getLegacyInternalEventDiagnosticsResponse> => {
+  const res = await fetch(getGetLegacyInternalEventDiagnosticsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyInternalEventDiagnosticsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyInternalEventDiagnosticsResponse;
 };
