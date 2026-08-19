@@ -161,6 +161,44 @@ func TestI01ALegacyProductRoutesRejectBoundaryAndErrorCases(t *testing.T) {
 	assertLegacyProductError(t, internal, http.StatusInternalServerError, "INTERNAL_ERROR")
 }
 
+func TestLegacyProductListPageIsCarrierOnly(t *testing.T) {
+	stub := &legacyProductStub{}
+	router := legacyProductRouter(t, &legacyAuthStub{}, stub)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyRequest(http.MethodGet, legacyProductPagePath, legacyToken(53)))
+	if response.Code != http.StatusFound || response.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Fwechat-pay%2Fproducts" || response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || stub.lastLimit != 0 {
+		t.Fatalf("status/headers/read=%d/%q/%q/%q/%d", response.Code, response.Header().Get("Location"), response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"), stub.lastLimit)
+	}
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+		response = httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(method, legacyProductPagePath, nil))
+		if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet || stub.lastLimit != 0 {
+			t.Fatalf("method/status/allow/read=%s/%d/%q/%d", method, response.Code, response.Header().Get("Allow"), stub.lastLimit)
+		}
+	}
+	for _, test := range []struct {
+		name    string
+		request *http.Request
+		want    int
+	}{
+		{name: "anonymous", request: httptest.NewRequest(http.MethodGet, legacyProductPagePath, nil), want: http.StatusUnauthorized},
+		{name: "sales", request: legacyRequest(http.MethodGet, legacyProductPagePath, legacyToken(54)), want: http.StatusForbidden},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := &legacyAuthStub{}
+			if test.name == "sales" {
+				staff := int64(9)
+				service.principal = authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staff}
+			}
+			result := httptest.NewRecorder()
+			legacyProductRouter(t, service, &legacyProductStub{}).ServeHTTP(result, test.request)
+			if result.Code != test.want {
+				t.Fatalf("status=%d body=%s", result.Code, result.Body.String())
+			}
+		})
+	}
+}
+
 func legacyProductRouter(t *testing.T, service authport.Service, products legacyProductApplication) http.Handler {
 	t.Helper()
 	legacy, err := NewHandlerWithOutboundAndProducts(service, &legacyCustomerStub{result: legacyCustomerResult()},

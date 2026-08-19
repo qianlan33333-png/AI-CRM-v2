@@ -17,6 +17,7 @@ import {
   EXECUTION_RUNTIME_PATH,
   ORDERS_PATH,
   OUTBOUND_PATH,
+  PRODUCTS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -498,7 +499,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(20);
+    expect(routes).toHaveLength(21);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -633,6 +634,7 @@ describe("Web shell routes", () => {
       "/admin/data-health",
       "/admin/execution-runtime",
       "/admin/orders",
+      PRODUCTS_PATH,
       "/outbound",
       "/settings",
     ]);
@@ -651,6 +653,7 @@ describe("Web shell routes", () => {
       "/admin/coupons",
       "/admin/group-invite-library",
       "/admin/orders",
+      PRODUCTS_PATH,
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -676,6 +679,7 @@ describe("Web shell routes", () => {
     expect(html).toContain(`href="${EXECUTION_RUNTIME_PATH}"`);
     expect(html).toContain(`href="${ORDERS_PATH}"`);
     expect(html).toContain(`href="${OUTBOUND_PATH}"`);
+    expect(html).toContain(`href="${PRODUCTS_PATH}"`);
   });
 
   it("renders an authenticated account view only for the exact login route", () => {
@@ -722,6 +726,9 @@ describe("legacy admin path carrier", () => {
     expect(carrierPathname("/", `?legacy_admin_path=${ORDERS_PATH}`)).toBe(
       ORDERS_PATH,
     );
+    expect(carrierPathname("/", `?legacy_admin_path=${PRODUCTS_PATH}`)).toBe(
+      PRODUCTS_PATH,
+    );
 
     for (const search of [
       "?legacy_admin_path=/admin/image-library",
@@ -729,10 +736,12 @@ describe("legacy admin path carrier", () => {
       "?legacy_admin_path=/admin/channels/extra",
       "?legacy_admin_path=/admin/coupons/extra",
       "?legacy_admin_path=/admin/orders/extra",
+      "?legacy_admin_path=/admin/wechat-pay/products/extra",
       "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,
       `?legacy_admin_path=${ORDERS_PATH}&legacy_admin_path=${ORDERS_PATH}`,
+      `?legacy_admin_path=${PRODUCTS_PATH}&legacy_admin_path=${PRODUCTS_PATH}`,
       "?legacy_admin_path=https://evil.example",
       "?legacy_admin_path=//evil.example",
       "?legacy_admin_path=/admin/miniprogram-library/extra",

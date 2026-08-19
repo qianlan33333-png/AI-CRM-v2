@@ -58,13 +58,14 @@ var p4AutomationOperations = map[string]bool{
 }
 
 var p4ProductOperations = map[string]bool{
-	"listProducts": true, "createProduct": true, "getProduct": true,
+	"listProducts": true, "createProduct": true, "getProduct": true, "getLegacyProductListPage": true,
 }
 
 var p4ProductLegacyMappings = map[string][]string{
-	"listProducts":  {"LEGACY-API-0525"},
-	"createProduct": {"LEGACY-API-0526"},
-	"getProduct":    {"LEGACY-API-0530"},
+	"listProducts":             {"LEGACY-API-0525"},
+	"createProduct":            {"LEGACY-API-0526"},
+	"getProduct":               {"LEGACY-API-0530"},
+	"getLegacyProductListPage": {"LEGACY-API-0079"},
 }
 
 var p4MediaOperations = map[string]bool{
@@ -354,6 +355,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listProducts":                              {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createProduct":                             {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getProduct":                                {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyProductListPage":                  {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"uploadLegacyImage":                         {"media.images.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyGroupInvites":                    {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createLegacyGroupInvite":                   {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
