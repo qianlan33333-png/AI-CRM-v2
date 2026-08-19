@@ -555,7 +555,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, errInvalidAPIComponent
 	}
 	adminReadRepository := eventstore.NewAdminReadRepository(pool)
-	handler, err := newAPIHandlerWithAdminRead(logger, callbackHandler, authHandler, candidate, legacyHandler, humanAuth, adminReadRepository, dataHealthSource)
+	adminDetailRepository := eventstore.NewAdminDetailRepository(pool)
+	handler, err := newAPIHandlerWithAdminRead(logger, callbackHandler, authHandler, candidate, legacyHandler, humanAuth, adminReadRepository, dataHealthSource, adminDetailRepository)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -590,11 +591,19 @@ func newAPIHandlerWithAll(logger *slog.Logger, callbackHandler http.Handler, aut
 	return newAPIHandlerWithAllOptions(logger, callbackHandler, authHandler, candidate, legacy, humanAuth, nil, dataHealthSources...)
 }
 
-func newAPIHandlerWithAdminRead(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler, repository eventport.AdminReadRepository, dataHealthSource legacyDataHealthObservationSource) (http.Handler, error) {
-	return newAPIHandlerWithAllOptions(logger, callbackHandler, authHandler, candidate, legacy, humanAuth, repository, dataHealthSource)
+func newAPIHandlerWithAdminRead(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler, repository eventport.AdminReadRepository, dataHealthSource legacyDataHealthObservationSource, detailRepositories ...eventport.AdminDetailRepository) (http.Handler, error) {
+	var detailRepository eventport.AdminDetailRepository
+	if len(detailRepositories) > 0 {
+		detailRepository = detailRepositories[0]
+	}
+	return newAPIHandlerWithAllOptionsAndAdminDetail(logger, callbackHandler, authHandler, candidate, legacy, humanAuth, repository, detailRepository, dataHealthSource)
 }
 
 func newAPIHandlerWithAllOptions(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler, adminReadRepository eventport.AdminReadRepository, dataHealthSources ...legacyDataHealthObservationSource) (http.Handler, error) {
+	return newAPIHandlerWithAllOptionsAndAdminDetail(logger, callbackHandler, authHandler, candidate, legacy, humanAuth, adminReadRepository, nil, dataHealthSources...)
+}
+
+func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHandler http.Handler, authHandler *authhttp.Handler, candidate api.ServerInterface, legacy *Handler, humanAuth *HumanAuthHandler, adminReadRepository eventport.AdminReadRepository, adminDetailRepository eventport.AdminDetailRepository, dataHealthSources ...legacyDataHealthObservationSource) (http.Handler, error) {
 	if logger == nil || callbackHandler == nil || authHandler == nil || candidate == nil {
 		return nil, errInvalidAPIComponent
 	}
@@ -847,10 +856,10 @@ func newAPIHandlerWithAllOptions(logger *slog.Logger, callbackHandler http.Handl
 			if method == http.MethodPost && pattern == legacyImageCollectionPath {
 				tail = legacyImageCreateSecurityHeaders(tail)
 			}
-			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath {
+			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -868,7 +877,7 @@ func newAPIHandlerWithAllOptions(logger *slog.Logger, callbackHandler http.Handl
 					if pattern == legacyDeliveryLineagePath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyDeliveryLineageMethodNotAllowed))
 					}
-					if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath {
+					if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyInternalEventsMethodNotAllowed))
 					}
 					strictLegacyMethodRouters[pattern] = methodRouter
@@ -894,6 +903,7 @@ func newAPIHandlerWithAllOptions(logger *slog.Logger, callbackHandler http.Handl
 			{http.MethodGet, legacyDeliveryLineagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetDeliveryLineage)},
 			{http.MethodGet, legacyInternalEventsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventsHandler(adminReadRepository).List)},
 			{http.MethodGet, legacyInternalEventsDiagnosticsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventsHandler(adminReadRepository).Diagnostics)},
+			{http.MethodGet, legacyInternalEventDetailPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventDetailHandler(adminDetailRepository).Get)},
 			{http.MethodGet, "/api/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigOverview)},
 			{http.MethodGet, "/api/admin/config/capabilities", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.Capabilities)},
 			{http.MethodGet, "/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsPage)},
