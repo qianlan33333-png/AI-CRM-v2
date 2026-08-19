@@ -6,6 +6,7 @@ import {
   App,
   IMAGE_LIBRARY_PATH,
   HXC_SENDER_PATH,
+  QUESTIONNAIRE_LIST_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -169,8 +170,37 @@ describe("Web shell routes", () => {
     expect(client.facets).not.toHaveBeenCalled();
   });
 
+  it("renders the questionnaire carrier route for admin and keeps non-admins fail-closed", () => {
+    vi.stubGlobal("window", {
+      location: { pathname: QUESTIONNAIRE_LIST_PATH },
+    });
+    expect(
+      renderToStaticMarkup(<App initialSession={adminSession} />),
+    ).toContain("正在读取问卷列表");
+    expect(
+      renderToStaticMarkup(
+        <App
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 8, role: "ops" },
+          }}
+        />,
+      ),
+    ).toContain("当前账号没有问卷管理权限。");
+    expect(
+      renderToStaticMarkup(
+        <App
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 9, role: "sales", staffID: 11 },
+          }}
+        />,
+      ),
+    ).toContain("当前账号没有问卷管理权限。");
+  });
+
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(10);
+    expect(routes).toHaveLength(11);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -295,6 +325,7 @@ describe("Web shell routes", () => {
       "/admin/miniprogram-library",
       "/admin/image-library",
       "/admin/hxc-send-config",
+      "/admin/questionnaires",
       "/settings",
     ]);
     expect(
@@ -321,6 +352,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/identity/merge-reviews"');
     expect(html).toContain('href="/admin/miniprogram-library"');
     expect(html).toContain('href="/admin/image-library"');
+    expect(html).toContain('href="/admin/questionnaires"');
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -350,6 +382,9 @@ describe("legacy admin path carrier", () => {
     expect(
       carrierPathname("/", `?legacy_admin_path=${MINIPROGRAM_LIBRARY_PATH}`),
     ).toBe(MINIPROGRAM_LIBRARY_PATH);
+    expect(
+      carrierPathname("/", `?legacy_admin_path=${QUESTIONNAIRE_LIST_PATH}`),
+    ).toBe(QUESTIONNAIRE_LIST_PATH);
 
     for (const search of [
       "?legacy_admin_path=/admin/wecom-tags",

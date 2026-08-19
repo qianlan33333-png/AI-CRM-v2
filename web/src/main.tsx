@@ -35,6 +35,8 @@ import { ImageLibraryPage } from "./image-library-ui";
 import type { ImageLibraryTransport } from "./image-library";
 import { HXCSenderPage } from "./hxc-sender-ui";
 import type { HXCSenderTransport } from "./hxc-sender";
+import { QuestionnaireListPage } from "./questionnaire-list-ui";
+import type { QuestionnaireListTransport } from "./questionnaire-list";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -42,6 +44,7 @@ export const LOGIN_PATH = "/login";
 export const MINIPROGRAM_LIBRARY_PATH = "/admin/miniprogram-library";
 export const IMAGE_LIBRARY_PATH = "/admin/image-library";
 export const HXC_SENDER_PATH = "/admin/hxc-send-config";
+export const QUESTIONNAIRE_LIST_PATH = "/admin/questionnaires";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -94,6 +97,12 @@ export const routes = [
     description: "HXC 本地发件人目录与配置的只读视图。",
   },
   {
+    path: "/admin/questionnaires",
+    navigationLabel: "问卷",
+    title: "问卷列表",
+    description: "问卷定义的本地管理列表。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -143,6 +152,7 @@ export interface AppProps {
   miniProgramTransport?: MiniProgramLibraryTransport;
   imageLibraryTransport?: ImageLibraryTransport;
   hxcSenderTransport?: HXCSenderTransport;
+  questionnaireTransport?: QuestionnaireListTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -191,7 +201,9 @@ export function carrierPathname(pathname: string, search: string): string {
   }
   const values = params.getAll(LEGACY_ADMIN_PATH_PARAM);
   if (values.length !== 1) return pathname;
-  return values[0] === MINIPROGRAM_LIBRARY_PATH || values[0] === HXC_SENDER_PATH
+  return values[0] === MINIPROGRAM_LIBRARY_PATH ||
+    values[0] === HXC_SENDER_PATH ||
+    values[0] === QUESTIONNAIRE_LIST_PATH
     ? values[0]
     : pathname;
 }
@@ -291,6 +303,7 @@ function PageContent({
   miniProgramTransport,
   imageLibraryTransport,
   hxcSenderTransport,
+  questionnaireTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -305,6 +318,7 @@ function PageContent({
   miniProgramTransport?: MiniProgramLibraryTransport;
   imageLibraryTransport?: ImageLibraryTransport;
   hxcSenderTransport?: HXCSenderTransport;
+  questionnaireTransport?: QuestionnaireListTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -417,6 +431,17 @@ function PageContent({
     );
   }
 
+  if (route.path === QUESTIONNAIRE_LIST_PATH) {
+    return (
+      <QuestionnaireListPage
+        role={principal.role}
+        transport={questionnaireTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -465,6 +490,9 @@ export function navigationLinks(
   if (base.length > 0 && principal.role === "admin") {
     permitted.add(HXC_SENDER_PATH);
   }
+  if (base.length > 0 && principal.role === "admin") {
+    permitted.add(QUESTIONNAIRE_LIST_PATH);
+  }
   return routes
     .filter((route) => permitted.has(route.path))
     .map((route) => ({ href: route.path, label: route.navigationLabel }));
@@ -484,6 +512,7 @@ export function App({
   miniProgramTransport,
   imageLibraryTransport,
   hxcSenderTransport,
+  questionnaireTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -640,6 +669,7 @@ export function App({
             miniProgramTransport={miniProgramTransport}
             imageLibraryTransport={imageLibraryTransport}
             hxcSenderTransport={hxcSenderTransport}
+            questionnaireTransport={questionnaireTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
