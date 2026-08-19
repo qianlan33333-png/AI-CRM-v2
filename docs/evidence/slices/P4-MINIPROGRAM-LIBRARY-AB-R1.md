@@ -135,3 +135,20 @@ exact-main closure are still required before this board can be called `MERGED`.
 - `HISTORICAL_DATABASE_NOT_ACCESSED`, `PRODUCTION_DATABASE_NOT_EXECUTED`,
   `LIVE_MIGRATION_NOT_EXECUTED`, `REAL_WECOM_OR_WECHAT_NOT_EXECUTED`, `URL_FETCH_NOT_EXECUTED`,
   `OUTBOUND_NOT_EXECUTED`, `DEPLOYMENT_NOT_EXECUTED` remain in force.
+
+## UI gap correction (2026-08-19)
+
+- The preceding UI-gap observation is superseded by exact-main commit
+  `95cd686e69efdca97a3f7b05f1461176e096edfa` (PR #253), an ancestor of
+  `761bf42451ba4c4eed94be4f1234e4efcc03fe94`. It mounts `MiniProgramLibraryPage` in
+  `web/src/main.tsx`, permits it only for admin/ops, and maps only the exact
+  `legacy_admin_path=/admin/miniprogram-library` carrier.
+- `web/src/miniprogram-library-ui.tsx` and its tests cover workspace rendering, list refresh,
+  create/save, enable/disable, cache-only test-resolve, and delete confirmation.
+  `web/src/miniprogram-library.test.ts` freezes same-origin credentials, CSRF/idempotency,
+  positive server thumbnail IDs, and rejects non-frozen responses. The UI neither makes nor
+  reports a provider-success claim.
+- Therefore `LEGACY-S07-018` and `LEGACY-S07-054/055/057/058/059/060` are locally
+  `IMPLEMENTED/SYNTHETIC_PASS` alongside the #240 backend. This corrects the contract-state gap
+  only; it does not claim historical reconciliation, production/live migration, URL fetch,
+  WeCom/WeChat, outbound delivery, or deployment.
