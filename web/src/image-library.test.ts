@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   firstPageQuery,
+  imageDataURLImportIdempotencyKey,
+  imageDataURLImportRequest,
+  importImageDataURL,
   deleteImage,
   imageDeleteIdempotencyKey,
   formatFileSize,
@@ -204,6 +207,7 @@ function transport(
     detail: vi.fn(reply),
     facets: vi.fn(reply),
     upload: vi.fn(reply),
+    create: vi.fn(reply),
     update: vi.fn(reply),
     remove: vi.fn(reply),
   } as unknown as ImageLibraryTransport;
@@ -223,6 +227,39 @@ function query(partial: Partial<ImageListQuery> = {}): ImageListQuery {
 const pngFile = { type: "image/png", size: 1024 } as Blob;
 const metadata = { name: "封面", description: "", tags: "", category: "" };
 const IDEMPOTENCY_KEY = "image-upload-test-000000000000";
+const dataURLDraft = {
+  dataURL: "data:image/png;base64,QUJDRA==",
+  fileName: "cover.png",
+  name: " 封面 ",
+  description: " 本地导入 ",
+  tags: " hero,首页,hero ",
+  category: " banner ",
+  enabled: false,
+};
+const dataURLCreateSuccess = {
+  ok: true,
+  item: {
+    id: 13,
+    name: "封面",
+    file_name: "cover.png",
+    file_size: 4,
+    mime_type: "image/png",
+    width: 1,
+    height: 1,
+    enabled: false,
+    description: "本地导入",
+    tags: ["hero", "首页"],
+    category: "banner",
+    created_at: "2026-08-20T12:00:00Z",
+    updated_at: "2026-08-20T12:00:00Z",
+  },
+  source_status: "local_repository_write",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  storage_adapter_mode: "postgresql",
+  adapter_mode: "postgresql",
+};
 
 describe("image item strict parser", () => {
   it("parses only the exact frozen twenty-field item", () => {
@@ -1320,6 +1357,61 @@ describe("upload transport", () => {
 });
 
 describe("input helpers", () => {
+  it("builds only canonical data URL import requests and preserves the Go rune boundary", () => {
+    expect(imageDataURLImportRequest(dataURLDraft)).toEqual({
+      data_url: "data:image/png;base64,QUJDRA==",
+      file_name: "cover.png",
+      name: "封面",
+      description: "本地导入",
+      tags: ["hero", "首页"],
+      category: "banner",
+      enabled: false,
+    });
+    expect(
+      imageDataURLImportRequest({
+        ...dataURLDraft,
+        name: "😀".repeat(200),
+        fileName: "ok.png",
+      }),
+    ).toMatchObject({ name: "😀".repeat(200) });
+    for (const fileName of [" ../a.png", "../a.png", "a/b.png", "a\\b.png", ".", "..", "a\u0001.png"]) {
+      expect(imageDataURLImportRequest({ ...dataURLDraft, fileName })).toBeUndefined();
+    }
+    for (const dataURL of [
+      "data:image/PNG;base64,QUJDRA==",
+      "data:image/png;base64,QUJDRA=_",
+      "data:image/png;base64,QUJDRA=",
+      "data:image/png;base64,",
+      // AB== decodes but has nonzero unused tail bits. Go re-encodes it as
+      // AA==, so client admission must reject it before transport.
+      "data:image/png;base64,AB==",
+    ]) {
+      expect(imageDataURLImportRequest({ ...dataURLDraft, dataURL })).toBeUndefined();
+    }
+    const exactMaximum = `data:image/png;base64,${"AAAA".repeat(
+      (MAX_IMAGE_FILE_SIZE - 1) / 3,
+    )}AA==`;
+    expect(
+      imageDataURLImportRequest({ ...dataURLDraft, dataURL: exactMaximum }),
+    ).toBeDefined();
+    const unpaddedOverMaximum = `data:image/png;base64,${"AAAA".repeat(
+      Math.ceil(MAX_IMAGE_FILE_SIZE / 3),
+    )}`;
+    expect(
+      imageDataURLImportRequest({
+        ...dataURLDraft,
+        dataURL: unpaddedOverMaximum,
+      }),
+    ).toBeUndefined();
+  });
+
+  it("mints data URL import idempotency keys inside the shared 16..128 window", () => {
+    const key = imageDataURLImportIdempotencyKey(() => 0.1);
+    expect(key).toMatch(/^image-data-url-import-[a-z0-9]+-[a-z0-9]{12}$/);
+    expect(key.length).toBeGreaterThanOrEqual(16);
+    expect(key.length).toBeLessThanOrEqual(128);
+  });
+
   it("normalizes tags input by trimming, dropping empties, and deduping", () => {
     expect(normalizeTagsInput(" a, b ,a,, c ,")).toBe("a,b,c");
     expect(normalizeTagsInput("")).toBe("");
@@ -1346,5 +1438,66 @@ describe("input helpers", () => {
     expect(formatFileSize(2048)).toBe("2.0 KiB");
     expect(formatFileSize(5 * 1024 * 1024)).toBe("5.0 MiB");
     expect(formatFileSize(-1)).toBe("未知");
+  });
+});
+
+describe("canonical data URL import transport", () => {
+  const key = "image-data-url-import-test-000000";
+
+  it("sends the exact closed JSON request with same-origin CSRF", async () => {
+    const client = transport({ status: 200, data: dataURLCreateSuccess });
+    await expect(
+      importImageDataURL(client, CSRF_COOKIE, dataURLDraft, key),
+    ).resolves.toMatchObject({ status: "created", image: { id: 13 } });
+    expect(client.create).toHaveBeenCalledWith(
+      {
+        data_url: dataURLDraft.dataURL,
+        file_name: "cover.png",
+        name: "封面",
+        description: "本地导入",
+        tags: ["hero", "首页"],
+        category: "banner",
+        enabled: false,
+      },
+      {
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": CSRF_TOKEN, "Idempotency-Key": key },
+      },
+    );
+  });
+
+  it("never sends for client or CSRF rejection and fails closed for receipt drift", async () => {
+    const client = transport({ status: 200, data: dataURLCreateSuccess });
+    await expect(
+      importImageDataURL(client, "other=1", dataURLDraft, key),
+    ).resolves.toEqual({ status: "csrf_missing" });
+    await expect(
+      importImageDataURL(client, CSRF_COOKIE, { ...dataURLDraft, dataURL: "bad" }, key),
+    ).resolves.toEqual({ status: "invalid" });
+    for (const dataURL of [
+      "data:image/png;base64,AB==",
+      `data:image/png;base64,${"AAAA".repeat(
+        Math.ceil(MAX_IMAGE_FILE_SIZE / 3),
+      )}`,
+    ]) {
+      await expect(
+        importImageDataURL(client, CSRF_COOKIE, { ...dataURLDraft, dataURL }, key),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    expect(client.create).not.toHaveBeenCalled();
+
+    for (const data of [
+      { ...dataURLCreateSuccess, extra: true },
+      { ...dataURLCreateSuccess, item: { ...dataURLCreateSuccess.item, data_url: dataURLDraft.dataURL } },
+      { ...dataURLCreateSuccess, item: { ...dataURLCreateSuccess.item, name: "服务端漂移" } },
+      { ...dataURLCreateSuccess, item: { ...dataURLCreateSuccess.item, created_at: "2026-02-30T12:00:00Z" } },
+      { ...dataURLCreateSuccess, real_external_call_executed: true },
+    ]) {
+      const drift = transport({ status: 200, data });
+      await expect(
+        importImageDataURL(drift, CSRF_COOKIE, dataURLDraft, key),
+      ).resolves.toEqual({ status: "unavailable" });
+      expect(drift.create).toHaveBeenCalledOnce();
+    }
   });
 });

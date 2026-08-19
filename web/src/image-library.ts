@@ -1,4 +1,5 @@
 import {
+  createLegacyImage,
   deleteLegacyImage,
   getLegacyImage,
   getLegacyImageFacets,
@@ -6,6 +7,7 @@ import {
   updateLegacyImage,
   uploadLegacyImage,
   type GetLegacyImageListParams,
+  type LegacyImageCreateRequest,
   type LegacyImageMetadataUpdateRequest,
   type UploadLegacyImageBody,
 } from "./api/generated/health";
@@ -128,6 +130,12 @@ async function generatedUpload(
 ) {
   return uploadLegacyImage(body, options);
 }
+async function generatedCreate(
+  body: LegacyImageCreateRequest,
+  options: RequestInit,
+) {
+  return createLegacyImage(body, options);
+}
 async function generatedUpdate(
   imageID: string,
   body: LegacyImageMetadataUpdateRequest,
@@ -146,6 +154,7 @@ export interface ImageLibraryTransport {
   readonly detail: typeof generatedDetail;
   readonly facets: typeof generatedFacets;
   readonly upload: typeof generatedUpload;
+  readonly create: typeof generatedCreate;
   readonly update: typeof generatedUpdate;
   readonly remove: typeof generatedRemove;
 }
@@ -155,6 +164,7 @@ export const generatedImageLibraryTransport: ImageLibraryTransport = {
   detail: generatedDetail,
   facets: generatedFacets,
   upload: generatedUpload,
+  create: generatedCreate,
   update: generatedUpdate,
   remove: generatedRemove,
 };
@@ -186,6 +196,34 @@ export type ImageDetailResult =
   | { readonly status: ImageLibraryFailure };
 export type ImageUploadResult =
   | { readonly status: "uploaded"; readonly image: UploadedImage }
+  | { readonly status: "csrf_missing" }
+  | { readonly status: ImageLibraryFailure };
+export interface ImageDataURLImportDraft {
+  readonly dataURL: string;
+  readonly fileName: string;
+  readonly name: string;
+  readonly description: string;
+  readonly tags: string;
+  readonly category: string;
+  readonly enabled: boolean;
+}
+export interface CreatedImage {
+  readonly id: number;
+  readonly name: string;
+  readonly fileName: string;
+  readonly fileSize: number;
+  readonly mimeType: string;
+  readonly width: number;
+  readonly height: number;
+  readonly enabled: boolean;
+  readonly description: string;
+  readonly tags: readonly string[];
+  readonly category: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+export type ImageDataURLImportResult =
+  | { readonly status: "created"; readonly image: CreatedImage }
   | { readonly status: "csrf_missing" }
   | { readonly status: ImageLibraryFailure };
 export type ImageMetadataUpdateResult =
@@ -861,6 +899,112 @@ function parseImageUpload(data: unknown): UploadedImage | undefined {
   return parseUploadedImage(data.item);
 }
 
+const IMAGE_CREATE_ITEM_KEYS: readonly string[] = [
+  "id",
+  "name",
+  "file_name",
+  "file_size",
+  "mime_type",
+  "width",
+  "height",
+  "enabled",
+  "description",
+  "tags",
+  "category",
+  "created_at",
+  "updated_at",
+];
+
+const IMAGE_CREATE_SUCCESS_KEYS: readonly string[] = [
+  "ok",
+  "item",
+  "source_status",
+  "route_owner",
+  "fallback_used",
+  "real_external_call_executed",
+  "storage_adapter_mode",
+  "adapter_mode",
+];
+
+function parseCreatedImage(value: unknown): CreatedImage | undefined {
+  if (!record(value) || !exactKeys(value, IMAGE_CREATE_ITEM_KEYS)) {
+    return undefined;
+  }
+  if (
+    !positive(value.id) ||
+    !frozenText(value.name, 200, true) ||
+    !safeImageFileName(value.file_name) ||
+    !positive(value.file_size) ||
+    value.file_size > MAX_IMAGE_FILE_SIZE ||
+    typeof value.mime_type !== "string" ||
+    !IMAGE_MIME_TYPES.has(value.mime_type) ||
+    !positive(value.width) ||
+    value.width > 10000 ||
+    !positive(value.height) ||
+    value.height > 10000 ||
+    typeof value.enabled !== "boolean" ||
+    !frozenText(value.description, 10_000, true) ||
+    !Array.isArray(value.tags) ||
+    value.tags.length > 50 ||
+    value.tags.some((tag) => !frozenText(tag, 64, false)) ||
+    !frozenText(value.category, 200, true) ||
+    !timestampText(value.created_at) ||
+    !timestampText(value.updated_at)
+  ) {
+    return undefined;
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    fileName: value.file_name,
+    fileSize: value.file_size,
+    mimeType: value.mime_type,
+    width: value.width,
+    height: value.height,
+    enabled: value.enabled,
+    description: value.description,
+    tags: value.tags as string[],
+    category: value.category,
+    createdAt: value.created_at,
+    updatedAt: value.updated_at,
+  };
+}
+
+function createdImageMatches(
+  image: CreatedImage,
+  request: LegacyImageCreateRequest,
+): boolean {
+  const mimeType = imageDataURLMimeType(request.data_url);
+  return (
+    mimeType !== undefined &&
+    image.mimeType === mimeType &&
+    image.fileName === request.file_name &&
+    image.name === (request.name ?? "") &&
+    image.description === (request.description ?? "") &&
+    image.category === (request.category ?? "") &&
+    image.enabled === (request.enabled ?? true) &&
+    image.tags.length === (request.tags?.length ?? 0) &&
+    image.tags.every((tag, index) => tag === request.tags?.[index])
+  );
+}
+
+function parseImageCreate(
+  data: unknown,
+  request: LegacyImageCreateRequest,
+): CreatedImage | undefined {
+  if (!record(data) || !exactKeys(data, IMAGE_CREATE_SUCCESS_KEYS)) {
+    return undefined;
+  }
+  if (
+    data.ok !== true ||
+    !frozenEnvelopeFlags(data, "local_repository_write")
+  ) {
+    return undefined;
+  }
+  const image = parseCreatedImage(data.item);
+  return image && createdImageMatches(image, request) ? image : undefined;
+}
+
 function parseImageMetadataUpdate(data: unknown): ImageDetail | undefined {
   if (!record(data) || !exactKeys(data, IMAGE_DETAIL_SUCCESS_KEYS)) {
     return undefined;
@@ -924,6 +1068,14 @@ export function uploadIdempotencyKey(random: () => number = Math.random): string
   const time = Date.now().toString(36);
   const entropy = random().toString(36).slice(2, 14).padEnd(12, "0");
   return `image-upload-${time}-${entropy}`.slice(0, 128);
+}
+
+export function imageDataURLImportIdempotencyKey(
+  random: () => number = Math.random,
+): string {
+  const time = Date.now().toString(36);
+  const entropy = random().toString(36).slice(2, 14).padEnd(12, "0");
+  return `image-data-url-import-${time}-${entropy}`.slice(0, 128);
 }
 
 export function imageDeleteIdempotencyKey(
@@ -1026,6 +1178,122 @@ export function uploadMetadataProblem(
     return "标签总长不能超过 10000 字。";
   }
   return undefined;
+}
+
+const IMAGE_DATA_URL_PREFIXES: readonly [string, string][] = [
+  ["data:image/png;base64,", "image/png"],
+  ["data:image/jpeg;base64,", "image/jpeg"],
+  ["data:image/gif;base64,", "image/gif"],
+];
+const MAX_IMAGE_BASE64_LENGTH = 13_981_016;
+
+function imageDataURLMimeType(value: string): string | undefined {
+  for (const [prefix, mimeType] of IMAGE_DATA_URL_PREFIXES) {
+    if (!value.startsWith(prefix)) continue;
+    const encoded = value.slice(prefix.length);
+    const padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
+    if (
+      encoded.length === 0 ||
+      encoded.length > MAX_IMAGE_BASE64_LENGTH ||
+      encoded.length % 4 !== 0 ||
+      !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||
+      encoded.length / 4 * 3 - padding > MAX_IMAGE_FILE_SIZE
+    ) {
+      return undefined;
+    }
+    // Mirror Go's DecodeString + EncodeToString equality without allocating a
+    // second 10 MiB byte buffer in the browser. A padded final quantum must
+    // have zero unused tail bits or it would re-encode to different text.
+    const tail = encoded.charCodeAt(encoded.length - padding - 1);
+    const sextet =
+      tail >= 65 && tail <= 90 ? tail - 65 :
+      tail >= 97 && tail <= 122 ? tail - 71 :
+      tail >= 48 && tail <= 57 ? tail + 4 :
+      tail === 43 ? 62 : tail === 47 ? 63 : -1;
+    if (
+      sextet < 0 ||
+      (padding === 2 && (sextet & 0x0f) !== 0) ||
+      (padding === 1 && (sextet & 0x03) !== 0)
+    ) {
+      return undefined;
+    }
+    return mimeType;
+  }
+  return undefined;
+}
+
+function safeImageFileName(value: unknown): value is string {
+  return (
+    frozenText(value, 255, false) &&
+    value !== "." &&
+    value !== ".." &&
+    !value.includes("/") &&
+    !value.includes("\\") &&
+    ![...value].some((character) => {
+      const code = character.codePointAt(0) ?? 0;
+      return code < 0x20 || code === 0x7f;
+    })
+  );
+}
+
+function importText(value: string, maximum: number): string | undefined {
+  const normalized = value.trim();
+  return frozenText(normalized, maximum, true) ? normalized : undefined;
+}
+
+function importTags(value: string): string[] | undefined {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of value.split(",")) {
+    const tag = raw.trim();
+    if (tag === "" || seen.has(tag)) continue;
+    if (!frozenText(tag, 64, false)) return undefined;
+    seen.add(tag);
+    result.push(tag);
+    if (result.length > 50) return undefined;
+  }
+  return result;
+}
+
+export function imageDataURLImportRequest(
+  draft: ImageDataURLImportDraft,
+): LegacyImageCreateRequest | undefined {
+  if (
+    !imageDataURLMimeType(draft.dataURL) ||
+    !safeImageFileName(draft.fileName) ||
+    typeof draft.enabled !== "boolean"
+  ) {
+    return undefined;
+  }
+  const name = importText(draft.name, 200);
+  const description = importText(draft.description, 10_000);
+  const category = importText(draft.category, 200);
+  const tags = importTags(draft.tags);
+  if (
+    name === undefined ||
+    description === undefined ||
+    category === undefined ||
+    tags === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    data_url: draft.dataURL,
+    file_name: draft.fileName,
+    name,
+    description,
+    tags,
+    category,
+    enabled: draft.enabled,
+  };
+}
+
+export function imageDataURLImportProblem(
+  draft: ImageDataURLImportDraft,
+): string | undefined {
+  return imageDataURLImportRequest(draft) === undefined
+    ? "数据 URL、文件名或元数据不符合本地导入规则。"
+    : undefined;
 }
 
 function metadataText(value: string, maximum: number): string | undefined {
@@ -1225,6 +1493,44 @@ export async function uploadImage(
     if (response.status !== 200) return { status: failure(response.status) };
     const image = parseImageUpload(response.data);
     return image ? { status: "uploaded", image } : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function importImageDataURL(
+  transport: ImageLibraryTransport,
+  cookieHeader: string,
+  draft: ImageDataURLImportDraft,
+  idempotencyKey: string,
+): Promise<ImageDataURLImportResult> {
+  const request = imageDataURLImportRequest(draft);
+  if (
+    !request ||
+    idempotencyKey.length < 16 ||
+    idempotencyKey.length > 128 ||
+    idempotencyKey.trim() !== idempotencyKey
+  ) {
+    return { status: "invalid" };
+  }
+  let csrfToken: string | undefined;
+  try {
+    csrfToken = readCSRFCookie(cookieHeader);
+  } catch {
+    csrfToken = undefined;
+  }
+  if (!csrfToken) return { status: "csrf_missing" };
+  try {
+    const response = await transport.create(request, {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Idempotency-Key": idempotencyKey,
+      },
+    });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const image = parseImageCreate(response.data, request);
+    return image ? { status: "created", image } : { status: "unavailable" };
   } catch {
     return { status: "unavailable" };
   }

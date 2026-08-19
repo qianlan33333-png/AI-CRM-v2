@@ -5,6 +5,9 @@ import {
   firstPageQuery,
   formatFileSize,
   generatedImageLibraryTransport,
+  imageDataURLImportIdempotencyKey,
+  imageDataURLImportProblem,
+  importImageDataURL,
   loadImageDetail,
   loadFacets,
   loadImages,
@@ -20,6 +23,8 @@ import {
   type ImageDetail,
   type ImageDeleteReferenceCounts,
   type ImageDeleteResult,
+  type ImageDataURLImportDraft,
+  type ImageDataURLImportResult,
   type ImageLibraryFailure,
   type ImageLibraryRole,
   type ImageLibraryTransport,
@@ -86,6 +91,14 @@ const uploadMessages: Record<UploadNoticeStatus, string> = {
   invalid: "图片或元数据不符合已冻结的上传规则。",
   unavailable: "上传结果未知，系统不会自动重试；请刷新列表确认后再操作。",
   csrf_missing: "安全令牌缺失，未发送上传请求。",
+};
+const dataURLImportMessages: Record<UploadNoticeStatus, string> = {
+  unauthenticated: "登录状态已失效，请重新登录。",
+  forbidden: "当前账号没有图片本地导入权限。",
+  conflict: "本次本地导入与已有操作冲突，请刷新后确认。",
+  invalid: "数据 URL、文件名或元数据不符合本地导入规则。",
+  unavailable: "本地导入结果未知，系统不会自动重试；请刷新列表确认后再操作。",
+  csrf_missing: "安全令牌缺失，未发送本地导入请求。",
 };
 const metadataMessages: Record<UploadNoticeStatus, string> = {
   unauthenticated: "登录状态已失效，请重新登录。",
@@ -154,6 +167,34 @@ export async function uploadThenReload(
     options.idempotencyKey,
   );
   if (result.status === "uploaded") options.reload();
+  return result;
+}
+
+export interface ImportDataURLThenReloadOptions {
+  readonly transport: ImageLibraryTransport;
+  readonly cookie: string;
+  readonly draft: ImageDataURLImportDraft;
+  readonly idempotencyKey: string;
+  readonly isCurrent: () => boolean;
+  readonly clearConfirmedDataURL: () => void;
+  readonly reload: () => void;
+}
+
+export async function importDataURLThenReload(
+  options: ImportDataURLThenReloadOptions,
+): Promise<ImageDataURLImportResult> {
+  const result = await importImageDataURL(
+    options.transport,
+    options.cookie,
+    options.draft,
+    options.idempotencyKey,
+  );
+  if (result.status === "created" && options.isCurrent()) {
+    // The user-provided data URL is sensitive transient input. Clear it before
+    // the follow-up read so no later UI state or retry path retains it.
+    options.clearConfirmedDataURL();
+    options.reload();
+  }
   return result;
 }
 
@@ -315,6 +356,17 @@ export function ImageLibraryPage({
   });
   const [uploadFile, setUploadFile] = useState<File>();
   const [uploading, setUploading] = useState(false);
+  const [dataURLImportDraft, setDataURLImportDraft] =
+    useState<ImageDataURLImportDraft>({
+      dataURL: "",
+      fileName: "",
+      name: "",
+      description: "",
+      tags: "",
+      category: "",
+      enabled: true,
+    });
+  const [importingDataURL, setImportingDataURL] = useState(false);
   const [metadataDraft, setMetadataDraft] = useState<ImageMetadataDraft>();
   const [savingMetadata, setSavingMetadata] = useState(false);
   const [savingEnabled, setSavingEnabled] = useState(false);
@@ -329,12 +381,36 @@ export function ImageLibraryPage({
   const facetsGeneration = useRef(0);
   const detailGeneration = useRef(0);
   const writeInFlight = useRef(false);
+  const dataURLImportLifetime = useRef(0);
+  const dataURLImportToken = useRef<symbol>();
+  const dataURLImportUncertain = useRef(false);
   const [detail, setDetail] = useState<DetailState>({ kind: "idle" });
   const [previewMode, setPreviewMode] =
     useState<ImagePreviewMode>("standard");
   const [previewErrorMode, setPreviewErrorMode] =
     useState<ImagePreviewMode>();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    dataURLImportLifetime.current += 1;
+    if (dataURLImportUncertain.current) {
+      // This is a new mounted lifetime, so state updates are safe here. The
+      // old lifetime's finally must never reset this lock or its notice.
+      setImportingDataURL(false);
+      setWritesLocked(true);
+      setNotice({
+        kind: "alert",
+        text: dataURLImportMessages.unavailable,
+      });
+    }
+    return () => {
+      dataURLImportLifetime.current += 1;
+      if (dataURLImportToken.current !== undefined) {
+        dataURLImportToken.current = undefined;
+        dataURLImportUncertain.current = true;
+      }
+    };
+  }, [canAccess, transport]);
 
   const loadList = useCallback(
     async (next: ImageListQuery) => {
@@ -619,6 +695,76 @@ export function ImageLibraryPage({
         setNotice({ kind: "alert", text: uploadMessages[result.status] });
       } finally {
         setUploading(false);
+      }
+    });
+    if (operation) await operation;
+  };
+
+  const submitDataURLImport = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    if (
+      !canAccess ||
+      writesLocked ||
+      importingDataURL ||
+      dataURLImportUncertain.current
+    ) {
+      return;
+    }
+    const problem = imageDataURLImportProblem(dataURLImportDraft);
+    if (problem !== undefined) {
+      setNotice({ kind: "alert", text: problem });
+      return;
+    }
+    const draft = dataURLImportDraft;
+    const operation = startImageMetadataSave(writeInFlight, async () => {
+      const token = Symbol("image-data-url-import");
+      const lifetime = dataURLImportLifetime.current;
+      dataURLImportToken.current = token;
+      const isCurrent = () =>
+        dataURLImportLifetime.current === lifetime &&
+        dataURLImportToken.current === token &&
+        !dataURLImportUncertain.current;
+      setImportingDataURL(true);
+      setNotice(undefined);
+      try {
+        const result = await importDataURLThenReload({
+          transport,
+          cookie: readMutationCookie(),
+          draft,
+          idempotencyKey: imageDataURLImportIdempotencyKey(),
+          isCurrent,
+          clearConfirmedDataURL: () =>
+            setDataURLImportDraft({
+              dataURL: "",
+              fileName: "",
+              name: "",
+              description: "",
+              tags: "",
+              category: "",
+              enabled: true,
+            }),
+          reload: reloadLibrary,
+        });
+        if (!isCurrent()) return;
+        if (result.status === "created") {
+          setNotice({
+            kind: "status",
+            text: `图片已导入为本地素材 #${result.image.id}；列表与筛选已按服务端事实刷新。`,
+          });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        if (result.status === "unavailable") lockUnknownWrite();
+        setNotice({ kind: "alert", text: dataURLImportMessages[result.status] });
+      } finally {
+        if (dataURLImportToken.current === token) {
+          dataURLImportToken.current = undefined;
+          if (dataURLImportLifetime.current === lifetime) {
+            setImportingDataURL(false);
+          }
+        }
       }
     });
     if (operation) await operation;
@@ -1144,6 +1290,116 @@ export function ImageLibraryPage({
             </p>
             <button type="submit" disabled={writesLocked || uploading || !uploadFile}>
               {uploading ? "正在上传…" : "上传图片"}
+            </button>
+          </fieldset>
+        </form>
+        <form
+          className="image-library__panel image-upload"
+          onSubmit={submitDataURLImport}
+        >
+          <h2>粘贴 data URL 本地导入</h2>
+          <fieldset disabled={writesLocked || importingDataURL}>
+            <label>
+              Canonical data URL
+              <textarea
+                rows={3}
+                value={dataURLImportDraft.dataURL}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    dataURL: event.currentTarget.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              文件名
+              <input
+                value={dataURLImportDraft.fileName}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    fileName: event.currentTarget.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              名称（可选）
+              <input
+                value={dataURLImportDraft.name}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    name: event.currentTarget.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              分类（可选）
+              <input
+                value={dataURLImportDraft.category}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    category: event.currentTarget.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              标签（可选，英文逗号分隔）
+              <input
+                value={dataURLImportDraft.tags}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    tags: event.currentTarget.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              描述（可选）
+              <textarea
+                rows={3}
+                value={dataURLImportDraft.description}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    description: event.currentTarget.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={dataURLImportDraft.enabled}
+                onChange={(event) =>
+                  setDataURLImportDraft({
+                    ...dataURLImportDraft,
+                    enabled: event.currentTarget.checked,
+                  })
+                }
+              />
+              导入后立即启用本地素材
+            </label>
+            <p className="image-library__meta">
+              仅接收 canonical PNG、JPEG 或 GIF data URL。内容只用于本地导入，
+              成功确认后会立即清空；不会请求远程 URL 或自动重试。
+            </p>
+            <button
+              type="submit"
+              disabled={
+                writesLocked ||
+                importingDataURL ||
+                dataURLImportDraft.dataURL === "" ||
+                dataURLImportDraft.fileName === ""
+              }
+            >
+              {importingDataURL ? "正在导入…" : "导入本地素材"}
             </button>
           </fieldset>
         </form>
