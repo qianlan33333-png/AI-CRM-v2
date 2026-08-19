@@ -102,7 +102,7 @@ func (service *Service) CreateCredential(ctx context.Context, command Credential
 }
 
 func (service *Service) RotateCredential(ctx context.Context, kind adminopsport.CredentialKind, clientID, actor, requestID string) (adminopsport.Credential, error) {
-	if err := service.ready(actor, requestID); err != nil || !validKind(kind) || !validIdentifier(clientID, 120) {
+	if err := service.ready(actor, requestID); err != nil || !validKind(kind) || !validCredentialIdentifier(clientID) {
 		return adminopsport.Credential{}, ErrInvalidCommand
 	}
 	ref := newSecretRef(kind, clientID, requestID)
@@ -125,7 +125,7 @@ func (service *Service) RotateCredential(ctx context.Context, kind adminopsport.
 }
 
 func (service *Service) SetCredentialEnabled(ctx context.Context, kind adminopsport.CredentialKind, clientID string, enabled bool, secretRef, actor, requestID string) (adminopsport.Credential, error) {
-	if err := service.ready(actor, requestID); err != nil || !validKind(kind) || !validIdentifier(clientID, 120) {
+	if err := service.ready(actor, requestID); err != nil || !validKind(kind) || !validCredentialIdentifier(clientID) {
 		return adminopsport.Credential{}, ErrInvalidCommand
 	}
 	action := "credential.disable"
@@ -200,7 +200,7 @@ func (service *Service) ListCredentials(ctx context.Context) ([]adminopsport.Cre
 }
 
 func (service *Service) GetCredential(ctx context.Context, kind adminopsport.CredentialKind, clientID string) (adminopsport.Credential, error) {
-	if !service.readyRead() || !validKind(kind) || !validIdentifier(clientID, 120) {
+	if !service.readyRead() || !validKind(kind) || !validCredentialIdentifier(clientID) {
 		return adminopsport.Credential{}, ErrInvalidCommand
 	}
 	var result adminopsport.Credential
@@ -573,7 +573,11 @@ func validKind(kind adminopsport.CredentialKind) bool {
 }
 
 func validCredentialCommand(command CredentialCommand) bool {
-	return validKind(command.Kind) && validIdentifier(command.ClientID, 120) && validText(command.DisplayName, 200)
+	return validKind(command.Kind) && validCredentialIdentifier(command.ClientID) && validText(command.DisplayName, 200)
+}
+
+func validCredentialIdentifier(value string) bool {
+	return value != "." && value != ".." && validIdentifier(value, 120)
 }
 
 func validIdentifier(value string, limit int) bool {

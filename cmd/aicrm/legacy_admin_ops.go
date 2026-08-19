@@ -12,9 +12,11 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 	adminopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/app"
@@ -52,7 +54,20 @@ type legacyAdminOps interface {
 
 var adminOpsPageTemplate = template.Must(template.New("admin-ops").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>{{.Title}}</title><main><h1>{{.Title}}</h1><p>{{.Summary}}</p><pre>{{.Payload}}</pre></main></html>`))
 
+var adminOpsAPIClientListTemplate = template.Must(template.New("admin-ops-api-clients").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>API 接入与 Token</title><main><h1>API 接入与 Token</h1><p>创建、轮换和停用外部 API 客户端；Secret 只在创建或轮换时显示一次。</p><nav><a href="/admin/config/api-clients/new">新建客户端</a></nav><form method="get" action="/admin/config/api-clients"><label>搜索 <input name="q" value="{{.Query}}"></label><label>状态 <select name="status"><option value=""{{if eq .Status ""}} selected{{end}}>全部</option><option value="enabled"{{if eq .Status "enabled"}} selected{{end}}>已启用</option><option value="disabled"{{if eq .Status "disabled"}} selected{{end}}>已停用</option><option value="pending_activation"{{if eq .Status "pending_activation"}} selected{{end}}>待激活</option></select></label><button type="submit">应用筛选</button><a href="/admin/config/api-clients">重置</a></form><p>共 {{.ConfiguredCount}} 个；已启用 {{.EnabledCount}} 个；已停用 {{.DisabledCount}} 个；待激活 {{.PendingActivationCount}} 个。</p><table><thead><tr><th>客户端</th><th>状态</th><th>版本</th><th>最近更新</th><th>操作</th></tr></thead><tbody>{{range .Clients}}<tr><td><strong>{{.DisplayName}}</strong><br><code>{{.ClientID}}</code></td><td>{{.StatusLabel}}</td><td>v{{.Version}}</td><td>{{.UpdatedAt}}</td><td><a href="/admin/config/api-clients/{{.EscapedClientID}}">管理 Secret</a></td></tr>{{else}}<tr><td colspan="5">没有符合条件的 API 客户端。</td></tr>{{end}}</tbody></table></main></html>`))
+
 type adminOpsPageData struct{ Title, Summary, Payload string }
+
+type adminOpsAPIClientListPageData struct {
+	Query, Status                                                        string
+	ConfiguredCount, EnabledCount, DisabledCount, PendingActivationCount int
+	Clients                                                              []adminOpsAPIClientListItem
+}
+
+type adminOpsAPIClientListItem struct {
+	ClientID, EscapedClientID, DisplayName, StatusLabel, UpdatedAt string
+	Version                                                        int64
+}
 
 func adminOpsActionToken(session authport.SessionRef, method, pattern string) string {
 	mac := hmac.New(sha256.New, []byte(session))
@@ -81,6 +96,10 @@ func (handler *Handler) adminOpsPage(writer http.ResponseWriter, request *http.R
 		http.Redirect(writer, request, "/admin/wecom-tags", http.StatusFound)
 		return
 	}
+	if request.URL.Path == "/admin/config/api-clients" {
+		handler.adminOpsAPIClientListPage(writer, request)
+		return
+	}
 	title, summary := "配置控制面", "本地读取模型；密钥只展示引用和掩码，任务不会在 HTTP 请求中执行。"
 	payload := map[string]any{"route_owner": "adminops", "provider_execution": false, "worker_isolated": true, "secret_boundary": "reference_and_mask_only"}
 	if strings.Contains(request.URL.Path, "release") {
@@ -103,6 +122,88 @@ func (handler *Handler) adminOpsPage(writer http.ResponseWriter, request *http.R
 	writer.Header().Set("Cache-Control", "no-store")
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = adminOpsPageTemplate.Execute(writer, adminOpsPageData{Title: title, Summary: summary, Payload: string(raw)})
+}
+
+func (handler *Handler) adminOpsAPIClientListPage(writer http.ResponseWriter, request *http.Request) {
+	query := strings.TrimSpace(request.URL.Query().Get("q"))
+	status := strings.ToLower(strings.TrimSpace(request.URL.Query().Get("status")))
+	if status != "" && status != "enabled" && status != "disabled" && status != "pending_activation" {
+		writeAdminOpsError(writer, http.StatusBadRequest, "invalid_status_filter")
+		return
+	}
+	if !utf8.ValidString(query) || utf8.RuneCountInString(query) > 200 {
+		writeAdminOpsError(writer, http.StatusBadRequest, "invalid_query_filter")
+		return
+	}
+	credentials, err := handler.adminOps.ListCredentials(request.Context())
+	if err != nil {
+		writeAdminOpsServiceError(writer, err)
+		return
+	}
+	data := adminOpsAPIClientListPageData{Query: query, Status: status}
+	normalizedQuery := strings.ToLower(query)
+	for _, credential := range credentials {
+		if credential.Kind != adminopsport.CredentialAPIClient {
+			continue
+		}
+		if !validAdminOpsPageClientID(credential.ClientID) || credential.DisplayName == "" ||
+			credential.DisplayName != strings.TrimSpace(credential.DisplayName) || !utf8.ValidString(credential.DisplayName) ||
+			utf8.RuneCountInString(credential.DisplayName) > 200 || (credential.State != "active" && credential.State != "disabled" && credential.State != "pending_activation") ||
+			credential.Version < 1 || credential.UpdatedAt.IsZero() {
+			writeAdminOpsError(writer, http.StatusServiceUnavailable, "admin_ops_unavailable")
+			return
+		}
+		data.ConfiguredCount++
+		switch credential.State {
+		case "active":
+			data.EnabledCount++
+		case "disabled":
+			data.DisabledCount++
+		case "pending_activation":
+			data.PendingActivationCount++
+		}
+		requestedState := status
+		if requestedState == "enabled" {
+			requestedState = "active"
+		}
+		if requestedState != "" && credential.State != requestedState {
+			continue
+		}
+		haystack := strings.ToLower(strings.Join([]string{credential.ClientID, credential.DisplayName, string(credential.Kind)}, " "))
+		if normalizedQuery != "" && !strings.Contains(haystack, normalizedQuery) {
+			continue
+		}
+		statusLabel := "待激活"
+		if credential.State == "disabled" {
+			statusLabel = "已停用"
+		} else if credential.State == "active" {
+			statusLabel = "已启用"
+		}
+		data.Clients = append(data.Clients, adminOpsAPIClientListItem{
+			ClientID: credential.ClientID, EscapedClientID: url.PathEscape(credential.ClientID),
+			DisplayName: credential.DisplayName, StatusLabel: statusLabel,
+			Version: credential.Version, UpdatedAt: credential.UpdatedAt.UTC().Format("2006-01-02 15:04:05Z"),
+		})
+	}
+	sort.Slice(data.Clients, func(i, j int) bool { return data.Clients[i].ClientID < data.Clients[j].ClientID })
+	writer.Header().Set("Cache-Control", "private, no-store")
+	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	if err := adminOpsAPIClientListTemplate.Execute(writer, data); err != nil {
+		return
+	}
+}
+
+func validAdminOpsPageClientID(value string) bool {
+	if value == "" || value == "." || value == ".." || len(value) > 120 || value != strings.TrimSpace(value) || !utf8.ValidString(value) {
+		return false
+	}
+	for _, item := range value {
+		if !(item == '-' || item == '_' || item == '.' || item >= 'a' && item <= 'z' || item >= 'A' && item <= 'Z' || item >= '0' && item <= '9') {
+			return false
+		}
+	}
+	return true
 }
 
 func (handler *Handler) adminOpsForm(writer http.ResponseWriter, request *http.Request) {

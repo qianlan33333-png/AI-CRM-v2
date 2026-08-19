@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	adminopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/app"
 	adminopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/port"
@@ -15,12 +17,84 @@ import (
 
 type legacyAdminOpsTransportStub struct {
 	legacyAdminOps
-	created []adminopsapp.CredentialCommand
+	created     []adminopsapp.CredentialCommand
+	credentials []adminopsport.Credential
+	listErr     error
 }
 
 func (stub *legacyAdminOpsTransportStub) CreateCredential(_ context.Context, command adminopsapp.CredentialCommand) (adminopsport.Credential, error) {
 	stub.created = append(stub.created, command)
 	return adminopsport.Credential{Kind: command.Kind, ClientID: command.ClientID, DisplayName: command.DisplayName, State: "active", SecretRef: "secret://adminops/direct_api_key/direct-default/12345678", SecretMask: "masked:…345678"}, nil
+}
+
+func (stub *legacyAdminOpsTransportStub) ListCredentials(context.Context) ([]adminopsport.Credential, error) {
+	return stub.credentials, stub.listErr
+}
+
+func TestAdminOpsAPIClientListPageUsesLocalProjectionAndSafeFilters(t *testing.T) {
+	updatedAt := time.Date(2026, 8, 19, 2, 3, 4, 0, time.UTC)
+	stub := &legacyAdminOpsTransportStub{credentials: []adminopsport.Credential{
+		{Kind: adminopsport.CredentialAPIClient, ClientID: "alpha.client", DisplayName: "Alpha <script>alert(1)</script>", State: "active", SecretRef: "secret://must-not-render", SecretMask: "masked:must-not-render", Version: 3, UpdatedAt: updatedAt},
+		{Kind: adminopsport.CredentialAPIClient, ClientID: "beta.client", DisplayName: "Beta", State: "disabled", Version: 2, UpdatedAt: updatedAt},
+		{Kind: adminopsport.CredentialAPIClient, ClientID: "gamma.client", DisplayName: "Gamma", State: "pending_activation", Version: 1, UpdatedAt: updatedAt},
+		{Kind: adminopsport.CredentialDirectAPIKey, ClientID: "direct-key", DisplayName: "Direct", State: "active", Version: 1, UpdatedAt: updatedAt},
+	}}
+	handler := &Handler{adminOps: stub}
+
+	response := httptest.NewRecorder()
+	handler.AdminOps(response, httptest.NewRequest(http.MethodGet, "/admin/config/api-clients?q=ALPHA&status=enabled", nil))
+	body := response.Body.String()
+	if response.Code != http.StatusOK || !strings.Contains(response.Header().Get("Cache-Control"), "private") || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("status=%d headers=%v", response.Code, response.Header())
+	}
+	for _, want := range []string{"Alpha &lt;script&gt;alert(1)&lt;/script&gt;", "/admin/config/api-clients/alpha.client", "/admin/config/api-clients/new", "共 3 个", "已启用 1 个", "已停用 1 个", "待激活 1 个"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %s", want, body)
+		}
+	}
+	for _, forbidden := range []string{"beta.client", "gamma.client", "direct-key", "secret://must-not-render", "masked:must-not-render", "<script>alert(1)</script>"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("unsafe or unfiltered value %q in %s", forbidden, body)
+		}
+	}
+	for _, testCase := range []struct {
+		status, want, forbidden string
+	}{
+		{status: "enabled", want: "alpha.client", forbidden: "beta.client"},
+		{status: "disabled", want: "beta.client", forbidden: "gamma.client"},
+		{status: "pending_activation", want: "gamma.client", forbidden: "beta.client"},
+	} {
+		filtered := httptest.NewRecorder()
+		handler.AdminOps(filtered, httptest.NewRequest(http.MethodGet, "/admin/config/api-clients?status="+testCase.status, nil))
+		if filtered.Code != http.StatusOK || !strings.Contains(filtered.Body.String(), testCase.want) || strings.Contains(filtered.Body.String(), testCase.forbidden) {
+			t.Fatalf("status filter=%s code=%d body=%s", testCase.status, filtered.Code, filtered.Body.String())
+		}
+	}
+}
+
+func TestAdminOpsAPIClientListPageRejectsBadStatusBeforeReading(t *testing.T) {
+	stub := &legacyAdminOpsTransportStub{listErr: errors.New("must not be called")}
+	handler := &Handler{adminOps: stub}
+	response := httptest.NewRecorder()
+	handler.AdminOps(response, httptest.NewRequest(http.MethodGet, "/admin/config/api-clients?status=unknown", nil))
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"error":"invalid_status_filter"`) {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestAdminOpsAPIClientListPageFailsClosedForInvalidProjection(t *testing.T) {
+	for _, credential := range []adminopsport.Credential{
+		{Kind: adminopsport.CredentialAPIClient, ClientID: "broken.client", DisplayName: "Broken", State: "unknown", Version: 1, UpdatedAt: time.Now().UTC()},
+		{Kind: adminopsport.CredentialAPIClient, ClientID: "..", DisplayName: "Unsafe path", State: "active", Version: 1, UpdatedAt: time.Now().UTC()},
+	} {
+		stub := &legacyAdminOpsTransportStub{credentials: []adminopsport.Credential{credential}}
+		handler := &Handler{adminOps: stub}
+		response := httptest.NewRecorder()
+		handler.AdminOps(response, httptest.NewRequest(http.MethodGet, "/admin/config/api-clients", nil))
+		if response.Code != http.StatusServiceUnavailable || !strings.Contains(response.Body.String(), `"error":"admin_ops_unavailable"`) || strings.Contains(response.Body.String(), credential.ClientID) {
+			t.Fatalf("credential=%q status=%d body=%s", credential.ClientID, response.Code, response.Body.String())
+		}
+	}
 }
 
 func TestAdminOpsDirectKeyRequiresSessionRBACCSRFAndActionToken(t *testing.T) {
