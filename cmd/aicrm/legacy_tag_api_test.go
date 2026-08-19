@@ -16,10 +16,32 @@ import (
 )
 
 type legacyTagStub struct {
-	catalog contactapp.LegacyTagCatalog
-	err     error
-	command contactapp.LegacyTagCommand
-	writes  int
+	catalog   contactapp.LegacyTagCatalog
+	err       error
+	command   contactapp.LegacyTagCommand
+	listCalls int
+	writes    int
+}
+
+type legacyTagReadAuthStub struct {
+	principal     authport.Principal
+	authorization authport.Authorization
+}
+
+func (stub *legacyTagReadAuthStub) Authenticate(context.Context, authport.SessionRef) (authport.Principal, error) {
+	return stub.principal, nil
+}
+
+func (stub *legacyTagReadAuthStub) Authorize(context.Context, authport.Principal, authport.Capability) (authport.Authorization, error) {
+	return stub.authorization, nil
+}
+
+func (*legacyTagReadAuthStub) ValidateCSRF(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
+}
+
+func (*legacyTagReadAuthStub) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
 }
 
 type legacyTagSyncStub struct {
@@ -52,6 +74,7 @@ func (stub *legacyTagStatusStub) Get(context.Context) (contactapp.LegacyTagExecu
 }
 
 func (s *legacyTagStub) List(context.Context) (contactapp.LegacyTagCatalog, error) {
+	s.listCalls++
 	return s.catalog, s.err
 }
 func (s *legacyTagStub) GetGroup(_ context.Context, id int64) (contactapp.LegacyTagGroup, error) {
@@ -147,6 +170,53 @@ func TestB02LegacyTagCatalogDegradesAndCSRFRejects(t *testing.T) {
 	router.ServeHTTP(response, bad)
 	if response.Code != http.StatusForbidden || stub.writes != 0 {
 		t.Fatalf("csrf=%d writes=%d body=%s", response.Code, stub.writes, response.Body.String())
+	}
+}
+
+func TestB02LegacyTagCatalogReadRequiresGlobalAdminOrOps(t *testing.T) {
+	for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
+		t.Run(string(role), func(t *testing.T) {
+			tags := &legacyTagStub{catalog: legacyTagFixture()}
+			auth := &legacyTagReadAuthStub{
+				principal:     authport.Principal{AdminUserID: 7, Role: role},
+				authorization: authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal},
+			}
+			handler := &Handler{auth: auth, legacyTags: tags}
+
+			read := httptest.NewRecorder()
+			legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.ListLegacyTags).ServeHTTP(read, legacyRequest(http.MethodGet, "/api/admin/wecom/tags", legacyToken(151)))
+			if read.Code != http.StatusOK || tags.listCalls != 1 {
+				t.Fatalf("read=%d list_calls=%d body=%s", read.Code, tags.listCalls, read.Body.String())
+			}
+
+			page := httptest.NewRecorder()
+			legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.LegacyWecomTagsPage).ServeHTTP(page, legacyRequest(http.MethodGet, "/admin/wecom-tags", legacyToken(152)))
+			if page.Code != http.StatusFound || page.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Fwecom-tags" {
+				t.Fatalf("page=%d location=%q body=%s", page.Code, page.Header().Get("Location"), page.Body.String())
+			}
+		})
+	}
+
+	staffID := int64(71)
+	tags := &legacyTagStub{catalog: legacyTagFixture()}
+	auth := &legacyTagReadAuthStub{
+		principal: authport.Principal{AdminUserID: 8, Role: authport.RoleSales, StaffID: &staffID},
+		authorization: authport.Authorization{
+			Capability:   authport.CapabilityCustomersRead,
+			Scope:        authport.ScopeOwnerStaff,
+			OwnerStaffID: staffID,
+		},
+	}
+	handler := &Handler{auth: auth, legacyTags: tags}
+	read := httptest.NewRecorder()
+	legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.ListLegacyTags).ServeHTTP(read, legacyRequest(http.MethodGet, "/api/admin/wecom/tags", legacyToken(153)))
+	if read.Code != http.StatusForbidden || tags.listCalls != 0 {
+		t.Fatalf("sales read=%d list_calls=%d body=%s", read.Code, tags.listCalls, read.Body.String())
+	}
+	page := httptest.NewRecorder()
+	legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.LegacyWecomTagsPage).ServeHTTP(page, legacyRequest(http.MethodGet, "/admin/wecom-tags", legacyToken(154)))
+	if page.Code != http.StatusForbidden || page.Header().Get("Location") != "" || tags.listCalls != 0 {
+		t.Fatalf("sales page=%d location=%q list_calls=%d body=%s", page.Code, page.Header().Get("Location"), tags.listCalls, page.Body.String())
 	}
 }
 
