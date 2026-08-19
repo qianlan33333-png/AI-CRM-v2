@@ -1,5 +1,10 @@
 import {
+  archiveLegacyGroupInvite,
+  createLegacyGroupInvite,
   listLegacyGroupInvites,
+  updateLegacyGroupInvite,
+  type LegacyGroupInviteCreateRequest,
+  type LegacyGroupInviteUpdateRequest,
   type ListLegacyGroupInvitesParams,
 } from "./api/generated/health";
 
@@ -17,6 +22,18 @@ export interface GroupInviteLibraryItem {
   readonly enabled: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly createdBy?: number;
+  readonly updatedBy?: number;
+  readonly version?: number;
+  readonly archivedAt?: string;
+}
+
+export interface GroupInviteLibraryDraft {
+  readonly name: string;
+  readonly title: string;
+  readonly description: string;
+  readonly joinURL: string;
+  readonly enabled: boolean;
 }
 
 export interface GroupInviteLibraryPageData {
@@ -38,22 +55,57 @@ async function generatedList(
   return listLegacyGroupInvites(params, options);
 }
 
+async function generatedCreate(
+  request: LegacyGroupInviteCreateRequest,
+  options: RequestInit,
+): Promise<GroupInviteLibraryTransportResponse> {
+  return createLegacyGroupInvite(request, options);
+}
+
+async function generatedUpdate(
+  itemID: number,
+  request: LegacyGroupInviteUpdateRequest,
+  options: RequestInit,
+): Promise<GroupInviteLibraryTransportResponse> {
+  return updateLegacyGroupInvite(itemID, request, options);
+}
+
+async function generatedArchive(
+  itemID: number,
+  options: RequestInit,
+): Promise<GroupInviteLibraryTransportResponse> {
+  return archiveLegacyGroupInvite(itemID, options);
+}
+
 export interface GroupInviteLibraryTransport {
   readonly list: typeof generatedList;
+  readonly create?: typeof generatedCreate;
+  readonly update?: typeof generatedUpdate;
+  readonly archive?: typeof generatedArchive;
 }
 
 export const generatedGroupInviteLibraryTransport: GroupInviteLibraryTransport = {
   list: generatedList,
+  create: generatedCreate,
+  update: generatedUpdate,
+  archive: generatedArchive,
 };
 
 export type GroupInviteLibraryFailure =
   | "unauthenticated"
   | "forbidden"
+  | "not_found"
+  | "conflict"
   | "invalid"
   | "unavailable";
 
 export type GroupInviteLibraryResult =
   | { readonly status: "loaded"; readonly page: GroupInviteLibraryPageData }
+  | { readonly status: GroupInviteLibraryFailure };
+
+export type GroupInviteLibraryMutationResult =
+  | { readonly status: "saved"; readonly item: GroupInviteLibraryItem }
+  | { readonly status: "archived"; readonly item: GroupInviteLibraryItem }
   | { readonly status: GroupInviteLibraryFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -148,14 +200,32 @@ function timestamp(value: unknown): value is string {
 
 export function parseGroupInviteLibraryItem(
   value: unknown,
+  allowArchived = false,
 ): GroupInviteLibraryItem | undefined {
   if (!record(value)) return undefined;
   const keys = Object.keys(value);
   const optionalCover = keys.includes("cover_image_id");
+  const archived = keys.includes("archived_at");
   if (
     !exact(
       value,
-      optionalCover
+      optionalCover && archived
+        ? [
+            "id",
+            "name",
+            "title",
+            "description",
+            "join_url",
+            "cover_image_id",
+            "enabled",
+            "created_by",
+            "updated_by",
+            "version",
+            "created_at",
+            "updated_at",
+            "archived_at",
+          ]
+        : optionalCover
         ? [
             "id",
             "name",
@@ -170,6 +240,21 @@ export function parseGroupInviteLibraryItem(
             "created_at",
             "updated_at",
           ]
+        : archived
+          ? [
+              "id",
+              "name",
+              "title",
+              "description",
+              "join_url",
+              "enabled",
+              "created_by",
+              "updated_by",
+              "version",
+              "created_at",
+              "updated_at",
+              "archived_at",
+            ]
         : [
             "id",
             "name",
@@ -196,7 +281,12 @@ export function parseGroupInviteLibraryItem(
     !positive(value.version) ||
     !timestamp(value.created_at) ||
     !timestamp(value.updated_at) ||
-    Date.parse(value.updated_at) < Date.parse(value.created_at)
+    Date.parse(value.updated_at) < Date.parse(value.created_at) ||
+    (archived &&
+      (!allowArchived ||
+        !timestamp(value.archived_at) ||
+        value.enabled !== false ||
+        Date.parse(value.archived_at) < Date.parse(value.updated_at)))
   ) {
     return undefined;
   }
@@ -214,6 +304,10 @@ export function parseGroupInviteLibraryItem(
     enabled: value.enabled,
     createdAt: value.created_at,
     updatedAt: value.updated_at,
+    createdBy: value.created_by,
+    updatedBy: value.updated_by,
+    version: value.version,
+    ...(archived ? { archivedAt: value.archived_at as string } : {}),
   };
 }
 
@@ -233,7 +327,11 @@ function sameItems(
         item.coverImageID === right[index]?.coverImageID &&
         item.enabled === right[index]?.enabled &&
         item.createdAt === right[index]?.createdAt &&
-        item.updatedAt === right[index]?.updatedAt,
+        item.updatedAt === right[index]?.updatedAt &&
+        item.createdBy === right[index]?.createdBy &&
+        item.updatedBy === right[index]?.updatedBy &&
+        item.version === right[index]?.version &&
+        item.archivedAt === right[index]?.archivedAt,
     )
   );
 }
@@ -270,8 +368,8 @@ export function parseGroupInviteLibraryPage(
   ) {
     return undefined;
   }
-  const items = value.items.map(parseGroupInviteLibraryItem);
-  const mirrored = value.group_invites.map(parseGroupInviteLibraryItem);
+  const items = value.items.map((item) => parseGroupInviteLibraryItem(item));
+  const mirrored = value.group_invites.map((item) => parseGroupInviteLibraryItem(item));
   if (
     items.includes(undefined) ||
     mirrored.includes(undefined) ||
@@ -295,6 +393,8 @@ export function parseGroupInviteLibraryPage(
 function failure(status: number): GroupInviteLibraryFailure {
   if (status === 401) return "unauthenticated";
   if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status === 409) return "conflict";
   if (status === 400) return "invalid";
   return "unavailable";
 }
@@ -318,6 +418,234 @@ export async function loadGroupInviteLibrary(
     if (response.status !== 200) return { status: failure(response.status) };
     const page = parseGroupInviteLibraryPage(response.data, offset);
     return page ? { status: "loaded", page } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+function validCSRFToken(value: string): boolean {
+  return /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+
+function validIdempotencyKey(value: string): boolean {
+  return (
+    value.length >= 16 &&
+    value.length <= 128 &&
+    value.trim() === value &&
+    /^[\x21-\x7e]+$/.test(value)
+  );
+}
+
+function mutationOptions(
+  csrfToken: string,
+  idempotencyKey: string,
+): RequestInit | undefined {
+  if (!validCSRFToken(csrfToken) || !validIdempotencyKey(idempotencyKey)) {
+    return undefined;
+  }
+  return {
+    credentials: "same-origin",
+    headers: {
+      "X-CSRF-Token": csrfToken,
+      "Idempotency-Key": idempotencyKey,
+    },
+  };
+}
+
+interface NormalizedDraft {
+  readonly name?: string;
+  readonly title: string;
+  readonly description: string;
+  readonly joinURL: string;
+  readonly enabled: boolean;
+}
+
+function normalizeDraft(value: GroupInviteLibraryDraft): NormalizedDraft | undefined {
+  const nameValue = value.name.trim();
+  const title = value.title.trim();
+  const description = value.description.trim();
+  const join = value.joinURL.trim();
+  if (
+    !boundedText(title, 128) ||
+    !boundedText(description, 512, true) ||
+    !joinURL(join) ||
+    typeof value.enabled !== "boolean" ||
+    (nameValue !== "" && !boundedText(nameValue, 128))
+  ) {
+    return undefined;
+  }
+  return {
+    ...(nameValue === "" ? {} : { name: nameValue }),
+    title,
+    description,
+    joinURL: join,
+    enabled: value.enabled,
+  };
+}
+
+function expectedItem(
+  current: GroupInviteLibraryItem | undefined,
+  draft: NormalizedDraft,
+): Pick<GroupInviteLibraryItem, "name" | "title" | "description" | "joinURL" | "enabled"> {
+  return {
+    name: draft.name ?? current?.name ?? draft.title,
+    title: draft.title,
+    description: draft.description,
+    joinURL: draft.joinURL,
+    enabled: draft.enabled,
+  };
+}
+
+function matchesExpected(
+  item: GroupInviteLibraryItem,
+  expected: Pick<GroupInviteLibraryItem, "name" | "title" | "description" | "joinURL" | "enabled">,
+): boolean {
+  return (
+    item.name === expected.name &&
+    item.title === expected.title &&
+    item.description === expected.description &&
+    item.joinURL === expected.joinURL &&
+    item.enabled === expected.enabled &&
+    item.archivedAt === undefined
+  );
+}
+
+function parseMutation(value: unknown): GroupInviteLibraryItem | undefined {
+  if (!record(value)) return undefined;
+  const baseKeys = [
+    "ok",
+    "item",
+    "group_invite",
+    "local_only",
+    "provider_call_executed",
+    "real_external_call_executed",
+  ];
+  if (
+    !exact(value, baseKeys) &&
+    !exact(value, [...baseKeys, "item_id"])
+  ) {
+    return undefined;
+  }
+  const item = parseGroupInviteLibraryItem(value.item);
+  const mirrored = parseGroupInviteLibraryItem(value.group_invite);
+  if (
+    value.ok !== true ||
+    value.local_only !== true ||
+    value.provider_call_executed !== false ||
+    value.real_external_call_executed !== false ||
+    !item ||
+    !mirrored ||
+    !sameItems([item], [mirrored]) ||
+    ("item_id" in value && value.item_id !== item.id)
+  ) {
+    return undefined;
+  }
+  return item;
+}
+
+function parseArchive(value: unknown): GroupInviteLibraryItem | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "item",
+      "archived",
+      "local_only",
+      "provider_call_executed",
+      "real_external_call_executed",
+    ]) ||
+    value.ok !== true ||
+    value.archived !== true ||
+    value.local_only !== true ||
+    value.provider_call_executed !== false ||
+    value.real_external_call_executed !== false
+  ) {
+    return undefined;
+  }
+  const item = parseGroupInviteLibraryItem(value.item, true);
+  return item?.archivedAt !== undefined && item.enabled === false ? item : undefined;
+}
+
+export async function createGroupInvite(
+  transport: GroupInviteLibraryTransport,
+  draft: GroupInviteLibraryDraft,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<GroupInviteLibraryMutationResult> {
+  const normalized = normalizeDraft(draft);
+  const options = mutationOptions(csrfToken, idempotencyKey);
+  if (!normalized || !options) return { status: "invalid" };
+  const request: LegacyGroupInviteCreateRequest = {
+    title: normalized.title,
+    description: normalized.description,
+    join_url: normalized.joinURL,
+    enabled: normalized.enabled,
+    ...(normalized.name === undefined ? {} : { name: normalized.name }),
+  };
+  const create = transport.create;
+  if (!create) return { status: "unavailable" };
+  try {
+    const response = await create(request, options);
+    if (response.status !== 200) return { status: failure(response.status) };
+    const item = parseMutation(response.data);
+    return item && matchesExpected(item, expectedItem(undefined, normalized))
+      ? { status: "saved", item }
+      : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function updateGroupInvite(
+  transport: GroupInviteLibraryTransport,
+  current: GroupInviteLibraryItem,
+  draft: GroupInviteLibraryDraft,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<GroupInviteLibraryMutationResult> {
+  const normalized = normalizeDraft(draft);
+  const options = mutationOptions(csrfToken, idempotencyKey);
+  if (!positive(current.id) || !normalized || !options) return { status: "invalid" };
+  const request: LegacyGroupInviteUpdateRequest = {
+    title: normalized.title,
+    description: normalized.description,
+    join_url: normalized.joinURL,
+    enabled: normalized.enabled,
+    ...(normalized.name === undefined ? {} : { name: normalized.name }),
+  };
+  const update = transport.update;
+  if (!update) return { status: "unavailable" };
+  try {
+    const response = await update(current.id, request, options);
+    if (response.status !== 200) return { status: failure(response.status) };
+    const item = parseMutation(response.data);
+    return item &&
+      item.id === current.id &&
+      matchesExpected(item, expectedItem(current, normalized))
+      ? { status: "saved", item }
+      : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function archiveGroupInvite(
+  transport: GroupInviteLibraryTransport,
+  current: GroupInviteLibraryItem,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<GroupInviteLibraryMutationResult> {
+  const options = mutationOptions(csrfToken, idempotencyKey);
+  if (!positive(current.id) || !options) return { status: "invalid" };
+  const archive = transport.archive;
+  if (!archive) return { status: "unavailable" };
+  try {
+    const response = await archive(current.id, options);
+    if (response.status !== 200) return { status: failure(response.status) };
+    const item = parseArchive(response.data);
+    return item && item.id === current.id
+      ? { status: "archived", item }
+      : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }

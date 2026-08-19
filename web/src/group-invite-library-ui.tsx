@@ -1,10 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { readCSRFCookie } from "./auth";
 import {
+  archiveGroupInvite,
+  createGroupInvite,
   generatedGroupInviteLibraryTransport,
   loadGroupInviteLibrary,
   nextGroupInvitePage,
   previousGroupInvitePage,
+  updateGroupInvite,
+  type GroupInviteLibraryDraft,
   type GroupInviteLibraryFailure,
+  type GroupInviteLibraryItem,
   type GroupInviteLibraryPageData,
   type GroupInviteLibraryRole,
   type GroupInviteLibraryTransport,
@@ -13,8 +19,18 @@ import {
 const messages: Record<GroupInviteLibraryFailure, string> = {
   unauthenticated: "登录状态已失效，请重新登录。",
   forbidden: "当前账号没有群邀请素材库访问权限。",
-  invalid: "群邀请素材库响应不符合已冻结的本地只读合同。",
+  not_found: "该群邀请素材已不存在或已归档。",
+  conflict: "群邀请素材正在被其他操作处理，请刷新后再试。",
+  invalid: "群邀请素材请求或回执不符合已冻结的本地合同。",
   unavailable: "群邀请素材库暂时不可用，请稍后重试。",
+};
+
+const emptyDraft: GroupInviteLibraryDraft = {
+  name: "",
+  title: "",
+  description: "",
+  joinURL: "",
+  enabled: true,
 };
 
 export type GroupInviteLibraryState =
@@ -26,7 +42,49 @@ export type GroupInviteLibraryState =
       readonly previous?: GroupInviteLibraryPageData;
     };
 
-function InviteRows({ page }: { readonly page: GroupInviteLibraryPageData }): React.ReactElement {
+type Editor =
+  | { readonly mode: "create"; readonly draft: GroupInviteLibraryDraft }
+  | {
+      readonly mode: "edit";
+      readonly item: GroupInviteLibraryItem;
+      readonly draft: GroupInviteLibraryDraft;
+    };
+
+function browserCookie(): string {
+  return typeof document === "undefined" ? "" : document.cookie;
+}
+
+function commandKey(operation: "create" | "update" | "archive"): string | undefined {
+  const randomUUID = globalThis.crypto?.randomUUID;
+  return typeof randomUUID === "function"
+    ? `group-invite:${operation}:${randomUUID.call(globalThis.crypto)}`
+    : undefined;
+}
+
+function draftFor(item: GroupInviteLibraryItem): GroupInviteLibraryDraft {
+  return {
+    name: item.name,
+    title: item.title,
+    description: item.description,
+    joinURL: item.joinURL,
+    enabled: item.enabled,
+  };
+}
+
+function InviteRows({
+  page,
+  busy = false,
+  onArchive,
+  onEdit,
+}: {
+  readonly page: GroupInviteLibraryPageData;
+  readonly busy?: boolean;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onArchive?: (item: GroupInviteLibraryItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onEdit?: (item: GroupInviteLibraryItem) => void;
+}): React.ReactElement {
+  const actions = onArchive !== undefined || onEdit !== undefined;
   return page.items.length === 0 ? (
     <p role="status">当前页没有本地群邀请素材。</p>
   ) : (
@@ -41,6 +99,7 @@ function InviteRows({ page }: { readonly page: GroupInviteLibraryPageData }): Re
           <th>状态</th>
           <th>创建时间</th>
           <th>更新时间</th>
+          {actions ? <th>本地操作</th> : null}
         </tr>
       </thead>
       <tbody>
@@ -54,6 +113,28 @@ function InviteRows({ page }: { readonly page: GroupInviteLibraryPageData }): Re
             <td>{item.enabled ? "enabled" : "disabled"}</td>
             <td>{item.createdAt}</td>
             <td>{item.updatedAt}</td>
+            {actions ? (
+              <td>
+                {onEdit ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onEdit(item)}
+                  >
+                    编辑本地元数据
+                  </button>
+                ) : null}{" "}
+                {onArchive ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onArchive(item)}
+                  >
+                    归档
+                  </button>
+                ) : null}
+              </td>
+            ) : null}
           </tr>
         ))}
       </tbody>
@@ -62,9 +143,17 @@ function InviteRows({ page }: { readonly page: GroupInviteLibraryPageData }): Re
 }
 
 export function GroupInviteLibraryView({
+  busy = false,
+  onArchive,
+  onEdit,
   onLoad,
   state,
 }: {
+  readonly busy?: boolean;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onArchive?: (item: GroupInviteLibraryItem) => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onEdit?: (item: GroupInviteLibraryItem) => void;
   // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
   readonly onLoad: (offset: number) => void;
   readonly state: GroupInviteLibraryState;
@@ -72,27 +161,27 @@ export function GroupInviteLibraryView({
   const page = state.kind === "ready" ? state.page : state.previous;
   return (
     <section className="route-card" aria-labelledby="app-title">
-      <p className="route-card__eyebrow">素材库 · 本地只读</p>
+      <p className="route-card__eyebrow">素材库 · 本地元数据</p>
       <h1 id="app-title">群邀请素材库</h1>
       <p>
-        本页仅显示本地群邀请卡元数据；不代表企业微信入群方式已创建、可用、已发送或已发生其他外部效果。
+        本页只管理本地群邀请卡元数据；不代表企业微信入群方式已创建、可用、已发送或已发生其他外部效果。
       </p>
       {page ? (
         <>
           <p>共 {page.total} 条本地未归档素材，当前从第 {page.offset + 1} 条开始。</p>
-          <InviteRows page={page} />
+          <InviteRows page={page} busy={busy} onEdit={onEdit} onArchive={onArchive} />
         </>
       ) : null}
       {state.kind === "loading" ? <p role="status">正在读取本地群邀请素材。</p> : null}
       {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
       {state.kind === "error" && !page ? (
-        <button type="button" onClick={() => onLoad(0)}>重试读取</button>
+        <button type="button" disabled={busy} onClick={() => onLoad(0)}>重试读取</button>
       ) : null}
       {page ? (
         <p>
           <button
             type="button"
-            disabled={state.kind === "loading" || !previousGroupInvitePage(page)}
+            disabled={busy || !previousGroupInvitePage(page)}
             onClick={() => {
               const previous = previousGroupInvitePage(page);
               if (previous !== undefined) onLoad(previous);
@@ -102,7 +191,7 @@ export function GroupInviteLibraryView({
           </button>{" "}
           <button
             type="button"
-            disabled={state.kind === "loading" || !nextGroupInvitePage(page)}
+            disabled={busy || !nextGroupInvitePage(page)}
             onClick={() => {
               const next = nextGroupInvitePage(page);
               if (next !== undefined) onLoad(next);
@@ -116,40 +205,174 @@ export function GroupInviteLibraryView({
   );
 }
 
+function EditorForm({
+  busy,
+  editor,
+  onCancel,
+  onChange,
+  onSubmit,
+}: {
+  readonly busy: boolean;
+  readonly editor: Editor;
+  readonly onCancel: () => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly onChange: (draft: GroupInviteLibraryDraft) => void;
+  readonly onSubmit: () => void;
+}): React.ReactElement {
+  const { draft } = editor;
+  const change = (field: keyof GroupInviteLibraryDraft, value: string | boolean) =>
+    onChange({ ...draft, [field]: value });
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
+    >
+      <h2>{editor.mode === "create" ? "新建本地群邀请卡" : "编辑本地群邀请卡"}</h2>
+      <p>入群地址仅作为本地文本保存，不会被打开、复制或验证实际入群。</p>
+      <label>
+        名称（可选）
+        <input value={draft.name} maxLength={128} disabled={busy} onChange={(event) => change("name", event.target.value)} />
+      </label>
+      <label>
+        标题
+        <input value={draft.title} maxLength={128} required disabled={busy} onChange={(event) => change("title", event.target.value)} />
+      </label>
+      <label>
+        说明
+        <textarea value={draft.description} maxLength={512} disabled={busy} onChange={(event) => change("description", event.target.value)} />
+      </label>
+      <label>
+        入群地址（本地文本）
+        <input value={draft.joinURL} maxLength={2048} required disabled={busy} onChange={(event) => change("joinURL", event.target.value)} />
+      </label>
+      <label>
+        <input type="checkbox" checked={draft.enabled} disabled={busy} onChange={(event) => change("enabled", event.target.checked)} />
+        启用本地卡片
+      </label>
+      <p>
+        <button type="submit" disabled={busy}>{editor.mode === "create" ? "保存本地卡片" : "保存本地修改"}</button>{" "}
+        {editor.mode === "edit" ? <button type="button" disabled={busy} onClick={onCancel}>取消编辑</button> : null}
+      </p>
+    </form>
+  );
+}
+
 export function GroupInviteLibraryPage({
   role,
   transport = generatedGroupInviteLibraryTransport,
+  readCookie = browserCookie,
   onUnauthenticated,
+  confirmArchive = () =>
+    typeof window !== "undefined" && window.confirm("确认归档这张本地群邀请卡吗？"),
 }: {
   readonly role: GroupInviteLibraryRole;
   readonly transport?: GroupInviteLibraryTransport;
+  readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
+  // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+  readonly confirmArchive?: (item: GroupInviteLibraryItem) => boolean;
 }): React.ReactElement {
   const canRead = role === "admin" || role === "ops";
   const generation = useRef(0);
+  const inFlight = useRef(false);
   const verified = useRef<GroupInviteLibraryPageData>();
   const [state, setState] = useState<GroupInviteLibraryState>({ kind: "loading" });
+  const [busy, setBusy] = useState(false);
+  const [editor, setEditor] = useState<Editor>({ mode: "create", draft: emptyDraft });
+  const [notice, setNotice] = useState<string>();
 
   const load = useCallback(
     async (offset: number) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setBusy(true);
       const currentGeneration = ++generation.current;
       setState({ kind: "loading", previous: verified.current });
-      const result = await loadGroupInviteLibrary(transport, offset);
-      if (currentGeneration !== generation.current) return;
-      if (result.status === "loaded") {
-        verified.current = result.page;
-        setState({ kind: "ready", page: result.page });
-        return;
+      try {
+        const result = await loadGroupInviteLibrary(transport, offset);
+        if (currentGeneration !== generation.current) return;
+        if (result.status === "loaded") {
+          verified.current = result.page;
+          setState({ kind: "ready", page: result.page });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setState({ kind: "error", failure: result.status, previous: verified.current });
+      } finally {
+        if (currentGeneration === generation.current) {
+          inFlight.current = false;
+          setBusy(false);
+        }
       }
-      if (result.status === "unauthenticated") onUnauthenticated?.();
-      setState({
-        kind: "error",
-        failure: result.status,
-        previous: verified.current,
-      });
     },
     [onUnauthenticated, transport],
   );
+
+  const csrf = (): string | undefined => {
+    try {
+      return readCSRFCookie(readCookie());
+    } catch {
+      return undefined;
+    }
+  };
+
+  const refreshAfterMutation = useCallback(async () => {
+    await load(0);
+  }, [load]);
+
+  const save = async () => {
+    if (inFlight.current) return;
+    const csrfToken = csrf();
+    const key = commandKey(editor.mode === "create" ? "create" : "update");
+    if (!csrfToken || !key) {
+      setNotice("安全令牌或本地命令标识缺失，未发送保存请求。");
+      return;
+    }
+    inFlight.current = true;
+    setBusy(true);
+    setNotice(undefined);
+    const result = editor.mode === "create"
+      ? await createGroupInvite(transport, editor.draft, csrfToken, key)
+      : await updateGroupInvite(transport, editor.item, editor.draft, csrfToken, key);
+    inFlight.current = false;
+    setBusy(false);
+    if (result.status === "unauthenticated") onUnauthenticated?.();
+    if (result.status !== "saved") {
+      setNotice(messages[result.status === "archived" ? "invalid" : result.status]);
+      return;
+    }
+    setEditor({ mode: "create", draft: emptyDraft });
+    setNotice("本地群邀请卡已保存，正在重新读取第一页。");
+    await refreshAfterMutation();
+  };
+
+  const archive = async (item: GroupInviteLibraryItem) => {
+    if (inFlight.current || !confirmArchive(item)) return;
+    const csrfToken = csrf();
+    const key = commandKey("archive");
+    if (!csrfToken || !key) {
+      setNotice("安全令牌或本地命令标识缺失，未发送归档请求。");
+      return;
+    }
+    inFlight.current = true;
+    setBusy(true);
+    setNotice(undefined);
+    const result = await archiveGroupInvite(transport, item, csrfToken, key);
+    inFlight.current = false;
+    setBusy(false);
+    if (result.status === "unauthenticated") onUnauthenticated?.();
+    if (result.status !== "archived") {
+      setNotice(messages[result.status === "saved" ? "invalid" : result.status]);
+      return;
+    }
+    if (editor.mode === "edit" && editor.item.id === item.id) {
+      setEditor({ mode: "create", draft: emptyDraft });
+    }
+    setNotice("本地群邀请卡已归档，正在重新读取第一页。");
+    await refreshAfterMutation();
+  };
 
   useEffect(() => {
     if (canRead) void load(0);
@@ -166,5 +389,27 @@ export function GroupInviteLibraryPage({
       </section>
     );
   }
-  return <GroupInviteLibraryView onLoad={(offset) => void load(offset)} state={state} />;
+  return (
+    <>
+      <GroupInviteLibraryView
+        busy={busy}
+        onLoad={(offset) => void load(offset)}
+        onEdit={(item) => {
+          if (!inFlight.current) setEditor({ mode: "edit", item, draft: draftFor(item) });
+        }}
+        onArchive={(item) => void archive(item)}
+        state={state}
+      />
+      <section className="route-card" aria-label="群邀请素材本地编辑">
+        <EditorForm
+          busy={busy}
+          editor={editor}
+          onCancel={() => setEditor({ mode: "create", draft: emptyDraft })}
+          onChange={(draft) => setEditor((current) => ({ ...current, draft }))}
+          onSubmit={() => void save()}
+        />
+        {notice ? <p role="status">{notice}</p> : null}
+      </section>
+    </>
+  );
 }
