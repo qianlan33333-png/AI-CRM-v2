@@ -1,14 +1,19 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { readCSRFCookie } from "./auth";
 import {
+  confirmsCreatedWecomTagGroup,
+  createWecomTagGroup,
   filterWecomTagGroups,
   generatedWecomTagsTransport,
   loadWecomTagCatalog,
+  newWecomTagIdempotencyKey,
   nextWecomTagPage,
   previousWecomTagPage,
   wecomTagPage,
   wecomTagPageCount,
   wecomTagSearchState,
   type WecomTagCatalog,
+  type WecomTagGroupCreateResult,
   type WecomTagsRole,
   type WecomTagsTransport,
 } from "./wecom-tags";
@@ -16,6 +21,7 @@ import {
 export interface WecomTagsPageProps {
   readonly role: WecomTagsRole;
   readonly transport?: WecomTagsTransport;
+  readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
 }
 
@@ -31,6 +37,38 @@ export type WecomTagCopyStatus =
   | "failed";
 
 type ClipboardWriter = Pick<Clipboard, "writeText">;
+
+function browserCookie(): string {
+  return typeof document === "undefined" ? "" : document.cookie;
+}
+
+const createMessages: Record<
+  Exclude<WecomTagGroupCreateResult["status"], "created"> | "csrf_missing",
+  string
+> = {
+  unauthenticated: "登录状态已失效，请重新登录。",
+  forbidden: "当前账号没有本地标签目录创建权限。",
+  invalid: "标签组和首个标签均须为 1–200 个字符。",
+  unknown: "创建结果未确认，系统不会自动重试；请人工刷新页面后核对目录。",
+  csrf_missing: "安全令牌缺失，未发送创建请求。",
+};
+
+// React does not commit disabled state between two synchronous submits. Keep
+// the actual component's ref-backed single-flight rule testable.
+export function startWecomTagGroupCreate(
+  lock: { current: boolean },
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  if (lock.current) return undefined;
+  lock.current = true;
+  return (async () => {
+    try {
+      await execute();
+    } finally {
+      lock.current = false;
+    }
+  })();
+}
 
 export async function copyWecomTagID(
   tagID: number,
@@ -51,10 +89,17 @@ export async function copyWecomTagID(
 export function WecomTagsPage({
   role,
   transport = generatedWecomTagsTransport,
+  readCookie = browserCookie,
   onUnauthenticated,
 }: WecomTagsPageProps): React.ReactElement {
   const canAccess = role === "admin" || role === "ops";
   const [state, setState] = useState<WecomTagsViewState>({ kind: "loading" });
+  const [groupName, setGroupName] = useState("");
+  const [firstTagName, setFirstTagName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [mutationUncertain, setMutationUncertain] = useState(false);
+  const [createNotice, setCreateNotice] = useState<string>();
+  const createInFlight = useRef(false);
 
   useEffect(() => {
     if (!canAccess) return undefined;
@@ -73,15 +118,101 @@ export function WecomTagsPage({
     };
   }, [canAccess, onUnauthenticated, transport]);
 
-  return <WecomTagsView role={role} state={state} />;
+  const submitCreate = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canAccess || mutationUncertain) return;
+    void startWecomTagGroupCreate(createInFlight, async () => {
+      let csrfToken: string | undefined;
+      try {
+        csrfToken = readCSRFCookie(readCookie());
+      } catch {
+        csrfToken = undefined;
+      }
+      const idempotencyKey = newWecomTagIdempotencyKey();
+      if (!csrfToken || !idempotencyKey) {
+        setCreateNotice(createMessages.csrf_missing);
+        return;
+      }
+      setCreating(true);
+      setCreateNotice(undefined);
+      try {
+        const result = await createWecomTagGroup(
+          transport,
+          groupName,
+          firstTagName,
+          csrfToken,
+          idempotencyKey,
+        );
+        if (result.status === "created") {
+          setGroupName("");
+          setFirstTagName("");
+          setCreateNotice("本地标签组和首个标签已创建。");
+          const refreshed = await loadWecomTagCatalog(transport);
+          if (refreshed.status === "unauthenticated") onUnauthenticated?.();
+          if (
+            refreshed.status === "loaded" &&
+            confirmsCreatedWecomTagGroup(refreshed.catalog, result)
+          ) {
+            setState({ kind: "ready", catalog: refreshed.catalog });
+          } else {
+            setMutationUncertain(true);
+            setCreateNotice(
+              "创建已确认，但目录刷新未确认；请人工刷新页面后核对目录。",
+            );
+          }
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        if (result.status === "unknown") setMutationUncertain(true);
+        setCreateNotice(createMessages[result.status]);
+      } finally {
+        setCreating(false);
+      }
+    });
+  };
+
+  const createPanel = canAccess ? (
+    <section aria-labelledby="wecom-tag-create-title">
+      <h2 id="wecom-tag-create-title">创建本地标签组</h2>
+      <p>仅创建本地标签目录记录，不会同步或操作企微联系人。</p>
+      <form onSubmit={submitCreate}>
+        <fieldset disabled={creating || mutationUncertain}>
+          <label>
+            标签组名称
+            <input
+              value={groupName}
+              onChange={(event) => setGroupName(event.currentTarget.value)}
+            />
+          </label>
+          <label>
+            首个标签名称
+            <input
+              value={firstTagName}
+              onChange={(event) => setFirstTagName(event.currentTarget.value)}
+            />
+          </label>
+          <button type="submit">{creating ? "正在创建…" : "创建标签组"}</button>
+        </fieldset>
+      </form>
+      {createNotice ? (
+        <p aria-live="polite" role={mutationUncertain ? "alert" : "status"}>
+          {createNotice}
+        </p>
+      ) : null}
+    </section>
+  ) : undefined;
+
+  return <WecomTagsView role={role} state={state} createPanel={createPanel} />;
 }
 
 export function WecomTagsView({
   role,
   state,
+  createPanel,
 }: {
   readonly role: WecomTagsRole;
   readonly state: WecomTagsViewState;
+  readonly createPanel?: React.ReactNode;
 }): React.ReactElement {
   const canAccess = role === "admin" || role === "ops";
   const [query, setQuery] = useState("");
@@ -148,6 +279,7 @@ export function WecomTagsView({
         <dt>本地目录快照时间（非企微同步）</dt>
         <dd>{state.catalog.snapshotAt}</dd>
       </dl>
+      {createPanel}
       <label>
         搜索标签组、标签名称或标签 ID
         <input

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -137,17 +138,17 @@ func TestB02LegacyTagCatalogEnvelopeAndWriteCompatibility(t *testing.T) {
 	}
 	auth.reset()
 	create := httptest.NewRecorder()
-	req := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客","actor":{"id":999},"idempotency_key":"body-key","trace_id":"trace-1","dry_run":false}`)
-	req.Header.Set("Idempotency-Key", "header-key")
+	req := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客","actor":{"id":999},"idempotency_key":"body-key","trace_id":"trace-1","dry_run":false}`)
+	req.Header.Set("Idempotency-Key", "header-key-0000001")
 	router.ServeHTTP(create, req)
-	if create.Code != 200 || stub.writes != 1 || stub.command.Actor != 1 || stub.command.IdempotencyKey != "header-key" || stub.command.TraceID != "trace-1" {
+	if create.Code != 200 || stub.writes != 1 || stub.command.Actor != 1 || stub.command.IdempotencyKey != "header-key-0000001" || stub.command.TraceID != "trace-1" {
 		t.Fatalf("create=%d writes=%d command=%#v body=%s", create.Code, stub.writes, stub.command, create.Body.String())
 	}
 	if got := auth.capabilities(); len(got) != 1 || got[0] != authport.CapabilityCustomersWrite {
 		t.Fatalf("write capability=%v", got)
 	}
 	patch := httptest.NewRecorder()
-	router.ServeHTTP(patch, legacyChannelWriteRequest(http.MethodPatch, "/api/admin/wecom/tags/2", `{"tag_name":"成交"}`))
+	router.ServeHTTP(patch, legacyTagWriteRequest(http.MethodPatch, "/api/admin/wecom/tags/2", `{"tag_name":"成交"}`))
 	if patch.Code != 200 || stub.command.TagID != 2 {
 		t.Fatalf("patch=%d command=%#v body=%s", patch.Code, stub.command, patch.Body.String())
 	}
@@ -220,6 +221,157 @@ func TestB02LegacyTagCatalogReadRequiresGlobalAdminOrOps(t *testing.T) {
 	}
 }
 
+func TestB02LegacyTagCatalogCreateRequiresGlobalAdminOrOps(t *testing.T) {
+	for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
+		t.Run(string(role), func(t *testing.T) {
+			tags := &legacyTagStub{catalog: legacyTagFixture()}
+			auth := &legacyTagReadAuthStub{
+				principal:     authport.Principal{AdminUserID: 7, Role: role},
+				authorization: authport.Authorization{Capability: authport.CapabilityCustomersWrite, Scope: authport.ScopeGlobal},
+			}
+			handler := &Handler{auth: auth, legacyTags: tags}
+			response := httptest.NewRecorder()
+			request := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+			legacyRoute(t, handler, authport.CapabilityCustomersWrite, handler.CreateLegacyTagGroup).ServeHTTP(response, request)
+			if response.Code != http.StatusOK || tags.writes != 1 {
+				t.Fatalf("create=%d writes=%d body=%s", response.Code, tags.writes, response.Body.String())
+			}
+			var payload map[string]any
+			if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil || !exactLegacyTagResponseKeys(payload, "ok", "reason", "source_status", "route_owner", "fallback_used", "real_external_call_executed", "sync_executed", "fixture_used", "dry_run", "group", "tag") ||
+				payload["reason"] != "group_created" || payload["source_status"] != "local_catalog" ||
+				payload["route_owner"] != "ai_crm_next" || payload["fallback_used"] != false ||
+				payload["real_external_call_executed"] != false || payload["sync_executed"] != false ||
+				payload["fixture_used"] != false || payload["dry_run"] != false {
+				t.Fatalf("closed create payload=%v err=%v", payload, err)
+			}
+		})
+	}
+
+	staffID := int64(71)
+	tags := &legacyTagStub{catalog: legacyTagFixture()}
+	auth := &legacyTagReadAuthStub{
+		principal: authport.Principal{AdminUserID: 8, Role: authport.RoleSales, StaffID: &staffID},
+		authorization: authport.Authorization{
+			Capability:   authport.CapabilityCustomersWrite,
+			Scope:        authport.ScopeOwnerStaff,
+			OwnerStaffID: staffID,
+		},
+	}
+	handler := &Handler{auth: auth, legacyTags: tags}
+	for _, attempt := range []struct {
+		name    string
+		method  string
+		path    string
+		body    string
+		handler http.HandlerFunc
+	}{
+		{"create group", http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`, handler.CreateLegacyTagGroup},
+		{"update group", http.MethodPatch, "/api/admin/wecom/tag-groups/1", `{"group_name":"改名"}`, handler.MutateLegacyTagGroup},
+		{"update tag", http.MethodPatch, "/api/admin/wecom/tags/2", `{"tag_name":"改名"}`, handler.MutateLegacyTag},
+	} {
+		t.Run(attempt.name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			request := legacyChannelWriteRequest(attempt.method, attempt.path, attempt.body)
+			legacyRoute(t, handler, authport.CapabilityCustomersWrite, attempt.handler).ServeHTTP(response, request)
+			if response.Code != http.StatusForbidden || tags.writes != 0 {
+				t.Fatalf("sales mutation=%d writes=%d body=%s", response.Code, tags.writes, response.Body.String())
+			}
+		})
+	}
+
+	noDependencySales := &Handler{auth: auth}
+	response := httptest.NewRecorder()
+	request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+	legacyRoute(t, noDependencySales, authport.CapabilityCustomersWrite, noDependencySales.CreateLegacyTagGroup).ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden || tags.writes != 0 {
+		t.Fatalf("sales unavailable create=%d writes=%d body=%s", response.Code, tags.writes, response.Body.String())
+	}
+
+	for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
+		t.Run("unavailable "+string(role), func(t *testing.T) {
+			auth := &legacyTagReadAuthStub{
+				principal:     authport.Principal{AdminUserID: 7, Role: role},
+				authorization: authport.Authorization{Capability: authport.CapabilityCustomersWrite, Scope: authport.ScopeGlobal},
+			}
+			handler := &Handler{auth: auth}
+			response := httptest.NewRecorder()
+			request := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+			legacyRoute(t, handler, authport.CapabilityCustomersWrite, handler.CreateLegacyTagGroup).ServeHTTP(response, request)
+			if response.Code != http.StatusServiceUnavailable {
+				t.Fatalf("%s unavailable create=%d body=%s", role, response.Code, response.Body.String())
+			}
+		})
+	}
+}
+
+func TestB02LegacyTagCommandRequiresStrictHeaderAndPreservesDryRun(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		request func() *http.Request
+	}{
+		{
+			name: "missing header does not fall back to body",
+			request: func() *http.Request {
+				request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客","idempotency_key":"body-key-0000001"}`)
+				return request
+			},
+		},
+		{
+			name: "short header",
+			request: func() *http.Request {
+				request := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+				request.Header.Set("Idempotency-Key", "too-short")
+				return request
+			},
+		},
+		{
+			name: "overlong header",
+			request: func() *http.Request {
+				request := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+				request.Header.Set("Idempotency-Key", strings.Repeat("x", 129))
+				return request
+			},
+		},
+		{
+			name: "multiple headers",
+			request: func() *http.Request {
+				request := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+				request.Header.Add("Idempotency-Key", "tag-write-key-0002")
+				return request
+			},
+		},
+		{
+			name: "not exactly trimmed",
+			request: func() *http.Request {
+				request := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客"}`)
+				request.Header.Set("Idempotency-Key", " tag-write-key-0001")
+				return request
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stub := &legacyTagStub{catalog: legacyTagFixture()}
+			router, _ := legacyTagRouter(t, stub)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, test.request())
+			if response.Code != http.StatusBadRequest || stub.writes != 0 {
+				t.Fatalf("status=%d writes=%d body=%s", response.Code, stub.writes, response.Body.String())
+			}
+		})
+	}
+
+	stub := &legacyTagStub{catalog: legacyTagFixture()}
+	router, _ := legacyTagRouter(t, stub)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-groups", `{"group_name":"客户阶段","first_tag_name":"新客","dry_run":true}`))
+	var payload map[string]any
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); response.Code != http.StatusOK || err != nil || !exactLegacyTagResponseKeys(payload, "ok", "reason", "source_status", "route_owner", "fallback_used", "real_external_call_executed", "sync_executed", "fixture_used", "dry_run") ||
+		payload["reason"] != "group_create_validated" || payload["dry_run"] != true ||
+		payload["group"] != nil || payload["tag"] != nil || stub.writes != 0 {
+		t.Fatalf("dry run status=%d writes=%d payload=%v err=%v", response.Code, stub.writes, payload, err)
+	}
+}
+
 func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testing.T) {
 	tags := &legacyTagStub{catalog: legacyTagFixture()}
 	sync := &legacyTagSyncStub{}
@@ -269,6 +421,24 @@ func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testi
 	if seen := auth.capabilities(); len(seen) != 8 || seen[0] != authport.CapabilityCustomersRead || seen[4] != authport.CapabilityCustomersRead || seen[5] != authport.CapabilityCustomersWrite {
 		t.Fatalf("capabilities=%v", seen)
 	}
+}
+
+func legacyTagWriteRequest(method, path, body string) *http.Request {
+	request := legacyChannelWriteRequest(method, path, body)
+	request.Header.Set("Idempotency-Key", "tag-write-key-0001")
+	return request
+}
+
+func exactLegacyTagResponseKeys(payload map[string]any, keys ...string) bool {
+	if len(payload) != len(keys) {
+		return false
+	}
+	for _, key := range keys {
+		if _, exists := payload[key]; !exists {
+			return false
+		}
+	}
+	return true
 }
 
 func legacyTagFixture() contactapp.LegacyTagCatalog {
