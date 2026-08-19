@@ -1,4 +1,5 @@
 import {
+  deleteLegacyImage,
   getLegacyImage,
   getLegacyImageFacets,
   getLegacyImageList,
@@ -85,6 +86,9 @@ export interface ImageListQuery {
   readonly category: string;
   readonly tags: string;
   readonly onlyUnlabeled: boolean;
+  // The persisted enabled flag is local media-library state. Listing disabled
+  // rows is opt-in so normal browse semantics remain unchanged.
+  readonly includeDisabled?: boolean;
   readonly offset: number;
 }
 
@@ -131,6 +135,11 @@ async function generatedUpdate(
 ) {
   return updateLegacyImage(imageID, body, options);
 }
+async function generatedRemove(imageID: string, options: RequestInit) {
+  // Never send force: a local delete must not attempt to bypass reference
+  // checks, and this endpoint deliberately rejects a request body.
+  return deleteLegacyImage(imageID, undefined, options);
+}
 
 export interface ImageLibraryTransport {
   readonly list: typeof generatedList;
@@ -138,6 +147,7 @@ export interface ImageLibraryTransport {
   readonly facets: typeof generatedFacets;
   readonly upload: typeof generatedUpload;
   readonly update: typeof generatedUpdate;
+  readonly remove: typeof generatedRemove;
 }
 
 export const generatedImageLibraryTransport: ImageLibraryTransport = {
@@ -146,6 +156,7 @@ export const generatedImageLibraryTransport: ImageLibraryTransport = {
   facets: generatedFacets,
   upload: generatedUpload,
   update: generatedUpdate,
+  remove: generatedRemove,
 };
 
 export type ImageLibraryFailure =
@@ -179,6 +190,23 @@ export type ImageUploadResult =
   | { readonly status: ImageLibraryFailure };
 export type ImageMetadataUpdateResult =
   | { readonly status: "saved"; readonly image: ImageDetail }
+  | { readonly status: "csrf_missing" }
+  | { readonly status: ImageLibraryFailure };
+export type ImageEnabledUpdateResult =
+  | { readonly status: "saved"; readonly image: ImageDetail }
+  | { readonly status: "csrf_missing" }
+  | { readonly status: ImageLibraryFailure };
+export interface ImageDeleteReferenceCounts {
+  readonly miniprograms: number;
+  readonly campaignSteps: number;
+  readonly groupInvites: number;
+  readonly automationAgents: number;
+  readonly channels: number;
+  readonly importPreflights: number;
+}
+export type ImageDeleteResult =
+  | { readonly status: "deleted"; readonly id: number }
+  | { readonly status: "referenced"; readonly references: ImageDeleteReferenceCounts }
   | { readonly status: "csrf_missing" }
   | { readonly status: ImageLibraryFailure };
 
@@ -259,7 +287,8 @@ function frozenEnvelopeFlags(
   sourceStatus:
     | "next_media_library"
     | "local_upload"
-    | "local_repository_write",
+    | "local_repository_write"
+    | "local_delete",
 ): boolean {
   return (
     value.source_status === sourceStatus &&
@@ -307,7 +336,10 @@ const IMAGE_ITEM_KEYS: readonly string[] = [
   "original_url",
 ];
 
-export function parseImageItem(value: unknown): ImageItem | undefined {
+export function parseImageItem(
+  value: unknown,
+  allowDisabled = false,
+): ImageItem | undefined {
   if (!record(value) || !exactKeys(value, IMAGE_ITEM_KEYS)) return undefined;
   if (!positive(value.id)) return undefined;
   if (typeof value.name !== "string" || runeLength(value.name) > 200) {
@@ -323,7 +355,9 @@ export function parseImageItem(value: unknown): ImageItem | undefined {
   if (!positive(value.file_size) || value.file_size > MAX_IMAGE_FILE_SIZE) {
     return undefined;
   }
-  if (value.enabled !== true) return undefined;
+  if (typeof value.enabled !== "boolean" || (!allowDisabled && !value.enabled)) {
+    return undefined;
+  }
   if (
     typeof value.description !== "string" ||
     value.description.length > 10000
@@ -372,7 +406,7 @@ export function parseImageItem(value: unknown): ImageItem | undefined {
     fileName: value.file_name,
     mimeType: value.mime_type,
     fileSize: value.file_size,
-    enabled: true,
+    enabled: value.enabled,
     description: value.description,
     tags: value.tags as string[],
     category: value.category,
@@ -520,6 +554,7 @@ const IMAGE_LIST_KEYS: readonly string[] = [
 
 function parseImageListPage(
   data: unknown,
+  allowDisabled: boolean,
 ):
   | {
       items: ImageItem[];
@@ -535,7 +570,7 @@ function parseImageListPage(
   if (data.ok !== true) return undefined;
   if (!frozenEnvelopeFlags(data, "next_media_library")) return undefined;
   if (!Array.isArray(data.items)) return undefined;
-  const items = data.items.map(parseImageItem);
+  const items = data.items.map((item) => parseImageItem(item, allowDisabled));
   if (items.some((item) => item === undefined)) return undefined;
   if (
     !nonnegative(data.total) ||
@@ -603,6 +638,120 @@ const IMAGE_DETAIL_SUCCESS_KEYS: readonly string[] = [
   "storage_adapter_mode",
   "adapter_mode",
 ];
+const IMAGE_DELETE_SUCCESS_KEYS: readonly string[] = [
+  "ok",
+  "deleted",
+  "hard_deleted",
+  "id",
+  "references_cleared",
+  "source_status",
+  "route_owner",
+  "fallback_used",
+  "real_external_call_executed",
+  "storage_adapter_mode",
+  "adapter_mode",
+];
+const IMAGE_DELETE_CONFLICT_KEYS: readonly string[] = [
+  "ok",
+  "error",
+  "references",
+  "source_status",
+  "route_owner",
+  "fallback_used",
+  "real_external_call_executed",
+  "storage_adapter_mode",
+  "adapter_mode",
+];
+const IMAGE_DELETE_REFERENCE_KEYS = [
+  "miniprograms",
+  "campaign_steps",
+  "group_invites",
+  "automation_agents",
+  "channels",
+  "import_preflights",
+] as const;
+
+function parseDeleteReferenceIDs(value: unknown): number[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const ids = value.map((item) => {
+    if (!record(item) || !exactKeys(item, ["id"]) || !positive(item.id)) {
+      return undefined;
+    }
+    return item.id;
+  });
+  if (ids.some((id) => id === undefined)) return undefined;
+  const values = ids as number[];
+  return new Set(values).size === values.length ? values : undefined;
+}
+
+function parseImageDeleteSuccess(data: unknown): number | undefined {
+  if (!record(data) || !exactKeys(data, IMAGE_DELETE_SUCCESS_KEYS)) {
+    return undefined;
+  }
+  if (
+    data.ok !== true ||
+    data.deleted !== true ||
+    data.hard_deleted !== true ||
+    !positive(data.id) ||
+    !frozenEnvelopeFlags(data, "local_delete") ||
+    !record(data.references_cleared) ||
+    !exactKeys(data.references_cleared, [
+      "miniprograms_cleared",
+      "campaign_steps_cleared",
+    ]) ||
+    data.references_cleared.miniprograms_cleared !== 0 ||
+    data.references_cleared.campaign_steps_cleared !== 0
+  ) {
+    return undefined;
+  }
+  return data.id;
+}
+
+function parseImageDeleteConflict(
+  data: unknown,
+): ImageDeleteReferenceCounts | undefined {
+  if (!record(data) || !exactKeys(data, IMAGE_DELETE_CONFLICT_KEYS)) {
+    return undefined;
+  }
+  if (
+    data.ok !== false ||
+    data.error !== "image_has_references" ||
+    !frozenEnvelopeFlags(data, "local_delete") ||
+    !record(data.references) ||
+    !exactKeys(data.references, IMAGE_DELETE_REFERENCE_KEYS)
+  ) {
+    return undefined;
+  }
+  const referenceProjection = data.references;
+  const miniprograms = parseDeleteReferenceIDs(referenceProjection.miniprograms);
+  const campaignSteps = parseDeleteReferenceIDs(referenceProjection.campaign_steps);
+  const groupInvites = parseDeleteReferenceIDs(referenceProjection.group_invites);
+  const automationAgents = parseDeleteReferenceIDs(
+    referenceProjection.automation_agents,
+  );
+  const channels = parseDeleteReferenceIDs(referenceProjection.channels);
+  const importPreflights = parseDeleteReferenceIDs(
+    referenceProjection.import_preflights,
+  );
+  if (
+    miniprograms === undefined ||
+    campaignSteps === undefined ||
+    groupInvites === undefined ||
+    automationAgents === undefined ||
+    channels === undefined ||
+    importPreflights === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    miniprograms: miniprograms.length,
+    campaignSteps: campaignSteps.length,
+    groupInvites: groupInvites.length,
+    automationAgents: automationAgents.length,
+    channels: channels.length,
+    importPreflights: importPreflights.length,
+  };
+}
 
 function parseImageDetailResponse(data: unknown): ImageDetail | undefined {
   if (!record(data) || !exactKeys(data, IMAGE_DETAIL_SUCCESS_KEYS)) {
@@ -777,6 +926,14 @@ export function uploadIdempotencyKey(random: () => number = Math.random): string
   return `image-upload-${time}-${entropy}`.slice(0, 128);
 }
 
+export function imageDeleteIdempotencyKey(
+  random: () => number = Math.random,
+): string {
+  const time = Date.now().toString(36);
+  const entropy = random().toString(36).slice(2, 14).padEnd(12, "0");
+  return `image-delete-${time}-${entropy}`.slice(0, 128);
+}
+
 export async function loadImages(
   transport: ImageLibraryTransport,
   query: ImageListQuery,
@@ -789,7 +946,7 @@ export async function loadImages(
     offset: String(
       Number.isSafeInteger(query.offset) && query.offset > 0 ? query.offset : 0,
     ),
-    enabled_only: "true",
+    enabled_only: query.includeDisabled ? "false" : "true",
     ...(search !== "" ? { q: search } : {}),
     ...(category !== "" ? { category } : {}),
     ...(tags !== "" ? { tags } : {}),
@@ -800,7 +957,7 @@ export async function loadImages(
       credentials: "same-origin",
     });
     if (response.status !== 200) return { status: failure(response.status) };
-    const page = parseImageListPage(response.data);
+    const page = parseImageListPage(response.data, query.includeDisabled === true);
     return page
       ? {
           status: "loaded",
@@ -908,23 +1065,23 @@ function imageMetadataMatches(
   request: LegacyImageMetadataUpdateRequest,
 ): boolean {
   return (
-    image.name === request.name &&
-    image.description === request.description &&
-    image.category === request.category &&
-    image.tags.length === request.tags?.length &&
-    image.tags.every((tag, index) => tag === request.tags?.[index])
+    (request.name === undefined || image.name === request.name) &&
+    (request.description === undefined || image.description === request.description) &&
+    (request.category === undefined || image.category === request.category) &&
+    (request.enabled === undefined || image.enabled === request.enabled) &&
+    (request.tags === undefined ||
+      (image.tags.length === request.tags.length &&
+        image.tags.every((tag, index) => tag === request.tags?.[index])))
   );
 }
 
-export async function updateImageMetadata(
+async function updateLocalImage(
   transport: ImageLibraryTransport,
   cookieHeader: string,
   imageID: number,
-  draft: ImageMetadataDraft,
-): Promise<ImageMetadataUpdateResult> {
+  request: LegacyImageMetadataUpdateRequest,
+): Promise<ImageEnabledUpdateResult> {
   if (!positive(imageID)) return { status: "invalid" };
-  const request = imageMetadataRequest(draft);
-  if (!request) return { status: "invalid" };
   let csrfToken: string | undefined;
   try {
     csrfToken = readCSRFCookie(cookieHeader);
@@ -939,9 +1096,77 @@ export async function updateImageMetadata(
     });
     if (response.status !== 200) return { status: failure(response.status) };
     const image = parseImageMetadataUpdate(response.data);
-    return image && image.id === imageID && image.enabled === true && imageMetadataMatches(image, request)
+    return image && image.id === imageID && imageMetadataMatches(image, request)
       ? { status: "saved", image }
       : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function updateImageMetadata(
+  transport: ImageLibraryTransport,
+  cookieHeader: string,
+  imageID: number,
+  draft: ImageMetadataDraft,
+): Promise<ImageMetadataUpdateResult> {
+  if (!positive(imageID)) return { status: "invalid" };
+  const request = imageMetadataRequest(draft);
+  if (!request) return { status: "invalid" };
+  return updateLocalImage(transport, cookieHeader, imageID, request);
+}
+
+export async function setImageEnabled(
+  transport: ImageLibraryTransport,
+  cookieHeader: string,
+  imageID: number,
+  enabled: boolean,
+): Promise<ImageEnabledUpdateResult> {
+  return updateLocalImage(transport, cookieHeader, imageID, { enabled });
+}
+
+export async function deleteImage(
+  transport: ImageLibraryTransport,
+  cookieHeader: string,
+  imageID: number,
+  idempotencyKey: string,
+): Promise<ImageDeleteResult> {
+  if (
+    !positive(imageID) ||
+    idempotencyKey.length < 16 ||
+    idempotencyKey.length > 128 ||
+    idempotencyKey.trim() !== idempotencyKey
+  ) {
+    return { status: "invalid" };
+  }
+  let csrfToken: string | undefined;
+  try {
+    csrfToken = readCSRFCookie(cookieHeader);
+  } catch {
+    csrfToken = undefined;
+  }
+  if (!csrfToken) return { status: "csrf_missing" };
+  try {
+    const response = await transport.remove(String(imageID), {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Idempotency-Key": idempotencyKey,
+      },
+    });
+    if (response.status === 200) {
+      const deletedID = parseImageDeleteSuccess(response.data);
+      return deletedID === imageID
+        ? { status: "deleted", id: deletedID }
+        : { status: "unavailable" };
+    }
+    if (response.status === 409) {
+      const references = parseImageDeleteConflict(response.data);
+      return references
+        ? { status: "referenced", references }
+        : { status: "unavailable" };
+    }
+    return { status: failure(response.status) };
   } catch {
     return { status: "unavailable" };
   }

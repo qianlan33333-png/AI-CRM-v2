@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  deleteImage,
+  imageDeleteIdempotencyKey,
   firstPageQuery,
   formatFileSize,
   generatedImageLibraryTransport,
@@ -13,8 +15,11 @@ import {
   uploadImage,
   uploadMetadataProblem,
   updateImageMetadata,
+  setImageEnabled,
   type ImageItem,
   type ImageDetail,
+  type ImageDeleteReferenceCounts,
+  type ImageDeleteResult,
   type ImageLibraryFailure,
   type ImageLibraryRole,
   type ImageLibraryTransport,
@@ -91,6 +96,24 @@ const metadataMessages: Record<UploadNoticeStatus, string> = {
   csrf_missing: "安全令牌缺失，未发送保存请求。",
 };
 
+function deleteReferenceMessage(references: ImageDeleteReferenceCounts): string {
+  const labels: readonly [keyof ImageDeleteReferenceCounts, string][] = [
+    ["miniprograms", "小程序"],
+    ["campaignSteps", "活动步骤"],
+    ["groupInvites", "群邀请"],
+    ["automationAgents", "自动化代理"],
+    ["channels", "渠道"],
+    ["importPreflights", "导入预检"],
+  ];
+  const summary = labels
+    .filter(([key]) => references[key] > 0)
+    .map(([key, label]) => `${label} ${references[key]} 项`)
+    .join("、");
+  return summary === ""
+    ? "本地素材仍存在引用，未删除。"
+    : `本地素材仍被引用（${summary}），未删除。`;
+}
+
 function browserCookie(): string {
   return typeof document === "undefined" ? "" : document.cookie;
 }
@@ -152,6 +175,48 @@ export async function saveMetadataThenReload(
     options.draft,
   );
   if (result.status === "saved") options.reload();
+  return result;
+}
+
+export interface ImageEnabledThenReloadOptions {
+  readonly transport: ImageLibraryTransport;
+  readonly cookie: string;
+  readonly imageID: number;
+  readonly enabled: boolean;
+  readonly reload: () => void;
+}
+
+export async function saveImageEnabledThenReload(
+  options: ImageEnabledThenReloadOptions,
+): Promise<ImageMetadataUpdateResult> {
+  const result = await setImageEnabled(
+    options.transport,
+    options.cookie,
+    options.imageID,
+    options.enabled,
+  );
+  if (result.status === "saved") options.reload();
+  return result;
+}
+
+export interface DeleteImageThenReloadOptions {
+  readonly transport: ImageLibraryTransport;
+  readonly cookie: string;
+  readonly imageID: number;
+  readonly idempotencyKey: string;
+  readonly reload: () => void;
+}
+
+export async function deleteImageThenReload(
+  options: DeleteImageThenReloadOptions,
+): Promise<ImageDeleteResult> {
+  const result = await deleteImage(
+    options.transport,
+    options.cookie,
+    options.imageID,
+    options.idempotencyKey,
+  );
+  if (result.status === "deleted") options.reload();
   return result;
 }
 
@@ -235,6 +300,7 @@ export function ImageLibraryPage({
     category: "",
     tags: "",
     onlyUnlabeled: false,
+    includeDisabled: false,
     offset: 0,
   });
   const [searchInput, setSearchInput] = useState("");
@@ -251,6 +317,10 @@ export function ImageLibraryPage({
   const [uploading, setUploading] = useState(false);
   const [metadataDraft, setMetadataDraft] = useState<ImageMetadataDraft>();
   const [savingMetadata, setSavingMetadata] = useState(false);
+  const [savingEnabled, setSavingEnabled] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<number>();
+  const [writesLocked, setWritesLocked] = useState(false);
   const [notice, setNotice] = useState<{
     readonly kind: "status" | "alert";
     readonly text: string;
@@ -258,7 +328,7 @@ export function ImageLibraryPage({
   const listGeneration = useRef(0);
   const facetsGeneration = useRef(0);
   const detailGeneration = useRef(0);
-  const metadataSaveInFlight = useRef(false);
+  const writeInFlight = useRef(false);
   const [detail, setDetail] = useState<DetailState>({ kind: "idle" });
   const [previewMode, setPreviewMode] =
     useState<ImagePreviewMode>("standard");
@@ -362,8 +432,19 @@ export function ImageLibraryPage({
     setMetadataDraft(undefined);
     setPreviewMode("standard");
     setPreviewErrorMode(undefined);
+    setDeleteConfirmation(undefined);
     setDetail({ kind: "idle" });
   };
+
+  const readMutationCookie = (): string => {
+    try {
+      return readCookie();
+    } catch {
+      return "";
+    }
+  };
+
+  const lockUnknownWrite = () => setWritesLocked(true);
 
   const selectPreviewMode = (mode: ImagePreviewMode) => {
     setPreviewMode(mode);
@@ -372,21 +453,22 @@ export function ImageLibraryPage({
 
   const submitMetadata = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canAccess || detail.kind !== "ready" || !metadataDraft) return;
+    if (
+      !canAccess ||
+      writesLocked ||
+      detail.kind !== "ready" ||
+      !metadataDraft
+    ) {
+      return;
+    }
     const imageID = detail.image.id;
-    const operation = startImageMetadataSave(metadataSaveInFlight, async () => {
+    const operation = startImageMetadataSave(writeInFlight, async () => {
       setSavingMetadata(true);
       setNotice(undefined);
-      let cookie = "";
-      try {
-        cookie = readCookie();
-      } catch {
-        cookie = "";
-      }
       try {
         const result = await saveMetadataThenReload({
           transport,
-          cookie,
+          cookie: readMutationCookie(),
           imageID,
           draft: metadataDraft,
           reload: reloadLibrary,
@@ -406,6 +488,7 @@ export function ImageLibraryPage({
           return;
         }
         if (result.status === "unauthenticated") onUnauthenticated?.();
+        if (result.status === "unavailable") lockUnknownWrite();
         setNotice({ kind: "alert", text: metadataMessages[result.status] });
       } finally {
         setSavingMetadata(false);
@@ -414,9 +497,88 @@ export function ImageLibraryPage({
     if (operation) await operation;
   };
 
+  const changeEnabled = async () => {
+    if (writesLocked || detail.kind !== "ready") return;
+    const image = detail.image;
+    const operation = startImageMetadataSave(writeInFlight, async () => {
+      setSavingEnabled(true);
+      setNotice(undefined);
+      try {
+        const result = await saveImageEnabledThenReload({
+          transport,
+          cookie: readMutationCookie(),
+          imageID: image.id,
+          enabled: !image.enabled,
+          reload: reloadLibrary,
+        });
+        if (result.status === "saved") {
+          setDetail({ kind: "ready", image: result.image });
+          setNotice({
+            kind: "status",
+            text: `图片 #${image.id} 已${result.image.enabled ? "启用" : "停用"}为本地素材；列表与筛选已按服务端事实刷新。`,
+          });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        if (result.status === "unavailable") lockUnknownWrite();
+        setNotice({ kind: "alert", text: metadataMessages[result.status] });
+      } finally {
+        setSavingEnabled(false);
+      }
+    });
+    if (operation) await operation;
+  };
+
+  const confirmDelete = async () => {
+    if (writesLocked || detail.kind !== "ready") return;
+    const imageID = detail.image.id;
+    if (deleteConfirmation !== imageID) {
+      setDeleteConfirmation(imageID);
+      setNotice({
+        kind: "alert",
+        text: `请再次点击“确认删除本地素材 #${imageID}”以执行本地硬删除。引用检查不会被绕过。`,
+      });
+      return;
+    }
+    const operation = startImageMetadataSave(writeInFlight, async () => {
+      setDeleting(true);
+      setNotice(undefined);
+      try {
+        const result = await deleteImageThenReload({
+          transport,
+          cookie: readMutationCookie(),
+          imageID,
+          idempotencyKey: imageDeleteIdempotencyKey(),
+          reload: reloadLibrary,
+        });
+        if (result.status === "deleted") {
+          closeDetail();
+          setNotice({
+            kind: "status",
+            text: `本地素材 #${result.id} 已删除；列表与筛选已按服务端事实刷新。`,
+          });
+          return;
+        }
+        if (result.status === "referenced") {
+          setNotice({
+            kind: "alert",
+            text: deleteReferenceMessage(result.references),
+          });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        if (result.status === "unavailable") lockUnknownWrite();
+        setNotice({ kind: "alert", text: metadataMessages[result.status] });
+      } finally {
+        setDeleting(false);
+      }
+    });
+    if (operation) await operation;
+  };
+
   const submitUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canAccess || uploading) return;
+    if (!canAccess || writesLocked || uploading) return;
     if (!uploadFile) {
       setNotice({ kind: "alert", text: "请先选择要上传的图片文件。" });
       return;
@@ -431,34 +593,35 @@ export function ImageLibraryPage({
       setNotice({ kind: "alert", text: metadataProblem });
       return;
     }
-    let cookie = "";
-    try {
-      cookie = readCookie();
-    } catch {
-      cookie = "";
-    }
-    setUploading(true);
-    setNotice(undefined);
-    const result = await uploadThenReload({
-      transport,
-      cookie,
-      file: uploadFile,
-      metadata: uploadDraft,
-      idempotencyKey: uploadIdempotencyKey(),
-      reload: reloadLibrary,
+    const operation = startImageMetadataSave(writeInFlight, async () => {
+      setUploading(true);
+      setNotice(undefined);
+      try {
+        const result = await uploadThenReload({
+          transport,
+          cookie: readMutationCookie(),
+          file: uploadFile,
+          metadata: uploadDraft,
+          idempotencyKey: uploadIdempotencyKey(),
+          reload: reloadLibrary,
+        });
+        if (result.status === "uploaded") {
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          setUploadFile(undefined);
+          setNotice({
+            kind: "status",
+            text: `图片已上传为本地素材 #${result.image.id}；列表与筛选已按服务端事实刷新。`,
+          });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        if (result.status === "unavailable") lockUnknownWrite();
+        setNotice({ kind: "alert", text: uploadMessages[result.status] });
+      } finally {
+        setUploading(false);
+      }
     });
-    setUploading(false);
-    if (result.status === "uploaded") {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setUploadFile(undefined);
-      setNotice({
-        kind: "status",
-        text: `图片已上传为本地素材 #${result.image.id}；列表与筛选已按服务端事实刷新。`,
-      });
-      return;
-    }
-    if (result.status === "unauthenticated") onUnauthenticated?.();
-    setNotice({ kind: "alert", text: uploadMessages[result.status] });
+    if (operation) await operation;
   };
 
   if (!canAccess) {
@@ -567,6 +730,21 @@ export function ImageLibraryPage({
               />
               仅看未标注
             </label>
+            <label className="image-library__checkbox">
+              <input
+                type="checkbox"
+                checked={query.includeDisabled === true}
+                disabled={listBusy}
+                onChange={(event) =>
+                  setQuery({
+                    ...query,
+                    includeDisabled: event.currentTarget.checked,
+                    offset: 0,
+                  })
+                }
+              />
+              包含已停用
+            </label>
             <button type="submit" disabled={listBusy}>
               搜索
             </button>
@@ -657,7 +835,7 @@ export function ImageLibraryPage({
                         </div>
                         <div>
                           <dt>状态</dt>
-                          <dd>已启用</dd>
+                          <dd>{item.enabled ? "已启用" : "已停用"}</dd>
                         </div>
                         <div>
                           <dt>本地 ID</dt>
@@ -756,10 +934,34 @@ export function ImageLibraryPage({
                       <p className="image-library__meta">
                         预览只读取已验证的本地变体，不证明公开访问、对象访问或真实外发可用。
                       </p>
-                      {detail.image.enabled && metadataDraft ? (
+                      <div aria-label="本地素材操作">
+                        <button
+                          type="button"
+                          disabled={writesLocked || savingEnabled || deleting}
+                          onClick={() => void changeEnabled()}
+                        >
+                          {savingEnabled
+                            ? "正在保存状态…"
+                            : detail.image.enabled
+                              ? "停用本地素材"
+                              : "启用本地素材"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={writesLocked || savingEnabled || deleting}
+                          onClick={() => void confirmDelete()}
+                        >
+                          {deleting
+                            ? "正在删除…"
+                            : deleteConfirmation === detail.image.id
+                              ? `确认删除本地素材 #${detail.image.id}`
+                              : "删除本地素材"}
+                        </button>
+                      </div>
+                      {metadataDraft ? (
                         <form onSubmit={submitMetadata}>
                           <h3>保存图片元数据</h3>
-                          <fieldset disabled={savingMetadata}>
+                          <fieldset disabled={writesLocked || savingMetadata || savingEnabled || deleting}>
                             <label>
                               名称
                               <input
@@ -816,7 +1018,7 @@ export function ImageLibraryPage({
                             <p className="image-library__meta">
                               仅保存本地名称、描述、标签和分类；不会修改图片文件、启停状态或变体。
                             </p>
-                            <button type="submit" disabled={savingMetadata}>
+                            <button type="submit" disabled={writesLocked || savingMetadata || savingEnabled || deleting}>
                               {savingMetadata ? "正在保存…" : "保存元数据"}
                             </button>
                           </fieldset>
@@ -871,7 +1073,7 @@ export function ImageLibraryPage({
           onSubmit={submitUpload}
         >
           <h2>上传图片</h2>
-          <fieldset disabled={uploading}>
+          <fieldset disabled={writesLocked || uploading}>
             <label>
               图片文件
               <input
@@ -940,7 +1142,7 @@ export function ImageLibraryPage({
               仅支持 PNG、JPEG、GIF，单个文件不超过 10
               MiB；每次提交使用一次性幂等键，网络结果未知时不会自动重试。
             </p>
-            <button type="submit" disabled={uploading || !uploadFile}>
+            <button type="submit" disabled={writesLocked || uploading || !uploadFile}>
               {uploading ? "正在上传…" : "上传图片"}
             </button>
           </fieldset>
