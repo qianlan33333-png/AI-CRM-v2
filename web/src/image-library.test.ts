@@ -3,6 +3,7 @@ import {
   firstPageQuery,
   formatFileSize,
   IMAGE_LIBRARY_PAGE_SIZE,
+  imageMetadataRequest,
   loadImageDetail,
   loadFacets,
   loadImages,
@@ -14,6 +15,7 @@ import {
   previousPageOffset,
   uploadIdempotencyKey,
   uploadImage,
+  updateImageMetadata,
   type ImageLibraryTransport,
   type ImageListQuery,
 } from "./image-library";
@@ -97,6 +99,26 @@ const detailItem = {
   original_url: "/api/admin/image-library/11/variants/original",
 };
 const detailSuccess = { ok: true, item: detailItem, ...flags };
+const metadataDraft = {
+  name: " 新封面 ",
+  description: " 首页主图 ",
+  tags: " hero, 首页,hero, ",
+  category: " cover ",
+};
+const updateSuccess = {
+  ok: true,
+  item: {
+    ...detailItem,
+    name: "新封面",
+    description: "首页主图",
+    tags: ["hero", "首页"],
+    category: "cover",
+    enabled: true,
+    updated_at: "2026-08-19T12:00:00Z",
+  },
+  ...flags,
+  source_status: "local_repository_write",
+};
 const uploadSuccess = {
   ok: true,
   item: {
@@ -144,6 +166,7 @@ function transport(
     detail: vi.fn(reply),
     facets: vi.fn(reply),
     upload: vi.fn(reply),
+    update: vi.fn(reply),
   } as unknown as ImageLibraryTransport;
 }
 
@@ -417,6 +440,99 @@ describe("image detail strict parser and local read", () => {
       status: "invalid",
     });
     expect(throwing.detail).toHaveBeenCalledOnce();
+  });
+});
+
+describe("image metadata update transport", () => {
+  it("normalizes and sends exactly the four frozen local metadata keys", async () => {
+    const client = transport({ status: 200, data: updateSuccess });
+    await expect(
+      updateImageMetadata(client, CSRF_COOKIE, 11, metadataDraft),
+    ).resolves.toMatchObject({ status: "saved", image: { id: 11 } });
+    expect(client.update).toHaveBeenCalledTimes(1);
+    expect(client.update).toHaveBeenCalledWith(
+      "11",
+      {
+        name: "新封面",
+        description: "首页主图",
+        tags: ["hero", "首页"],
+        category: "cover",
+      },
+      {
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": CSRF_TOKEN },
+      },
+    );
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.detail).not.toHaveBeenCalled();
+    expect(client.facets).not.toHaveBeenCalled();
+    expect(client.upload).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid metadata or CSRF before a write", async () => {
+    const client = transport({ status: 200, data: updateSuccess });
+    const fifty = Array.from({ length: 50 }, (_, index) => `tag-${index}`);
+    expect(
+      imageMetadataRequest({ ...metadataDraft, tags: fifty.join(",") }),
+    ).toMatchObject({ tags: fifty });
+    for (const draft of [
+      { ...metadataDraft, name: "x".repeat(201) },
+      { ...metadataDraft, description: "x".repeat(10001) },
+      { ...metadataDraft, category: "x".repeat(201) },
+      { ...metadataDraft, tags: Array.from({ length: 51 }, (_, i) => `t${i}`).join(",") },
+      { ...metadataDraft, tags: "x".repeat(65) },
+      { ...metadataDraft, tags: "safe,\x00bad" },
+    ]) {
+      await expect(
+        updateImageMetadata(client, CSRF_COOKIE, 11, draft),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    await expect(
+      updateImageMetadata(client, "other=1", 11, metadataDraft),
+    ).resolves.toEqual({ status: "csrf_missing" });
+    expect(client.update).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for a malformed, mismatched, disabled, failed, or unknown result without retry", async () => {
+    for (const data of [
+      { ...updateSuccess, extra: true },
+      { ...updateSuccess, item: { ...updateSuccess.item, enabled: false } },
+      { ...updateSuccess, item: { ...updateSuccess.item, name: "另一张图" } },
+      { ...updateSuccess, source_status: "next_media_library" },
+      { ...updateSuccess, item: { ...updateSuccess.item, data_url: "data:image/png;base64,AA==" } },
+    ]) {
+      const client = transport({ status: 200, data });
+      await expect(
+        updateImageMetadata(client, CSRF_COOKIE, 11, metadataDraft),
+      ).resolves.toEqual({ status: "unavailable" });
+      expect(client.update).toHaveBeenCalledTimes(1);
+    }
+    for (const [status, expected] of [
+      [400, "invalid"],
+      [401, "unauthenticated"],
+      [403, "forbidden"],
+      [404, "unavailable"],
+      [503, "unavailable"],
+    ] as const) {
+      const client = transport({ status, data: {} });
+      await expect(
+        updateImageMetadata(client, CSRF_COOKIE, 11, metadataDraft),
+      ).resolves.toEqual({ status: expected });
+      expect(client.update).toHaveBeenCalledTimes(1);
+    }
+    const throwing: ImageLibraryTransport = {
+      list: vi.fn(),
+      detail: vi.fn(),
+      facets: vi.fn(),
+      upload: vi.fn(),
+      update: vi.fn(async () => {
+        throw new Error("connection reset");
+      }),
+    } as unknown as ImageLibraryTransport;
+    await expect(
+      updateImageMetadata(throwing, CSRF_COOKIE, 11, metadataDraft),
+    ).resolves.toEqual({ status: "unavailable" });
+    expect(throwing.update).toHaveBeenCalledTimes(1);
   });
 });
 

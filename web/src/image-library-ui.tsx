@@ -12,12 +12,15 @@ import {
   uploadIdempotencyKey,
   uploadImage,
   uploadMetadataProblem,
+  updateImageMetadata,
   type ImageItem,
   type ImageDetail,
   type ImageLibraryFailure,
   type ImageLibraryRole,
   type ImageLibraryTransport,
   type ImageListQuery,
+  type ImageMetadataDraft,
+  type ImageMetadataUpdateResult,
   type ImageUploadMetadata,
   type ImageUploadResult,
 } from "./image-library";
@@ -77,6 +80,14 @@ const uploadMessages: Record<UploadNoticeStatus, string> = {
   unavailable: "上传结果未知，系统不会自动重试；请刷新列表确认后再操作。",
   csrf_missing: "安全令牌缺失，未发送上传请求。",
 };
+const metadataMessages: Record<UploadNoticeStatus, string> = {
+  unauthenticated: "登录状态已失效，请重新登录。",
+  forbidden: "当前账号没有图片元数据保存权限。",
+  conflict: "元数据保存与当前状态冲突，请刷新后重试。",
+  invalid: "图片元数据不符合已冻结的保存规则。",
+  unavailable: "保存结果未知，系统不会自动重试；请刷新列表确认后再操作。",
+  csrf_missing: "安全令牌缺失，未发送保存请求。",
+};
 
 function browserCookie(): string {
   return typeof document === "undefined" ? "" : document.cookie;
@@ -121,6 +132,44 @@ export async function uploadThenReload(
   return result;
 }
 
+export interface MetadataSaveThenReloadOptions {
+  readonly transport: ImageLibraryTransport;
+  readonly cookie: string;
+  readonly imageID: number;
+  readonly draft: ImageMetadataDraft;
+  readonly reload: () => void;
+}
+
+export async function saveMetadataThenReload(
+  options: MetadataSaveThenReloadOptions,
+): Promise<ImageMetadataUpdateResult> {
+  const result = await updateImageMetadata(
+    options.transport,
+    options.cookie,
+    options.imageID,
+    options.draft,
+  );
+  if (result.status === "saved") options.reload();
+  return result;
+}
+
+// React does not commit disabled state between two synchronous click handlers.
+// The ref prevents a second local PUT until the complete first flow settles.
+export function startImageMetadataSave(
+  lock: { current: boolean },
+  execute: () => Promise<void>,
+): Promise<void> | undefined {
+  if (lock.current) return undefined;
+  lock.current = true;
+  return (async () => {
+    try {
+      await execute();
+    } finally {
+      lock.current = false;
+    }
+  })();
+}
+
 export function ImageLibraryPage({
   role,
   transport = generatedImageLibraryTransport,
@@ -147,6 +196,8 @@ export function ImageLibraryPage({
   });
   const [uploadFile, setUploadFile] = useState<File>();
   const [uploading, setUploading] = useState(false);
+  const [metadataDraft, setMetadataDraft] = useState<ImageMetadataDraft>();
+  const [savingMetadata, setSavingMetadata] = useState(false);
   const [notice, setNotice] = useState<{
     readonly kind: "status" | "alert";
     readonly text: string;
@@ -154,6 +205,7 @@ export function ImageLibraryPage({
   const listGeneration = useRef(0);
   const facetsGeneration = useRef(0);
   const detailGeneration = useRef(0);
+  const metadataSaveInFlight = useRef(false);
   const [detail, setDetail] = useState<DetailState>({ kind: "idle" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -230,6 +282,14 @@ export function ImageLibraryPage({
       // A later selection (or close) wins over an older local read result.
       if (generation !== detailGeneration.current) return;
       if (result.status === "unauthenticated") onUnauthenticated?.();
+      if (result.status === "loaded") {
+        setMetadataDraft({
+          name: result.image.name,
+          description: result.image.description,
+          tags: result.image.tags.join(","),
+          category: result.image.category,
+        });
+      }
       setDetail(
         result.status === "loaded"
           ? { kind: "ready", image: result.image }
@@ -240,7 +300,52 @@ export function ImageLibraryPage({
 
   const closeDetail = () => {
     detailGeneration.current += 1;
+    setMetadataDraft(undefined);
     setDetail({ kind: "idle" });
+  };
+
+  const submitMetadata = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canAccess || detail.kind !== "ready" || !metadataDraft) return;
+    const imageID = detail.image.id;
+    const operation = startImageMetadataSave(metadataSaveInFlight, async () => {
+      setSavingMetadata(true);
+      setNotice(undefined);
+      let cookie = "";
+      try {
+        cookie = readCookie();
+      } catch {
+        cookie = "";
+      }
+      try {
+        const result = await saveMetadataThenReload({
+          transport,
+          cookie,
+          imageID,
+          draft: metadataDraft,
+          reload: reloadLibrary,
+        });
+        if (result.status === "saved") {
+          setDetail({ kind: "ready", image: result.image });
+          setMetadataDraft({
+            name: result.image.name,
+            description: result.image.description,
+            tags: result.image.tags.join(","),
+            category: result.image.category,
+          });
+          setNotice({
+            kind: "status",
+            text: `图片 #${result.image.id} 的本地元数据已保存；列表与筛选已按服务端事实刷新。`,
+          });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setNotice({ kind: "alert", text: metadataMessages[result.status] });
+      } finally {
+        setSavingMetadata(false);
+      }
+    });
+    if (operation) await operation;
   };
 
   const submitUpload = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -586,6 +691,72 @@ export function ImageLibraryPage({
                       <p className="image-library__meta">
                         预览只读取已验证的本地变体，不证明公开访问、对象访问或真实外发可用。
                       </p>
+                      {detail.image.enabled && metadataDraft ? (
+                        <form onSubmit={submitMetadata}>
+                          <h3>保存图片元数据</h3>
+                          <fieldset disabled={savingMetadata}>
+                            <label>
+                              名称
+                              <input
+                                maxLength={200}
+                                value={metadataDraft.name}
+                                onChange={(event) =>
+                                  setMetadataDraft({
+                                    ...metadataDraft,
+                                    name: event.currentTarget.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              描述
+                              <textarea
+                                maxLength={10000}
+                                rows={3}
+                                value={metadataDraft.description}
+                                onChange={(event) =>
+                                  setMetadataDraft({
+                                    ...metadataDraft,
+                                    description: event.currentTarget.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              标签（英文逗号分隔）
+                              <input
+                                maxLength={1000}
+                                value={metadataDraft.tags}
+                                onChange={(event) =>
+                                  setMetadataDraft({
+                                    ...metadataDraft,
+                                    tags: event.currentTarget.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              分类
+                              <input
+                                maxLength={200}
+                                value={metadataDraft.category}
+                                onChange={(event) =>
+                                  setMetadataDraft({
+                                    ...metadataDraft,
+                                    category: event.currentTarget.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <p className="image-library__meta">
+                              仅保存本地名称、描述、标签和分类；不会修改图片文件、启停状态或变体。
+                            </p>
+                            <button type="submit" disabled={savingMetadata}>
+                              {savingMetadata ? "正在保存…" : "保存元数据"}
+                            </button>
+                          </fieldset>
+                        </form>
+                      ) : null}
                     </>
                   )}
                 </section>

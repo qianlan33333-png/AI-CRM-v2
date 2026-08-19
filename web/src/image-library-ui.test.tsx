@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   handleSearchKeyDown,
   ImageLibraryPage,
+  saveMetadataThenReload,
+  startImageMetadataSave,
   uploadThenReload,
 } from "./image-library-ui";
 import type { ImageLibraryTransport } from "./image-library";
@@ -33,13 +35,58 @@ const uploadSuccess = {
   storage_adapter_mode: "postgresql",
   adapter_mode: "postgresql",
 };
+const metadataDraft = {
+  name: "封面",
+  description: "首页主图",
+  tags: "活动",
+  category: "banner",
+};
+const metadataSuccess = {
+  ok: true,
+  item: {
+    id: 11,
+    name: "封面",
+    file_name: "cover.png",
+    mime_type: "image/png",
+    file_size: 1024,
+    description: "首页主图",
+    category: "banner",
+    width: 400,
+    height: 300,
+    created_at: "2026-08-17T12:00:00Z",
+    updated_at: "2026-08-19T12:00:00Z",
+    content_type: "image/png",
+    tags: ["活动"],
+    enabled: true,
+    source: "upload",
+    source_url: "",
+    thumb_media_id: "",
+    thumb_media_id_expires_at: "",
+    ai_metadata: {},
+    thumb_160_url: "/api/admin/image-library/11/variants/thumb_160",
+    thumb_320_url: "/api/admin/image-library/11/variants/thumb_320",
+    thumb_url: "/api/admin/image-library/11/variants/thumb_320",
+    preview_url: "/api/admin/image-library/11/variants/mobile_1080",
+    mobile_1080_url: "/api/admin/image-library/11/variants/mobile_1080",
+    large_1440_url: "/api/admin/image-library/11/variants/large_1440",
+    original_url: "/api/admin/image-library/11/variants/original",
+  },
+  source_status: "local_repository_write",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  storage_adapter_mode: "postgresql",
+  adapter_mode: "postgresql",
+};
 
 function transport(): ImageLibraryTransport {
   const unavailable = async () => ({ status: 503, data: {} });
   return {
     list: vi.fn(unavailable),
+    detail: vi.fn(unavailable),
     facets: vi.fn(unavailable),
     upload: vi.fn(unavailable),
+    update: vi.fn(unavailable),
   } as unknown as ImageLibraryTransport;
 }
 
@@ -102,6 +149,7 @@ describe("ImageLibraryPage shell", () => {
     expect(client.list).not.toHaveBeenCalled();
     expect(client.facets).not.toHaveBeenCalled();
     expect(client.upload).not.toHaveBeenCalled();
+    expect(client.update).not.toHaveBeenCalled();
   });
 
   it("keeps Enter in search isolated from the upload form", () => {
@@ -220,5 +268,62 @@ describe("upload then reload flow", () => {
     expect(result).toEqual({ status: "invalid" });
     expect(client.upload).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
+  });
+});
+
+describe("metadata save then reload flow", () => {
+  it("reloads once after the strict local metadata result", async () => {
+    const client = transport();
+    vi.mocked(client.update).mockResolvedValue({
+      status: 200,
+      data: metadataSuccess,
+    } as Awaited<ReturnType<ImageLibraryTransport["update"]>>);
+    const reload = vi.fn();
+
+    await expect(
+      saveMetadataThenReload({
+        transport: client,
+        cookie: `aicrm_csrf=${CSRF_TOKEN}`,
+        imageID: 11,
+        draft: metadataDraft,
+        reload,
+      }),
+    ).resolves.toMatchObject({ status: "saved", image: { id: 11 } });
+    expect(client.update).toHaveBeenCalledOnce();
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("does not retry or reload after failure, and the same-tick lock permits one PUT", async () => {
+    const client = transport();
+    const reload = vi.fn();
+    const execute = vi.fn(async () => {
+      await saveMetadataThenReload({
+        transport: client,
+        cookie: `aicrm_csrf=${CSRF_TOKEN}`,
+        imageID: 11,
+        draft: metadataDraft,
+        reload,
+      });
+    });
+    const lock = { current: false };
+    const first = startImageMetadataSave(lock, execute);
+    const second = startImageMetadataSave(lock, execute);
+    expect(first).toBeInstanceOf(Promise);
+    expect(second).toBeUndefined();
+    expect(execute).toHaveBeenCalledOnce();
+    expect(client.update).toHaveBeenCalledOnce();
+    expect(reload).not.toHaveBeenCalled();
+    await first;
+    expect(lock.current).toBe(false);
+  });
+
+  it("releases the save lock if the flow throws", async () => {
+    const lock = { current: false };
+    await expect(
+      startImageMetadataSave(lock, async () => {
+        throw new Error("local test failure");
+      }),
+    ).rejects.toThrow("local test failure");
+    expect(lock.current).toBe(false);
   });
 });
