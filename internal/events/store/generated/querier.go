@@ -20,6 +20,8 @@ type Querier interface {
 	FinalFailEventDelivery(ctx context.Context, arg FinalFailEventDeliveryParams) (int64, error)
 	GetEvent(ctx context.Context, eventID int64) (EventLog, error)
 	GetEventDelivery(ctx context.Context, arg GetEventDeliveryParams) (GetEventDeliveryRow, error)
+	ListAdminReadDeliveries(ctx context.Context, eventIds []int64) ([]ListAdminReadDeliveriesRow, error)
+	ListAdminReadEvents(ctx context.Context, eventType string) ([]ListAdminReadEventsRow, error)
 	ListEventDeliveryLineage(ctx context.Context, resultLimit int32) ([]ListEventDeliveryLineageRow, error)
 	MarkEventDispatched(ctx context.Context, eventID int64) (int64, error)
 	MarkEventsDispatched(ctx context.Context, eventIds []int64) (int64, error)

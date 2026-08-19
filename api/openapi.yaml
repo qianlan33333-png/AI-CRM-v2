@@ -3264,6 +3264,92 @@ paths:
         "200": { description: Normal aggregation or explicit production-read degradation, content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyPushCenterStatsResponse" }, { $ref: "#/components/schemas/LegacyPushCenterStatsDegradedResponse" }] } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/internal-events:
+    get:
+      tags: [p4-internal-events]
+      operationId: listLegacyInternalEvents
+      summary: Read the bounded local internal-event and delivery projection
+      x-legacy-mapping-ids: [LEGACY-API-0367]
+      x-p4-decision-evidence: P4-INTERNAL-EVENTS-0367-0368-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: consumer
+          in: query
+          required: false
+          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 3, default: "50", pattern: '^[1-9][0-9]*$' }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 6, default: "0", pattern: '^(0|[1-9][0-9]*)$' }
+      responses:
+        "200": { description: Complete local event and delivery projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventListResponse" } } } }
+        "400": { description: Query grammar rejected, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "401": { description: Human session required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "403": { description: Admin global read grant required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
+        "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+  /api/admin/internal-events/diagnostics:
+    get:
+      tags: [p4-internal-events]
+      operationId: getLegacyInternalEventDiagnostics
+      summary: Read local internal-event and delivery diagnostic counts
+      x-legacy-mapping-ids: [LEGACY-API-0368]
+      x-p4-decision-evidence: P4-INTERNAL-EVENTS-0367-0368-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: consumer
+          in: query
+          required: false
+          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
+      responses:
+        "200": { description: Complete local diagnostic projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventDiagnosticsResponse" } } } }
+        "400": { description: Query grammar rejected, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "401": { description: Human session required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "403": { description: Admin global read grant required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
+        "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
 components:
   securitySchemes:
     AdminSession:
@@ -3426,6 +3512,97 @@ components:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
   schemas:
+    LegacyInternalEventDelivery:
+      type: object
+      additionalProperties: false
+      required: [consumer, status, attempt_count, completed_at]
+      properties:
+        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        status: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
+        attempt_count: { type: integer, format: int32, minimum: 0 }
+        completed_at: { type: string, format: date-time, nullable: true }
+    LegacyInternalEventItem:
+      type: object
+      additionalProperties: false
+      required: [event_id, event_type, occurred_at, dispatched, deliveries]
+      properties:
+        event_id: { type: integer, format: int64, minimum: 1 }
+        event_type: { type: string, minLength: 1, maxLength: 200 }
+        occurred_at: { type: string, format: date-time }
+        dispatched: { type: boolean }
+        deliveries: { type: array, items: { $ref: "#/components/schemas/LegacyInternalEventDelivery" } }
+    LegacyInternalEventListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset, observed_at, registry_id, source_status, delivery_observation_available, external_delivery, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyInternalEventItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int64, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int64, minimum: 0, maximum: 100000 }
+        observed_at: { type: string, format: date-time }
+        registry_id: { type: string, enum: [v2-internal-events.v1] }
+        source_status: { type: string, enum: [local_read_model] }
+        delivery_observation_available: { type: boolean, enum: [true] }
+        external_delivery: { type: string, enum: [unknown] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyInternalEventFilters:
+      type: object
+      additionalProperties: false
+      required: [event_type, consumer, status]
+      properties:
+        event_type: { type: string, maxLength: 200 }
+        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        status: { type: string, enum: ["", pending, processing, completed, final_failed, outcome_unknown] }
+    LegacyInternalEventDeliveryCounts:
+      type: object
+      additionalProperties: false
+      required: [pending, processing, completed, final_failed, outcome_unknown]
+      properties:
+        pending: { type: integer, format: int64, minimum: 0 }
+        processing: { type: integer, format: int64, minimum: 0 }
+        completed: { type: integer, format: int64, minimum: 0 }
+        final_failed: { type: integer, format: int64, minimum: 0 }
+        outcome_unknown: { type: integer, format: int64, minimum: 0 }
+    LegacyInternalEventConsumerBinding:
+      type: object
+      additionalProperties: false
+      required: [consumer, event_types]
+      properties:
+        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        event_types: { type: array, minItems: 1, items: { type: string, enum: [customer.tag_applied, operation_cycle.fact_recorded] } }
+    LegacyInternalEventDiagnosticsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, filters, event_count, undispatched_event_count, delivery_counts, consumer_registry, observed_at, registry_id, source_status, observed_domains, unobserved_domains, external_delivery, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        filters: { $ref: "#/components/schemas/LegacyInternalEventFilters" }
+        event_count: { type: integer, format: int64, minimum: 0 }
+        undispatched_event_count: { type: integer, format: int64, minimum: 0 }
+        delivery_counts: { $ref: "#/components/schemas/LegacyInternalEventDeliveryCounts" }
+        consumer_registry: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/LegacyInternalEventConsumerBinding" } }
+        observed_at: { type: string, format: date-time }
+        registry_id: { type: string, enum: [v2-internal-events.v1] }
+        source_status: { type: string, enum: [local_read_model] }
+        observed_domains: { type: array, minItems: 2, maxItems: 2, items: { type: string, enum: [event_log, event_deliveries] } }
+        unobserved_domains: { type: array, minItems: 3, maxItems: 3, items: { type: string, enum: [river_queue, outbound_provider, external_delivery] } }
+        external_delivery: { type: string, enum: [unknown] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyInternalEventError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, message, request_id, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [400, 401, 403, 405, 500, 503] }
+        error_code: { type: string, enum: [internal_event_query_invalid, authentication_required, forbidden, route_not_found, method_not_allowed, internal_event_observation_unavailable, internal_event_observation_failed] }
+        message: { type: string, minLength: 1 }
+        request_id: { type: string, minLength: 1 }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyExecutionRuntimeControl:
       type: object
       additionalProperties: false
