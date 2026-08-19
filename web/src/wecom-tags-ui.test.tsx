@@ -5,6 +5,7 @@ import {
   copyWecomTagID,
   startWecomTagGroupCreate,
   startWecomTagMutation,
+  submitWecomTagArchive,
   submitWecomTagGroupArchive,
   submitWecomTagGroupRename,
   WecomTagDetails,
@@ -41,7 +42,12 @@ function transport(): WecomTagsTransport {
   } as unknown as WecomTagsTransport;
 }
 
-function rawTag(id: number, name: string, sortOrder: number, groupName: string) {
+function rawTag(
+  id: number,
+  name: string,
+  sortOrder: number,
+  groupName: string,
+) {
   return {
     tag_id: id,
     id,
@@ -195,6 +201,31 @@ function groupArchiveController(
     lockMutations,
     setArchiving,
     setCatalog,
+  };
+}
+
+function tagArchiveController(
+  client: WecomTagsTransport,
+  onUnauthenticated?: () => void,
+) {
+  const mutationInFlight = { current: false };
+  const mutationLocked = { current: false };
+  const lockMutations = vi.fn(() => {
+    mutationLocked.current = true;
+  });
+  return {
+    controller: {
+      transport: client,
+      readCookie: () => `aicrm_csrf=${"c".repeat(43)}`,
+      onUnauthenticated,
+      mutationInFlight,
+      mutationLocked,
+      lockMutations,
+      setArchiving: vi.fn(),
+      setCatalog: vi.fn(),
+    },
+    mutationLocked,
+    lockMutations,
   };
 }
 
@@ -371,6 +402,24 @@ describe("WecomTagsView", () => {
     expect(html).not.toMatch(/企微删除|sync|live|provider/i);
   });
 
+  it("renders a separate explicit single-tag archive confirmation without external wording", () => {
+    const archive = vi.fn(async () => ({
+      status: "archived" as const,
+      tag: catalog.tags[0],
+    }));
+    const html = renderToStaticMarkup(
+      <WecomTagDetails
+        copyStatus="idle"
+        onArchive={archive}
+        onCopy={vi.fn()}
+        tag={catalog.tags[0]}
+      />,
+    );
+    expect(html).toContain("归档本地标签");
+    expect(html).not.toContain("确认归档本地标签");
+    expect(html).not.toMatch(/sync|live|provider|企微删除/i);
+  });
+
   it("renders an uncertain group rename as a read-only local form", () => {
     const html = renderToStaticMarkup(
       <WecomTagGroupDetails
@@ -520,8 +569,8 @@ describe("WecomTagsPage group rename controller", () => {
   });
 
   it("allows one same-tick PATCH and locks after an unconfirmed transport result without replacing the old catalog", async () => {
-    // eslint-disable-next-line no-unused-vars -- named resolver parameter is required by TS function-type syntax.
-    let release: ((value: { status: number; data: unknown }) => void) | undefined;
+    let release:
+      ((...args: [{ status: number; data: unknown }]) => void) | undefined; // eslint-disable-line no-unused-vars -- deferred resolver accepts a response.
     const client = {
       read: vi.fn(),
       renameGroup: vi.fn(
@@ -664,8 +713,8 @@ describe("WecomTagsPage group archive controller", () => {
   });
 
   it("locks every write after uncertain archive outcomes but preserves the current catalog for deterministic failures", async () => {
-    // eslint-disable-next-line no-unused-vars -- named resolver parameter is required by TS function-type syntax.
-    let release: ((value: { status: number; data: unknown }) => void) | undefined;
+    let release:
+      ((...args: [{ status: number; data: unknown }]) => void) | undefined; // eslint-disable-line no-unused-vars -- deferred resolver accepts a response.
     const unknownClient = {
       read: vi.fn(),
       archiveGroup: vi.fn(
@@ -719,5 +768,81 @@ describe("WecomTagsPage group archive controller", () => {
     expect(onUnauthenticated).toHaveBeenCalledOnce();
     expect(client.read).not.toHaveBeenCalled();
     expect(fixture.setCatalog).not.toHaveBeenCalled();
+  });
+});
+
+describe("WecomTagsPage tag archive controller", () => {
+  it("single-flights archive, rereads before publishing, and locks an unconfirmed result", async () => {
+    const receipt = {
+      ok: true,
+      reason: "tag_archived",
+      source_status: "local_catalog",
+      route_owner: "ai_crm_next",
+      fallback_used: false,
+      real_external_call_executed: false,
+      sync_executed: false,
+      fixture_used: false,
+      dry_run: false,
+      tag: {
+        tag_id: 10,
+        group_id: 1,
+        group_name: "意向",
+        tag_name: "高意向",
+        sort_order: 0,
+      },
+    };
+    const remaining = rawCatalog("意向");
+    const nextTags = remaining.tags.filter((tag) => tag.tag_id !== 10);
+    const client = {
+      archiveTag: vi.fn(async () => ({ status: 200, data: receipt })),
+      read: vi.fn(async () => ({
+        status: 200,
+        data: {
+          ...remaining,
+          items: nextTags,
+          tags: nextTags,
+          groups: [{ ...remaining.groups[0], tags: nextTags }],
+          count: 1,
+          total_tags: 1,
+        },
+      })),
+    } as unknown as WecomTagsTransport;
+    const fixture = tagArchiveController(client);
+    const first = submitWecomTagArchive(fixture.controller, catalog.tags[0]);
+    expect(
+      submitWecomTagArchive(fixture.controller, catalog.tags[0]),
+    ).toBeUndefined();
+    await expect(first).resolves.toEqual({
+      status: "archived",
+      tag: catalog.tags[0],
+    });
+    expect(client.archiveTag).toHaveBeenCalledOnce();
+    expect(client.read).toHaveBeenCalledOnce();
+
+    const unknown = tagArchiveController({
+      archiveTag: vi.fn(async () => ({ status: 503, data: {} })),
+      read: vi.fn(),
+    } as unknown as WecomTagsTransport);
+    await expect(
+      submitWecomTagArchive(unknown.controller, catalog.tags[0]),
+    ).resolves.toEqual({ status: "unknown" });
+    expect(unknown.mutationLocked.current).toBe(true);
+    expect(unknown.lockMutations).toHaveBeenCalledOnce();
+  });
+
+  it("notifies one 401 without rereading or replacing the catalog", async () => {
+    const onUnauthenticated = vi.fn();
+    const fixture = tagArchiveController(
+      {
+        archiveTag: vi.fn(async () => ({ status: 401, data: {} })),
+        read: vi.fn(),
+      } as unknown as WecomTagsTransport,
+      onUnauthenticated,
+    );
+    await expect(
+      submitWecomTagArchive(fixture.controller, catalog.tags[0]),
+    ).resolves.toEqual({ status: "unauthenticated" });
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(fixture.controller.transport.read).not.toHaveBeenCalled();
   });
 });

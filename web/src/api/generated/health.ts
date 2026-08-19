@@ -1287,6 +1287,82 @@ export interface LegacyTagGroupArchiveValidatedSuccess {
 export type LegacyTagGroupArchiveResponse =
   LegacyTagGroupArchiveSuccess | LegacyTagGroupArchiveValidatedSuccess;
 
+export type LegacyTagArchiveSuccessReason =
+  (typeof LegacyTagArchiveSuccessReason)[keyof typeof LegacyTagArchiveSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagArchiveSuccessReason = {
+  tag_archived: "tag_archived",
+} as const;
+
+export type LegacyTagArchiveSuccessSourceStatus =
+  (typeof LegacyTagArchiveSuccessSourceStatus)[keyof typeof LegacyTagArchiveSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagArchiveSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagArchiveSuccessRouteOwner =
+  (typeof LegacyTagArchiveSuccessRouteOwner)[keyof typeof LegacyTagArchiveSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagArchiveSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagArchiveSuccess {
+  ok: boolean;
+  reason: LegacyTagArchiveSuccessReason;
+  source_status: LegacyTagArchiveSuccessSourceStatus;
+  route_owner: LegacyTagArchiveSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+  tag: LegacyTagUpdateSuccessTag;
+}
+
+export type LegacyTagArchiveValidatedSuccessReason =
+  (typeof LegacyTagArchiveValidatedSuccessReason)[keyof typeof LegacyTagArchiveValidatedSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagArchiveValidatedSuccessReason = {
+  tag_archive_validated: "tag_archive_validated",
+} as const;
+
+export type LegacyTagArchiveValidatedSuccessSourceStatus =
+  (typeof LegacyTagArchiveValidatedSuccessSourceStatus)[keyof typeof LegacyTagArchiveValidatedSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagArchiveValidatedSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagArchiveValidatedSuccessRouteOwner =
+  (typeof LegacyTagArchiveValidatedSuccessRouteOwner)[keyof typeof LegacyTagArchiveValidatedSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagArchiveValidatedSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagArchiveValidatedSuccess {
+  ok: boolean;
+  reason: LegacyTagArchiveValidatedSuccessReason;
+  source_status: LegacyTagArchiveValidatedSuccessSourceStatus;
+  route_owner: LegacyTagArchiveValidatedSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+}
+
+export type LegacyTagArchiveResponse =
+  LegacyTagArchiveSuccess | LegacyTagArchiveValidatedSuccess;
+
 export interface LegacyTagUpdateSuccessTag {
   /** @minimum 1 */
   tag_id: number;
@@ -13280,7 +13356,7 @@ export const updateLegacyWecomTagPatch = async (
  * @summary Archive one local tag
  */
 export type archiveLegacyWecomTagResponse200 = {
-  data: void;
+  data: LegacyTagArchiveResponse;
   status: 200;
 };
 
@@ -13332,11 +13408,14 @@ export const getArchiveLegacyWecomTagUrl = (tagId: number) => {
 
 export const archiveLegacyWecomTag = async (
   tagId: number,
+  legacyTagArchiveRequest: LegacyTagArchiveRequest,
   options?: RequestInit,
 ): Promise<archiveLegacyWecomTagResponse> => {
   const res = await fetch(getArchiveLegacyWecomTagUrl(tagId), {
     ...options,
     method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyTagArchiveRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
