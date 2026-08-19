@@ -329,6 +329,16 @@ func TestCouponBoardMutationsUseReceiptReplayAndConflicts(t *testing.T) {
 	if replay, replayErr := service.Delete(context.Background(), 8, 9, "delete-key-000001"); replayErr != nil || replay.Status != "deleted" {
 		t.Fatalf("delete replay=%#v err=%v", replay, replayErr)
 	}
+	copied, err := service.Copy(context.Background(), 7, 9, "copy-key-00000001")
+	if err != nil || copied.ID == 7 || copied.Name != "满减券 副本" || copied.Status != "draft" || copied.AvailabilityStatus != "draft" || copied.IssuedCount != 0 || copied.CreatedBy != 9 || copied.UpdatedBy != 9 {
+		t.Fatalf("copy=%#v err=%v", copied, err)
+	}
+	if replay, replayErr := service.Copy(context.Background(), 7, 9, "copy-key-00000001"); replayErr != nil || replay.ID != copied.ID || len(events.rows) != 3 || events.rows[2].Type != "coupon.copied" {
+		t.Fatalf("copy replay=%#v err=%v events=%#v", replay, replayErr, events.rows)
+	}
+	if _, err = service.Copy(context.Background(), 8, 9, "copy-key-00000001"); !errors.Is(err, ErrConflict) {
+		t.Fatalf("cross-coupon copy key error=%v", err)
+	}
 }
 
 func TestCouponOpaqueIdentityAndSidebarGrantAreSeparate(t *testing.T) {
