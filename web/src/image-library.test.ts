@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   firstPageQuery,
+  deleteImage,
+  imageDeleteIdempotencyKey,
   formatFileSize,
   imagePreviewURL,
   IMAGE_LIBRARY_PAGE_SIZE,
@@ -17,6 +19,7 @@ import {
   uploadIdempotencyKey,
   uploadImage,
   updateImageMetadata,
+  setImageEnabled,
   type ImageLibraryTransport,
   type ImageListQuery,
 } from "./image-library";
@@ -120,6 +123,40 @@ const updateSuccess = {
   ...flags,
   source_status: "local_repository_write",
 };
+const deleteSuccess = {
+  ok: true,
+  deleted: true,
+  hard_deleted: true,
+  id: 11,
+  references_cleared: {
+    miniprograms_cleared: 0,
+    campaign_steps_cleared: 0,
+  },
+  source_status: "local_delete",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  storage_adapter_mode: "postgresql",
+  adapter_mode: "postgresql",
+};
+const deleteConflict = {
+  ok: false,
+  error: "image_has_references",
+  references: {
+    miniprograms: [{ id: 7 }],
+    campaign_steps: [],
+    group_invites: [],
+    automation_agents: [],
+    channels: [],
+    import_preflights: [],
+  },
+  source_status: "local_delete",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  storage_adapter_mode: "postgresql",
+  adapter_mode: "postgresql",
+};
 const uploadSuccess = {
   ok: true,
   item: {
@@ -168,6 +205,7 @@ function transport(
     facets: vi.fn(reply),
     upload: vi.fn(reply),
     update: vi.fn(reply),
+    remove: vi.fn(reply),
   } as unknown as ImageLibraryTransport;
 }
 
@@ -505,10 +543,9 @@ describe("image metadata update transport", () => {
     expect(client.update).not.toHaveBeenCalled();
   });
 
-  it("fails closed for a malformed, mismatched, disabled, failed, or unknown result without retry", async () => {
+  it("fails closed for a malformed, mismatched, failed, or unknown result without retry", async () => {
     for (const data of [
       { ...updateSuccess, extra: true },
-      { ...updateSuccess, item: { ...updateSuccess.item, enabled: false } },
       { ...updateSuccess, item: { ...updateSuccess.item, name: "另一张图" } },
       { ...updateSuccess, source_status: "next_media_library" },
       { ...updateSuccess, item: { ...updateSuccess.item, data_url: "data:image/png;base64,AA==" } },
@@ -545,6 +582,16 @@ describe("image metadata update transport", () => {
       updateImageMetadata(throwing, CSRF_COOKIE, 11, metadataDraft),
     ).resolves.toEqual({ status: "unavailable" });
     expect(throwing.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows metadata editing for a persisted disabled local image", async () => {
+    const client = transport({
+      status: 200,
+      data: { ...updateSuccess, item: { ...updateSuccess.item, enabled: false } },
+    });
+    await expect(
+      updateImageMetadata(client, CSRF_COOKIE, 11, metadataDraft),
+    ).resolves.toMatchObject({ status: "saved", image: { enabled: false } });
   });
 });
 
@@ -597,6 +644,26 @@ describe("image list transport", () => {
     );
     expect(vi.mocked(client.list).mock.calls[0][0]).not.toHaveProperty(
       "tag_group",
+    );
+  });
+
+  it("includes disabled rows only when the local filter explicitly requests them", async () => {
+    const client = transport({
+      status: 200,
+      data: {
+        ...listPage,
+        items: [{ ...imageItem, enabled: false }],
+      },
+    });
+    await expect(
+      loadImages(client, query({ includeDisabled: true })),
+    ).resolves.toMatchObject({
+      status: "loaded",
+      items: [{ id: 11, enabled: false }],
+    });
+    expect(client.list).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled_only: "false" }),
+      { credentials: "same-origin" },
     );
   });
 
@@ -794,6 +861,86 @@ describe("image list transport", () => {
       status: "unavailable",
     });
     expect(throwing.list).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("local image state and deletion transport", () => {
+  const DELETE_KEY = "image-delete-test-000000000000";
+
+  it("uses a CSRF-bound local PUT to change only enabled state", async () => {
+    const client = transport({
+      status: 200,
+      data: {
+        ...updateSuccess,
+        item: { ...updateSuccess.item, enabled: false },
+      },
+    });
+    await expect(
+      setImageEnabled(client, CSRF_COOKIE, 11, false),
+    ).resolves.toMatchObject({ status: "saved", image: { id: 11, enabled: false } });
+    expect(client.update).toHaveBeenCalledWith(
+      "11",
+      { enabled: false },
+      {
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": CSRF_TOKEN },
+      },
+    );
+  });
+
+  it("sends an exact no-force local DELETE and accepts only its closed receipt", async () => {
+    const client = transport({ status: 200, data: deleteSuccess });
+    await expect(
+      deleteImage(client, CSRF_COOKIE, 11, DELETE_KEY),
+    ).resolves.toEqual({ status: "deleted", id: 11 });
+    expect(client.remove).toHaveBeenCalledWith("11", {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": CSRF_TOKEN,
+        "Idempotency-Key": DELETE_KEY,
+      },
+    });
+    expect(imageDeleteIdempotencyKey(() => 0)).toMatch(/^image-delete-/);
+  });
+
+  it("surfaces counted reference conflicts without IDs and never treats malformed delete results as success", async () => {
+    const conflict = transport({ status: 409, data: deleteConflict });
+    await expect(
+      deleteImage(conflict, CSRF_COOKIE, 11, DELETE_KEY),
+    ).resolves.toEqual({
+      status: "referenced",
+      references: {
+        miniprograms: 1,
+        campaignSteps: 0,
+        groupInvites: 0,
+        automationAgents: 0,
+        channels: 0,
+        importPreflights: 0,
+      },
+    });
+    const malformed = transport({
+      status: 200,
+      data: { ...deleteSuccess, references_cleared: { miniprograms_cleared: 1, campaign_steps_cleared: 0 } },
+    });
+    await expect(
+      deleteImage(malformed, CSRF_COOKIE, 11, DELETE_KEY),
+    ).resolves.toEqual({ status: "unavailable" });
+    const unknown = transport({ status: 503, data: {} });
+    await expect(
+      deleteImage(unknown, CSRF_COOKIE, 11, DELETE_KEY),
+    ).resolves.toEqual({ status: "unavailable" });
+    expect(unknown.remove).toHaveBeenCalledOnce();
+  });
+
+  it("does not send a delete without the CSRF cookie or a valid idempotency key", async () => {
+    const client = transport({ status: 200, data: deleteSuccess });
+    await expect(
+      deleteImage(client, "other=1", 11, DELETE_KEY),
+    ).resolves.toEqual({ status: "csrf_missing" });
+    await expect(
+      deleteImage(client, CSRF_COOKIE, 11, "short"),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(client.remove).not.toHaveBeenCalled();
   });
 });
 

@@ -5,6 +5,8 @@ import {
   handleSearchKeyDown,
   ImageLibraryPage,
   ImagePreviewPanel,
+  deleteImageThenReload,
+  saveImageEnabledThenReload,
   saveMetadataThenReload,
   startImageMetadataSave,
   uploadThenReload,
@@ -79,6 +81,19 @@ const metadataSuccess = {
   storage_adapter_mode: "postgresql",
   adapter_mode: "postgresql",
 };
+const deleteSuccess = {
+  ok: true,
+  deleted: true,
+  hard_deleted: true,
+  id: 11,
+  references_cleared: { miniprograms_cleared: 0, campaign_steps_cleared: 0 },
+  source_status: "local_delete",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  storage_adapter_mode: "postgresql",
+  adapter_mode: "postgresql",
+};
 
 const detail: ImageDetail = {
   id: 11,
@@ -106,6 +121,7 @@ function transport(): ImageLibraryTransport {
     facets: vi.fn(unavailable),
     upload: vi.fn(unavailable),
     update: vi.fn(unavailable),
+    remove: vi.fn(unavailable),
   } as unknown as ImageLibraryTransport;
 }
 
@@ -125,6 +141,7 @@ describe("ImageLibraryPage shell", () => {
       expect(html).toContain("标签筛选");
       expect(html).toContain("分类筛选");
       expect(html).toContain("仅看未标注");
+      expect(html).toContain("包含已停用");
       expect(html).toContain("上传图片");
       expect(html).toContain("图片文件");
       expect(html).toContain("名称（可选）");
@@ -169,6 +186,7 @@ describe("ImageLibraryPage shell", () => {
     expect(client.facets).not.toHaveBeenCalled();
     expect(client.upload).not.toHaveBeenCalled();
     expect(client.update).not.toHaveBeenCalled();
+    expect(client.remove).not.toHaveBeenCalled();
   });
 
   it("keeps Enter in search isolated from the upload form", () => {
@@ -379,5 +397,63 @@ describe("metadata save then reload flow", () => {
       }),
     ).rejects.toThrow("local test failure");
     expect(lock.current).toBe(false);
+  });
+});
+
+describe("local state and delete then reload flows", () => {
+  it("reloads once after a confirmed enabled-state update", async () => {
+    const client = transport();
+    vi.mocked(client.update).mockResolvedValue({
+      status: 200,
+      data: metadataSuccess,
+    } as Awaited<ReturnType<ImageLibraryTransport["update"]>>);
+    const reload = vi.fn();
+    await expect(
+      saveImageEnabledThenReload({
+        transport: client,
+        cookie: `aicrm_csrf=${CSRF_TOKEN}`,
+        imageID: 11,
+        enabled: true,
+        reload,
+      }),
+    ).resolves.toMatchObject({ status: "saved", image: { id: 11 } });
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("reloads only after the exact local delete receipt", async () => {
+    const client = transport();
+    vi.mocked(client.remove).mockResolvedValue({
+      status: 200,
+      data: deleteSuccess,
+    } as Awaited<ReturnType<ImageLibraryTransport["remove"]>>);
+    const reload = vi.fn();
+    await expect(
+      deleteImageThenReload({
+        transport: client,
+        cookie: `aicrm_csrf=${CSRF_TOKEN}`,
+        imageID: 11,
+        idempotencyKey: "image-delete-flow-0000000000",
+        reload,
+      }),
+    ).resolves.toEqual({ status: "deleted", id: 11 });
+    expect(client.remove).toHaveBeenCalledOnce();
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("does not retry or reload after a delete result of unknown", async () => {
+    const client = transport();
+    vi.mocked(client.remove).mockRejectedValue(new Error("network down"));
+    const reload = vi.fn();
+    await expect(
+      deleteImageThenReload({
+        transport: client,
+        cookie: `aicrm_csrf=${CSRF_TOKEN}`,
+        imageID: 11,
+        idempotencyKey: "image-delete-flow-0000000000",
+        reload,
+      }),
+    ).resolves.toEqual({ status: "unavailable" });
+    expect(client.remove).toHaveBeenCalledOnce();
+    expect(reload).not.toHaveBeenCalled();
   });
 });
