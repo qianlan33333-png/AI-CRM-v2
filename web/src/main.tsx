@@ -51,6 +51,8 @@ import { DeliveryLineagePage } from "./delivery-lineage-ui";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
 import { DataHealthPage } from "./data-health-ui";
 import type { DataHealthTransport } from "./data-health";
+import { OrdersPage } from "./orders-ui";
+import type { OrdersTransport } from "./orders";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -66,6 +68,7 @@ export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
 export const GROUP_INVITE_LIBRARY_PATH = "/admin/group-invite-library";
 export const DELIVERY_LINEAGE_PATH = "/admin/delivery-lineage";
 export const DATA_HEALTH_PATH = "/admin/data-health";
+export const ORDERS_PATH = "/admin/orders";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -166,6 +169,12 @@ export const routes = [
     description: "四项本地平台就绪度检查的只读视图。",
   },
   {
+    path: "/admin/orders",
+    navigationLabel: "订单",
+    title: "订单总览",
+    description: "已持久化订单投影的本地只读浏览。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -223,6 +232,7 @@ export interface AppProps {
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
+  ordersTransport?: OrdersTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -276,7 +286,8 @@ export function carrierPathname(pathname: string, search: string): string {
     values[0] === QUESTIONNAIRE_LIST_PATH ||
     values[0] === WECOM_TAGS_PATH ||
     values[0] === CHANNELS_PATH ||
-    values[0] === COUPONS_PATH
+    values[0] === COUPONS_PATH ||
+    values[0] === ORDERS_PATH
     ? values[0]
     : pathname;
 }
@@ -384,6 +395,7 @@ function PageContent({
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
+  ordersTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -406,6 +418,7 @@ function PageContent({
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
+  ordersTransport?: OrdersTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -600,6 +613,16 @@ function PageContent({
     );
   }
 
+  if (route.path === ORDERS_PATH) {
+    return (
+      <OrdersPage
+        role={principal.role}
+        transport={ordersTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -662,6 +685,7 @@ export function navigationLinks(
     permitted.add(CHANNELS_PATH);
     permitted.add(COUPONS_PATH);
     permitted.add(GROUP_INVITE_LIBRARY_PATH);
+    permitted.add(ORDERS_PATH);
   }
   return routes
     .filter((route) => permitted.has(route.path))
@@ -690,6 +714,7 @@ export function App({
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
+  ordersTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -854,6 +879,7 @@ export function App({
             groupInviteLibraryTransport={groupInviteLibraryTransport}
             deliveryLineageTransport={deliveryLineageTransport}
             dataHealthTransport={dataHealthTransport}
+            ordersTransport={ordersTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
