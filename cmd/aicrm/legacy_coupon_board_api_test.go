@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -126,6 +127,62 @@ func couponBoardAdminWrite(method, path string) *http.Request {
 	request := legacyChannelWriteRequest(method, path, "")
 	request.Header.Set("Idempotency-Key", "coupon-board-key-0001")
 	return request
+}
+
+func TestCouponProductOptionsUsesLocalPageTotalWithoutQuery(t *testing.T) {
+	products := &legacyProductStub{page: productport.LegacyPage{
+		Items:  []productport.Product{{ID: 27, Name: "本地普通商品", PriceMinor: 9900, Currency: "CNY"}},
+		Total:  21,
+		Limit:  20,
+		Offset: 20,
+	}}
+	handler, err := NewHandlerWithOutboundProductsMediaAndSurvey(
+		&recordingAuth{},
+		&legacyCustomerStub{result: legacyCustomerResult()},
+		&legacyOutboundQueryStub{},
+		&legacyCancelStub{},
+		&legacyRetryStub{},
+		products,
+		&legacyMediaStub{},
+		&legacySurveyStub{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	handler.CouponProductOptions(response, httptest.NewRequest(
+		http.MethodGet,
+		"/api/admin/coupons/product-options?product_type=standard_product&limit=20&offset=20",
+		nil,
+	))
+	if response.Code != http.StatusOK || products.lastLimit != 20 || products.lastOffset != 20 {
+		t.Fatalf("status/page=%d/%d/%d body=%s", response.Code, products.lastLimit, products.lastOffset, response.Body.String())
+	}
+	var body struct {
+		OK     bool  `json:"ok"`
+		Total  int64 `json:"total"`
+		Limit  int32 `json:"limit"`
+		Offset int32 `json:"offset"`
+		Items  []struct {
+			ID        int64  `json:"id"`
+			TargetRef string `json:"target_ref"`
+			Name      string `json:"name"`
+			Price     int64  `json:"price_minor"`
+			Currency  string `json:"currency"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if !body.OK || body.Total != 21 || body.Limit != 20 || body.Offset != 20 || len(body.Items) != 1 || body.Items[0] != (struct {
+		ID        int64  `json:"id"`
+		TargetRef string `json:"target_ref"`
+		Name      string `json:"name"`
+		Price     int64  `json:"price_minor"`
+		Currency  string `json:"currency"`
+	}{ID: 27, TargetRef: "standard_product:27", Name: "本地普通商品", Price: 9900, Currency: "CNY"}) {
+		t.Fatalf("body=%#v", body)
+	}
 }
 
 func TestCouponBoardPublicIdentityFailsClosedAndCannotBeSpoofed(t *testing.T) {

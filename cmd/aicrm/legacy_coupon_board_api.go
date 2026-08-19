@@ -98,7 +98,11 @@ func (h *Handler) CouponProductOptions(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, map[string]any{"id": p.ID, "target_ref": "standard_product:" + strconv.FormatInt(int64(p.ID), 10), "name": p.Name, "price_minor": p.PriceMinor, "currency": p.Currency})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "items": items, "total": len(items), "limit": page.Limit, "offset": page.Offset})
+	total := int64(len(items))
+	if q == "" {
+		total = page.Total
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "items": items, "total": total, "limit": page.Limit, "offset": page.Offset})
 }
 func (h *Handler) CouponClaims(w http.ResponseWriter, r *http.Request) {
 	b := h.boardOrFail(w)
