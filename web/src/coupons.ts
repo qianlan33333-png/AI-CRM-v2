@@ -1,10 +1,13 @@
 import {
   archiveLegacyCoupon,
   copyLegacyCoupon,
+  createLegacyCoupon,
   getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
   listLegacyCoupons,
+  updateLegacyCoupon,
+  type CouponUpsertRequest,
 } from "./api/generated/health";
 
 export type CouponsRole = "admin" | "ops" | "sales";
@@ -45,6 +48,21 @@ export interface CouponRuleDetail extends CouponListItem {
   readonly createdBy: number;
   readonly updatedBy: number;
   readonly version: number;
+}
+
+export interface CouponDraftInput {
+  readonly name: string;
+  readonly discountAmountTotal: string;
+  readonly totalIssueLimit: string;
+  readonly perUserIssueLimit: string;
+  readonly claimStartsAt: string;
+  readonly claimEndsAt: string;
+  readonly validityMode: "fixed_range" | "relative_days";
+  readonly useStartsAt: string;
+  readonly useEndsAt: string;
+  readonly relativeValidityDays: string;
+  readonly instructions: string;
+  readonly targetRefs: string;
 }
 
 export interface CouponClaimItem {
@@ -94,6 +112,13 @@ export type CouponShareResult =
 export type CouponDetailResult =
   | { readonly status: "loaded"; readonly detail: CouponRuleDetail }
   | { readonly status: CouponsFailure };
+export type CouponDraftMutationResult =
+  | { readonly status: "created"; readonly item: CouponRuleDetail }
+  | { readonly status: "updated"; readonly item: CouponRuleDetail }
+  | {
+      readonly status: CouponsFailure;
+      readonly outcomeUncertain: boolean;
+    };
 export type CouponArchiveResult =
   | { readonly status: "archived"; readonly item: CouponListItem }
   | { readonly status: "canceled" }
@@ -136,6 +161,24 @@ async function generatedDetail(couponID: number, options?: RequestInit) {
   return getLegacyCoupon(couponID, { credentials: "same-origin", ...options });
 }
 
+async function generatedCreate(
+  input: CouponUpsertRequest,
+  options?: RequestInit,
+) {
+  return createLegacyCoupon(input, { credentials: "same-origin", ...options });
+}
+
+async function generatedUpdate(
+  couponID: number,
+  input: CouponUpsertRequest,
+  options?: RequestInit,
+) {
+  return updateLegacyCoupon(couponID, input, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
 async function generatedArchive(couponID: number, options?: RequestInit) {
   return archiveLegacyCoupon(couponID, {
     credentials: "same-origin",
@@ -148,6 +191,8 @@ export interface CouponsTransport {
   readonly copy: typeof generatedCopy;
   readonly claims: typeof generatedClaims;
   readonly detail: typeof generatedDetail;
+  readonly create: typeof generatedCreate;
+  readonly update: typeof generatedUpdate;
   readonly share: typeof generatedShare;
   readonly archive: typeof generatedArchive;
 }
@@ -157,6 +202,8 @@ export const generatedCouponsTransport: CouponsTransport = {
   copy: generatedCopy,
   claims: generatedClaims,
   detail: generatedDetail,
+  create: generatedCreate,
+  update: generatedUpdate,
   share: generatedShare,
   archive: generatedArchive,
 };
@@ -389,6 +436,82 @@ function coupon(value: unknown): CouponListItem | undefined {
     : undefined;
 }
 
+function safePositiveInteger(value: string): number | undefined {
+  if (!/^[1-9][0-9]*$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+export function couponUpsertRequest(
+  input: CouponDraftInput,
+): CouponUpsertRequest | undefined {
+  const name = input.name.trim();
+  const instructions = input.instructions.trim();
+  const discountAmountTotal = safePositiveInteger(input.discountAmountTotal);
+  const totalIssueLimit = safePositiveInteger(input.totalIssueLimit);
+  const perUserIssueLimit = safePositiveInteger(input.perUserIssueLimit);
+  const targets = input.targetRefs.split("\n");
+  if (
+    !text(name, 45) ||
+    !discountAmountTotal ||
+    !totalIssueLimit ||
+    !perUserIssueLimit ||
+    perUserIssueLimit > totalIssueLimit ||
+    !timestamp(input.claimStartsAt) ||
+    !timestamp(input.claimEndsAt) ||
+    Date.parse(input.claimStartsAt) >= Date.parse(input.claimEndsAt) ||
+    !text(instructions, 200, true) ||
+    !targetRefs(targets)
+  ) {
+    return undefined;
+  }
+  if (input.validityMode === "fixed_range") {
+    if (
+      !timestamp(input.useStartsAt) ||
+      !timestamp(input.useEndsAt) ||
+      Date.parse(input.useStartsAt) >= Date.parse(input.useEndsAt)
+    ) {
+      return undefined;
+    }
+    return {
+      name,
+      discount_amount_total: discountAmountTotal,
+      total_issue_limit: totalIssueLimit,
+      per_user_issue_limit: perUserIssueLimit,
+      claim_starts_at: input.claimStartsAt,
+      claim_ends_at: input.claimEndsAt,
+      validity_mode: "fixed_range",
+      use_starts_at: input.useStartsAt,
+      use_ends_at: input.useEndsAt,
+      relative_validity_days: null,
+      instructions,
+      target_refs: targets,
+    };
+  }
+  const relativeValidityDays = safePositiveInteger(input.relativeValidityDays);
+  if (
+    input.validityMode !== "relative_days" ||
+    !relativeValidityDays ||
+    relativeValidityDays > 36500
+  ) {
+    return undefined;
+  }
+  return {
+    name,
+    discount_amount_total: discountAmountTotal,
+    total_issue_limit: totalIssueLimit,
+    per_user_issue_limit: perUserIssueLimit,
+    claim_starts_at: input.claimStartsAt,
+    claim_ends_at: input.claimEndsAt,
+    validity_mode: "relative_days",
+    use_starts_at: null,
+    use_ends_at: null,
+    relative_validity_days: relativeValidityDays,
+    instructions,
+    target_refs: targets,
+  };
+}
+
 function sameCouponDetail(
   left: CouponRuleDetail,
   right: CouponRuleDetail,
@@ -436,8 +559,118 @@ function couponDetailResponse(
   }
   const primary = couponDetail(value.coupon);
   const mirror = couponDetail(value.data.coupon);
-  return primary && mirror && primary.id === couponID && sameCouponDetail(primary, mirror)
+  return primary &&
+    mirror &&
+    primary.id === couponID &&
+    sameCouponDetail(primary, mirror)
     ? primary
+    : undefined;
+}
+
+function sameTimestamp(
+  value: string | undefined,
+  expected: string | null | undefined,
+): boolean {
+  return (
+    typeof value === "string" &&
+    typeof expected === "string" &&
+    Date.parse(value) === Date.parse(expected)
+  );
+}
+
+function sameRuleResponse(
+  item: CouponRuleDetail,
+  request: CouponUpsertRequest,
+): boolean {
+  if (
+    item.name !== request.name ||
+    item.discountAmountTotal !== request.discount_amount_total ||
+    item.totalIssueLimit !== request.total_issue_limit ||
+    item.perUserIssueLimit !== request.per_user_issue_limit ||
+    !sameTimestamp(item.claimStartsAt, request.claim_starts_at) ||
+    !sameTimestamp(item.claimEndsAt, request.claim_ends_at) ||
+    item.validityMode !== request.validity_mode ||
+    item.instructions !== (request.instructions ?? "") ||
+    item.targetRefs.length !== request.target_refs.length ||
+    !item.targetRefs.every(
+      (target, index) => target === request.target_refs[index],
+    )
+  ) {
+    return false;
+  }
+  if (request.validity_mode === "fixed_range") {
+    return (
+      sameTimestamp(item.useStartsAt, request.use_starts_at) &&
+      sameTimestamp(item.useEndsAt, request.use_ends_at) &&
+      item.relativeValidityDays === undefined
+    );
+  }
+  return (
+    item.useStartsAt === undefined &&
+    item.useEndsAt === undefined &&
+    item.relativeValidityDays === request.relative_validity_days
+  );
+}
+
+function createCouponResponse(
+  value: unknown,
+  request: CouponUpsertRequest,
+): CouponRuleDetail | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "coupon",
+      "coupon_id",
+      "fallback_used",
+      "create_replay_safe",
+      "real_external_call_executed",
+    ]) ||
+    value.ok !== true ||
+    value.fallback_used !== false ||
+    value.create_replay_safe !== false ||
+    value.real_external_call_executed !== false
+  ) {
+    return undefined;
+  }
+  const item = couponDetail(value.coupon);
+  return item &&
+    value.coupon_id === item.id &&
+    item.status === "draft" &&
+    item.availability === "draft" &&
+    item.issuedCount === 0 &&
+    sameRuleResponse(item, request)
+    ? item
+    : undefined;
+}
+
+function updateCouponResponse(
+  value: unknown,
+  current: CouponRuleDetail,
+  request: CouponUpsertRequest,
+): CouponRuleDetail | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "coupon",
+      "fallback_used",
+      "real_external_call_executed",
+    ]) ||
+    value.ok !== true ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false
+  ) {
+    return undefined;
+  }
+  const item = couponDetail(value.coupon);
+  return item &&
+    item.id === current.id &&
+    item.status === "draft" &&
+    item.availability === "draft" &&
+    item.issuedCount === current.issuedCount &&
+    sameRuleResponse(item, request)
+    ? item
     : undefined;
 }
 
@@ -680,6 +913,79 @@ export async function loadCouponDetail(
     return { status: failure(response.status, response.data) };
   const detail = couponDetailResponse(response.data, couponID);
   return detail ? { status: "loaded", detail } : { status: "invalid" };
+}
+
+function validCSRF(value: string): boolean {
+  return /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+
+function knownMutationFailure(
+  status: number,
+  body: unknown,
+): Exclude<
+  CouponDraftMutationResult,
+  { readonly status: "created" | "updated" }
+> {
+  const result = failure(status, body);
+  return { status: result, outcomeUncertain: result === "unavailable" };
+}
+
+export async function createCouponDraft(
+  transport: CouponsTransport,
+  input: CouponDraftInput,
+  csrf: string,
+): Promise<CouponDraftMutationResult> {
+  const request = couponUpsertRequest(input);
+  if (!request || !validCSRF(csrf))
+    return { status: "invalid", outcomeUncertain: false };
+  let response: Awaited<ReturnType<CouponsTransport["create"]>>;
+  try {
+    response = await transport.create(request, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": csrf },
+    });
+  } catch {
+    return { status: "unavailable", outcomeUncertain: true };
+  }
+  if (response.status !== 200)
+    return knownMutationFailure(response.status, response.data);
+  const item = createCouponResponse(response.data, request);
+  return item
+    ? { status: "created", item }
+    : { status: "invalid", outcomeUncertain: true };
+}
+
+export async function updateCouponDraft(
+  transport: CouponsTransport,
+  current: CouponRuleDetail,
+  input: CouponDraftInput,
+  csrf: string,
+): Promise<CouponDraftMutationResult> {
+  const request = couponUpsertRequest(input);
+  if (
+    !request ||
+    !validCSRF(csrf) ||
+    current.status !== "draft" ||
+    current.availability !== "draft" ||
+    !positive(current.id)
+  ) {
+    return { status: "invalid", outcomeUncertain: false };
+  }
+  let response: Awaited<ReturnType<CouponsTransport["update"]>>;
+  try {
+    response = await transport.update(current.id, request, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": csrf },
+    });
+  } catch {
+    return { status: "unavailable", outcomeUncertain: true };
+  }
+  if (response.status !== 200)
+    return knownMutationFailure(response.status, response.data);
+  const item = updateCouponResponse(response.data, current, request);
+  return item
+    ? { status: "updated", item }
+    : { status: "invalid", outcomeUncertain: true };
 }
 
 export async function loadCouponShare(

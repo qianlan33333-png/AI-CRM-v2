@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   archiveCoupon,
+  couponUpsertRequest,
   copyCoupon,
+  createCouponDraft,
   filterCoupons,
   loadCouponClaims,
   loadCouponDetail,
@@ -9,14 +11,17 @@ import {
   loadCoupons,
   newCouponArchiveIdempotencyKey,
   newCouponCopyIdempotencyKey,
+  updateCouponDraft,
   type CouponsTransport,
 } from "./coupons";
 import {
   archiveLegacyCoupon,
   copyLegacyCoupon,
+  createLegacyCoupon,
   getLegacyCoupon,
   getLegacyCouponShare,
   listLegacyCouponClaims,
+  updateLegacyCoupon,
 } from "./api/generated/health";
 
 const sourceCoupon = {
@@ -113,6 +118,86 @@ function detailEnvelope(
   return { ok: true, coupon, data: { coupon: mirror } };
 }
 
+function createdEnvelope(extra: Record<string, unknown> = {}) {
+  const coupon = {
+    ...sourceCoupon,
+    id: 8,
+    name: "新建本地草稿",
+    instructions: "仅本地规则",
+    target_refs: ["standard_product:7", "standard_product:8"],
+    status: "draft",
+    availability_status: "draft",
+    issued_count: 0,
+    created_at: "2026-08-19T01:02:04Z",
+    updated_at: "2026-08-19T01:02:04Z",
+    ...extra,
+  };
+  return {
+    ok: true,
+    coupon,
+    coupon_id: coupon.id,
+    fallback_used: false,
+    create_replay_safe: false,
+    real_external_call_executed: false,
+  };
+}
+
+function updatedEnvelope(extra: Record<string, unknown> = {}) {
+  return {
+    ok: true,
+    coupon: {
+      ...sourceCoupon,
+      name: "新建本地草稿",
+      instructions: "仅本地规则",
+      target_refs: ["standard_product:7", "standard_product:8"],
+      status: "draft",
+      availability_status: "draft",
+      issued_count: 0,
+      ...extra,
+    },
+    fallback_used: false,
+    real_external_call_executed: false,
+  };
+}
+
+const draftInput = {
+  name: "新建本地草稿",
+  discountAmountTotal: "100",
+  totalIssueLimit: "20",
+  perUserIssueLimit: "1",
+  claimStartsAt: "2026-08-19T00:00:00Z",
+  claimEndsAt: "2026-08-20T00:00:00Z",
+  validityMode: "relative_days" as const,
+  useStartsAt: "",
+  useEndsAt: "",
+  relativeValidityDays: "30",
+  instructions: "仅本地规则",
+  targetRefs: "standard_product:7\nstandard_product:8",
+};
+
+const draftDetail = {
+  id: 7,
+  name: "满减券",
+  status: "draft" as const,
+  availability: "draft" as const,
+  issuedCount: 0,
+  createdAt: "2026-08-19T00:00:00Z",
+  updatedAt: "2026-08-19T01:02:03Z",
+  discountAmountTotal: 100,
+  currency: "CNY" as const,
+  totalIssueLimit: 20,
+  perUserIssueLimit: 1,
+  claimStartsAt: "2026-08-19T00:00:00Z",
+  claimEndsAt: "2026-08-20T00:00:00Z",
+  validityMode: "relative_days" as const,
+  relativeValidityDays: 30,
+  instructions: "",
+  targetRefs: ["standard_product:7"],
+  createdBy: 1,
+  updatedBy: 1,
+  version: 1,
+};
+
 function transport(
   listData: unknown = envelope(),
   copyData: unknown = copiedEnvelope(),
@@ -120,12 +205,16 @@ function transport(
   shareData: unknown = shareEnvelope(),
   archiveData: unknown = archivedEnvelope(),
   detailData: unknown = detailEnvelope(),
+  createData: unknown = createdEnvelope(),
+  updateData: unknown = updatedEnvelope(),
 ): CouponsTransport {
   return {
     list: vi.fn(async () => ({ status: 200, data: listData })),
     copy: vi.fn(async () => ({ status: 200, data: copyData })),
     claims: vi.fn(async () => ({ status: 200, data: claimsData })),
     detail: vi.fn(async () => ({ status: 200, data: detailData })),
+    create: vi.fn(async () => ({ status: 200, data: createData })),
+    update: vi.fn(async () => ({ status: 200, data: updateData })),
     share: vi.fn(async () => ({ status: 200, data: shareData })),
     archive: vi.fn(async () => ({ status: 200, data: archiveData })),
   } as unknown as CouponsTransport;
@@ -291,6 +380,215 @@ describe("coupon list and copy local boundary", () => {
     expect(unavailable.copy).toHaveBeenCalledTimes(1);
   });
 
+  it("constructs only the frozen local draft DTO for both validity modes", () => {
+    expect(couponUpsertRequest(draftInput)).toEqual({
+      name: "新建本地草稿",
+      discount_amount_total: 100,
+      total_issue_limit: 20,
+      per_user_issue_limit: 1,
+      claim_starts_at: "2026-08-19T00:00:00Z",
+      claim_ends_at: "2026-08-20T00:00:00Z",
+      validity_mode: "relative_days",
+      use_starts_at: null,
+      use_ends_at: null,
+      relative_validity_days: 30,
+      instructions: "仅本地规则",
+      target_refs: ["standard_product:7", "standard_product:8"],
+    });
+    expect(
+      couponUpsertRequest({
+        ...draftInput,
+        validityMode: "fixed_range",
+        useStartsAt: "2026-08-20T00:00:00Z",
+        useEndsAt: "2026-08-21T00:00:00Z",
+      }),
+    ).toMatchObject({
+      validity_mode: "fixed_range",
+      use_starts_at: "2026-08-20T00:00:00Z",
+      use_ends_at: "2026-08-21T00:00:00Z",
+      relative_validity_days: null,
+    });
+    for (const input of [
+      { ...draftInput, perUserIssueLimit: "21" },
+      { ...draftInput, claimEndsAt: draftInput.claimStartsAt },
+      { ...draftInput, relativeValidityDays: "36501" },
+      { ...draftInput, targetRefs: "standard_product:7\nstandard_product:7" },
+      { ...draftInput, targetRefs: "standard_product:07" },
+      { ...draftInput, discountAmountTotal: "9007199254740992" },
+      { ...draftInput, instructions: "x".repeat(201) },
+    ]) {
+      expect(couponUpsertRequest(input)).toBeUndefined();
+    }
+  });
+
+  it("creates and updates one local draft through the generated same-origin APIs with CSRF only", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(createdEnvelope()), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(updatedEnvelope({ name: "已更新草稿" })), {
+          status: 200,
+        }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const csrf = "x".repeat(43);
+
+    await expect(
+      createCouponDraft(
+        { create: createLegacyCoupon } as unknown as CouponsTransport,
+        draftInput,
+        csrf,
+      ),
+    ).resolves.toMatchObject({
+      status: "created",
+      item: { id: 8, issuedCount: 0 },
+    });
+    await expect(
+      updateCouponDraft(
+        { update: updateLegacyCoupon } as unknown as CouponsTransport,
+        draftDetail,
+        { ...draftInput, name: "已更新草稿" },
+        csrf,
+      ),
+    ).resolves.toMatchObject({
+      status: "updated",
+      item: { id: 7, name: "已更新草稿" },
+    });
+
+    const expected = {
+      name: "新建本地草稿",
+      discount_amount_total: 100,
+      total_issue_limit: 20,
+      per_user_issue_limit: 1,
+      claim_starts_at: "2026-08-19T00:00:00Z",
+      claim_ends_at: "2026-08-20T00:00:00Z",
+      validity_mode: "relative_days",
+      use_starts_at: null,
+      use_ends_at: null,
+      relative_validity_days: 30,
+      instructions: "仅本地规则",
+      target_refs: ["standard_product:7", "standard_product:8"],
+    };
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/admin/coupons",
+      expect.objectContaining({
+        credentials: "same-origin",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify(expected),
+      }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/admin/coupons/7",
+      expect.objectContaining({
+        credentials: "same-origin",
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+      }),
+    );
+    expect(fetch.mock.calls[0]?.[1]).not.toHaveProperty(
+      "headers.Idempotency-Key",
+    );
+  });
+
+  it("fails closed when a create or update receipt drifts from the submitted local rule", async () => {
+    for (const response of [
+      createdEnvelope({ discount_amount_total: 101 }),
+      createdEnvelope({
+        target_refs: ["standard_product:8", "standard_product:7"],
+      }),
+      createdEnvelope({ claim_ends_at: "2026-08-21T00:00:00Z" }),
+    ]) {
+      await expect(
+        createCouponDraft(
+          transport(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            response,
+          ),
+          draftInput,
+          "x".repeat(43),
+        ),
+      ).resolves.toEqual({ status: "invalid", outcomeUncertain: true });
+    }
+
+    for (const response of [
+      updatedEnvelope({ per_user_issue_limit: 2 }),
+      updatedEnvelope({ instructions: "服务端漂移" }),
+      updatedEnvelope({ use_starts_at: "2026-08-20T00:00:00Z" }),
+    ]) {
+      await expect(
+        updateCouponDraft(
+          transport(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            response,
+          ),
+          draftDetail,
+          draftInput,
+          "x".repeat(43),
+        ),
+      ).resolves.toEqual({ status: "invalid", outcomeUncertain: true });
+    }
+  });
+
+  it("does not send invalid writes and freezes uncertain create or update outcomes without retry", async () => {
+    const client = transport();
+    await expect(createCouponDraft(client, draftInput, "bad")).resolves.toEqual(
+      { status: "invalid", outcomeUncertain: false },
+    );
+    expect(client.create).not.toHaveBeenCalled();
+    await expect(
+      updateCouponDraft(
+        client,
+        { ...draftDetail, status: "published", availability: "active" },
+        draftInput,
+        "x".repeat(43),
+      ),
+    ).resolves.toEqual({ status: "invalid", outcomeUncertain: false });
+    expect(client.update).not.toHaveBeenCalled();
+
+    const malformed = transport(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { ok: true },
+    );
+    await expect(
+      createCouponDraft(malformed, draftInput, "x".repeat(43)),
+    ).resolves.toEqual({ status: "invalid", outcomeUncertain: true });
+    expect(malformed.create).toHaveBeenCalledOnce();
+
+    const unavailable = transport();
+    vi.mocked(unavailable.update).mockRejectedValue(new Error("network"));
+    await expect(
+      updateCouponDraft(unavailable, draftDetail, draftInput, "x".repeat(43)),
+    ).resolves.toEqual({ status: "unavailable", outcomeUncertain: true });
+    expect(unavailable.update).toHaveBeenCalledOnce();
+  });
+
   it("creates only a standards-valid 16-to-128 character browser key", () => {
     expect(
       newCouponCopyIdempotencyKey({
@@ -308,9 +606,11 @@ describe("coupon list and copy local boundary", () => {
   });
 
   it("archives one eligible local coupon through the existing same-origin Orval endpoint", async () => {
-    const fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(archivedEnvelope()), { status: 200 }),
-    );
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(archivedEnvelope()), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetch);
     const item = {
       id: 7,
@@ -342,7 +642,8 @@ describe("coupon list and copy local boundary", () => {
         method: "POST",
         headers: {
           "X-CSRF-Token": "x".repeat(43),
-          "Idempotency-Key": "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+          "Idempotency-Key":
+            "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
         },
       }),
     );
@@ -368,7 +669,12 @@ describe("coupon list and copy local boundary", () => {
       ),
     ).resolves.toEqual({ status: "invalid" });
     await expect(
-      archiveCoupon(client, item, "invalid", "coupon-archive:123e4567-e89b-42d3-a456-426614174000"),
+      archiveCoupon(
+        client,
+        item,
+        "invalid",
+        "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
+      ),
     ).resolves.toEqual({ status: "invalid" });
     await expect(
       archiveCoupon(client, item, "x".repeat(43), "too-short"),
@@ -383,7 +689,13 @@ describe("coupon list and copy local boundary", () => {
     ]) {
       await expect(
         archiveCoupon(
-          transport(envelope(), copiedEnvelope(), claimsEnvelope(), shareEnvelope(), body),
+          transport(
+            envelope(),
+            copiedEnvelope(),
+            claimsEnvelope(),
+            shareEnvelope(),
+            body,
+          ),
           item,
           "x".repeat(43),
           "coupon-archive:123e4567-e89b-42d3-a456-426614174000",
@@ -462,7 +774,9 @@ describe("coupon list and copy local boundary", () => {
   it("reads one same-origin coupon rule detail through the generated GET only", async () => {
     const fetch = vi
       .fn()
-      .mockResolvedValue(new Response(JSON.stringify(detailEnvelope()), { status: 200 }));
+      .mockResolvedValue(
+        new Response(JSON.stringify(detailEnvelope()), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetch);
 
     await expect(
@@ -492,21 +806,40 @@ describe("coupon list and copy local boundary", () => {
 
   it("fails closed when either detail mirror, its requested ID, or its DTO differs", async () => {
     const client = transport();
-    await expect(loadCouponDetail(client, 0)).resolves.toEqual({ status: "invalid" });
+    await expect(loadCouponDetail(client, 0)).resolves.toEqual({
+      status: "invalid",
+    });
     expect(client.detail).not.toHaveBeenCalled();
 
     for (const body of [
       { ok: true, coupon: sourceCoupon },
       { ok: true, coupon: sourceCoupon, data: {} },
       { ...detailEnvelope(), unexpected: true },
-      { ok: true, coupon: sourceCoupon, data: { coupon: sourceCoupon, extra: true } },
+      {
+        ok: true,
+        coupon: sourceCoupon,
+        data: { coupon: sourceCoupon, extra: true },
+      },
       detailEnvelope({ ...sourceCoupon, id: 8 }),
       detailEnvelope(sourceCoupon, { ...sourceCoupon, issued_count: 1 }),
-      detailEnvelope(sourceCoupon, { ...sourceCoupon, target_refs: ["standard_product:8"] }),
+      detailEnvelope(sourceCoupon, {
+        ...sourceCoupon,
+        target_refs: ["standard_product:8"],
+      }),
       detailEnvelope({ ...sourceCoupon, instructions: "bad\x00value" }),
     ]) {
       await expect(
-        loadCouponDetail(transport(undefined, undefined, undefined, undefined, undefined, body), 7),
+        loadCouponDetail(
+          transport(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            body,
+          ),
+          7,
+        ),
       ).resolves.toEqual({ status: "invalid" });
     }
     const unavailable = transport();

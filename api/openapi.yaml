@@ -1735,7 +1735,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/CSRFToken" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CouponUpsertRequest" } } } }
       responses:
-        "200": { description: Draft persisted with Event and technical receipt in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "200": { description: Draft persisted with Event and technical receipt in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponCreateResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1766,7 +1766,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/CSRFToken" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CouponUpsertRequest" } } } }
       responses:
-        "200": { description: Draft rule updated in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "200": { description: Draft rule updated in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponUpdateResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -4377,6 +4377,26 @@ components:
         real_external_call_executed: { type: boolean, enum: [false] }
         create_replay_safe: { type: boolean, enum: [false] }
         idempotent_same_state: { type: boolean, enum: [true] }
+    LegacyCouponCreateResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon, coupon_id, fallback_used, create_replay_safe, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        coupon_id: { type: integer, format: int64, minimum: 1 }
+        fallback_used: { type: boolean, enum: [false] }
+        create_replay_safe: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyCouponUpdateResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyCouponBoardMutationResponse:
       type: object
       additionalProperties: false

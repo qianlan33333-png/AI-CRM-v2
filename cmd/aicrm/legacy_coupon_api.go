@@ -99,7 +99,7 @@ func (handler *Handler) UpdateCoupon(w http.ResponseWriter, r *http.Request) {
 		writeCouponError(w, err)
 		return
 	}
-	item, err := handler.coupons.Update(r.Context(), command)
+	item, err := handler.coupons.UpdateDraft(r.Context(), command)
 	if err != nil {
 		writeCouponError(w, err)
 		return

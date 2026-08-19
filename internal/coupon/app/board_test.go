@@ -47,6 +47,7 @@ type couponTestStore struct {
 	payment  map[[32]byte]int64
 	sidebar  map[[32]byte]int64
 	nextID   couponport.ID
+	updates  int
 }
 
 func newCouponTestStore(items ...couponport.Coupon) *couponTestStore {
@@ -102,6 +103,7 @@ func (s *couponTestStore) Create(_ context.Context, command couponport.UpsertCom
 	return item, nil
 }
 func (s *couponTestStore) Update(_ context.Context, command couponport.UpsertCommand, _ []int64, now time.Time) (couponport.Coupon, error) {
+	s.updates++
 	old, err := s.Get(context.Background(), command.ID)
 	if err != nil {
 		return couponport.Coupon{}, err
@@ -303,6 +305,54 @@ func TestCouponClaimStateMachineReplaysAndCaps(t *testing.T) {
 	if len(events.rows) != 4 || events.rows[0].Type != "coupon.claimed" || events.rows[0].CustomerID != 41 {
 		t.Fatalf("events=%#v", events.rows)
 	}
+}
+
+func TestUpdateDraftLocksAndRejectsPublishedOrClaimedRules(t *testing.T) {
+	now := time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC)
+	assertRejected := func(t *testing.T, service *Service, store *couponTestStore, events *couponTestEvents) {
+		t.Helper()
+		current := store.coupons[7]
+		beforeUpdates, beforeEvents := store.updates, len(events.rows)
+		_, err := service.UpdateDraft(context.Background(), couponport.UpsertCommand{
+			Coupon:         current,
+			Actor:          1,
+			IdempotencyKey: "browser-draft-update-key",
+		})
+		if !errors.Is(err, ErrConflict) {
+			t.Fatalf("UpdateDraft error=%v", err)
+		}
+		if store.updates != beforeUpdates || len(events.rows) != beforeEvents {
+			t.Fatalf("rejected draft update wrote update/events: updates=%d events=%d", store.updates, len(events.rows))
+		}
+		for _, receipt := range store.receipts {
+			if receipt.Operation == "update" && receipt.State == "completed" {
+				t.Fatalf("rejected draft update completed receipt=%#v", receipt)
+			}
+		}
+	}
+	t.Run("published row", func(t *testing.T) {
+		item := couponTestItem(7, now)
+		item.Status = "draft"
+		store, events := newCouponTestStore(item), &couponTestEvents{}
+		service := couponTestService(now, store, events)
+		if _, err := service.Publish(context.Background(), 7, 1, "publish-before-browser-update"); err != nil {
+			t.Fatalf("publish=%v", err)
+		}
+		assertRejected(t, service, store, events)
+	})
+	t.Run("claimed row", func(t *testing.T) {
+		item := couponTestItem(7, now)
+		item.Status = "draft"
+		store, events := newCouponTestStore(item), &couponTestEvents{}
+		service := couponTestService(now, store, events)
+		if _, err := service.Publish(context.Background(), 7, 1, "publish-before-claim"); err != nil {
+			t.Fatalf("publish=%v", err)
+		}
+		if _, err := service.Claim(context.Background(), couponport.ClaimCommand{CouponID: 7, CustomerID: 41, IdempotencyKey: "claim-before-browser-update"}); err != nil {
+			t.Fatalf("claim=%v", err)
+		}
+		assertRejected(t, service, store, events)
+	})
 }
 
 func TestCouponBoardMutationsUseReceiptReplayAndConflicts(t *testing.T) {
