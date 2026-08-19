@@ -10,6 +10,7 @@ import {
   WECOM_TAGS_PATH,
   CHANNELS_PATH,
   COUPONS_PATH,
+  AUTOMATION_RUNS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -31,6 +32,7 @@ import type { ImageLibraryTransport } from "./image-library";
 import type { WecomTagsTransport } from "./wecom-tags";
 import type { ChannelsTransport } from "./channels";
 import type { CouponsTransport } from "./coupons";
+import type { AutomationRunsTransport } from "./automation-runs";
 
 const adminSession = {
   status: "authenticated",
@@ -118,6 +120,11 @@ function couponsTransport(): CouponsTransport {
     list: vi.fn(response),
     copy: vi.fn(response),
   } as unknown as CouponsTransport;
+}
+
+function automationRunsTransport(): AutomationRunsTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { list: vi.fn(response) } as AutomationRunsTransport;
 }
 
 describe("Web shell routes", () => {
@@ -318,8 +325,32 @@ describe("Web shell routes", () => {
     ).toContain("当前账号没有问卷管理权限。");
   });
 
+  it("renders the automation receipts route for admin and keeps non-admins fail-closed", () => {
+    vi.stubGlobal("window", { location: { pathname: AUTOMATION_RUNS_PATH } });
+    const client = automationRunsTransport();
+    expect(
+      renderToStaticMarkup(
+        <App automationRunsTransport={client} initialSession={adminSession} />,
+      ),
+    ).toContain("正在读取自动化运行记录。");
+    for (const role of ["ops", "sales"] as const) {
+      expect(
+        renderToStaticMarkup(
+          <App
+            automationRunsTransport={client}
+            initialSession={{
+              status: "authenticated",
+              principal: { adminUserID: 8, role },
+            }}
+          />,
+        ),
+      ).toContain("当前账号没有自动化运行记录访问权限。");
+    }
+    expect(client.list).not.toHaveBeenCalled();
+  });
+
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(14);
+    expect(routes).toHaveLength(15);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -448,6 +479,7 @@ describe("Web shell routes", () => {
       "/admin/wecom-tags",
       "/admin/channels",
       "/admin/coupons",
+      "/admin/automation-runs",
       "/settings",
     ]);
     expect(
@@ -481,6 +513,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/wecom-tags"');
     expect(html).toContain('href="/admin/channels"');
     expect(html).toContain('href="/admin/coupons"');
+    expect(html).toContain('href="/admin/automation-runs"');
     expect(html).not.toContain('href="/outbound"');
   });
 
