@@ -1,8 +1,10 @@
 import {
   getLegacyOrder,
+  getLegacyOrderItems,
   listLegacyOrders,
   listLegacyRefunds,
   type GetLegacyOrderParams,
+  type GetLegacyOrderItemsParams,
   type ListLegacyOrdersParams,
   type ListLegacyRefundsParams,
 } from "./api/generated/health";
@@ -11,20 +13,11 @@ export type OrdersRole = "admin" | "ops" | "sales";
 export const ORDER_PAGE_SIZE = 50;
 const MAXIMUM_OFFSET = 1_000_000;
 export type OrderProvider = "wechat" | "alipay" | "wechat_shop";
-export type OrderIdentityKind = "userid" | "external_userid" | "unionid";
 
 export interface OrderListItem {
   readonly orderNo: string;
-  readonly merchantOrderNo: string;
-  readonly outTradeNo: string;
-  readonly platformTransactionNo: string;
-  readonly transactionId: string;
-  readonly detailUrl: string;
-  readonly identity?: Readonly<{ readonly kind: OrderIdentityKind; readonly value: string }>;
   readonly provider: OrderProvider;
   readonly status: string;
-  readonly payerName: string;
-  readonly mobile: string;
   readonly productCode: string;
   readonly productName: string;
   readonly amountYuan: string;
@@ -50,8 +43,6 @@ export interface OrderDetail {
   readonly id: number;
   readonly orderNo: string;
   readonly provider: OrderProvider;
-  readonly payerName: string;
-  readonly mobile: string;
   readonly productCode: string;
   readonly productName: string;
   readonly amountYuan: string;
@@ -62,6 +53,17 @@ export interface OrderDetail {
   readonly refundableAmountTotal: number;
 }
 
+/** A purchased-product snapshot is local order data, never a media or provider link. */
+export interface OrderItemSnapshot {
+  readonly orderNo: string;
+  readonly provider: OrderProvider;
+  readonly productCode: string;
+  readonly productName: string;
+  readonly amountYuan: string;
+  readonly currency: string;
+  readonly createdAt: string;
+}
+
 export type LocalRefundState =
   | "pending_external_gate"
   | "outcome_unknown"
@@ -70,19 +72,12 @@ export type LocalRefundState =
 
 export interface LocalRefundRecord {
   readonly id: number;
-  readonly orderID: number;
   readonly provider: OrderProvider;
   readonly orderNo: string;
-  readonly transactionID: string;
-  readonly refundID: string;
-  readonly outRefundNo: string;
   readonly refundAmountTotal: number;
   readonly currency: "CNY";
-  readonly reason: string;
   readonly status: LocalRefundState;
-  readonly externalEffectID: number;
   readonly externalEffectState: LocalRefundState;
-  readonly autoRetryAllowed: false;
   readonly createdAt: string;
 }
 
@@ -108,6 +103,14 @@ async function generatedDetail(
   return getLegacyOrder(orderNo, params, options);
 }
 
+async function generatedItems(
+  orderNo: string,
+  params: GetLegacyOrderItemsParams,
+  options: RequestInit,
+): Promise<OrdersTransportResponse> {
+  return getLegacyOrderItems(orderNo, params, options);
+}
+
 async function generatedRefunds(
   params: ListLegacyRefundsParams,
   options: RequestInit,
@@ -118,12 +121,14 @@ async function generatedRefunds(
 export interface OrdersTransport {
   readonly list: typeof generatedList;
   readonly detail: typeof generatedDetail;
+  readonly items: typeof generatedItems;
   readonly refunds: typeof generatedRefunds;
 }
 
 export const generatedOrdersTransport: OrdersTransport = {
   list: generatedList,
   detail: generatedDetail,
+  items: generatedItems,
   refunds: generatedRefunds,
 };
 
@@ -137,6 +142,9 @@ export type OrdersResult =
   | { readonly status: OrdersFailure };
 export type OrderDetailResult =
   | { readonly status: "loaded"; readonly detail: OrderDetail }
+  | { readonly status: OrdersFailure };
+export type OrderItemsResult =
+  | { readonly status: "loaded"; readonly item: OrderItemSnapshot }
   | { readonly status: OrdersFailure };
 export type LocalRefundResult =
   | { readonly status: "loaded"; readonly page: LocalRefundPage }
@@ -253,21 +261,10 @@ function parseOrderItem(value: unknown): OrderListItem | undefined {
     !text(value.provider_label, 80, true) ||
     !safeDetailPath(value.detail_url)
   ) return undefined;
-  const identity = identityKeys.length === 1
-    ? { kind: identityKeys[0] as OrderIdentityKind, value: value[identityKeys[0]] as string }
-    : undefined;
   return {
     orderNo: value.order_no,
-    merchantOrderNo: value.merchant_order_no,
-    outTradeNo: value.out_trade_no,
-    platformTransactionNo: value.platform_transaction_no,
-    transactionId: value.transaction_id,
-    detailUrl: value.detail_url,
-    identity,
     provider: value.provider,
     status: value.status,
-    payerName: value.payer_name,
-    mobile: value.mobile,
     productCode: value.product_code,
     productName: value.product_name,
     amountYuan: value.amount_yuan,
@@ -310,21 +307,10 @@ function parseOrderDetail(
     typeof value.id !== "number" || !Number.isSafeInteger(value.id) || value.id < 1 ||
     !nonnegative(value.refundable_amount_total) ||
     total === undefined || BigInt(value.refundable_amount_total) > total ||
-    value.merchant_order_no !== expected.orderNo ||
-    value.out_trade_no !== expected.orderNo ||
     value.order_no !== expected.orderNo ||
     item.orderNo !== expected.orderNo ||
-    item.merchantOrderNo !== expected.merchantOrderNo ||
-    item.outTradeNo !== expected.outTradeNo ||
-    item.platformTransactionNo !== expected.platformTransactionNo ||
-    item.transactionId !== expected.transactionId ||
-    item.detailUrl !== expected.detailUrl ||
-    item.identity?.kind !== expected.identity?.kind ||
-    item.identity?.value !== expected.identity?.value ||
     item.provider !== expected.provider ||
     item.status !== expected.status ||
-    item.payerName !== expected.payerName ||
-    item.mobile !== expected.mobile ||
     item.productCode !== expected.productCode ||
     item.productName !== expected.productName ||
     item.amountYuan !== expected.amountYuan ||
@@ -337,8 +323,6 @@ function parseOrderDetail(
     id: value.id,
     orderNo: item.orderNo,
     provider: item.provider,
-    payerName: item.payerName,
-    mobile: item.mobile,
     productCode: item.productCode,
     productName: item.productName,
     amountYuan: item.amountYuan,
@@ -347,6 +331,24 @@ function parseOrderDetail(
     providerLabel: item.providerLabel,
     createdAt: item.createdAt,
     refundableAmountTotal: value.refundable_amount_total,
+  };
+}
+
+function parseOrderItems(value: unknown, expected: OrderListItem): OrderItemSnapshot | undefined {
+  if (!record(value) || !exact(value, ["items"]) || !Array.isArray(value.items) || value.items.length !== 1) {
+    return undefined;
+  }
+  const item = parseOrderItem(value.items[0]);
+  if (
+    !item || item.orderNo !== expected.orderNo || item.provider !== expected.provider ||
+    item.productCode !== expected.productCode || item.productName !== expected.productName ||
+    item.amountYuan !== expected.amountYuan || item.currency !== expected.currency ||
+    item.createdAt !== expected.createdAt
+  ) return undefined;
+  return {
+    orderNo: item.orderNo, provider: item.provider, productCode: item.productCode,
+    productName: item.productName, amountYuan: item.amountYuan, currency: item.currency,
+    createdAt: item.createdAt,
   };
 }
 
@@ -395,19 +397,12 @@ function parseLocalRefund(value: unknown): LocalRefundRecord | undefined {
   ) return undefined;
   return {
     id: value.id,
-    orderID: value.order_id,
     provider: value.provider,
     orderNo: value.order_no,
-    transactionID: value.transaction_id,
-    refundID: value.refund_id,
-    outRefundNo: value.out_refund_no,
     refundAmountTotal: value.refund_amount_total,
     currency: "CNY",
-    reason: value.reason,
     status: value.status,
-    externalEffectID: value.external_effect_id,
     externalEffectState: value.external_effect_state,
-    autoRetryAllowed: false,
     createdAt: value.created_at,
   };
 }
@@ -424,10 +419,11 @@ function parseLocalRefundPage(value: unknown, offset: number): LocalRefundPage |
   const items = value.items.map(parseLocalRefund);
   if (items.some((item) => item === undefined)) return undefined;
   const parsed = items as LocalRefundRecord[];
+  const raw = value.items as Record<string, unknown>[];
   if (
     new Set(parsed.map((item) => item.id)).size !== parsed.length ||
-    new Set(parsed.map((item) => `${item.provider}:${item.refundID}`)).size !== parsed.length ||
-    new Set(parsed.map((item) => `${item.provider}:${item.outRefundNo}`)).size !== parsed.length
+    new Set(raw.map((item) => `${item.provider}:${item.refund_id}`)).size !== parsed.length ||
+    new Set(raw.map((item) => `${item.provider}:${item.out_refund_no}`)).size !== parsed.length
   ) return undefined;
   return { items: parsed, total: value.total, offset, hasMore: value.has_more };
 }
@@ -475,6 +471,24 @@ export async function loadOrderDetail(
   }
 }
 
+export async function loadOrderItems(
+  transport: OrdersTransport,
+  item: OrderListItem,
+): Promise<OrderItemsResult> {
+  try {
+    const response = await transport.items(
+      item.orderNo,
+      { provider: item.provider },
+      { credentials: "same-origin" },
+    );
+    if (response.status !== 200) return { status: failure(response.status) };
+    const snapshot = parseOrderItems(response.data, item);
+    return snapshot ? { status: "loaded", item: snapshot } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
 export async function loadLocalRefunds(
   transport: OrdersTransport,
   offset = 0,
@@ -509,4 +523,42 @@ export function previousLocalRefundOffset(page: LocalRefundPage): number | undef
 export function nextLocalRefundOffset(page: LocalRefundPage): number | undefined {
   const next = page.offset + ORDER_PAGE_SIZE;
   return page.hasMore && next <= MAXIMUM_OFFSET ? next : undefined;
+}
+
+export interface SafeOrderFilter {
+  readonly keyword: string;
+  readonly provider: "all" | OrderProvider;
+  readonly status: string;
+}
+
+export const defaultSafeOrderFilter: SafeOrderFilter = { keyword: "", provider: "all", status: "" };
+
+function localIncludes(haystack: string, needle: string): boolean {
+  return haystack.toLocaleLowerCase().includes(needle.toLocaleLowerCase());
+}
+
+/** Filters only an already validated in-memory page; it never broadens a server query. */
+export function filterSafeOrders(
+  items: readonly OrderListItem[],
+  filter: SafeOrderFilter,
+): readonly OrderListItem[] {
+  const keyword = filter.keyword.trim();
+  return items.filter((item) =>
+    (filter.provider === "all" || item.provider === filter.provider) &&
+    (filter.status === "" || item.status === filter.status) &&
+    (keyword === "" || [item.orderNo, item.productCode, item.productName].some((value) => localIncludes(value, keyword))),
+  );
+}
+
+/** The refund filter is also local-only and omits raw provider identifiers and reasons. */
+export function filterSafeRefunds(
+  items: readonly LocalRefundRecord[],
+  filter: SafeOrderFilter,
+): readonly LocalRefundRecord[] {
+  const keyword = filter.keyword.trim();
+  return items.filter((item) =>
+    (filter.provider === "all" || item.provider === filter.provider) &&
+    (filter.status === "" || item.status === filter.status) &&
+    (keyword === "" || localIncludes(item.orderNo, keyword)),
+  );
 }
