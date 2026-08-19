@@ -47,6 +47,8 @@ import { AutomationRunsPage } from "./automation-runs-ui";
 import type { AutomationRunsTransport } from "./automation-runs";
 import { GroupInviteLibraryPage } from "./group-invite-library-ui";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
+import { DeliveryLineagePage } from "./delivery-lineage-ui";
+import type { DeliveryLineageTransport } from "./delivery-lineage";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -60,6 +62,7 @@ export const CHANNELS_PATH = "/admin/channels";
 export const COUPONS_PATH = "/admin/coupons";
 export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
 export const GROUP_INVITE_LIBRARY_PATH = "/admin/group-invite-library";
+export const DELIVERY_LINEAGE_PATH = "/admin/delivery-lineage";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -148,6 +151,12 @@ export const routes = [
     description: "本地群邀请卡元数据的只读浏览。",
   },
   {
+    path: "/admin/delivery-lineage",
+    navigationLabel: "投递谱系",
+    title: "投递处理谱系",
+    description: "本地内部处理状态的只读浏览。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -203,6 +212,7 @@ export interface AppProps {
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
+  deliveryLineageTransport?: DeliveryLineageTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -362,6 +372,7 @@ function PageContent({
   couponsTransport,
   automationRunsTransport,
   groupInviteLibraryTransport,
+  deliveryLineageTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -382,6 +393,7 @@ function PageContent({
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
+  deliveryLineageTransport?: DeliveryLineageTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -556,6 +568,16 @@ function PageContent({
     );
   }
 
+  if (route.path === DELIVERY_LINEAGE_PATH) {
+    return (
+      <DeliveryLineagePage
+        role={principal.role}
+        transport={deliveryLineageTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -607,6 +629,7 @@ export function navigationLinks(
   if (base.length > 0 && principal.role === "admin") {
     permitted.add(QUESTIONNAIRE_LIST_PATH);
     permitted.add(AUTOMATION_RUNS_PATH);
+    permitted.add(DELIVERY_LINEAGE_PATH);
   }
   if (
     base.length > 0 &&
@@ -642,6 +665,7 @@ export function App({
   couponsTransport,
   automationRunsTransport,
   groupInviteLibraryTransport,
+  deliveryLineageTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -804,6 +828,7 @@ export function App({
             couponsTransport={couponsTransport}
             automationRunsTransport={automationRunsTransport}
             groupInviteLibraryTransport={groupInviteLibraryTransport}
+            deliveryLineageTransport={deliveryLineageTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
