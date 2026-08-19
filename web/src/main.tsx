@@ -51,6 +51,8 @@ import { DeliveryLineagePage } from "./delivery-lineage-ui";
 import type { DeliveryLineageTransport } from "./delivery-lineage";
 import { DataHealthPage } from "./data-health-ui";
 import type { DataHealthTransport } from "./data-health";
+import { ExecutionRuntimePage } from "./execution-runtime-ui";
+import type { ExecutionRuntimeTransport } from "./execution-runtime";
 import { OrdersPage } from "./orders-ui";
 import type { OrdersTransport } from "./orders";
 import "./shell.css";
@@ -68,6 +70,7 @@ export const AUTOMATION_RUNS_PATH = "/admin/automation-runs";
 export const GROUP_INVITE_LIBRARY_PATH = "/admin/group-invite-library";
 export const DELIVERY_LINEAGE_PATH = "/admin/delivery-lineage";
 export const DATA_HEALTH_PATH = "/admin/data-health";
+export const EXECUTION_RUNTIME_PATH = "/admin/execution-runtime";
 export const ORDERS_PATH = "/admin/orders";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
@@ -169,6 +172,12 @@ export const routes = [
     description: "四项本地平台就绪度检查的只读视图。",
   },
   {
+    path: "/admin/execution-runtime",
+    navigationLabel: "执行运行时",
+    title: "执行运行时",
+    description: "本地执行运行时观察的安全只读视图。",
+  },
+  {
     path: "/admin/orders",
     navigationLabel: "订单",
     title: "订单总览",
@@ -232,6 +241,7 @@ export interface AppProps {
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
+  executionRuntimeTransport?: ExecutionRuntimeTransport;
   ordersTransport?: OrdersTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
@@ -287,6 +297,7 @@ export function carrierPathname(pathname: string, search: string): string {
     values[0] === WECOM_TAGS_PATH ||
     values[0] === CHANNELS_PATH ||
     values[0] === COUPONS_PATH ||
+    values[0] === EXECUTION_RUNTIME_PATH ||
     values[0] === ORDERS_PATH
     ? values[0]
     : pathname;
@@ -395,6 +406,7 @@ function PageContent({
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
+  executionRuntimeTransport,
   ordersTransport,
   cookieHeader,
   onUnauthenticated,
@@ -418,6 +430,7 @@ function PageContent({
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
+  executionRuntimeTransport?: ExecutionRuntimeTransport;
   ordersTransport?: OrdersTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
@@ -613,6 +626,16 @@ function PageContent({
     );
   }
 
+  if (route.path === EXECUTION_RUNTIME_PATH) {
+    return (
+      <ExecutionRuntimePage
+        role={principal.role}
+        transport={executionRuntimeTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   if (route.path === ORDERS_PATH) {
     return (
       <OrdersPage
@@ -676,6 +699,7 @@ export function navigationLinks(
     permitted.add(AUTOMATION_RUNS_PATH);
     permitted.add(DELIVERY_LINEAGE_PATH);
     permitted.add(DATA_HEALTH_PATH);
+    permitted.add(EXECUTION_RUNTIME_PATH);
   }
   if (
     base.length > 0 &&
@@ -714,6 +738,7 @@ export function App({
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
+  executionRuntimeTransport,
   ordersTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
@@ -879,6 +904,7 @@ export function App({
             groupInviteLibraryTransport={groupInviteLibraryTransport}
             deliveryLineageTransport={deliveryLineageTransport}
             dataHealthTransport={dataHealthTransport}
+            executionRuntimeTransport={executionRuntimeTransport}
             ordersTransport={ordersTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}

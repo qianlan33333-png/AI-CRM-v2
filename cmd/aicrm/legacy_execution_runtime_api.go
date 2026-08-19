@@ -96,13 +96,13 @@ func executionRuntimeControl(control *adminopsport.RuntimeControl) any {
 	if control == nil {
 		return nil
 	}
-	return map[string]any{"name": control.Name, "state": control.State, "details": control.Details, "observed_at": control.ObservedAt.UTC()}
+	return map[string]any{"name": control.Name, "state": control.State, "details": executionRuntimeDetails(control.Details), "observed_at": control.ObservedAt.UTC()}
 }
 
 func executionRuntimeObservations(observations []adminopsport.RuntimeObservation) []map[string]any {
 	result := make([]map[string]any, 0, len(observations))
 	for _, observation := range observations {
-		result = append(result, map[string]any{"source": observation.Source, "queue": observation.Queue, "status": observation.Status, "attempt": observation.Attempt, "status_url": observation.StatusURL, "details": observation.Details, "observed_at": observation.ObservedAt.UTC()})
+		result = append(result, map[string]any{"source": observation.Source, "queue": observation.Queue, "status": observation.Status, "attempt": observation.Attempt, "status_url": observation.StatusURL, "details": executionRuntimeDetails(observation.Details), "observed_at": observation.ObservedAt.UTC()})
 	}
 	return result
 }
@@ -120,5 +120,12 @@ func executionRuntimeNode(node adminopsport.ExecutionGraphNode) map[string]any {
 	for _, child := range node.Children {
 		children = append(children, executionRuntimeNode(child))
 	}
-	return map[string]any{"id": node.ID, "kind": node.Kind, "status": node.Status, "message": node.Message, "details": node.Details, "observed_at": node.ObservedAt.UTC(), "children": children}
+	return map[string]any{"id": node.ID, "kind": node.Kind, "status": node.Status, "message": node.Message, "details": executionRuntimeDetails(node.Details), "observed_at": node.ObservedAt.UTC(), "children": children}
+}
+
+func executionRuntimeDetails(details map[string]string) map[string]string {
+	if details == nil {
+		return map[string]string{}
+	}
+	return details
 }

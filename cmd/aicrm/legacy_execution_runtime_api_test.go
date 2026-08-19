@@ -88,6 +88,54 @@ func TestExecutionRuntimeRoutesDistinguishMissingControlNotFoundAndUnavailable(t
 	}
 }
 
+func TestExecutionRuntimeRoutesNormalizeAbsentDetailsToObjects(t *testing.T) {
+	observed := time.Date(2026, 8, 19, 8, 0, 0, 0, time.UTC)
+	reader := &executionRuntimeHTTPReader{snapshot: adminopsport.RuntimeSnapshot{
+		Control:      &adminopsport.RuntimeControl{Name: "control", State: "observed", ObservedAt: observed},
+		Observations: []adminopsport.RuntimeObservation{{Source: "source", Queue: "queue", Status: "observed", ObservedAt: observed}},
+		ObservedAt:   observed,
+	}}
+	router := executionRuntimeRouter(t, &legacyAuthStub{}, adminopsapp.NewExecutionRuntimeService(reader))
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/execution-runtime", legacyToken(68)))
+	if response.Code != http.StatusOK || strings.Contains(response.Body.String(), `"details":null`) || !strings.Contains(response.Body.String(), `"details":{}`) {
+		t.Fatalf("status/body=%d/%s", response.Code, response.Body.String())
+	}
+}
+
+func TestExecutionRuntimePageIsAdminOnlyCarrier(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		principal authport.Principal
+		want      int
+	}{
+		{name: "admin", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, want: http.StatusFound},
+		{name: "ops", principal: authport.Principal{AdminUserID: 8, Role: authport.RoleOps}, want: http.StatusForbidden},
+		{name: "sales", principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales}, want: http.StatusForbidden},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			router := executionRuntimeRouter(t, &legacyAuthStub{principal: test.principal}, adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{}))
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, legacyRequest(http.MethodGet, legacyExecutionRuntimePagePath, legacyToken(67)))
+			if response.Code != test.want || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+				t.Fatalf("status/headers=%d/%q", response.Code, response.Header().Get("X-Content-Type-Options"))
+			}
+			if test.want == http.StatusFound && (response.Header().Get("Location") != "/?legacy_admin_path=%2Fadmin%2Fexecution-runtime" || response.Header().Get("Cache-Control") != "private, no-store") {
+				t.Fatalf("location/cache=%q/%q", response.Header().Get("Location"), response.Header().Get("Cache-Control"))
+			}
+		})
+	}
+
+	router := executionRuntimeRouter(t, &legacyAuthStub{}, adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{}))
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead, http.MethodOptions} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(method, legacyExecutionRuntimePagePath, nil))
+		if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet || response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+			t.Fatalf("method/status/headers=%s/%d/%q/%q/%q", method, response.Code, response.Header().Get("Allow"), response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"))
+		}
+	}
+}
+
 func executionRuntimeRouter(t *testing.T, service authport.Service, runtime legacyExecutionRuntimeApplication) http.Handler {
 	t.Helper()
 	legacy := &Handler{auth: service, executionRuntime: runtime}

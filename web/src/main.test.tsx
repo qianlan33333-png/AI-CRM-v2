@@ -14,6 +14,7 @@ import {
   GROUP_INVITE_LIBRARY_PATH,
   DELIVERY_LINEAGE_PATH,
   DATA_HEALTH_PATH,
+  EXECUTION_RUNTIME_PATH,
   ORDERS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
@@ -469,17 +470,25 @@ describe("Web shell routes", () => {
     vi.stubGlobal("window", { location: { pathname: ORDERS_PATH } });
     const client = ordersTransport();
     for (const role of ["admin", "ops"] as const) {
-      expect(renderToStaticMarkup(
-        <App
-          ordersTransport={client}
-          initialSession={{ status: "authenticated", principal: { adminUserID: 8, role } }}
-        />,
-      )).toContain("正在读取本地订单总览。");
+      expect(
+        renderToStaticMarkup(
+          <App
+            ordersTransport={client}
+            initialSession={{
+              status: "authenticated",
+              principal: { adminUserID: 8, role },
+            }}
+          />,
+        ),
+      ).toContain("正在读取本地订单总览。");
     }
     const sales = renderToStaticMarkup(
       <App
         ordersTransport={client}
-        initialSession={{ status: "authenticated", principal: { adminUserID: 9, role: "sales", staffID: 11 } }}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
       />,
     );
     expect(sales).toContain("当前账号没有订单总览访问权限。");
@@ -488,7 +497,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(19);
+    expect(routes).toHaveLength(20);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -621,6 +630,7 @@ describe("Web shell routes", () => {
       "/admin/group-invite-library",
       "/admin/delivery-lineage",
       "/admin/data-health",
+      "/admin/execution-runtime",
       "/admin/orders",
       "/settings",
     ]);
@@ -661,6 +671,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).toContain('href="/admin/delivery-lineage"');
     expect(html).toContain('href="/admin/data-health"');
+    expect(html).toContain(`href="${EXECUTION_RUNTIME_PATH}"`);
     expect(html).toContain(`href="${ORDERS_PATH}"`);
     expect(html).not.toContain('href="/outbound"');
   });
@@ -703,6 +714,9 @@ describe("legacy admin path carrier", () => {
     expect(carrierPathname("/", `?legacy_admin_path=${COUPONS_PATH}`)).toBe(
       COUPONS_PATH,
     );
+    expect(
+      carrierPathname("/", `?legacy_admin_path=${EXECUTION_RUNTIME_PATH}`),
+    ).toBe(EXECUTION_RUNTIME_PATH);
     expect(carrierPathname("/", `?legacy_admin_path=${ORDERS_PATH}`)).toBe(
       ORDERS_PATH,
     );
