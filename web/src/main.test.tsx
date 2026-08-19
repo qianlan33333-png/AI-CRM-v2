@@ -12,6 +12,7 @@ import {
   COUPONS_PATH,
   AUTOMATION_RUNS_PATH,
   GROUP_INVITE_LIBRARY_PATH,
+  DELIVERY_LINEAGE_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -35,6 +36,7 @@ import type { ChannelsTransport } from "./channels";
 import type { CouponsTransport } from "./coupons";
 import type { AutomationRunsTransport } from "./automation-runs";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
+import type { DeliveryLineageTransport } from "./delivery-lineage";
 
 const adminSession = {
   status: "authenticated",
@@ -132,6 +134,11 @@ function automationRunsTransport(): AutomationRunsTransport {
 function groupInviteLibraryTransport(): GroupInviteLibraryTransport {
   const response = async () => ({ status: 503, data: {} });
   return { list: vi.fn(response) } as GroupInviteLibraryTransport;
+}
+
+function deliveryLineageTransport(): DeliveryLineageTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { list: vi.fn(response) } as DeliveryLineageTransport;
 }
 
 describe("Web shell routes", () => {
@@ -238,6 +245,31 @@ describe("Web shell routes", () => {
     );
     expect(sales).toContain("当前账号没有群邀请素材库访问权限。");
     expect(sales).not.toContain(`href="${GROUP_INVITE_LIBRARY_PATH}"`);
+    expect(client.list).not.toHaveBeenCalled();
+  });
+
+  it("renders delivery lineage only for admin while ops and sales remain inert", () => {
+    vi.stubGlobal("window", { location: { pathname: DELIVERY_LINEAGE_PATH } });
+    const client = deliveryLineageTransport();
+    const admin = renderToStaticMarkup(
+      <App deliveryLineageTransport={client} initialSession={adminSession} />,
+    );
+    expect(admin).toContain('<h1 id="app-title">投递处理谱系</h1>');
+    expect(admin).toContain("正在读取投递处理谱系。");
+    expect(admin).toContain(`href="${DELIVERY_LINEAGE_PATH}"`);
+    for (const role of ["ops", "sales"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          deliveryLineageTransport={client}
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 8, role },
+          }}
+        />,
+      );
+      expect(html).toContain("当前账号没有投递处理谱系访问权限。");
+      expect(html).not.toContain(`href="${DELIVERY_LINEAGE_PATH}"`);
+    }
     expect(client.list).not.toHaveBeenCalled();
   });
 
@@ -390,7 +422,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(16);
+    expect(routes).toHaveLength(17);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -521,6 +553,7 @@ describe("Web shell routes", () => {
       "/admin/coupons",
       "/admin/automation-runs",
       "/admin/group-invite-library",
+      "/admin/delivery-lineage",
       "/settings",
     ]);
     expect(
@@ -557,6 +590,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/coupons"');
     expect(html).toContain('href="/admin/automation-runs"');
     expect(html).toContain('href="/admin/group-invite-library"');
+    expect(html).toContain('href="/admin/delivery-lineage"');
     expect(html).not.toContain('href="/outbound"');
   });
 
