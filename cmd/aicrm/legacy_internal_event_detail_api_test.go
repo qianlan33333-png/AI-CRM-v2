@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -110,6 +112,39 @@ func TestLegacyInternalEventDetailPathAndQueryGrammar(t *testing.T) {
 	}
 }
 
+func TestLegacyInternalEventDetailOpenAPIUsesCanonicalSignedInt64EventID(t *testing.T) {
+	const signedInt64Pattern = `^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$`
+	contents, err := os.ReadFile("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantSchema := "schema: { type: string, minLength: 1, maxLength: 19, pattern: '" + signedInt64Pattern + "' }"
+	if !strings.Contains(string(contents), wantSchema) {
+		t.Fatal("0371 OpenAPI event_id schema does not use the canonical signed-int64 pattern")
+	}
+	if strings.Contains(string(contents), "schema: { type: string, minLength: 1, maxLength: 19, pattern: '^[1-9][0-9]*$' }") {
+		t.Fatal("0371 OpenAPI event_id schema still accepts signed-int64 overflow")
+	}
+	pattern := regexp.MustCompile(signedInt64Pattern)
+	for _, test := range []struct {
+		value string
+		valid bool
+	}{
+		{value: "1", valid: true},
+		{value: "9223372036854775807", valid: true},
+		{value: "9223372036854775806", valid: true},
+		{value: "9223372036854775808", valid: false},
+		{value: "9223372036854775810", valid: false},
+		{value: "0001", valid: false},
+		{value: "+1", valid: false},
+		{value: " 1", valid: false},
+	} {
+		if got := pattern.MatchString(test.value); got != test.valid {
+			t.Fatalf("OpenAPI event_id pattern value=%q got=%v want=%v", test.value, got, test.valid)
+		}
+	}
+}
+
 func TestLegacyInternalEventDetailNoDeliveryUsesEmptyArray(t *testing.T) {
 	stamp := time.Date(2026, 8, 19, 0, 0, 0, 0, time.UTC)
 	repository := &legacyInternalEventDetailRepositoryStub{snapshot: eventport.AdminDetailSnapshot{Found: true, Event: eventport.AdminReadEvent{EventID: 5, EventType: "custom.local_fact", OccurredAt: stamp}}}
@@ -153,8 +188,113 @@ func TestLegacyInternalEventDetailRouteRejectsMethodBeforeAuth(t *testing.T) {
 		t.Fatalf("status/allow/calls=%d/%q/%d body=%s", response.Code, response.Header().Get("Allow"), detailRepository.calls, response.Body.String())
 	}
 	assertLegacyInternalDetailErrorBody(t, response, http.StatusMethodNotAllowed, "method_not_allowed")
-	if response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Cache-Control") != "private, no-store" {
-		t.Fatalf("headers=%v", response.Header())
+	assertLegacyInternalDetailRouteSecurityHeaders(t, response)
+}
+
+func TestLegacyInternalEventDetailRouteAuthMatrixAndNoCSRF(t *testing.T) {
+	validRepository := func() *legacyInternalEventDetailRepositoryStub {
+		return &legacyInternalEventDetailRepositoryStub{snapshot: eventport.AdminDetailSnapshot{
+			Found:      true,
+			Event:      eventport.AdminReadEvent{EventID: 42, EventType: eventport.EvTagApplied, OccurredAt: time.Date(2026, 8, 19, 0, 0, 0, 0, time.UTC)},
+			Deliveries: []eventport.AdminReadDelivery{},
+		}}
+	}
+	routerFor := func(service authport.Service, repository *legacyInternalEventDetailRepositoryStub) http.Handler {
+		authHandler, err := authhttp.NewHandler(service)
+		if err != nil {
+			t.Fatal(err)
+		}
+		legacy, err := NewHandler(service, &legacyCustomerStub{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		router, err := newAPIHandlerWithAdminRead(slog.New(slog.NewJSONHandler(io.Discard, nil)), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), authHandler, authHandler, legacy, nil, &legacyInternalEventsRepositoryStub{}, nil, repository)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return router
+	}
+
+	unauthorized := []struct {
+		name    string
+		request func() *http.Request
+	}{
+		{name: "anonymous", request: func() *http.Request { return httptest.NewRequest(http.MethodGet, "/api/admin/internal-events/42", nil) }},
+		{name: "bearer-only", request: func() *http.Request {
+			request := httptest.NewRequest(http.MethodGet, "/api/admin/internal-events/42", nil)
+			request.Header.Set("Authorization", "Bearer "+legacyToken(31))
+			return request
+		}},
+		{name: "service-only", request: func() *http.Request {
+			request := httptest.NewRequest(http.MethodGet, "/api/admin/internal-events/42", nil)
+			request.Header.Set("X-AICRM-Service-Token", "service-only-token")
+			return request
+		}},
+	}
+	for _, test := range unauthorized {
+		t.Run("401/"+test.name, func(t *testing.T) {
+			repository := validRepository()
+			service := &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}
+			response := httptest.NewRecorder()
+			routerFor(service, repository).ServeHTTP(response, test.request())
+			if response.Code != http.StatusUnauthorized || repository.calls != 0 {
+				t.Fatalf("status/calls=%d/%d body=%s", response.Code, repository.calls, response.Body.String())
+			}
+			assertLegacyInternalDetailRouteSecurityHeaders(t, response)
+			assertLegacyInternalDetailErrorBody(t, response, http.StatusUnauthorized, "authentication_required")
+		})
+	}
+
+	staffID := int64(7)
+	for _, test := range []struct {
+		name    string
+		service authport.Service
+	}{
+		{name: "non-admin", service: &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.Role("viewer")}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}},
+		{name: "ops", service: &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}},
+		{name: "sales", service: &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staffID}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}},
+		{name: "non-global", service: &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeSelf}}},
+		{name: "owner-scoped", service: &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: 7}}},
+		{name: "missing-capability", service: &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal}}},
+	} {
+		t.Run("403/"+test.name, func(t *testing.T) {
+			repository := validRepository()
+			request := legacyRequest(http.MethodGet, "/api/admin/internal-events/42", legacyToken(32))
+			response := httptest.NewRecorder()
+			routerFor(test.service, repository).ServeHTTP(response, request)
+			if response.Code != http.StatusForbidden || repository.calls != 0 {
+				t.Fatalf("status/calls=%d/%d body=%s", response.Code, repository.calls, response.Body.String())
+			}
+			assertLegacyInternalDetailRouteSecurityHeaders(t, response)
+			assertLegacyInternalDetailErrorBody(t, response, http.StatusForbidden, "forbidden")
+		})
+	}
+
+	t.Run("GET has no CSRF", func(t *testing.T) {
+		repository := validRepository()
+		service := &dataHealthAuthStub{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}
+		response := httptest.NewRecorder()
+		request := legacyRequest(http.MethodGet, "/api/admin/internal-events/42", legacyToken(33))
+		// Deliberately omit X-CSRF-Token: the frozen GET is session-authenticated
+		// but has no CSRF requirement.
+		routerFor(service, repository).ServeHTTP(response, request)
+		if response.Code != http.StatusOK || repository.calls != 1 {
+			t.Fatalf("status/calls=%d/%d body=%s", response.Code, repository.calls, response.Body.String())
+		}
+		assertLegacyInternalDetailRouteSecurityHeaders(t, response)
+	})
+}
+
+func assertLegacyInternalDetailRouteSecurityHeaders(t *testing.T, response *httptest.ResponseRecorder) {
+	t.Helper()
+	for key, want := range map[string]string{
+		"Content-Type":           "application/json",
+		"Cache-Control":          "private, no-store",
+		"X-Content-Type-Options": "nosniff",
+	} {
+		if got := response.Header().Get(key); got != want {
+			t.Fatalf("header %s=%q want %q", key, got, want)
+		}
 	}
 }
 

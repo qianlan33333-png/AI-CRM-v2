@@ -1,6 +1,7 @@
 package internaleventsacceptance_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -50,6 +51,8 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)`, eventID, consumer, status, attempt, leaseO
 	unknown := seedEvent(eventport.EvTagApplied)
 	allRows := seedEvent(eventport.EvTagApplied)
 	noDelivery := seedEvent(marker + ".arbitrary_valid_type")
+	unknownConsumer := seedEvent(eventport.EvTagApplied)
+	wrongBinding := seedEvent(eventport.EvTagApplied)
 	completion := stamp.Add(time.Minute)
 	seedDelivery(pending, eventport.ConsumerAutomationTagTrigger, string(eventport.DeliveryPending), 0, nil, false)
 	seedDelivery(processing, eventport.ConsumerStatsTagApplied, string(eventport.DeliveryProcessing), 2, nil, true)
@@ -58,6 +61,8 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)`, eventID, consumer, status, attempt, leaseO
 	seedDelivery(unknown, eventport.ConsumerStatsTagApplied, string(eventport.DeliveryOutcomeUnknown), 4, &completion, false)
 	seedDelivery(allRows, eventport.ConsumerStatsTagApplied, string(eventport.DeliveryCompleted), 1, &completion, false)
 	seedDelivery(allRows, eventport.ConsumerAutomationTagTrigger, string(eventport.DeliveryPending), 0, nil, false)
+	seedDelivery(unknownConsumer, "unknown.consumer.v1", string(eventport.DeliveryPending), 0, nil, false)
+	seedDelivery(wrongBinding, eventport.ConsumerOperationCycleFact, string(eventport.DeliveryPending), 0, nil, false)
 	// Snapshot after fixture creation: the read-only assertion must ignore the
 	// deliberately seeded rows and detect only mutations caused by the detail
 	// read itself.
@@ -113,12 +118,62 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)`, eventID, consumer, status, attempt, leaseO
 	if err != nil || empty.Item.Deliveries == nil || len(empty.Item.Deliveries) != 0 {
 		t.Fatalf("no-delivery=%+v err=%v", empty, err)
 	}
+	for _, test := range []struct {
+		name    string
+		eventID int64
+	}{
+		{name: "unknown consumer", eventID: unknownConsumer},
+		{name: "wrong event binding", eventID: wrongBinding},
+	} {
+		t.Run("malformed/"+test.name, func(t *testing.T) {
+			if _, err := service.Get(ctx, eventport.EventID(test.eventID)); !errors.Is(err, eventapp.ErrAdminDetailUnavailable) {
+				t.Fatalf("malformed point read err=%v, want ErrAdminDetailUnavailable", err)
+			}
+		})
+	}
 	missing, err := service.Get(ctx, eventport.EventID(9223372036854775807))
 	if !errors.Is(err, eventapp.ErrAdminDetailNotFound) || missing.Item.EventID != 0 {
 		t.Fatalf("missing=%+v err=%v", missing, err)
 	}
 	if after := sourceFacts(t, ctx, p); after != before {
 		t.Fatalf("detail read changed source facts: before=%+v after=%+v", before, after)
+	}
+}
+
+type malformedAdminDetailRepository struct {
+	snapshot eventport.AdminDetailSnapshot
+}
+
+func (repository *malformedAdminDetailRepository) Read(context.Context, eventport.EventID) (eventport.AdminDetailSnapshot, error) {
+	return repository.snapshot, nil
+}
+
+func TestInternalEventDetail0371MalformedPointReadRowsFailClosed(t *testing.T) {
+	stamp := time.Date(2026, 8, 19, 0, 0, 0, 0, time.UTC)
+	completed := stamp.Add(time.Minute)
+	event := eventport.AdminReadEvent{EventID: 42, EventType: eventport.EvTagApplied, OccurredAt: stamp}
+	validCompleted := eventport.AdminReadDelivery{EventID: 42, Consumer: eventport.ConsumerStatsTagApplied, Status: string(eventport.DeliveryCompleted), AttemptCount: 1, CompletedAt: &completed}
+	malformed := []struct {
+		name       string
+		deliveries []eventport.AdminReadDelivery
+	}{
+		{name: "unknown consumer", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: "unknown.consumer.v1", Status: string(eventport.DeliveryPending)}}},
+		{name: "wrong event binding", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: eventport.ConsumerOperationCycleFact, Status: string(eventport.DeliveryPending)}}},
+		{name: "duplicate consumer", deliveries: []eventport.AdminReadDelivery{validCompleted, validCompleted}},
+		{name: "negative attempt", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: eventport.ConsumerStatsTagApplied, Status: string(eventport.DeliveryCompleted), AttemptCount: -1, CompletedAt: &completed}}},
+		{name: "invalid status", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: eventport.ConsumerStatsTagApplied, Status: "invalid", AttemptCount: 1, CompletedAt: &completed}}},
+		{name: "pending with completion", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: eventport.ConsumerStatsTagApplied, Status: string(eventport.DeliveryPending), CompletedAt: &completed}}},
+		{name: "completed without completion", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: eventport.ConsumerStatsTagApplied, Status: string(eventport.DeliveryCompleted), AttemptCount: 1}}},
+		{name: "processing with completion", deliveries: []eventport.AdminReadDelivery{{EventID: 42, Consumer: eventport.ConsumerStatsTagApplied, Status: string(eventport.DeliveryProcessing), AttemptCount: 1, CompletedAt: &completed}}},
+	}
+	for _, test := range malformed {
+		t.Run(test.name, func(t *testing.T) {
+			repository := &malformedAdminDetailRepository{snapshot: eventport.AdminDetailSnapshot{Found: true, Event: event, Deliveries: test.deliveries}}
+			service := eventapp.NewAdminDetailService(repository, func() time.Time { return stamp })
+			if _, err := service.Get(context.Background(), eventport.EventID(42)); !errors.Is(err, eventapp.ErrAdminDetailUnavailable) {
+				t.Fatalf("malformed point-read row err=%v, want ErrAdminDetailUnavailable", err)
+			}
+		})
 	}
 }
 
