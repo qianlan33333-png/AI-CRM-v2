@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -28,6 +29,46 @@ type legacyQuestionnaireRequest struct {
 	IsDisabled        *bool                        `json:"is_disabled"`
 	Questions         []surveyport.Question        `json:"questions"`
 	ScoreRules        []surveyport.ScoreRule       `json:"score_rules"`
+}
+
+const legacyQuestionnairePagePath = "/admin/questionnaires"
+
+func legacyQuestionnaireSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		next.ServeHTTP(legacyQuestionnaireHeaderWriter{ResponseWriter: writer}, request)
+	})
+}
+
+type legacyQuestionnaireHeaderWriter struct{ http.ResponseWriter }
+
+func (writer legacyQuestionnaireHeaderWriter) WriteHeader(status int) {
+	writer.setSecurityHeaders()
+	writer.ResponseWriter.WriteHeader(status)
+}
+
+func (writer legacyQuestionnaireHeaderWriter) Write(payload []byte) (int, error) {
+	writer.setSecurityHeaders()
+	return writer.ResponseWriter.Write(payload)
+}
+
+func (writer legacyQuestionnaireHeaderWriter) setSecurityHeaders() {
+	writer.Header().Set("Cache-Control", "private, no-store")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+}
+
+func writeLegacyQuestionnaireMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Allow", http.MethodGet)
+	writer.Header().Set("Cache-Control", "private, no-store")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+func (handler *Handler) QuestionnaireListPage(writer http.ResponseWriter, request *http.Request) {
+	if request != nil && request.URL.Path == legacyQuestionnairePagePath+"/ui" {
+		http.Redirect(writer, request, legacyQuestionnairePagePath, http.StatusFound)
+		return
+	}
+	http.Redirect(writer, request, "/?legacy_admin_path="+url.QueryEscape(legacyQuestionnairePagePath), http.StatusFound)
 }
 
 func (handler *Handler) ListQuestionnaires(writer http.ResponseWriter, request *http.Request) {

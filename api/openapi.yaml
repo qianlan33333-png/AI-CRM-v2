@@ -2037,6 +2037,52 @@ paths:
         "200": { description: Public compatibility HTML, content: { text/html: { schema: { type: string } } } }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/questionnaires:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaireListPage
+      summary: Carry the frozen questionnaire list into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0061]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable questionnaire carrier path.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fquestionnaires$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /admin/questionnaires/ui:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaireListUIAlias
+      summary: Redirect the same-origin questionnaire UI alias to its frozen page path
+      x-legacy-mapping-ids: [LEGACY-API-0064]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect exactly to the frozen questionnaire page path.
+          headers:
+            Location: { required: true, schema: { type: string, enum: [/admin/questionnaires] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
   /api/admin/questionnaires:
     get:
       tags: [p4-survey-compat]

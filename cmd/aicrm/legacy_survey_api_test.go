@@ -23,30 +23,37 @@ type legacySurveyStub struct {
 	err     error
 	command surveyport.CreateCommand
 	creates int
+	calls   int
 }
 
 func (stub *legacySurveyStub) ListLegacy(context.Context, int32, int32) (surveyport.LegacyPage, error) {
+	stub.calls++
 	return stub.page, stub.err
 }
 func (stub *legacySurveyStub) Get(context.Context, surveyport.ID) (surveyport.Questionnaire, error) {
+	stub.calls++
 	return stub.item, stub.err
 }
 func (stub *legacySurveyStub) Create(_ context.Context, command surveyport.CreateCommand) (surveyport.Questionnaire, error) {
-	stub.command, stub.creates = command, stub.creates+1
+	stub.command, stub.creates, stub.calls = command, stub.creates+1, stub.calls+1
 	return stub.item, stub.err
 }
 func (stub *legacySurveyStub) Update(_ context.Context, _ surveyport.ID, command surveyport.UpdateCommand) (surveyport.Questionnaire, error) {
+	stub.calls++
 	stub.command = surveyport.CreateCommand{Questionnaire: command.Questionnaire, Actor: command.Actor, IdempotencyKey: command.IdempotencyKey}
 	return stub.item, stub.err
 }
 func (stub *legacySurveyStub) SetDisabled(_ context.Context, _ surveyport.ID, disabled bool, _ int64, _ string) (surveyport.Questionnaire, error) {
+	stub.calls++
 	stub.item.IsDisabled = disabled
 	return stub.item, stub.err
 }
 func (stub *legacySurveyStub) Delete(_ context.Context, _ surveyport.ID, _ int64, _ string) (surveyport.DeleteResult, error) {
+	stub.calls++
 	return surveyport.DeleteResult{Questionnaire: stub.item, Deleted: stub.err == nil}, stub.err
 }
 func (stub *legacySurveyStub) Duplicate(_ context.Context, _ surveyport.ID, _ int64, _ string, title, slug string) (surveyport.Questionnaire, error) {
+	stub.calls++
 	item := stub.item
 	if title != "" {
 		item.Title = title
@@ -158,6 +165,79 @@ func TestF01BLegacyQuestionnaireManagementRoutesPreserveDirectContract(t *testin
 	router.ServeHTTP(deleted, legacySurveyWriteRequest(http.MethodDelete, "/api/admin/questionnaires/41", ""))
 	if deleted.Code != http.StatusOK || !strings.Contains(deleted.Body.String(), `"delete_mode":"hard_delete"`) || !strings.Contains(deleted.Body.String(), `"deleted":true`) {
 		t.Fatalf("removal status=%d body=%s", deleted.Code, deleted.Body.String())
+	}
+}
+
+func TestLegacyQuestionnaireListCarrierUsesAdminReadCapabilityAndSameOriginAlias(t *testing.T) {
+	router, auth := legacySurveyRouter(t, &legacySurveyStub{item: legacySurveyItem()})
+	for path, location := range map[string]string{legacyQuestionnairePagePath: "/?legacy_admin_path=%2Fadmin%2Fquestionnaires", legacyQuestionnairePagePath + "/ui": legacyQuestionnairePagePath} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, legacyRequest(http.MethodGet, path, legacyToken(91)))
+		if response.Code != http.StatusFound || response.Header().Get("Location") != location {
+			t.Fatalf("carrier %s=%d location=%q", path, response.Code, response.Header().Get("Location"))
+		}
+		assertQuestionnaireSecurityHeaders(t, response)
+	}
+	if capabilities := auth.capabilities(); len(capabilities) != 2 || capabilities[0] != authport.CapabilityAdminRead || capabilities[1] != authport.CapabilityAdminRead {
+		t.Fatalf("capabilities=%v", capabilities)
+	}
+}
+
+func TestLegacyQuestionnaireListOperationsUsePrivateNoStoreAndNosniff(t *testing.T) {
+	stub := &legacySurveyStub{item: legacySurveyItem(), page: surveyport.LegacyPage{Items: []surveyport.Questionnaire{legacySurveyItem()}, Total: 1, Limit: 50}}
+	router, _ := legacySurveyRouter(t, stub)
+
+	for _, request := range []*http.Request{
+		legacyRequest(http.MethodGet, "/api/admin/questionnaires", legacyToken(92)),
+		legacySurveyWriteRequest(http.MethodPost, "/api/admin/questionnaires/41/disable", `{"is_disabled":true}`),
+		legacySurveyWriteRequest(http.MethodDelete, "/api/admin/questionnaires/41", ""),
+	} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("%s %s status=%d body=%s", request.Method, request.URL.Path, response.Code, response.Body.String())
+		}
+		assertQuestionnaireSecurityHeaders(t, response)
+	}
+
+	unauthenticated := httptest.NewRecorder()
+	router.ServeHTTP(unauthenticated, httptest.NewRequest(http.MethodGet, "/api/admin/questionnaires", nil))
+	if unauthenticated.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated status=%d body=%s", unauthenticated.Code, unauthenticated.Body.String())
+	}
+	assertQuestionnaireSecurityHeaders(t, unauthenticated)
+
+	stub.err = surveyapp.ErrUnavailable
+	unavailable := httptest.NewRecorder()
+	router.ServeHTTP(unavailable, legacyRequest(http.MethodGet, "/api/admin/questionnaires", legacyToken(93)))
+	if unavailable.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unavailable status=%d body=%s", unavailable.Code, unavailable.Body.String())
+	}
+	assertQuestionnaireSecurityHeaders(t, unavailable)
+}
+
+func TestLegacyQuestionnaireCarrierRejectsOtherMethodsBeforeAuthOrSurvey(t *testing.T) {
+	stub := &legacySurveyStub{item: legacySurveyItem()}
+	router, auth := legacySurveyRouter(t, stub)
+	for _, target := range []string{legacyQuestionnairePagePath, legacyQuestionnairePagePath + "/ui"} {
+		for _, method := range []string{http.MethodPost, http.MethodPut} {
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, httptest.NewRequest(method, target, nil))
+			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet {
+				t.Fatalf("%s %s status=%d allow=%q", method, target, response.Code, response.Header().Get("Allow"))
+			}
+			assertQuestionnaireSecurityHeaders(t, response)
+		}
+	}
+	if capabilities := auth.capabilities(); len(capabilities) != 0 || stub.calls != 0 {
+		t.Fatalf("auth=%v survey_calls=%d", capabilities, stub.calls)
+	}
+}
+
+func assertQuestionnaireSecurityHeaders(t *testing.T, response *httptest.ResponseRecorder) {
+	t.Helper()
+	if response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("security headers cache=%q nosniff=%q", response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"))
 	}
 }
 

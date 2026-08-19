@@ -14849,6 +14849,124 @@ export const getPublicCouponPage = async (
 };
 
 /**
+ * @summary Carry the frozen questionnaire list into the existing admin shell
+ */
+export type getLegacyQuestionnaireListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyQuestionnaireListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnaireListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnaireListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyQuestionnaireListPageResponseError = (
+  | getLegacyQuestionnaireListPageResponse302
+  | getLegacyQuestionnaireListPageResponse401
+  | getLegacyQuestionnaireListPageResponse403
+  | getLegacyQuestionnaireListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnaireListPageResponse =
+  getLegacyQuestionnaireListPageResponseError;
+
+export const getGetLegacyQuestionnaireListPageUrl = () => {
+  return `/admin/questionnaires`;
+};
+
+export const getLegacyQuestionnaireListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyQuestionnaireListPageResponse> => {
+  const res = await fetch(getGetLegacyQuestionnaireListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnaireListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnaireListPageResponse;
+};
+
+/**
+ * @summary Redirect the same-origin questionnaire UI alias to its frozen page path
+ */
+export type getLegacyQuestionnaireListUIAliasResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponseError = (
+  | getLegacyQuestionnaireListUIAliasResponse302
+  | getLegacyQuestionnaireListUIAliasResponse401
+  | getLegacyQuestionnaireListUIAliasResponse403
+  | getLegacyQuestionnaireListUIAliasResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse =
+  getLegacyQuestionnaireListUIAliasResponseError;
+
+export const getGetLegacyQuestionnaireListUIAliasUrl = () => {
+  return `/admin/questionnaires/ui`;
+};
+
+export const getLegacyQuestionnaireListUIAlias = async (
+  options?: RequestInit,
+): Promise<getLegacyQuestionnaireListUIAliasResponse> => {
+  const res = await fetch(getGetLegacyQuestionnaireListUIAliasUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnaireListUIAliasResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnaireListUIAliasResponse;
+};
+
+/**
  * @summary List persisted questionnaire definitions for the frozen old admin UI
  */
 export type listLegacyQuestionnairesResponse200 = {
