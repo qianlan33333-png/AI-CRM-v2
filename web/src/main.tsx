@@ -39,6 +39,8 @@ import { QuestionnaireListPage } from "./questionnaire-list-ui";
 import type { QuestionnaireListTransport } from "./questionnaire-list";
 import { WecomTagsPage } from "./wecom-tags-ui";
 import type { WecomTagsTransport } from "./wecom-tags";
+import { ChannelsPage } from "./channels-ui";
+import type { ChannelsTransport } from "./channels";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -48,6 +50,7 @@ export const IMAGE_LIBRARY_PATH = "/admin/image-library";
 export const HXC_SENDER_PATH = "/admin/hxc-send-config";
 export const QUESTIONNAIRE_LIST_PATH = "/admin/questionnaires";
 export const WECOM_TAGS_PATH = "/admin/wecom-tags";
+export const CHANNELS_PATH = "/admin/channels";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -112,6 +115,12 @@ export const routes = [
     description: "企微标签的本地只读目录。",
   },
   {
+    path: "/admin/channels",
+    navigationLabel: "渠道",
+    title: "渠道列表",
+    description: "本地渠道资源的只读列表。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -163,6 +172,7 @@ export interface AppProps {
   hxcSenderTransport?: HXCSenderTransport;
   questionnaireTransport?: QuestionnaireListTransport;
   wecomTagsTransport?: WecomTagsTransport;
+  channelsTransport?: ChannelsTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -214,7 +224,8 @@ export function carrierPathname(pathname: string, search: string): string {
   return values[0] === MINIPROGRAM_LIBRARY_PATH ||
     values[0] === HXC_SENDER_PATH ||
     values[0] === QUESTIONNAIRE_LIST_PATH ||
-    values[0] === WECOM_TAGS_PATH
+    values[0] === WECOM_TAGS_PATH ||
+    values[0] === CHANNELS_PATH
     ? values[0]
     : pathname;
 }
@@ -316,6 +327,7 @@ function PageContent({
   hxcSenderTransport,
   questionnaireTransport,
   wecomTagsTransport,
+  channelsTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -332,6 +344,7 @@ function PageContent({
   hxcSenderTransport?: HXCSenderTransport;
   questionnaireTransport?: QuestionnaireListTransport;
   wecomTagsTransport?: WecomTagsTransport;
+  channelsTransport?: ChannelsTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -465,6 +478,16 @@ function PageContent({
     );
   }
 
+  if (route.path === CHANNELS_PATH) {
+    return (
+      <ChannelsPage
+        role={principal.role}
+        transport={channelsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   return (
     <section className="route-card" aria-labelledby="app-title">
       <p className="route-card__eyebrow">模块边界</p>
@@ -521,6 +544,7 @@ export function navigationLinks(
     (principal.role === "admin" || principal.role === "ops")
   ) {
     permitted.add(WECOM_TAGS_PATH);
+    permitted.add(CHANNELS_PATH);
   }
   return routes
     .filter((route) => permitted.has(route.path))
@@ -543,6 +567,7 @@ export function App({
   hxcSenderTransport,
   questionnaireTransport,
   wecomTagsTransport,
+  channelsTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -701,6 +726,7 @@ export function App({
             hxcSenderTransport={hxcSenderTransport}
             questionnaireTransport={questionnaireTransport}
             wecomTagsTransport={wecomTagsTransport}
+            channelsTransport={channelsTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />

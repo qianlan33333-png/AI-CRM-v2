@@ -877,6 +877,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyCustomerProfileTagsPath {
 				tail = legacyCustomerProfileTagsSecurityHeaders(tail)
 			}
+			if pattern == legacyChannelPagePath {
+				tail = legacyChannelPageSecurityHeaders(tail)
+			}
 			if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath ||
 				(method == http.MethodGet && pattern == "/api/admin/questionnaires") ||
 				(method == http.MethodPost && pattern == "/api/admin/questionnaires/{questionnaire_id}/disable") ||
@@ -892,7 +895,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -915,6 +918,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if pattern == legacyCustomerProfileTagsPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyCustomerProfileTagsMethodNotAllowed))
+					}
+					if pattern == legacyChannelPagePath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyChannelPageMethodNotAllowed))
 					}
 					if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyQuestionnaireMethodNotAllowed))
@@ -1115,6 +1121,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/results", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaireResults)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/submissions", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaireSubmissions)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/export", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ExportQuestionnaireSubmissions)},
+			{http.MethodGet, legacyChannelPagePath, authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.ChannelListPage)},
 			{http.MethodGet, "/api/admin/channels", authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.ListChannels)},
 			{http.MethodPost, "/api/admin/channels", authport.CapabilityChannelsWrite, true, http.HandlerFunc(legacy.CreateChannel)},
 			{http.MethodGet, "/api/admin/channels/{channel_id}", authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.GetChannel)},
