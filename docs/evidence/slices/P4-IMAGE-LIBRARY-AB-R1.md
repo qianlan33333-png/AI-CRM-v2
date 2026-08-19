@@ -8,6 +8,11 @@
   the audited Image Library implementation.
 - This is a declaration-only correction. It changes only mapping `LEGACY-API-0052` and
   `LEGACY-API-0361`, plus matrix rows `LEGACY-S07-017` and `LEGACY-S07-049`.
+- Canonical inventory correction: the implemented `/admin/image-library` workspace is an edge-served
+  SPA deep link, not a Go/OpenAPI page carrier. Therefore `LEGACY-API-0052` remains visibly implemented
+  in `LEGACY-S07-017`, while its `candidate_v2_operation_id/method/path` stay
+  `PENDING_HUMAN_DESIGN` until a real canonical operation exists. The API upload mapping `0361` is
+  unaffected.
 
 ## Declared local capabilities
 
