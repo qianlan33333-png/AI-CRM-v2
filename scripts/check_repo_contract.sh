@@ -89,6 +89,14 @@ for needed_job in classify secret_diff go_selected web api_codegen database shar
     fail "merge gate lost required dependency: $needed_job"
 done
 
+database_block="$(awk '
+  /^  database:$/ { capture = 1; first = 1 }
+  capture && !first && /^  [a-z][a-z0-9_]*:$/ { exit }
+  capture { print; first = 0 }
+' <<<"$ci_source")"
+grep -Fqx '    timeout-minutes: 60' <<<"$database_block" ||
+  fail "full database gate must retain its 60-minute budget"
+
 ! grep -Fq 'pull_request:' <<<"$nightly_source" ||
   fail "nightly must not run as a pull-request gate"
 for anchor in \

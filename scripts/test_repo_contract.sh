@@ -108,6 +108,22 @@ refresh_manifest "$missing_always_fixture"
 expect_rejected "$missing_always_fixture" "merge gate without always()"
 printf 'repo-contract-tests: merge-gate PASS\n'
 
+database_budget_fixture="$(make_fixture database-budget)"
+python3 - "$database_budget_fixture/.github/workflows/ci.yml" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = "  database:\n    name: ci / database\n    needs: classify\n    if: needs.classify.outputs.database == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 60"
+new = old.replace("timeout-minutes: 60", "timeout-minutes: 30")
+if old not in source:
+    raise SystemExit("database timeout fixture anchor missing")
+path.write_text(source.replace(old, new, 1), encoding="utf-8")
+PY
+refresh_manifest "$database_budget_fixture"
+expect_rejected "$database_budget_fixture" "database gate without full-test budget"
+printf 'repo-contract-tests: database-budget PASS\n'
+
 nightly_pr_fixture="$(make_fixture nightly-pull-request)"
 python3 - "$nightly_pr_fixture/.github/workflows/nightly.yml" <<'PY'
 from pathlib import Path
@@ -166,4 +182,4 @@ refresh_manifest "$metadata_fixture"
 expect_rejected "$metadata_fixture" "PR metadata policy input"
 printf 'repo-contract-tests: metadata-policy PASS\n'
 
-printf 'repo-contract-tests: PASS cases=11\n'
+printf 'repo-contract-tests: PASS cases=12\n'

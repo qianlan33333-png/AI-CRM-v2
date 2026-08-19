@@ -2870,6 +2870,128 @@ export interface LegacyHXCSenderUnavailableResponse {
   real_external_call_executed: boolean;
 }
 
+export type LegacyDeliveryLineageRecordRecordKind =
+  (typeof LegacyDeliveryLineageRecordRecordKind)[keyof typeof LegacyDeliveryLineageRecordRecordKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordRecordKind = {
+  outbound_task: "outbound_task",
+  event_delivery: "event_delivery",
+} as const;
+
+export type LegacyDeliveryLineageRecordInternalState =
+  (typeof LegacyDeliveryLineageRecordInternalState)[keyof typeof LegacyDeliveryLineageRecordInternalState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordInternalState = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+  processing: "processing",
+  completed: "completed",
+} as const;
+
+export type LegacyDeliveryLineageRecordExternalDelivery =
+  (typeof LegacyDeliveryLineageRecordExternalDelivery)[keyof typeof LegacyDeliveryLineageRecordExternalDelivery];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordExternalDelivery = {
+  unknown: "unknown",
+} as const;
+
+export type LegacyDeliveryLineageRecordExternalReceipt =
+  (typeof LegacyDeliveryLineageRecordExternalReceipt)[keyof typeof LegacyDeliveryLineageRecordExternalReceipt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordExternalReceipt = {
+  unknown: "unknown",
+} as const;
+
+export interface LegacyDeliveryLineageRecord {
+  /** @pattern ^(outbound-task:[1-9][0-9]*|event-delivery:v1:[0-9a-f]{64})$ */
+  lineage_id: string;
+  record_kind: LegacyDeliveryLineageRecordRecordKind;
+  internal_state: LegacyDeliveryLineageRecordInternalState;
+  /** @minimum 0 */
+  attempt_count: number;
+  updated_at: string;
+  external_delivery: LegacyDeliveryLineageRecordExternalDelivery;
+  external_receipt: LegacyDeliveryLineageRecordExternalReceipt;
+}
+
+export type LegacyDeliveryLineageInterpretationKind =
+  (typeof LegacyDeliveryLineageInterpretationKind)[keyof typeof LegacyDeliveryLineageInterpretationKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageInterpretationKind = {
+  internal_processing_only: "internal_processing_only",
+} as const;
+
+export type LegacyDeliveryLineageInterpretationExternalDelivery =
+  (typeof LegacyDeliveryLineageInterpretationExternalDelivery)[keyof typeof LegacyDeliveryLineageInterpretationExternalDelivery];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageInterpretationExternalDelivery = {
+  unknown: "unknown",
+} as const;
+
+export type LegacyDeliveryLineageInterpretationExternalReceipt =
+  (typeof LegacyDeliveryLineageInterpretationExternalReceipt)[keyof typeof LegacyDeliveryLineageInterpretationExternalReceipt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageInterpretationExternalReceipt = {
+  unknown: "unknown",
+} as const;
+
+export interface LegacyDeliveryLineageInterpretation {
+  kind: LegacyDeliveryLineageInterpretationKind;
+  external_delivery: LegacyDeliveryLineageInterpretationExternalDelivery;
+  external_receipt: LegacyDeliveryLineageInterpretationExternalReceipt;
+}
+
+export interface LegacyDeliveryLineageResponse {
+  ok: boolean;
+  items: LegacyDeliveryLineageRecord[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  interpretation: LegacyDeliveryLineageInterpretation;
+}
+
+export type LegacyDeliveryLineageUnavailableStatusCode =
+  (typeof LegacyDeliveryLineageUnavailableStatusCode)[keyof typeof LegacyDeliveryLineageUnavailableStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageUnavailableStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyDeliveryLineageUnavailableErrorCode =
+  (typeof LegacyDeliveryLineageUnavailableErrorCode)[keyof typeof LegacyDeliveryLineageUnavailableErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageUnavailableErrorCode = {
+  delivery_lineage_unavailable: "delivery_lineage_unavailable",
+} as const;
+
+export interface LegacyDeliveryLineageUnavailable {
+  ok: boolean;
+  status_code: LegacyDeliveryLineageUnavailableStatusCode;
+  error_code: LegacyDeliveryLineageUnavailableErrorCode;
+}
+
 export type LegacyMiniProgramCreateRequest =
   | (unknown & {
       /** @maxLength 200 */
@@ -6413,6 +6535,19 @@ export type ListLegacyGroupInvitesParams = {
    * @maxLength 128
    */
   q?: string;
+};
+
+export type GetLegacyDeliveryLineageParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
 };
 
 export type ListLegacyMiniProgramsParams = {
@@ -16119,6 +16254,96 @@ export const getLegacyHXCSendConfig = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyHXCSendConfigResponse;
+};
+
+/**
+ * @summary Read local delivery-processing lineage without asserting external delivery
+ */
+export type getLegacyDeliveryLineageResponse200 = {
+  data: LegacyDeliveryLineageResponse;
+  status: 200;
+};
+
+export type getLegacyDeliveryLineageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyDeliveryLineageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyDeliveryLineageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyDeliveryLineageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type getLegacyDeliveryLineageResponse503 = {
+  data: LegacyDeliveryLineageUnavailable;
+  status: 503;
+};
+
+export type getLegacyDeliveryLineageResponseSuccess =
+  getLegacyDeliveryLineageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyDeliveryLineageResponseError = (
+  | getLegacyDeliveryLineageResponse401
+  | getLegacyDeliveryLineageResponse403
+  | getLegacyDeliveryLineageResponse405
+  | getLegacyDeliveryLineageResponse422
+  | getLegacyDeliveryLineageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyDeliveryLineageResponse =
+  | getLegacyDeliveryLineageResponseSuccess
+  | getLegacyDeliveryLineageResponseError;
+
+export const getGetLegacyDeliveryLineageUrl = (
+  params?: GetLegacyDeliveryLineageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/delivery-lineage?${stringifiedParams}`
+    : `/api/admin/delivery-lineage`;
+};
+
+export const getLegacyDeliveryLineage = async (
+  params?: GetLegacyDeliveryLineageParams,
+  options?: RequestInit,
+): Promise<getLegacyDeliveryLineageResponse> => {
+  const res = await fetch(getGetLegacyDeliveryLineageUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyDeliveryLineageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyDeliveryLineageResponse;
 };
 
 /**
