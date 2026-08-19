@@ -4201,18 +4201,29 @@ export interface LegacyMiniProgramResolveResponse {
 }
 
 export interface Product {
+  /** @minimum 1 */
   id: number;
   /**
    * @minLength 1
    * @maxLength 200
    */
   product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
   name: string;
+  /** @maxLength 10000 */
   description: string;
+  /** @minimum 0 */
   price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
   currency: string;
+  /** @minimum 0 */
   stock_quantity: number;
+  /** @maxItems 20 */
   images: string[];
+  /** @minimum 1 */
   created_by: number;
   created_at: string;
   updated_at: string;
@@ -7493,11 +7504,19 @@ export type listProductsResponse403 = {
   status: 403;
 };
 
+export type listProductsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
 export type listProductsResponseSuccess = listProductsResponse200 & {
   headers: Headers;
 };
 export type listProductsResponseError = (
-  listProductsResponse400 | listProductsResponse401 | listProductsResponse403
+  | listProductsResponse400
+  | listProductsResponse401
+  | listProductsResponse403
+  | listProductsResponse503
 ) & {
   headers: Headers;
 };
@@ -7636,6 +7655,11 @@ export type getProductResponse404 = {
   status: 404;
 };
 
+export type getProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
 export type getProductResponseSuccess = getProductResponse200 & {
   headers: Headers;
 };
@@ -7644,6 +7668,7 @@ export type getProductResponseError = (
   | getProductResponse401
   | getProductResponse403
   | getProductResponse404
+  | getProductResponse503
 ) & {
   headers: Headers;
 };
@@ -7672,6 +7697,65 @@ export const getProduct = async (
     status: res.status,
     headers: res.headers,
   } as getProductResponse;
+};
+
+/**
+ * @summary Redirect the frozen product list entrypoint to the exact local SPA carrier
+ */
+export type getLegacyProductListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyProductListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyProductListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyProductListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyProductListPageResponseError = (
+  | getLegacyProductListPageResponse302
+  | getLegacyProductListPageResponse401
+  | getLegacyProductListPageResponse403
+  | getLegacyProductListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyProductListPageResponse =
+  getLegacyProductListPageResponseError;
+
+export const getGetLegacyProductListPageUrl = () => {
+  return `/admin/wechat-pay/products`;
+};
+
+export const getLegacyProductListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyProductListPageResponse> => {
+  const res = await fetch(getGetLegacyProductListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyProductListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyProductListPageResponse;
 };
 
 /**

@@ -7751,6 +7751,15 @@ func (response ListProducts403JSONResponse) VisitListProductsResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListProducts503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListProducts503JSONResponse) VisitListProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CreateProductRequestObject struct {
 	Params CreateProductParams
 	Body   *CreateProductJSONRequestBody
@@ -7854,6 +7863,15 @@ type GetProduct404JSONResponse struct{ NotFoundJSONResponse }
 func (response GetProduct404JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetProduct503JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }

@@ -57,6 +57,8 @@ import { PushCenterPage } from "./push-center-ui";
 import type { PushCenterTransport } from "./push-center";
 import { OrdersPage } from "./orders-ui";
 import type { OrdersTransport } from "./orders";
+import { ProductsPage } from "./products-ui";
+import type { ProductsTransport } from "./products";
 import "./shell.css";
 
 export const ROUTE_CHANGE_EVENT = "aicrm:route-change";
@@ -75,6 +77,7 @@ export const DATA_HEALTH_PATH = "/admin/data-health";
 export const EXECUTION_RUNTIME_PATH = "/admin/execution-runtime";
 export const ORDERS_PATH = "/admin/orders";
 export const OUTBOUND_PATH = "/outbound";
+export const PRODUCTS_PATH = "/admin/wechat-pay/products";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
 
 export const routes = [
@@ -187,6 +190,12 @@ export const routes = [
     description: "已持久化订单投影的本地只读浏览。",
   },
   {
+    path: "/admin/wechat-pay/products",
+    navigationLabel: "产品",
+    title: "产品目录",
+    description: "已持久化产品投影的本地只读浏览。",
+  },
+  {
     path: "/outbound",
     navigationLabel: "群发任务",
     title: "群发任务",
@@ -247,6 +256,7 @@ export interface AppProps {
   executionRuntimeTransport?: ExecutionRuntimeTransport;
   pushCenterTransport?: PushCenterTransport;
   ordersTransport?: OrdersTransport;
+  productsTransport?: ProductsTransport;
   cookieHeader?: () => string;
   initialSession?: SessionResult;
 }
@@ -302,7 +312,8 @@ export function carrierPathname(pathname: string, search: string): string {
     values[0] === CHANNELS_PATH ||
     values[0] === COUPONS_PATH ||
     values[0] === EXECUTION_RUNTIME_PATH ||
-    values[0] === ORDERS_PATH
+    values[0] === ORDERS_PATH ||
+    values[0] === PRODUCTS_PATH
     ? values[0]
     : pathname;
 }
@@ -413,6 +424,7 @@ function PageContent({
   executionRuntimeTransport,
   pushCenterTransport,
   ordersTransport,
+  productsTransport,
   cookieHeader,
   onUnauthenticated,
 }: {
@@ -438,6 +450,7 @@ function PageContent({
   executionRuntimeTransport?: ExecutionRuntimeTransport;
   pushCenterTransport?: PushCenterTransport;
   ordersTransport?: OrdersTransport;
+  productsTransport?: ProductsTransport;
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
@@ -661,6 +674,9 @@ function PageContent({
       />
     );
   }
+  if (route.path === PRODUCTS_PATH) {
+    return <ProductsPage role={principal.role} transport={productsTransport} onUnauthenticated={onUnauthenticated} />;
+  }
 
   return (
     <section className="route-card" aria-labelledby="app-title">
@@ -727,6 +743,7 @@ export function navigationLinks(
     permitted.add(COUPONS_PATH);
     permitted.add(GROUP_INVITE_LIBRARY_PATH);
     permitted.add(ORDERS_PATH);
+    permitted.add(PRODUCTS_PATH);
   }
   return routes
     .filter((route) => permitted.has(route.path))
@@ -758,6 +775,7 @@ export function App({
   executionRuntimeTransport,
   pushCenterTransport,
   ordersTransport,
+  productsTransport,
   cookieHeader = runtimeCookieHeader,
   initialSession,
 }: AppProps) {
@@ -925,6 +943,7 @@ export function App({
             executionRuntimeTransport={executionRuntimeTransport}
             pushCenterTransport={pushCenterTransport}
             ordersTransport={ordersTransport}
+            productsTransport={productsTransport}
             cookieHeader={cookieHeader}
             onUnauthenticated={markSessionUnauthenticated}
           />
