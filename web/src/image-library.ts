@@ -2,8 +2,10 @@ import {
   getLegacyImage,
   getLegacyImageFacets,
   getLegacyImageList,
+  updateLegacyImage,
   uploadLegacyImage,
   type GetLegacyImageListParams,
+  type LegacyImageMetadataUpdateRequest,
   type UploadLegacyImageBody,
 } from "./api/generated/health";
 import { readCSRFCookie } from "./auth";
@@ -81,6 +83,15 @@ export interface ImageUploadMetadata {
   readonly category: string;
 }
 
+// This is deliberately metadata-only. Image enabled state, bytes, URLs, and
+// variants belong to separate contracts and are never sent by this consumer.
+export interface ImageMetadataDraft {
+  readonly name: string;
+  readonly description: string;
+  readonly tags: string;
+  readonly category: string;
+}
+
 async function generatedList(
   params: GetLegacyImageListParams,
   options: RequestInit,
@@ -101,12 +112,20 @@ async function generatedUpload(
 ) {
   return uploadLegacyImage(body, options);
 }
+async function generatedUpdate(
+  imageID: string,
+  body: LegacyImageMetadataUpdateRequest,
+  options: RequestInit,
+) {
+  return updateLegacyImage(imageID, body, options);
+}
 
 export interface ImageLibraryTransport {
   readonly list: typeof generatedList;
   readonly detail: typeof generatedDetail;
   readonly facets: typeof generatedFacets;
   readonly upload: typeof generatedUpload;
+  readonly update: typeof generatedUpdate;
 }
 
 export const generatedImageLibraryTransport: ImageLibraryTransport = {
@@ -114,6 +133,7 @@ export const generatedImageLibraryTransport: ImageLibraryTransport = {
   detail: generatedDetail,
   facets: generatedFacets,
   upload: generatedUpload,
+  update: generatedUpdate,
 };
 
 export type ImageLibraryFailure =
@@ -143,6 +163,10 @@ export type ImageDetailResult =
   | { readonly status: ImageLibraryFailure };
 export type ImageUploadResult =
   | { readonly status: "uploaded"; readonly image: UploadedImage }
+  | { readonly status: "csrf_missing" }
+  | { readonly status: ImageLibraryFailure };
+export type ImageMetadataUpdateResult =
+  | { readonly status: "saved"; readonly image: ImageDetail }
   | { readonly status: "csrf_missing" }
   | { readonly status: ImageLibraryFailure };
 
@@ -220,7 +244,10 @@ function timestampText(value: unknown): value is string {
 
 function frozenEnvelopeFlags(
   value: Record<string, unknown>,
-  sourceStatus: "next_media_library" | "local_upload",
+  sourceStatus:
+    | "next_media_library"
+    | "local_upload"
+    | "local_repository_write",
 ): boolean {
   return (
     value.source_status === sourceStatus &&
@@ -673,6 +700,19 @@ function parseImageUpload(data: unknown): UploadedImage | undefined {
   return parseUploadedImage(data.item);
 }
 
+function parseImageMetadataUpdate(data: unknown): ImageDetail | undefined {
+  if (!record(data) || !exactKeys(data, IMAGE_DETAIL_SUCCESS_KEYS)) {
+    return undefined;
+  }
+  if (
+    data.ok !== true ||
+    !frozenEnvelopeFlags(data, "local_repository_write")
+  ) {
+    return undefined;
+  }
+  return parseImageDetail(data.item);
+}
+
 function failure(status: number): ImageLibraryFailure {
   if (status === 401) return "unauthenticated";
   if (status === 403) return "forbidden";
@@ -817,6 +857,82 @@ export function uploadMetadataProblem(
     return "标签总长不能超过 10000 字。";
   }
   return undefined;
+}
+
+function metadataText(value: string, maximum: number): string | undefined {
+  const normalized = value.trim();
+  return !normalized.includes("\x00") && runeLength(normalized) <= maximum
+    ? normalized
+    : undefined;
+}
+
+export function imageMetadataRequest(
+  draft: ImageMetadataDraft,
+): LegacyImageMetadataUpdateRequest | undefined {
+  const name = metadataText(draft.name, 200);
+  const description = metadataText(draft.description, 10_000);
+  const category = metadataText(draft.category, 200);
+  if (name === undefined || description === undefined || category === undefined) {
+    return undefined;
+  }
+  const tags: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of draft.tags.split(",")) {
+    const tag = raw.trim();
+    if (tag === "") continue;
+    if (tag.includes("\x00") || runeLength(tag) > 64 || seen.has(tag)) {
+      if (tag.includes("\x00") || runeLength(tag) > 64) return undefined;
+      continue;
+    }
+    seen.add(tag);
+    tags.push(tag);
+    if (tags.length > 50) return undefined;
+  }
+  return { name, description, tags, category };
+}
+
+function imageMetadataMatches(
+  image: ImageDetail,
+  request: LegacyImageMetadataUpdateRequest,
+): boolean {
+  return (
+    image.name === request.name &&
+    image.description === request.description &&
+    image.category === request.category &&
+    image.tags.length === request.tags?.length &&
+    image.tags.every((tag, index) => tag === request.tags?.[index])
+  );
+}
+
+export async function updateImageMetadata(
+  transport: ImageLibraryTransport,
+  cookieHeader: string,
+  imageID: number,
+  draft: ImageMetadataDraft,
+): Promise<ImageMetadataUpdateResult> {
+  if (!positive(imageID)) return { status: "invalid" };
+  const request = imageMetadataRequest(draft);
+  if (!request) return { status: "invalid" };
+  let csrfToken: string | undefined;
+  try {
+    csrfToken = readCSRFCookie(cookieHeader);
+  } catch {
+    csrfToken = undefined;
+  }
+  if (!csrfToken) return { status: "csrf_missing" };
+  try {
+    const response = await transport.update(String(imageID), request, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": csrfToken },
+    });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const image = parseImageMetadataUpdate(response.data);
+    return image && image.id === imageID && image.enabled === true && imageMetadataMatches(image, request)
+      ? { status: "saved", image }
+      : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
 }
 
 export function uploadFileProblem(file: Blob): string | undefined {
