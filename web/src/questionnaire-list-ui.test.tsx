@@ -238,7 +238,55 @@ describe("QuestionnaireListPage UI", () => {
       />,
     );
     expect(page).toContain(">复制问卷<");
-    expect(busy.match(/disabled=""/g)).toHaveLength(9);
+    expect(busy.match(/disabled=""/g)).toHaveLength(11);
+  });
+
+  it("renders only the local submission aggregate and retains it on a local result read failure", () => {
+    const ready = renderToStaticMarkup(
+      <QuestionnaireListContent
+        busy={undefined}
+        onLoad={vi.fn()}
+        onMutate={vi.fn()}
+        results={{
+          kind: "ready",
+          item: active,
+          aggregate: {
+            submissionCount: 2,
+            latestSubmittedAt: "2026-08-19T01:02:03Z",
+            averageScore: 1.5,
+          },
+        }}
+        state={{ kind: "ready", items: [active], total: 1, offset: 0 }}
+      />,
+    );
+    expect(ready).toContain('data-testid="questionnaire-results"');
+    expect(ready).toContain("提交汇总：欢迎问卷");
+    expect(ready).toContain("提交者身份或答案");
+    expect(ready).toContain("1.5");
+    expect(ready).not.toMatch(
+      /openid|unionid|external_userid|mobile|respondent|redirect|answer/i,
+    );
+
+    const failed = renderToStaticMarkup(
+      <QuestionnaireListContent
+        busy={undefined}
+        onLoad={vi.fn()}
+        onMutate={vi.fn()}
+        results={{
+          kind: "error",
+          item: active,
+          failure: "unavailable",
+          previous: {
+            submissionCount: 2,
+            latestSubmittedAt: "2026-08-19T01:02:03Z",
+            averageScore: 1.5,
+          },
+        }}
+        state={{ kind: "ready", items: [active], total: 1, offset: 0 }}
+      />,
+    );
+    expect(failed).toContain("1.5");
+    expect(failed).toContain("问卷服务暂时不可用，请稍后重试。");
   });
 
   it("copies the parsed same-origin public link without using transport", async () => {

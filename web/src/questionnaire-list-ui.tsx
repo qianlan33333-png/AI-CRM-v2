@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
   deleteQuestionnaire,
@@ -6,6 +6,7 @@ import {
   generatedQuestionnaireListTransport,
   loadQuestionnaires,
   loadQuestionnairePreflight,
+  loadQuestionnaireResults,
   nextQuestionnaireOffset,
   previousQuestionnaireOffset,
   questionnaireMutationReloadOffset,
@@ -17,6 +18,7 @@ import {
   type QuestionnaireMutationResult,
   type QuestionnairePreflight,
   type QuestionnairePreflightResult,
+  type QuestionnaireSubmissionAggregate,
 } from "./questionnaire-list";
 
 const messages: Record<QuestionnaireFailure, string> = {
@@ -42,6 +44,25 @@ export type QuestionnairePreflightState =
   | { readonly kind: "loading" }
   | { readonly kind: "ready"; readonly preflight: QuestionnairePreflight }
   | { readonly kind: "error"; readonly failure: QuestionnaireFailure };
+
+export type QuestionnaireResultsState =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "loading";
+      readonly item: QuestionnaireItem;
+      readonly previous?: QuestionnaireSubmissionAggregate;
+    }
+  | {
+      readonly kind: "ready";
+      readonly item: QuestionnaireItem;
+      readonly aggregate: QuestionnaireSubmissionAggregate;
+    }
+  | {
+      readonly kind: "error";
+      readonly item: QuestionnaireItem;
+      readonly failure: QuestionnaireFailure;
+      readonly previous?: QuestionnaireSubmissionAggregate;
+    };
 
 export type QuestionnaireMutationAction = "toggle" | "delete" | "duplicate";
 export type QuestionnairePageMutationResult =
@@ -132,7 +153,12 @@ export interface QuestionnaireListContentProps {
   readonly notice?: string;
   readonly onLoad: React.Dispatch<number>;
   readonly onMutate: React.Dispatch<QuestionnaireMutationRequest>;
+  readonly onLoadResults?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    item: QuestionnaireItem,
+  ) => void;
   readonly preflight?: QuestionnairePreflightState;
+  readonly results?: QuestionnaireResultsState;
   readonly state: QuestionnaireListState;
 }
 
@@ -178,12 +204,64 @@ function QuestionnairePreflightPanel({
   );
 }
 
+function AggregateValues({
+  aggregate,
+}: {
+  readonly aggregate: QuestionnaireSubmissionAggregate;
+}): React.ReactElement {
+  return (
+    <dl>
+      <dt>提交数</dt>
+      <dd>{aggregate.submissionCount}</dd>
+      <dt>最近提交时间</dt>
+      <dd>{aggregate.latestSubmittedAt ?? "暂无"}</dd>
+      <dt>平均分</dt>
+      <dd>{aggregate.averageScore}</dd>
+    </dl>
+  );
+}
+
+function QuestionnaireResultsPanel({
+  state,
+}: {
+  readonly state: QuestionnaireResultsState;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const title = `提交汇总：${state.item.title}`;
+  if (state.kind === "loading")
+    return (
+      <section data-testid="questionnaire-results">
+        <h2>{title}</h2>
+        {state.previous ? <AggregateValues aggregate={state.previous} /> : null}
+        <p>
+          {state.previous ? "正在刷新本地提交汇总。" : "正在读取本地提交汇总。"}
+        </p>
+      </section>
+    );
+  if (state.kind === "error")
+    return (
+      <section data-testid="questionnaire-results">
+        <h2>{title}</h2>
+        {state.previous ? <AggregateValues aggregate={state.previous} /> : null}
+        <p role="alert">{messages[state.failure]}</p>
+      </section>
+    );
+  return (
+    <section data-testid="questionnaire-results">
+      <h2>{title}</h2>
+      <AggregateValues aggregate={state.aggregate} />
+    </section>
+  );
+}
+
 export function QuestionnaireListContent({
   busy,
   notice,
   onLoad,
   onMutate,
+  onLoadResults = noopLoadResults,
   preflight,
+  results = { kind: "idle" },
   state,
 }: QuestionnaireListContentProps): React.ReactElement {
   const [copyNotice, setCopyNotice] = useState<string>();
@@ -225,9 +303,11 @@ export function QuestionnaireListContent({
       <h1 id="app-title">问卷列表</h1>
       {preflightPanel}
       <p>共 {state.total} 条问卷。写入成功后会重新加载列表。</p>
+      <p>提交汇总只读取本地 Survey 聚合，不包含提交者身份或答案。</p>
       {(notice ?? copyNotice) ? (
         <p role="status">{notice ?? copyNotice}</p>
       ) : null}
+      <QuestionnaireResultsPanel state={results} />
       {state.items.length === 0 ? (
         <p>当前没有问卷。</p>
       ) : (
@@ -259,6 +339,13 @@ export function QuestionnaireListContent({
                     onClick={() => void copyPublicLink(item)}
                   >
                     复制公开链接
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined}
+                    onClick={() => onLoadResults(item)}
+                  >
+                    查看提交汇总
                   </button>
                   <button
                     type="button"
@@ -324,6 +411,8 @@ export function QuestionnaireListContent({
   );
 }
 
+function noopLoadResults(): void {}
+
 export function QuestionnaireListPage({
   role,
   transport = generatedQuestionnaireListTransport,
@@ -343,8 +432,14 @@ export function QuestionnaireListPage({
   });
   const [busy, setBusy] = useState<number>();
   const [mutationNotice, setMutationNotice] = useState<string>();
+  const [results, setResults] = useState<QuestionnaireResultsState>({
+    kind: "idle",
+  });
+  const resultsGeneration = useRef(0);
   const load = useCallback(
     (offset: number) => {
+      ++resultsGeneration.current;
+      setResults({ kind: "idle" });
       setState({ kind: "loading" });
       void loadQuestionnaires(transport, offset).then(
         (result: QuestionnaireListResult) => {
@@ -377,6 +472,23 @@ export function QuestionnaireListPage({
       },
     );
   }, [onUnauthenticated, transport]);
+  const loadResults = useCallback(
+    (item: QuestionnaireItem) => {
+      const generation = ++resultsGeneration.current;
+      const previous = retainedAggregate(results, item.id);
+      setResults({ kind: "loading", item, previous });
+      void loadQuestionnaireResults(transport, item).then((result) => {
+        if (generation !== resultsGeneration.current) return;
+        if (result.status === "loaded") {
+          setResults({ kind: "ready", item, aggregate: result.aggregate });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setResults({ kind: "error", item, failure: result.status, previous });
+      });
+    },
+    [onUnauthenticated, results, transport],
+  );
   useEffect(() => {
     if (role === "admin") {
       load(0);
@@ -420,9 +532,24 @@ export function QuestionnaireListPage({
       busy={busy}
       notice={mutationNotice}
       onLoad={load}
+      onLoadResults={loadResults}
       onMutate={({ item, action }) => void mutate(item, action)}
       preflight={preflight}
+      results={results}
       state={state}
     />
   );
+}
+
+function retainedAggregate(
+  state: QuestionnaireResultsState,
+  questionnaireID: number,
+): QuestionnaireSubmissionAggregate | undefined {
+  if (state.kind === "idle" || state.item.id !== questionnaireID)
+    return undefined;
+  return state.kind === "ready"
+    ? state.aggregate
+    : state.kind === "loading" || state.kind === "error"
+      ? state.previous
+      : undefined;
 }

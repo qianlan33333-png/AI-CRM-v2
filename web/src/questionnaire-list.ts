@@ -3,6 +3,7 @@ import {
   disableLegacyQuestionnaire,
   duplicateLegacyQuestionnaire,
   getLegacyQuestionnairePreflight,
+  getLegacyQuestionnaireResults,
   listLegacyQuestionnaires,
   type LegacyQuestionnaire,
 } from "./api/generated/health";
@@ -28,6 +29,7 @@ export interface QuestionnaireListTransport {
   readonly duplicate: typeof duplicateLegacyQuestionnaire;
   readonly remove: typeof deleteLegacyQuestionnaire;
   readonly preflight: typeof getLegacyQuestionnairePreflight;
+  readonly results: typeof getLegacyQuestionnaireResults;
 }
 
 export const generatedQuestionnaireListTransport: QuestionnaireListTransport = {
@@ -36,6 +38,7 @@ export const generatedQuestionnaireListTransport: QuestionnaireListTransport = {
   duplicate: duplicateLegacyQuestionnaire,
   remove: deleteLegacyQuestionnaire,
   preflight: getLegacyQuestionnairePreflight,
+  results: getLegacyQuestionnaireResults,
 };
 
 export type QuestionnairePreflightStatus = "partial" | "ok";
@@ -72,6 +75,17 @@ export type QuestionnaireMutationResult =
   { readonly status: "saved" } | { readonly status: QuestionnaireFailure };
 export type QuestionnairePreflightResult =
   | { readonly status: "loaded"; readonly preflight: QuestionnairePreflight }
+  | { readonly status: QuestionnaireFailure };
+export interface QuestionnaireSubmissionAggregate {
+  readonly submissionCount: number;
+  readonly latestSubmittedAt: string | null;
+  readonly averageScore: number;
+}
+export type QuestionnaireResultsResult =
+  | {
+      readonly status: "loaded";
+      readonly aggregate: QuestionnaireSubmissionAggregate;
+    }
   | { readonly status: QuestionnaireFailure };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -115,6 +129,23 @@ function timestamp(value: unknown): value is string {
       value,
     ) &&
     Number.isFinite(Date.parse(value))
+  );
+}
+function aggregateTimestamp(value: unknown): value is string {
+  if (!timestamp(value)) return false;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return false;
+  const [year, month, day, hour, minute, second] = match.slice(1).map(Number);
+  const calendar = new Date(0);
+  calendar.setUTCFullYear(year, month - 1, day);
+  calendar.setUTCHours(hour, minute, second, 0);
+  return (
+    calendar.getUTCFullYear() === year &&
+    calendar.getUTCMonth() === month - 1 &&
+    calendar.getUTCDate() === day &&
+    calendar.getUTCHours() === hour &&
+    calendar.getUTCMinutes() === minute &&
+    calendar.getUTCSeconds() === second
   );
 }
 function allowed(
@@ -418,6 +449,87 @@ export async function loadQuestionnairePreflight(
         },
       },
     };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+function aggregate(
+  value: unknown,
+): QuestionnaireSubmissionAggregate | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "submission_count",
+      "latest_submitted_at",
+      "average_score",
+      "rules",
+    ]) ||
+    !nonnegative(value.submission_count) ||
+    typeof value.average_score !== "number" ||
+    !Number.isFinite(value.average_score) ||
+    value.average_score < 0 ||
+    !Array.isArray(value.rules) ||
+    value.rules.length !== 0 ||
+    (value.latest_submitted_at !== null &&
+      !aggregateTimestamp(value.latest_submitted_at)) ||
+    (value.submission_count === 0 &&
+      (value.latest_submitted_at !== null || value.average_score !== 0)) ||
+    (value.submission_count > 0 && value.latest_submitted_at === null)
+  ) {
+    return undefined;
+  }
+  return {
+    submissionCount: value.submission_count,
+    latestSubmittedAt: value.latest_submitted_at,
+    averageScore: value.average_score,
+  };
+}
+
+function equalAggregate(
+  left: QuestionnaireSubmissionAggregate,
+  right: QuestionnaireSubmissionAggregate,
+): boolean {
+  return (
+    left.submissionCount === right.submissionCount &&
+    left.latestSubmittedAt === right.latestSubmittedAt &&
+    Object.is(left.averageScore, right.averageScore)
+  );
+}
+
+export async function loadQuestionnaireResults(
+  transport: QuestionnaireListTransport,
+  item: QuestionnaireItem,
+): Promise<QuestionnaireResultsResult> {
+  if (!positive(item.id)) return { status: "invalid" };
+  try {
+    const response = await transport.results(item.id, {
+      credentials: "same-origin",
+    });
+    if (response.status !== 200) return { status: failure(response.status) };
+    const body: unknown = response.data;
+    if (
+      !record(body) ||
+      !exact(body, [
+        "ok",
+        "questionnaire_id",
+        "results",
+        "data",
+        "side_effect_executed",
+      ]) ||
+      body.ok !== true ||
+      body.questionnaire_id !== item.id ||
+      body.side_effect_executed !== false ||
+      !record(body.data) ||
+      !exact(body.data, ["results"])
+    ) {
+      return { status: "invalid" };
+    }
+    const parsed = aggregate(body.results);
+    const mirrored = aggregate(body.data.results);
+    return parsed && mirrored && equalAggregate(parsed, mirrored)
+      ? { status: "loaded", aggregate: parsed }
+      : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }
