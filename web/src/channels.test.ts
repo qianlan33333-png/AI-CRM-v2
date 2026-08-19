@@ -3,7 +3,9 @@ import {
   filterChannels,
   loadChannelDetail,
   loadChannels,
+  newChannelConfigurationIdempotencyKey,
   newChannelStatusIdempotencyKey,
+  saveChannelConfiguration,
   updateChannelStatus,
   type ChannelsTransport,
 } from "./channels";
@@ -48,7 +50,14 @@ function detailChannel(extra: Record<string, unknown> = {}) {
     created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T01:02:03Z",
     assignees: [], assignment_stats_24h: [], assignee_count: 0, channel_contact_count: 0,
     latest_channel_entered_at: "", qrcode_asset_id: 0, qrcode_status: "not_generated",
-    qr_download_url: "", share_url: "", copy_text: "", ...extra,
+    qr_download_url: "", share_url: "", copy_text: "",
+    channel_type: "qrcode", carrier_type: "qrcode", scene_value: "", qr_url: "",
+    owner_staff_id: "", customer_channel: "", link_url: "", final_url: "", welcome_message: "",
+    welcome_image_library_ids: [], welcome_miniprogram_library_ids: [],
+    welcome_attachment_library_ids: [], welcome_group_invite_library_ids: [],
+    auto_accept_friend: false, entry_tag_id: "", entry_tag_name: "", entry_tag_group_name: "",
+    assignment_mode: "single_owner", assignment_strategy: "ratio", overflow_policy: "least_loaded",
+    assignment_config_json: {}, ...extra,
   };
 }
 function detailResponse(channel: unknown = detailChannel(), extra: Record<string, unknown> = {}) {
@@ -66,7 +75,7 @@ describe("local channel list read boundary", () => {
       detail: vi.fn(async () => ({ status: 200, data: detailResponse(), headers: new Headers() })),
     } as unknown as ChannelsTransport;
     await expect(loadChannelDetail(client, list.items[0])).resolves.toMatchObject({
-      status: "loaded", detail: { item: list.items[0], imageMaterialCount: 0, hasAssignmentConfig: false },
+      status: "loaded", detail: { item: list.items[0], imageMaterialCount: 0, hasAssignmentConfig: true },
     });
     expect(client.detail).toHaveBeenCalledWith(1);
     expect(client.read).not.toHaveBeenCalled();
@@ -238,17 +247,10 @@ describe("local channel list read boundary", () => {
       })),
       write: vi.fn(async () => ({
         status: 200,
-        // This must remain unread: success responses carry an unfrozen legacy projection.
-        data: new Proxy(
-          {},
-          {
-            get() {
-              throw new Error("must not consume channel mutation projection");
-            },
-          },
-        ),
+        data: { ok: true, channel: detailChannel({ status: "inactive" }), reason: "channel_updated", source: "ai_crm_next", fallback_used: false, real_external_call_executed: false },
         headers: new Headers(),
       })),
+      detail: vi.fn(async () => ({ status: 200, data: detailResponse(detailChannel({ status: "inactive" })), headers: new Headers() })),
     } as unknown as ChannelsTransport;
 
     await expect(
@@ -293,6 +295,7 @@ describe("local channel list read boundary", () => {
       },
     });
     expect(client.read).toHaveBeenCalledTimes(1);
+    expect(client.detail).toHaveBeenCalledWith(1);
   });
 
   it("uses only the generated PATCH and one existing safe-list GET", async () => {
@@ -308,15 +311,17 @@ describe("local channel list read boundary", () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            ok: true,
-            channel: { qr_url: "https://must-not-be-used.example/qr" },
-            reason: "channel_updated",
+            ok: true, channel: detailChannel({ status: "inactive" }), reason: "channel_updated",
+            source: "ai_crm_next", fallback_used: false, real_external_call_executed: false,
           }),
           { status: 200 },
         ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify(refreshed), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(detailResponse(detailChannel({ status: "inactive" }))), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetch);
 
@@ -350,7 +355,12 @@ describe("local channel list read boundary", () => {
       "/api/admin/channels?limit=300&include_archived=true",
       expect.objectContaining({ credentials: "same-origin", method: "GET" }),
     );
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      "/api/admin/channels/1",
+      expect.objectContaining({ credentials: "same-origin", method: "GET" }),
+    );
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it("does not claim an update when the safe list cannot confirm the exact target state", async () => {
@@ -419,6 +429,36 @@ describe("local channel list read boundary", () => {
     expect(client.write).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps definite status-write rejections distinct from an unknown outcome", async () => {
+    const cases: readonly [number, unknown, "invalid" | "forbidden"][] = [
+      [400, { ok: false, detail: "invalid channel status" }, "invalid"],
+      [403, { code: "UNAUTHORIZED", message: "Permission is denied.", request_id: "request-403" }, "forbidden"],
+      [404, { ok: false, detail: "channel not found" }, "invalid"],
+      [409, { ok: false, detail: "channel status conflict" }, "invalid"],
+    ];
+    for (const [status, data, expected] of cases) {
+      const client = {
+        read: vi.fn(),
+        detail: vi.fn(),
+        create: vi.fn(),
+        configure: vi.fn(),
+        write: vi.fn(async () => ({ status, data, headers: new Headers() })),
+      } as unknown as ChannelsTransport;
+      await expect(
+        updateChannelStatus(
+          client,
+          1,
+          "inactive",
+          "a".repeat(43),
+          "channel-status:123e4567-e89b-42d3-a456-426614174000",
+        ),
+      ).resolves.toEqual({ status: expected });
+      expect(client.write).toHaveBeenCalledOnce();
+      expect(client.read).not.toHaveBeenCalled();
+      expect(client.detail).not.toHaveBeenCalled();
+    }
+  });
+
   it("uses a unique valid channel status receipt key or stops before the request", () => {
     expect(
       newChannelStatusIdempotencyKey({
@@ -428,5 +468,99 @@ describe("local channel list read boundary", () => {
     expect(
       newChannelStatusIdempotencyKey({ randomUUID: () => "not-a-uuid" }),
     ).toBeUndefined();
+  });
+
+  it("creates one full local configuration through the generated POST and confirms its strict mutation DTO plus list/detail rereads", async () => {
+    const input = {
+      channelType: "qrcode" as const, carrierType: "qrcode" as const,
+      channelName: "公开课", channelCode: "course", status: "active" as const,
+      sceneValue: "", qrURL: "", ownerStaffID: "", customerChannel: "", linkURL: "", finalURL: "",
+      welcomeMessage: "", imageMaterialIDs: [], miniProgramMaterialIDs: [], attachmentMaterialIDs: [], groupInviteMaterialIDs: [],
+      autoAcceptFriend: false, entryTagID: "", entryTagName: "", entryTagGroupName: "",
+      assignmentMode: "single_owner" as const, assignmentStrategy: "ratio" as const, overflowPolicy: "least_loaded",
+    };
+    const mutation = {
+      ok: true, channel: detailChannel(), reason: "channel_created", source: "ai_crm_next",
+      fallback_used: false, real_external_call_executed: false,
+    } as const;
+    const client = {
+      create: vi.fn(async () => ({ status: 201, data: mutation, headers: new Headers() })),
+      configure: vi.fn(),
+      read: vi.fn(async () => ({ status: 200, data: response, headers: new Headers() })),
+      detail: vi.fn(async () => ({ status: 200, data: detailResponse(), headers: new Headers() })),
+      write: vi.fn(),
+    } as unknown as ChannelsTransport;
+    await expect(saveChannelConfiguration(client, "create", input, undefined, "a".repeat(43), "channel-create:123e4567-e89b-42d3-a456-426614174000"))
+      .resolves.toMatchObject({ status: "confirmed", detail: { item: { id: 1, name: "公开课" } } });
+    expect(client.create).toHaveBeenCalledWith(input, {
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": "a".repeat(43),
+        "Idempotency-Key": "channel-create:123e4567-e89b-42d3-a456-426614174000",
+      },
+    });
+    expect(client.read).toHaveBeenCalledTimes(1);
+    expect(client.detail).toHaveBeenCalledWith(1);
+    expect(client.configure).not.toHaveBeenCalled();
+  });
+
+  it("fails closed and marks the result unknown without reread for malformed or uncertain configuration mutations", async () => {
+    const input = {
+      channelType: "qrcode" as const, carrierType: "qrcode" as const,
+      channelName: "公开课", channelCode: "course", status: "active" as const,
+      sceneValue: "", qrURL: "", ownerStaffID: "", customerChannel: "", linkURL: "", finalURL: "",
+      welcomeMessage: "", imageMaterialIDs: [], miniProgramMaterialIDs: [], attachmentMaterialIDs: [], groupInviteMaterialIDs: [],
+      autoAcceptFriend: false, entryTagID: "", entryTagName: "", entryTagGroupName: "",
+      assignmentMode: "single_owner" as const, assignmentStrategy: "ratio" as const, overflowPolicy: "least_loaded",
+    };
+    const client = {
+      create: vi.fn(async () => ({ status: 201, data: { ok: true, channel: detailChannel(), reason: "channel_created", source: "ai_crm_next", fallback_used: false, real_external_call_executed: true }, headers: new Headers() })),
+      configure: vi.fn(), read: vi.fn(), detail: vi.fn(), write: vi.fn(),
+    } as unknown as ChannelsTransport;
+    await expect(saveChannelConfiguration(client, "create", input, undefined, "a".repeat(43), "channel-create:123e4567-e89b-42d3-a456-426614174000"))
+      .resolves.toEqual({ status: "unknown" });
+    expect(client.read).not.toHaveBeenCalled();
+    expect(client.detail).not.toHaveBeenCalled();
+
+    expect(newChannelConfigurationIdempotencyKey("update", { randomUUID: () => "123e4567-e89b-42d3-a456-426614174000" }))
+      .toBe("channel-update:123e4567-e89b-42d3-a456-426614174000");
+  });
+
+  it("uses the generated same-origin POST without replacing opaque assignment details", async () => {
+    const input = {
+      channelType: "qrcode" as const, carrierType: "qrcode" as const,
+      channelName: "公开课", channelCode: "course", status: "active" as const,
+      sceneValue: "", qrURL: "https://local.example/qr", ownerStaffID: "staff-1", customerChannel: "",
+      linkURL: "https://local.example/link", finalURL: "", welcomeMessage: "欢迎",
+      imageMaterialIDs: [7], miniProgramMaterialIDs: [], attachmentMaterialIDs: [], groupInviteMaterialIDs: [],
+      autoAcceptFriend: false, entryTagID: "11", entryTagName: "新客", entryTagGroupName: "来源",
+      assignmentMode: "single_owner" as const, assignmentStrategy: "ratio" as const, overflowPolicy: "least_loaded",
+    };
+    const channel = detailChannel({
+      qr_url: input.qrURL, owner_staff_id: input.ownerStaffID, link_url: input.linkURL,
+      welcome_message: input.welcomeMessage, welcome_image_library_ids: [7], entry_tag_id: "11",
+      entry_tag_name: "新客", entry_tag_group_name: "来源", assignment_config_json: { retained: "server-owned" },
+    });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, channel, reason: "channel_created", source: "ai_crm_next", fallback_used: false, real_external_call_executed: false }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(response), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(detailResponse(channel)), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(saveChannelConfiguration(
+      (await import("./channels")).generatedChannelsTransport,
+      "create", input, undefined, "a".repeat(43), "channel-create:123e4567-e89b-42d3-a456-426614174000",
+    )).resolves.toMatchObject({ status: "confirmed" });
+    expect(fetch).toHaveBeenNthCalledWith(1, "/api/admin/channels", expect.objectContaining({
+      credentials: "same-origin", method: "POST",
+      headers: expect.objectContaining({ "X-CSRF-Token": "a".repeat(43) }),
+      body: JSON.stringify({
+        channel_type: "qrcode", carrier_type: "qrcode", channel_name: "公开课", channel_code: "course", status: "active",
+        scene_value: "", qr_url: input.qrURL, owner_staff_id: "staff-1", customer_channel: "", link_url: input.linkURL,
+        final_url: "", welcome_message: "欢迎", welcome_image_library_ids: [7], welcome_miniprogram_library_ids: [],
+        welcome_attachment_library_ids: [], welcome_group_invite_library_ids: [], auto_accept_friend: false,
+        entry_tag_id: "11", entry_tag_name: "新客", entry_tag_group_name: "来源", assignment_mode: "single_owner",
+        assignment_strategy: "ratio", overflow_policy: "least_loaded",
+      }),
+    }));
   });
 });

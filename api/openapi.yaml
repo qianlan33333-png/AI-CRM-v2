@@ -1407,7 +1407,7 @@ paths:
     post:
       tags: [p4-channel-compat]
       operationId: createLegacyChannel
-      summary: Create one local channel resource without QR, welcome, assignment, or provider execution
+      summary: Create one complete local channel configuration without provider execution
       x-legacy-mapping-ids: [LEGACY-API-0191]
       x-p4-decision-evidence: P4-C01-2026-08-15
       x-aicrm-capability: channels.write
