@@ -11,6 +11,7 @@ import (
 	"time"
 
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
+	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -25,6 +26,15 @@ type legacyCouponBoardStub struct {
 	rows    []couponport.SidebarCoupon
 	claim   couponport.ClaimCommand
 	writes  int
+	limit   int32
+	offset  int32
+	status  string
+	query   string
+}
+
+func (s *legacyCouponBoardStub) List(_ context.Context, limit, offset int32, status, query string) (couponport.Page, error) {
+	s.limit, s.offset, s.status, s.query = limit, offset, status, query
+	return s.page, nil
 }
 
 func (s *legacyCouponBoardStub) Archive(_ context.Context, _ couponport.ID, _ int64, _ string) (couponport.Coupon, error) {
@@ -69,6 +79,12 @@ func (s *legacyCouponBoardStub) ListSidebarCoupons(context.Context, int64) ([]co
 
 func legacyCouponBoardRouter(t *testing.T, stub *legacyCouponBoardStub) http.Handler {
 	t.Helper()
+	router, _ := legacyCouponBoardRouterWithAuth(t, stub)
+	return router
+}
+
+func legacyCouponBoardRouterWithAuth(t *testing.T, stub *legacyCouponBoardStub) (http.Handler, *recordingAuth) {
+	t.Helper()
 	service := &recordingAuth{}
 	products := &legacyProductStub{page: productport.LegacyPage{Items: []productport.Product{{ID: 7, Name: "商品", PriceMinor: 999, Currency: "CNY"}}, Total: 1, Limit: 20}}
 	legacy, err := NewHandlerWithOutboundProductsMediaAndSurvey(service, &legacyCustomerStub{result: legacyCustomerResult()}, &legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, products, &legacyMediaStub{}, &legacySurveyStub{})
@@ -84,7 +100,7 @@ func legacyCouponBoardRouter(t *testing.T, stub *legacyCouponBoardStub) http.Han
 	if err != nil {
 		t.Fatal(err)
 	}
-	return router
+	return router, service
 }
 
 func couponPublicRequest(method, path string, cookie *http.Cookie) *http.Request {
@@ -207,4 +223,88 @@ func TestCouponBoardAddsAllFifteenMissingRoutes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCouponListPageFiltersLocallyWithoutChangingCouponBoardContracts(t *testing.T) {
+	unsafeName := `Alpha <img src=x onerror=alert(1)>`
+	items := []couponport.Coupon{
+		{Name: unsafeName, Status: "published", AvailabilityStatus: "scheduled"},
+		{Name: "active coupon", Status: "published", AvailabilityStatus: "active"},
+		{Name: "sold out coupon", Status: "published", AvailabilityStatus: "sold_out"},
+		{Name: "ended coupon", Status: "published", AvailabilityStatus: "ended"},
+		{Name: "draft coupon", Status: "draft"},
+		{Name: "stopped coupon", Status: "stopped"},
+		{Name: "archived coupon", Status: "archived"},
+	}
+	stub := &legacyCouponBoardStub{legacyCouponStub: legacyCouponStub{page: couponport.Page{Items: items, Total: int64(len(items)), Limit: 100}}}
+	router, auth := legacyCouponBoardRouterWithAuth(t, stub)
+	request := legacyRequest(http.MethodGet, "/admin/coupons", legacyToken(114))
+	originalURL := request.URL.String()
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	body := response.Body.String()
+
+	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" || !strings.HasPrefix(response.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("response=%d headers=%v body=%s", response.Code, response.Header(), body)
+	}
+	if stub.limit != 100 || stub.offset != 0 || stub.status != "" || stub.query != "" || stub.writes != 0 {
+		t.Fatalf("list arguments limit=%d offset=%d status=%q query=%q writes=%d", stub.limit, stub.offset, stub.status, stub.query, stub.writes)
+	}
+	if got := auth.capabilities(); len(got) != 1 || got[0] != authport.CapabilityCouponsRead {
+		t.Fatalf("capabilities=%v", got)
+	}
+	if request.URL.String() != originalURL || strings.Contains(body, "fetch(") || strings.Contains(body, "XMLHttpRequest") || strings.Contains(body, "history.") {
+		t.Fatalf("unexpected browser request mutation or remote call body=%s", body)
+	}
+	if !strings.Contains(body, `type="search" id="coupon-search"`) || !strings.Contains(body, `id="coupon-status"`) || !strings.Contains(body, "row.hidden=") || !strings.Contains(body, "row.dataset.name.toLowerCase().includes(needle)") || !strings.Contains(body, `row.dataset.status===wanted`) {
+		t.Fatalf("missing local filter controls body=%s", body)
+	}
+	for _, status := range []string{"draft", "scheduled", "active", "sold_out", "ended", "stopped", "archived"} {
+		if !strings.Contains(body, `value="`+status+`"`) || !strings.Contains(body, `data-status="`+status+`"`) {
+			t.Fatalf("missing status %q body=%s", status, body)
+		}
+	}
+	for _, item := range []struct{ name, status string }{
+		{"active coupon", "active"},
+		{"sold out coupon", "sold_out"},
+		{"ended coupon", "ended"},
+		{"draft coupon", "draft"},
+		{"stopped coupon", "stopped"},
+		{"archived coupon", "archived"},
+	} {
+		if !strings.Contains(body, item.name+" · "+item.status) {
+			t.Fatalf("missing displayed availability state %#v body=%s", item, body)
+		}
+	}
+	if strings.Contains(body, `data-status="published"`) || strings.Contains(body, " · published") {
+		t.Fatalf("stored status leaked instead of availability status body=%s", body)
+	}
+	if !strings.Contains(body, `data-name="Alpha &lt;img src=x onerror=alert(1)&gt;"`) || !strings.Contains(body, `Alpha &lt;img src=x onerror=alert(1)&gt; · scheduled`) || strings.Contains(body, unsafeName) {
+		t.Fatalf("unsafe coupon name was not escaped body=%s", body)
+	}
+	if strings.Contains(renderCouponPageBody(t), `id="coupon-search"`) {
+		t.Fatal("coupon filter leaked into a non-list coupon page")
+	}
+}
+
+func TestCouponListPageFailsClosedForUnexpectedAvailabilityStatus(t *testing.T) {
+	for _, item := range []couponport.Coupon{
+		{Name: "published without availability", Status: "published"},
+		{Name: "deleted availability", Status: "published", AvailabilityStatus: "deleted"},
+	} {
+		stub := &legacyCouponBoardStub{legacyCouponStub: legacyCouponStub{page: couponport.Page{Items: []couponport.Coupon{item}, Total: 1, Limit: 100}}}
+		router := legacyCouponBoardRouter(t, stub)
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, legacyRequest(http.MethodGet, "/admin/coupons", legacyToken(115)))
+		if response.Code != http.StatusServiceUnavailable || strings.Contains(response.Body.String(), item.Name) {
+			t.Fatalf("unexpected availability status item=%#v response=%d body=%s", item, response.Code, response.Body.String())
+		}
+	}
+}
+
+func renderCouponPageBody(t *testing.T) string {
+	t.Helper()
+	response := httptest.NewRecorder()
+	renderCouponPage(response, "新建优惠券", nil, couponport.Coupon{})
+	return response.Body.String()
 }
