@@ -935,6 +935,38 @@ export type LegacyChannelAllOf = {
 
 export type LegacyChannel = LegacyChannelWriteRequest & LegacyChannelAllOf;
 
+export type LegacyChannelListItemStatus =
+  (typeof LegacyChannelListItemStatus)[keyof typeof LegacyChannelListItemStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyChannelListItemStatus = {
+  active: "active",
+  inactive: "inactive",
+  archived: "archived",
+} as const;
+
+export interface LegacyChannelListItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  channel_name: string;
+  /** @maxLength 200 */
+  channel_code: string;
+  status: LegacyChannelListItemStatus;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  assignee_count: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  channel_contact_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export type LegacyChannelListResponseReason =
   (typeof LegacyChannelListResponseReason)[keyof typeof LegacyChannelListResponseReason];
 
@@ -953,7 +985,7 @@ export const LegacyChannelListResponseSource = {
 
 export interface LegacyChannelListResponse {
   ok: boolean;
-  channels: LegacyChannel[];
+  channels: LegacyChannelListItem[];
   reason: LegacyChannelListResponseReason;
   source: LegacyChannelListResponseSource;
 }
@@ -11784,6 +11816,65 @@ export const queueLegacyWecomTagSyncDue = async (
     status: res.status,
     headers: res.headers,
   } as queueLegacyWecomTagSyncDueResponse;
+};
+
+/**
+ * @summary Carry the local read-only channel list into the existing admin shell
+ */
+export type getLegacyChannelListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyChannelListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyChannelListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyChannelListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyChannelListPageResponseError = (
+  | getLegacyChannelListPageResponse302
+  | getLegacyChannelListPageResponse401
+  | getLegacyChannelListPageResponse403
+  | getLegacyChannelListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyChannelListPageResponse =
+  getLegacyChannelListPageResponseError;
+
+export const getGetLegacyChannelListPageUrl = () => {
+  return `/admin/channels`;
+};
+
+export const getLegacyChannelListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyChannelListPageResponse> => {
+  const res = await fetch(getGetLegacyChannelListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyChannelListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyChannelListPageResponse;
 };
 
 /**

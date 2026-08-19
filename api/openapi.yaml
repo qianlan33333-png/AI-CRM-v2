@@ -1266,6 +1266,29 @@ paths:
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: { required: false, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagSyncRequest" } } } }
       responses: { "202": { description: Queued local acceptance; no WeCom sync was executed, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /admin/channels:
+    get:
+      tags: [p4-channel-compat]
+      operationId: getLegacyChannelListPage
+      summary: Carry the local read-only channel list into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0013]
+      x-p4-decision-evidence: P4-S06-001-LOCAL-READ-2026-08-19
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable channel carrier path.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fchannels$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
   /api/admin/channels:
     get:
       tags: [p4-channel-compat]
@@ -4011,13 +4034,26 @@ components:
             qr_download_url: { type: string, enum: [""] }
             share_url: { type: string, enum: [""] }
             copy_text: { type: string, enum: [""] }
+    LegacyChannelListItem:
+      type: object
+      additionalProperties: false
+      required: [id, channel_name, channel_code, status, assignee_count, channel_contact_count, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        channel_name: { type: string, maxLength: 200 }
+        channel_code: { type: string, maxLength: 200 }
+        status: { type: string, enum: [active, inactive, archived] }
+        assignee_count: { type: integer, minimum: 0, maximum: 0 }
+        channel_contact_count: { type: integer, minimum: 0, maximum: 0 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     LegacyChannelListResponse:
       type: object
       additionalProperties: false
       required: [ok, channels, reason, source]
       properties:
         ok: { type: boolean, enum: [true] }
-        channels: { type: array, items: { $ref: "#/components/schemas/LegacyChannel" } }
+        channels: { type: array, items: { $ref: "#/components/schemas/LegacyChannelListItem" } }
         reason: { type: string, enum: [channels_listed] }
         source: { type: string, enum: [ai_crm_next] }
     LegacyChannelDetailResponse:

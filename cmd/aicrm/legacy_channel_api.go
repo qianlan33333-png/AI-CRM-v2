@@ -48,13 +48,26 @@ func (handler *Handler) ListChannels(writer http.ResponseWriter, request *http.R
 	}
 	items := make([]map[string]any, len(channels))
 	for index, channel := range channels {
-		items[index], err = legacyChannel(channel)
-		if err != nil {
-			writeLegacyChannelError(writer, err)
-			return
-		}
+		items[index] = legacyChannelListItem(channel)
 	}
 	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "channels": items, "reason": "channels_listed", "source": "ai_crm_next"})
+}
+
+// legacyChannelListItem deliberately projects only the S06-001 list fields.
+// The stored LegacyProjection remains available only to the existing detail
+// and write compatibility responses; exposing it here would leak unowned
+// welcome, assignment, tag, or link configuration into the read-only list.
+func legacyChannelListItem(channel contactapp.Channel) map[string]any {
+	return map[string]any{
+		"id":                    channel.ID,
+		"channel_name":          channel.ChannelName,
+		"channel_code":          channel.ChannelCode,
+		"status":                channel.Status,
+		"assignee_count":        0,
+		"channel_contact_count": 0,
+		"created_at":            channel.CreatedAt.UTC(),
+		"updated_at":            channel.UpdatedAt.UTC(),
+	}
 }
 
 func (handler *Handler) GetChannel(writer http.ResponseWriter, request *http.Request) {

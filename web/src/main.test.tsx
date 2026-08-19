@@ -8,6 +8,7 @@ import {
   HXC_SENDER_PATH,
   QUESTIONNAIRE_LIST_PATH,
   WECOM_TAGS_PATH,
+  CHANNELS_PATH,
   LOGIN_PATH,
   MINIPROGRAM_LIBRARY_PATH,
   ROUTE_CHANGE_EVENT,
@@ -27,6 +28,7 @@ import {
 import type { CustomerDetailTransport } from "./customer-detail";
 import type { ImageLibraryTransport } from "./image-library";
 import type { WecomTagsTransport } from "./wecom-tags";
+import type { ChannelsTransport } from "./channels";
 
 const adminSession = {
   status: "authenticated",
@@ -101,6 +103,11 @@ function imageLibraryTransport(): ImageLibraryTransport {
 function wecomTagsTransport(): WecomTagsTransport {
   const response = async () => ({ status: 503, data: {} });
   return { read: vi.fn(response) } as unknown as WecomTagsTransport;
+}
+
+function channelsTransport(): ChannelsTransport {
+  const response = async () => ({ status: 503, data: {} });
+  return { read: vi.fn(response) } as unknown as ChannelsTransport;
 }
 
 describe("Web shell routes", () => {
@@ -208,6 +215,37 @@ describe("Web shell routes", () => {
     expect(client.read).not.toHaveBeenCalled();
   });
 
+  it("renders the channel route for global admin and ops only", () => {
+    vi.stubGlobal("window", { location: { pathname: CHANNELS_PATH } });
+    const client = channelsTransport();
+    const admin = renderToStaticMarkup(
+      <App channelsTransport={client} initialSession={adminSession} />,
+    );
+    expect(admin).toContain('<h1 id="app-title">渠道列表</h1>');
+    expect(admin).toContain("正在读取本地渠道列表。");
+    const ops = renderToStaticMarkup(
+      <App
+        channelsTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 8, role: "ops" },
+        }}
+      />,
+    );
+    expect(ops).toContain("正在读取本地渠道列表。");
+    const sales = renderToStaticMarkup(
+      <App
+        channelsTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有渠道列表访问权限。");
+    expect(client.read).not.toHaveBeenCalled();
+  });
+
   it("renders the questionnaire carrier route for admin and keeps non-admins fail-closed", () => {
     vi.stubGlobal("window", {
       location: { pathname: QUESTIONNAIRE_LIST_PATH },
@@ -238,7 +276,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(12);
+    expect(routes).toHaveLength(13);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -365,6 +403,7 @@ describe("Web shell routes", () => {
       "/admin/hxc-send-config",
       "/admin/questionnaires",
       "/admin/wecom-tags",
+      "/admin/channels",
       "/settings",
     ]);
     expect(
@@ -378,6 +417,7 @@ describe("Web shell routes", () => {
       "/admin/miniprogram-library",
       "/admin/image-library",
       "/admin/wecom-tags",
+      "/admin/channels",
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(
@@ -394,6 +434,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/image-library"');
     expect(html).toContain('href="/admin/questionnaires"');
     expect(html).toContain('href="/admin/wecom-tags"');
+    expect(html).toContain('href="/admin/channels"');
     expect(html).not.toContain('href="/outbound"');
   });
 
@@ -429,10 +470,14 @@ describe("legacy admin path carrier", () => {
     expect(carrierPathname("/", `?legacy_admin_path=${WECOM_TAGS_PATH}`)).toBe(
       WECOM_TAGS_PATH,
     );
+    expect(carrierPathname("/", `?legacy_admin_path=${CHANNELS_PATH}`)).toBe(
+      CHANNELS_PATH,
+    );
 
     for (const search of [
       "?legacy_admin_path=/admin/image-library",
       "?legacy_admin_path=/admin/wecom-tags/extra",
+      "?legacy_admin_path=/admin/channels/extra",
       "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,

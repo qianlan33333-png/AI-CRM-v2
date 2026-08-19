@@ -95,6 +95,40 @@ func TestC01LegacyChannelRejectsCrossOriginUnknownAndStableErrors(t *testing.T) 
 	}
 }
 
+func TestC01LegacyChannelListNeverExposesLegacyProjection(t *testing.T) {
+	item := legacyChannelItem()
+	item.LegacyProjection = json.RawMessage(`{"channel_name":"公开课","channel_code":"course","status":"active","welcome_message":"must_not_list","owner_staff_id":"staff-1","entry_tag_id":"tag-1","welcome_image_library_ids":[41],"assignment_mode":"single_owner","assignment_config_json":{"ratio":100},"link_url":"https://outside.invalid/link","final_url":"https://outside.invalid/final","share_url":"https://outside.invalid/share"}`)
+	router, _ := legacyChannelRouter(t, &legacyChannelStub{item: item, rows: []contactapp.Channel{item}})
+
+	list := httptest.NewRecorder()
+	router.ServeHTTP(list, legacyRequest(http.MethodGet, "/api/admin/channels?limit=300&include_archived=true", legacyToken(95)))
+	if list.Code != http.StatusOK {
+		t.Fatalf("list=%d body=%s", list.Code, list.Body.String())
+	}
+	var listBody struct {
+		Channels []map[string]any `json:"channels"`
+	}
+	if err := json.NewDecoder(list.Body).Decode(&listBody); err != nil || len(listBody.Channels) != 1 {
+		t.Fatalf("list body=%#v err=%v", listBody, err)
+	}
+	row := listBody.Channels[0]
+	wantKeys := map[string]bool{"id": true, "channel_name": true, "channel_code": true, "status": true, "assignee_count": true, "channel_contact_count": true, "created_at": true, "updated_at": true}
+	if len(row) != len(wantKeys) || row["assignee_count"] != float64(0) || row["channel_contact_count"] != float64(0) {
+		t.Fatalf("list row=%#v", row)
+	}
+	for key := range row {
+		if !wantKeys[key] {
+			t.Fatalf("unexpected list field %q in %#v", key, row)
+		}
+	}
+
+	detail := httptest.NewRecorder()
+	router.ServeHTTP(detail, legacyRequest(http.MethodGet, "/api/admin/channels/1", legacyToken(96)))
+	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), `"welcome_message":"must_not_list"`) {
+		t.Fatalf("detail=%d body=%s", detail.Code, detail.Body.String())
+	}
+}
+
 func legacyChannelRouter(t *testing.T, channels legacyChannelApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
