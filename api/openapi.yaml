@@ -1553,7 +1553,8 @@ paths:
       x-aicrm-capability: customers.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
-      responses: { "200": { description: Local tag archive envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagArchiveRequest" } } } }
+      responses: { "200": { description: Closed local tag-archived or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagArchiveResponse" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/wecom/tags/live/gate:
     get:
       tags: [p4-tag-compat]
@@ -4614,6 +4615,39 @@ components:
       oneOf:
         - $ref: "#/components/schemas/LegacyTagGroupArchiveSuccess"
         - $ref: "#/components/schemas/LegacyTagGroupArchiveValidatedSuccess"
+    LegacyTagArchiveSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_archived] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        tag: { $ref: "#/components/schemas/LegacyTagUpdateSuccessTag" }
+    LegacyTagArchiveValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_archive_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagArchiveResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagArchiveSuccess"
+        - $ref: "#/components/schemas/LegacyTagArchiveValidatedSuccess"
     LegacyTagUpdateSuccessTag:
       type: object
       additionalProperties: false

@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
+import { WeComCallbackInboxPage } from "./wecom-callback-inbox-ui";
+import type { CallbackInboxTransport } from "./wecom-callback-inbox";
 import {
+  archiveWecomTag,
   archiveWecomTagGroup,
+  confirmsArchivedWecomTag,
   confirmsArchivedWecomTagGroup,
   confirmsCreatedWecomTagGroup,
   confirmsRenamedWecomTag,
@@ -22,6 +26,7 @@ import {
   type WecomTagGroupCreateResult,
   type WecomTagGroupArchiveResult,
   type WecomTagGroupRenameResult,
+  type WecomTagArchiveResult,
   type WecomTagRenameResult,
   type WecomTagsRole,
   type WecomTagsTransport,
@@ -32,6 +37,7 @@ import {
 export interface WecomTagsPageProps {
   readonly role: WecomTagsRole;
   readonly transport?: WecomTagsTransport;
+  readonly callbackTransport?: CallbackInboxTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
 }
@@ -221,6 +227,65 @@ export function submitWecomTagGroupArchive(
   });
 }
 
+export interface WecomTagArchiveController {
+  readonly transport: WecomTagsTransport;
+  readonly readCookie: () => string;
+  readonly onUnauthenticated?: () => void;
+  readonly mutationInFlight: { current: boolean };
+  readonly mutationLocked: { current: boolean };
+  readonly lockMutations: () => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setArchiving: (value: boolean) => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setCatalog: (catalog: WecomTagCatalog) => void;
+}
+
+export function submitWecomTagArchive(
+  controller: WecomTagArchiveController,
+  tag: WecomTag,
+): Promise<WecomTagArchiveResult | undefined> | undefined {
+  if (controller.mutationLocked.current) return undefined;
+  return startWecomTagMutation(controller.mutationInFlight, async () => {
+    let csrfToken: string | undefined;
+    try {
+      csrfToken = readCSRFCookie(controller.readCookie());
+    } catch {
+      csrfToken = undefined;
+    }
+    const idempotencyKey = newWecomTagIdempotencyKey();
+    if (!csrfToken || !idempotencyKey) return { status: "invalid" };
+    controller.setArchiving(true);
+    try {
+      const result = await archiveWecomTag(
+        controller.transport,
+        tag,
+        csrfToken,
+        idempotencyKey,
+      );
+      if (result.status !== "archived") {
+        if (result.status === "unauthenticated")
+          controller.onUnauthenticated?.();
+        if (result.status === "unknown") controller.lockMutations();
+        return result;
+      }
+      const refreshed = await loadWecomTagCatalog(controller.transport);
+      if (refreshed.status === "unauthenticated")
+        controller.onUnauthenticated?.();
+      if (
+        refreshed.status === "loaded" &&
+        confirmsArchivedWecomTag(refreshed.catalog, result, tag)
+      ) {
+        controller.setCatalog(refreshed.catalog);
+        return result;
+      }
+      controller.lockMutations();
+      return { status: "unknown" };
+    } finally {
+      controller.setArchiving(false);
+    }
+  });
+}
+
 export async function copyWecomTagID(
   tagID: number,
   clipboard: ClipboardWriter | undefined = typeof navigator === "undefined"
@@ -241,6 +306,7 @@ export async function copyWecomTagID(
 export function WecomTagsPage({
   role,
   transport = generatedWecomTagsTransport,
+  callbackTransport,
   readCookie = browserCookie,
   onUnauthenticated,
 }: WecomTagsPageProps): React.ReactElement {
@@ -335,7 +401,9 @@ export function WecomTagsPage({
       <h2 id="wecom-tag-create-title">创建本地标签组</h2>
       <p>仅创建本地标签目录记录，不会同步或操作企微联系人。</p>
       <form onSubmit={submitCreate}>
-        <fieldset disabled={creating || renaming || archiving || mutationUncertain}>
+        <fieldset
+          disabled={creating || renaming || archiving || mutationUncertain}
+        >
           <label>
             标签组名称
             <input
@@ -448,19 +516,48 @@ export function WecomTagsPage({
     );
   };
 
+  const onArchiveTag = async (
+    tag: WecomTag,
+  ): Promise<WecomTagArchiveResult | undefined> => {
+    if (!canAccess) return undefined;
+    return submitWecomTagArchive(
+      {
+        transport,
+        readCookie,
+        onUnauthenticated,
+        mutationInFlight,
+        mutationLocked,
+        lockMutations,
+        setArchiving,
+        setCatalog: (catalog) => setState({ kind: "ready", catalog }),
+      },
+      tag,
+    );
+  };
+
   return (
-    <WecomTagsView
-      createPanel={createPanel}
-      mutationBusy={creating || renaming || archiving}
-      mutationLocked={mutationUncertain}
-      onArchiveGroup={onArchiveGroup}
-      onRenameGroup={onRenameGroup}
-      onRenameTag={onRenameTag}
-      renaming={renaming}
-      archiving={archiving}
-      role={role}
-      state={state}
-    />
+    <>
+      <WecomTagsView
+        createPanel={createPanel}
+        mutationBusy={creating || renaming || archiving}
+        mutationLocked={mutationUncertain}
+        onArchiveGroup={onArchiveGroup}
+        onArchiveTag={onArchiveTag}
+        onRenameGroup={onRenameGroup}
+        onRenameTag={onRenameTag}
+        renaming={renaming}
+        archiving={archiving}
+        role={role}
+        state={state}
+      />
+      {role === "admin" ? (
+        <WeComCallbackInboxPage
+          role="admin"
+          transport={callbackTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -471,6 +568,7 @@ export function WecomTagsView({
   mutationBusy = false,
   mutationLocked = false,
   onArchiveGroup,
+  onArchiveTag,
   onRenameGroup,
   onRenameTag,
   renaming = false,
@@ -485,6 +583,10 @@ export function WecomTagsView({
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     group: WecomTagGroup,
   ) => Promise<WecomTagGroupArchiveResult | undefined>;
+  readonly onArchiveTag?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    tag: WecomTag,
+  ) => Promise<WecomTagArchiveResult | undefined>;
   readonly onRenameGroup?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     group: WecomTagGroup,
@@ -675,6 +777,7 @@ export function WecomTagsView({
               onCopy={() => {
                 void copyWecomTagID(selectedTag.id).then(setCopyStatus);
               }}
+              onArchive={onArchiveTag}
               onRename={onRenameTag}
               renaming={renaming}
               tag={selectedTag}
@@ -838,6 +941,7 @@ export function WecomTagDetails({
   copyStatus,
   mutationBusy = false,
   mutationLocked = false,
+  onArchive,
   onCopy,
   onRename,
   renaming = false,
@@ -846,6 +950,10 @@ export function WecomTagDetails({
   readonly copyStatus: WecomTagCopyStatus;
   readonly mutationBusy?: boolean;
   readonly mutationLocked?: boolean;
+  readonly onArchive?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    tag: WecomTag,
+  ) => Promise<WecomTagArchiveResult | undefined>;
   readonly onCopy: () => void;
   readonly onRename?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
@@ -858,10 +966,14 @@ export function WecomTagDetails({
 }): React.ReactElement {
   const [tagName, setTagName] = useState(tag.name);
   const [renameNotice, setRenameNotice] = useState<string>();
+  const [archiveConfirmation, setArchiveConfirmation] = useState(false);
+  const [archiveNotice, setArchiveNotice] = useState<string>();
 
   useEffect(() => {
     setTagName(tag.name);
     setRenameNotice(undefined);
+    setArchiveConfirmation(false);
+    setArchiveNotice(undefined);
   }, [tag.id, tag.name]);
 
   return (
@@ -915,6 +1027,62 @@ export function WecomTagDetails({
         <p aria-live="polite" role={mutationLocked ? "alert" : "status"}>
           {renameNotice}
         </p>
+      ) : null}
+      {onArchive ? (
+        <section aria-labelledby="wecom-tag-archive-title">
+          <h3 id="wecom-tag-archive-title">归档本地标签</h3>
+          {archiveConfirmation ? (
+            <>
+              <p>确认归档本地标签“{tag.name}”？</p>
+              <button
+                type="button"
+                disabled={mutationLocked || mutationBusy}
+                onClick={() => {
+                  if (mutationLocked || mutationBusy) return;
+                  void onArchive(tag).then((result) => {
+                    if (!result) return;
+                    const notices: Record<
+                      WecomTagArchiveResult["status"],
+                      string
+                    > = {
+                      archived: "本地标签已归档。",
+                      unauthenticated: "登录状态已失效，请重新登录。",
+                      forbidden: "当前账号没有本地标签归档权限。",
+                      invalid: "本地标签归档请求未通过校验。",
+                      unknown:
+                        "本地归档结果未确认，系统不会自动重试；请人工刷新页面后核对目录。",
+                    };
+                    if (result.status === "archived")
+                      setArchiveConfirmation(false);
+                    setArchiveNotice(notices[result.status]);
+                  });
+                }}
+              >
+                {mutationBusy ? "正在归档…" : "确认归档本地标签"}
+              </button>
+              <button
+                type="button"
+                disabled={mutationLocked || mutationBusy}
+                onClick={() => setArchiveConfirmation(false)}
+              >
+                取消
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={mutationLocked || mutationBusy}
+              onClick={() => setArchiveConfirmation(true)}
+            >
+              归档本地标签
+            </button>
+          )}
+          {archiveNotice ? (
+            <p aria-live="polite" role={mutationLocked ? "alert" : "status"}>
+              {archiveNotice}
+            </p>
+          ) : null}
+        </section>
       ) : null}
       {copyStatus === "copied" ? (
         <p aria-live="polite" role="status">

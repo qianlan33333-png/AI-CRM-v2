@@ -39,6 +39,7 @@ import { QuestionnaireListPage } from "./questionnaire-list-ui";
 import type { QuestionnaireListTransport } from "./questionnaire-list";
 import { WecomTagsPage } from "./wecom-tags-ui";
 import type { WecomTagsTransport } from "./wecom-tags";
+import type { CallbackInboxTransport } from "./wecom-callback-inbox";
 import { ChannelsPage } from "./channels-ui";
 import type { ChannelsTransport } from "./channels";
 import { CouponsPage } from "./coupons-ui";
@@ -258,6 +259,7 @@ export interface AppProps {
   hxcSenderTransport?: HXCSenderTransport;
   questionnaireTransport?: QuestionnaireListTransport;
   wecomTagsTransport?: WecomTagsTransport;
+  callbackInboxTransport?: CallbackInboxTransport;
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
@@ -429,6 +431,7 @@ function PageContent({
   hxcSenderTransport,
   questionnaireTransport,
   wecomTagsTransport,
+  callbackInboxTransport,
   channelsTransport,
   couponsTransport,
   automationRunsTransport,
@@ -457,6 +460,7 @@ function PageContent({
   hxcSenderTransport?: HXCSenderTransport;
   questionnaireTransport?: QuestionnaireListTransport;
   wecomTagsTransport?: WecomTagsTransport;
+  callbackInboxTransport?: CallbackInboxTransport;
   channelsTransport?: ChannelsTransport;
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
@@ -597,6 +601,7 @@ function PageContent({
       <WecomTagsPage
         role={principal.role}
         transport={wecomTagsTransport}
+        callbackTransport={callbackInboxTransport}
         onUnauthenticated={onUnauthenticated}
       />
     );
@@ -770,7 +775,10 @@ export function navigationLinks(
   if (base.length > 0 && principal.role === "admin") {
     permitted.add(HXC_SENDER_PATH);
   }
-  if (base.length > 0 && (principal.role === "admin" || principal.role === "ops")) {
+  if (
+    base.length > 0 &&
+    (principal.role === "admin" || principal.role === "ops")
+  ) {
     permitted.add(QUESTIONNAIRE_LIST_PATH);
   }
   if (base.length > 0 && principal.role === "admin") {
@@ -813,6 +821,7 @@ export function App({
   hxcSenderTransport,
   questionnaireTransport,
   wecomTagsTransport,
+  callbackInboxTransport,
   channelsTransport,
   couponsTransport,
   automationRunsTransport,
@@ -983,6 +992,7 @@ export function App({
             hxcSenderTransport={hxcSenderTransport}
             questionnaireTransport={questionnaireTransport}
             wecomTagsTransport={wecomTagsTransport}
+            callbackInboxTransport={callbackInboxTransport}
             channelsTransport={channelsTransport}
             couponsTransport={couponsTransport}
             automationRunsTransport={automationRunsTransport}

@@ -1,4 +1,5 @@
 import {
+  archiveLegacyWecomTag,
   archiveLegacyWecomTagGroup,
   createLegacyWecomTagGroup,
   listLegacyWecomTags,
@@ -73,6 +74,11 @@ export type WecomTagGroupArchiveResult =
   | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
   | { readonly status: "unknown" };
 
+export type WecomTagArchiveResult =
+  | { readonly status: "archived"; readonly tag: WecomTag }
+  | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
+  | { readonly status: "unknown" };
+
 async function generatedRead(options?: RequestInit) {
   return listLegacyWecomTags({ credentials: "same-origin", ...options });
 }
@@ -123,12 +129,25 @@ async function generatedGroupArchive(
   return { status: response.status, data: response.data };
 }
 
+async function generatedTagArchive(
+  tagID: number,
+  request: LegacyTagArchiveRequest,
+  options?: RequestInit,
+) {
+  const response = await archiveLegacyWecomTag(tagID, request, {
+    credentials: "same-origin",
+    ...options,
+  });
+  return { status: response.status, data: response.data };
+}
+
 export interface WecomTagsTransport {
   readonly read: typeof generatedRead;
   readonly create: typeof generatedCreate;
   readonly rename: typeof generatedRename;
   readonly renameGroup: typeof generatedGroupRename;
   readonly archiveGroup: typeof generatedGroupArchive;
+  readonly archiveTag: typeof generatedTagArchive;
 }
 
 export const generatedWecomTagsTransport: WecomTagsTransport = {
@@ -137,6 +156,7 @@ export const generatedWecomTagsTransport: WecomTagsTransport = {
   rename: generatedRename,
   renameGroup: generatedGroupRename,
   archiveGroup: generatedGroupArchive,
+  archiveTag: generatedTagArchive,
 };
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -446,6 +466,63 @@ export function parseWecomTagGroupArchiveSuccess(
       "dry_run",
     ]) &&
     value.reason === "group_archive_validated" &&
+    value.dry_run === true
+  ) {
+    return { status: "validated" };
+  }
+  return undefined;
+}
+
+export type WecomTagArchiveEnvelope =
+  | { readonly status: "archived"; readonly tag: WecomTag }
+  | { readonly status: "validated" };
+
+/** Parses both server variants; the browser deliberately accepts only normal local archive. */
+export function parseWecomTagArchiveSuccess(
+  value: unknown,
+): WecomTagArchiveEnvelope | undefined {
+  if (!record(value)) return undefined;
+  const common =
+    value.ok === true &&
+    value.source_status === "local_catalog" &&
+    value.route_owner === "ai_crm_next" &&
+    value.fallback_used === false &&
+    value.real_external_call_executed === false &&
+    value.sync_executed === false &&
+    value.fixture_used === false;
+  if (!common) return undefined;
+  if (
+    exact(value, [
+      "ok",
+      "reason",
+      "source_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+      "dry_run",
+      "tag",
+    ]) &&
+    value.reason === "tag_archived" &&
+    value.dry_run === false
+  ) {
+    const tag = parseCreatedTag(value.tag);
+    return tag ? { status: "archived", tag } : undefined;
+  }
+  if (
+    exact(value, [
+      "ok",
+      "reason",
+      "source_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+      "dry_run",
+    ]) &&
+    value.reason === "tag_archive_validated" &&
     value.dry_run === true
   ) {
     return { status: "validated" };
@@ -826,6 +903,51 @@ export async function archiveWecomTagGroup(
     : { status: "unknown" };
 }
 
+export async function archiveWecomTag(
+  transport: WecomTagsTransport,
+  tag: WecomTag,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<WecomTagArchiveResult> {
+  if (
+    !validRenameTarget(tag) ||
+    !validCSRFToken(csrfToken) ||
+    !validIdempotencyKey(idempotencyKey)
+  ) {
+    return { status: "invalid" };
+  }
+  let response: Awaited<ReturnType<WecomTagsTransport["archiveTag"]>>;
+  try {
+    response = await transport.archiveTag(
+      tag.id,
+      {},
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
+    );
+  } catch {
+    return { status: "unknown" };
+  }
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status === 400 || response.status === 404)
+    return { status: "invalid" };
+  if (response.status !== 200) return { status: "unknown" };
+  const archived = parseWecomTagArchiveSuccess(response.data);
+  return archived?.status === "archived" &&
+    archived.tag.id === tag.id &&
+    archived.tag.groupID === tag.groupID &&
+    archived.tag.groupName === tag.groupName &&
+    archived.tag.name === tag.name &&
+    archived.tag.sortOrder === tag.sortOrder
+    ? archived
+    : { status: "unknown" };
+}
+
 export function newWecomTagIdempotencyKey(): string | undefined {
   if (
     typeof globalThis.crypto === "undefined" ||
@@ -916,7 +1038,10 @@ export function confirmsRenamedWecomTagGroup(
 
 export function confirmsArchivedWecomTagGroup(
   catalog: WecomTagCatalog,
-  archived: Extract<WecomTagGroupArchiveResult, { readonly status: "archived" }>,
+  archived: Extract<
+    WecomTagGroupArchiveResult,
+    { readonly status: "archived" }
+  >,
   original: WecomTagGroup,
 ): boolean {
   const archivedTagIDs = new Set(original.tags.map((tag) => tag.id));
@@ -925,6 +1050,24 @@ export function confirmsArchivedWecomTagGroup(
     !catalog.tags.some((tag) => archivedTagIDs.has(tag.id)) &&
     !catalog.groups.some((group) =>
       group.tags.some((tag) => archivedTagIDs.has(tag.id)),
+    )
+  );
+}
+
+export function confirmsArchivedWecomTag(
+  catalog: WecomTagCatalog,
+  archived: Extract<WecomTagArchiveResult, { readonly status: "archived" }>,
+  original: WecomTag,
+): boolean {
+  return (
+    archived.tag.id === original.id &&
+    archived.tag.groupID === original.groupID &&
+    archived.tag.groupName === original.groupName &&
+    archived.tag.name === original.name &&
+    archived.tag.sortOrder === original.sortOrder &&
+    !catalog.tags.some((item) => item.id === original.id) &&
+    !catalog.groups.some((group) =>
+      group.tags.some((item) => item.id === original.id),
     )
   );
 }

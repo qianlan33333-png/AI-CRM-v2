@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  archiveWecomTag,
   archiveWecomTagGroup,
+  confirmsArchivedWecomTag,
   confirmsArchivedWecomTagGroup,
   confirmsCreatedWecomTagGroup,
   confirmsRenamedWecomTag,
@@ -16,6 +18,7 @@ import {
   wecomTagPageCount,
   wecomTagSearchState,
   parseWecomTagGroupArchiveSuccess,
+  parseWecomTagArchiveSuccess,
   type WecomTagsTransport,
 } from "./wecom-tags";
 
@@ -166,6 +169,25 @@ const archiveValidated = {
   sync_executed: false,
   fixture_used: false,
   dry_run: true,
+} as const;
+
+const archivedTag = {
+  ok: true,
+  reason: "tag_archived",
+  source_status: "local_catalog",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  sync_executed: false,
+  fixture_used: false,
+  dry_run: false,
+  tag: {
+    tag_id: 10,
+    group_id: 1,
+    group_name: "意向",
+    tag_name: "高意向",
+    sort_order: 0,
+  },
 } as const;
 
 describe("WeCom tag catalog read boundary", () => {
@@ -770,8 +792,20 @@ describe("WeCom local tag-group archive boundary", () => {
           name: "意向",
           sortOrder: 0,
           tags: [
-            { id: 10, groupID: 1, groupName: "意向", name: "高意向", sortOrder: 0 },
-            { id: 11, groupID: 1, groupName: "意向", name: "低意向", sortOrder: 1 },
+            {
+              id: 10,
+              groupID: 1,
+              groupName: "意向",
+              name: "高意向",
+              sortOrder: 0,
+            },
+            {
+              id: 11,
+              groupID: 1,
+              groupName: "意向",
+              name: "低意向",
+              sortOrder: 1,
+            },
           ],
         },
         CSRF_TOKEN,
@@ -811,7 +845,10 @@ describe("WeCom local tag-group archive boundary", () => {
     }
     const client = {
       ...transport(200, catalog),
-      archiveGroup: vi.fn(async () => ({ status: 200, data: archiveValidated })),
+      archiveGroup: vi.fn(async () => ({
+        status: 200,
+        data: archiveValidated,
+      })),
     } as unknown as WecomTagsTransport;
     await expect(
       archiveWecomTagGroup(
@@ -846,12 +883,24 @@ describe("WeCom local tag-group archive boundary", () => {
           id: 2,
           name: "来源",
           sortOrder: 1,
-          tags: [{ id: 21, groupID: 2, groupName: "来源", name: "社群", sortOrder: 0 }],
+          tags: [
+            {
+              id: 21,
+              groupID: 2,
+              groupName: "来源",
+              name: "社群",
+              sortOrder: 0,
+            },
+          ],
         },
       ],
-      tags: [{ id: 21, groupID: 2, groupName: "来源", name: "社群", sortOrder: 0 }],
+      tags: [
+        { id: 21, groupID: 2, groupName: "来源", name: "社群", sortOrder: 0 },
+      ],
     };
-    expect(confirmsArchivedWecomTagGroup(remaining, result, original)).toBe(true);
+    expect(confirmsArchivedWecomTagGroup(remaining, result, original)).toBe(
+      true,
+    );
     expect(
       confirmsArchivedWecomTagGroup(
         { ...remaining, tags: [...remaining.tags, original.tags[0]] },
@@ -863,7 +912,10 @@ describe("WeCom local tag-group archive boundary", () => {
       ...transport(200, catalog),
       archiveGroup: vi.fn(async () => ({
         status: 200,
-        data: { ...archivedGroup, group: { ...archivedGroup.group, group_name: "archived:2" } },
+        data: {
+          ...archivedGroup,
+          group: { ...archivedGroup.group, group_name: "archived:2" },
+        },
       })),
     } as unknown as WecomTagsTransport;
     await expect(
@@ -884,7 +936,13 @@ describe("WeCom local tag-group archive boundary", () => {
           name: "意向",
           sortOrder: 0,
           tags: [
-            { id: 10, groupID: 2, groupName: "意向", name: "高意向", sortOrder: 0 },
+            {
+              id: 10,
+              groupID: 2,
+              groupName: "意向",
+              name: "高意向",
+              sortOrder: 0,
+            },
           ],
         },
         CSRF_TOKEN,
@@ -892,5 +950,69 @@ describe("WeCom local tag-group archive boundary", () => {
       ),
     ).resolves.toEqual({ status: "invalid" });
     expect(client.archiveGroup).not.toHaveBeenCalled();
+  });
+});
+
+describe("WeCom local tag archive boundary", () => {
+  const original = {
+    id: 10,
+    groupID: 1,
+    groupName: "意向",
+    name: "高意向",
+    sortOrder: 0,
+  } as const;
+
+  it("uses the generated DELETE transport with a required empty body and accepts only its closed normal receipt", async () => {
+    const client = {
+      ...transport(200, catalog),
+      archiveTag: vi.fn(async () => ({ status: 200, data: archivedTag })),
+    } as unknown as WecomTagsTransport;
+    await expect(
+      archiveWecomTag(client, original, CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({
+      status: "archived",
+      tag: original,
+    });
+    expect(client.archiveTag).toHaveBeenCalledWith(
+      10,
+      {},
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": CSRF_TOKEN,
+          "Idempotency-Key": IDEMPOTENCY_KEY,
+        },
+      },
+    );
+  });
+
+  it("fails closed for dry-run, receipt drift, extra fields, and an inconsistent reread", async () => {
+    expect(parseWecomTagArchiveSuccess(archivedTag)).toEqual({
+      status: "archived",
+      tag: original,
+    });
+    const client = {
+      ...transport(200, catalog),
+      archiveTag: vi.fn(async () => ({
+        status: 200,
+        data: { ...archivedTag, unexpected: true },
+      })),
+    } as unknown as WecomTagsTransport;
+    await expect(
+      archiveWecomTag(client, original, CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "unknown" });
+    expect(
+      confirmsArchivedWecomTag(
+        {
+          totalTags: 2,
+          tagLimit: 1000,
+          snapshotAt: "2026-08-20T00:00:00Z",
+          groups: [{ id: 1, name: "意向", sortOrder: 0, tags: [original] }],
+          tags: [original],
+        },
+        { status: "archived", tag: original },
+        original,
+      ),
+    ).toBe(false);
   });
 });

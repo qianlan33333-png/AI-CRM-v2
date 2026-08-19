@@ -314,6 +314,9 @@ describe("Web shell routes", () => {
     );
     expect(admin).toContain('<h1 id="app-title">企微标签目录</h1>');
     expect(admin).toContain("正在读取企微标签目录。");
+    expect(admin).toContain(
+      '<h2 id="wecom-callback-audit-title">企微回调本地审计</h2>',
+    );
     const ops = renderToStaticMarkup(
       <App
         wecomTagsTransport={client}
@@ -324,6 +327,7 @@ describe("Web shell routes", () => {
       />,
     );
     expect(ops).toContain("正在读取企微标签目录。");
+    expect(ops).not.toContain("企微回调本地审计");
     const sales = renderToStaticMarkup(
       <App
         wecomTagsTransport={client}
