@@ -39,9 +39,10 @@ make_fixture() {
   printf '%s\n' "$fixture"
 }
 
-mkdir -p "$test_root/baseline/.github/workflows" "$test_root/baseline/scripts"
+mkdir -p "$test_root/baseline/.github/workflows" "$test_root/baseline/docs/ci" "$test_root/baseline/scripts"
 cp -a .github/ci-map.yml "$test_root/baseline/.github/"
 cp -a .github/workflows/ci.yml .github/workflows/nightly.yml "$test_root/baseline/.github/workflows/"
+cp -a docs/ci/go-acceptance-manifest.tsv "$test_root/baseline/docs/ci/"
 mkdir -p "$test_root/baseline/scripts/ci"
 cp -a scripts/ci/*.py scripts/ci/*.sh "$test_root/baseline/scripts/ci/"
 cp -a \
@@ -182,4 +183,66 @@ refresh_manifest "$metadata_fixture"
 expect_rejected "$metadata_fixture" "PR metadata policy input"
 printf 'repo-contract-tests: metadata-policy PASS\n'
 
-printf 'repo-contract-tests: PASS cases=12\n'
+events_full_fixture="$(make_fixture events-full-fallback)"
+python3 - "$events_full_fixture/.github/ci-map.yml" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = '"database_groups": ["events"],"database_mode": "selected"'
+if old not in source:
+    raise SystemExit("events selected database fixture anchor missing")
+path.write_text(source.replace(old, '"database_groups": ["events"],"database_mode": "full"', 1), encoding="utf-8")
+PY
+refresh_manifest "$events_full_fixture"
+expect_rejected "$events_full_fixture" "Events database full fallback"
+printf 'repo-contract-tests: events-full-fallback PASS\n'
+
+events_group_fixture="$(make_fixture events-missing-group)"
+python3 - "$events_group_fixture/.github/ci-map.yml" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = '"database_groups": ["events"],"database_mode": "selected"'
+if old not in source:
+    raise SystemExit("events database group fixture anchor missing")
+path.write_text(source.replace(old, '"database_groups": [],"database_mode": "selected"', 1), encoding="utf-8")
+PY
+refresh_manifest "$events_group_fixture"
+expect_rejected "$events_group_fixture" "Events database group omission"
+printf 'repo-contract-tests: events-group PASS\n'
+
+events_skip_fixture="$(make_fixture events-acceptance-skipped)"
+python3 - "$events_skip_fixture/scripts/ci/run_selected_database.sh" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = '''    events)
+      run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance
+      ;;'''
+if old not in source:
+    raise SystemExit("events acceptance fixture anchor missing")
+path.write_text(source.replace(old, "    events)\n      ;;", 1), encoding="utf-8")
+PY
+refresh_manifest "$events_skip_fixture"
+expect_rejected "$events_skip_fixture" "Events acceptance skip"
+printf 'repo-contract-tests: events-skip PASS\n'
+
+events_make_skip_fixture="$(make_fixture events-make-acceptance-skipped)"
+python3 - "$events_make_skip_fixture/Makefile" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = '@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s ./acceptance/events -args -database-url "$$P4INTERNAL_EVENTS_TEST_DATABASE_URL"'
+if old not in source:
+    raise SystemExit("events Make acceptance fixture anchor missing")
+path.write_text(source.replace(old, "@true", 1), encoding="utf-8")
+PY
+refresh_manifest "$events_make_skip_fixture"
+expect_rejected "$events_make_skip_fixture" "Events Make acceptance skip"
+printf 'repo-contract-tests: events-make-skip PASS\n'
+
+printf 'repo-contract-tests: PASS cases=16\n'

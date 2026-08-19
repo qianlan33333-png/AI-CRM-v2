@@ -205,6 +205,7 @@
         "internal/automation/store/**","acceptance/automation/**",
         "internal/contact/store/**","acceptance/contact/**",
         "internal/coupon/store/**","acceptance/coupon/**",
+        "internal/events/store/**","acceptance/events/**",
         "internal/identity/store/**","acceptance/identity/**",
         "internal/operationcycle/store/**","acceptance/operationcycle/**",
         "internal/order/store/**","acceptance/order/**",
@@ -247,6 +248,11 @@
       "name": "database-identity",
       "patterns": ["internal/identity/store/**","acceptance/identity/**"],
       "effects": {"database": true,"database_groups": ["identity"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-events",
+      "patterns": ["internal/events/store/**","acceptance/events/**"],
+      "effects": {"database": true,"database_groups": ["events"],"database_mode": "selected"}
     },
     {
       "name": "database-operationcycle",
@@ -298,7 +304,7 @@
       "patterns": ["internal/*/store/**"],
       "exclude": [
         "internal/adminops/store/**","internal/auth/store/**","internal/automation/store/**",
-        "internal/contact/store/**","internal/coupon/store/**","internal/identity/store/**",
+        "internal/contact/store/**","internal/coupon/store/**","internal/events/store/**","internal/identity/store/**",
         "internal/media/store/**","internal/operationcycle/store/**","internal/order/store/**",
         "internal/outbound/store/**","internal/product/store/**","internal/pushcenter/store/**",
         "internal/segment/store/**","internal/stats/store/**","internal/survey/store/**",

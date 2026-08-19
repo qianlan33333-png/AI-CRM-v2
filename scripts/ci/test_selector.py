@@ -160,6 +160,23 @@ class ClassificationMatrixTests(unittest.TestCase):
             sqlc="true",
         )
 
+    def test_events_store_and_acceptance_select_database(self) -> None:
+        for path in (
+            "internal/events/store/appender.go",
+            "acceptance/events/events_store_integration_test.go",
+        ):
+            self.assert_flags(
+                [path],
+                go="true",
+                go_mode="selected",
+                go_groups="events",
+                database="true",
+                database_mode="selected",
+                database_groups="events",
+                sqlc="true",
+                shared="false",
+            )
+
     def test_shared_acceptance_fixture_has_known_consumers(self) -> None:
         values = self.assert_flags(
             ["acceptance/mediafixture/image.go"],
@@ -364,6 +381,19 @@ class CliTests(unittest.TestCase):
 
 
 class WorkflowWiringTests(unittest.TestCase):
+    def test_events_selected_database_runner_is_migration_gated(self) -> None:
+        source = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")
+        selected_migrations = source.index("run_migration_checks\n\n# A migration-only")
+        events_case = source.index("    events)\n")
+        self.assertLess(selected_migrations, events_case)
+        self.assertIn(
+            "run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance",
+            source,
+        )
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("p4-internal-events-0367-0368-acceptance:", makefile)
+        self.assertIn("./acceptance/events -args -database-url", makefile)
+
     def test_only_active_workflows_remain(self) -> None:
         tracked = subprocess.check_output(
             [

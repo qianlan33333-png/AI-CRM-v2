@@ -500,6 +500,10 @@ p4-admin-shell-ab-acceptance:
 p4-execution-runtime-ab-acceptance:
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/adminops/app ./internal/auth/app ./internal/auth/port
 
+p4-internal-events-0367-0368-acceptance:
+	@test -n "$${P4INTERNAL_EVENTS_TEST_DATABASE_URL:-}" || { echo "P4INTERNAL_EVENTS_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=240s ./acceptance/events -args -database-url "$$P4INTERNAL_EVENTS_TEST_DATABASE_URL"
+
 p4-si00b-auth-acceptance:
 	@test -n "$${P4SI00B_AUTH_TEST_DATABASE_URL:-}" || { echo "P4SI00B_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/auth/si00b_migration_compatibility.sh
