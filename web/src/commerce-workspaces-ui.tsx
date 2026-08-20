@@ -4,6 +4,11 @@ import {
   type CommerceWorkspaceRole,
   type CommerceWorkspaceRoute,
 } from "./commerce-workspaces";
+import {
+  CommerceTransactionWorkspace,
+  isCommerceTransactionRoute,
+} from "./commerce-transactions-ui";
+import { type OrdersTransport } from "./orders";
 
 const workspaceCopy: Record<
   CommerceWorkspaceRoute["kind"],
@@ -67,9 +72,13 @@ export function CommerceWorkspaceBoundary(): React.ReactElement {
 export function CommerceWorkspaces({
   role,
   route,
+  ordersTransport,
+  onUnauthenticated,
 }: {
   readonly role: CommerceWorkspaceRole;
   readonly route: CommerceWorkspaceRoute;
+  readonly ordersTransport?: OrdersTransport;
+  readonly onUnauthenticated?: () => void;
 }): React.ReactElement {
   if (role !== "admin") {
     return (
@@ -89,17 +98,26 @@ export function CommerceWorkspaces({
           </a>
         ))}
       </nav>
-      <section aria-labelledby="commerce-workspace-title">
-        <h1 id="commerce-workspace-title">{copy.title}</h1>
-        <CommerceWorkspaceBoundary />
-        {"resourceID" in route ? (
-          <dl>
-            <dt>资源标识</dt>
-            <dd>{route.resourceID}</dd>
-          </dl>
-        ) : null}
-        <p role="status">{copy.status}</p>
-      </section>
+      {isCommerceTransactionRoute(route) ? (
+        <CommerceTransactionWorkspace
+          role={role}
+          route={route}
+          transport={ordersTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      ) : (
+        <section aria-labelledby="commerce-workspace-title">
+          <h1 id="commerce-workspace-title">{copy.title}</h1>
+          <CommerceWorkspaceBoundary />
+          {"resourceID" in route ? (
+            <dl>
+              <dt>资源标识</dt>
+              <dd>{route.resourceID}</dd>
+            </dl>
+          ) : null}
+          <p role="status">{copy.status}</p>
+        </section>
+      )}
     </main>
   );
 }

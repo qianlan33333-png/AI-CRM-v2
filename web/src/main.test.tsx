@@ -770,8 +770,8 @@ describe("Web shell routes", () => {
     });
     const admin = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(admin).toContain("微信支付交易详情");
-    expect(admin).toContain("order one");
-    expect(admin).toContain("不提供退款、重试或 Provider 操作");
+    expect(admin).not.toContain("order one");
+    expect(admin).toContain("本页没有支付、退款、导出、重试或 Provider 操作");
     expect(admin).not.toContain("提交退款");
 
     for (const role of ["ops", "sales"] as const) {

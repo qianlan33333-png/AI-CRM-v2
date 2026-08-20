@@ -27,11 +27,12 @@ describe("CommerceWorkspaces", () => {
     expect(html).not.toContain("<form");
   });
 
-  it("renders the exact transaction identifier while keeping refund closed", () => {
+  it("keeps the opaque transaction reference out of the page until a verified read", () => {
     const html = render(`${WECHAT_PAY_TRANSACTIONS_PATH}/order%20one`);
-    expect(html).toContain("order one");
-    expect(html).toContain("不提供退款、重试或 Provider 操作");
-    expect(html).not.toContain("<button");
+    expect(html).not.toContain("order one");
+    expect(html).toContain("本页没有支付、退款、导出、重试或 Provider 操作");
+    expect(html).not.toContain("退款申请");
+    expect(html).not.toContain("重试退款");
   });
 
   it.each(["ops", "sales"] as const)("fails closed for %s", (role) => {
