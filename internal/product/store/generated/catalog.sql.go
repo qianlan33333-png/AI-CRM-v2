@@ -11,11 +11,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeEntitlementOperationReceipt = `-- name: CompleteEntitlementOperationReceipt :one
+UPDATE entitlement_operation_receipts
+SET state = 'completed', result_snapshot = $1::jsonb, completed_at = $2::timestamptz
+WHERE id = $3::bigint AND state = 'in_progress'
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type CompleteEntitlementOperationReceiptParams struct {
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	ID             int64              `json:"id"`
+}
+
+type CompleteEntitlementOperationReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) CompleteEntitlementOperationReceipt(ctx context.Context, arg CompleteEntitlementOperationReceiptParams) (CompleteEntitlementOperationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeEntitlementOperationReceipt, arg.ResultSnapshot, arg.CompletedAt, arg.ID)
+	var i CompleteEntitlementOperationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const completeProductOperationReceipt = `-- name: CompleteProductOperationReceipt :one
 UPDATE product_operation_receipts
 SET state = 'completed', result_snapshot = $1::jsonb, completed_at = $2::timestamptz
 WHERE id = $3::bigint AND state = 'in_progress'
-RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 `
 
 type CompleteProductOperationReceiptParams struct {
@@ -26,6 +64,7 @@ type CompleteProductOperationReceiptParams struct {
 
 type CompleteProductOperationReceiptRow struct {
 	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
 	ActorScope     string `json:"actor_scope"`
 	KeyDigest      []byte `json:"key_digest"`
 	PayloadDigest  []byte `json:"payload_digest"`
@@ -38,6 +77,7 @@ func (q *Queries) CompleteProductOperationReceipt(ctx context.Context, arg Compl
 	var i CompleteProductOperationReceiptRow
 	err := row.Scan(
 		&i.ID,
+		&i.Operation,
 		&i.ActorScope,
 		&i.KeyDigest,
 		&i.PayloadDigest,
@@ -61,7 +101,7 @@ func (q *Queries) CountProducts(ctx context.Context) (int64, error) {
 const createProduct = `-- name: CreateProduct :one
 INSERT INTO products (product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, legacy_admin_projection)
 VALUES ($1::text, $2::text, $3::text, $4::bigint, $5::char(3), $6::integer, $7::bigint, $8::timestamptz, $8::timestamptz, $9::jsonb)
-RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, legacy_admin_projection
+RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, legacy_admin_projection
 `
 
 type CreateProductParams struct {
@@ -76,7 +116,22 @@ type CreateProductParams struct {
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 }
 
-func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
+type CreateProductRow struct {
+	ID                    int64              `json:"id"`
+	ProductCode           string             `json:"product_code"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	CreatedBy             int64              `json:"created_by"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+}
+
+func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error) {
 	row := q.db.QueryRow(ctx, createProduct,
 		arg.ProductCode,
 		arg.Name,
@@ -88,7 +143,7 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		arg.CreatedAt,
 		arg.LegacyAdminProjection,
 	)
-	var i Product
+	var i CreateProductRow
 	err := row.Scan(
 		&i.ID,
 		&i.ProductCode,
@@ -100,13 +155,101 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
 		&i.LegacyAdminProjection,
 	)
 	return i, err
 }
 
+const createProductLocalEntitlement = `-- name: CreateProductLocalEntitlement :one
+INSERT INTO product_local_entitlements
+  (product_id, order_id, customer_id, state, version, granted_by, granted_at)
+VALUES
+  ($1::bigint, $2::bigint, $3::bigint,
+   'active', 1, $4::bigint, $5::timestamptz)
+RETURNING id, product_id, order_id, customer_id, state, version, granted_at, revoked_at
+`
+
+type CreateProductLocalEntitlementParams struct {
+	ProductID  int64              `json:"product_id"`
+	OrderID    int64              `json:"order_id"`
+	CustomerID int64              `json:"customer_id"`
+	GrantedBy  int64              `json:"granted_by"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+}
+
+type CreateProductLocalEntitlementRow struct {
+	ID         int64              `json:"id"`
+	ProductID  int64              `json:"product_id"`
+	OrderID    int64              `json:"order_id"`
+	CustomerID int64              `json:"customer_id"`
+	State      string             `json:"state"`
+	Version    int64              `json:"version"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+func (q *Queries) CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error) {
+	row := q.db.QueryRow(ctx, createProductLocalEntitlement,
+		arg.ProductID,
+		arg.OrderID,
+		arg.CustomerID,
+		arg.GrantedBy,
+		arg.GrantedAt,
+	)
+	var i CreateProductLocalEntitlementRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductID,
+		&i.OrderID,
+		&i.CustomerID,
+		&i.State,
+		&i.Version,
+		&i.GrantedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const getEntitlementOperationReceipt = `-- name: GetEntitlementOperationReceipt :one
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+FROM entitlement_operation_receipts
+WHERE operation = $1::text AND actor_scope = $2::text AND key_digest = $3::bytea
+`
+
+type GetEntitlementOperationReceiptParams struct {
+	Operation  string `json:"operation"`
+	ActorScope string `json:"actor_scope"`
+	KeyDigest  []byte `json:"key_digest"`
+}
+
+type GetEntitlementOperationReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) GetEntitlementOperationReceipt(ctx context.Context, arg GetEntitlementOperationReceiptParams) (GetEntitlementOperationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getEntitlementOperationReceipt, arg.Operation, arg.ActorScope, arg.KeyDigest)
+	var i GetEntitlementOperationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const getProduct = `-- name: GetProduct :one
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -127,6 +270,7 @@ type GetProductRow struct {
 	CreatedBy             int64              `json:"created_by"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -145,25 +289,144 @@ func (q *Queries) GetProduct(ctx context.Context, productID int64) (GetProductRo
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
 		&i.LegacyAdminProjection,
 		&i.Images,
 	)
 	return i, err
 }
 
+const getProductForUpdate = `-- name: GetProductForUpdate :one
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+       COALESCE(images.items, '[]'::jsonb) AS images
+FROM products p
+LEFT JOIN LATERAL (
+  SELECT jsonb_agg(pi.image_url ORDER BY pi.position) AS items
+  FROM product_images pi WHERE pi.product_id = p.id
+) images ON true
+WHERE p.id = $1::bigint
+FOR UPDATE OF p
+`
+
+type GetProductForUpdateRow struct {
+	ID                    int64              `json:"id"`
+	ProductCode           string             `json:"product_code"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	CreatedBy             int64              `json:"created_by"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+	Images                []byte             `json:"images"`
+}
+
+func (q *Queries) GetProductForUpdate(ctx context.Context, productID int64) (GetProductForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getProductForUpdate, productID)
+	var i GetProductForUpdateRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductCode,
+		&i.Name,
+		&i.Description,
+		&i.PriceMinor,
+		&i.Currency,
+		&i.StockQuantity,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+		&i.LegacyAdminProjection,
+		&i.Images,
+	)
+	return i, err
+}
+
+const getProductLocalEntitlement = `-- name: GetProductLocalEntitlement :one
+SELECT id, product_id, order_id, customer_id, state, version, granted_at, revoked_at
+FROM product_local_entitlements
+WHERE id = $1::bigint
+`
+
+type GetProductLocalEntitlementRow struct {
+	ID         int64              `json:"id"`
+	ProductID  int64              `json:"product_id"`
+	OrderID    int64              `json:"order_id"`
+	CustomerID int64              `json:"customer_id"`
+	State      string             `json:"state"`
+	Version    int64              `json:"version"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+func (q *Queries) GetProductLocalEntitlement(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementRow, error) {
+	row := q.db.QueryRow(ctx, getProductLocalEntitlement, entitlementID)
+	var i GetProductLocalEntitlementRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductID,
+		&i.OrderID,
+		&i.CustomerID,
+		&i.State,
+		&i.Version,
+		&i.GrantedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const getProductLocalEntitlementForUpdate = `-- name: GetProductLocalEntitlementForUpdate :one
+SELECT id, product_id, order_id, customer_id, state, version, granted_at, revoked_at
+FROM product_local_entitlements
+WHERE id = $1::bigint
+FOR UPDATE
+`
+
+type GetProductLocalEntitlementForUpdateRow struct {
+	ID         int64              `json:"id"`
+	ProductID  int64              `json:"product_id"`
+	OrderID    int64              `json:"order_id"`
+	CustomerID int64              `json:"customer_id"`
+	State      string             `json:"state"`
+	Version    int64              `json:"version"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+func (q *Queries) GetProductLocalEntitlementForUpdate(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getProductLocalEntitlementForUpdate, entitlementID)
+	var i GetProductLocalEntitlementForUpdateRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductID,
+		&i.OrderID,
+		&i.CustomerID,
+		&i.State,
+		&i.Version,
+		&i.GrantedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const getProductOperationReceipt = `-- name: GetProductOperationReceipt :one
-SELECT id, actor_scope, key_digest, payload_digest, state, result_snapshot
+SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 FROM product_operation_receipts
-WHERE operation = 'create' AND actor_scope = $1::text AND key_digest = $2::bytea
+WHERE operation = $1::text AND actor_scope = $2::text AND key_digest = $3::bytea
 `
 
 type GetProductOperationReceiptParams struct {
+	Operation  string `json:"operation"`
 	ActorScope string `json:"actor_scope"`
 	KeyDigest  []byte `json:"key_digest"`
 }
 
 type GetProductOperationReceiptRow struct {
 	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
 	ActorScope     string `json:"actor_scope"`
 	KeyDigest      []byte `json:"key_digest"`
 	PayloadDigest  []byte `json:"payload_digest"`
@@ -172,10 +435,11 @@ type GetProductOperationReceiptRow struct {
 }
 
 func (q *Queries) GetProductOperationReceipt(ctx context.Context, arg GetProductOperationReceiptParams) (GetProductOperationReceiptRow, error) {
-	row := q.db.QueryRow(ctx, getProductOperationReceipt, arg.ActorScope, arg.KeyDigest)
+	row := q.db.QueryRow(ctx, getProductOperationReceipt, arg.Operation, arg.ActorScope, arg.KeyDigest)
 	var i GetProductOperationReceiptRow
 	err := row.Scan(
 		&i.ID,
+		&i.Operation,
 		&i.ActorScope,
 		&i.KeyDigest,
 		&i.PayloadDigest,
@@ -214,8 +478,61 @@ func (q *Queries) InsertProductImage(ctx context.Context, arg InsertProductImage
 	return err
 }
 
+const listProductLocalEntitlements = `-- name: ListProductLocalEntitlements :many
+SELECT id, product_id, order_id, customer_id, state, version, granted_at, revoked_at
+FROM product_local_entitlements
+WHERE product_id = $1::bigint
+ORDER BY id DESC
+LIMIT $2::integer
+`
+
+type ListProductLocalEntitlementsParams struct {
+	ProductID int64 `json:"product_id"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+type ListProductLocalEntitlementsRow struct {
+	ID         int64              `json:"id"`
+	ProductID  int64              `json:"product_id"`
+	OrderID    int64              `json:"order_id"`
+	CustomerID int64              `json:"customer_id"`
+	State      string             `json:"state"`
+	Version    int64              `json:"version"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+func (q *Queries) ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error) {
+	rows, err := q.db.Query(ctx, listProductLocalEntitlements, arg.ProductID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListProductLocalEntitlementsRow{}
+	for rows.Next() {
+		var i ListProductLocalEntitlementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProductID,
+			&i.OrderID,
+			&i.CustomerID,
+			&i.State,
+			&i.Version,
+			&i.GrantedAt,
+			&i.RevokedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProducts = `-- name: ListProducts :many
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -243,6 +560,7 @@ type ListProductsRow struct {
 	CreatedBy             int64              `json:"created_by"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -267,6 +585,7 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Version,
 			&i.LegacyAdminProjection,
 			&i.Images,
 		); err != nil {
@@ -281,7 +600,7 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 }
 
 const listProductsOffset = `-- name: ListProductsOffset :many
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -308,6 +627,7 @@ type ListProductsOffsetRow struct {
 	CreatedBy             int64              `json:"created_by"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -332,6 +652,7 @@ func (q *Queries) ListProductsOffset(ctx context.Context, arg ListProductsOffset
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Version,
 			&i.LegacyAdminProjection,
 			&i.Images,
 		); err != nil {
@@ -345,14 +666,61 @@ func (q *Queries) ListProductsOffset(ctx context.Context, arg ListProductsOffset
 	return items, nil
 }
 
+const reserveEntitlementOperationReceipt = `-- name: ReserveEntitlementOperationReceipt :one
+INSERT INTO entitlement_operation_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
+VALUES ($1::text, $2::text, $3::bytea, $4::bytea, $5::timestamptz)
+ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type ReserveEntitlementOperationReceiptParams struct {
+	Operation     string             `json:"operation"`
+	ActorScope    string             `json:"actor_scope"`
+	KeyDigest     []byte             `json:"key_digest"`
+	PayloadDigest []byte             `json:"payload_digest"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ReserveEntitlementOperationReceiptRow struct {
+	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveEntitlementOperationReceipt,
+		arg.Operation,
+		arg.ActorScope,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.CreatedAt,
+	)
+	var i ReserveEntitlementOperationReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const reserveProductOperationReceipt = `-- name: ReserveProductOperationReceipt :one
 INSERT INTO product_operation_receipts (operation, actor_scope, key_digest, payload_digest, created_at)
-VALUES ('create', $1::text, $2::bytea, $3::bytea, $4::timestamptz)
+VALUES ($1::text, $2::text, $3::bytea, $4::bytea, $5::timestamptz)
 ON CONFLICT (operation, actor_scope, key_digest) DO NOTHING
-RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot
+RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 `
 
 type ReserveProductOperationReceiptParams struct {
+	Operation     string             `json:"operation"`
 	ActorScope    string             `json:"actor_scope"`
 	KeyDigest     []byte             `json:"key_digest"`
 	PayloadDigest []byte             `json:"payload_digest"`
@@ -361,6 +729,7 @@ type ReserveProductOperationReceiptParams struct {
 
 type ReserveProductOperationReceiptRow struct {
 	ID             int64  `json:"id"`
+	Operation      string `json:"operation"`
 	ActorScope     string `json:"actor_scope"`
 	KeyDigest      []byte `json:"key_digest"`
 	PayloadDigest  []byte `json:"payload_digest"`
@@ -370,6 +739,7 @@ type ReserveProductOperationReceiptRow struct {
 
 func (q *Queries) ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error) {
 	row := q.db.QueryRow(ctx, reserveProductOperationReceipt,
+		arg.Operation,
 		arg.ActorScope,
 		arg.KeyDigest,
 		arg.PayloadDigest,
@@ -378,11 +748,130 @@ func (q *Queries) ReserveProductOperationReceipt(ctx context.Context, arg Reserv
 	var i ReserveProductOperationReceiptRow
 	err := row.Scan(
 		&i.ID,
+		&i.Operation,
 		&i.ActorScope,
 		&i.KeyDigest,
 		&i.PayloadDigest,
 		&i.State,
 		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
+const revokeProductLocalEntitlement = `-- name: RevokeProductLocalEntitlement :one
+UPDATE product_local_entitlements
+SET state = 'revoked', version = version + 1,
+    revoked_by = $1::bigint, revoked_at = $2::timestamptz
+WHERE id = $3::bigint
+  AND state = 'active'
+  AND version = $4::bigint
+RETURNING id, product_id, order_id, customer_id, state, version, granted_at, revoked_at
+`
+
+type RevokeProductLocalEntitlementParams struct {
+	RevokedBy       int64              `json:"revoked_by"`
+	RevokedAt       pgtype.Timestamptz `json:"revoked_at"`
+	EntitlementID   int64              `json:"entitlement_id"`
+	ExpectedVersion int64              `json:"expected_version"`
+}
+
+type RevokeProductLocalEntitlementRow struct {
+	ID         int64              `json:"id"`
+	ProductID  int64              `json:"product_id"`
+	OrderID    int64              `json:"order_id"`
+	CustomerID int64              `json:"customer_id"`
+	State      string             `json:"state"`
+	Version    int64              `json:"version"`
+	GrantedAt  pgtype.Timestamptz `json:"granted_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+func (q *Queries) RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error) {
+	row := q.db.QueryRow(ctx, revokeProductLocalEntitlement,
+		arg.RevokedBy,
+		arg.RevokedAt,
+		arg.EntitlementID,
+		arg.ExpectedVersion,
+	)
+	var i RevokeProductLocalEntitlementRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductID,
+		&i.OrderID,
+		&i.CustomerID,
+		&i.State,
+		&i.Version,
+		&i.GrantedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const updateProduct = `-- name: UpdateProduct :one
+UPDATE products
+SET name = $1::text,
+    description = $2::text,
+    price_minor = $3::bigint,
+    currency = $4::char(3),
+    stock_quantity = $5::integer,
+    updated_at = $6::timestamptz,
+    version = version + 1
+WHERE id = $7::bigint
+  AND version = $8::bigint
+RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, legacy_admin_projection
+`
+
+type UpdateProductParams struct {
+	Name            string             `json:"name"`
+	Description     string             `json:"description"`
+	PriceMinor      int64              `json:"price_minor"`
+	Currency        string             `json:"currency"`
+	StockQuantity   int32              `json:"stock_quantity"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ProductID       int64              `json:"product_id"`
+	ExpectedVersion int64              `json:"expected_version"`
+}
+
+type UpdateProductRow struct {
+	ID                    int64              `json:"id"`
+	ProductCode           string             `json:"product_code"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	CreatedBy             int64              `json:"created_by"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+}
+
+func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (UpdateProductRow, error) {
+	row := q.db.QueryRow(ctx, updateProduct,
+		arg.Name,
+		arg.Description,
+		arg.PriceMinor,
+		arg.Currency,
+		arg.StockQuantity,
+		arg.UpdatedAt,
+		arg.ProductID,
+		arg.ExpectedVersion,
+	)
+	var i UpdateProductRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductCode,
+		&i.Name,
+		&i.Description,
+		&i.PriceMinor,
+		&i.Currency,
+		&i.StockQuantity,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+		&i.LegacyAdminProjection,
 	)
 	return i, err
 }

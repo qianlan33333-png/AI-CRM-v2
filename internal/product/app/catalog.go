@@ -11,11 +11,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"reflect"
 	"strings"
 	"time"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 )
@@ -28,21 +30,25 @@ const (
 )
 
 var (
-	ErrInvalidProduct = errors.New("invalid product")
-	ErrInvalidCursor  = errors.New("invalid product cursor")
-	ErrNotFound       = errors.New("product not found")
-	ErrConflict       = errors.New("product command conflict")
-	ErrUnavailable    = errors.New("product catalog unavailable")
+	ErrInvalidProduct             = errors.New("invalid product")
+	ErrInvalidCursor              = errors.New("invalid product cursor")
+	ErrNotFound                   = errors.New("product not found")
+	ErrConflict                   = errors.New("product command conflict")
+	ErrUnavailable                = errors.New("product catalog unavailable")
+	ErrEntitlementNotFound        = errors.New("product local entitlement not found")
+	ErrEntitlementOrderIneligible = errors.New("order is not eligible for local entitlement")
 )
 
 type Receipt struct {
 	ID                       int64
+	Operation                string
 	ActorScope               string
 	KeyDigest, PayloadDigest [32]byte
 	State                    string
 	ResultSnapshot           json.RawMessage
 }
 type Reservation struct {
+	Operation                string
 	ActorScope               string
 	KeyDigest, PayloadDigest [32]byte
 	CreatedAt                time.Time
@@ -52,9 +58,18 @@ type Store interface {
 	ListOffset(context.Context, int32, int32) ([]productport.Product, error)
 	Count(context.Context) (int64, error)
 	Get(context.Context, productport.ID) (productport.Product, error)
+	GetForUpdate(context.Context, productport.ID) (productport.Product, error)
 	Create(context.Context, productport.CreateCommand, time.Time) (productport.Product, error)
+	Update(context.Context, productport.UpdateCommand, time.Time) (productport.Product, error)
+	CreateLocalEntitlement(context.Context, productport.ID, orderport.PaidOrderProjection, int64, time.Time) (productport.LocalEntitlement, error)
+	GetLocalEntitlement(context.Context, productport.EntitlementID) (productport.LocalEntitlement, error)
+	GetLocalEntitlementForUpdate(context.Context, productport.EntitlementID) (productport.LocalEntitlement, error)
+	ListLocalEntitlements(context.Context, productport.ID, int32) ([]productport.LocalEntitlement, error)
+	RevokeLocalEntitlement(context.Context, productport.EntitlementID, int64, int64, time.Time) (productport.LocalEntitlement, error)
 	Reserve(context.Context, Reservation) (Receipt, bool, error)
 	Complete(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
+	ReserveEntitlement(context.Context, Reservation) (Receipt, bool, error)
+	CompleteEntitlement(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
 }
 type Service struct {
 	uow    platformport.UnitOfWork
@@ -153,7 +168,7 @@ func (s *Service) Create(ctx context.Context, command productport.CreateCommand)
 		return productport.Product{}, ErrUnavailable
 	}
 	actor := fmt.Sprintf("admin:%d", command.Actor)
-	reservation := Reservation{ActorScope: actor, KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
+	reservation := Reservation{Operation: "create", ActorScope: actor, KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
 	var result productport.Product
 	err = s.uow.Within(ctx, func(tx context.Context) error {
 		receipt, owned, e := s.store.Reserve(tx, reservation)
@@ -214,14 +229,403 @@ func (s *Service) Create(ctx context.Context, command productport.CreateCommand)
 	}
 	return result, nil
 }
+
+// Update performs a native v2 compare-and-swap. Product code, images, and the
+// legacy compatibility projection intentionally remain outside this contract.
+func (s *Service) Update(ctx context.Context, command productport.UpdateCommand) (productport.Product, error) {
+	command, digest, err := normalizeUpdate(command)
+	if err != nil || !ready(s) {
+		if err != nil {
+			return productport.Product{}, err
+		}
+		return productport.Product{}, ErrUnavailable
+	}
+	now := s.now().UTC()
+	if now.IsZero() {
+		return productport.Product{}, ErrUnavailable
+	}
+	reservation := Reservation{Operation: "update", ActorScope: fmt.Sprintf("admin:%d", command.Actor), KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
+	var result productport.Product
+	err = s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, e := s.store.Reserve(tx, reservation)
+		if e != nil {
+			return e
+		}
+		if !validReceipt(receipt, reservation) {
+			return ErrUnavailable
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" {
+				return ErrUnavailable
+			}
+			if json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validProduct(result) {
+				return ErrUnavailable
+			}
+			canonical, e := snapshotJSON(result)
+			if e != nil || !jsonEquivalent(canonical, receipt.ResultSnapshot) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		current, e := s.store.GetForUpdate(tx, command.ID)
+		if e != nil {
+			return e
+		}
+		if !validProduct(current) {
+			return ErrUnavailable
+		}
+		if current.Version != int64(command.ExpectedVersion) {
+			return ErrConflict
+		}
+		result, e = s.store.Update(tx, command, now)
+		if e != nil {
+			return e
+		}
+		if !validProduct(result) || result.Version != current.Version+1 ||
+			result.ProductCode != current.ProductCode || result.CreatedBy != current.CreatedBy ||
+			!result.CreatedAt.Equal(current.CreatedAt) || !reflect.DeepEqual(result.Images, current.Images) ||
+			!jsonEquivalent(result.LegacyAdminProjection, current.LegacyAdminProjection) ||
+			result.Name != command.Name || result.Description != command.Description ||
+			result.PriceMinor != command.PriceMinor || result.Currency != command.Currency ||
+			result.StockQuantity != command.StockQuantity {
+			return ErrUnavailable
+		}
+		snapshot, e := snapshotJSON(result)
+		if e != nil {
+			return e
+		}
+		payload, e := json.Marshal(struct {
+			ProductID productport.ID `json:"product_id"`
+			Version   int64          `json:"version"`
+			Actor     int64          `json:"actor"`
+		}{result.ID, result.Version, command.Actor})
+		if e != nil {
+			return e
+		}
+		eventDigest := sha256.Sum256([]byte(reservation.ActorScope + "\x00" + command.IdempotencyKey))
+		if _, e = s.events.Append(tx, eventport.Event{Type: eventport.EvProductUpdated, Payload: payload, OccurredAt: now, IdempotencyKey: "product.update:" + hex.EncodeToString(eventDigest[:])}); e != nil {
+			return e
+		}
+		completed, e := s.store.Complete(tx, receipt.ID, snapshot, now)
+		if e != nil || completed.State != "completed" || !jsonEquivalent(snapshot, completed.ResultSnapshot) {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return productport.Product{}, classify(err)
+	}
+	return result, nil
+}
+
+type EntitlementService struct {
+	uow    platformport.UnitOfWork
+	store  Store
+	orders orderport.PaidOrderReader
+	events eventport.Appender
+	now    func() time.Time
+}
+
+func NewEntitlementService(uow platformport.UnitOfWork, store Store, orders orderport.PaidOrderReader, events eventport.Appender) *EntitlementService {
+	return &EntitlementService{uow: uow, store: store, orders: orders, events: events, now: time.Now}
+}
+
+func (s *EntitlementService) List(ctx context.Context, productID productport.ID, limit int32) ([]productport.LocalEntitlement, error) {
+	if !entitlementReady(s) || productID < 1 || limit < 1 || limit > MaximumLimit {
+		return nil, ErrInvalidProduct
+	}
+	var rows []productport.LocalEntitlement
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var e error
+		rows, e = s.store.ListLocalEntitlements(tx, productID, limit)
+		return e
+	})
+	if err != nil {
+		return nil, classifyEntitlement(err)
+	}
+	var previous productport.EntitlementID
+	for index, row := range rows {
+		if !validEntitlement(row) || row.ProductID != productID || (index > 0 && row.ID >= previous) {
+			return nil, ErrUnavailable
+		}
+		previous = row.ID
+	}
+	return rows, nil
+}
+
+func (s *EntitlementService) Get(ctx context.Context, id productport.EntitlementID) (productport.LocalEntitlement, error) {
+	if !entitlementReady(s) || id < 1 {
+		return productport.LocalEntitlement{}, ErrEntitlementNotFound
+	}
+	var result productport.LocalEntitlement
+	err := s.uow.Within(ctx, func(tx context.Context) error { var e error; result, e = s.store.GetLocalEntitlement(tx, id); return e })
+	if err != nil {
+		return productport.LocalEntitlement{}, classifyEntitlement(err)
+	}
+	if !validEntitlement(result) {
+		return productport.LocalEntitlement{}, ErrUnavailable
+	}
+	return result, nil
+}
+
+func (s *EntitlementService) Grant(ctx context.Context, command productport.GrantLocalEntitlementCommand) (productport.LocalEntitlement, error) {
+	if !entitlementReady(s) || command.ProductID < 1 || command.OrderID < 1 || command.Actor < 1 || !validIdempotencyKey(command.IdempotencyKey) {
+		return productport.LocalEntitlement{}, ErrInvalidProduct
+	}
+	digest, e := digestGrant(command)
+	if e != nil {
+		return productport.LocalEntitlement{}, ErrInvalidProduct
+	}
+	now := s.now().UTC()
+	if now.IsZero() {
+		return productport.LocalEntitlement{}, ErrUnavailable
+	}
+	reservation := Reservation{Operation: "grant", ActorScope: fmt.Sprintf("admin:%d", command.Actor), KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
+	var result productport.LocalEntitlement
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, err := s.store.ReserveEntitlement(tx, reservation)
+		if err != nil {
+			return err
+		}
+		if !validReceipt(receipt, reservation) {
+			return ErrUnavailable
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validEntitlement(result) {
+				return ErrUnavailable
+			}
+			canonical, err := entitlementSnapshot(result)
+			if err != nil || !jsonEquivalent(canonical, receipt.ResultSnapshot) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		order, err := s.orders.ReadPaidOrder(tx, orderport.ID(command.OrderID))
+		if err != nil {
+			return err
+		}
+		if order.ID != orderport.ID(command.OrderID) || order.ProductID != int64(command.ProductID) || order.CustomerID < 1 {
+			return ErrEntitlementOrderIneligible
+		}
+		product, err := s.store.Get(tx, command.ProductID)
+		if err != nil {
+			return err
+		}
+		if !validProduct(product) {
+			return ErrUnavailable
+		}
+		result, err = s.store.CreateLocalEntitlement(tx, command.ProductID, order, command.Actor, now)
+		if err != nil {
+			return err
+		}
+		if !validEntitlement(result) || result.ProductID != command.ProductID || result.OrderID != command.OrderID || result.CustomerID != order.CustomerID {
+			return ErrUnavailable
+		}
+		snapshot, err := entitlementSnapshot(result)
+		if err != nil {
+			return err
+		}
+		payload, err := json.Marshal(struct {
+			EntitlementID productport.EntitlementID `json:"entitlement_id"`
+			ProductID     productport.ID            `json:"product_id"`
+			OrderID       int64                     `json:"order_id"`
+		}{result.ID, result.ProductID, result.OrderID})
+		if err != nil {
+			return err
+		}
+		eventDigest := sha256.Sum256([]byte(reservation.ActorScope + "\x00" + command.IdempotencyKey))
+		if _, err = s.events.Append(tx, eventport.Event{Type: eventport.EvProductEntitlementGranted, CustomerID: eventport.CustomerID(result.CustomerID), Payload: payload, OccurredAt: now, IdempotencyKey: "product.entitlement.grant:" + hex.EncodeToString(eventDigest[:])}); err != nil {
+			return err
+		}
+		completed, err := s.store.CompleteEntitlement(tx, receipt.ID, snapshot, now)
+		if err != nil || completed.State != "completed" || !jsonEquivalent(snapshot, completed.ResultSnapshot) {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return productport.LocalEntitlement{}, classifyEntitlement(err)
+	}
+	return result, nil
+}
+
+func (s *EntitlementService) Revoke(ctx context.Context, command productport.RevokeLocalEntitlementCommand) (productport.LocalEntitlement, error) {
+	if !entitlementReady(s) || command.ID < 1 || command.ExpectedVersion < 1 || command.ExpectedVersion == math.MaxInt64 || command.Actor < 1 || !validIdempotencyKey(command.IdempotencyKey) {
+		return productport.LocalEntitlement{}, ErrInvalidProduct
+	}
+	digest, e := digestRevoke(command)
+	if e != nil {
+		return productport.LocalEntitlement{}, ErrInvalidProduct
+	}
+	now := s.now().UTC()
+	if now.IsZero() {
+		return productport.LocalEntitlement{}, ErrUnavailable
+	}
+	reservation := Reservation{Operation: "revoke", ActorScope: fmt.Sprintf("admin:%d", command.Actor), KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: digest, CreatedAt: now}
+	var result productport.LocalEntitlement
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		receipt, owned, err := s.store.ReserveEntitlement(tx, reservation)
+		if err != nil {
+			return err
+		}
+		if !validReceipt(receipt, reservation) {
+			return ErrUnavailable
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validEntitlement(result) {
+				return ErrUnavailable
+			}
+			canonical, err := entitlementSnapshot(result)
+			if err != nil || !jsonEquivalent(canonical, receipt.ResultSnapshot) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		current, err := s.store.GetLocalEntitlementForUpdate(tx, command.ID)
+		if err != nil {
+			return err
+		}
+		if !validEntitlement(current) {
+			return ErrUnavailable
+		}
+		if current.Version != int64(command.ExpectedVersion) {
+			return ErrConflict
+		}
+		result = current
+		if current.State == "active" {
+			result, err = s.store.RevokeLocalEntitlement(tx, command.ID, command.ExpectedVersion, command.Actor, now)
+			if err != nil {
+				return err
+			}
+			if !validEntitlement(result) || result.Version != current.Version+1 || result.State != "revoked" {
+				return ErrUnavailable
+			}
+			payload, err := json.Marshal(struct {
+				EntitlementID productport.EntitlementID `json:"entitlement_id"`
+				ProductID     productport.ID            `json:"product_id"`
+				OrderID       int64                     `json:"order_id"`
+			}{result.ID, result.ProductID, result.OrderID})
+			if err != nil {
+				return err
+			}
+			eventDigest := sha256.Sum256([]byte(reservation.ActorScope + "\x00" + command.IdempotencyKey))
+			if _, err = s.events.Append(tx, eventport.Event{Type: eventport.EvProductEntitlementRevoked, CustomerID: eventport.CustomerID(result.CustomerID), Payload: payload, OccurredAt: now, IdempotencyKey: "product.entitlement.revoke:" + hex.EncodeToString(eventDigest[:])}); err != nil {
+				return err
+			}
+		}
+		snapshot, err := entitlementSnapshot(result)
+		if err != nil {
+			return err
+		}
+		completed, err := s.store.CompleteEntitlement(tx, receipt.ID, snapshot, now)
+		if err != nil || completed.State != "completed" || !jsonEquivalent(snapshot, completed.ResultSnapshot) {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return productport.LocalEntitlement{}, classifyEntitlement(err)
+	}
+	return result, nil
+}
 func ready(s *Service) bool { return s != nil && s.uow != nil && s.store != nil && s.events != nil }
+
+func entitlementReady(s *EntitlementService) bool {
+	return s != nil && s.uow != nil && s.store != nil && s.orders != nil && s.events != nil
+}
+
+func normalizeUpdate(c productport.UpdateCommand) (productport.UpdateCommand, [32]byte, error) {
+	c.Name = strings.TrimSpace(c.Name)
+	c.Description = strings.TrimSpace(c.Description)
+	c.Currency = strings.ToUpper(strings.TrimSpace(c.Currency))
+	if c.ID < 1 || c.ExpectedVersion < 1 || c.ExpectedVersion == math.MaxInt64 || c.Actor < 1 || c.Name == "" || len(c.Name) > 200 || len(c.Description) > 10000 || c.PriceMinor < 0 || c.StockQuantity < 0 || len(c.Currency) != 3 || !validIdempotencyKey(c.IdempotencyKey) {
+		return productport.UpdateCommand{}, [32]byte{}, ErrInvalidProduct
+	}
+	canonical, err := json.Marshal(struct {
+		ID                          int64
+		ExpectedVersion             int64
+		Name, Description, Currency string
+		PriceMinor                  int64
+		StockQuantity               int32
+	}{int64(c.ID), c.ExpectedVersion, c.Name, c.Description, c.Currency, c.PriceMinor, c.StockQuantity})
+	if err != nil {
+		return productport.UpdateCommand{}, [32]byte{}, ErrInvalidProduct
+	}
+	return c, sha256.Sum256(canonical), nil
+}
+
+func validIdempotencyKey(key string) bool {
+	return len(key) >= 16 && len(key) <= 128 && strings.TrimSpace(key) == key
+}
+
+func digestGrant(c productport.GrantLocalEntitlementCommand) ([32]byte, error) {
+	raw, err := json.Marshal(struct {
+		ProductID int64 `json:"product_id"`
+		OrderID   int64 `json:"order_id"`
+	}{int64(c.ProductID), c.OrderID})
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return sha256.Sum256(raw), nil
+}
+
+func digestRevoke(c productport.RevokeLocalEntitlementCommand) ([32]byte, error) {
+	raw, err := json.Marshal(struct {
+		ID              int64 `json:"id"`
+		ExpectedVersion int64 `json:"expected_version"`
+	}{int64(c.ID), c.ExpectedVersion})
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return sha256.Sum256(raw), nil
+}
+
+func validEntitlement(x productport.LocalEntitlement) bool {
+	if x.ID < 1 || x.ProductID < 1 || x.OrderID < 1 || x.CustomerID < 1 || x.Version < 1 || x.GrantedAt.IsZero() {
+		return false
+	}
+	switch x.State {
+	case "active":
+		return x.RevokedAt == nil
+	case "revoked":
+		return x.RevokedAt != nil && !x.RevokedAt.IsZero() && !x.RevokedAt.Before(x.GrantedAt)
+	default:
+		return false
+	}
+}
+
+func entitlementSnapshot(x productport.LocalEntitlement) (json.RawMessage, error) {
+	return json.Marshal(x)
+}
+
+func classifyEntitlement(err error) error {
+	switch {
+	case errors.Is(err, ErrEntitlementNotFound), errors.Is(err, ErrNotFound):
+		return ErrEntitlementNotFound
+	case errors.Is(err, ErrConflict), errors.Is(err, ErrInvalidProduct), errors.Is(err, ErrEntitlementOrderIneligible):
+		return err
+	case errors.Is(err, orderport.ErrPaidOrderReadNotFound):
+		return ErrEntitlementOrderIneligible
+	default:
+		return ErrUnavailable
+	}
+}
 func normalize(c productport.CreateCommand) (productport.CreateCommand, [32]byte, error) {
 	c.Name = strings.TrimSpace(c.Name)
 	c.ProductCode = strings.TrimSpace(c.ProductCode)
 	c.Description = strings.TrimSpace(c.Description)
 	c.Currency = strings.ToUpper(strings.TrimSpace(c.Currency))
 	projection, err := CanonicalLegacyAdminProjection(c.LegacyAdminProjection)
-	if c.Actor < 1 || c.ProductCode == "" || len(c.ProductCode) > 200 || c.Name == "" || len(c.Name) > 200 || len(c.Description) > 10000 || c.PriceMinor < 0 || c.StockQuantity < 0 || len(c.Currency) != 3 || len(c.Images) > 20 || len(c.IdempotencyKey) < 16 || len(c.IdempotencyKey) > 128 || strings.TrimSpace(c.IdempotencyKey) != c.IdempotencyKey || err != nil {
+	if c.Actor < 1 || c.ProductCode == "" || len(c.ProductCode) > 200 || c.Name == "" || len(c.Name) > 200 || len(c.Description) > 10000 || c.PriceMinor < 0 || c.StockQuantity < 0 || len(c.Currency) != 3 || len(c.Images) > 20 || !validIdempotencyKey(c.IdempotencyKey) || err != nil {
 		return productport.CreateCommand{}, [32]byte{}, ErrInvalidProduct
 	}
 	c.LegacyAdminProjection = projection
@@ -246,7 +650,7 @@ func normalize(c productport.CreateCommand) (productport.CreateCommand, [32]byte
 }
 func validProduct(p productport.Product) bool {
 	normalized, _, e := normalize(productport.CreateCommand{ProductCode: p.ProductCode, Name: p.Name, Description: p.Description, Currency: p.Currency, PriceMinor: p.PriceMinor, StockQuantity: p.StockQuantity, Images: p.Images, LegacyAdminProjection: p.LegacyAdminProjection, Actor: p.CreatedBy, IdempotencyKey: strings.Repeat("v", 16)})
-	return e == nil && jsonEquivalent(normalized.LegacyAdminProjection, p.LegacyAdminProjection) && p.ID > 0 && !p.CreatedAt.IsZero() && !p.UpdatedAt.IsZero()
+	return e == nil && jsonEquivalent(normalized.LegacyAdminProjection, p.LegacyAdminProjection) && p.ID > 0 && p.Version > 0 && !p.CreatedAt.IsZero() && !p.UpdatedAt.IsZero() && !p.UpdatedAt.Before(p.CreatedAt)
 }
 func validProducts(ps []productport.Product) bool {
 	var prev productport.ID
@@ -259,7 +663,7 @@ func validProducts(ps []productport.Product) bool {
 	return true
 }
 func validReceipt(r Receipt, x Reservation) bool {
-	return r.ID > 0 && r.ActorScope == x.ActorScope && subtle.ConstantTimeCompare(r.KeyDigest[:], x.KeyDigest[:]) == 1
+	return r.ID > 0 && r.Operation == x.Operation && r.ActorScope == x.ActorScope && subtle.ConstantTimeCompare(r.KeyDigest[:], x.KeyDigest[:]) == 1
 }
 func snapshotJSON(p productport.Product) (json.RawMessage, error) { return json.Marshal(p) }
 func jsonEquivalent(a, b []byte) bool {

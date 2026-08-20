@@ -18,6 +18,7 @@ import (
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -123,6 +124,117 @@ func TestI01AEventConflictRollsBackProductAndReceipt(t *testing.T) {
 	}
 	if products != 0 || receipts != 0 {
 		t.Fatalf("rolled-back products/receipts=%d/%d", products, receipts)
+	}
+}
+
+func TestI01BProductCASAndLocalEntitlementLifecycleUseOneUoW(t *testing.T) {
+	pool, ctx := openPool(t)
+	service := realService(pool)
+	entitlements := realEntitlementService(pool)
+	code := uniqueCode("local-entitlement")
+	actor := int64(9301)
+	created, err := service.Create(ctx, productport.CreateCommand{
+		ProductCode: code, Name: "本地权益产品", Description: "I01B", PriceMinor: 1200, Currency: "CNY", StockQuantity: 4,
+		Images: []string{}, LegacyAdminProjection: productapp.DefaultLegacyAdminProjection(), Actor: actor,
+		IdempotencyKey: "i01b-create-" + code,
+	})
+	if err != nil || created.Version != 1 {
+		t.Fatalf("create product=%+v err=%v", created, err)
+	}
+
+	var customerID, orderID int64
+	if err = pool.QueryRow(ctx, `INSERT INTO customers (name) VALUES ('I01B 本地客户') RETURNING id`).Scan(&customerID); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `INSERT INTO order_list_projections (
+		provider,provider_label,merchant_order_no,customer_id,product_id,product_code,product_name_snapshot,
+		amount_minor,currency,status,status_label,detail_url,created_at,updated_at
+	) VALUES ('wechat','微信支付',$1,$2,$3,$4,'本地权益产品',1200,'CNY','paid','已支付',$5,now(),now()) RETURNING id`,
+		"i01b-order-"+code, customerID, int64(created.ID), code, "/orders/i01b-"+code).Scan(&orderID); err != nil {
+		t.Fatal(err)
+	}
+
+	updateKey := "i01b-update-" + code
+	updated, err := service.Update(ctx, productport.UpdateCommand{
+		ID: created.ID, ExpectedVersion: created.Version, Name: "已更新本地权益产品", Description: "I01B CAS", PriceMinor: 1500,
+		Currency: "CNY", StockQuantity: 7, Actor: actor, IdempotencyKey: updateKey,
+	})
+	if err != nil || updated.Version != created.Version+1 || updated.ProductCode != created.ProductCode || updated.CreatedBy != created.CreatedBy || !updated.CreatedAt.Equal(created.CreatedAt) {
+		t.Fatalf("update product=%+v err=%v", updated, err)
+	}
+	replayedUpdate, err := service.Update(ctx, productport.UpdateCommand{
+		ID: created.ID, ExpectedVersion: created.Version, Name: "已更新本地权益产品", Description: "I01B CAS", PriceMinor: 1500,
+		Currency: "CNY", StockQuantity: 7, Actor: actor, IdempotencyKey: updateKey,
+	})
+	if err != nil || replayedUpdate.ID != updated.ID || replayedUpdate.Version != updated.Version {
+		t.Fatalf("update replay=%+v err=%v", replayedUpdate, err)
+	}
+	if _, err = service.Update(ctx, productport.UpdateCommand{
+		ID: created.ID, ExpectedVersion: created.Version, Name: "stale", Description: "I01B", PriceMinor: 1,
+		Currency: "CNY", StockQuantity: 1, Actor: actor, IdempotencyKey: "i01b-stale-" + code,
+	}); !errors.Is(err, productapp.ErrConflict) {
+		t.Fatalf("stale product CAS error=%v", err)
+	}
+
+	grantKey := "i01b-grant-" + code
+	grantCommand := productport.GrantLocalEntitlementCommand{ProductID: created.ID, OrderID: orderID, Actor: actor, IdempotencyKey: grantKey}
+	granted, err := entitlements.Grant(ctx, grantCommand)
+	if err != nil || granted.ProductID != created.ID || granted.OrderID != orderID || granted.CustomerID != customerID || granted.State != "active" || granted.Version != 1 {
+		t.Fatalf("grant=%+v err=%v", granted, err)
+	}
+	replayedGrant, err := entitlements.Grant(ctx, grantCommand)
+	if err != nil || replayedGrant.ID != granted.ID || replayedGrant.Version != granted.Version {
+		t.Fatalf("grant replay=%+v err=%v", replayedGrant, err)
+	}
+	listed, err := entitlements.List(ctx, created.ID, 10)
+	if err != nil || len(listed) != 1 || listed[0].ID != granted.ID {
+		t.Fatalf("list=%+v err=%v", listed, err)
+	}
+	loaded, err := entitlements.Get(ctx, granted.ID)
+	if err != nil || !sameLocalEntitlement(loaded, granted) {
+		t.Fatalf("get=%+v err=%v want=%+v", loaded, err, granted)
+	}
+
+	revokeKey := "i01b-revoke-" + code
+	revokeCommand := productport.RevokeLocalEntitlementCommand{ID: granted.ID, ExpectedVersion: granted.Version, Actor: actor, IdempotencyKey: revokeKey}
+	revoked, err := entitlements.Revoke(ctx, revokeCommand)
+	if err != nil || revoked.State != "revoked" || revoked.Version != granted.Version+1 || revoked.RevokedAt == nil || revoked.RevokedAt.Before(revoked.GrantedAt) {
+		t.Fatalf("revoke=%+v err=%v", revoked, err)
+	}
+	replayedRevoke, err := entitlements.Revoke(ctx, revokeCommand)
+	if err != nil || replayedRevoke.ID != revoked.ID || replayedRevoke.Version != revoked.Version || replayedRevoke.State != "revoked" {
+		t.Fatalf("revoke replay=%+v err=%v", replayedRevoke, err)
+	}
+	readback, err := entitlements.Get(ctx, granted.ID)
+	if err != nil || !sameLocalEntitlement(readback, revoked) {
+		t.Fatalf("revoke readback=%+v err=%v want=%+v", readback, err, revoked)
+	}
+
+	updateDigest := sha256.Sum256([]byte(updateKey))
+	grantDigest := sha256.Sum256([]byte(grantKey))
+	revokeDigest := sha256.Sum256([]byte(revokeKey))
+	actorScope := fmt.Sprintf("admin:%d", actor)
+	updateEventDigest := sha256.Sum256([]byte(actorScope + "\x00" + updateKey))
+	grantEventDigest := sha256.Sum256([]byte(actorScope + "\x00" + grantKey))
+	revokeEventDigest := sha256.Sum256([]byte(actorScope + "\x00" + revokeKey))
+	var updateReceipts, grantReceipts, revokeReceipts, updateEvents, grantEvents, revokeEvents int
+	var grantState, revokeState string
+	err = pool.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM product_operation_receipts WHERE operation='update' AND actor_scope=$1 AND key_digest=$2 AND state='completed'),
+		(SELECT count(*) FROM entitlement_operation_receipts WHERE operation='grant' AND actor_scope=$1 AND key_digest=$3 AND state='completed'),
+		(SELECT count(*) FROM entitlement_operation_receipts WHERE operation='revoke' AND actor_scope=$1 AND key_digest=$4 AND state='completed'),
+		(SELECT count(*) FROM event_log WHERE event_type=$5 AND idempotency_key=$6),
+		(SELECT count(*) FROM event_log WHERE event_type=$7 AND idempotency_key=$8 AND customer_id=$9),
+		(SELECT count(*) FROM event_log WHERE event_type=$10 AND idempotency_key=$11 AND customer_id=$9),
+		(SELECT state FROM entitlement_operation_receipts WHERE operation='grant' AND actor_scope=$1 AND key_digest=$3),
+		(SELECT state FROM entitlement_operation_receipts WHERE operation='revoke' AND actor_scope=$1 AND key_digest=$4)`,
+		actorScope, updateDigest[:], grantDigest[:], revokeDigest[:], eventport.EvProductUpdated,
+		"product.update:"+hex.EncodeToString(updateEventDigest[:]), eventport.EvProductEntitlementGranted,
+		"product.entitlement.grant:"+hex.EncodeToString(grantEventDigest[:]), customerID,
+		eventport.EvProductEntitlementRevoked, "product.entitlement.revoke:"+hex.EncodeToString(revokeEventDigest[:]),
+	).Scan(&updateReceipts, &grantReceipts, &revokeReceipts, &updateEvents, &grantEvents, &revokeEvents, &grantState, &revokeState)
+	if err != nil || updateReceipts != 1 || grantReceipts != 1 || revokeReceipts != 1 || updateEvents != 1 || grantEvents != 1 || revokeEvents != 1 || grantState != "completed" || revokeState != "completed" {
+		t.Fatalf("uow facts update/grant/revoke receipts=%d/%d/%d events=%d/%d/%d states=%s/%s err=%v", updateReceipts, grantReceipts, revokeReceipts, updateEvents, grantEvents, revokeEvents, grantState, revokeState, err)
 	}
 }
 
@@ -310,7 +422,7 @@ func TestI01AStorageCatalogAndSingleInstanceShape(t *testing.T) {
 	  (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('products'::regclass,'product_images'::regclass,'product_catalog_counters'::regclass,'product_operation_receipts'::regclass) AND confrelid='event_log'::regclass)`).Scan(
 		&waterline, &constraints, &invalidConstraints, &indexes, &invalidIndexes, &eventForeignKeys,
 	)
-	if err != nil || waterline != 29 || constraints < 18 || invalidConstraints != 0 || indexes < 6 || invalidIndexes != 0 || eventForeignKeys != 0 {
+	if err != nil || waterline != 50 || constraints < 19 || invalidConstraints != 0 || indexes < 6 || invalidIndexes != 0 || eventForeignKeys != 0 {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/event-fk/error=%d/%d/%d/%d/%d/%d/%v",
 			waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventForeignKeys, err)
 	}
@@ -318,6 +430,22 @@ func TestI01AStorageCatalogAndSingleInstanceShape(t *testing.T) {
 
 func realService(pool *pgxpool.Pool) *productapp.Service {
 	return productapp.NewService(platformstore.NewUnitOfWork(pool), productstore.NewCatalogRepository(), eventstore.NewAppender())
+}
+
+func realEntitlementService(pool *pgxpool.Pool) *productapp.EntitlementService {
+	return productapp.NewEntitlementService(
+		platformstore.NewUnitOfWork(pool), productstore.NewCatalogRepository(), orderstore.NewRepository(), eventstore.NewAppender(),
+	)
+}
+
+func sameLocalEntitlement(left, right productport.LocalEntitlement) bool {
+	if left.ID != right.ID || left.ProductID != right.ProductID || left.OrderID != right.OrderID || left.CustomerID != right.CustomerID || left.State != right.State || left.Version != right.Version || !left.GrantedAt.Equal(right.GrantedAt) {
+		return false
+	}
+	if left.RevokedAt == nil || right.RevokedAt == nil {
+		return left.RevokedAt == nil && right.RevokedAt == nil
+	}
+	return left.RevokedAt.Equal(*right.RevokedAt)
 }
 
 func assertProductFactCounts(t *testing.T, pool *pgxpool.Pool, ctx context.Context, code string, actor int64, key string, wantProducts, wantReceipts, wantEvents int) {

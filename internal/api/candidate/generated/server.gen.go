@@ -1568,6 +1568,24 @@ func (e LegacyRuntimeHealthSnapshotWarning) Valid() bool {
 	}
 }
 
+// Defines values for LocalProductEntitlementState.
+const (
+	Active  LocalProductEntitlementState = "active"
+	Revoked LocalProductEntitlementState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the LocalProductEntitlementState enum.
+func (e LocalProductEntitlementState) Valid() bool {
+	switch e {
+	case Active:
+		return true
+	case Revoked:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResolveIdentityConflictStatus.
 const (
 	ResolveIdentityConflictStatusConflict ResolveIdentityConflictStatus = "conflict"
@@ -2052,6 +2070,11 @@ type ErrorResponse struct {
 type FieldError struct {
 	Field  string `json:"field"`
 	Reason string `json:"reason"`
+}
+
+// GrantProductLocalEntitlementRequest defines model for GrantProductLocalEntitlementRequest.
+type GrantProductLocalEntitlementRequest struct {
+	OrderId int64 `json:"order_id"`
 }
 
 // IdentityMergeReview defines model for IdentityMergeReview.
@@ -2703,6 +2726,25 @@ type LegacyRuntimeHealthSnapshotStatus string
 // LegacyRuntimeHealthSnapshotWarning defines model for LegacyRuntimeHealthSnapshot.Warning.
 type LegacyRuntimeHealthSnapshotWarning string
 
+// LocalProductEntitlement defines model for LocalProductEntitlement.
+type LocalProductEntitlement struct {
+	GrantedAt time.Time                    `json:"granted_at"`
+	Id        int64                        `json:"id"`
+	OrderId   int64                        `json:"order_id"`
+	ProductId int64                        `json:"product_id"`
+	RevokedAt *time.Time                   `json:"revoked_at"`
+	State     LocalProductEntitlementState `json:"state"`
+	Version   int64                        `json:"version"`
+}
+
+// LocalProductEntitlementState defines model for LocalProductEntitlement.State.
+type LocalProductEntitlementState string
+
+// LocalProductEntitlementPage defines model for LocalProductEntitlementPage.
+type LocalProductEntitlementPage struct {
+	Items []LocalProductEntitlement `json:"items"`
+}
+
 // Product defines model for Product.
 type Product struct {
 	CreatedAt     time.Time `json:"created_at"`
@@ -2716,6 +2758,7 @@ type Product struct {
 	ProductCode   string    `json:"product_code"`
 	StockQuantity int32     `json:"stock_quantity"`
 	UpdatedAt     time.Time `json:"updated_at"`
+	Version       int64     `json:"version"`
 }
 
 // ProductPage defines model for ProductPage.
@@ -2769,6 +2812,11 @@ type ResolveIdentityRequest struct {
 // ResolveIdentityResponse defines model for ResolveIdentityResponse.
 type ResolveIdentityResponse struct {
 	union json.RawMessage
+}
+
+// RevokeProductLocalEntitlementRequest defines model for RevokeProductLocalEntitlementRequest.
+type RevokeProductLocalEntitlementRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
 }
 
 // Segment defines model for Segment.
@@ -2872,6 +2920,16 @@ type TagListResponse struct {
 	Items []Tag `json:"items"`
 }
 
+// UpdateProductRequest defines model for UpdateProductRequest.
+type UpdateProductRequest struct {
+	Currency        string `json:"currency"`
+	Description     string `json:"description"`
+	ExpectedVersion int64  `json:"expected_version"`
+	Name            string `json:"name"`
+	PriceMinor      int64  `json:"price_minor"`
+	StockQuantity   int32  `json:"stock_quantity"`
+}
+
 // UpdateSegmentRequest defines model for UpdateSegmentRequest.
 type UpdateSegmentRequest struct {
 	Definition  *SegmentDefinition               `json:"definition,omitempty"`
@@ -2906,6 +2964,12 @@ type CustomerID = int64
 
 // CustomerKeyword defines model for CustomerKeyword.
 type CustomerKeyword = string
+
+// EntitlementID defines model for EntitlementID.
+type EntitlementID = int64
+
+// EntitlementLimit defines model for EntitlementLimit.
+type EntitlementLimit = int
 
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
@@ -3174,6 +3238,15 @@ type RejectIdentityMergeReviewParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// RevokeProductLocalEntitlementParams defines parameters for RevokeProductLocalEntitlement.
+type RevokeProductLocalEntitlementParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ListProductsParams defines parameters for ListProducts.
 type ListProductsParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
@@ -3183,6 +3256,29 @@ type ListProductsParams struct {
 
 // CreateProductParams defines parameters for CreateProduct.
 type CreateProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateProductParams defines parameters for UpdateProduct.
+type UpdateProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListProductLocalEntitlementsParams defines parameters for ListProductLocalEntitlements.
+type ListProductLocalEntitlementsParams struct {
+	Limit *EntitlementLimit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GrantProductLocalEntitlementParams defines parameters for GrantProductLocalEntitlement.
+type GrantProductLocalEntitlementParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
@@ -3264,8 +3360,17 @@ type RejectIdentityMergeReviewJSONRequestBody = RejectIdentityMergeReviewRequest
 // ResolveIdentityJSONRequestBody defines body for ResolveIdentity for application/json ContentType.
 type ResolveIdentityJSONRequestBody = ResolveIdentityRequest
 
+// RevokeProductLocalEntitlementJSONRequestBody defines body for RevokeProductLocalEntitlement for application/json ContentType.
+type RevokeProductLocalEntitlementJSONRequestBody = RevokeProductLocalEntitlementRequest
+
 // CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
 type CreateProductJSONRequestBody = CreateProductRequest
+
+// UpdateProductJSONRequestBody defines body for UpdateProduct for application/json ContentType.
+type UpdateProductJSONRequestBody = UpdateProductRequest
+
+// GrantProductLocalEntitlementJSONRequestBody defines body for GrantProductLocalEntitlement for application/json ContentType.
+type GrantProductLocalEntitlementJSONRequestBody = GrantProductLocalEntitlementRequest
 
 // CreateSegmentJSONRequestBody defines body for CreateSegment for application/json ContentType.
 type CreateSegmentJSONRequestBody = CreateSegmentRequest
@@ -3979,6 +4084,12 @@ type ServerInterface interface {
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(w http.ResponseWriter, r *http.Request)
+	// Get one local product entitlement
+	// (GET /api/v1/product-entitlements/{entitlement_id})
+	GetProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID)
+	// Revoke one local entitlement using optimistic concurrency
+	// (POST /api/v1/product-entitlements/{entitlement_id}/revoke)
+	RevokeProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID, params RevokeProductLocalEntitlementParams)
 	// List ordinary products using a keyset cursor
 	// (GET /api/v1/products)
 	ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams)
@@ -3988,6 +4099,15 @@ type ServerInterface interface {
 	// Get one ordinary product
 	// (GET /api/v1/products/{product_id})
 	GetProduct(w http.ResponseWriter, r *http.Request, productId ProductID)
+	// Update one local ordinary product using optimistic concurrency
+	// (PUT /api/v1/products/{product_id})
+	UpdateProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params UpdateProductParams)
+	// List local product entitlements without invoking payment or providers
+	// (GET /api/v1/products/{product_id}/local-entitlements)
+	ListProductLocalEntitlements(w http.ResponseWriter, r *http.Request, productId ProductID, params ListProductLocalEntitlementsParams)
+	// Grant a local entitlement from one existing paid local order projection
+	// (POST /api/v1/products/{product_id}/local-entitlements)
+	GrantProductLocalEntitlement(w http.ResponseWriter, r *http.Request, productId ProductID, params GrantProductLocalEntitlementParams)
 	// List materialized audience definitions with a keyset cursor
 	// (GET /api/v1/segments)
 	ListSegments(w http.ResponseWriter, r *http.Request, params ListSegmentsParams)
@@ -4168,6 +4288,18 @@ func (_ Unimplemented) ResolveIdentity(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Get one local product entitlement
+// (GET /api/v1/product-entitlements/{entitlement_id})
+func (_ Unimplemented) GetProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke one local entitlement using optimistic concurrency
+// (POST /api/v1/product-entitlements/{entitlement_id}/revoke)
+func (_ Unimplemented) RevokeProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID, params RevokeProductLocalEntitlementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List ordinary products using a keyset cursor
 // (GET /api/v1/products)
 func (_ Unimplemented) ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams) {
@@ -4183,6 +4315,24 @@ func (_ Unimplemented) CreateProduct(w http.ResponseWriter, r *http.Request, par
 // Get one ordinary product
 // (GET /api/v1/products/{product_id})
 func (_ Unimplemented) GetProduct(w http.ResponseWriter, r *http.Request, productId ProductID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update one local ordinary product using optimistic concurrency
+// (PUT /api/v1/products/{product_id})
+func (_ Unimplemented) UpdateProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params UpdateProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local product entitlements without invoking payment or providers
+// (GET /api/v1/products/{product_id}/local-entitlements)
+func (_ Unimplemented) ListProductLocalEntitlements(w http.ResponseWriter, r *http.Request, productId ProductID, params ListProductLocalEntitlementsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Grant a local entitlement from one existing paid local order projection
+// (POST /api/v1/products/{product_id}/local-entitlements)
+func (_ Unimplemented) GrantProductLocalEntitlement(w http.ResponseWriter, r *http.Request, productId ProductID, params GrantProductLocalEntitlementParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5724,6 +5874,119 @@ func (siw *ServerInterfaceWrapper) ResolveIdentity(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// GetProductLocalEntitlement operation middleware
+func (siw *ServerInterfaceWrapper) GetProductLocalEntitlement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "entitlement_id" -------------
+	var entitlementId EntitlementID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entitlement_id", chi.URLParam(r, "entitlement_id"), &entitlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entitlement_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductLocalEntitlement(w, r, entitlementId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeProductLocalEntitlement operation middleware
+func (siw *ServerInterfaceWrapper) RevokeProductLocalEntitlement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "entitlement_id" -------------
+	var entitlementId EntitlementID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entitlement_id", chi.URLParam(r, "entitlement_id"), &entitlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entitlement_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RevokeProductLocalEntitlementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeProductLocalEntitlement(w, r, entitlementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListProducts operation middleware
 func (siw *ServerInterfaceWrapper) ListProducts(w http.ResponseWriter, r *http.Request) {
 
@@ -5860,6 +6123,212 @@ func (siw *ServerInterfaceWrapper) GetProduct(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetProduct(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProduct operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProduct(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProductLocalEntitlements operation middleware
+func (siw *ServerInterfaceWrapper) ListProductLocalEntitlements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProductLocalEntitlementsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProductLocalEntitlements(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GrantProductLocalEntitlement operation middleware
+func (siw *ServerInterfaceWrapper) GrantProductLocalEntitlement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GrantProductLocalEntitlementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GrantProductLocalEntitlement(w, r, productId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6599,6 +7068,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/v1/identity/resolve", wrapper.ResolveIdentity)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/product-entitlements/{entitlement_id}", wrapper.GetProductLocalEntitlement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/product-entitlements/{entitlement_id}/revoke", wrapper.RevokeProductLocalEntitlement)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/products", wrapper.ListProducts)
 	})
 	r.Group(func(r chi.Router) {
@@ -6606,6 +7081,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/products/{product_id}", wrapper.GetProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/products/{product_id}", wrapper.UpdateProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/products/{product_id}/local-entitlements", wrapper.ListProductLocalEntitlements)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/products/{product_id}/local-entitlements", wrapper.GrantProductLocalEntitlement)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/segments", wrapper.ListSegments)
@@ -7952,6 +8436,141 @@ func (response ResolveIdentity503JSONResponse) VisitResolveIdentityResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetProductLocalEntitlementRequestObject struct {
+	EntitlementId EntitlementID `json:"entitlement_id"`
+}
+
+type GetProductLocalEntitlementResponseObject interface {
+	VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error
+}
+
+type GetProductLocalEntitlement200JSONResponse LocalProductEntitlement
+
+func (response GetProductLocalEntitlement200JSONResponse) VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProductLocalEntitlement400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProductLocalEntitlement400JSONResponse) VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProductLocalEntitlement401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProductLocalEntitlement401JSONResponse) VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProductLocalEntitlement403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductLocalEntitlement403JSONResponse) VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProductLocalEntitlement404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProductLocalEntitlement404JSONResponse) VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProductLocalEntitlement503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetProductLocalEntitlement503JSONResponse) VisitGetProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlementRequestObject struct {
+	EntitlementId EntitlementID `json:"entitlement_id"`
+	Params        RevokeProductLocalEntitlementParams
+	Body          *RevokeProductLocalEntitlementJSONRequestBody
+}
+
+type RevokeProductLocalEntitlementResponseObject interface {
+	VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error
+}
+
+type RevokeProductLocalEntitlement200JSONResponse LocalProductEntitlement
+
+func (response RevokeProductLocalEntitlement200JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlement400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RevokeProductLocalEntitlement400JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlement401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RevokeProductLocalEntitlement401JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlement403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RevokeProductLocalEntitlement403JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlement404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RevokeProductLocalEntitlement404JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlement409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RevokeProductLocalEntitlement409JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RevokeProductLocalEntitlement503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RevokeProductLocalEntitlement503JSONResponse) VisitRevokeProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListProductsRequestObject struct {
 	Params ListProductsParams
 }
@@ -8059,6 +8678,15 @@ func (response CreateProduct409JSONResponse) VisitCreateProductResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateProduct503JSONResponse) VisitCreateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetProductRequestObject struct {
 	ProductId ProductID `json:"product_id"`
 }
@@ -8115,6 +8743,215 @@ func (response GetProduct404JSONResponse) VisitGetProductResponse(w http.Respons
 type GetProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetProduct503JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProductRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    UpdateProductParams
+	Body      *UpdateProductJSONRequestBody
+}
+
+type UpdateProductResponseObject interface {
+	VisitUpdateProductResponse(w http.ResponseWriter) error
+}
+
+type UpdateProduct200JSONResponse Product
+
+func (response UpdateProduct200JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateProduct400JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateProduct401JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProduct403JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateProduct404JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateProduct409JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateProduct503JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProductLocalEntitlementsRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    ListProductLocalEntitlementsParams
+}
+
+type ListProductLocalEntitlementsResponseObject interface {
+	VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error
+}
+
+type ListProductLocalEntitlements200JSONResponse LocalProductEntitlementPage
+
+func (response ListProductLocalEntitlements200JSONResponse) VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProductLocalEntitlements400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProductLocalEntitlements400JSONResponse) VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProductLocalEntitlements401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProductLocalEntitlements401JSONResponse) VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProductLocalEntitlements403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListProductLocalEntitlements403JSONResponse) VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProductLocalEntitlements404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListProductLocalEntitlements404JSONResponse) VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProductLocalEntitlements503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListProductLocalEntitlements503JSONResponse) VisitListProductLocalEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlementRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    GrantProductLocalEntitlementParams
+	Body      *GrantProductLocalEntitlementJSONRequestBody
+}
+
+type GrantProductLocalEntitlementResponseObject interface {
+	VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error
+}
+
+type GrantProductLocalEntitlement201JSONResponse LocalProductEntitlement
+
+func (response GrantProductLocalEntitlement201JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlement400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GrantProductLocalEntitlement400JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlement401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GrantProductLocalEntitlement401JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlement403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GrantProductLocalEntitlement403JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlement404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GrantProductLocalEntitlement404JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlement409JSONResponse struct{ ConflictJSONResponse }
+
+func (response GrantProductLocalEntitlement409JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GrantProductLocalEntitlement503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GrantProductLocalEntitlement503JSONResponse) VisitGrantProductLocalEntitlementResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -8894,6 +9731,12 @@ type StrictServerInterface interface {
 	// Resolve one scoped identity without implicit creation
 	// (POST /api/v1/identity/resolve)
 	ResolveIdentity(ctx context.Context, request ResolveIdentityRequestObject) (ResolveIdentityResponseObject, error)
+	// Get one local product entitlement
+	// (GET /api/v1/product-entitlements/{entitlement_id})
+	GetProductLocalEntitlement(ctx context.Context, request GetProductLocalEntitlementRequestObject) (GetProductLocalEntitlementResponseObject, error)
+	// Revoke one local entitlement using optimistic concurrency
+	// (POST /api/v1/product-entitlements/{entitlement_id}/revoke)
+	RevokeProductLocalEntitlement(ctx context.Context, request RevokeProductLocalEntitlementRequestObject) (RevokeProductLocalEntitlementResponseObject, error)
 	// List ordinary products using a keyset cursor
 	// (GET /api/v1/products)
 	ListProducts(ctx context.Context, request ListProductsRequestObject) (ListProductsResponseObject, error)
@@ -8903,6 +9746,15 @@ type StrictServerInterface interface {
 	// Get one ordinary product
 	// (GET /api/v1/products/{product_id})
 	GetProduct(ctx context.Context, request GetProductRequestObject) (GetProductResponseObject, error)
+	// Update one local ordinary product using optimistic concurrency
+	// (PUT /api/v1/products/{product_id})
+	UpdateProduct(ctx context.Context, request UpdateProductRequestObject) (UpdateProductResponseObject, error)
+	// List local product entitlements without invoking payment or providers
+	// (GET /api/v1/products/{product_id}/local-entitlements)
+	ListProductLocalEntitlements(ctx context.Context, request ListProductLocalEntitlementsRequestObject) (ListProductLocalEntitlementsResponseObject, error)
+	// Grant a local entitlement from one existing paid local order projection
+	// (POST /api/v1/products/{product_id}/local-entitlements)
+	GrantProductLocalEntitlement(ctx context.Context, request GrantProductLocalEntitlementRequestObject) (GrantProductLocalEntitlementResponseObject, error)
 	// List materialized audience definitions with a keyset cursor
 	// (GET /api/v1/segments)
 	ListSegments(ctx context.Context, request ListSegmentsRequestObject) (ListSegmentsResponseObject, error)
@@ -9617,6 +10469,66 @@ func (sh *strictHandler) ResolveIdentity(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// GetProductLocalEntitlement operation middleware
+func (sh *strictHandler) GetProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID) {
+	var request GetProductLocalEntitlementRequestObject
+
+	request.EntitlementId = entitlementId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProductLocalEntitlement(ctx, request.(GetProductLocalEntitlementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProductLocalEntitlement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductLocalEntitlementResponseObject); ok {
+		if err := validResponse.VisitGetProductLocalEntitlementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeProductLocalEntitlement operation middleware
+func (sh *strictHandler) RevokeProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID, params RevokeProductLocalEntitlementParams) {
+	var request RevokeProductLocalEntitlementRequestObject
+
+	request.EntitlementId = entitlementId
+	request.Params = params
+
+	var body RevokeProductLocalEntitlementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeProductLocalEntitlement(ctx, request.(RevokeProductLocalEntitlementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeProductLocalEntitlement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeProductLocalEntitlementResponseObject); ok {
+		if err := validResponse.VisitRevokeProductLocalEntitlementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListProducts operation middleware
 func (sh *strictHandler) ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams) {
 	var request ListProductsRequestObject
@@ -9695,6 +10607,101 @@ func (sh *strictHandler) GetProduct(w http.ResponseWriter, r *http.Request, prod
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProductResponseObject); ok {
 		if err := validResponse.VisitGetProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProduct operation middleware
+func (sh *strictHandler) UpdateProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params UpdateProductParams) {
+	var request UpdateProductRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body UpdateProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProduct(ctx, request.(UpdateProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProductResponseObject); ok {
+		if err := validResponse.VisitUpdateProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProductLocalEntitlements operation middleware
+func (sh *strictHandler) ListProductLocalEntitlements(w http.ResponseWriter, r *http.Request, productId ProductID, params ListProductLocalEntitlementsParams) {
+	var request ListProductLocalEntitlementsRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProductLocalEntitlements(ctx, request.(ListProductLocalEntitlementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProductLocalEntitlements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProductLocalEntitlementsResponseObject); ok {
+		if err := validResponse.VisitListProductLocalEntitlementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GrantProductLocalEntitlement operation middleware
+func (sh *strictHandler) GrantProductLocalEntitlement(w http.ResponseWriter, r *http.Request, productId ProductID, params GrantProductLocalEntitlementParams) {
+	var request GrantProductLocalEntitlementRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body GrantProductLocalEntitlementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GrantProductLocalEntitlement(ctx, request.(GrantProductLocalEntitlementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GrantProductLocalEntitlement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GrantProductLocalEntitlementResponseObject); ok {
+		if err := validResponse.VisitGrantProductLocalEntitlementResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

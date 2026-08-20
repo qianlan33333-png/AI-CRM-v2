@@ -71,6 +71,12 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityProductsWrite: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityEntitlementsRead: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
+	authport.CapabilityEntitlementsWrite: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
 	authport.CapabilityMediaImagesWrite: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},

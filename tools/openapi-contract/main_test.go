@@ -70,6 +70,68 @@ func TestCanonicalCandidateDeclarationDoesNotRequireRunnerRegistryChanges(t *tes
 	})
 }
 
+func TestOwnerApprovedNativePackageRegistry(t *testing.T) {
+	operation := func(contract nativePackageOperation) (*openapi3.PathItem, *openapi3.Operation) {
+		op := &openapi3.Operation{
+			OperationID: "updateProduct",
+			Extensions: map[string]any{
+				"x-p4-decision-evidence":      contract.evidence,
+				"x-aicrm-capability":          contract.capability,
+				"x-aicrm-auth-scheme":         contract.authScheme,
+				"x-aicrm-data-classification": contract.classification,
+				"x-aicrm-data-source":         contract.dataSource,
+				"x-aicrm-external-effect":     "none",
+				"x-aicrm-session-bound-csrf":  contract.csrf,
+				"x-aicrm-rbac-scopes":         map[string]any{"admin": "global", "ops": "global"},
+			},
+			Responses: openapi3.NewResponses(openapi3.WithStatus(403, &openapi3.ResponseRef{Value: openapi3.NewResponse()})),
+		}
+		item := &openapi3.PathItem{Put: op}
+		return item, op
+	}
+
+	t.Run("authenticated operation accepted", func(t *testing.T) {
+		contract := nativePackageOperations["updateProduct"]
+		item, op := operation(contract)
+		if err := validateNativePackageOperation(contract.path, item, op, contract); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("legacy mapping rejected", func(t *testing.T) {
+		contract := nativePackageOperations["updateProduct"]
+		item, op := operation(contract)
+		op.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0530"}
+		if err := validateNativePackageOperation(contract.path, item, op, contract); err == nil {
+			t.Fatal("expected native operation with legacy mapping to be rejected")
+		}
+	})
+	t.Run("public POST accepted without broadening generic public routes", func(t *testing.T) {
+		contract := nativePackageOperations["submitPublicSurvey"]
+		security := openapi3.SecurityRequirements{}
+		op := &openapi3.Operation{
+			OperationID: "submitPublicSurvey",
+			Security:    &security,
+			Extensions: map[string]any{
+				"x-p4-decision-evidence":      contract.evidence,
+				"x-aicrm-capability":          contract.capability,
+				"x-aicrm-auth-scheme":         contract.authScheme,
+				"x-aicrm-data-classification": contract.classification,
+				"x-aicrm-data-source":         contract.dataSource,
+				"x-aicrm-external-effect":     "none",
+				"x-aicrm-csrf":                contract.csrf,
+			},
+		}
+		item := &openapi3.PathItem{Post: op}
+		if err := validateNativePackageOperation(contract.path, item, op, contract); err != nil {
+			t.Fatal(err)
+		}
+		op.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global"}
+		if err := validateNativePackageOperation(contract.path, item, op, contract); err == nil {
+			t.Fatal("expected public native operation with RBAC scopes to be rejected")
+		}
+	})
+}
+
 func TestRejectsUnsafeContractMutations(t *testing.T) {
 	tests := map[string]func(*testing.T){
 		"canonical public route becomes authenticated": func(t *testing.T) {

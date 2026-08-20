@@ -9,16 +9,26 @@ import (
 )
 
 type Querier interface {
+	CompleteEntitlementOperationReceipt(ctx context.Context, arg CompleteEntitlementOperationReceiptParams) (CompleteEntitlementOperationReceiptRow, error)
 	CompleteProductOperationReceipt(ctx context.Context, arg CompleteProductOperationReceiptParams) (CompleteProductOperationReceiptRow, error)
 	CountProducts(ctx context.Context) (int64, error)
-	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
+	CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error)
+	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
+	GetEntitlementOperationReceipt(ctx context.Context, arg GetEntitlementOperationReceiptParams) (GetEntitlementOperationReceiptRow, error)
 	GetProduct(ctx context.Context, productID int64) (GetProductRow, error)
+	GetProductForUpdate(ctx context.Context, productID int64) (GetProductForUpdateRow, error)
+	GetProductLocalEntitlement(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementRow, error)
+	GetProductLocalEntitlementForUpdate(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementForUpdateRow, error)
 	GetProductOperationReceipt(ctx context.Context, arg GetProductOperationReceiptParams) (GetProductOperationReceiptRow, error)
 	IncrementProductCount(ctx context.Context) (int64, error)
 	InsertProductImage(ctx context.Context, arg InsertProductImageParams) error
+	ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsOffset(ctx context.Context, arg ListProductsOffsetParams) ([]ListProductsOffsetRow, error)
+	ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error)
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
+	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)
+	UpdateProduct(ctx context.Context, arg UpdateProductParams) (UpdateProductRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

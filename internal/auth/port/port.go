@@ -55,6 +55,8 @@ const (
 	CapabilityOutboundControl            Capability = "outbound.control"
 	CapabilityProductsRead               Capability = "products.read"
 	CapabilityProductsWrite              Capability = "products.write"
+	CapabilityEntitlementsRead           Capability = "entitlements.read"
+	CapabilityEntitlementsWrite          Capability = "entitlements.write"
 	CapabilityMediaImagesWrite           Capability = "media.images.write"
 	CapabilityMediaLibraryRead           Capability = "media.library.read"
 	CapabilityMediaLibraryWrite          Capability = "media.library.write"
@@ -84,7 +86,7 @@ func (capability Capability) Known() bool {
 		CapabilityConfigOverviewRead, CapabilityConfigSettingsManage, CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
 		CapabilityOutboundRead, CapabilityOutboundControl,
-		CapabilityProductsRead, CapabilityProductsWrite,
+		CapabilityProductsRead, CapabilityProductsWrite, CapabilityEntitlementsRead, CapabilityEntitlementsWrite,
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
@@ -221,7 +223,7 @@ func validAuthorization(authorization Authorization) bool {
 		CapabilityIdentityReviewRead, CapabilityIdentityReviewWrite, CapabilityConfigOverviewRead, CapabilityConfigSettingsManage,
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite, CapabilityOutboundControl,
-		CapabilityProductsRead, CapabilityProductsWrite,
+		CapabilityProductsRead, CapabilityProductsWrite, CapabilityEntitlementsRead, CapabilityEntitlementsWrite,
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
