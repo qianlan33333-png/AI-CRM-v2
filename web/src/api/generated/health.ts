@@ -2899,10 +2899,14 @@ export interface LegacyOrderExport {
    * @maxLength 2048
    */
   download_url: string;
-  content_type?: LegacyOrderExportContentType;
-  /** @maxLength 100 */
-  file_name?: string;
-  content_text?: string;
+  content_type: LegacyOrderExportContentType;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  file_name: string;
+  /** @minLength 1 */
+  content_text: string;
 }
 
 export type LegacyOrderExternalEffectProvider =
