@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
+import { ProductLocalControls } from "./products-local-controls";
 import {
   canReadProducts,
   createLocalProduct,
@@ -128,7 +129,7 @@ export function ProductsPage({
     {page?.items.length === 0 ? <p role="status">当前没有本地产品。</p> : null}
     {state.kind === "loading" ? <p role="status">正在读取本地产品目录。</p> : null}
     {state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
-    {detail ? <section aria-label="本地产品详情"><h2>产品详情</h2>{detail.kind === "loading" ? <p role="status">正在读取本地产品详情。</p> : null}{detail.kind === "error" ? <p role="alert">{messages[detail.failure]}</p> : null}{detailProduct ? <dl><dt>ID</dt><dd>{detailProduct.id}</dd><dt>产品码</dt><dd>{detailProduct.productCode}</dd><dt>名称</dt><dd>{detailProduct.name}</dd><dt>描述</dt><dd>{detailProduct.description || "—"}</dd><dt>金额（最小货币单位）</dt><dd>{detailProduct.priceMinor} {detailProduct.currency}</dd><dt>库存</dt><dd>{detailProduct.stockQuantity}</dd><dt>创建时间</dt><dd>{displayDate(detailProduct.createdAt)}</dd><dt>更新时间</dt><dd>{displayDate(detailProduct.updatedAt)}</dd></dl> : null}<button type="button" disabled={busy} onClick={closeDetail}>关闭详情</button></section> : null}
+    {detail ? <section aria-label="本地产品详情"><h2>产品详情</h2>{detail.kind === "loading" ? <p role="status">正在读取本地产品详情。</p> : null}{detail.kind === "error" ? <p role="alert">{messages[detail.failure]}</p> : null}{detailProduct ? <dl><dt>ID</dt><dd>{detailProduct.id}</dd><dt>产品码</dt><dd>{detailProduct.productCode}</dd><dt>名称</dt><dd>{detailProduct.name}</dd><dt>描述</dt><dd>{detailProduct.description || "—"}</dd><dt>金额（最小货币单位）</dt><dd>{detailProduct.priceMinor} {detailProduct.currency}</dd><dt>库存</dt><dd>{detailProduct.stockQuantity}</dd><dt>创建时间</dt><dd>{displayDate(detailProduct.createdAt)}</dd><dt>更新时间</dt><dd>{displayDate(detailProduct.updatedAt)}</dd></dl> : null}{detailProduct ? <ProductLocalControls product={detailProduct} transport={transport} readCookie={readCookie} onUnauthenticated={onUnauthenticated} onProductUpdated={(updated) => { verifiedDetail.current = updated; setDetail({ kind: "ready", product: updated }); cursor.current = undefined; load(); }} /> : null}<button type="button" disabled={busy} onClick={closeDetail}>关闭详情</button></section> : null}
     <button type="button" disabled={busy || page?.nextCursor === undefined} onClick={() => { if (page?.nextCursor) load(page.nextCursor); }}>下一页</button>
   </section>;
 }

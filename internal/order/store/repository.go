@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
@@ -15,8 +16,27 @@ import (
 type Repository struct{}
 
 var _ orderapp.Store = (*Repository)(nil)
+var _ orderport.PaidOrderReader = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) ReadPaidOrder(ctx context.Context, id orderport.ID) (orderport.PaidOrderProjection, error) {
+	queries, err := transactionQueries(ctx)
+	if repository == nil || err != nil || id < 1 {
+		return orderport.PaidOrderProjection{}, orderport.ErrPaidOrderReadUnavailable
+	}
+	row, err := queries.GetPaidOrderProjection(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return orderport.PaidOrderProjection{}, orderport.ErrPaidOrderReadNotFound
+		}
+		return orderport.PaidOrderProjection{}, errors.Join(orderport.ErrPaidOrderReadUnavailable, err)
+	}
+	if !row.ProductID.Valid || !row.CustomerID.Valid || row.ID < 1 || row.ProductID.Int64 < 1 || row.CustomerID.Int64 < 1 {
+		return orderport.PaidOrderProjection{}, orderport.ErrPaidOrderReadUnavailable
+	}
+	return orderport.PaidOrderProjection{ID: orderport.ID(row.ID), ProductID: row.ProductID.Int64, CustomerID: row.CustomerID.Int64}, nil
+}
 
 func (repository *Repository) List(ctx context.Context, filter orderport.Filter) ([]orderport.Record, error) {
 	queries, err := transactionQueries(ctx)

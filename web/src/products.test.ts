@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createLocalProduct, loadProductDetail, loadProducts, newProductIdempotencyKey, parseProductDetail, parseProductPage, productCreateRequest } from "./products";
+import { createLocalProduct, grantProductLocalEntitlement, loadProductDetail, loadProductLocalEntitlement, loadProductLocalEntitlements, loadProducts, newLocalProductIdempotencyKey, newProductIdempotencyKey, parseProductDetail, parseProductPage, productCreateRequest, productUpdateRequest, revokeProductLocalEntitlement, updateLocalProduct } from "./products";
 
 const product = { id: 1, product_code: "SKU-1", name: "商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: ["opaque-image-value"], created_by: 7, created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T00:00:00Z" };
 describe("products", () => {
-  it("accepts the closed local page and drops image metadata", () => {
-    expect(parseProductPage({ items: [product] })).toEqual({ items: [{ id: 1, productCode: "SKU-1", name: "商品", description: "本地描述", priceMinor: 1990, currency: "CNY", stockQuantity: 3, createdAt: product.created_at, updatedAt: product.updated_at }] });
+  it("accepts the closed local page while retaining immutable facts for CAS verification", () => {
+    expect(parseProductPage({ items: [product] })).toEqual({ items: [{ id: 1, productCode: "SKU-1", name: "商品", description: "本地描述", priceMinor: 1990, currency: "CNY", stockQuantity: 3, images: ["opaque-image-value"], createdBy: 7, createdAt: product.created_at, updatedAt: product.updated_at }] });
   });
-  it("accepts only a direct closed detail for the requested product and drops images", () => {
-    expect(parseProductDetail(product, 1)).toEqual({ id: 1, productCode: "SKU-1", name: "商品", description: "本地描述", priceMinor: 1990, currency: "CNY", stockQuantity: 3, createdAt: product.created_at, updatedAt: product.updated_at });
+  it("accepts only a direct closed detail for the requested product and keeps hidden immutable facts", () => {
+    expect(parseProductDetail(product, 1)).toEqual({ id: 1, productCode: "SKU-1", name: "商品", description: "本地描述", priceMinor: 1990, currency: "CNY", stockQuantity: 3, images: ["opaque-image-value"], createdBy: 7, createdAt: product.created_at, updatedAt: product.updated_at });
     expect(parseProductDetail(product, 2)).toBeUndefined();
     expect(parseProductDetail({ ...product, extra: true }, 1)).toBeUndefined();
     expect(parseProductDetail({ ...product, images: [" https://unsafe.example"] }, 1)).toBeUndefined();
@@ -17,6 +17,7 @@ describe("products", () => {
     expect(parseProductPage({ items: [{ ...product, images: [" https://bad.example"] }] })).toBeUndefined();
     expect(parseProductPage({ items: [{ ...product, price_minor: -1 }] })).toBeUndefined();
     expect(parseProductPage({ items: [{ ...product, stock_quantity: 2_147_483_648 }] })).toBeUndefined();
+    expect(parseProductDetail({ ...product, updated_at: "2026-08-18T23:59:59Z" }, 1)).toBeUndefined();
     expect(parseProductPage({ items: [product, { ...product, id: 1 }] })).toBeUndefined();
   });
   it("treats cursors as opaque and maps response failures", async () => {
@@ -67,5 +68,30 @@ describe("products", () => {
     expect((await createLocalProduct({ ...base, create: async () => { throw new Error("offline"); } }, draft, "c".repeat(43), "product-create:123e4567-e89b-42d3-a456-426614174000")).status).toBe("unknown");
     expect(newProductIdempotencyKey({ randomUUID: () => "123e4567-e89b-42d3-a456-426614174000" })).toBe("product-create:123e4567-e89b-42d3-a456-426614174000");
     expect(newProductIdempotencyKey({ randomUUID: () => "not-a-uuid" })).toBeUndefined();
+  });
+  it("uses exact CAS and local-entitlement DTOs without accepting actor or caller-owned facts", async () => {
+    const versioned = { ...product, version: 1 };
+    const update = { expectedVersion: 1, name: "更新商品", description: "更新说明", priceMinor: "2", currency: "cny", stockQuantity: "3" };
+    expect(productUpdateRequest(update)).toEqual({ expected_version: 1, name: "更新商品", description: "更新说明", price_minor: 2, currency: "CNY", stock_quantity: 3 });
+    const calls: unknown[] = [];
+    const entitlement = { id: 19, product_id: 1, order_id: 44, customer_id: 9, state: "active", version: 1, granted_at: "2026-08-20T09:00:00Z", revoked_at: null };
+    const transport = {
+      list: async () => ({ status: 200, data: { items: [versioned] } }), get: async () => ({ status: 200, data: versioned }),
+      update: async (id: number, request: unknown, options: RequestInit) => { calls.push(["update", id, request, options]); return { status: 200, data: { ...versioned, name: "更新商品", description: "更新说明", price_minor: 2, stock_quantity: 3, version: 2 } }; },
+      listEntitlements: async (id: number, params: unknown) => { calls.push(["list", id, params]); return { status: 200, data: { items: [entitlement] } }; },
+      getEntitlement: async (id: number) => ({ status: 200, data: { ...entitlement, id } }),
+      grantEntitlement: async (id: number, request: unknown, options: RequestInit) => { calls.push(["grant", id, request, options]); return { status: 201, data: entitlement }; },
+      revokeEntitlement: async (id: number, request: unknown, options: RequestInit) => { calls.push(["revoke", id, request, options]); return { status: 200, data: { ...entitlement, state: "revoked", version: 2, revoked_at: "2026-08-20T10:00:00Z" } }; },
+    };
+    const csrf = "c".repeat(43); const key = "product-update:123e4567-e89b-42d3-a456-426614174000";
+    expect(await updateLocalProduct(transport, { id: 1, productCode: "SKU-1", name: "商品", description: "本地描述", priceMinor: 1990, currency: "CNY", stockQuantity: 3, images: ["opaque-image-value"], createdBy: 7, createdAt: product.created_at, updatedAt: product.updated_at, version: 1 }, update, csrf, key)).toMatchObject({ status: "updated", product: { version: 2, name: "更新商品" } });
+    expect(await loadProductLocalEntitlements(transport, 1)).toMatchObject({ status: "loaded", items: [{ orderId: 44, customerId: 9 }] });
+    expect(await loadProductLocalEntitlement(transport, 19)).toMatchObject({ status: "loaded", entitlement: { id: 19 } });
+    expect(await grantProductLocalEntitlement(transport, 1, 44, csrf, "product-grant:123e4567-e89b-42d3-a456-426614174000")).toMatchObject({ status: "granted", entitlement: { productId: 1, orderId: 44 } });
+    expect(await revokeProductLocalEntitlement(transport, { id: 19, productId: 1, orderId: 44, customerId: 9, state: "active", version: 1, grantedAt: "2026-08-20T09:00:00Z" }, csrf, "product-revoke:123e4567-e89b-42d3-a456-426614174000")).toMatchObject({ status: "revoked", entitlement: { version: 2, state: "revoked" } });
+    expect(calls).toContainEqual(["grant", 1, { order_id: 44 }, expect.objectContaining({ headers: expect.objectContaining({ "X-CSRF-Token": csrf }) })]);
+    expect(calls).toContainEqual(["revoke", 19, { expected_version: 1 }, expect.anything()]);
+    expect(newLocalProductIdempotencyKey("grant", { randomUUID: () => "123e4567-e89b-42d3-a456-426614174000" })).toBe("product-grant:123e4567-e89b-42d3-a456-426614174000");
+    expect(await grantProductLocalEntitlement({ list: transport.list, get: transport.get, grantEntitlement: async () => ({ status: 201, data: { ...entitlement, granted_by: 7 } }) }, 1, 44, csrf, "product-grant:123e4567-e89b-42d3-a456-426614174000")).toEqual({ status: "unknown" });
   });
 });

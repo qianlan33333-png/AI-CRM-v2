@@ -5,10 +5,29 @@ package port
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 )
 
 type ID int64
+
+var (
+	ErrPaidOrderReadNotFound    = errors.New("paid order projection not found")
+	ErrPaidOrderReadUnavailable = errors.New("paid order projection unavailable")
+)
+
+// PaidOrderProjection is the minimum local fact a Product-owned entitlement
+// grant may consume. It never exposes payment credentials, payer PII, or a
+// provider receipt.
+type PaidOrderProjection struct {
+	ID         ID
+	ProductID  int64
+	CustomerID int64
+}
+
+type PaidOrderReader interface {
+	ReadPaidOrder(context.Context, ID) (PaidOrderProjection, error)
+}
 
 type Filter struct {
 	Provider, OrderNo, Mobile, ProductCode, Status string

@@ -25,6 +25,7 @@ type Querier interface {
 	GetOrderExternalEffect(ctx context.Context, id int64) (OrderExternalEffect, error)
 	GetOrderExternalEffectForUpdate(ctx context.Context, id int64) (OrderExternalEffect, error)
 	GetOrderOperationReceipt(ctx context.Context, arg GetOrderOperationReceiptParams) (GetOrderOperationReceiptRow, error)
+	GetPaidOrderProjection(ctx context.Context, orderID int64) (GetPaidOrderProjectionRow, error)
 	ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams) ([]OrderListProjection, error)
 	ListOrderExternalEffects(ctx context.Context, orderID int64) ([]OrderExternalEffect, error)
 	ListOrderProjections(ctx context.Context, arg ListOrderProjectionsParams) ([]OrderListProjection, error)

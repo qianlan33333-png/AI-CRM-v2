@@ -155,6 +155,47 @@ describe("ProductsPage", () => {
     expect(onUnauthenticated).toHaveBeenCalledTimes(1);
     await act(async () => { mounted.root.unmount(); });
   });
+  it("mounts the injected local entitlement controls without rendering hidden customer facts", async () => {
+    const versioned = { ...product, version: 1 };
+    const entitlement = { id: 19, product_id: 1, order_id: 44, customer_id: 9, state: "active", version: 1, granted_at: "2026-08-20T09:00:00Z", revoked_at: null };
+    const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<ProductsPage role="admin" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} transport={{ list: async () => ({ status: 200, data: { items: [versioned] } }), get: async () => ({ status: 200, data: versioned }), update: async () => ({ status: 200, data: { ...versioned, version: 2 } }), listEntitlements: async () => ({ status: 200, data: { items: [entitlement] } }), getEntitlement: async () => ({ status: 200, data: entitlement }), grantEntitlement: async () => ({ status: 201, data: entitlement }), revokeEntitlement: async () => ({ status: 200, data: { ...entitlement, state: "revoked", version: 2, revoked_at: "2026-08-20T10:00:00Z" } }) }} />); await Promise.resolve(); });
+    await act(async () => { click(buttons(mounted.container).find((button) => button.textContent === "查看详情")!); await Promise.resolve(); await Promise.resolve(); });
+    expect(mounted.container.textContent).toContain("按版本更新");
+    expect(mounted.container.textContent).toContain("授予本地权益");
+    expect(mounted.container.textContent).not.toContain("客户 #9");
+    await act(async () => { mounted.root.unmount(); });
+  });
+  it("uses the mounted product controls' synchronous writer locks and turns a drifted readback into outcome-unknown", async () => {
+    const updatePending = deferred<{ status: number; data: unknown }>();
+    const versioned = { ...product, version: 1 };
+    const update = vi.fn(() => updatePending.promise);
+    const get = vi.fn(() => get.mock.calls.length === 1
+      ? Promise.resolve({ status: 200, data: versioned })
+      : Promise.resolve({ status: 200, data: { ...versioned, name: "已更新", version: 2, created_by: 99, updated_at: "2026-08-20T11:00:00Z" } }));
+    const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<ProductsPage role="admin" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} transport={{ list: async () => ({ status: 200, data: { items: [versioned] } }), get, update }} />); await Promise.resolve(); });
+    await act(async () => { click(buttons(mounted.container).find((button) => button.textContent === "查看详情")!); await Promise.resolve(); });
+    await act(async () => { reactProps<{ onChange?: (event: { currentTarget: { value: string } }) => void }>(formFields(mounted.container)[6]).onChange?.({ currentTarget: { value: "已更新" } }); });
+    const updateForm = elements(mounted.container, "FORM")[1];
+    await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(updateForm).onSubmit?.({ preventDefault() {} }); reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(updateForm).onSubmit?.({ preventDefault() {} }); });
+    expect(update).toHaveBeenCalledTimes(1);
+    await act(async () => { updatePending.resolve({ status: 200, data: { ...versioned, name: "已更新", version: 2, updated_at: "2026-08-20T11:00:00Z" } }); await Promise.resolve(); await Promise.resolve(); });
+    expect(mounted.container.textContent).toContain("结果未知");
+    await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(updateForm).onSubmit?.({ preventDefault() {} }); });
+    expect(update).toHaveBeenCalledTimes(1);
+    await act(async () => { mounted.root.unmount(); });
+  });
+  it("does not let an unmounted local update publish a stale 401", async () => {
+    const response = deferred<{ status: number; data: unknown }>();
+    const onUnauthenticated = vi.fn(); const versioned = { ...product, version: 1 };
+    const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<ProductsPage role="admin" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} onUnauthenticated={onUnauthenticated} transport={{ list: async () => ({ status: 200, data: { items: [versioned] } }), get: async () => ({ status: 200, data: versioned }), update: async () => response.promise }} />); await Promise.resolve(); });
+    await act(async () => { click(buttons(mounted.container).find((button) => button.textContent === "查看详情")!); await Promise.resolve(); await Promise.resolve(); });
+    await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(elements(mounted.container, "FORM")[1]).onSubmit?.({ preventDefault() {} }); });
+    await act(async () => { mounted.root.unmount(); response.resolve({ status: 401, data: {} }); await Promise.resolve(); });
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+  });
   it("mounts the detail state machine with exact IDs, singleflight, stale-response, failure-retention, and one 401 callback", async () => {
     const initial = deferred<{ status: number; data: unknown }>();
     const first = deferred<{ status: number; data: unknown }>();

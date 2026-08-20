@@ -17,6 +17,14 @@ LIMIT sqlc.arg(row_limit)::integer OFFSET sqlc.arg(row_offset)::integer;
 -- name: CountAllOrderProjections :one
 SELECT total_orders FROM order_list_projection_counters WHERE singleton = TRUE;
 
+-- name: GetPaidOrderProjection :one
+SELECT id, product_id, customer_id
+FROM order_list_projections
+WHERE id = sqlc.arg(order_id)::bigint
+  AND status = 'paid'
+  AND product_id IS NOT NULL
+  AND customer_id IS NOT NULL;
+
 -- name: CountFilteredOrderProjections :one
 SELECT count(*)
 FROM order_list_projections

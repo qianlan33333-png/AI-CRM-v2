@@ -557,6 +557,28 @@ func (q *Queries) GetOrderOperationReceipt(ctx context.Context, arg GetOrderOper
 	return i, err
 }
 
+const getPaidOrderProjection = `-- name: GetPaidOrderProjection :one
+SELECT id, product_id, customer_id
+FROM order_list_projections
+WHERE id = $1::bigint
+  AND status = 'paid'
+  AND product_id IS NOT NULL
+  AND customer_id IS NOT NULL
+`
+
+type GetPaidOrderProjectionRow struct {
+	ID         int64       `json:"id"`
+	ProductID  pgtype.Int8 `json:"product_id"`
+	CustomerID pgtype.Int8 `json:"customer_id"`
+}
+
+func (q *Queries) GetPaidOrderProjection(ctx context.Context, orderID int64) (GetPaidOrderProjectionRow, error) {
+	row := q.db.QueryRow(ctx, getPaidOrderProjection, orderID)
+	var i GetPaidOrderProjectionRow
+	err := row.Scan(&i.ID, &i.ProductID, &i.CustomerID)
+	return i, err
+}
+
 const listBoardOrders = `-- name: ListBoardOrders :many
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,

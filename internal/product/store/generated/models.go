@@ -3,21 +3,3 @@
 //   sqlc v1.28.0
 
 package productdb
-
-import (
-	"github.com/jackc/pgx/v5/pgtype"
-)
-
-type Product struct {
-	ID                    int64              `json:"id"`
-	ProductCode           string             `json:"product_code"`
-	Name                  string             `json:"name"`
-	Description           string             `json:"description"`
-	PriceMinor            int64              `json:"price_minor"`
-	Currency              string             `json:"currency"`
-	StockQuantity         int32              `json:"stock_quantity"`
-	CreatedBy             int64              `json:"created_by"`
-	CreatedAt             pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
-	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
-}

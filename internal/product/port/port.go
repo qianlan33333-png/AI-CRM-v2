@@ -13,6 +13,7 @@ var (
 )
 
 type ID int64
+type EntitlementID int64
 
 type Product struct {
 	ID                    ID              `json:"id"`
@@ -26,6 +27,7 @@ type Product struct {
 	CreatedBy             int64           `json:"created_by"`
 	CreatedAt             time.Time       `json:"created_at"`
 	UpdatedAt             time.Time       `json:"updated_at"`
+	Version               int64           `json:"version"`
 	LegacyAdminProjection json.RawMessage `json:"legacy_admin_projection"`
 }
 
@@ -36,6 +38,43 @@ type CreateCommand struct {
 	Images                                                   []string
 	LegacyAdminProjection                                    json.RawMessage
 	Actor                                                    int64
+}
+
+// UpdateCommand deliberately omits product_code, images, and legacy projection:
+// they have existing compatibility consumers and are not part of the native v2
+// product CAS contract.
+type UpdateCommand struct {
+	ID                                          ID
+	ExpectedVersion                             int64
+	Name, Description, Currency, IdempotencyKey string
+	PriceMinor                                  int64
+	StockQuantity                               int32
+	Actor                                       int64
+}
+
+type LocalEntitlement struct {
+	ID         EntitlementID `json:"id"`
+	ProductID  ID            `json:"product_id"`
+	OrderID    int64         `json:"order_id"`
+	CustomerID int64         `json:"customer_id"`
+	State      string        `json:"state"`
+	Version    int64         `json:"version"`
+	GrantedAt  time.Time     `json:"granted_at"`
+	RevokedAt  *time.Time    `json:"revoked_at"`
+}
+
+type GrantLocalEntitlementCommand struct {
+	ProductID      ID
+	OrderID        int64
+	IdempotencyKey string
+	Actor          int64
+}
+
+type RevokeLocalEntitlementCommand struct {
+	ID              EntitlementID
+	ExpectedVersion int64
+	IdempotencyKey  string
+	Actor           int64
 }
 
 type Page struct {

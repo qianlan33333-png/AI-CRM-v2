@@ -23,6 +23,8 @@ func TestAuthorizationContextRejectsCapabilityScopeMismatch(t *testing.T) {
 		{Capability: CapabilityChannelsWrite, Scope: ScopeSelf},
 		{Capability: CapabilityCouponsRead, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
 		{Capability: CapabilityCouponsWrite, Scope: ScopeSelf},
+		{Capability: CapabilityEntitlementsRead, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
+		{Capability: CapabilityEntitlementsWrite, Scope: ScopeSelf},
 	}
 	for _, authorization := range tests {
 		ctx, err := WithAuthorization(context.Background(), authorization)
@@ -42,6 +44,8 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityConfigSettingsManage,
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
+		CapabilityProductsRead, CapabilityProductsWrite,
+		CapabilityEntitlementsRead, CapabilityEntitlementsWrite,
 		CapabilityMediaImagesWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite,
