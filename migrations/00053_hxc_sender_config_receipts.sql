@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE hxc_sender_config_receipts (
   id BIGSERIAL PRIMARY KEY,
-  operation TEXT NOT NULL CHECK (operation IN ('create','update','reorder','archive')),
+  operation TEXT NOT NULL CHECK (operation IN ('save','reorder','archive')),
   actor TEXT NOT NULL CHECK (actor = btrim(actor) AND actor <> ''),
   key_digest BYTEA NOT NULL CHECK (octet_length(key_digest) = 32),
   payload_digest BYTEA NOT NULL CHECK (octet_length(payload_digest) = 32),

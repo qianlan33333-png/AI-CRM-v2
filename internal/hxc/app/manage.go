@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"sort"
 	"strings"
 	"time"
 
@@ -32,6 +31,7 @@ type ManageCommand struct {
 	ID, SenderUserID, DisplayName, Actor, IdempotencyKey string
 	Priority                                             int
 	Active                                               bool
+	IDs                                                  []string
 }
 type Manager struct {
 	uow    platform.UnitOfWork
@@ -68,21 +68,33 @@ func (m *Manager) Save(ctx context.Context, c ManageCommand) (hxc.SenderConfig, 
 		out = x
 		return x, nil
 	})
+	if err == nil && out.ID == "" {
+		items, listErr := m.List(ctx)
+		if listErr != nil {
+			return hxc.SenderConfig{}, listErr
+		}
+		for _, item := range items {
+			if item.ID == c.ID {
+				return item, nil
+			}
+		}
+		return hxc.SenderConfig{}, ErrConfigConflict
+	}
 	return out, err
 }
 func (m *Manager) Archive(ctx context.Context, c ManageCommand) error {
-	if !m.ready() || !validKey(c.Actor, c.IdempotencyKey) || text(c.ID, 200) == "" {
+	if !m.ready() || !validKey(c.Actor, c.IdempotencyKey) || text(c.SenderUserID, 200) == "" {
 		return ErrInvalidCommand
 	}
 	return m.mutate(ctx, "archive", c, func(tx context.Context) (any, error) {
-		if e := m.store.DeleteSenderConfig(tx, c.ID); e != nil {
+		if e := m.store.DeleteSenderConfig(tx, c.SenderUserID); e != nil {
 			return nil, e
 		}
-		return map[string]string{"id": c.ID}, nil
+		return map[string]string{"sender_userid": c.SenderUserID}, nil
 	})
 }
 func (m *Manager) Reorder(ctx context.Context, actor, key string, ids []string) ([]hxc.SenderConfig, error) {
-	c := ManageCommand{Actor: actor, IdempotencyKey: key}
+	c := ManageCommand{Actor: actor, IdempotencyKey: key, IDs: append([]string(nil), ids...)}
 	if !m.ready() || !validKey(actor, key) || len(ids) == 0 {
 		return nil, ErrInvalidCommand
 	}
@@ -99,6 +111,9 @@ func (m *Manager) Reorder(ctx context.Context, actor, key string, ids []string) 
 		out = x
 		return x, e
 	})
+	if err == nil && out == nil {
+		return m.List(ctx)
+	}
 	return out, err
 }
 func (m *Manager) mutate(ctx context.Context, op string, c ManageCommand, fn func(context.Context) (any, error)) error {
@@ -114,7 +129,7 @@ func (m *Manager) mutate(ctx context.Context, op string, c ManageCommand, fn fun
 			if len(replay) == 0 {
 				return ErrConfigConflict
 			}
-			return json.Unmarshal(replay, &struct{}{})
+			return validateReceiptReplay(op, replay)
 		}
 		result, e := fn(tx)
 		if e != nil {
@@ -132,6 +147,42 @@ func (m *Manager) mutate(ctx context.Context, op string, c ManageCommand, fn fun
 		return m.store.CompleteSenderReceipt(tx, op, c.Actor, kd, raw, m.now().UTC())
 	})
 }
+
+func validateReceiptReplay(op string, replay json.RawMessage) error {
+	switch op {
+	case "save":
+		var result hxc.SenderConfig
+		if err := json.Unmarshal(replay, &result); err != nil {
+			return err
+		}
+		if text(result.ID, 200) == "" || text(result.SenderUserID, 200) == "" {
+			return errUnavailable
+		}
+	case "reorder":
+		var result []hxc.SenderConfig
+		if err := json.Unmarshal(replay, &result); err != nil {
+			return err
+		}
+		if len(result) == 0 {
+			return errUnavailable
+		}
+		if _, err := canonicalConfigs(result); err != nil {
+			return errUnavailable
+		}
+	case "archive":
+		var result map[string]string
+		if err := json.Unmarshal(replay, &result); err != nil {
+			return err
+		}
+		if len(result) != 1 || text(result["sender_userid"], 200) == "" {
+			return errUnavailable
+		}
+	default:
+		return errUnavailable
+	}
+	return nil
+}
+
 func (m *Manager) eligible(ctx context.Context, id string) error {
 	entries, e := m.staff.ListEligibleStaff(ctx)
 	if e != nil {
@@ -157,5 +208,3 @@ func text(s string, max int) string {
 	}
 	return s
 }
-
-var _ = sort.Strings

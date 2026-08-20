@@ -23,12 +23,12 @@ func (r *SenderConfigRepository) SaveSenderConfig(ctx context.Context, value hxc
 	}
 	return value, nil
 }
-func (r *SenderConfigRepository) DeleteSenderConfig(ctx context.Context, id string) error {
+func (r *SenderConfigRepository) DeleteSenderConfig(ctx context.Context, senderUserID string) error {
 	tx, e := platform.TxFromContext(ctx)
 	if e != nil {
 		return e
 	}
-	tag, e := tx.Exec(ctx, `DELETE FROM hxc_sender_configs WHERE id=$1`, id)
+	tag, e := tx.Exec(ctx, `DELETE FROM hxc_sender_configs WHERE sender_userid=$1`, senderUserID)
 	if e != nil {
 		return e
 	}

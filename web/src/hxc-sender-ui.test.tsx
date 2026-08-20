@@ -9,6 +9,7 @@ import {
   startHXCSenderRead,
 } from "./hxc-sender-ui";
 import type { HXCSenderTransport } from "./hxc-sender";
+import type { HXCSenderManagerTransport } from "./hxc-sender-manager";
 
 class TestNode {
   parentNode: TestNode | null = null;
@@ -156,6 +157,24 @@ function mountedRoot(): {
   const container = document.createElement("div");
   document.body.appendChild(container);
   return { root: createRoot(container as unknown as Element), container };
+}
+function elements(root: TestNode, tagName: string): TestElement[] {
+  return [
+    root,
+    ...root.childNodes.flatMap((node) => elements(node, tagName)),
+  ].filter(
+    (node): node is TestElement =>
+      node instanceof TestElement && node.tagName === tagName,
+  );
+}
+function reactProps<T extends Record<string, unknown>>(
+  element: TestElement,
+): T {
+  const key = Object.keys(element).find((candidate) =>
+    candidate.startsWith("__reactProps"),
+  );
+  if (!key) throw new Error("mounted element is missing React props");
+  return (element as unknown as Record<string, T>)[key];
 }
 function deferred<T>(): {
   readonly promise: Promise<T>;
@@ -359,5 +378,76 @@ describe("HXCSenderPage", () => {
       await pendingUnmount.promise;
     });
     expect(unauthenticated).not.toHaveBeenCalled();
+  });
+
+  it("mounts the manager, sends one local save, and replaces the page with strict readback", async () => {
+    const read = vi.fn(async () => response(body()));
+    const save = vi.fn(async () => ({ status: 200 as const, data: {} }));
+    const reread = vi.fn(async () => response(body("alice", "Alice Updated")));
+    const managerTransport = {
+      save,
+      reorder: vi.fn(),
+      archive: vi.fn(),
+      reread,
+    } as unknown as HXCSenderManagerTransport;
+    const { root, container } = mountedRoot();
+    await act(async () => {
+      root.render(
+        <HXCSenderPage
+          role="admin"
+          transport={{ read } as HXCSenderTransport}
+          managerTransport={managerTransport}
+          readCookie={() => `aicrm_csrf=${"c".repeat(43)}`}
+        />,
+      );
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain("本地发件人管理");
+    const inputs = elements(container, "INPUT");
+    await act(async () => {
+      reactProps<{
+        onChange(event: { currentTarget: { value: string } }): void;
+      }>(inputs[1]).onChange({ currentTarget: { value: "cfg-2" } });
+      reactProps<{
+        onChange(event: { currentTarget: { value: string } }): void;
+      }>(inputs[2]).onChange({ currentTarget: { value: "alice" } });
+      reactProps<{
+        onChange(event: { currentTarget: { value: string } }): void;
+      }>(inputs[3]).onChange({ currentTarget: { value: "Alice Updated" } });
+      reactProps<{
+        onChange(event: { currentTarget: { value: string } }): void;
+      }>(inputs[4]).onChange({ currentTarget: { value: "3" } });
+    });
+    const form = elements(container, "FORM")[0];
+    await act(async () => {
+      const submit = reactProps<{
+        onSubmit(event: { preventDefault(): void }): void;
+      }>(form).onSubmit;
+      submit({ preventDefault() {} });
+      submit({ preventDefault() {} });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith(
+      {
+        id: "cfg-2",
+        sender_userid: "alice",
+        display_name: "Alice Updated",
+        priority: 3,
+        is_active: true,
+      },
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "c".repeat(43),
+          "Idempotency-Key": expect.stringMatching(/^hxc-sender-save-/),
+        }),
+      }),
+    );
+    expect(reread).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Alice Updated");
+    expect(container.textContent).toContain("已回读确认");
+    await act(async () => root.unmount());
   });
 });

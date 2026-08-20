@@ -13,15 +13,25 @@ import (
 )
 
 const (
-	legacyHXCSenderPagePath = "/admin/hxc-send-config"
-	legacyHXCSenderReadPath = "/api/admin/hxc-dashboard/send-config"
-	hxcSenderWarning        = "HXC senders use the local staff projection; no WeCom directory call was executed."
+	legacyHXCSenderPagePath    = "/admin/hxc-send-config"
+	legacyHXCSenderReadPath    = "/api/admin/hxc-dashboard/send-config"
+	legacyHXCSenderItemPath    = "/api/admin/hxc-dashboard/send-config/{sender_userid}"
+	legacyHXCSenderReorderPath = "/api/admin/hxc-dashboard/send-config/reorder"
+	hxcSenderWarning           = "HXC senders use the local staff projection; no WeCom directory call was executed."
 )
 
 type hxcSenderRead interface {
 	Read(context.Context) (hxcapp.Projection, error)
 }
-type hxcSenderHandler struct{ reader hxcSenderRead }
+type hxcSenderManage interface {
+	Save(context.Context, hxcapp.ManageCommand) (hxcport.SenderConfig, error)
+	Archive(context.Context, hxcapp.ManageCommand) error
+	Reorder(context.Context, string, string, []string) ([]hxcport.SenderConfig, error)
+}
+type hxcSenderHandler struct {
+	reader  hxcSenderRead
+	manager hxcSenderManage
+}
 
 type hxcSenderConfigResponse struct {
 	ID           string `json:"id"`

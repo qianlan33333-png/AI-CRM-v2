@@ -218,11 +218,13 @@ export function HXCSenderPage({
   transport = generatedHXCSenderTransport,
   onUnauthenticated,
   managerTransport,
+  readCookie,
 }: {
   readonly role: "admin" | "ops" | "sales";
   readonly transport?: HXCSenderTransport;
   readonly onUnauthenticated?: () => void;
   readonly managerTransport?: HXCSenderManagerTransport;
+  readonly readCookie?: () => string;
 }): React.ReactElement {
   const canRead = role === "admin";
   const generation = useRef(0);
@@ -283,9 +285,11 @@ export function HXCSenderPage({
           role={role}
           items={state.model.sendConfigs}
           transport={managerTransport}
+          readCookie={readCookie}
           onUnauthenticated={onUnauthenticated}
-          onConfirmed={() => {
-            void load();
+          onConfirmed={(model) => {
+            verified.current = model;
+            setState({ kind: "ready", model });
           }}
         />
       ) : null}
