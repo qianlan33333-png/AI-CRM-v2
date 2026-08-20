@@ -253,6 +253,8 @@ type PublicSubmissionReceipt struct {
 type PublicAnalytics struct {
 	QuestionnaireID   ID                        `json:"questionnaire_id"`
 	DefinitionVersion int64                     `json:"definition_version"`
+	Slug              string                    `json:"slug"`
+	State             string                    `json:"state"`
 	SubmissionCount   int64                     `json:"submission_count"`
 	Questions         []PublicAnalyticsQuestion `json:"questions"`
 }

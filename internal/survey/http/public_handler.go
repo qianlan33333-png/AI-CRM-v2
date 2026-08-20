@@ -11,13 +11,14 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/netip"
-	"net/url"
 	"strings"
 	"time"
 
+	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
@@ -52,6 +53,10 @@ func (h *PublicHandler) GetDefinition(w http.ResponseWriter, r *http.Request, sl
 		method(w, http.MethodGet)
 		return
 	}
+	if !surveyapp.ValidPublicSlug(slug) {
+		h.reply(w, nil, surveyapp.ErrInvalidPublicInput)
+		return
+	}
 	out, err := h.Service.Definition(r.Context(), slug)
 	h.reply(w, out, err)
 }
@@ -59,6 +64,10 @@ func (h *PublicHandler) Submit(w http.ResponseWriter, r *http.Request, slug stri
 	h.headers(w)
 	if r.Method != http.MethodPost {
 		method(w, http.MethodPost)
+		return
+	}
+	if !surveyapp.ValidPublicSlug(slug) {
+		h.reply(w, nil, surveyapp.ErrInvalidPublicInput)
 		return
 	}
 	var body struct {
@@ -108,15 +117,19 @@ func (h *PublicHandler) Publish(w http.ResponseWriter, r *http.Request, question
 		method(w, http.MethodPost)
 		return
 	}
+	if !singleIdempotencyKey(r) {
+		h.adminReply(w, r, nil, surveyapp.ErrInvalidPublicInput)
+		return
+	}
 	var body struct {
 		ExpectedVersion int64 `json:"expected_questionnaire_version"`
 	}
-	if !decode(w, r, &body) {
+	if !decodeAdmin(w, r, &body) {
 		return
 	}
 	out, err := h.Service.Publish(r.Context(), surveyport.PublishPublicDefinitionCommand{QuestionnaireID: questionnaireID, ExpectedQuestionnaireVersion: body.ExpectedVersion, Actor: actor, IdempotencyKey: r.Header.Get("Idempotency-Key")})
 	if err != nil {
-		h.reply(w, nil, err)
+		h.adminReply(w, r, nil, err)
 		return
 	}
 	write(w, http.StatusOK, managementView(out))
@@ -127,15 +140,19 @@ func (h *PublicHandler) Disable(w http.ResponseWriter, r *http.Request, question
 		method(w, http.MethodPost)
 		return
 	}
+	if !singleIdempotencyKey(r) {
+		h.adminReply(w, r, nil, surveyapp.ErrInvalidPublicInput)
+		return
+	}
 	var body struct {
 		ExpectedVersion int64 `json:"expected_definition_version"`
 	}
-	if !decode(w, r, &body) {
+	if !decodeAdmin(w, r, &body) {
 		return
 	}
 	out, err := h.Service.Disable(r.Context(), surveyport.DisablePublicDefinitionCommand{QuestionnaireID: questionnaireID, ExpectedDefinitionVersion: body.ExpectedVersion, Actor: actor, IdempotencyKey: r.Header.Get("Idempotency-Key")})
 	if err != nil {
-		h.reply(w, nil, err)
+		h.adminReply(w, r, nil, err)
 		return
 	}
 	write(w, http.StatusOK, managementView(out))
@@ -147,7 +164,7 @@ func (h *PublicHandler) Analytics(w http.ResponseWriter, r *http.Request, questi
 		return
 	}
 	out, err := h.Service.Analytics(r.Context(), questionnaireID, version)
-	h.reply(w, out, err)
+	h.adminReply(w, r, out, err)
 }
 func (h *PublicHandler) Page(w http.ResponseWriter, r *http.Request, slug string) {
 	h.headers(w)
@@ -155,13 +172,14 @@ func (h *PublicHandler) Page(w http.ResponseWriter, r *http.Request, slug string
 		method(w, http.MethodGet)
 		return
 	}
-	if slug == "" || strings.ContainsAny(slug, "/?#") {
+	if !surveyapp.ValidPublicSlug(slug) {
 		h.reply(w, nil, surveyapp.ErrInvalidPublicInput)
 		return
 	}
 	// The actual web bundle is mounted by the existing SPA. Never manufacture a
 	// second asset path here (or expose result tokens in a carrier document).
-	http.Redirect(w, r, "/?public_survey_slug="+url.QueryEscape(slug), http.StatusFound)
+	w.Header().Set("Location", "/?public_survey_slug="+slug)
+	w.WriteHeader(http.StatusFound)
 }
 func (h *PublicHandler) headers(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
@@ -210,7 +228,7 @@ func (h *PublicHandler) anonymous(w http.ResponseWriter, r *http.Request) ([32]b
 	_, _ = mac.Write([]byte("aicrm.survey.public.anon.v1\x00" + raw))
 	var cookieDigest [32]byte
 	copy(cookieDigest[:], mac.Sum(nil))
-	ip, err := controlledRemoteIP(r.RemoteAddr)
+	ip, err := controlledRemoteIP(r)
 	if err != nil {
 		return [32]byte{}, [32]byte{}, err
 	}
@@ -220,8 +238,11 @@ func (h *PublicHandler) anonymous(w http.ResponseWriter, r *http.Request) ([32]b
 	copy(sourceDigest[:], mac.Sum(nil))
 	return cookieDigest, sourceDigest, nil
 }
-func controlledRemoteIP(remote string) (netip.Addr, error) {
-	host, _, err := net.SplitHostPort(remote)
+func controlledRemoteIP(r *http.Request) (netip.Addr, error) {
+	if r == nil {
+		return netip.Addr{}, errors.New("untrusted remote address")
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return netip.Addr{}, errors.New("untrusted remote address")
 	}
@@ -229,7 +250,25 @@ func controlledRemoteIP(remote string) (netip.Addr, error) {
 	if err != nil {
 		return netip.Addr{}, errors.New("untrusted remote address")
 	}
-	return ip.Unmap(), nil
+	ip = ip.Unmap()
+	if !ip.IsLoopback() {
+		// Direct clients cannot influence their rate key with forwarding headers.
+		return ip, nil
+	}
+	// The frozen production topology has one same-host nginx TLS terminator.
+	// Only that loopback peer is trusted, and nginx's appended right-most XFF
+	// hop wins over any attacker-supplied prefix. Missing/malformed forwarding
+	// data fails closed rather than collapsing every public user into 127.0.0.1.
+	values := r.Header.Values("X-Forwarded-For")
+	if len(values) != 1 {
+		return netip.Addr{}, errors.New("trusted proxy forwarding address is unavailable")
+	}
+	hops := strings.Split(values[0], ",")
+	client, err := netip.ParseAddr(strings.TrimSpace(hops[len(hops)-1]))
+	if err != nil || !client.IsValid() || client.IsUnspecified() || client.IsMulticast() {
+		return netip.Addr{}, errors.New("trusted proxy forwarding address is invalid")
+	}
+	return client.Unmap(), nil
 }
 func (h *PublicHandler) reply(w http.ResponseWriter, out any, err error) {
 	if err == nil {
@@ -249,10 +288,27 @@ func (h *PublicHandler) reply(w http.ResponseWriter, out any, err error) {
 		write(w, http.StatusServiceUnavailable, map[string]string{"code": "unavailable"})
 	}
 }
+func (h *PublicHandler) adminReply(w http.ResponseWriter, r *http.Request, out any, err error) {
+	if err == nil {
+		write(w, http.StatusOK, out)
+		return
+	}
+	code := platformhttp.CodeDependencyUnavailable
+	switch {
+	case errors.Is(err, surveyapp.ErrInvalidPublicInput):
+		code = platformhttp.CodeMalformedRequest
+	case errors.Is(err, surveyapp.ErrNotFound):
+		code = platformhttp.CodeNotFound
+	case errors.Is(err, surveyapp.ErrConflict):
+		code = platformhttp.CodeConflict
+	}
+	platformhttp.WriteError(w, r, platformhttp.NewError(code, err))
+}
 func decode(w http.ResponseWriter, r *http.Request, out any) bool {
 	de := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	de.DisallowUnknownFields()
-	if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || strings.ToLower(mediaType) != "application/json" {
 		write(w, http.StatusBadRequest, map[string]string{"code": "invalid_public_input"})
 		return false
 	}
@@ -261,6 +317,23 @@ func decode(w http.ResponseWriter, r *http.Request, out any) bool {
 		return false
 	}
 	return true
+}
+func decodeAdmin(w http.ResponseWriter, r *http.Request, out any) bool {
+	de := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	de.DisallowUnknownFields()
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || strings.ToLower(mediaType) != "application/json" || de.Decode(out) != nil || de.Decode(&struct{}{}) != io.EOF {
+		platformhttp.WriteError(w, r, platformhttp.NewError(platformhttp.CodeMalformedRequest, surveyapp.ErrInvalidPublicInput))
+		return false
+	}
+	return true
+}
+func singleIdempotencyKey(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	values := r.Header.Values("Idempotency-Key")
+	return len(values) == 1 && len(values[0]) >= 16 && len(values[0]) <= 128 && values[0] == strings.TrimSpace(values[0])
 }
 func write(w http.ResponseWriter, status int, out any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

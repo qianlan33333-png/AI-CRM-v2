@@ -214,10 +214,10 @@ func TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet(t *testing.T) 
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
-		"AddCustomerTag", "ApproveIdentityMergeReview", "ArchiveSegment", "ArchiveStage", "ArchiveTag", "ArchiveTagGroup", "BindIdentity", "CreateProduct", "CreateSegment", "CreateStage", "CreateTag", "CreateTagGroup", "GetAdminConfigOverview", "GetAuthSession",
-		"GetCustomer", "GetCustomerContext", "GetDomainVerificationFile", "GetLegacyExecutionRuntime", "GetLegacyExecutionRuntimePage", "GetLegacyExecutionTimeline", "GetLegacyHealth", "GetLegacyPushCenterSections", "GetLegacyPushCenterStats", "GetProduct", "GetProductLocalEntitlement", "GetSegment", "GrantProductLocalEntitlement", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
-		"ListProductLocalEntitlements", "ListProducts", "ListSegmentMembers", "ListSegments", "ListStages", "ListTagGroups", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
-		"RemoveCustomerTag", "RenameStage", "ReorderStages", "ReorderTagGroups", "ReorderTags", "RequestSegmentRefresh", "ResolveIdentity", "RevokeProductLocalEntitlement", "SetCustomerStage", "UpdateCustomer", "UpdateProduct", "UpdateSegment", "UpdateTag", "UpdateTagGroup",
+		"AddCustomerTag", "ApproveIdentityMergeReview", "ArchiveSegment", "ArchiveStage", "ArchiveTag", "ArchiveTagGroup", "BindIdentity", "CreateProduct", "CreateSegment", "CreateStage", "CreateTag", "CreateTagGroup", "DisableQuestionnairePublicDefinition", "GetAdminConfigOverview", "GetAuthSession",
+		"GetCustomer", "GetCustomerContext", "GetDomainVerificationFile", "GetLegacyExecutionRuntime", "GetLegacyExecutionRuntimePage", "GetLegacyExecutionTimeline", "GetLegacyHealth", "GetLegacyPushCenterSections", "GetLegacyPushCenterStats", "GetProduct", "GetProductLocalEntitlement", "GetPublicSurveyDefinition", "GetPublicSurveyPage", "GetQuestionnairePublicAnalytics", "GetSegment", "GrantProductLocalEntitlement", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
+		"ListProductLocalEntitlements", "ListProducts", "ListSegmentMembers", "ListSegments", "ListStages", "ListTagGroups", "ListTags", "LogoutAdmin", "PublishQuestionnairePublicDefinition", "QueryPublicSurveySubmissionResult", "RejectIdentityMergeReview",
+		"RemoveCustomerTag", "RenameStage", "ReorderStages", "ReorderTagGroups", "ReorderTags", "RequestSegmentRefresh", "ResolveIdentity", "RevokeProductLocalEntitlement", "SetCustomerStage", "SubmitPublicSurvey", "UpdateCustomer", "UpdateProduct", "UpdateSegment", "UpdateTag", "UpdateTagGroup",
 	})
 }
 

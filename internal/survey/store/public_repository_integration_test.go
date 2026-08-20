@@ -48,6 +48,12 @@ func TestPublicRepositoryPostgreSQLRoundTrip(t *testing.T) {
 		if _, err = repo.GetPublishedBySlug(tx, "survey-it"); err != nil {
 			return err
 		}
+		if current, err := repo.GetCurrentPublicDefinition(tx, surveyport.ID(qid)); err != nil || current.ID != def.ID || current.State != "public" || current.View.Version != def.View.Version {
+			if err != nil {
+				return err
+			}
+			return surveyapp.ErrUnavailable
+		}
 		anon, key, payload := sha256.Sum256([]byte("anon")), sha256.Sum256([]byte("key")), sha256.Sum256([]byte("payload"))
 		receipt, owned, err := repo.ReservePublicReceipt(tx, def, anon, key, payload, now)
 		if err != nil || !owned {
@@ -84,8 +90,15 @@ func TestPublicRepositoryPostgreSQLRoundTrip(t *testing.T) {
 		if err = repo.ConsumePublicRate(tx, def.ID, otherSource, sha256.Sum256([]byte("other-cookie")), now); err != nil {
 			return err
 		}
-		if _, err = repo.DisablePublicDefinition(tx, def.View.ID, def.View.Version, now); err != nil {
+		disabled, err := repo.DisablePublicDefinition(tx, def.View.ID, def.View.Version, now)
+		if err != nil || disabled.View.Slug != "survey-it" || disabled.State != "disabled" {
+			if err == nil {
+				return surveyapp.ErrUnavailable
+			}
 			return err
+		}
+		if _, err = repo.GetCurrentPublicDefinition(tx, surveyport.ID(qid)); err != surveyapp.ErrNotFound {
+			return surveyapp.ErrUnavailable
 		}
 		return errRollback
 	})

@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Domain-owned destructive acceptance. Lane E may wire it into CI later.
+# Domain-owned destructive acceptance, wired through p4-f01ab-survey-acceptance.
 # It intentionally starts at 52, proves 52->51->52, and finishes clean by a
 # final 52->51->52 cycle so no anonymous fixture rows survive.
 : "${P4SURVEY_PUBLIC_TEST_DATABASE_URL:?P4SURVEY_PUBLIC_TEST_DATABASE_URL is required}"
 db_url="$P4SURVEY_PUBLIC_TEST_DATABASE_URL"
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 goose=(go tool -modfile="$root/tools/go.mod" goose -dir "$root/migrations" postgres "$db_url")
+"${goose[@]}" up
 psql "$db_url" -v ON_ERROR_STOP=1 -Atqc "SELECT 1 FROM goose_db_version WHERE version_id=52 AND is_applied" >/dev/null
 "${goose[@]}" down
 test "$(psql "$db_url" -v ON_ERROR_STOP=1 -Atqc "SELECT CASE WHEN to_regclass('public.questionnaire_public_definitions') IS NULL AND to_regclass('public.questionnaires') IS NOT NULL AND to_regclass('public.event_log') IS NOT NULL THEN 1 ELSE 0 END")" = 1

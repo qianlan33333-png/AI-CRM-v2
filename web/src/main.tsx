@@ -37,6 +37,8 @@ import { HXCSenderPage } from "./hxc-sender-ui";
 import type { HXCSenderTransport } from "./hxc-sender";
 import { QuestionnaireListPage } from "./questionnaire-list-ui";
 import type { QuestionnaireListTransport } from "./questionnaire-list";
+import { PublicSurveyPage } from "./public-survey-ui";
+import { publicSlug, type PublicSurveyTransport } from "./public-survey";
 import { WecomTagsPage } from "./wecom-tags-ui";
 import type { WecomTagsTransport } from "./wecom-tags";
 import type { CallbackInboxTransport } from "./wecom-callback-inbox";
@@ -260,6 +262,7 @@ export interface AppProps {
   imageLibraryTransport?: ImageLibraryTransport;
   hxcSenderTransport?: HXCSenderTransport;
   questionnaireTransport?: QuestionnaireListTransport;
+  publicSurveyTransport?: PublicSurveyTransport;
   wecomTagsTransport?: WecomTagsTransport;
   callbackInboxTransport?: CallbackInboxTransport;
   channelsTransport?: ChannelsTransport;
@@ -307,6 +310,23 @@ export function readSearch(): string {
   return typeof window.location.search === "string"
     ? window.location.search
     : "";
+}
+
+// This public carrier is intentionally narrower than the legacy admin one:
+// its root query has exactly one safe slug and cannot carry a result token or
+// any other browser-owned state into the public screen.
+export function publicSurveySlug(search: string): string | undefined {
+  if (search === "") return undefined;
+  let params: URLSearchParams;
+  try {
+    params = new URLSearchParams(search);
+  } catch {
+    return undefined;
+  }
+  const entries = [...params.entries()];
+  if (entries.length !== 1 || entries[0][0] !== "public_survey_slug")
+    return undefined;
+  return publicSlug(`/q/${entries[0][1]}`) ?? undefined;
 }
 
 // The legacy admin page carrier (`GET /admin/miniprogram-library` →
@@ -821,6 +841,7 @@ export function App({
   imageLibraryTransport,
   hxcSenderTransport,
   questionnaireTransport,
+  publicSurveyTransport,
   wecomTagsTransport,
   callbackInboxTransport,
   channelsTransport,
@@ -848,6 +869,8 @@ export function App({
   const effectivePathname = carrierPathname(pathname, search);
   const route = routeForPathname(effectivePathname);
   const customerID = customerIDForPathname(effectivePathname);
+  const publicSurvey =
+    pathname === "/" ? publicSurveySlug(search) : undefined;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -858,7 +881,7 @@ export function App({
   }, []);
 
   useEffect(() => {
-    if (initialSession) return undefined;
+    if (initialSession || publicSurvey) return undefined;
     let active = true;
     void cache.load().then((result) => {
       if (active) setSession(result);
@@ -866,7 +889,7 @@ export function App({
     return () => {
       active = false;
     };
-  }, [cache, initialSession]);
+  }, [cache, initialSession, publicSurvey]);
 
   const retrySession = () => {
     setSession({ status: "checking" });
@@ -915,6 +938,14 @@ export function App({
         handleNavigationClick(event, event.currentTarget.href),
     } as const;
   })();
+
+  if (publicSurvey)
+    return (
+      <PublicSurveyPage
+        slug={publicSurvey}
+        transport={publicSurveyTransport}
+      />
+    );
 
   if (session.status !== "authenticated" || pathname === LOGIN_PATH) {
     return (

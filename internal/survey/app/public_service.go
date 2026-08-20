@@ -50,6 +50,7 @@ type PublicManagementReceipt struct {
 type PublicStore interface {
 	GetPublishedBySlug(context.Context, string) (PublicDefinitionRecord, error)
 	GetPublicDefinition(context.Context, surveyport.ID, int64) (PublicDefinitionRecord, error)
+	GetCurrentPublicDefinition(context.Context, surveyport.ID) (PublicDefinitionRecord, error)
 	GetQuestionnaire(context.Context, surveyport.ID) (surveyport.Questionnaire, error)
 	CreatePublicDefinition(context.Context, surveyport.Questionnaire, time.Time) (PublicDefinitionRecord, error)
 	DisablePublicDefinition(context.Context, surveyport.ID, int64, time.Time) (PublicDefinitionRecord, error)
@@ -76,8 +77,11 @@ func NewPublicService(uow platformport.UnitOfWork, store PublicStore, events eve
 }
 
 func (s *PublicService) Definition(ctx context.Context, slug string) (surveyport.PublicQuestionnaire, error) {
-	if !publicReady(s) || slug == "" {
+	if !publicReady(s) {
 		return surveyport.PublicQuestionnaire{}, ErrPublicUnavailable
+	}
+	if !ValidPublicSlug(slug) {
+		return surveyport.PublicQuestionnaire{}, ErrInvalidPublicInput
 	}
 	var record PublicDefinitionRecord
 	err := s.uow.Within(ctx, func(tx context.Context) error {
@@ -94,6 +98,9 @@ func (s *PublicService) Definition(ctx context.Context, slug string) (surveyport
 func (s *PublicService) Submit(ctx context.Context, input surveyport.PublicSubmissionCommand) (surveyport.PublicSubmissionReceipt, string, error) {
 	if !publicReady(s) {
 		return surveyport.PublicSubmissionReceipt{}, "", ErrPublicUnavailable
+	}
+	if !ValidPublicSlug(input.Slug) {
+		return surveyport.PublicSubmissionReceipt{}, "", ErrInvalidPublicInput
 	}
 	now := s.now().UTC()
 	if now.IsZero() {
@@ -229,7 +236,7 @@ func (s *PublicService) Publish(ctx context.Context, command surveyport.PublishP
 			return ErrPublicUnavailable
 		}
 		if !owned {
-			if reserved.State != "completed" || json.Unmarshal(reserved.ResultSnapshot, &record) != nil || record.ID < 1 || record.State != "public" || record.View.ID != command.QuestionnaireID || record.View.Version < 1 || record.View.Slug == "" {
+			if reserved.State != "completed" || json.Unmarshal(reserved.ResultSnapshot, &record) != nil || record.ID < 1 || record.State != "public" || record.View.ID != command.QuestionnaireID || record.View.Version < 1 || !ValidPublicSlug(record.View.Slug) {
 				return ErrPublicUnavailable
 			}
 			return nil
@@ -301,7 +308,7 @@ func (s *PublicService) Disable(ctx context.Context, command surveyport.DisableP
 			return ErrPublicUnavailable
 		}
 		if !owned {
-			if reserved.State != "completed" || json.Unmarshal(reserved.ResultSnapshot, &record) != nil || record.ID < 1 || record.State != "disabled" || record.View.ID != command.QuestionnaireID || record.View.Version != command.ExpectedDefinitionVersion || record.View.Slug == "" {
+			if reserved.State != "completed" || json.Unmarshal(reserved.ResultSnapshot, &record) != nil || record.ID < 1 || record.State != "disabled" || record.View.ID != command.QuestionnaireID || record.View.Version != command.ExpectedDefinitionVersion || !ValidPublicSlug(record.View.Slug) {
 				return ErrPublicUnavailable
 			}
 			return nil
@@ -335,16 +342,28 @@ func (s *PublicService) Disable(ctx context.Context, command surveyport.DisableP
 }
 
 func (s *PublicService) Analytics(ctx context.Context, questionnaireID surveyport.ID, definitionVersion int64) (surveyport.PublicAnalytics, error) {
-	if !publicReady(s) || questionnaireID < 1 || definitionVersion < 1 {
+	if !publicReady(s) || questionnaireID < 1 || definitionVersion < 0 {
 		return surveyport.PublicAnalytics{}, ErrInvalidPublicInput
 	}
 	var result surveyport.PublicAnalytics
 	err := s.uow.Within(ctx, func(tx context.Context) error {
-		record, err := s.store.GetPublicDefinition(tx, questionnaireID, definitionVersion)
+		var record PublicDefinitionRecord
+		var err error
+		if definitionVersion == 0 {
+			record, err = s.store.GetCurrentPublicDefinition(tx, questionnaireID)
+		} else {
+			record, err = s.store.GetPublicDefinition(tx, questionnaireID, definitionVersion)
+		}
 		if err != nil {
 			return err
 		}
+		if definitionVersion == 0 && record.State != "public" {
+			return ErrNotFound
+		}
 		result, err = s.store.PublicAnalytics(tx, record)
+		if err == nil && (result.QuestionnaireID != record.View.ID || result.DefinitionVersion != record.View.Version || result.Slug != record.View.Slug || result.State != record.State || !ValidPublicSlug(result.Slug) || result.State != "public" && result.State != "disabled") {
+			return ErrPublicUnavailable
+		}
 		return err
 	})
 	if err != nil {

@@ -54,6 +54,19 @@ func (r *PublicRepository) GetPublicDefinition(ctx context.Context, questionnair
 	}
 	return r.definition(ctx, id, int64(questionnaireID), version, state, slug)
 }
+func (r *PublicRepository) GetCurrentPublicDefinition(ctx context.Context, questionnaireID surveyport.ID) (surveyapp.PublicDefinitionRecord, error) {
+	tx, err := publicTx(ctx)
+	if r == nil || err != nil || questionnaireID < 1 {
+		return surveyapp.PublicDefinitionRecord{}, unavailable(err)
+	}
+	var id, version int64
+	var state, slug string
+	err = tx.QueryRow(ctx, `SELECT id,definition_version,state,slug FROM questionnaire_public_definitions WHERE questionnaire_id=$1 AND state='public' FOR SHARE`, int64(questionnaireID)).Scan(&id, &version, &state, &slug)
+	if err != nil {
+		return surveyapp.PublicDefinitionRecord{}, publicDBErr(err)
+	}
+	return r.definition(ctx, id, int64(questionnaireID), version, state, slug)
+}
 func (r *PublicRepository) definition(ctx context.Context, id, qid, version int64, state, slug string) (surveyapp.PublicDefinitionRecord, error) {
 	tx, err := publicTx(ctx)
 	if err != nil {
@@ -145,11 +158,12 @@ func (r *PublicRepository) DisablePublicDefinition(ctx context.Context, qid surv
 		return surveyapp.PublicDefinitionRecord{}, unavailable(err)
 	}
 	var id int64
-	err = tx.QueryRow(ctx, `UPDATE questionnaire_public_definitions SET state='disabled',disabled_at=$3 WHERE questionnaire_id=$1 AND definition_version=$2 AND state='public' RETURNING id`, int64(qid), version, now).Scan(&id)
+	var slug string
+	err = tx.QueryRow(ctx, `UPDATE questionnaire_public_definitions SET state='disabled',disabled_at=$3 WHERE questionnaire_id=$1 AND definition_version=$2 AND state='public' RETURNING id,slug`, int64(qid), version, now).Scan(&id, &slug)
 	if err != nil {
 		return surveyapp.PublicDefinitionRecord{}, publicDBErr(err)
 	}
-	return r.definition(ctx, id, int64(qid), version, "disabled", "")
+	return r.definition(ctx, id, int64(qid), version, "disabled", slug)
 }
 
 func (r *PublicRepository) ReservePublicReceipt(ctx context.Context, d surveyapp.PublicDefinitionRecord, anon, key, payload [32]byte, now time.Time) (surveyapp.PublicReceipt, bool, error) {
@@ -178,6 +192,9 @@ func (r *PublicRepository) ReservePublicReceipt(ctx context.Context, d surveyapp
 func (r *PublicRepository) ConsumePublicRate(ctx context.Context, definition int64, source, cookie [32]byte, window time.Time) error {
 	tx, err := publicTx(ctx)
 	if r == nil || err != nil {
+		return unavailable(err)
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM questionnaire_public_submission_rate_windows WHERE definition_id=$1 AND window_started_at < $2::timestamptz - INTERVAL '24 hours'`, definition, window); err != nil {
 		return unavailable(err)
 	}
 	for _, digest := range [][32]byte{source, cookie} {
@@ -255,7 +272,7 @@ func (r *PublicRepository) PublicAnalytics(ctx context.Context, d surveyapp.Publ
 	if r == nil || err != nil {
 		return surveyport.PublicAnalytics{}, unavailable(err)
 	}
-	out := surveyport.PublicAnalytics{QuestionnaireID: d.View.ID, DefinitionVersion: d.View.Version, Questions: []surveyport.PublicAnalyticsQuestion{}}
+	out := surveyport.PublicAnalytics{QuestionnaireID: d.View.ID, DefinitionVersion: d.View.Version, Slug: d.View.Slug, State: d.State, Questions: []surveyport.PublicAnalyticsQuestion{}}
 	err = tx.QueryRow(ctx, `SELECT count(*) FROM questionnaire_public_submissions WHERE definition_id=$1`, d.ID).Scan(&out.SubmissionCount)
 	if err != nil {
 		return out, unavailable(err)

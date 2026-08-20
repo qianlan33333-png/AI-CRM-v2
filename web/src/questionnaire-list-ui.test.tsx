@@ -146,6 +146,8 @@ const active: QuestionnaireItem = {
   id: 41,
   name: "welcome",
   title: "欢迎问卷",
+  slug: "welcome",
+  version: 1,
   publicPath: "/q/welcome",
   isDisabled: false,
   status: "active",
@@ -325,6 +327,151 @@ describe("QuestionnaireListPage UI", () => {
     const html = renderToStaticMarkup(<QuestionnaireListPage role="sales" transport={client} />);
     expect(html).toContain("当前账号没有问卷管理权限。");
     expect(client.list).not.toHaveBeenCalled();
+  });
+
+  it("makes zero list, lifecycle, or aggregate requests for sales", async () => {
+    const client = transport();
+    const publicTransport = {
+      publish: vi.fn(),
+      disable: vi.fn(),
+      analytics: vi.fn(),
+    };
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(
+        <QuestionnaireListPage
+          role="sales"
+          transport={client}
+          publicAnalyticsTransport={publicTransport as never}
+        />,
+      );
+      await Promise.resolve();
+    });
+    expect(client.list).not.toHaveBeenCalled();
+    expect(client.preflight).not.toHaveBeenCalled();
+    expect(publicTransport.publish).not.toHaveBeenCalled();
+    expect(publicTransport.disable).not.toHaveBeenCalled();
+    expect(publicTransport.analytics).not.toHaveBeenCalled();
+    await act(async () => { mounted.root.unmount(); });
+  });
+
+  it("confirms one anonymous-public publish, shares the editor write lock, and rereads counts", async () => {
+    const pending = deferred<{ status: number; data: unknown }>();
+    const publish = vi.fn(() => pending.promise);
+    const publicTransport = {
+      publish,
+      disable: vi.fn(),
+      analytics: vi.fn(async () => ({
+        status: 200,
+        data: {
+          questionnaire_id: item.id,
+          definition_version: 7,
+          slug: item.slug,
+          state: "public",
+          submission_count: 0,
+          questions: [{
+            question_id: 1,
+            type: "single_choice",
+            sort_order: 0,
+            answered_count: 0,
+            options: [{ option_id: 1, sort_order: 0, selection_count: 0 }],
+          }],
+        },
+      })),
+    };
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(
+        <QuestionnaireListPage
+          role="admin"
+          readCookie={() => `aicrm_csrf=${csrf}`}
+          transport={transport()}
+          publicAnalyticsTransport={publicTransport as never}
+        />,
+      );
+      await Promise.resolve();
+    });
+    Object.assign(window, { confirm: vi.fn(() => true) });
+    const byText = (text: string) => {
+      const button = buttons(mounted.container).find((candidate) => candidate.textContent === text);
+      if (!button) throw new Error(`missing ${text}`);
+      return button;
+    };
+    await act(async () => {
+      click(byText("发布匿名公开快照"));
+      click(byText("发布匿名公开快照"));
+    });
+    expect(publish).toHaveBeenCalledOnce();
+    expect(byText("编辑问卷").hasAttribute("disabled")).toBe(true);
+    await act(async () => {
+      pending.resolve({ status: 200, data: { questionnaire_id: item.id, slug: item.slug, definition_version: 7, state: "public" } });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(publicTransport.analytics).toHaveBeenCalledWith(item.id, { definition_version: 7 }, { credentials: "same-origin" });
+    expect(mounted.container.textContent).toContain("匿名公开快照已确认，并已读取本地聚合。");
+    expect(mounted.container.textContent).toContain("不显示身份、答案、令牌或 Provider 结果。");
+    await act(async () => { mounted.root.unmount(); });
+  });
+
+  it("discovers the current public snapshot version before disabling it", async () => {
+    const analyticsData = {
+      questionnaire_id: item.id,
+      definition_version: 7,
+      slug: "original-public-slug",
+      state: "public",
+      submission_count: 0,
+      questions: [{
+        question_id: 1,
+        type: "single_choice",
+        sort_order: 0,
+        answered_count: 0,
+        options: [{ option_id: 1, sort_order: 0, selection_count: 0 }],
+      }],
+    };
+    const analytics = vi.fn()
+      .mockResolvedValueOnce({ status: 200, data: analyticsData })
+      .mockResolvedValueOnce({ status: 200, data: { ...analyticsData, state: "disabled" } });
+    const publicTransport = {
+      publish: vi.fn(),
+      disable: vi.fn(async () => ({ status: 200, data: { questionnaire_id: item.id, slug: "original-public-slug", definition_version: 7, state: "disabled" } })),
+      analytics,
+    };
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(<QuestionnaireListPage role="ops" readCookie={() => `aicrm_csrf=${csrf}`} transport={transport()} publicAnalyticsTransport={publicTransport as never} />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    Object.assign(window, { confirm: vi.fn(() => true) });
+    const byText = (text: string) => {
+      const button = buttons(mounted.container).find((candidate) => candidate.textContent === text);
+      if (!button) throw new Error(`missing ${text}`);
+      return button;
+    };
+    expect(byText("停用匿名公开快照").hasAttribute("disabled")).toBe(true);
+    await act(async () => {
+      click(byText("查看匿名公开聚合"));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(publicTransport.analytics).toHaveBeenNthCalledWith(1, item.id, { definition_version: undefined }, { credentials: "same-origin" });
+    expect(byText("复制公开链接").hasAttribute("disabled")).toBe(false);
+    expect(byText("停用匿名公开快照").hasAttribute("disabled")).toBe(false);
+    await act(async () => {
+      click(byText("停用匿名公开快照"));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(publicTransport.disable).toHaveBeenCalledWith(
+      item.id,
+      { expected_definition_version: 7 },
+      expect.objectContaining({ credentials: "same-origin" }),
+    );
+    expect(publicTransport.analytics).toHaveBeenNthCalledWith(2, item.id, { definition_version: 7 }, { credentials: "same-origin" });
+    expect(mounted.container.textContent).toContain("匿名公开快照已停用");
+    await act(async () => mounted.root.unmount());
   });
 
   it("keeps every list command locked until a successful editor save is semantically reread", async () => {
@@ -674,7 +821,7 @@ describe("QuestionnaireListPage UI", () => {
       />,
     );
     expect(page).toContain(">复制问卷<");
-    expect(busy.match(/disabled=""/g)).toHaveLength(16);
+    expect(busy.match(/disabled=""/g)).toHaveLength(22);
   });
 
   it("renders only the local submission aggregate and retains it on a local result read failure", () => {

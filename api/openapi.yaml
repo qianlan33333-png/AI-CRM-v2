@@ -2834,6 +2834,167 @@ paths:
         "200": { description: Public compatibility HTML, content: { text/html: { schema: { type: string } } } }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/public/questionnaires/{slug}:
+    get:
+      tags: [p4-survey]
+      operationId: getPublicSurveyDefinition
+      summary: Read one immutable anonymous public survey definition
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
+      responses:
+        "200": { description: "Immutable public survey definition without identity, free-text, redirect, provider, or assessment fields.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyDefinition" } } } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "404": { $ref: "#/components/responses/PublicSurveyNotFound" }
+        "503": { $ref: "#/components/responses/PublicSurveyUnavailable" }
+        "405": { $ref: "#/components/responses/PublicSurveyGetOnly" }
+  /api/public/questionnaires/{slug}/submissions:
+    post:
+      tags: [p4-survey]
+      operationId: submitPublicSurvey
+      summary: Submit one anonymous selection-only public survey response
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.submit
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveySubmissionRequest" } } } }
+      responses:
+        "202": { description: "Local anonymous submission receipt. The opaque result token is returned only in this POST body and is never a URL parameter.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveySubmissionResponse" } } } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "404": { $ref: "#/components/responses/PublicSurveyNotFound" }
+        "409": { $ref: "#/components/responses/PublicSurveyConflict" }
+        "429": { $ref: "#/components/responses/PublicSurveyRateLimited" }
+        "503": { $ref: "#/components/responses/PublicSurveyUnavailable" }
+        "405": { $ref: "#/components/responses/PublicSurveyPostOnly" }
+  /api/public/survey-submission-results/query:
+    post:
+      tags: [p4-survey]
+      operationId: queryPublicSurveySubmissionResult
+      summary: Query one anonymous local-only public survey result by POST body token
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.result
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyResultQueryRequest" } } } }
+      responses:
+        "200": { description: "Local-only result status with no answer, identity, token, or provider receipt fields.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyResult" } } } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "404": { $ref: "#/components/responses/PublicSurveyNotFound" }
+        "503": { $ref: "#/components/responses/PublicSurveyUnavailable" }
+        "405": { $ref: "#/components/responses/PublicSurveyPostOnly" }
+  /api/admin/questionnaires/{questionnaire_id}/public-publish:
+    post:
+      tags: [p4-survey]
+      operationId: publishQuestionnairePublicDefinition
+      summary: Publish an immutable local anonymous public survey snapshot
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/QuestionnaireID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyPublishRequest" } } } }
+      responses:
+        "200": { description: "Local immutable public definition lifecycle state, not a provider publication receipt.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyManagementResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/public-disable:
+    post:
+      tags: [p4-survey]
+      operationId: disableQuestionnairePublicDefinition
+      summary: Disable one immutable local anonymous public survey snapshot
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/QuestionnaireID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyDisableRequest" } } } }
+      responses:
+        "200": { description: "Local immutable public definition lifecycle state, not a provider disable receipt.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyManagementResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/public-analytics:
+    get:
+      tags: [p4-survey]
+      operationId: getQuestionnairePublicAnalytics
+      summary: Read aggregate anonymous local public survey analytics
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+        - name: definition_version
+          in: query
+          required: false
+          description: Omit to read the current public snapshot; provide a positive version to read one immutable historical snapshot.
+          schema: { type: integer, format: int64, minimum: 1 }
+      responses:
+        "200": { description: "Aggregate selection counts only; no submissions, browser data, identity, answer values, or provider receipts.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyAnalytics" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /q/{slug}:
+    get:
+      tags: [p4-survey]
+      operationId: getPublicSurveyPage
+      summary: Carry a public survey slug into the same-origin SPA without token parameters
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.page
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
+      responses:
+        "302":
+          description: Same-origin SPA carrier; the Location contains only the encoded survey slug and never a result token or external target.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/\\?public_survey_slug=[a-z0-9][a-z0-9-]{0,119}$' } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "405": { $ref: "#/components/responses/PublicSurveyGetOnly" }
   /admin/questionnaires:
     get:
       tags: [p4-survey-compat]
@@ -4408,6 +4569,16 @@ components:
       required: true
       description: Stable caller key; reusing it with a different normalized command is a conflict.
       schema: { type: string, minLength: 16, maxLength: 128 }
+    QuestionnaireID:
+      name: questionnaire_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    PublicSurveySlug:
+      name: slug
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
     MergeReviewID:
       name: review_id
       in: path
@@ -4536,7 +4707,169 @@ components:
     ServiceUnavailable:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    PublicSurveyInvalidInput:
+      description: Public survey input is malformed, unsupported, or unsafe.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyNotFound:
+      description: The public survey definition or result does not exist.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyConflict:
+      description: The anonymous submission or management idempotency command conflicts with stored local state.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyRateLimited:
+      description: The local anonymous browser/source rate budget is exhausted.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyUnavailable:
+      description: The local Survey dependency is unavailable.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyGetOnly:
+      description: This public survey route accepts only GET.
+      headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyPostOnly:
+      description: This public survey route accepts only POST.
+      headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    PublicSurveyError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, enum: [invalid_public_input, not_found, idempotency_conflict, rate_limited, unavailable, method_not_allowed] }
+    PublicSurveyDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, slug, title, description, answer_display_mode, version, questions]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        title: { type: string, minLength: 1, maxLength: 300 }
+        description: { type: string, maxLength: 10000 }
+        answer_display_mode: { type: string, enum: [all_in_one, one_by_one] }
+        version: { type: integer, format: int64, minimum: 1 }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyQuestion" } }
+    PublicSurveyQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, type, title, required, sort_order, minimum_selections, maximum_selections, options]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        type: { type: string, enum: [single_choice, multi_choice] }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        required: { type: boolean }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+        minimum_selections: { type: integer, minimum: 0, maximum: 100 }
+        maximum_selections: { type: integer, minimum: 1, maximum: 100 }
+        options: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyOption" } }
+    PublicSurveyOption:
+      type: object
+      additionalProperties: false
+      required: [id, option_text, sort_order]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        option_text: { type: string, minLength: 1, maxLength: 500 }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+    PublicSurveySubmissionRequest:
+      type: object
+      additionalProperties: false
+      required: [version, submission_key, answers]
+      properties:
+        version: { type: integer, format: int64, minimum: 1 }
+        submission_key: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+        answers: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveySubmissionAnswer" } }
+    PublicSurveySubmissionAnswer:
+      type: object
+      additionalProperties: false
+      required: [question_id, option_ids]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        option_ids: { type: array, maxItems: 100, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+    PublicSurveySubmissionReceipt:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, questionnaire_slug, definition_version, submission_id]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        submission_id: { type: integer, format: int64, minimum: 1 }
+    PublicSurveySubmissionResponse:
+      type: object
+      additionalProperties: false
+      required: [receipt, result_token]
+      properties:
+        receipt: { $ref: "#/components/schemas/PublicSurveySubmissionReceipt" }
+        result_token:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          description: POST-body-only opaque result credential; it is never accepted in a query parameter or returned by lookup responses.
+    PublicSurveyResultQueryRequest:
+      type: object
+      additionalProperties: false
+      required: [result_token]
+      properties:
+        result_token: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+    PublicSurveyResult:
+      type: object
+      additionalProperties: false
+      required: [submission_id, definition_version, submitted_at, local_only, external_executed]
+      properties:
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        local_only: { type: boolean, enum: [true] }
+        external_executed: { type: boolean, enum: [false] }
+    PublicSurveyPublishRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_questionnaire_version]
+      properties:
+        expected_questionnaire_version: { type: integer, format: int64, minimum: 1 }
+    PublicSurveyDisableRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_definition_version]
+      properties:
+        expected_definition_version: { type: integer, format: int64, minimum: 1 }
+    PublicSurveyManagementResponse:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, slug, definition_version, state]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        state: { type: string, enum: [public, disabled] }
+    PublicSurveyAnalytics:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, definition_version, slug, state, submission_count, questions]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        state: { type: string, enum: [public, disabled] }
+        submission_count: { type: integer, format: int64, minimum: 0 }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyAnalyticsQuestion" } }
+    PublicSurveyAnalyticsQuestion:
+      type: object
+      additionalProperties: false
+      required: [question_id, type, sort_order, answered_count, options]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        type: { type: string, enum: [single_choice, multi_choice] }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+        answered_count: { type: integer, format: int64, minimum: 0 }
+        options: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyAnalyticsOption" } }
+    PublicSurveyAnalyticsOption:
+      type: object
+      additionalProperties: false
+      required: [option_id, sort_order, selection_count]
+      properties:
+        option_id: { type: integer, format: int64, minimum: 1 }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+        selection_count: { type: integer, format: int64, minimum: 0 }
     LegacyInternalEventDelivery:
       type: object
       additionalProperties: false

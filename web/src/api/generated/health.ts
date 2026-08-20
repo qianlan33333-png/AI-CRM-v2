@@ -5,6 +5,271 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type PublicSurveyErrorCode =
+  (typeof PublicSurveyErrorCode)[keyof typeof PublicSurveyErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicSurveyErrorCode = {
+  invalid_public_input: "invalid_public_input",
+  not_found: "not_found",
+  idempotency_conflict: "idempotency_conflict",
+  rate_limited: "rate_limited",
+  unavailable: "unavailable",
+  method_not_allowed: "method_not_allowed",
+} as const;
+
+export interface PublicSurveyError {
+  code: PublicSurveyErrorCode;
+}
+
+export type PublicSurveyDefinitionAnswerDisplayMode =
+  (typeof PublicSurveyDefinitionAnswerDisplayMode)[keyof typeof PublicSurveyDefinitionAnswerDisplayMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicSurveyDefinitionAnswerDisplayMode = {
+  all_in_one: "all_in_one",
+  one_by_one: "one_by_one",
+} as const;
+
+export interface PublicSurveyDefinition {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9][a-z0-9-]{0,119}$
+   */
+  slug: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  title: string;
+  /** @maxLength 10000 */
+  description: string;
+  answer_display_mode: PublicSurveyDefinitionAnswerDisplayMode;
+  /** @minimum 1 */
+  version: number;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  questions: PublicSurveyQuestion[];
+}
+
+export type PublicSurveyQuestionType =
+  (typeof PublicSurveyQuestionType)[keyof typeof PublicSurveyQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicSurveyQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface PublicSurveyQuestion {
+  /** @minimum 1 */
+  id: number;
+  type: PublicSurveyQuestionType;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  title: string;
+  required: boolean;
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  sort_order: number;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  minimum_selections: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  maximum_selections: number;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  options: PublicSurveyOption[];
+}
+
+export interface PublicSurveyOption {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  option_text: string;
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  sort_order: number;
+}
+
+export interface PublicSurveySubmissionRequest {
+  /** @minimum 1 */
+  version: number;
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  submission_key: string;
+  /** @maxItems 100 */
+  answers: PublicSurveySubmissionAnswer[];
+}
+
+export interface PublicSurveySubmissionAnswer {
+  /** @minimum 1 */
+  question_id: number;
+  /** @maxItems 100 */
+  option_ids: number[];
+}
+
+export interface PublicSurveySubmissionReceipt {
+  /** @minimum 1 */
+  questionnaire_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9][a-z0-9-]{0,119}$
+   */
+  questionnaire_slug: string;
+  /** @minimum 1 */
+  definition_version: number;
+  /** @minimum 1 */
+  submission_id: number;
+}
+
+export interface PublicSurveySubmissionResponse {
+  receipt: PublicSurveySubmissionReceipt;
+  /**
+   * POST-body-only opaque result credential; it is never accepted in a query parameter or returned by lookup responses.
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  result_token: string;
+}
+
+export interface PublicSurveyResultQueryRequest {
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  result_token: string;
+}
+
+export interface PublicSurveyResult {
+  /** @minimum 1 */
+  submission_id: number;
+  /** @minimum 1 */
+  definition_version: number;
+  submitted_at: string;
+  local_only: boolean;
+  external_executed: boolean;
+}
+
+export interface PublicSurveyPublishRequest {
+  /** @minimum 1 */
+  expected_questionnaire_version: number;
+}
+
+export interface PublicSurveyDisableRequest {
+  /** @minimum 1 */
+  expected_definition_version: number;
+}
+
+export type PublicSurveyManagementResponseState =
+  (typeof PublicSurveyManagementResponseState)[keyof typeof PublicSurveyManagementResponseState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicSurveyManagementResponseState = {
+  public: "public",
+  disabled: "disabled",
+} as const;
+
+export interface PublicSurveyManagementResponse {
+  /** @minimum 1 */
+  questionnaire_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9][a-z0-9-]{0,119}$
+   */
+  slug: string;
+  /** @minimum 1 */
+  definition_version: number;
+  state: PublicSurveyManagementResponseState;
+}
+
+export type PublicSurveyAnalyticsState =
+  (typeof PublicSurveyAnalyticsState)[keyof typeof PublicSurveyAnalyticsState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicSurveyAnalyticsState = {
+  public: "public",
+  disabled: "disabled",
+} as const;
+
+export interface PublicSurveyAnalytics {
+  /** @minimum 1 */
+  questionnaire_id: number;
+  /** @minimum 1 */
+  definition_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @pattern ^[a-z0-9][a-z0-9-]{0,119}$
+   */
+  slug: string;
+  state: PublicSurveyAnalyticsState;
+  /** @minimum 0 */
+  submission_count: number;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  questions: PublicSurveyAnalyticsQuestion[];
+}
+
+export type PublicSurveyAnalyticsQuestionType =
+  (typeof PublicSurveyAnalyticsQuestionType)[keyof typeof PublicSurveyAnalyticsQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicSurveyAnalyticsQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface PublicSurveyAnalyticsQuestion {
+  /** @minimum 1 */
+  question_id: number;
+  type: PublicSurveyAnalyticsQuestionType;
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  sort_order: number;
+  /** @minimum 0 */
+  answered_count: number;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  options: PublicSurveyAnalyticsOption[];
+}
+
+export interface PublicSurveyAnalyticsOption {
+  /** @minimum 1 */
+  option_id: number;
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  sort_order: number;
+  /** @minimum 0 */
+  selection_count: number;
+}
+
 export type LegacyInternalEventDeliveryConsumer =
   (typeof LegacyInternalEventDeliveryConsumer)[keyof typeof LegacyInternalEventDeliveryConsumer];
 
@@ -7731,6 +7996,41 @@ export type UnprocessableEntityResponse = ErrorResponse;
  */
 export type ServiceUnavailableResponse = ErrorResponse;
 
+/**
+ * Public survey input is malformed, unsupported, or unsafe.
+ */
+export type PublicSurveyInvalidInputResponse = PublicSurveyError;
+
+/**
+ * The public survey definition or result does not exist.
+ */
+export type PublicSurveyNotFoundResponse = PublicSurveyError;
+
+/**
+ * The anonymous submission or management idempotency command conflicts with stored local state.
+ */
+export type PublicSurveyConflictResponse = PublicSurveyError;
+
+/**
+ * The local anonymous browser/source rate budget is exhausted.
+ */
+export type PublicSurveyRateLimitedResponse = PublicSurveyError;
+
+/**
+ * The local Survey dependency is unavailable.
+ */
+export type PublicSurveyUnavailableResponse = PublicSurveyError;
+
+/**
+ * This public survey route accepts only GET.
+ */
+export type PublicSurveyGetOnlyResponse = PublicSurveyError;
+
+/**
+ * This public survey route accepts only POST.
+ */
+export type PublicSurveyPostOnlyResponse = PublicSurveyError;
+
 export type EntitlementLimitParameter = number;
 
 /**
@@ -8361,6 +8661,14 @@ export type ListH5AvailableCouponsParams = {
    * @maxLength 200
    */
   target_ref: string;
+};
+
+export type GetQuestionnairePublicAnalyticsParams = {
+  /**
+   * Omit to read the current public snapshot; provide a positive version to read one immutable historical snapshot.
+   * @minimum 1
+   */
+  definition_version?: number;
 };
 
 export type ListLegacyQuestionnairesParams = {
@@ -18827,6 +19135,558 @@ export const getPublicCouponPage = async (
     status: res.status,
     headers: res.headers,
   } as getPublicCouponPageResponse;
+};
+
+/**
+ * @summary Read one immutable anonymous public survey definition
+ */
+export type getPublicSurveyDefinitionResponse200 = {
+  data: PublicSurveyDefinition;
+  status: 200;
+};
+
+export type getPublicSurveyDefinitionResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type getPublicSurveyDefinitionResponse404 = {
+  data: PublicSurveyNotFoundResponse;
+  status: 404;
+};
+
+export type getPublicSurveyDefinitionResponse405 = {
+  data: PublicSurveyGetOnlyResponse;
+  status: 405;
+};
+
+export type getPublicSurveyDefinitionResponse503 = {
+  data: PublicSurveyUnavailableResponse;
+  status: 503;
+};
+
+export type getPublicSurveyDefinitionResponseSuccess =
+  getPublicSurveyDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type getPublicSurveyDefinitionResponseError = (
+  | getPublicSurveyDefinitionResponse400
+  | getPublicSurveyDefinitionResponse404
+  | getPublicSurveyDefinitionResponse405
+  | getPublicSurveyDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getPublicSurveyDefinitionResponse =
+  | getPublicSurveyDefinitionResponseSuccess
+  | getPublicSurveyDefinitionResponseError;
+
+export const getGetPublicSurveyDefinitionUrl = (slug: string) => {
+  return `/api/public/questionnaires/${slug}`;
+};
+
+export const getPublicSurveyDefinition = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<getPublicSurveyDefinitionResponse> => {
+  const res = await fetch(getGetPublicSurveyDefinitionUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPublicSurveyDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getPublicSurveyDefinitionResponse;
+};
+
+/**
+ * @summary Submit one anonymous selection-only public survey response
+ */
+export type submitPublicSurveyResponse202 = {
+  data: PublicSurveySubmissionResponse;
+  status: 202;
+};
+
+export type submitPublicSurveyResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type submitPublicSurveyResponse404 = {
+  data: PublicSurveyNotFoundResponse;
+  status: 404;
+};
+
+export type submitPublicSurveyResponse405 = {
+  data: PublicSurveyPostOnlyResponse;
+  status: 405;
+};
+
+export type submitPublicSurveyResponse409 = {
+  data: PublicSurveyConflictResponse;
+  status: 409;
+};
+
+export type submitPublicSurveyResponse429 = {
+  data: PublicSurveyRateLimitedResponse;
+  status: 429;
+};
+
+export type submitPublicSurveyResponse503 = {
+  data: PublicSurveyUnavailableResponse;
+  status: 503;
+};
+
+export type submitPublicSurveyResponseSuccess =
+  submitPublicSurveyResponse202 & {
+    headers: Headers;
+  };
+export type submitPublicSurveyResponseError = (
+  | submitPublicSurveyResponse400
+  | submitPublicSurveyResponse404
+  | submitPublicSurveyResponse405
+  | submitPublicSurveyResponse409
+  | submitPublicSurveyResponse429
+  | submitPublicSurveyResponse503
+) & {
+  headers: Headers;
+};
+
+export type submitPublicSurveyResponse =
+  submitPublicSurveyResponseSuccess | submitPublicSurveyResponseError;
+
+export const getSubmitPublicSurveyUrl = (slug: string) => {
+  return `/api/public/questionnaires/${slug}/submissions`;
+};
+
+export const submitPublicSurvey = async (
+  slug: string,
+  publicSurveySubmissionRequest: PublicSurveySubmissionRequest,
+  options?: RequestInit,
+): Promise<submitPublicSurveyResponse> => {
+  const res = await fetch(getSubmitPublicSurveyUrl(slug), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicSurveySubmissionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: submitPublicSurveyResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as submitPublicSurveyResponse;
+};
+
+/**
+ * @summary Query one anonymous local-only public survey result by POST body token
+ */
+export type queryPublicSurveySubmissionResultResponse200 = {
+  data: PublicSurveyResult;
+  status: 200;
+};
+
+export type queryPublicSurveySubmissionResultResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type queryPublicSurveySubmissionResultResponse404 = {
+  data: PublicSurveyNotFoundResponse;
+  status: 404;
+};
+
+export type queryPublicSurveySubmissionResultResponse405 = {
+  data: PublicSurveyPostOnlyResponse;
+  status: 405;
+};
+
+export type queryPublicSurveySubmissionResultResponse503 = {
+  data: PublicSurveyUnavailableResponse;
+  status: 503;
+};
+
+export type queryPublicSurveySubmissionResultResponseSuccess =
+  queryPublicSurveySubmissionResultResponse200 & {
+    headers: Headers;
+  };
+export type queryPublicSurveySubmissionResultResponseError = (
+  | queryPublicSurveySubmissionResultResponse400
+  | queryPublicSurveySubmissionResultResponse404
+  | queryPublicSurveySubmissionResultResponse405
+  | queryPublicSurveySubmissionResultResponse503
+) & {
+  headers: Headers;
+};
+
+export type queryPublicSurveySubmissionResultResponse =
+  | queryPublicSurveySubmissionResultResponseSuccess
+  | queryPublicSurveySubmissionResultResponseError;
+
+export const getQueryPublicSurveySubmissionResultUrl = () => {
+  return `/api/public/survey-submission-results/query`;
+};
+
+export const queryPublicSurveySubmissionResult = async (
+  publicSurveyResultQueryRequest: PublicSurveyResultQueryRequest,
+  options?: RequestInit,
+): Promise<queryPublicSurveySubmissionResultResponse> => {
+  const res = await fetch(getQueryPublicSurveySubmissionResultUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicSurveyResultQueryRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queryPublicSurveySubmissionResultResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queryPublicSurveySubmissionResultResponse;
+};
+
+/**
+ * @summary Publish an immutable local anonymous public survey snapshot
+ */
+export type publishQuestionnairePublicDefinitionResponse200 = {
+  data: PublicSurveyManagementResponse;
+  status: 200;
+};
+
+export type publishQuestionnairePublicDefinitionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type publishQuestionnairePublicDefinitionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type publishQuestionnairePublicDefinitionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type publishQuestionnairePublicDefinitionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type publishQuestionnairePublicDefinitionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type publishQuestionnairePublicDefinitionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type publishQuestionnairePublicDefinitionResponseSuccess =
+  publishQuestionnairePublicDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type publishQuestionnairePublicDefinitionResponseError = (
+  | publishQuestionnairePublicDefinitionResponse400
+  | publishQuestionnairePublicDefinitionResponse401
+  | publishQuestionnairePublicDefinitionResponse403
+  | publishQuestionnairePublicDefinitionResponse404
+  | publishQuestionnairePublicDefinitionResponse409
+  | publishQuestionnairePublicDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type publishQuestionnairePublicDefinitionResponse =
+  | publishQuestionnairePublicDefinitionResponseSuccess
+  | publishQuestionnairePublicDefinitionResponseError;
+
+export const getPublishQuestionnairePublicDefinitionUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/public-publish`;
+};
+
+export const publishQuestionnairePublicDefinition = async (
+  questionnaireId: number,
+  publicSurveyPublishRequest: PublicSurveyPublishRequest,
+  options?: RequestInit,
+): Promise<publishQuestionnairePublicDefinitionResponse> => {
+  const res = await fetch(
+    getPublishQuestionnairePublicDefinitionUrl(questionnaireId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(publicSurveyPublishRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: publishQuestionnairePublicDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as publishQuestionnairePublicDefinitionResponse;
+};
+
+/**
+ * @summary Disable one immutable local anonymous public survey snapshot
+ */
+export type disableQuestionnairePublicDefinitionResponse200 = {
+  data: PublicSurveyManagementResponse;
+  status: 200;
+};
+
+export type disableQuestionnairePublicDefinitionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type disableQuestionnairePublicDefinitionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type disableQuestionnairePublicDefinitionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type disableQuestionnairePublicDefinitionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type disableQuestionnairePublicDefinitionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type disableQuestionnairePublicDefinitionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type disableQuestionnairePublicDefinitionResponseSuccess =
+  disableQuestionnairePublicDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type disableQuestionnairePublicDefinitionResponseError = (
+  | disableQuestionnairePublicDefinitionResponse400
+  | disableQuestionnairePublicDefinitionResponse401
+  | disableQuestionnairePublicDefinitionResponse403
+  | disableQuestionnairePublicDefinitionResponse404
+  | disableQuestionnairePublicDefinitionResponse409
+  | disableQuestionnairePublicDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type disableQuestionnairePublicDefinitionResponse =
+  | disableQuestionnairePublicDefinitionResponseSuccess
+  | disableQuestionnairePublicDefinitionResponseError;
+
+export const getDisableQuestionnairePublicDefinitionUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/public-disable`;
+};
+
+export const disableQuestionnairePublicDefinition = async (
+  questionnaireId: number,
+  publicSurveyDisableRequest: PublicSurveyDisableRequest,
+  options?: RequestInit,
+): Promise<disableQuestionnairePublicDefinitionResponse> => {
+  const res = await fetch(
+    getDisableQuestionnairePublicDefinitionUrl(questionnaireId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(publicSurveyDisableRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: disableQuestionnairePublicDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as disableQuestionnairePublicDefinitionResponse;
+};
+
+/**
+ * @summary Read aggregate anonymous local public survey analytics
+ */
+export type getQuestionnairePublicAnalyticsResponse200 = {
+  data: PublicSurveyAnalytics;
+  status: 200;
+};
+
+export type getQuestionnairePublicAnalyticsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getQuestionnairePublicAnalyticsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getQuestionnairePublicAnalyticsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getQuestionnairePublicAnalyticsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getQuestionnairePublicAnalyticsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getQuestionnairePublicAnalyticsResponseSuccess =
+  getQuestionnairePublicAnalyticsResponse200 & {
+    headers: Headers;
+  };
+export type getQuestionnairePublicAnalyticsResponseError = (
+  | getQuestionnairePublicAnalyticsResponse400
+  | getQuestionnairePublicAnalyticsResponse401
+  | getQuestionnairePublicAnalyticsResponse403
+  | getQuestionnairePublicAnalyticsResponse404
+  | getQuestionnairePublicAnalyticsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getQuestionnairePublicAnalyticsResponse =
+  | getQuestionnairePublicAnalyticsResponseSuccess
+  | getQuestionnairePublicAnalyticsResponseError;
+
+export const getGetQuestionnairePublicAnalyticsUrl = (
+  questionnaireId: number,
+  params?: GetQuestionnairePublicAnalyticsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/questionnaires/${questionnaireId}/public-analytics?${stringifiedParams}`
+    : `/api/admin/questionnaires/${questionnaireId}/public-analytics`;
+};
+
+export const getQuestionnairePublicAnalytics = async (
+  questionnaireId: number,
+  params?: GetQuestionnairePublicAnalyticsParams,
+  options?: RequestInit,
+): Promise<getQuestionnairePublicAnalyticsResponse> => {
+  const res = await fetch(
+    getGetQuestionnairePublicAnalyticsUrl(questionnaireId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getQuestionnairePublicAnalyticsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getQuestionnairePublicAnalyticsResponse;
+};
+
+/**
+ * @summary Carry a public survey slug into the same-origin SPA without token parameters
+ */
+export type getPublicSurveyPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getPublicSurveyPageResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type getPublicSurveyPageResponse405 = {
+  data: PublicSurveyGetOnlyResponse;
+  status: 405;
+};
+
+export type getPublicSurveyPageResponseError = (
+  | getPublicSurveyPageResponse302
+  | getPublicSurveyPageResponse400
+  | getPublicSurveyPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getPublicSurveyPageResponse = getPublicSurveyPageResponseError;
+
+export const getGetPublicSurveyPageUrl = (slug: string) => {
+  return `/q/${slug}`;
+};
+
+export const getPublicSurveyPage = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<getPublicSurveyPageResponse> => {
+  const res = await fetch(getGetPublicSurveyPageUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPublicSurveyPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getPublicSurveyPageResponse;
 };
 
 /**

@@ -64,6 +64,7 @@ import (
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
+	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
@@ -116,6 +117,7 @@ type candidateHandler struct {
 	segments        *segmenthttp.CRUDHandler
 	products        *producthttp.Handler
 	productLocal    *producthttp.LocalMutationHandler
+	surveyPublic    *surveyhttp.PublicHandler
 	segmentRefresh  *segmenthttp.RefreshHandler
 	identityReviews *identityhttp.ReviewHandler
 	automationRuns  interface {
@@ -544,6 +546,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	miniProgramService := mediaapp.NewMiniProgramService(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository)
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveystore.NewSubmissionRepository())
+	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
+	surveyPublicHandler := surveyhttp.NewPublicHandler(
+		surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey),
+		surveyCookieKey,
+		surveyAbuseKey,
+	)
 	channelService := contactapp.NewChannelServiceWithImageReferences(uow, contactstore.NewChannelRepository(), mediaRepository, eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
 	localTagCatalogHandler, err := contacthttp.NewLocalTagCatalogHandler(legacyTagService)
@@ -599,6 +607,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segments:           segmentCRUDHandler,
 		products:           productHandler,
 		productLocal:       productLocalHandler,
+		surveyPublic:       surveyPublicHandler,
 		segmentRefresh:     segmentRefreshHandler,
 		identityReviews:    identityReviewHandler,
 		automationRuns:     automationstore.NewRepository(pool),
@@ -872,6 +881,68 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 	}
 
 	wrapper := &api.ServerInterfaceWrapper{Handler: candidate, ErrorHandlerFunc: platformhttp.RequestErrorHandler}
+	registerPublicSurvey := func(method, pattern string, endpoint http.Handler) error {
+		var allowed http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			defer func() {
+				if recover() == nil {
+					return
+				}
+				logger.Error("public survey handler panic")
+				for key := range writer.Header() {
+					writer.Header().Del(key)
+				}
+				writer.Header().Set("Cache-Control", "no-store")
+				writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+				writer.Header().Set("Referrer-Policy", "no-referrer")
+				writer.Header().Set("X-Content-Type-Options", "nosniff")
+				writer.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = writer.Write([]byte("{\"code\":\"unavailable\"}\n"))
+			}()
+			endpoint.ServeHTTP(writer, request)
+		})
+		var wrapErr error
+		allowed, wrapErr = gateway.TimeoutMiddleware(allowed)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		allowed, wrapErr = gateway.RoutePatternMiddleware(pattern, allowed)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		methodGuard, wrapErr := gateway.RoutePatternMiddleware(pattern, endpoint)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		// The recovery buffer expects platform errors for non-success statuses.
+		// Deliberate Survey 405 responses therefore bypass it, just like /health.
+		router.Handle(pattern, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == method {
+				allowed.ServeHTTP(writer, request)
+				return
+			}
+			methodGuard.ServeHTTP(writer, request)
+		}))
+		return nil
+	}
+	for _, route := range []struct {
+		method, pattern string
+		endpoint        http.Handler
+	}{
+		{http.MethodGet, "/api/public/questionnaires/{slug}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			candidate.GetPublicSurveyDefinition(writer, request, api.PublicSurveySlug(chi.URLParam(request, "slug")))
+		})},
+		{http.MethodPost, "/api/public/questionnaires/{slug}/submissions", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			candidate.SubmitPublicSurvey(writer, request, api.PublicSurveySlug(chi.URLParam(request, "slug")))
+		})},
+		{http.MethodPost, "/api/public/survey-submission-results/query", http.HandlerFunc(candidate.QueryPublicSurveySubmissionResult)},
+		{http.MethodGet, "/q/{slug}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			candidate.GetPublicSurveyPage(writer, request, api.PublicSurveySlug(chi.URLParam(request, "slug")))
+		})},
+	} {
+		if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
+			return nil, err
+		}
+	}
 	register := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
 		tail, wrapErr := recovery(endpoint)
 		if wrapErr != nil {
@@ -956,6 +1027,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ReorderStages)},
 		{http.MethodDelete, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ArchiveStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
+		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
+		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
+		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},
 	}
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {

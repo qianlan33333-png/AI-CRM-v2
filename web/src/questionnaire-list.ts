@@ -19,6 +19,8 @@ export interface QuestionnaireItem {
   readonly id: number;
   readonly name: string;
   readonly title: string;
+  readonly slug: string;
+  readonly version: number;
   readonly publicPath: string;
   readonly isDisabled: boolean;
   readonly status: "active" | "disabled";
@@ -413,6 +415,8 @@ function questionnaireDefinition(
       id: value.id,
       name: value.name,
       title: value.title,
+      slug: value.slug,
+      version: value.version,
       publicPath: value.public_path,
       isDisabled: value.is_disabled,
       status: value.status,
