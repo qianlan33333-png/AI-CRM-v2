@@ -7,6 +7,11 @@ import type {
   CustomerMergeHistoryRole,
   CustomerMergeHistoryTransport,
 } from "./customer-merge-history";
+import { CustomerChatActivityPanel } from "./customer-chat-activity-ui";
+import type {
+  CustomerChatActivityRole,
+  CustomerChatActivityTransport,
+} from "./customer-chat-activity";
 import {
   generatedCustomerDetailTransport,
   isCustomerGender,
@@ -34,6 +39,8 @@ export interface CustomerDetailPageProps {
   readonly contextTransport?: CustomerContextTransport;
   readonly mergeHistoryRole?: CustomerMergeHistoryRole;
   readonly mergeHistoryTransport?: CustomerMergeHistoryTransport;
+  readonly chatActivityRole?: CustomerChatActivityRole;
+  readonly chatActivityTransport?: CustomerChatActivityTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerDetailSnapshot;
@@ -189,6 +196,8 @@ export function CustomerDetailPage({
   contextTransport,
   mergeHistoryRole,
   mergeHistoryTransport,
+  chatActivityRole,
+  chatActivityTransport,
   readCookie = browserCookie,
   onUnauthenticated,
   initialSnapshot,
@@ -516,6 +525,7 @@ export function CustomerDetailPage({
         customerID={customerID}
         transport={contextTransport}
         onUnauthenticated={onUnauthenticated}
+        showChatSummary={!(chatActivityRole && chatActivityTransport)}
       />
 
       {mergeHistoryTransport && mergeHistoryRole && (
@@ -523,6 +533,15 @@ export function CustomerDetailPage({
           customerID={customerID}
           role={mergeHistoryRole}
           transport={mergeHistoryTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      )}
+
+      {chatActivityRole && chatActivityTransport && (
+        <CustomerChatActivityPanel
+          customerID={customerID}
+          role={chatActivityRole}
+          transport={chatActivityTransport}
           onUnauthenticated={onUnauthenticated}
         />
       )}

@@ -276,6 +276,20 @@ describe("CustomerContextPanel", () => {
       expect(html.toLowerCase()).not.toContain(forbidden);
   });
 
+  it("lets the paginated activity panel replace the initial chat summary", () => {
+    const html = renderToStaticMarkup(
+      <CustomerContextPanel
+        customerID={7}
+        initialSnapshot={snapshot}
+        transport={{ get: vi.fn() } as unknown as CustomerContextTransport}
+        showChatSummary={false}
+      />,
+    );
+    expect(html).not.toContain("本地聊天摘要");
+    expect(html).not.toContain("private / text");
+    expect(html).toContain("Customer 360 本地读取");
+  });
+
   it("mounts timeline pagination with same-tick singleflight, failure retention, and unmount stale-drop", async () => {
     const first = deferred<{ status: number; data: unknown }>();
     const unavailable = deferred<{ status: number; data: unknown }>();

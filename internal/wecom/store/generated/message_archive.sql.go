@@ -79,6 +79,30 @@ func (q *Queries) CountMessageArchiveExternalRecords(ctx context.Context, arg Co
 	return column_1, err
 }
 
+const countMessageArchiveRecords = `-- name: CountMessageArchiveRecords :one
+SELECT count(*)::bigint
+FROM wecom_message_archive_records
+WHERE customer_id = $1::bigint
+  AND ($2::text = '' OR chat_type = $2::text)
+  AND (
+    $3::text = ''
+    OR position(lower($3::text) IN lower(content_masked)) > 0
+  )
+`
+
+type CountMessageArchiveRecordsParams struct {
+	CustomerID int64  `json:"customer_id"`
+	ChatType   string `json:"chat_type"`
+	Keyword    string `json:"keyword"`
+}
+
+func (q *Queries) CountMessageArchiveRecords(ctx context.Context, arg CountMessageArchiveRecordsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countMessageArchiveRecords, arg.CustomerID, arg.ChatType, arg.Keyword)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listMessageArchiveExternalRecords = `-- name: ListMessageArchiveExternalRecords :many
 SELECT
   id, source_message_id, external_userid, chat_type, owner_userid, sender,

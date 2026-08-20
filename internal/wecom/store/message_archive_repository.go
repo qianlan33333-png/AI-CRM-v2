@@ -87,13 +87,19 @@ func (*MessageArchiveRepository) ListMessageArchive(ctx context.Context, query w
 		}
 		return mapArchiveExternalRows(rows), total, nil
 	}
+	total, err := queries.CountMessageArchiveRecords(ctx, wecomdb.CountMessageArchiveRecordsParams{
+		CustomerID: int64(query.CustomerID), ChatType: query.ChatType, Keyword: query.Keyword,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
 	rows, err := queries.ListMessageArchiveRecords(ctx, wecomdb.ListMessageArchiveRecordsParams{
 		CustomerID: int64(query.CustomerID), ChatType: query.ChatType, Keyword: query.Keyword, RowLimit: query.Limit, RowOffset: query.Offset,
 	})
 	if err != nil {
 		return nil, 0, err
 	}
-	return mapArchiveRows(rows), int64(len(rows)), nil
+	return mapArchiveRows(rows), total, nil
 }
 
 func messageArchiveQueries(ctx context.Context) (*wecomdb.Queries, error) {

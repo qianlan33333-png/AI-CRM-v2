@@ -17,6 +17,7 @@ var (
 
 type CustomerChatSummaryQuery struct {
 	CustomerID contactport.CustomerID
+	ChatType   string
 	Limit      int32
 	Offset     int32
 }
