@@ -132,6 +132,33 @@ func TestOwnerApprovedNativePackageRegistry(t *testing.T) {
 	})
 }
 
+func TestGroupOpsPlanIDRemainsALosslessDecimalString(t *testing.T) {
+	for name, mutate := range map[string]func(*openapi3.Schema){
+		"integer type": func(schema *openapi3.Schema) {
+			schema.Type = &openapi3.Types{"integer"}
+			schema.Format = "int64"
+		},
+		"broader pattern": func(schema *openapi3.Schema) {
+			schema.Pattern = "^[0-9]+$"
+		},
+		"longer value": func(schema *openapi3.Schema) {
+			maximum := uint64(20)
+			schema.MaxLength = &maximum
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc, ids := fresh(t)
+			item := doc.Paths.Value("/admin/automation-conversion/group-ops/plans/{plan_id}")
+			parameter := item.Parameters.GetByInAndName("path", "plan_id")
+			if parameter == nil || parameter.Schema == nil || parameter.Schema.Value == nil {
+				t.Fatal("group operations plan_id parameter is missing")
+			}
+			mutate(parameter.Schema.Value)
+			reject(t, doc, ids)
+		})
+	}
+}
+
 func TestRejectsUnsafeContractMutations(t *testing.T) {
 	tests := map[string]func(*testing.T){
 		"canonical public route becomes authenticated": func(t *testing.T) {

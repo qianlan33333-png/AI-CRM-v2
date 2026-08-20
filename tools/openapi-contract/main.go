@@ -43,11 +43,19 @@ type nativePackageOperation struct {
 	scopes         map[string]string
 }
 
+type nativePackagePathParameter struct {
+	name      string
+	typeName  string
+	pattern   string
+	maxLength uint64
+}
+
 const (
 	p4ClassificationPackageEvidence = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
 	p4ProductEntitlementEvidence    = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
 	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
 	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
+	p4GroupOpsWorkspaceEvidence     = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
 	p4OutboundOperationsEvidence    = "P4-OUTBOUND-OPERATIONS-2026-08-20"
 	p4CommerceWorkspaceEvidence     = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
 	p4HXCSenderManagementEvidence   = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
@@ -86,6 +94,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCloudOrchestratorPlanDetailWorkspace":    {"/admin/cloud-orchestrator/plans/{plan_id}", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorCampaignsWorkspace":     {"/admin/cloud-orchestrator/campaigns", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorObservabilityWorkspace": {"/admin/cloud-orchestrator/observability", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getGroupOpsPlansWorkspace":                  {"/admin/automation-conversion/group-ops/ui", "GET", p4GroupOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getGroupOpsPlanDetailWorkspace":             {"/admin/automation-conversion/group-ops/plans/{plan_id}", "GET", p4GroupOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getAlipayTransactionsWorkspace":             {"/admin/alipay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getServiceProductsWorkspace":                {"/admin/service-period-products", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
@@ -99,6 +109,18 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getWeChatShopTransactionsWorkspace":         {"/admin/wechat-shop/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getWeChatShopTransactionWorkspace":          {"/admin/wechat-shop/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"reorderLegacyHXCSendConfigs":                {"/api/admin/hxc-dashboard/send-config/reorder", "PUT", p4HXCSenderManagementEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global"}},
+}
+
+// nativePackagePathParameters freezes identifiers which must cross generated
+// JavaScript clients without IEEE-754 rounding. The runtime remains responsible
+// for the stricter domain range check after receiving the lossless text value.
+var nativePackagePathParameters = map[string]nativePackagePathParameter{
+	"getGroupOpsPlanDetailWorkspace": {
+		name:      "plan_id",
+		typeName:  "string",
+		pattern:   "^[1-9][0-9]{0,18}$",
+		maxLength: 19,
+	},
 }
 
 var p1CandidateOperations = map[string]bool{
@@ -795,6 +817,18 @@ func validateNativePackageOperation(path string, item *openapi3.PathItem, op *op
 	}
 	if len(contract.scopes) < 3 && op.Responses.Value("403") == nil {
 		return fmt.Errorf("%s native package operation denies a role but lacks 403", op.OperationID)
+	}
+	if parameterContract, frozen := nativePackagePathParameters[op.OperationID]; frozen {
+		parameter := item.Parameters.GetByInAndName("path", parameterContract.name)
+		if parameter == nil || !parameter.Required || parameter.Schema == nil || parameter.Schema.Value == nil {
+			return fmt.Errorf("%s lossless path parameter contract is missing", op.OperationID)
+		}
+		schema := parameter.Schema.Value
+		if schema.Type == nil || !schema.Type.Is(parameterContract.typeName) || schema.Format != "" ||
+			schema.Pattern != parameterContract.pattern || schema.MaxLength == nil || *schema.MaxLength != parameterContract.maxLength ||
+			schema.Min != nil || schema.Max != nil {
+			return fmt.Errorf("%s lossless path parameter contract drifted", op.OperationID)
+		}
 	}
 	return nil
 }
