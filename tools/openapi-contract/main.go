@@ -49,6 +49,7 @@ const (
 	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
 	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
 	p4OutboundOperationsEvidence    = "P4-OUTBOUND-OPERATIONS-2026-08-20"
+	p4CommerceWorkspaceEvidence     = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -85,6 +86,18 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCloudOrchestratorCampaignsWorkspace":     {"/admin/cloud-orchestrator/campaigns", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorObservabilityWorkspace": {"/admin/cloud-orchestrator/observability", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+
+	"getAlipayTransactionsWorkspace":     {"/admin/alipay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductsWorkspace":        {"/admin/service-period-products", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductCreateWorkspace":   {"/admin/service-period-products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductEditWorkspace":     {"/admin/service-period-products/{service_product_id}/edit", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductDataWorkspace":     {"/admin/service-period-products/{service_product_id}/data", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayProductCreateWorkspace": {"/admin/wechat-pay/products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayProductEditWorkspace":   {"/admin/wechat-pay/products/{product_id}/edit", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayTransactionsWorkspace":  {"/admin/wechat-pay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayTransactionWorkspace":   {"/admin/wechat-pay/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatShopTransactionsWorkspace": {"/admin/wechat-shop/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatShopTransactionWorkspace":  {"/admin/wechat-shop/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 }
 
 var p1CandidateOperations = map[string]bool{
@@ -442,6 +455,17 @@ var authorizationContracts = map[string]authorizationContract{
 	"getCloudOrchestratorPlanDetailWorkspace":    {"admin.read", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorCampaignsWorkspace":     {"admin.read", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorObservabilityWorkspace": {"admin.read", map[string]string{"admin": "global"}},
+	"getAlipayTransactionsWorkspace":             {"admin.read", map[string]string{"admin": "global"}},
+	"getServiceProductsWorkspace":                {"admin.read", map[string]string{"admin": "global"}},
+	"getServiceProductCreateWorkspace":           {"admin.read", map[string]string{"admin": "global"}},
+	"getServiceProductEditWorkspace":             {"admin.read", map[string]string{"admin": "global"}},
+	"getServiceProductDataWorkspace":             {"admin.read", map[string]string{"admin": "global"}},
+	"getWeChatPayProductCreateWorkspace":         {"admin.read", map[string]string{"admin": "global"}},
+	"getWeChatPayProductEditWorkspace":           {"admin.read", map[string]string{"admin": "global"}},
+	"getWeChatPayTransactionsWorkspace":          {"admin.read", map[string]string{"admin": "global"}},
+	"getWeChatPayTransactionWorkspace":           {"admin.read", map[string]string{"admin": "global"}},
+	"getWeChatShopTransactionsWorkspace":         {"admin.read", map[string]string{"admin": "global"}},
+	"getWeChatShopTransactionWorkspace":          {"admin.read", map[string]string{"admin": "global"}},
 	"listProducts":                               {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createProduct":                              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getProduct":                                 {"products.read", map[string]string{"admin": "global", "ops": "global"}},

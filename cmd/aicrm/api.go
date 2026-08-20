@@ -1082,6 +1082,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		}
 		dataHealth := newLegacyDataHealthHandler(source)
 		cloudOrchestratorPages := automationhttp.NewCloudOrchestratorPages()
+		commerceWorkspacePages := producthttp.NewWorkspacePages()
 		isCloudOrchestratorPagePattern := func(pattern string) bool {
 			return pattern == automationhttp.CloudOrchestratorRootPath ||
 				pattern == automationhttp.CloudOrchestratorPlansPath ||
@@ -1154,6 +1155,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if isCloudOrchestratorPagePattern(pattern) {
 				tail = automationhttp.CloudOrchestratorPageSecurityHeaders(tail)
 			}
+			if producthttp.IsWorkspacePagePattern(pattern) {
+				tail = producthttp.WorkspacePageSecurityHeaders(tail)
+			}
 			if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath ||
 				(method == http.MethodGet && pattern == "/api/admin/questionnaires") ||
 				(method == http.MethodPost && pattern == "/api/admin/questionnaires/{questionnaire_id}/disable") ||
@@ -1169,7 +1173,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isCloudOrchestratorPagePattern(pattern) {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isCloudOrchestratorPagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -1213,6 +1217,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if isCloudOrchestratorPagePattern(pattern) {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(automationhttp.WriteCloudOrchestratorPageMethodNotAllowed))
+					}
+					if producthttp.IsWorkspacePagePattern(pattern) {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(producthttp.WriteWorkspacePageMethodNotAllowed))
 					}
 					if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyQuestionnaireMethodNotAllowed))
@@ -1333,6 +1340,17 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, automationhttp.CloudOrchestratorPlanDetailPattern, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
 			{http.MethodGet, automationhttp.CloudOrchestratorCampaignsPath, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
 			{http.MethodGet, automationhttp.CloudOrchestratorObservabilityPath, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
+			{http.MethodGet, producthttp.AlipayTransactionsPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.ServiceProductsPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.ServiceProductNewPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.ServiceProductEditPattern, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.ServiceProductDataPattern, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.WeChatPayProductNewPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.WeChatPayProductEditPattern, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.WeChatPayTransactionsPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.WeChatPayTransactionPattern, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.WeChatShopTransactionsPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
+			{http.MethodGet, producthttp.WeChatShopTransactionPattern, authport.CapabilityAdminRead, false, commerceWorkspacePages},
 			{http.MethodGet, "/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentListPage)},
 			{http.MethodGet, "/admin/automation-agents/{agent_id}/edit", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentEditPage)},
 			{http.MethodGet, "/api/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationAgents)},
