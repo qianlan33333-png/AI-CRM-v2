@@ -629,8 +629,34 @@ describe("Web shell routes", () => {
     expect(client.save).not.toHaveBeenCalled();
   });
 
+  it("connects the admin-only AI assistant carrier to the local read-only workspace", () => {
+    vi.stubGlobal("window", {
+      location: { pathname: "/admin/cloud-orchestrator/plans" },
+    });
+    const admin = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(admin).toContain("运营计划审阅");
+    expect(admin).toContain("不表示 Provider 已调用");
+    expect(admin).toContain('href="/admin/cloud-orchestrator/plans"');
+
+    for (const role of ["ops", "sales"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          initialSession={{
+            status: "authenticated",
+            principal:
+              role === "sales"
+                ? { adminUserID: 9, role, staffID: 11 }
+                : { adminUserID: 8, role },
+          }}
+        />,
+      );
+      expect(html).toContain("当前账号没有 AI 助手本地审阅权限");
+      expect(html).not.toContain('href="/admin/cloud-orchestrator/plans"');
+    }
+  });
+
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(23);
+    expect(routes).toHaveLength(27);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -769,6 +795,7 @@ describe("Web shell routes", () => {
       "/admin/coupons",
       "/admin/automation-runs",
       AUTOMATION_AGENTS_PATH,
+      "/admin/cloud-orchestrator/plans",
       "/admin/group-invite-library",
       "/admin/delivery-lineage",
       "/admin/data-health",
@@ -817,6 +844,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/coupons"');
     expect(html).toContain('href="/admin/automation-runs"');
     expect(html).toContain(`href="${AUTOMATION_AGENTS_PATH}"`);
+    expect(html).toContain('href="/admin/cloud-orchestrator/plans"');
     expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).toContain('href="/admin/delivery-lineage"');
     expect(html).toContain('href="/admin/data-health"');
@@ -877,6 +905,18 @@ describe("legacy admin path carrier", () => {
     expect(
       carrierPathname("/", `?legacy_admin_path=${AUTOMATION_AGENTS_PATH}`),
     ).toBe(AUTOMATION_AGENTS_PATH);
+    expect(
+      carrierPathname(
+        "/",
+        "?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans",
+      ),
+    ).toBe("/admin/cloud-orchestrator/plans");
+    expect(
+      carrierPathname(
+        "/",
+        "?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans%2Fplan_A-42",
+      ),
+    ).toBe("/admin/cloud-orchestrator/plans/plan_A-42");
     expect(
       carrierPathname("/", `?legacy_admin_path=${EXECUTION_RUNTIME_PATH}`),
     ).toBe(EXECUTION_RUNTIME_PATH);

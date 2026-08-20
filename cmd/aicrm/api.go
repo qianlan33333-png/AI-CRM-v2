@@ -22,6 +22,7 @@ import (
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	authstore "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store"
 	automationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/app"
+	automationhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/http"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
@@ -1080,6 +1081,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			source = dataHealthSources[0]
 		}
 		dataHealth := newLegacyDataHealthHandler(source)
+		cloudOrchestratorPages := automationhttp.NewCloudOrchestratorPages()
+		isCloudOrchestratorPagePattern := func(pattern string) bool {
+			return pattern == automationhttp.CloudOrchestratorRootPath ||
+				pattern == automationhttp.CloudOrchestratorPlansPath ||
+				pattern == automationhttp.CloudOrchestratorPlanDetailPattern ||
+				pattern == automationhttp.CloudOrchestratorCampaignsPath ||
+				pattern == automationhttp.CloudOrchestratorObservabilityPath
+		}
 		strictLegacyMethodRouters := make(map[string]*chi.Mux)
 		legacyAPIDocs, docsErr := newLegacyAPIDocsHandler()
 		if docsErr != nil {
@@ -1142,6 +1151,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyAutomationAgentListPagePath {
 				tail = legacyAutomationAgentListPageSecurityHeaders(tail)
 			}
+			if isCloudOrchestratorPagePattern(pattern) {
+				tail = automationhttp.CloudOrchestratorPageSecurityHeaders(tail)
+			}
 			if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath ||
 				(method == http.MethodGet && pattern == "/api/admin/questionnaires") ||
 				(method == http.MethodPost && pattern == "/api/admin/questionnaires/{questionnaire_id}/disable") ||
@@ -1157,7 +1169,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isCloudOrchestratorPagePattern(pattern) {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -1198,6 +1210,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if pattern == legacyAutomationAgentListPagePath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyAutomationAgentListPageMethodNotAllowed))
+					}
+					if isCloudOrchestratorPagePattern(pattern) {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(automationhttp.WriteCloudOrchestratorPageMethodNotAllowed))
 					}
 					if pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyQuestionnaireMethodNotAllowed))
@@ -1313,6 +1328,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/broadcast-jobs/{job_id}/approve", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/api/admin/broadcast-jobs/{job_id}/cancel", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/api/admin/automation-conversion/agent-runs", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.ListAutomationTriggerRuns)},
+			{http.MethodGet, automationhttp.CloudOrchestratorRootPath, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
+			{http.MethodGet, automationhttp.CloudOrchestratorPlansPath, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
+			{http.MethodGet, automationhttp.CloudOrchestratorPlanDetailPattern, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
+			{http.MethodGet, automationhttp.CloudOrchestratorCampaignsPath, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
+			{http.MethodGet, automationhttp.CloudOrchestratorObservabilityPath, authport.CapabilityAdminRead, false, cloudOrchestratorPages},
 			{http.MethodGet, "/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentListPage)},
 			{http.MethodGet, "/admin/automation-agents/{agent_id}/edit", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AutomationAgentEditPage)},
 			{http.MethodGet, "/api/admin/automation-agents", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationAgents)},
