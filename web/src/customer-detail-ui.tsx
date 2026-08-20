@@ -12,6 +12,7 @@ import type {
   CustomerChatActivityRole,
   CustomerChatActivityTransport,
 } from "./customer-chat-activity";
+import type { CustomerActivityAnalyticsTransport } from "./customer-activity-analytics";
 import {
   generatedCustomerDetailTransport,
   isCustomerGender,
@@ -41,6 +42,7 @@ export interface CustomerDetailPageProps {
   readonly mergeHistoryTransport?: CustomerMergeHistoryTransport;
   readonly chatActivityRole?: CustomerChatActivityRole;
   readonly chatActivityTransport?: CustomerChatActivityTransport;
+  readonly activityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerDetailSnapshot;
@@ -198,6 +200,7 @@ export function CustomerDetailPage({
   mergeHistoryTransport,
   chatActivityRole,
   chatActivityTransport,
+  activityAnalyticsTransport,
   readCookie = browserCookie,
   onUnauthenticated,
   initialSnapshot,
@@ -526,6 +529,7 @@ export function CustomerDetailPage({
         transport={contextTransport}
         onUnauthenticated={onUnauthenticated}
         showChatSummary={!(chatActivityRole && chatActivityTransport)}
+        activityAnalyticsTransport={activityAnalyticsTransport}
       />
 
       {mergeHistoryTransport && mergeHistoryRole && (

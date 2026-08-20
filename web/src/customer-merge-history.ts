@@ -1,4 +1,8 @@
 /* eslint-disable no-unused-vars -- transport callback parameter names document the generated adapter contract. */
+import {
+  listCustomerMergeHistory,
+  type ListCustomerMergeHistoryParams,
+} from "./api/generated/health";
 export const CUSTOMER_MERGE_HISTORY_PAGE_SIZE = 50;
 
 export type CustomerMergeHistoryRole = "admin" | "ops" | "sales";
@@ -30,6 +34,20 @@ export interface CustomerMergeHistoryTransport {
     options: RequestInit,
   ) => Promise<CustomerMergeHistoryTransportResponse>;
 }
+
+async function loadGeneratedCustomerMergeHistory(
+  customerID: number,
+  params: ListCustomerMergeHistoryParams,
+  options: RequestInit,
+): Promise<CustomerMergeHistoryTransportResponse> {
+  const response = await listCustomerMergeHistory(customerID, params, options);
+  return { status: response.status, data: response.data };
+}
+
+export const generatedCustomerMergeHistoryTransport: CustomerMergeHistoryTransport =
+  {
+    get: loadGeneratedCustomerMergeHistory,
+  };
 
 export type CustomerMergeHistoryLoadResult =
   | { readonly status: "loaded"; readonly page: CustomerMergeHistoryPageData }

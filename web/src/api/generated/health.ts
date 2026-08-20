@@ -6391,6 +6391,168 @@ export interface CustomerContextResponse {
   real_external_call_executed: boolean;
 }
 
+export type CustomerMergeHistoryItemMode =
+  (typeof CustomerMergeHistoryItemMode)[keyof typeof CustomerMergeHistoryItemMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerMergeHistoryItemMode = {
+  auto: "auto",
+  manual: "manual",
+} as const;
+
+export interface CustomerMergeHistoryItem {
+  /** @minimum 1 */
+  merge_audit_id: number;
+  /** @minimum 1 */
+  primary_customer_id: number;
+  /** @minimum 1 */
+  merged_customer_id: number;
+  mode: CustomerMergeHistoryItemMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  policy_version: string;
+  merged_at: string;
+}
+
+export type CustomerMergeHistoryResponseScope =
+  (typeof CustomerMergeHistoryResponseScope)[keyof typeof CustomerMergeHistoryResponseScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerMergeHistoryResponseScope = {
+  connected_component: "connected_component",
+} as const;
+
+export interface CustomerMergeHistoryResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  scope: CustomerMergeHistoryResponseScope;
+  /** @maxItems 100 */
+  items: CustomerMergeHistoryItem[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+  identity_values_included: boolean;
+  operator_identifiers_included: boolean;
+  chat_content_included: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type CustomerChatActivityItemChatType =
+  (typeof CustomerChatActivityItemChatType)[keyof typeof CustomerChatActivityItemChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerChatActivityItemChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CustomerChatActivityItem {
+  chat_type: CustomerChatActivityItemChatType;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  message_type: string;
+  sent_at: string;
+}
+
+export type CustomerChatActivityResponseChatType =
+  (typeof CustomerChatActivityResponseChatType)[keyof typeof CustomerChatActivityResponseChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerChatActivityResponseChatType = {
+  all: "all",
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CustomerChatActivityResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  chat_type: CustomerChatActivityResponseChatType;
+  /** @maxItems 100 */
+  items: CustomerChatActivityItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  previous_cursor: string | null;
+  non_atomic_snapshot: boolean;
+  message_content_included: boolean;
+  identity_values_included: boolean;
+  provider_receipts_included: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface CustomerActivityTypeFacet {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  /** @minimum 1 */
+  count: number;
+  last_occurred_at: string;
+}
+
+export interface CustomerActivityDayCount {
+  day: string;
+  /** @minimum 1 */
+  count: number;
+}
+
+export type CustomerActivityAnalyticsResponseWindowDays =
+  (typeof CustomerActivityAnalyticsResponseWindowDays)[keyof typeof CustomerActivityAnalyticsResponseWindowDays];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerActivityAnalyticsResponseWindowDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+  NUMBER_90: 90,
+} as const;
+
+export interface CustomerActivityAnalyticsResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  window_days: CustomerActivityAnalyticsResponseWindowDays;
+  from: string;
+  through: string;
+  /** @minimum 0 */
+  total_events: number;
+  /**
+   * @minimum 0
+   * @maximum 91
+   */
+  active_days: number;
+  /** @minimum 0 */
+  unique_event_types: number;
+  /** @nullable */
+  last_occurred_at: string | null;
+  /** @maxItems 50 */
+  type_facets: CustomerActivityTypeFacet[];
+  type_facets_truncated: boolean;
+  /** @maxItems 91 */
+  daily_counts: CustomerActivityDayCount[];
+  payload_included: boolean;
+  actor_included: boolean;
+  identity_included: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface Tag {
   /** @minimum 1 */
   id: number;
@@ -8432,6 +8594,58 @@ export type GetCustomerContextParams = {
    */
   limit?: LimitParameter;
 };
+
+export type ListCustomerMergeHistoryParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListCustomerChatActivityParams = {
+  chat_type?: ListCustomerChatActivityChatType;
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListCustomerChatActivityChatType =
+  (typeof ListCustomerChatActivityChatType)[keyof typeof ListCustomerChatActivityChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCustomerChatActivityChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export type GetCustomerActivityAnalyticsParams = {
+  window_days?: GetCustomerActivityAnalyticsWindowDays;
+};
+
+export type GetCustomerActivityAnalyticsWindowDays =
+  (typeof GetCustomerActivityAnalyticsWindowDays)[keyof typeof GetCustomerActivityAnalyticsWindowDays];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetCustomerActivityAnalyticsWindowDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+  NUMBER_90: 90,
+} as const;
 
 export type ListSegmentsParams = {
   /**
@@ -11135,6 +11349,279 @@ export const getCustomerContext = async (
     status: res.status,
     headers: res.headers,
   } as getCustomerContextResponse;
+};
+
+/**
+ * @summary List redacted local OneID merge history for a customer component
+ */
+export type listCustomerMergeHistoryResponse200 = {
+  data: CustomerMergeHistoryResponse;
+  status: 200;
+};
+
+export type listCustomerMergeHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCustomerMergeHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCustomerMergeHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCustomerMergeHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCustomerMergeHistoryResponseSuccess =
+  listCustomerMergeHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listCustomerMergeHistoryResponseError = (
+  | listCustomerMergeHistoryResponse400
+  | listCustomerMergeHistoryResponse401
+  | listCustomerMergeHistoryResponse403
+  | listCustomerMergeHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCustomerMergeHistoryResponse =
+  | listCustomerMergeHistoryResponseSuccess
+  | listCustomerMergeHistoryResponseError;
+
+export const getListCustomerMergeHistoryUrl = (
+  customerId: number,
+  params?: ListCustomerMergeHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/customers/${customerId}/merge-history?${stringifiedParams}`
+    : `/api/v1/customers/${customerId}/merge-history`;
+};
+
+export const listCustomerMergeHistory = async (
+  customerId: number,
+  params?: ListCustomerMergeHistoryParams,
+  options?: RequestInit,
+): Promise<listCustomerMergeHistoryResponse> => {
+  const res = await fetch(getListCustomerMergeHistoryUrl(customerId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCustomerMergeHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCustomerMergeHistoryResponse;
+};
+
+/**
+ * @summary List zero-body local chat activity facts for one visible customer
+ */
+export type listCustomerChatActivityResponse200 = {
+  data: CustomerChatActivityResponse;
+  status: 200;
+};
+
+export type listCustomerChatActivityResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCustomerChatActivityResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCustomerChatActivityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCustomerChatActivityResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listCustomerChatActivityResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCustomerChatActivityResponseSuccess =
+  listCustomerChatActivityResponse200 & {
+    headers: Headers;
+  };
+export type listCustomerChatActivityResponseError = (
+  | listCustomerChatActivityResponse400
+  | listCustomerChatActivityResponse401
+  | listCustomerChatActivityResponse403
+  | listCustomerChatActivityResponse404
+  | listCustomerChatActivityResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCustomerChatActivityResponse =
+  | listCustomerChatActivityResponseSuccess
+  | listCustomerChatActivityResponseError;
+
+export const getListCustomerChatActivityUrl = (
+  customerId: number,
+  params?: ListCustomerChatActivityParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/customers/${customerId}/chat-activity?${stringifiedParams}`
+    : `/api/v1/customers/${customerId}/chat-activity`;
+};
+
+export const listCustomerChatActivity = async (
+  customerId: number,
+  params?: ListCustomerChatActivityParams,
+  options?: RequestInit,
+): Promise<listCustomerChatActivityResponse> => {
+  const res = await fetch(getListCustomerChatActivityUrl(customerId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCustomerChatActivityResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCustomerChatActivityResponse;
+};
+
+/**
+ * @summary Read non-PII local customer activity aggregates for a fixed window
+ */
+export type getCustomerActivityAnalyticsResponse200 = {
+  data: CustomerActivityAnalyticsResponse;
+  status: 200;
+};
+
+export type getCustomerActivityAnalyticsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCustomerActivityAnalyticsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCustomerActivityAnalyticsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCustomerActivityAnalyticsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getCustomerActivityAnalyticsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCustomerActivityAnalyticsResponseSuccess =
+  getCustomerActivityAnalyticsResponse200 & {
+    headers: Headers;
+  };
+export type getCustomerActivityAnalyticsResponseError = (
+  | getCustomerActivityAnalyticsResponse400
+  | getCustomerActivityAnalyticsResponse401
+  | getCustomerActivityAnalyticsResponse403
+  | getCustomerActivityAnalyticsResponse404
+  | getCustomerActivityAnalyticsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCustomerActivityAnalyticsResponse =
+  | getCustomerActivityAnalyticsResponseSuccess
+  | getCustomerActivityAnalyticsResponseError;
+
+export const getGetCustomerActivityAnalyticsUrl = (
+  customerId: number,
+  params?: GetCustomerActivityAnalyticsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/customers/${customerId}/activity-analytics?${stringifiedParams}`
+    : `/api/v1/customers/${customerId}/activity-analytics`;
+};
+
+export const getCustomerActivityAnalytics = async (
+  customerId: number,
+  params?: GetCustomerActivityAnalyticsParams,
+  options?: RequestInit,
+): Promise<getCustomerActivityAnalyticsResponse> => {
+  const res = await fetch(
+    getGetCustomerActivityAnalyticsUrl(customerId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCustomerActivityAnalyticsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCustomerActivityAnalyticsResponse;
 };
 
 /**

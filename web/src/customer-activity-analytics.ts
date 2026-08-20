@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars -- injected transport signatures freeze the browser contract. */
+import { getCustomerActivityAnalytics, type GetCustomerActivityAnalyticsParams } from "./api/generated/health";
 export type CustomerActivityWindowDays = 7 | 30 | 90;
 
 export interface CustomerActivityTypeFacet { readonly eventType: string; readonly count: number; readonly lastOccurredAt: string }
@@ -15,6 +16,11 @@ export interface CustomerActivityAnalyticsResponse { readonly status: number; re
 export interface CustomerActivityAnalyticsTransport {
   readonly get: (customerID: number, params: { readonly window_days: CustomerActivityWindowDays }, options: RequestInit) => Promise<CustomerActivityAnalyticsResponse>;
 }
+async function loadGeneratedCustomerActivityAnalytics(customerID: number, params: GetCustomerActivityAnalyticsParams, options: RequestInit): Promise<CustomerActivityAnalyticsResponse> {
+  const response = await getCustomerActivityAnalytics(customerID, params, options);
+  return { status: response.status, data: response.data };
+}
+export const generatedCustomerActivityAnalyticsTransport: CustomerActivityAnalyticsTransport = { get: loadGeneratedCustomerActivityAnalytics };
 export type CustomerActivityAnalyticsLoadResult =
   | { readonly status: "loaded"; readonly analytics: CustomerActivityAnalytics }
   | { readonly status: "invalid" | "unauthenticated" | "forbidden" | "not_found" | "unavailable" };

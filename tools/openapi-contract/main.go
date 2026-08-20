@@ -186,7 +186,15 @@ var p4AutomationAgentManagementOperations = map[string]bool{
 }
 
 var p4Customer360Operations = map[string]bool{
-	"getCustomerContext": true,
+	"getCustomerContext": true, "listCustomerMergeHistory": true,
+	"listCustomerChatActivity": true, "getCustomerActivityAnalytics": true,
+}
+
+var p4Customer360ResponseSchemas = map[string]string{
+	"getCustomerContext":           "CustomerContextResponse",
+	"listCustomerMergeHistory":     "CustomerMergeHistoryResponse",
+	"listCustomerChatActivity":     "CustomerChatActivityResponse",
+	"getCustomerActivityAnalytics": "CustomerActivityAnalyticsResponse",
 }
 
 var p4ProductOperations = map[string]bool{
@@ -462,6 +470,9 @@ var authorizationContracts = map[string]authorizationContract{
 	"updateCustomer":                             {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listCustomerEvents":                         {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getCustomerContext":                         {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listCustomerMergeHistory":                   {"identity.review.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listCustomerChatActivity":                   {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getCustomerActivityAnalytics":               {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"resolveIdentity":                            {"identity.resolve", map[string]string{"admin": "global", "ops": "global"}},
 	"bindIdentity":                               {"identity.bind", map[string]string{"admin": "global", "ops": "global"}},
 	"ingestIdentityEvent":                        {"identity.ingest", map[string]string{"admin": "global", "ops": "global"}},
@@ -1009,9 +1020,9 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 				}
 				if op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != "none" ||
 					op.Extensions["x-aicrm-data-classification"] != "internal_pii" || op.Extensions["x-aicrm-data-source"] != "local_read_model" ||
-					op.Extensions["x-aicrm-external-effect"] != "none" || !operationResponseUsesLocalSchema(op, "CustomerContextResponse") ||
+					op.Extensions["x-aicrm-external-effect"] != "none" || !operationResponseUsesLocalSchema(op, p4Customer360ResponseSchemas[op.OperationID]) ||
 					op.Responses.Value("400") == nil || op.Responses.Value("401") == nil || op.Responses.Value("403") == nil ||
-					op.Responses.Value("404") == nil || op.Responses.Value("503") == nil {
+					op.Responses.Value("503") == nil || (op.OperationID != "listCustomerMergeHistory" && op.Responses.Value("404") == nil) {
 					return fmt.Errorf("%s safe local Customer 360 contract drifted", op.OperationID)
 				}
 			} else if p4ProductOperations[op.OperationID] {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   CUSTOMER_CHAT_ACTIVITY_PAGE_SIZE,
+  generatedCustomerChatActivityTransport,
   loadCustomerChatActivity,
   parseCustomerChatActivityPage,
   type CustomerChatActivityFilter,
@@ -107,6 +108,26 @@ describe("parseCustomerChatActivityPage", () => {
 });
 
 describe("loadCustomerChatActivity", () => {
+  it("uses the generated same-origin customer chat-activity endpoint", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify(page("private")), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await generatedCustomerChatActivityTransport.get(
+        41,
+        { chat_type: "private", cursor: "opaque", limit: 50 },
+        { credentials: "same-origin" },
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/v1/customers/41/chat-activity?chat_type=private&cursor=opaque&limit=50",
+        { credentials: "same-origin", method: "GET" },
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("uses one same-origin GET with a fixed limit and explicit safe filter", async () => {
     const get = vi.fn(async () => ({ status: 200, data: page("private") }));
     await expect(

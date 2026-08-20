@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   CUSTOMER_MERGE_HISTORY_PAGE_SIZE,
+  generatedCustomerMergeHistoryTransport,
   loadCustomerMergeHistory,
   parseCustomerMergeHistoryPage,
   type CustomerMergeHistoryTransport,
@@ -31,6 +32,25 @@ function page(items: unknown[] = [item(9)], nextCursor: string | null = null) {
 }
 
 describe("customer merge history decoder", () => {
+  it("uses the generated same-origin customer merge-history endpoint", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify(page()), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await generatedCustomerMergeHistoryTransport.get(
+        41,
+        { cursor: "opaque", limit: 50 },
+        { credentials: "same-origin" },
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/v1/customers/41/merge-history?cursor=opaque&limit=50",
+        { credentials: "same-origin", method: "GET" },
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("accepts the closed redacted page and rejects unsafe drift", () => {
     expect(parseCustomerMergeHistoryPage(page(), 41)?.items[0]).toEqual({
       mergeAuditID: 9,

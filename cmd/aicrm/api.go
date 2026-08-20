@@ -29,6 +29,7 @@ import (
 	configstore "github.com/qianlan33333-png/AI-CRM-v2/internal/config/store"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponstore "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/store"
@@ -108,22 +109,25 @@ type apiComponent struct {
 
 type candidateHandler struct {
 	*authhttp.Handler
-	customers       *contacthttp.CustomerListHandler
-	customerDetail  *contacthttp.CustomerDetailHandler
-	customerEvents  *contacthttp.CustomerEventHandler
-	customerContext *customer360http.CustomerContextHandler
-	mutations       *contacthttp.CustomerMutationHandler
-	tags            *contacthttp.TagCatalogHandler
-	localTags       *contacthttp.LocalTagCatalogHandler
-	stages          *contacthttp.Handler
-	segments        *segmenthttp.CRUDHandler
-	products        *producthttp.Handler
-	productLocal    *producthttp.LocalMutationHandler
-	surveyPublic    *surveyhttp.PublicHandler
-	segmentRefresh  *segmenthttp.RefreshHandler
-	identityReviews *identityhttp.ReviewHandler
-	identityConsole *identityhttp.ConsoleHandler
-	automationRuns  interface {
+	customers                 *contacthttp.CustomerListHandler
+	customerDetail            *contacthttp.CustomerDetailHandler
+	customerEvents            *contacthttp.CustomerEventHandler
+	customerContext           *customer360http.CustomerContextHandler
+	customerChatActivity      *customer360http.CustomerChatActivityHandler
+	customerActivityAnalytics *contacthttp.CustomerActivityAnalyticsHandler
+	customerMergeHistory      *identityhttp.MergeHistoryHandler
+	mutations                 *contacthttp.CustomerMutationHandler
+	tags                      *contacthttp.TagCatalogHandler
+	localTags                 *contacthttp.LocalTagCatalogHandler
+	stages                    *contacthttp.Handler
+	segments                  *segmenthttp.CRUDHandler
+	products                  *producthttp.Handler
+	productLocal              *producthttp.LocalMutationHandler
+	surveyPublic              *surveyhttp.PublicHandler
+	segmentRefresh            *segmenthttp.RefreshHandler
+	identityReviews           *identityhttp.ReviewHandler
+	identityConsole           *identityhttp.ConsoleHandler
+	automationRuns            interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
 	}
 	domainVerification interface {
@@ -161,6 +165,42 @@ func (handler *candidateHandler) ListCustomerEvents(writer http.ResponseWriter, 
 
 func (handler *candidateHandler) GetCustomerContext(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.GetCustomerContextParams) {
 	handler.customerContext.GetCustomerContext(writer, request, customerID, params)
+}
+
+func (handler *candidateHandler) ListCustomerMergeHistory(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.ListCustomerMergeHistoryParams) {
+	query := identityhttp.CustomerMergeHistoryQuery{}
+	if params.Cursor != nil {
+		query.Cursor = string(*params.Cursor)
+	}
+	if params.Limit != nil {
+		query.Limit = *params.Limit
+	}
+	handler.customerMergeHistory.GetCustomerMergeHistory(writer, request, contactport.CustomerID(customerID), query)
+}
+
+func (handler *candidateHandler) ListCustomerChatActivity(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.ListCustomerChatActivityParams) {
+	query := customer360http.CustomerChatActivityQuery{}
+	if params.ChatType != nil {
+		query.ChatType = string(*params.ChatType)
+	}
+	if params.Cursor != nil {
+		query.Cursor = string(*params.Cursor)
+		query.CursorSupplied = true
+	}
+	if params.Limit != nil {
+		query.Limit = *params.Limit
+		query.LimitSupplied = true
+	}
+	handler.customerChatActivity.GetCustomerChatActivity(writer, request, contactport.CustomerID(customerID), query)
+}
+
+func (handler *candidateHandler) GetCustomerActivityAnalytics(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.GetCustomerActivityAnalyticsParams) {
+	handlerParams := contacthttp.CustomerActivityAnalyticsParams{}
+	if params.WindowDays != nil {
+		windowDays := int(*params.WindowDays)
+		handlerParams.WindowDays = &windowDays
+	}
+	handler.customerActivityAnalytics.GetCustomerActivityAnalytics(writer, request, int64(customerID), handlerParams)
 }
 
 func (handler *candidateHandler) ListTags(writer http.ResponseWriter, request *http.Request) {
@@ -523,12 +563,25 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	messageArchiveService := wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
-	customerContextHandler, err := customer360http.NewCustomerContextHandler(customer360app.NewCustomerContextService(
+	customerContextService := customer360app.NewCustomerContextService(
 		contactapp.NewCustomer360ReaderService(
 			contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository()),
 			contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
 		),
 		messageArchiveService,
+	)
+	customerContextHandler, err := customer360http.NewCustomerContextHandler(customerContextService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	customerChatActivityHandler, err := customer360http.NewCustomerChatActivityHandler(customerContextService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	customerActivityAnalyticsHandler, err := contacthttp.NewCustomerActivityAnalyticsHandler(contactapp.NewCustomerActivityAnalyticsService(
+		uow, contactstore.NewCustomerActivityAnalyticsRepository(), time.Now,
 	))
 	if err != nil {
 		pool.Close()
@@ -612,6 +665,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	identityRepository := identitystore.NewRepository()
+	customerMergeHistoryHandler, err := identityhttp.NewMergeHistoryHandler(identityapp.NewCustomerMergeHistoryService(
+		uow, identityRepository,
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	identityReviewHandler, err := identityhttp.NewReviewHandler(identityapp.NewMergeReviewService(
 		uow, identityRepository, contactstore.NewMergePortRepository(), eventstore.NewAppender(), config.Identity.HMACKey.Value(),
 	))
@@ -641,7 +701,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler, customerContext: customerContextHandler,
-		mutations: mutationHandler, tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
+		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
+		customerMergeHistory: customerMergeHistoryHandler,
+		mutations:            mutationHandler, tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
 		segments:           segmentCRUDHandler,
 		products:           productHandler,
 		productLocal:       productLocalHandler,
@@ -1032,6 +1094,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/context", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.GetCustomerContext)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}/merge-history", authport.CapabilityIdentityReviewRead, false, http.HandlerFunc(wrapper.ListCustomerMergeHistory)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}/chat-activity", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerChatActivity)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}/activity-analytics", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.GetCustomerActivityAnalytics)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/stage", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)},
 		{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)},

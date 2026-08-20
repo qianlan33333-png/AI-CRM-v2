@@ -1,4 +1,8 @@
 /* eslint-disable no-unused-vars -- transport names document the generated adapter contract. */
+import {
+  listCustomerChatActivity,
+  type ListCustomerChatActivityParams,
+} from "./api/generated/health";
 import { isStrictRFC3339Timestamp } from "./customer-context";
 export const CUSTOMER_CHAT_ACTIVITY_PAGE_SIZE = 50;
 
@@ -36,6 +40,20 @@ export interface CustomerChatActivityTransport {
     options: RequestInit,
   ) => Promise<CustomerChatActivityTransportResponse>;
 }
+
+async function loadGeneratedCustomerChatActivity(
+  customerID: number,
+  params: ListCustomerChatActivityParams,
+  options: RequestInit,
+): Promise<CustomerChatActivityTransportResponse> {
+  const response = await listCustomerChatActivity(customerID, params, options);
+  return { status: response.status, data: response.data };
+}
+
+export const generatedCustomerChatActivityTransport: CustomerChatActivityTransport =
+  {
+    get: loadGeneratedCustomerChatActivity,
+  };
 
 export type CustomerChatActivityLoadResult =
   | { readonly status: "loaded"; readonly page: CustomerChatActivityPage }
