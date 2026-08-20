@@ -254,6 +254,16 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/admin/push-center/sections").Get.Extensions["x-aicrm-external-effect"] = "provider"
 			reject(t, doc, ids)
 		},
+		"outbound cancellation loses its closed local receipt": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/jobs/{job_id}/cancel").Post.Responses.Delete("202")
+			reject(t, doc, ids)
+		},
+		"outbound cancellation forges a legacy mapping": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/jobs/{job_id}/cancel").Post.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0416"}
+			reject(t, doc, ids)
+		},
 		"browser JWT substitution": func(t *testing.T) {
 			doc, ids := fresh(t)
 			scheme := doc.Components.SecuritySchemes["AdminSession"].Value

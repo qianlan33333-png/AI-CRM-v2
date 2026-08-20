@@ -62,7 +62,9 @@ function mountedRoot(): { readonly root: Root; readonly container: TestElement }
 }
 function elements(root: TestNode, tagName: string): TestElement[] { return [root, ...root.childNodes.flatMap((node) => elements(node, tagName))].filter((node): node is TestElement => node instanceof TestElement && node.tagName === tagName); }
 function buttons(root: TestNode): TestElement[] { return elements(root, "BUTTON"); }
-function click(button: TestElement): void { const key = Object.keys(button).find((candidate) => candidate.startsWith("__reactProps")); const props = key === undefined ? undefined : (button as unknown as Record<string, { onClick?: () => void }>)[key]; if (!props?.onClick) throw new Error("mounted button is missing React click handler"); props.onClick(); }
+function reactProps<T>(element: TestElement): T { const key = Object.keys(element).find((candidate) => candidate.startsWith("__reactProps")); if (key === undefined) throw new Error("mounted element is missing React props"); return (element as unknown as Record<string, T>)[key]!; }
+function click(button: TestElement): void { const props = reactProps<{ onClick?: () => void }>(button); if (!props.onClick) throw new Error("mounted button is missing React click handler"); props.onClick(); }
+function check(input: TestElement, checked: boolean): void { const props = reactProps<{ onChange?: (event: { currentTarget: { checked: boolean } }) => void }>(input); if (!props.onChange) throw new Error("mounted input is missing React change handler"); props.onChange({ currentTarget: { checked } }); }
 function deferred<T>(): { readonly promise: Promise<T>; resolve(value: T): void } { let resolve!: (value: T) => void; return { promise: new Promise<T>((done) => { resolve = done; }), resolve }; }
 
 const task = (taskID: number, updatedAt = "2026-08-20T08:00:01Z") => ({ job_id: taskID, task_id: taskID, customer_id: taskID + 100, status: "outcome_unknown", attempt_count: 2, delivery_proven: false, queue_job: { river_job_id: taskID + 200, generation: 2, kind: "outbound_enqueue_one" }, created_at: "2026-08-20T08:00:00Z", status_updated_at: updatedAt });
@@ -71,7 +73,7 @@ const reconciliation = (job: ReturnType<typeof task>) => ({ status: 200, data: {
 
 describe("outbound observation UI", () => {
   it("keeps the admin-only outbound carrier closed to ops and sales", () => { for (const role of ["ops", "sales"] as const) { const t: OutboundOperationsTransport = { list: vi.fn(), reconciliation: vi.fn() }; expect(renderToStaticMarkup(<OutboundOperationsPage role={role} transport={t} />)).toContain("没有本地投递运营查看权限"); expect(t.list).not.toHaveBeenCalled(); } });
-  it("has no controls", () => { const value = { taskID: "42", status: "pending", attemptCount: 0, generation: 1, queueKind: "outbound_enqueue_one", createdAt: "2026-08-20T08:00:00Z", updatedAt: "2026-08-20T08:00:01Z" }; const html = renderToStaticMarkup(<OutboundOperationsView status="" businessID="" onStatus={vi.fn()} onBusinessID={vi.fn()} onLoad={vi.fn()} onSelect={vi.fn()} state={{ kind: "ready", page: { items: [value], offset: 0, hasMore: false } }} detail={{ kind: "ready", value: { task: value, attempts: [], receipts: [] } }} />); expect(html).not.toMatch(/取消|重排/); });
+  it("never offers retry or external delivery control", () => { const value = { taskID: "42", status: "pending", attemptCount: 0, generation: 1, queueKind: "outbound_enqueue_one", createdAt: "2026-08-20T08:00:00Z", updatedAt: "2026-08-20T08:00:01Z" }; const html = renderToStaticMarkup(<OutboundOperationsView status="" businessID="" onStatus={vi.fn()} onBusinessID={vi.fn()} onLoad={vi.fn()} onSelect={vi.fn()} onCancel={vi.fn()} canCancel cancelLocked={false} onConfirmTask={vi.fn()} state={{ kind: "ready", page: { items: [value], offset: 0, hasMore: false } }} detail={{ kind: "ready", value: { task: value, attempts: [], receipts: [] } }} />); expect(html).toContain("取消尚未运行的本地任务"); expect(html).not.toMatch(/重试|发送|外部投递控制/); });
   it("releases token-owned page and reconciliation flights across a transport replacement", async () => {
     const aInitialPage = deferred<{ status: number; data: unknown }>(); const aPendingPage = deferred<{ status: number; data: unknown }>(); const aInitialDetail = deferred<{ status: number; data: unknown }>(); const aPendingDetail = deferred<{ status: number; data: unknown }>(); const bPage = deferred<{ status: number; data: unknown }>(); const bDetail = deferred<{ status: number; data: unknown }>();
     let aPageCalls = 0; let aDetailCalls = 0;
@@ -100,6 +102,39 @@ describe("outbound observation UI", () => {
     expect(mounted.container.textContent).toContain("2026-08-20T09:00:01Z"); expect(mounted.container.textContent).toContain("501"); expect(old401).not.toHaveBeenCalled(); expect(active401).not.toHaveBeenCalled();
     await act(async () => { bDetail.resolve({ status: 401, data: {} }); await Promise.resolve(); });
     expect(active401).toHaveBeenCalledOnce(); expect(mounted.container.textContent).toContain("501");
+    await act(async () => { mounted.root.unmount(); });
+  });
+  it("runs the mounted pending-cancel state machine once and retains an unknown lock across replacement", async () => {
+    const pending = task(42) as ReturnType<typeof task> & { status: string; attempt_count: number };
+    pending.status = "pending"; pending.attempt_count = 0;
+    const cancelA = deferred<{ status: number; data: unknown }>(); const cancelB = vi.fn();
+    const receipt = { receipt_id: 91, task_id: 42, operation: "cancel", state: "completed", generation: 2, river_job_id: 242, job_kind: "outbound_enqueue_one", event_id: 92, task_status: "cancelled", completed_at: "2026-08-20T08:00:02Z" };
+    const a: OutboundOperationsTransport = { list: vi.fn(async () => page(pending)), reconciliation: vi.fn(async () => reconciliation(pending)), cancel: vi.fn(() => cancelA.promise) };
+    const b: OutboundOperationsTransport = { list: vi.fn(async () => page(pending)), reconciliation: vi.fn(async () => reconciliation(pending)), cancel: cancelB };
+    const old401 = vi.fn(); const active401 = vi.fn(); const mounted = mountedRoot();
+    const button = (text: string) => { const result = buttons(mounted.container).find((candidate) => candidate.textContent === text); if (!result) throw new Error(`missing ${text}`); return result; };
+    await act(async () => { mounted.root.render(<OutboundOperationsPage role="admin" transport={a} readCookie={() => `aicrm_csrf=${"x".repeat(43)}`} onUnauthenticated={old401} />); await Promise.resolve(); });
+    const checkbox = elements(mounted.container, "INPUT").find((item) => item.getAttribute("aria-label") === "确认取消本地任务 42"); if (!checkbox) throw new Error("missing cancellation confirmation");
+    await act(async () => { check(checkbox, true); await Promise.resolve(); });
+    await act(async () => { click(button("取消本地任务")); click(button("取消本地任务")); await Promise.resolve(); });
+    expect(a.cancel).toHaveBeenCalledOnce();
+    await act(async () => { mounted.root.render(<OutboundOperationsPage role="admin" transport={b} readCookie={() => `aicrm_csrf=${"x".repeat(43)}`} onUnauthenticated={active401} />); await Promise.resolve(); });
+    await act(async () => { cancelA.resolve({ status: 202, data: { ok: true, control_receipt: receipt, source_status: "v2_outbound_cancel_service", fallback_used: false } }); await Promise.resolve(); });
+    expect(a.reconciliation).not.toHaveBeenCalled(); expect(cancelB).not.toHaveBeenCalled(); expect(old401).not.toHaveBeenCalled(); expect(active401).not.toHaveBeenCalled();
+    await act(async () => { mounted.root.unmount(); });
+  });
+  it("calls active 401 once and keeps the prior safe reconciliation on an unconfirmed cancellation", async () => {
+    const pending = task(42) as ReturnType<typeof task> & { status: string; attempt_count: number };
+    pending.status = "pending"; pending.attempt_count = 0;
+    const receipt = { receipt_id: 91, task_id: 42, operation: "cancel", state: "completed", generation: 2, river_job_id: 242, job_kind: "outbound_enqueue_one", event_id: 92, task_status: "cancelled", completed_at: "2026-08-20T08:00:02Z" };
+    const on401 = vi.fn(); const client: OutboundOperationsTransport = { list: vi.fn(async () => page(pending)), reconciliation: vi.fn().mockResolvedValueOnce(reconciliation(pending)).mockResolvedValueOnce({ status: 401, data: {} }), cancel: vi.fn(async () => ({ status: 202, data: { ok: true, control_receipt: receipt, source_status: "v2_outbound_cancel_service", fallback_used: false } })) };
+    const mounted = mountedRoot(); const button = (text: string) => { const result = buttons(mounted.container).find((candidate) => candidate.textContent === text); if (!result) throw new Error(`missing ${text}`); return result; };
+    await act(async () => { mounted.root.render(<OutboundOperationsPage role="admin" transport={client} readCookie={() => `aicrm_csrf=${"x".repeat(43)}`} onUnauthenticated={on401} />); await Promise.resolve(); });
+    await act(async () => { click(button("读取本地对账")); await Promise.resolve(); }); expect(mounted.container.textContent).toContain("501");
+    const checkbox = elements(mounted.container, "INPUT").find((item) => item.getAttribute("aria-label") === "确认取消本地任务 42"); if (!checkbox) throw new Error("missing cancellation confirmation");
+    await act(async () => { check(checkbox, true); await Promise.resolve(); });
+    await act(async () => { click(button("取消本地任务")); await Promise.resolve(); });
+    expect(on401).toHaveBeenCalledOnce(); expect(mounted.container.textContent).toContain("501"); expect(mounted.container.textContent).toContain("不会自动重试");
     await act(async () => { mounted.root.unmount(); });
   });
 });
