@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { HXCSenderManager, type HXCSenderManagerTransport } from "./hxc-sender-manager";
 import {
   generatedHXCSenderTransport,
   loadHXCSenders,
@@ -10,10 +11,12 @@ export function HXCSenderPage({
   role,
   transport = generatedHXCSenderTransport,
   onUnauthenticated,
+  managerTransport,
 }: {
   readonly role: "admin" | "ops" | "sales";
   readonly transport?: HXCSenderTransport;
   readonly onUnauthenticated?: () => void;
+  readonly managerTransport?: HXCSenderManagerTransport;
 }): React.ReactElement {
   const [state, setState] = useState<HXCSenderResult>({
     status: "unavailable",
@@ -31,15 +34,19 @@ export function HXCSenderPage({
     };
   }, [transport, onUnauthenticated]);
 
-  return <HXCSenderView role={role} state={state} />;
+  return <HXCSenderView role={role} state={state} managerTransport={managerTransport} onUnauthenticated={onUnauthenticated} />;
 }
 
 export function HXCSenderView({
   role,
   state,
+  managerTransport,
+  onUnauthenticated,
 }: {
   readonly role: "admin" | "ops" | "sales";
   readonly state: HXCSenderResult;
+  readonly managerTransport?: HXCSenderManagerTransport;
+  readonly onUnauthenticated?: () => void;
 }): React.ReactElement {
   if (role !== "admin")
     return (
@@ -108,6 +115,7 @@ export function HXCSenderView({
           </tbody>
         </table>
       )}
+      <HXCSenderManager role={role} items={state.model.sendConfigs} transport={managerTransport} onUnauthenticated={onUnauthenticated} />
     </section>
   );
 }
