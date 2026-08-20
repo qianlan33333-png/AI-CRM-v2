@@ -7,6 +7,8 @@ import {
   type CustomerContextSnapshot,
   type CustomerContextTransport,
 } from "./customer-context";
+import { CustomerActivityAnalyticsPanel } from "./customer-activity-analytics-ui";
+import type { CustomerActivityAnalyticsTransport } from "./customer-activity-analytics";
 
 export interface CustomerContextPanelProps {
   readonly customerID: number;
@@ -14,6 +16,7 @@ export interface CustomerContextPanelProps {
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerContextSnapshot;
   readonly showChatSummary?: boolean;
+  readonly activityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
 }
 
 type PanelState =
@@ -60,6 +63,7 @@ export function CustomerContextPanel({
   onUnauthenticated,
   initialSnapshot,
   showChatSummary = true,
+  activityAnalyticsTransport,
 }: CustomerContextPanelProps): React.ReactElement {
   const [page, setPage] = useState<PanelState>(() =>
     initialSnapshot
@@ -329,6 +333,11 @@ export function CustomerContextPanel({
           )}
         </>
       )}
+      <CustomerActivityAnalyticsPanel
+        customerID={customerID}
+        transport={activityAnalyticsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
     </section>
   );
 }
