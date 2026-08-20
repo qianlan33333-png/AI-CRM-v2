@@ -5,6 +5,7 @@ import {
   copyWecomTagID,
   startWecomTagGroupCreate,
   startWecomTagMutation,
+  submitWecomTagCreate,
   submitWecomTagArchive,
   submitWecomTagGroupArchive,
   submitWecomTagGroupRename,
@@ -91,6 +92,46 @@ function rawCatalog(groupName: string, childGroupName = groupName) {
   };
 }
 
+function rawCatalogWithCreatedTag() {
+  const tags = [
+    rawTag(10, "高意向", 0, "意向"),
+    rawTag(11, "低意向", 1, "意向"),
+    rawTag(12, "待跟进", 2, "意向"),
+  ];
+  return {
+    ok: true,
+    items: tags,
+    tags,
+    groups: [{ group_id: 1, group_name: "意向", name: "意向", sort_order: 0, tags }],
+    count: 3,
+    total_tags: 3,
+    tag_limit: 1000,
+    synced_at: "2026-08-19T00:00:00Z",
+    source_status: "local_catalog",
+    read_model_status: "ready",
+    route_owner: "ai_crm_next",
+    fallback_used: false,
+    real_external_call_executed: false,
+    sync_executed: false,
+    fixture_used: false,
+  };
+}
+
+function tagCreated() {
+  return {
+    ok: true,
+    reason: "tag_created",
+    source_status: "local_catalog",
+    route_owner: "ai_crm_next",
+    fallback_used: false,
+    real_external_call_executed: false,
+    sync_executed: false,
+    fixture_used: false,
+    dry_run: false,
+    tag: { tag_id: 12, group_id: 1, group_name: "意向", tag_name: "待跟进", sort_order: 2 },
+  };
+}
+
 function groupUpdated(groupName: string) {
   return {
     ok: true,
@@ -172,6 +213,32 @@ function groupRenameController(
     lockMutations,
     setRenaming,
     setCatalog,
+  };
+}
+
+function tagCreateController(
+  client: WecomTagsTransport,
+  onUnauthenticated?: () => void,
+) {
+  const mutationInFlight = { current: false };
+  const mutationLocked = { current: false };
+  const lockMutations = vi.fn(() => {
+    mutationLocked.current = true;
+  });
+  return {
+    controller: {
+      transport: client,
+      readCookie: () => `aicrm_csrf=${"c".repeat(43)}`,
+      onUnauthenticated,
+      mutationInFlight,
+      mutationLocked,
+      lockMutations,
+      setCreatingTag: vi.fn(),
+      setCatalog: vi.fn(),
+    },
+    mutationInFlight,
+    mutationLocked,
+    lockMutations,
   };
 }
 
@@ -524,6 +591,70 @@ describe("local tag-group creation lock", () => {
     release?.();
     await expect(first).resolves.toBeUndefined();
     expect(lock.current).toBe(false);
+  });
+});
+
+describe("WecomTagsPage additional-tag controller", () => {
+  it("creates exactly one selected-group tag, then publishes only its confirmed catalog reread", async () => {
+    const client = {
+      read: vi.fn(async () => ({ status: 200, data: rawCatalogWithCreatedTag() })),
+      createTag: vi.fn(async () => ({ status: 200, data: tagCreated() })),
+    } as unknown as WecomTagsTransport;
+    const fixture = tagCreateController(client);
+    await expect(
+      submitWecomTagCreate(fixture.controller, catalog.groups[0], " 待跟进 "),
+    ).resolves.toMatchObject({
+      status: "created",
+      tag: { id: 12, groupID: 1, groupName: "意向", name: "待跟进" },
+    });
+    expect(client.createTag).toHaveBeenCalledOnce();
+    expect(client.createTag).toHaveBeenCalledWith(
+      { group_id: 1, group_name: "意向", tag_name: "待跟进" },
+      expect.objectContaining({
+        credentials: "same-origin",
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "c".repeat(43),
+          "Idempotency-Key": expect.stringMatching(/^[A-Za-z0-9_-]{43}$/),
+        }),
+      }),
+    );
+    expect(fixture.controller.setCatalog).toHaveBeenCalledOnce();
+    expect(fixture.lockMutations).not.toHaveBeenCalled();
+  });
+
+  it("shares the same-tick lock and locks without replacing catalog after unconfirmed creation", async () => {
+    let release:
+      // eslint-disable-next-line no-unused-vars -- deferred resolver accepts the transport response.
+      ((value: { status: number; data: unknown }) => void) | undefined;
+    const client = {
+      read: vi.fn(),
+      createTag: vi.fn(
+        () => new Promise<{ status: number; data: unknown }>((resolve) => { release = resolve; }),
+      ),
+    } as unknown as WecomTagsTransport;
+    const fixture = tagCreateController(client);
+    const first = submitWecomTagCreate(fixture.controller, catalog.groups[0], "待跟进");
+    const second = submitWecomTagCreate(fixture.controller, catalog.groups[0], "待跟进");
+    expect(second).toBeUndefined();
+    expect(client.createTag).toHaveBeenCalledOnce();
+    release?.({ status: 503, data: {} });
+    await expect(first).resolves.toEqual({ status: "unknown" });
+    expect(fixture.lockMutations).toHaveBeenCalledOnce();
+    expect(fixture.controller.setCatalog).not.toHaveBeenCalled();
+  });
+
+  it("reports a 401 once and preserves the old catalog", async () => {
+    const onUnauthenticated = vi.fn();
+    const client = {
+      read: vi.fn(),
+      createTag: vi.fn(async () => ({ status: 401, data: {} })),
+    } as unknown as WecomTagsTransport;
+    const fixture = tagCreateController(client, onUnauthenticated);
+    await expect(
+      submitWecomTagCreate(fixture.controller, catalog.groups[0], "待跟进"),
+    ).resolves.toEqual({ status: "unauthenticated" });
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    expect(fixture.controller.setCatalog).not.toHaveBeenCalled();
   });
 });
 

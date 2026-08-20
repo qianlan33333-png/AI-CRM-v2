@@ -1525,6 +1525,79 @@ export interface LegacyTagGroupCreateSuccessTag {
   sort_order: number;
 }
 
+export type LegacyTagCreateSuccessReason =
+  (typeof LegacyTagCreateSuccessReason)[keyof typeof LegacyTagCreateSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCreateSuccessReason = {
+  tag_created: "tag_created",
+} as const;
+
+export type LegacyTagCreateSuccessSourceStatus =
+  (typeof LegacyTagCreateSuccessSourceStatus)[keyof typeof LegacyTagCreateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCreateSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagCreateSuccessRouteOwner =
+  (typeof LegacyTagCreateSuccessRouteOwner)[keyof typeof LegacyTagCreateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCreateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagCreateSuccess {
+  ok: boolean;
+  reason: LegacyTagCreateSuccessReason;
+  source_status: LegacyTagCreateSuccessSourceStatus;
+  route_owner: LegacyTagCreateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+  tag: LegacyTagGroupCreateSuccessTag;
+}
+
+export type LegacyTagCreateValidatedSuccessReason =
+  (typeof LegacyTagCreateValidatedSuccessReason)[keyof typeof LegacyTagCreateValidatedSuccessReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCreateValidatedSuccessReason = {
+  tag_create_validated: "tag_create_validated",
+} as const;
+
+export type LegacyTagCreateValidatedSuccessSourceStatus =
+  (typeof LegacyTagCreateValidatedSuccessSourceStatus)[keyof typeof LegacyTagCreateValidatedSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCreateValidatedSuccessSourceStatus = {
+  local_catalog: "local_catalog",
+} as const;
+
+export type LegacyTagCreateValidatedSuccessRouteOwner =
+  (typeof LegacyTagCreateValidatedSuccessRouteOwner)[keyof typeof LegacyTagCreateValidatedSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagCreateValidatedSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyTagCreateValidatedSuccess {
+  ok: boolean;
+  reason: LegacyTagCreateValidatedSuccessReason;
+  source_status: LegacyTagCreateValidatedSuccessSourceStatus;
+  route_owner: LegacyTagCreateValidatedSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  sync_executed: boolean;
+  fixture_used: boolean;
+  dry_run: boolean;
+}
+
 export type LegacyTagGroupCreateSuccessReason =
   (typeof LegacyTagGroupCreateSuccessReason)[keyof typeof LegacyTagGroupCreateSuccessReason];
 
@@ -8347,6 +8420,9 @@ export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
 
+export type CreateLegacyWecomTag200 =
+  LegacyTagCreateSuccess | LegacyTagCreateValidatedSuccess;
+
 export type CreateLegacyWecomTagGroup200 =
   LegacyTagGroupCreateSuccess | LegacyTagGroupCreateValidatedSuccess;
 
@@ -14695,7 +14771,7 @@ export const listLegacyWecomTags = async (
  * @summary Create one tag in the local Contact-owned catalog
  */
 export type createLegacyWecomTagResponse200 = {
-  data: void;
+  data: CreateLegacyWecomTag200;
   status: 200;
 };
 

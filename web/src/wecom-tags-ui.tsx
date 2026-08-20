@@ -7,7 +7,9 @@ import {
   archiveWecomTagGroup,
   confirmsArchivedWecomTag,
   confirmsArchivedWecomTagGroup,
+  confirmsCreatedWecomTag,
   confirmsCreatedWecomTagGroup,
+  createWecomTag,
   confirmsRenamedWecomTag,
   confirmsRenamedWecomTagGroup,
   createWecomTagGroup,
@@ -23,6 +25,7 @@ import {
   wecomTagPageCount,
   wecomTagSearchState,
   type WecomTagCatalog,
+  type WecomTagCreateResult,
   type WecomTagGroupCreateResult,
   type WecomTagGroupArchiveResult,
   type WecomTagGroupRenameResult,
@@ -112,6 +115,65 @@ export interface WecomTagGroupRenameController {
   readonly setRenaming: (value: boolean) => void;
   // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
   readonly setCatalog: (catalog: WecomTagCatalog) => void;
+}
+
+export interface WecomTagCreateController {
+  readonly transport: WecomTagsTransport;
+  readonly readCookie: () => string;
+  readonly onUnauthenticated?: () => void;
+  readonly mutationInFlight: { current: boolean };
+  readonly mutationLocked: { current: boolean };
+  readonly lockMutations: () => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setCreatingTag: (value: boolean) => void;
+  // eslint-disable-next-line no-unused-vars -- named setter parameter is required by TS function-type syntax.
+  readonly setCatalog: (catalog: WecomTagCatalog) => void;
+}
+
+export function submitWecomTagCreate(
+  controller: WecomTagCreateController,
+  group: WecomTagGroup,
+  tagName: string,
+): Promise<WecomTagCreateResult | undefined> | undefined {
+  if (controller.mutationLocked.current) return undefined;
+  return startWecomTagMutation(controller.mutationInFlight, async () => {
+    let csrfToken: string | undefined;
+    try {
+      csrfToken = readCSRFCookie(controller.readCookie());
+    } catch {
+      csrfToken = undefined;
+    }
+    const idempotencyKey = newWecomTagIdempotencyKey();
+    if (!csrfToken || !idempotencyKey) return { status: "invalid" };
+    controller.setCreatingTag(true);
+    try {
+      const result = await createWecomTag(
+        controller.transport,
+        group,
+        tagName,
+        csrfToken,
+        idempotencyKey,
+      );
+      if (result.status !== "created") {
+        if (result.status === "unauthenticated") controller.onUnauthenticated?.();
+        if (result.status === "unknown") controller.lockMutations();
+        return result;
+      }
+      const refreshed = await loadWecomTagCatalog(controller.transport);
+      if (refreshed.status === "unauthenticated") controller.onUnauthenticated?.();
+      if (
+        refreshed.status === "loaded" &&
+        confirmsCreatedWecomTag(refreshed.catalog, result.tag)
+      ) {
+        controller.setCatalog(refreshed.catalog);
+        return result;
+      }
+      controller.lockMutations();
+      return { status: "unknown" };
+    } finally {
+      controller.setCreatingTag(false);
+    }
+  });
 }
 
 export function submitWecomTagGroupRename(
@@ -315,6 +377,7 @@ export function WecomTagsPage({
   const [groupName, setGroupName] = useState("");
   const [firstTagName, setFirstTagName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [creatingTag, setCreatingTag] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [mutationUncertain, setMutationUncertain] = useState(false);
@@ -476,6 +539,27 @@ export function WecomTagsPage({
     });
   };
 
+  const onCreateTag = async (
+    group: WecomTagGroup,
+    tagName: string,
+  ): Promise<WecomTagCreateResult | undefined> => {
+    if (!canAccess) return undefined;
+    return submitWecomTagCreate(
+      {
+        transport,
+        readCookie,
+        onUnauthenticated,
+        mutationInFlight,
+        mutationLocked,
+        lockMutations,
+        setCreatingTag,
+        setCatalog: (catalog) => setState({ kind: "ready", catalog }),
+      },
+      group,
+      tagName,
+    );
+  };
+
   const onRenameGroup = async (
     group: WecomTagGroup,
     groupName: string,
@@ -539,8 +623,9 @@ export function WecomTagsPage({
     <>
       <WecomTagsView
         createPanel={createPanel}
-        mutationBusy={creating || renaming || archiving}
+        mutationBusy={creating || creatingTag || renaming || archiving}
         mutationLocked={mutationUncertain}
+        onCreateTag={onCreateTag}
         onArchiveGroup={onArchiveGroup}
         onArchiveTag={onArchiveTag}
         onRenameGroup={onRenameGroup}
@@ -569,6 +654,7 @@ export function WecomTagsView({
   mutationLocked = false,
   onArchiveGroup,
   onArchiveTag,
+  onCreateTag,
   onRenameGroup,
   onRenameTag,
   renaming = false,
@@ -587,6 +673,12 @@ export function WecomTagsView({
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     tag: WecomTag,
   ) => Promise<WecomTagArchiveResult | undefined>;
+  readonly onCreateTag?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    group: WecomTagGroup,
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    tagName: string,
+  ) => Promise<WecomTagCreateResult | undefined>;
   readonly onRenameGroup?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     group: WecomTagGroup,
@@ -721,6 +813,14 @@ export function WecomTagsView({
             renaming={renaming}
             archiving={archiving}
           />
+          {onCreateTag ? (
+            <WecomTagCreateForm
+              busy={mutationBusy}
+              group={selected}
+              mutationLocked={mutationLocked}
+              onCreate={onCreateTag}
+            />
+          ) : null}
           {visibleTags.length === 0 ? (
             <p>当前筛选下没有标签。</p>
           ) : (
@@ -932,6 +1032,73 @@ export function WecomTagGroupDetails({
             </p>
           ) : null}
         </section>
+      ) : null}
+    </section>
+  );
+}
+
+function WecomTagCreateForm({
+  busy,
+  group,
+  mutationLocked,
+  onCreate,
+}: {
+  readonly busy: boolean;
+  readonly group: WecomTagGroup;
+  readonly mutationLocked: boolean;
+  readonly onCreate: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    group: WecomTagGroup,
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    tagName: string,
+  ) => Promise<WecomTagCreateResult | undefined>;
+}): React.ReactElement {
+  const [tagName, setTagName] = useState("");
+  const [notice, setNotice] = useState<string>();
+
+  useEffect(() => {
+    setTagName("");
+    setNotice(undefined);
+  }, [group.id, group.name]);
+
+  return (
+    <section aria-labelledby="wecom-tag-create-title">
+      <h3 id="wecom-tag-create-title">新增本地标签</h3>
+      <p>标签将仅写入已选本地标签组，不会同步或操作企微联系人。</p>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (busy || mutationLocked) return;
+          void onCreate(group, tagName).then((result) => {
+            if (!result) return;
+            const messages: Record<WecomTagCreateResult["status"], string> = {
+              created: "本地标签已创建。",
+              unauthenticated: "登录状态已失效，请重新登录。",
+              forbidden: "当前账号没有本地标签目录创建权限。",
+              invalid: "标签名称不符合已冻结的本地合同。",
+              unknown:
+                "创建结果未确认，系统不会自动重试；请人工刷新页面后核对目录。",
+            };
+            if (result.status === "created") setTagName("");
+            setNotice(messages[result.status]);
+          });
+        }}
+      >
+        <fieldset disabled={busy || mutationLocked}>
+          <label>
+            本地标签名称
+            <input
+              value={tagName}
+              onChange={(event) => setTagName(event.currentTarget.value)}
+            />
+          </label>
+          <button type="submit">新增本地标签</button>
+        </fieldset>
+      </form>
+      {notice ? (
+        <p aria-live="polite" role={mutationLocked ? "alert" : "status"}>
+          {notice}
+        </p>
       ) : null}
     </section>
   );
