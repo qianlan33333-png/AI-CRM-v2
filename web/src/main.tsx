@@ -62,6 +62,18 @@ import {
   cloudOrchestratorRoute,
   type CloudOrchestratorRoute,
 } from "./cloud-orchestrator";
+import { CommerceWorkspaces } from "./commerce-workspaces-ui";
+import {
+  ALIPAY_TRANSACTIONS_PATH,
+  SERVICE_PRODUCT_NEW_PATH,
+  SERVICE_PRODUCTS_PATH,
+  WECHAT_PAY_PRODUCT_NEW_PATH,
+  WECHAT_PAY_TRANSACTIONS_PATH,
+  WECHAT_SHOP_TRANSACTIONS_PATH,
+  commerceWorkspaceCarrierRoute,
+  commerceWorkspaceRoute,
+  type CommerceWorkspaceRoute,
+} from "./commerce-workspaces";
 import { GroupInviteLibraryPage } from "./group-invite-library-ui";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import { DeliveryLineagePage } from "./delivery-lineage-ui";
@@ -217,6 +229,42 @@ export const routes = [
     navigationLabel: "AI 可观察性",
     title: "AI 助手可观察性",
     description: "本地可观察性入口载体。",
+  },
+  {
+    path: SERVICE_PRODUCTS_PATH,
+    navigationLabel: "周期商品",
+    title: "周期商品",
+    description: "周期商品的本地管理工作区载体。",
+  },
+  {
+    path: SERVICE_PRODUCT_NEW_PATH,
+    navigationLabel: "新建周期商品",
+    title: "新建周期商品",
+    description: "周期商品新建工作区载体。",
+  },
+  {
+    path: WECHAT_PAY_PRODUCT_NEW_PATH,
+    navigationLabel: "新建微信支付商品",
+    title: "新建微信支付商品",
+    description: "微信支付商品新建工作区载体。",
+  },
+  {
+    path: WECHAT_PAY_TRANSACTIONS_PATH,
+    navigationLabel: "微信支付交易",
+    title: "微信支付交易",
+    description: "微信支付交易的本地只读工作区载体。",
+  },
+  {
+    path: WECHAT_SHOP_TRANSACTIONS_PATH,
+    navigationLabel: "微信小店交易",
+    title: "微信小店交易",
+    description: "微信小店交易的本地只读工作区载体。",
+  },
+  {
+    path: ALIPAY_TRANSACTIONS_PATH,
+    navigationLabel: "支付宝交易",
+    title: "支付宝交易",
+    description: "支付宝交易的本地只读工作区载体。",
   },
   {
     path: "/admin/group-invite-library",
@@ -381,6 +429,8 @@ export function carrierPathname(pathname: string, search: string): string {
   if (pathname !== "/" || search === "") return pathname;
   const cloudOrchestratorCarrier = cloudOrchestratorCarrierRoute(search);
   if (cloudOrchestratorCarrier) return cloudOrchestratorCarrier.pathname;
+  const commerceCarrier = commerceWorkspaceCarrierRoute(search);
+  if (commerceCarrier) return commerceCarrier.pathname;
   let params: URLSearchParams;
   try {
     params = new URLSearchParams(search);
@@ -489,6 +539,7 @@ export function handleNavigationClick(
 function PageContent({
   route,
   cloudOrchestrator,
+  commerceWorkspace,
   principal,
   customerTransport,
   customerDetailTransport,
@@ -521,6 +572,7 @@ function PageContent({
 }: {
   route: AppRoute | undefined;
   cloudOrchestrator?: CloudOrchestratorRoute;
+  commerceWorkspace?: CommerceWorkspaceRoute;
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
   customerDetailTransport?: CustomerDetailTransport;
@@ -551,6 +603,11 @@ function PageContent({
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
+  if (commerceWorkspace) {
+    return (
+      <CommerceWorkspaces role={principal.role} route={commerceWorkspace} />
+    );
+  }
   if (cloudOrchestrator) {
     return (
       <CloudOrchestratorWorkspace
@@ -785,7 +842,18 @@ function PageContent({
 
   if (route.path === OUTBOUND_PATH) {
     return (
-      <><PushCenterPage role={principal.role} transport={pushCenterTransport} onUnauthenticated={onUnauthenticated} /><OutboundOperationsPage role={principal.role} transport={outboundOperationsTransport} onUnauthenticated={onUnauthenticated} /></>
+      <>
+        <PushCenterPage
+          role={principal.role}
+          transport={pushCenterTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+        <OutboundOperationsPage
+          role={principal.role}
+          transport={outboundOperationsTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      </>
     );
   }
 
@@ -880,6 +948,10 @@ export function navigationLinks(
     permitted.add(EXECUTION_RUNTIME_PATH);
     permitted.add(OUTBOUND_PATH);
     permitted.add(CLOUD_ORCHESTRATOR_PLANS_PATH);
+    permitted.add(SERVICE_PRODUCTS_PATH);
+    permitted.add(WECHAT_PAY_TRANSACTIONS_PATH);
+    permitted.add(WECHAT_SHOP_TRANSACTIONS_PATH);
+    permitted.add(ALIPAY_TRANSACTIONS_PATH);
   }
   if (
     base.length > 0 &&
@@ -941,9 +1013,9 @@ export function App({
   const effectivePathname = carrierPathname(pathname, search);
   const route = routeForPathname(effectivePathname);
   const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
+  const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);
   const customerID = customerIDForPathname(effectivePathname);
-  const publicSurvey =
-    pathname === "/" ? publicSurveySlug(search) : undefined;
+  const publicSurvey = pathname === "/" ? publicSurveySlug(search) : undefined;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -1014,10 +1086,7 @@ export function App({
 
   if (publicSurvey)
     return (
-      <PublicSurveyPage
-        slug={publicSurvey}
-        transport={publicSurveyTransport}
-      />
+      <PublicSurveyPage slug={publicSurvey} transport={publicSurveyTransport} />
     );
 
   if (session.status !== "authenticated" || pathname === LOGIN_PATH) {
@@ -1087,6 +1156,7 @@ export function App({
           <PageContent
             route={route}
             cloudOrchestrator={cloudOrchestrator}
+            commerceWorkspace={commerceWorkspace}
             principal={session.principal}
             customerTransport={customerTransport}
             customerDetailTransport={customerDetailTransport}

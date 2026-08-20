@@ -50,6 +50,13 @@ import type { DataHealthTransport } from "./data-health";
 import type { OrdersTransport } from "./orders";
 import type { AppSettingsTransport } from "./app-settings";
 import type { PublicSurveyTransport } from "./public-survey";
+import {
+  ALIPAY_TRANSACTIONS_PATH,
+  SERVICE_PRODUCT_NEW_PATH,
+  SERVICE_PRODUCTS_PATH,
+  WECHAT_PAY_TRANSACTIONS_PATH,
+  WECHAT_SHOP_TRANSACTIONS_PATH,
+} from "./commerce-workspaces";
 
 const adminSession = {
   status: "authenticated",
@@ -234,16 +241,23 @@ describe("Web shell routes", () => {
     expect(client.result).not.toHaveBeenCalled();
 
     vi.stubGlobal("window", {
-      location: { pathname: "/", search: "?public_survey_slug=summer&result_token=x" },
+      location: {
+        pathname: "/",
+        search: "?public_survey_slug=summer&result_token=x",
+      },
     });
     expect(
-      renderToStaticMarkup(<App initialSession={{ status: "unauthenticated" }} />),
+      renderToStaticMarkup(
+        <App initialSession={{ status: "unauthenticated" }} />,
+      ),
     ).toContain("登录运营工作台");
     vi.stubGlobal("window", {
       location: { pathname: "/q/summer-2026", search: "" },
     });
     expect(
-      renderToStaticMarkup(<App initialSession={{ status: "unauthenticated" }} />),
+      renderToStaticMarkup(
+        <App initialSession={{ status: "unauthenticated" }} />,
+      ),
     ).toContain("登录运营工作台");
   });
 
@@ -655,8 +669,38 @@ describe("Web shell routes", () => {
     }
   });
 
+  it("mounts commerce workspaces and keeps payment and refund effects closed", () => {
+    vi.stubGlobal("window", {
+      location: {
+        pathname: `${WECHAT_PAY_TRANSACTIONS_PATH}/order%20one`,
+        search: "",
+      },
+    });
+    const admin = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(admin).toContain("微信支付交易详情");
+    expect(admin).toContain("order one");
+    expect(admin).toContain("不提供退款、重试或 Provider 操作");
+    expect(admin).not.toContain("提交退款");
+
+    for (const role of ["ops", "sales"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          initialSession={{
+            status: "authenticated",
+            principal:
+              role === "sales"
+                ? { adminUserID: 9, role, staffID: 11 }
+                : { adminUserID: 8, role },
+          }}
+        />,
+      );
+      expect(html).toContain("没有交易与周期商品工作区权限");
+      expect(html).not.toContain("order one");
+    }
+  });
+
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(27);
+    expect(routes).toHaveLength(33);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -796,6 +840,10 @@ describe("Web shell routes", () => {
       "/admin/automation-runs",
       AUTOMATION_AGENTS_PATH,
       "/admin/cloud-orchestrator/plans",
+      SERVICE_PRODUCTS_PATH,
+      WECHAT_PAY_TRANSACTIONS_PATH,
+      WECHAT_SHOP_TRANSACTIONS_PATH,
+      ALIPAY_TRANSACTIONS_PATH,
       "/admin/group-invite-library",
       "/admin/delivery-lineage",
       "/admin/data-health",
@@ -845,6 +893,10 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/automation-runs"');
     expect(html).toContain(`href="${AUTOMATION_AGENTS_PATH}"`);
     expect(html).toContain('href="/admin/cloud-orchestrator/plans"');
+    expect(html).toContain(`href="${SERVICE_PRODUCTS_PATH}"`);
+    expect(html).toContain(`href="${WECHAT_PAY_TRANSACTIONS_PATH}"`);
+    expect(html).toContain(`href="${WECHAT_SHOP_TRANSACTIONS_PATH}"`);
+    expect(html).toContain(`href="${ALIPAY_TRANSACTIONS_PATH}"`);
     expect(html).toContain('href="/admin/group-invite-library"');
     expect(html).toContain('href="/admin/delivery-lineage"');
     expect(html).toContain('href="/admin/data-health"');
@@ -855,7 +907,9 @@ describe("Web shell routes", () => {
   });
 
   it("composes the Push Center sections with local task observation at outbound", () => {
-    vi.stubGlobal("window", { location: { pathname: OUTBOUND_PATH, search: "" } });
+    vi.stubGlobal("window", {
+      location: { pathname: OUTBOUND_PATH, search: "" },
+    });
 
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
 
@@ -926,6 +980,15 @@ describe("legacy admin path carrier", () => {
     expect(carrierPathname("/", `?legacy_admin_path=${PRODUCTS_PATH}`)).toBe(
       PRODUCTS_PATH,
     );
+    expect(
+      carrierPathname("/", `?legacy_admin_path=${SERVICE_PRODUCT_NEW_PATH}`),
+    ).toBe(SERVICE_PRODUCT_NEW_PATH);
+    expect(
+      carrierPathname(
+        "/",
+        `?legacy_admin_path=${encodeURIComponent(`${WECHAT_PAY_TRANSACTIONS_PATH}/order_A-42`)}`,
+      ),
+    ).toBe(`${WECHAT_PAY_TRANSACTIONS_PATH}/order_A-42`);
 
     for (const search of [
       "?legacy_admin_path=/admin/image-library",
@@ -935,6 +998,8 @@ describe("legacy admin path carrier", () => {
       "?legacy_admin_path=/admin/automation-agents/extra",
       "?legacy_admin_path=/admin/orders/extra",
       "?legacy_admin_path=/admin/wechat-pay/products/extra",
+      "?legacy_admin_path=/admin/service-period-products/service/nested/edit",
+      "?legacy_admin_path=/admin/wechat-pay/transactions/order%0Aheader",
       "?legacy_admin_path=/admin/wecom-tags&legacy_admin_path=/admin/wecom-tags",
       `?legacy_admin_path=${IMAGE_LIBRARY_PATH}`,
       `?legacy_admin_path=${HXC_SENDER_PATH}&legacy_admin_path=${HXC_SENDER_PATH}`,

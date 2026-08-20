@@ -1643,6 +1643,219 @@ paths:
             Allow: { required: true, schema: { type: string, enum: [GET] } }
             Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/alipay/transactions:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getAlipayTransactionsWorkspace
+      summary: Carry an authorized administrator to the local Alipay transaction workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no payment fact is read or executed., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Falipay%2Ftransactions"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductsWorkspace
+      summary: Carry an authorized administrator to the local service-product list workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no entitlement or product fact is inferred., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fservice-period-products"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products/new:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductCreateWorkspace
+      summary: Carry an authorized administrator to the local service-product creation shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no create command or provider action is available., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fservice-period-products%2Fnew"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products/{service_product_id}/edit:
+    parameters:
+      - { name: service_product_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductEditWorkspace
+      summary: Carry an authorized administrator to one safe local service-product edit shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated resource identifier., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products/{service_product_id}/data:
+    parameters:
+      - { name: service_product_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductDataWorkspace
+      summary: Carry an authorized administrator to one safe local service-product member-data shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated resource identifier; no member facts are read., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/products/new:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayProductCreateWorkspace
+      summary: Carry an authorized administrator to the local WeChat Pay product creation shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no payment-product create or provider call occurs., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-pay%2Fproducts%2Fnew"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/products/{product_id}/edit:
+    parameters:
+      - { name: product_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayProductEditWorkspace
+      summary: Carry an authorized administrator to one safe local WeChat Pay product edit shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated product identifier., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/transactions:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayTransactionsWorkspace
+      summary: Carry an authorized administrator to the local WeChat Pay transaction workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no transaction or provider fact is read., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-pay%2Ftransactions"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/transactions/{order_id}:
+    parameters:
+      - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayTransactionWorkspace
+      summary: Carry an authorized administrator to one safe local WeChat Pay transaction-detail shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated order identifier; no refund is attempted., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-shop/transactions:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatShopTransactionsWorkspace
+      summary: Carry an authorized administrator to the local WeChat Shop transaction workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no shop transaction or provider fact is read., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-shop%2Ftransactions"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-shop/transactions/{order_id}:
+    parameters:
+      - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatShopTransactionWorkspace
+      summary: Carry an authorized administrator to one safe local WeChat Shop transaction-detail shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated order identifier; no refund is attempted., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
   /admin/automation-agents:
     get:
       tags: [p4-automation-agents]
