@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars -- transport signatures deliberately name their contract arguments. */
 import {
+  cancelLegacyOutboundJob,
   getLegacyOutboundJobReconciliation,
   listLegacyOutboundJobs,
   type ListLegacyOutboundJobsStatus,
@@ -33,6 +34,7 @@ export interface OutboundAttempt {
 }
 export interface OutboundControlReceipt {
   readonly receiptID: string;
+  readonly taskID: string;
   readonly operation: "cancel" | "manual_retry";
   readonly state: "completed";
   readonly generation: number;
@@ -46,6 +48,8 @@ export interface OutboundOperationsResponse { readonly status: number; readonly 
 export interface OutboundOperationsTransport {
   readonly list: (params: { readonly status?: string; readonly businessID?: string; readonly offset: number }, options: RequestInit) => Promise<OutboundOperationsResponse>;
   readonly reconciliation: (taskID: string, options: RequestInit) => Promise<OutboundOperationsResponse>;
+  /** Optional only for isolated read-only test fixtures; the default transport is generated and always supplies it. */
+  readonly cancel?: (taskID: string, options: RequestInit) => Promise<OutboundOperationsResponse>;
 }
 
 function generatedTaskID(taskID: string): number | undefined {
@@ -66,9 +70,16 @@ export const generatedOutboundOperationsTransport: OutboundOperationsTransport =
     const id = generatedTaskID(taskID);
     return id === undefined ? { status: 400, data: {} } : getLegacyOutboundJobReconciliation(id, options);
   },
+  cancel: async (taskID, options) => {
+    const id = generatedTaskID(taskID);
+    return id === undefined ? { status: 400, data: {} } : cancelLegacyOutboundJob(id, options);
+  },
 };
 export type OutboundOperationsFailure = "unauthenticated" | "forbidden" | "invalid" | "unavailable";
 export type OutboundOperationsResult<T> = { readonly status: "loaded"; readonly value: T } | { readonly status: OutboundOperationsFailure };
+export type OutboundCancelResult =
+  | { readonly status: "cancelled"; readonly receipt: OutboundControlReceipt }
+  | { readonly status: "unauthenticated" | "forbidden" | "invalid" | "conflict" | "unknown" | "unavailable" };
 
 function plain(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null); }
 function exact(value: Record<string, unknown>, keys: readonly string[]): boolean { const actual = Object.keys(value); return actual.length === keys.length && actual.every((key) => keys.includes(key)); }
@@ -101,7 +112,7 @@ export function parseOutboundAttempt(value: unknown): OutboundAttempt | undefine
 export function parseOutboundControlReceipt(value: unknown, taskID: string): OutboundControlReceipt | undefined {
   if (!plain(value) || !exact(value, ["receipt_id", "task_id", "operation", "state", "generation", "river_job_id", "job_kind", "event_id", "task_status", "completed_at"]) || !positiveID(value.receipt_id) || !positiveID(value.task_id) || id(value.task_id) !== taskID || (value.operation !== "cancel" && value.operation !== "manual_retry") || value.state !== "completed" || !positive(value.generation) || !positiveID(value.river_job_id) || typeof value.job_kind !== "string" || !JOB_KINDS.has(value.job_kind) || !positiveID(value.event_id) || typeof value.task_status !== "string" || !TASK_STATES.has(value.task_status) || !time(value.completed_at)) return undefined;
   if ((value.operation === "cancel" && value.task_status !== "cancelled") || (value.operation === "manual_retry" && value.task_status !== "pending")) return undefined;
-  return { receiptID: id(value.receipt_id), operation: value.operation, state: "completed", generation: value.generation, queueKind: value.job_kind, taskStatus: value.task_status, completedAt: value.completed_at };
+  return { receiptID: id(value.receipt_id), taskID, operation: value.operation, state: "completed", generation: value.generation, queueKind: value.job_kind, taskStatus: value.task_status, completedAt: value.completed_at };
 }
 function source(value: unknown): boolean { return value === "v2_outbound_service"; }
 function listPage(value: unknown, offset: number): OutboundTaskPage | undefined {
@@ -113,3 +124,34 @@ function reconciliation(value: unknown, taskID: string): OutboundReconciliation 
 function failure(status: number): OutboundOperationsFailure { if (status === 401) return "unauthenticated"; if (status === 403) return "forbidden"; if (status === 400 || status === 404 || status === 422) return "invalid"; return "unavailable"; }
 export async function loadOutboundTasks(transport: OutboundOperationsTransport, params: { readonly status?: string; readonly businessID?: string; readonly offset?: number } = {}): Promise<OutboundOperationsResult<OutboundTaskPage>> { const offset = params.offset ?? 0; if (!nonnegative(offset) || offset > MAX_OFFSET || offset % OUTBOUND_OPERATIONS_PAGE_SIZE !== 0 || (params.status !== undefined && !TASK_STATES.has(params.status)) || (params.businessID !== undefined && !positiveID(params.businessID))) return { status: "invalid" }; try { const response = await transport.list({ status: params.status, businessID: params.businessID, offset }, { credentials: "same-origin" }); if (response.status !== 200) return { status: failure(response.status) }; const page = listPage(response.data, offset); return page ? { status: "loaded", value: page } : { status: "invalid" }; } catch { return { status: "unavailable" }; } }
 export async function loadOutboundReconciliation(transport: OutboundOperationsTransport, taskID: string): Promise<OutboundOperationsResult<OutboundReconciliation>> { if (!positiveID(taskID)) return { status: "invalid" }; try { const response = await transport.reconciliation(taskID, { credentials: "same-origin" }); if (response.status !== 200) return { status: failure(response.status) }; const value = reconciliation(response.data, taskID); return value ? { status: "loaded", value } : { status: "invalid" }; } catch { return { status: "unavailable" }; } }
+
+function validCSRF(value: string): boolean { return /^[A-Za-z0-9_-]{43}$/.test(value); }
+function validIdempotencyKey(value: string): boolean { return /^[A-Za-z0-9:_-]{16,128}$/.test(value) && value === value.trim(); }
+function cancelReceipt(value: unknown, taskID: string): OutboundControlReceipt | undefined {
+  if (!plain(value) || !exact(value, ["ok", "control_receipt", "source_status", "fallback_used"]) || value.ok !== true || value.source_status !== "v2_outbound_cancel_service" || value.fallback_used !== false) return undefined;
+  const receipt = parseOutboundControlReceipt(value.control_receipt, taskID);
+  return receipt?.operation === "cancel" && receipt.taskStatus === "cancelled" ? receipt : undefined;
+}
+
+/** This is deliberately a pre-provider control: a valid 202 only proves the local
+ * cancellation receipt. The caller must read the same task back before changing UI state. */
+export async function cancelPendingOutboundTask(transport: OutboundOperationsTransport, task: OutboundTask, csrf: string, idempotencyKey: string): Promise<OutboundCancelResult> {
+  if (task.status !== "pending" || !positiveID(task.taskID) || !validCSRF(csrf) || !validIdempotencyKey(idempotencyKey) || !transport.cancel) return { status: "invalid" };
+  try {
+    const response = await transport.cancel(task.taskID, { credentials: "same-origin", headers: { "X-CSRF-Token": csrf, "Idempotency-Key": idempotencyKey } });
+    if (response.status === 202) { const receipt = cancelReceipt(response.data, task.taskID); return receipt ? { status: "cancelled", receipt } : { status: "unknown" }; }
+    if (response.status === 401) return { status: "unauthenticated" };
+    if (response.status === 403) return { status: "forbidden" };
+    if (response.status === 400 || response.status === 404 || response.status === 422) return { status: "invalid" };
+    if (response.status === 409) return { status: "conflict" };
+    return { status: "unknown" };
+  } catch { return { status: "unknown" }; }
+}
+
+export function newOutboundCancelIdempotencyKey(source: { readonly randomUUID: () => string } | undefined = globalThis.crypto): string | undefined {
+  try { const uuid = source?.randomUUID(); return typeof uuid === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid) ? `outbound-cancel:${uuid}` : undefined; } catch { return undefined; }
+}
+
+export function confirmsCancelledOutboundTask(value: OutboundReconciliation, receipt: OutboundControlReceipt): boolean {
+  return value.task.status === "cancelled" && value.task.taskID === receipt.taskID && value.task.generation === receipt.generation && value.task.queueKind === receipt.queueKind && value.receipts.some((item) => item.receiptID === receipt.receiptID && item.operation === "cancel" && item.state === "completed" && item.taskStatus === "cancelled" && item.generation === receipt.generation && item.queueKind === receipt.queueKind && item.completedAt === receipt.completedAt);
+}

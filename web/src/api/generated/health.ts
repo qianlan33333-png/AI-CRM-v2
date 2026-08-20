@@ -525,6 +525,72 @@ export interface LegacyOutboundJobReconciliationResponse {
   fallback_used: boolean;
 }
 
+export type LegacyOutboundCancelReceiptOperation =
+  (typeof LegacyOutboundCancelReceiptOperation)[keyof typeof LegacyOutboundCancelReceiptOperation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelReceiptOperation = {
+  cancel: "cancel",
+} as const;
+
+export type LegacyOutboundCancelReceiptState =
+  (typeof LegacyOutboundCancelReceiptState)[keyof typeof LegacyOutboundCancelReceiptState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelReceiptState = {
+  completed: "completed",
+} as const;
+
+export type LegacyOutboundCancelReceiptJobKind =
+  (typeof LegacyOutboundCancelReceiptJobKind)[keyof typeof LegacyOutboundCancelReceiptJobKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelReceiptJobKind = {
+  outbound_enqueue_one: "outbound_enqueue_one",
+  outbound_enqueue_batch_task: "outbound_enqueue_batch_task",
+} as const;
+
+export type LegacyOutboundCancelReceiptTaskStatus =
+  (typeof LegacyOutboundCancelReceiptTaskStatus)[keyof typeof LegacyOutboundCancelReceiptTaskStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelReceiptTaskStatus = {
+  cancelled: "cancelled",
+} as const;
+
+export interface LegacyOutboundCancelReceipt {
+  /** @minimum 1 */
+  receipt_id: number;
+  /** @minimum 1 */
+  task_id: number;
+  operation: LegacyOutboundCancelReceiptOperation;
+  state: LegacyOutboundCancelReceiptState;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  river_job_id: number;
+  job_kind: LegacyOutboundCancelReceiptJobKind;
+  /** @minimum 1 */
+  event_id: number;
+  task_status: LegacyOutboundCancelReceiptTaskStatus;
+  completed_at: string;
+}
+
+export type LegacyOutboundCancelResponseSourceStatus =
+  (typeof LegacyOutboundCancelResponseSourceStatus)[keyof typeof LegacyOutboundCancelResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelResponseSourceStatus = {
+  v2_outbound_cancel_service: "v2_outbound_cancel_service",
+} as const;
+
+export interface LegacyOutboundCancelResponse {
+  ok: boolean;
+  control_receipt: LegacyOutboundCancelReceipt;
+  source_status: LegacyOutboundCancelResponseSourceStatus;
+  fallback_used: boolean;
+}
+
 export type LegacyInternalEventListResponseRegistryId =
   (typeof LegacyInternalEventListResponseRegistryId)[keyof typeof LegacyInternalEventListResponseRegistryId];
 
@@ -23860,6 +23926,87 @@ export const getLegacyOutboundJobReconciliation = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyOutboundJobReconciliationResponse;
+};
+
+/**
+ * @summary Cancel only a still-pending local outbound task before a worker can claim it
+ */
+export type cancelLegacyOutboundJobResponse202 = {
+  data: LegacyOutboundCancelResponse;
+  status: 202;
+};
+
+export type cancelLegacyOutboundJobResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type cancelLegacyOutboundJobResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type cancelLegacyOutboundJobResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type cancelLegacyOutboundJobResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type cancelLegacyOutboundJobResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type cancelLegacyOutboundJobResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type cancelLegacyOutboundJobResponseSuccess =
+  cancelLegacyOutboundJobResponse202 & {
+    headers: Headers;
+  };
+export type cancelLegacyOutboundJobResponseError = (
+  | cancelLegacyOutboundJobResponse400
+  | cancelLegacyOutboundJobResponse401
+  | cancelLegacyOutboundJobResponse403
+  | cancelLegacyOutboundJobResponse404
+  | cancelLegacyOutboundJobResponse409
+  | cancelLegacyOutboundJobResponse503
+) & {
+  headers: Headers;
+};
+
+export type cancelLegacyOutboundJobResponse =
+  cancelLegacyOutboundJobResponseSuccess | cancelLegacyOutboundJobResponseError;
+
+export const getCancelLegacyOutboundJobUrl = (jobId: number) => {
+  return `/api/admin/push-center/jobs/${jobId}/cancel`;
+};
+
+export const cancelLegacyOutboundJob = async (
+  jobId: number,
+  options?: RequestInit,
+): Promise<cancelLegacyOutboundJobResponse> => {
+  const res = await fetch(getCancelLegacyOutboundJobUrl(jobId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: cancelLegacyOutboundJobResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as cancelLegacyOutboundJobResponse;
 };
 
 /**

@@ -48,6 +48,7 @@ const (
 	p4ProductEntitlementEvidence    = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
 	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
 	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
+	p4OutboundOperationsEvidence    = "P4-OUTBOUND-OPERATIONS-2026-08-20"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -83,6 +84,7 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCloudOrchestratorPlanDetailWorkspace":    {"/admin/cloud-orchestrator/plans/{plan_id}", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorCampaignsWorkspace":     {"/admin/cloud-orchestrator/campaigns", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorObservabilityWorkspace": {"/admin/cloud-orchestrator/observability", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 var p1CandidateOperations = map[string]bool{
@@ -760,6 +762,28 @@ func validateNativePackageOperation(path string, item *openapi3.PathItem, op *op
 	return nil
 }
 
+func validateOutboundCancelOperation(op *openapi3.Operation) error {
+	if op == nil || op.RequestBody != nil || !operationResponseUsesStatusLocalSchema(op, "202", "LegacyOutboundCancelResponse") ||
+		op.Responses.Value("400") == nil || op.Responses.Value("401") == nil || op.Responses.Value("403") == nil ||
+		op.Responses.Value("404") == nil || op.Responses.Value("409") == nil || op.Responses.Value("503") == nil {
+		return errors.New("cancelLegacyOutboundJob closed response contract drifted")
+	}
+	if len(op.Parameters) != 3 {
+		return errors.New("cancelLegacyOutboundJob parameter contract drifted")
+	}
+	want := map[string]string{"job_id": "path", "X-CSRF-Token": "header", "Idempotency-Key": "header"}
+	for _, reference := range op.Parameters {
+		if reference == nil || reference.Value == nil || !reference.Value.Required || want[reference.Value.Name] != reference.Value.In {
+			return errors.New("cancelLegacyOutboundJob parameter contract drifted")
+		}
+		delete(want, reference.Value.Name)
+	}
+	if len(want) != 0 {
+		return errors.New("cancelLegacyOutboundJob parameter contract drifted")
+	}
+	return nil
+}
+
 func validate(doc *openapi3.T, inventory mappingInventory) error {
 	known := inventory.Known
 	if err := doc.Validate(context.Background()); err != nil {
@@ -1114,6 +1138,11 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 			} else if nativeContract, native := nativePackageOperations[op.OperationID]; native {
 				if err := validateNativePackageOperation(path, item, op, nativeContract); err != nil {
 					return err
+				}
+				if op.OperationID == "cancelLegacyOutboundJob" {
+					if err := validateOutboundCancelOperation(op); err != nil {
+						return err
+					}
 				}
 			} else if canonicalFallback {
 				if err := validateGenericCanonicalAuthorization(op, canonicalContract.Method); err != nil {

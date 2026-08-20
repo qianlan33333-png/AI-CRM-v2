@@ -4544,6 +4544,31 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/push-center/jobs/{job_id}/cancel:
+    post:
+      tags: [p4-outbound-operations]
+      operationId: cancelLegacyOutboundJob
+      summary: Cancel only a still-pending local outbound task before a worker can claim it
+      x-p4-decision-evidence: P4-OUTBOUND-OPERATIONS-2026-08-20
+      x-aicrm-capability: outbound.control
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202": { description: Completed local pre-worker cancellation receipt; it is not a provider receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundCancelResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/internal-events:
     get:
       tags: [p4-internal-events]
@@ -5131,6 +5156,30 @@ components:
         attempts: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundAttempt" } }
         control_receipts: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundControlReceipt" } }
         source_status: { type: string, enum: [v2_outbound_service] }
+        fallback_used: { type: boolean, enum: [false] }
+    LegacyOutboundCancelReceipt:
+      type: object
+      additionalProperties: false
+      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at]
+      properties:
+        receipt_id: { type: integer, format: int64, minimum: 1 }
+        task_id: { type: integer, format: int64, minimum: 1 }
+        operation: { type: string, enum: [cancel] }
+        state: { type: string, enum: [completed] }
+        generation: { type: integer, format: int32, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        job_kind: { type: string, enum: [outbound_enqueue_one, outbound_enqueue_batch_task] }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        task_status: { type: string, enum: [cancelled] }
+        completed_at: { type: string, format: date-time }
+    LegacyOutboundCancelResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, control_receipt, source_status, fallback_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        control_receipt: { $ref: "#/components/schemas/LegacyOutboundCancelReceipt" }
+        source_status: { type: string, enum: [v2_outbound_cancel_service] }
         fallback_used: { type: boolean, enum: [false] }
     LegacyInternalEventListResponse:
       type: object
