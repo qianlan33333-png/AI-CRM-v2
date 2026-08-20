@@ -32,6 +32,7 @@ func (fake *customerContextLocalFake) ReadCustomer360(_ context.Context, input c
 type customerContextChatFake struct {
 	result wecomport.CustomerChatSummaryPage
 	err    error
+	fn     func(wecomport.CustomerChatSummaryQuery) (wecomport.CustomerChatSummaryPage, error)
 	calls  int
 	inputs []wecomport.CustomerChatSummaryQuery
 }
@@ -39,6 +40,9 @@ type customerContextChatFake struct {
 func (fake *customerContextChatFake) ListCustomerChatSummaries(_ context.Context, input wecomport.CustomerChatSummaryQuery) (wecomport.CustomerChatSummaryPage, error) {
 	fake.calls++
 	fake.inputs = append(fake.inputs, input)
+	if fake.fn != nil {
+		return fake.fn(input)
+	}
 	return fake.result, fake.err
 }
 

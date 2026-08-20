@@ -14,6 +14,7 @@ type Querier interface {
 	AcceptMessageArchiveSyncReceipt(ctx context.Context, arg AcceptMessageArchiveSyncReceiptParams) (AcceptMessageArchiveSyncReceiptRow, error)
 	AdvanceWeComSyncState(ctx context.Context, arg AdvanceWeComSyncStateParams) (AdvanceWeComSyncStateRow, error)
 	CountMessageArchiveExternalRecords(ctx context.Context, arg CountMessageArchiveExternalRecordsParams) (int64, error)
+	CountMessageArchiveRecords(ctx context.Context, arg CountMessageArchiveRecordsParams) (int64, error)
 	ListMessageArchiveExternalRecords(ctx context.Context, arg ListMessageArchiveExternalRecordsParams) ([]ListMessageArchiveExternalRecordsRow, error)
 	ListMessageArchiveLastAcceptedAt(ctx context.Context) ([]pgtype.Timestamptz, error)
 	ListMessageArchiveRecords(ctx context.Context, arg ListMessageArchiveRecordsParams) ([]ListMessageArchiveRecordsRow, error)

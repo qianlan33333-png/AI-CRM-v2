@@ -77,6 +77,22 @@ describe("CustomerDetailPage", () => {
     expect(html).not.toContain("X-CSRF-Token");
   });
 
+  it("mounts the injected zero-body chat activity panel without transport during SSR", () => {
+    const get = vi.fn();
+    const html = renderToStaticMarkup(
+      <CustomerDetailPage
+        customerID={7}
+        initialSnapshot={snapshot}
+        transport={transport()}
+        chatActivityRole="ops"
+        chatActivityTransport={{ get }}
+      />,
+    );
+    expect(html).toContain("本地聊天活动");
+    expect(html).toContain("不读取正文、身份值、媒体");
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it("starts with an accessible loading status without requiring browser globals", () => {
     const html = renderToStaticMarkup(
       <CustomerDetailPage customerID={7} transport={transport()} />,

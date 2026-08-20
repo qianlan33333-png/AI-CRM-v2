@@ -427,6 +427,75 @@ func (q *Queries) InsertVerifiedPhoneMergeReview(ctx context.Context, arg Insert
 	return id, err
 }
 
+const listCustomerMergeHistory = `-- name: ListCustomerMergeHistory :many
+WITH RECURSIVE lineage(customer_id) AS (
+  SELECT $3::bigint
+  UNION
+  SELECT CASE
+    WHEN merge.primary_customer_id = lineage.customer_id THEN merge.merged_customer_id
+    ELSE merge.primary_customer_id
+  END
+  FROM customer_merges AS merge
+  JOIN lineage
+    ON merge.primary_customer_id = lineage.customer_id
+    OR merge.merged_customer_id = lineage.customer_id
+)
+SELECT merge.id,
+       merge.primary_customer_id,
+       merge.merged_customer_id,
+       merge.mode,
+       merge.policy_version,
+       merge.merged_at
+FROM customer_merges AS merge
+WHERE (merge.primary_customer_id IN (SELECT customer_id FROM lineage)
+       OR merge.merged_customer_id IN (SELECT customer_id FROM lineage))
+  AND ($1::bigint = 0 OR merge.id < $1::bigint)
+ORDER BY merge.id DESC
+LIMIT $2::integer
+`
+
+type ListCustomerMergeHistoryParams struct {
+	AfterID    int64 `json:"after_id"`
+	PageLimit  int32 `json:"page_limit"`
+	CustomerID int64 `json:"customer_id"`
+}
+
+type ListCustomerMergeHistoryRow struct {
+	ID                int64              `json:"id"`
+	PrimaryCustomerID int64              `json:"primary_customer_id"`
+	MergedCustomerID  int64              `json:"merged_customer_id"`
+	Mode              string             `json:"mode"`
+	PolicyVersion     string             `json:"policy_version"`
+	MergedAt          pgtype.Timestamptz `json:"merged_at"`
+}
+
+func (q *Queries) ListCustomerMergeHistory(ctx context.Context, arg ListCustomerMergeHistoryParams) ([]ListCustomerMergeHistoryRow, error) {
+	rows, err := q.db.Query(ctx, listCustomerMergeHistory, arg.AfterID, arg.PageLimit, arg.CustomerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCustomerMergeHistoryRow{}
+	for rows.Next() {
+		var i ListCustomerMergeHistoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PrimaryCustomerID,
+			&i.MergedCustomerID,
+			&i.Mode,
+			&i.PolicyVersion,
+			&i.MergedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPendingMergeReviews = `-- name: ListPendingMergeReviews :many
 SELECT
   pending.id,

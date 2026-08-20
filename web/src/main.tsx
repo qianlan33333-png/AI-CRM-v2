@@ -23,6 +23,18 @@ import { CustomerListPage } from "./customers-ui";
 import type { CustomerTransport } from "./customers";
 import { CustomerDetailPage } from "./customer-detail-ui";
 import type { CustomerDetailTransport } from "./customer-detail";
+import {
+  generatedCustomerMergeHistoryTransport,
+  type CustomerMergeHistoryTransport,
+} from "./customer-merge-history";
+import {
+  generatedCustomerChatActivityTransport,
+  type CustomerChatActivityTransport,
+} from "./customer-chat-activity";
+import {
+  generatedCustomerActivityAnalyticsTransport,
+  type CustomerActivityAnalyticsTransport,
+} from "./customer-activity-analytics";
 import { StagesPage } from "./stages-ui";
 import type { StageTransport } from "./stages";
 import { SegmentsPage } from "./segments-ui";
@@ -385,6 +397,9 @@ export interface AppProps {
   transport?: AuthTransport;
   customerTransport?: CustomerTransport;
   customerDetailTransport?: CustomerDetailTransport;
+  customerMergeHistoryTransport?: CustomerMergeHistoryTransport;
+  customerChatActivityTransport?: CustomerChatActivityTransport;
+  customerActivityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
@@ -591,6 +606,9 @@ function PageContent({
   principal,
   customerTransport,
   customerDetailTransport,
+  customerMergeHistoryTransport,
+  customerChatActivityTransport,
+  customerActivityAnalyticsTransport,
   customerID,
   stageTransport,
   segmentTransport,
@@ -627,6 +645,9 @@ function PageContent({
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
   customerDetailTransport?: CustomerDetailTransport;
+  customerMergeHistoryTransport?: CustomerMergeHistoryTransport;
+  customerChatActivityTransport?: CustomerChatActivityTransport;
+  customerActivityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
   customerID?: number;
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
@@ -659,10 +680,7 @@ function PageContent({
   }
   if (audiencePackage) {
     return (
-      <AudiencePackageWorkspace
-        role={principal.role}
-        route={audiencePackage}
-      />
+      <AudiencePackageWorkspace role={principal.role} route={audiencePackage} />
     );
   }
   if (userOps) {
@@ -692,6 +710,11 @@ function PageContent({
       <CustomerDetailPage
         customerID={customerID}
         transport={customerDetailTransport}
+        mergeHistoryRole={principal.role}
+        mergeHistoryTransport={customerMergeHistoryTransport}
+        chatActivityRole={principal.role}
+        chatActivityTransport={customerChatActivityTransport}
+        activityAnalyticsTransport={customerActivityAnalyticsTransport}
         readCookie={cookieHeader}
         onUnauthenticated={onUnauthenticated}
       />
@@ -1051,6 +1074,9 @@ export function App({
   transport = generatedAuthTransport,
   customerTransport,
   customerDetailTransport,
+  customerMergeHistoryTransport = generatedCustomerMergeHistoryTransport,
+  customerChatActivityTransport = generatedCustomerChatActivityTransport,
+  customerActivityAnalyticsTransport = generatedCustomerActivityAnalyticsTransport,
   stageTransport,
   segmentTransport,
   identityReviewTransport,
@@ -1240,6 +1266,11 @@ export function App({
             principal={session.principal}
             customerTransport={customerTransport}
             customerDetailTransport={customerDetailTransport}
+            customerMergeHistoryTransport={customerMergeHistoryTransport}
+            customerChatActivityTransport={customerChatActivityTransport}
+            customerActivityAnalyticsTransport={
+              customerActivityAnalyticsTransport
+            }
             customerID={customerID}
             stageTransport={stageTransport}
             segmentTransport={segmentTransport}

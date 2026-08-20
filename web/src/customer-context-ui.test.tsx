@@ -4,6 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CustomerContextPanel } from "./customer-context-ui";
+import { CustomerActivityAnalyticsPanel } from "./customer-activity-analytics-ui";
+import type { CustomerActivityAnalyticsTransport } from "./customer-activity-analytics";
 import type {
   CustomerContextSnapshot,
   CustomerContextTransport,
@@ -77,6 +79,10 @@ class TestElement extends TestNode {
   readonly tagName: string;
   readonly namespaceURI = "http://www.w3.org/1999/xhtml";
   readonly style: Record<string, string> = {};
+  selected = false;
+  defaultSelected = false;
+  disabled = false;
+  value = "";
   private readonly attributes = new Map<string, string>();
   constructor(tagName: string, ownerDocument: TestDocument) {
     super(1, tagName.toUpperCase());
@@ -94,6 +100,14 @@ class TestElement extends TestNode {
   }
   hasAttribute(name: string): boolean {
     return this.attributes.has(name);
+  }
+  get options(): TestElement[] {
+    return this.tagName === "SELECT"
+      ? this.childNodes.filter(
+          (node): node is TestElement =>
+            node instanceof TestElement && node.tagName === "OPTION",
+        )
+      : [];
   }
 }
 class TestDocument extends TestNode {
@@ -276,6 +290,20 @@ describe("CustomerContextPanel", () => {
       expect(html.toLowerCase()).not.toContain(forbidden);
   });
 
+  it("lets the paginated activity panel replace the initial chat summary", () => {
+    const html = renderToStaticMarkup(
+      <CustomerContextPanel
+        customerID={7}
+        initialSnapshot={snapshot}
+        transport={{ get: vi.fn() } as unknown as CustomerContextTransport}
+        showChatSummary={false}
+      />,
+    );
+    expect(html).not.toContain("本地聊天摘要");
+    expect(html).not.toContain("private / text");
+    expect(html).toContain("Customer 360 本地读取");
+  });
+
   it("mounts timeline pagination with same-tick singleflight, failure retention, and unmount stale-drop", async () => {
     const first = deferred<{ status: number; data: unknown }>();
     const unavailable = deferred<{ status: number; data: unknown }>();
@@ -395,5 +423,23 @@ describe("CustomerContextPanel", () => {
     await act(async () => {
       mounted.root.unmount();
     });
+  });
+});
+
+describe("CustomerActivityAnalyticsPanel lifecycle", () => {
+  const analyticsBody = (customerID: number, windowDays: 7 | 30 | 90, total = 2) => ({ customer_id: customerID, window_days: windowDays, from: "2026-07-21T10:00:00Z", through: "2026-08-20T10:00:00Z", total_events: total, active_days: total === 0 ? 0 : 1, unique_event_types: total === 0 ? 0 : 1, last_occurred_at: total === 0 ? null : "2026-08-20T09:00:00Z", type_facets: total === 0 ? [] : [{ event_type: "customer.updated", count: total, last_occurred_at: "2026-08-20T09:00:00Z" }], type_facets_truncated: false, daily_counts: total === 0 ? [] : [{ day: "2026-08-20", count: total }], payload_included: false, actor_included: false, identity_included: false, real_external_call_executed: false });
+  it("drops replacement and unmount stale responses while preserving active 401 semantics", async () => {
+    const old = deferred<{ status: number; data: unknown }>(); const current = deferred<{ status: number; data: unknown }>(); const get = vi.fn((customerID: number) => customerID === 7 ? old.promise : current.promise); const onUnauthenticated = vi.fn(); const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<CustomerActivityAnalyticsPanel customerID={7} transport={{ get: async (id) => get(id) } as CustomerActivityAnalyticsTransport} onUnauthenticated={onUnauthenticated} />); });
+    await act(async () => { mounted.root.render(<CustomerActivityAnalyticsPanel customerID={8} transport={{ get: async (id) => get(id) } as CustomerActivityAnalyticsTransport} onUnauthenticated={onUnauthenticated} />); current.resolve(response(analyticsBody(8, 30, 3))); await Promise.resolve(); });
+    expect(mounted.container.textContent).toContain("3"); await act(async () => { old.resolve(response({}, 401)); await Promise.resolve(); }); expect(onUnauthenticated).not.toHaveBeenCalled(); expect(mounted.container.textContent).toContain("3");
+    await act(async () => { mounted.root.unmount(); });
+  });
+  it("uses same-tick singleflight and retains verified data on window failure", async () => {
+    const first = deferred<{ status: number; data: unknown }>(); const next = deferred<{ status: number; data: unknown }>(); const get = vi.fn(() => get.mock.calls.length === 1 ? first.promise : next.promise); const mounted = mountedRoot();
+    await act(async () => { mounted.root.render(<CustomerActivityAnalyticsPanel customerID={7} transport={{ get: async () => get() } as CustomerActivityAnalyticsTransport} />); first.resolve(response(analyticsBody(7, 30, 2))); await Promise.resolve(); });
+    const select = [mounted.container, ...mounted.container.childNodes.flatMap(function walk(node): TestNode[] { return [node, ...node.childNodes.flatMap(walk)]; })].find((node): node is TestElement => node instanceof TestElement && node.tagName === "SELECT"); if (!select) throw new Error("missing window select");
+    await act(async () => { const onChange = reactProps<{ onChange?: (event: { currentTarget: { value: string } }) => void }>(select).onChange; onChange?.({ currentTarget: { value: "90" } }); onChange?.({ currentTarget: { value: "90" } }); });
+    expect(get).toHaveBeenCalledTimes(2); await act(async () => { next.resolve(response({}, 503)); await Promise.resolve(); }); expect(mounted.container.textContent).toContain("已保留上次结果"); expect(mounted.container.textContent).toContain("customer.updated"); await act(async () => { mounted.root.unmount(); });
   });
 });

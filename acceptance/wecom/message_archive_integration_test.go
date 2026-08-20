@@ -14,6 +14,7 @@ import (
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 )
 
@@ -22,7 +23,8 @@ var p4MessageArchiveDatabaseURL = flag.String("p4-message-archive-database-url",
 func TestP4MessageArchiveNormalBoundaryOwnershipAndAcceptedUoW(t *testing.T) {
 	pool, ctx := openMessageArchivePool(t)
 	prefix := fmt.Sprintf("p4-message-archive-%d", time.Now().UnixNano())
-	firstCustomer, secondCustomer := int64(8_801_001), int64(8_801_002)
+	seed := time.Now().UnixNano() % 1_000_000_000
+	firstCustomer, secondCustomer := int64(8_801_000_000+seed), int64(8_802_000_000+seed)
 	now := time.Date(2026, 8, 15, 11, 0, 0, 0, time.UTC)
 	for index, customerID := range []int64{firstCustomer, secondCustomer} {
 		_, err := pool.Exec(ctx, `INSERT INTO wecom_message_archive_records
@@ -33,6 +35,13 @@ func TestP4MessageArchiveNormalBoundaryOwnershipAndAcceptedUoW(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	_, err := pool.Exec(ctx, `INSERT INTO wecom_message_archive_records
+      (source_message_id,customer_id,external_userid,chat_type,owner_userid,sender,receiver,chat_id,roomid,group_name,message_type,content_masked,sent_at)
+      VALUES ($1,$2,'external-group-hidden','group','','','','chat-local','room-local','local group','image','group body must stay hidden',$3)`,
+		prefix+"-group", firstCustomer, now.Add(2*time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
 		_, _ = pool.Exec(context.Background(), `DELETE FROM wecom_message_archive_sync_receipts WHERE idempotency_scope='admin:8801' AND idempotency_key=$1`, prefix+"-accepted-command")
 		_, _ = pool.Exec(context.Background(), `DELETE FROM wecom_message_archive_records WHERE source_message_id LIKE $1`, prefix+"%")
@@ -40,6 +49,14 @@ func TestP4MessageArchiveNormalBoundaryOwnershipAndAcceptedUoW(t *testing.T) {
 
 	events := &archiveAcceptanceAppender{}
 	service := wecomapp.NewMessageArchiveService(platformstore.NewUnitOfWork(pool), wecomstore.NewMessageArchiveRepository(), events)
+	safeAll, err := service.ListCustomerChatSummaries(ctx, wecomport.CustomerChatSummaryQuery{CustomerID: contactport.CustomerID(firstCustomer), Limit: 1})
+	if err != nil || safeAll.Total != 2 || len(safeAll.Items) != 1 || safeAll.Items[0].ChatType != "group" || safeAll.Items[0].MessageType != "image" {
+		t.Fatalf("safe all page=%#v err=%v", safeAll, err)
+	}
+	safePrivate, err := service.ListCustomerChatSummaries(ctx, wecomport.CustomerChatSummaryQuery{CustomerID: contactport.CustomerID(firstCustomer), ChatType: "private", Limit: 20})
+	if err != nil || safePrivate.Total != 1 || len(safePrivate.Items) != 1 || safePrivate.Items[0].ChatType != "private" {
+		t.Fatalf("safe private page=%#v err=%v", safePrivate, err)
+	}
 	items, total, err := service.List(ctx, wecomapp.ArchiveQuery{CustomerID: contactport.CustomerID(firstCustomer), ChatType: "private", Keyword: "masked", Limit: 20})
 	if err != nil || total != 1 || len(items) != 1 || items[0].ExternalUserID != "external-0" || items[0].Content != "phone [masked-phone]" {
 		t.Fatalf("owned list items=%#v total=%d err=%v", items, total, err)

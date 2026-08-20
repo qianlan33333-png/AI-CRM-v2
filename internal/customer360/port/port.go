@@ -11,8 +11,10 @@ import (
 )
 
 var (
-	ErrInvalidCustomerContext     = errors.New("invalid customer context query")
-	ErrCustomerContextUnavailable = errors.New("customer context unavailable")
+	ErrInvalidCustomerContext          = errors.New("invalid customer context query")
+	ErrCustomerContextUnavailable      = errors.New("customer context unavailable")
+	ErrInvalidCustomerChatActivity     = errors.New("invalid customer chat activity query")
+	ErrCustomerChatActivityUnavailable = errors.New("customer chat activity unavailable")
 )
 
 type CustomerContextQuery struct {
@@ -78,4 +80,35 @@ type CustomerContext struct {
 
 type Reader interface {
 	ReadCustomerContext(context.Context, CustomerContextQuery) (CustomerContext, error)
+}
+
+// CustomerChatActivityQuery is bound only to a local OneID and optional local
+// owner scope. Cursor values are opaque and bound to the customer and filter.
+type CustomerChatActivityQuery struct {
+	CustomerID   contactport.CustomerID
+	OwnerStaffID *int64
+	ChatType     string
+	Cursor       string
+	Limit        int32
+}
+
+// CustomerChatActivityEntry deliberately excludes message content, actor and
+// recipient identifiers, provider IDs, media URLs and delivery receipts.
+type CustomerChatActivityEntry struct {
+	ChatType    string
+	MessageType string
+	SentAt      time.Time
+}
+
+type CustomerChatActivityPage struct {
+	CustomerID     contactport.CustomerID
+	ChatType       string
+	Items          []CustomerChatActivityEntry
+	Total          int64
+	NextCursor     *string
+	PreviousCursor *string
+}
+
+type CustomerChatActivityReader interface {
+	ListCustomerChatActivity(context.Context, CustomerChatActivityQuery) (CustomerChatActivityPage, error)
 }

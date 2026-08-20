@@ -26,8 +26,42 @@ var _ identityapp.IngestStore = (*Repository)(nil)
 var _ identityapp.PendingReplayStore = (*Repository)(nil)
 var _ identityapp.MergeReviewStore = (*Repository)(nil)
 var _ identityapp.MessageArchiveUnionIDStore = (*Repository)(nil)
+var _ identityapp.CustomerMergeHistoryStore = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) ListCustomerMergeHistory(
+	ctx context.Context,
+	customerID contactport.CustomerID,
+	afterID int64,
+	limit int32,
+) ([]identityport.CustomerMergeHistory, error) {
+	if repository == nil || customerID <= 0 || afterID < 0 || limit < 1 || limit > identityapp.CustomerMergeHistoryMaximumLimit+1 {
+		return nil, identityapp.ErrCustomerMergeHistoryInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := identitydb.New(tx).ListCustomerMergeHistory(ctx, identitydb.ListCustomerMergeHistoryParams{
+		CustomerID: int64(customerID), AfterID: afterID, PageLimit: limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]identityport.CustomerMergeHistory, 0, len(rows))
+	for _, row := range rows {
+		if !row.MergedAt.Valid {
+			return nil, identityapp.ErrCustomerMergeHistoryUnavailable
+		}
+		result = append(result, identityport.CustomerMergeHistory{
+			MergeAuditID: row.ID, PrimaryCustomerID: contactport.CustomerID(row.PrimaryCustomerID),
+			MergedCustomerID: contactport.CustomerID(row.MergedCustomerID), Mode: row.Mode,
+			PolicyVersion: row.PolicyVersion, MergedAt: row.MergedAt.Time.UTC(),
+		})
+	}
+	return result, nil
+}
 
 func (repository *Repository) LookupMessageArchiveUnionIDCustomers(ctx context.Context, unionID string) ([]int64, error) {
 	if repository == nil || unionID == "" || strings.TrimSpace(unionID) != unionID {

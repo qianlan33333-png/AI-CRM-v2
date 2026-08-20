@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -230,18 +231,213 @@ func (e CreateSegmentRequestRefreshMode) Valid() bool {
 	}
 }
 
+// Defines values for CustomerActivityAnalyticsResponseActorIncluded.
+const (
+	CustomerActivityAnalyticsResponseActorIncludedFalse CustomerActivityAnalyticsResponseActorIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerActivityAnalyticsResponseActorIncluded enum.
+func (e CustomerActivityAnalyticsResponseActorIncluded) Valid() bool {
+	switch e {
+	case CustomerActivityAnalyticsResponseActorIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerActivityAnalyticsResponseIdentityIncluded.
+const (
+	CustomerActivityAnalyticsResponseIdentityIncludedFalse CustomerActivityAnalyticsResponseIdentityIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerActivityAnalyticsResponseIdentityIncluded enum.
+func (e CustomerActivityAnalyticsResponseIdentityIncluded) Valid() bool {
+	switch e {
+	case CustomerActivityAnalyticsResponseIdentityIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerActivityAnalyticsResponsePayloadIncluded.
+const (
+	CustomerActivityAnalyticsResponsePayloadIncludedFalse CustomerActivityAnalyticsResponsePayloadIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerActivityAnalyticsResponsePayloadIncluded enum.
+func (e CustomerActivityAnalyticsResponsePayloadIncluded) Valid() bool {
+	switch e {
+	case CustomerActivityAnalyticsResponsePayloadIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerActivityAnalyticsResponseRealExternalCallExecuted.
+const (
+	CustomerActivityAnalyticsResponseRealExternalCallExecutedFalse CustomerActivityAnalyticsResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerActivityAnalyticsResponseRealExternalCallExecuted enum.
+func (e CustomerActivityAnalyticsResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerActivityAnalyticsResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerActivityAnalyticsResponseWindowDays.
+const (
+	CustomerActivityAnalyticsResponseWindowDaysN30 CustomerActivityAnalyticsResponseWindowDays = 30
+	CustomerActivityAnalyticsResponseWindowDaysN7  CustomerActivityAnalyticsResponseWindowDays = 7
+	CustomerActivityAnalyticsResponseWindowDaysN90 CustomerActivityAnalyticsResponseWindowDays = 90
+)
+
+// Valid indicates whether the value is a known member of the CustomerActivityAnalyticsResponseWindowDays enum.
+func (e CustomerActivityAnalyticsResponseWindowDays) Valid() bool {
+	switch e {
+	case CustomerActivityAnalyticsResponseWindowDaysN30:
+		return true
+	case CustomerActivityAnalyticsResponseWindowDaysN7:
+		return true
+	case CustomerActivityAnalyticsResponseWindowDaysN90:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityItemChatType.
+const (
+	CustomerChatActivityItemChatTypeGroup   CustomerChatActivityItemChatType = "group"
+	CustomerChatActivityItemChatTypePrivate CustomerChatActivityItemChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityItemChatType enum.
+func (e CustomerChatActivityItemChatType) Valid() bool {
+	switch e {
+	case CustomerChatActivityItemChatTypeGroup:
+		return true
+	case CustomerChatActivityItemChatTypePrivate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityResponseChatType.
+const (
+	CustomerChatActivityResponseChatTypeAll     CustomerChatActivityResponseChatType = "all"
+	CustomerChatActivityResponseChatTypeGroup   CustomerChatActivityResponseChatType = "group"
+	CustomerChatActivityResponseChatTypePrivate CustomerChatActivityResponseChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityResponseChatType enum.
+func (e CustomerChatActivityResponseChatType) Valid() bool {
+	switch e {
+	case CustomerChatActivityResponseChatTypeAll:
+		return true
+	case CustomerChatActivityResponseChatTypeGroup:
+		return true
+	case CustomerChatActivityResponseChatTypePrivate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityResponseIdentityValuesIncluded.
+const (
+	CustomerChatActivityResponseIdentityValuesIncludedFalse CustomerChatActivityResponseIdentityValuesIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityResponseIdentityValuesIncluded enum.
+func (e CustomerChatActivityResponseIdentityValuesIncluded) Valid() bool {
+	switch e {
+	case CustomerChatActivityResponseIdentityValuesIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityResponseMessageContentIncluded.
+const (
+	CustomerChatActivityResponseMessageContentIncludedFalse CustomerChatActivityResponseMessageContentIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityResponseMessageContentIncluded enum.
+func (e CustomerChatActivityResponseMessageContentIncluded) Valid() bool {
+	switch e {
+	case CustomerChatActivityResponseMessageContentIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityResponseNonAtomicSnapshot.
+const (
+	CustomerChatActivityResponseNonAtomicSnapshotTrue CustomerChatActivityResponseNonAtomicSnapshot = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityResponseNonAtomicSnapshot enum.
+func (e CustomerChatActivityResponseNonAtomicSnapshot) Valid() bool {
+	switch e {
+	case CustomerChatActivityResponseNonAtomicSnapshotTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityResponseProviderReceiptsIncluded.
+const (
+	CustomerChatActivityResponseProviderReceiptsIncludedFalse CustomerChatActivityResponseProviderReceiptsIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityResponseProviderReceiptsIncluded enum.
+func (e CustomerChatActivityResponseProviderReceiptsIncluded) Valid() bool {
+	switch e {
+	case CustomerChatActivityResponseProviderReceiptsIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerChatActivityResponseRealExternalCallExecuted.
+const (
+	CustomerChatActivityResponseRealExternalCallExecutedFalse CustomerChatActivityResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerChatActivityResponseRealExternalCallExecuted enum.
+func (e CustomerChatActivityResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerChatActivityResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CustomerContextChatEntryChatType.
 const (
-	Group   CustomerContextChatEntryChatType = "group"
-	Private CustomerContextChatEntryChatType = "private"
+	CustomerContextChatEntryChatTypeGroup   CustomerContextChatEntryChatType = "group"
+	CustomerContextChatEntryChatTypePrivate CustomerContextChatEntryChatType = "private"
 )
 
 // Valid indicates whether the value is a known member of the CustomerContextChatEntryChatType enum.
 func (e CustomerContextChatEntryChatType) Valid() bool {
 	switch e {
-	case Group:
+	case CustomerContextChatEntryChatTypeGroup:
 		return true
-	case Private:
+	case CustomerContextChatEntryChatTypePrivate:
 		return true
 	default:
 		return false
@@ -272,6 +468,99 @@ const (
 func (e CustomerContextResponseRealExternalCallExecuted) Valid() bool {
 	switch e {
 	case CustomerContextResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerMergeHistoryItemMode.
+const (
+	CustomerMergeHistoryItemModeAuto   CustomerMergeHistoryItemMode = "auto"
+	CustomerMergeHistoryItemModeManual CustomerMergeHistoryItemMode = "manual"
+)
+
+// Valid indicates whether the value is a known member of the CustomerMergeHistoryItemMode enum.
+func (e CustomerMergeHistoryItemMode) Valid() bool {
+	switch e {
+	case CustomerMergeHistoryItemModeAuto:
+		return true
+	case CustomerMergeHistoryItemModeManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerMergeHistoryResponseChatContentIncluded.
+const (
+	CustomerMergeHistoryResponseChatContentIncludedFalse CustomerMergeHistoryResponseChatContentIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerMergeHistoryResponseChatContentIncluded enum.
+func (e CustomerMergeHistoryResponseChatContentIncluded) Valid() bool {
+	switch e {
+	case CustomerMergeHistoryResponseChatContentIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerMergeHistoryResponseIdentityValuesIncluded.
+const (
+	CustomerMergeHistoryResponseIdentityValuesIncludedFalse CustomerMergeHistoryResponseIdentityValuesIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerMergeHistoryResponseIdentityValuesIncluded enum.
+func (e CustomerMergeHistoryResponseIdentityValuesIncluded) Valid() bool {
+	switch e {
+	case CustomerMergeHistoryResponseIdentityValuesIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerMergeHistoryResponseOperatorIdentifiersIncluded.
+const (
+	CustomerMergeHistoryResponseOperatorIdentifiersIncludedFalse CustomerMergeHistoryResponseOperatorIdentifiersIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerMergeHistoryResponseOperatorIdentifiersIncluded enum.
+func (e CustomerMergeHistoryResponseOperatorIdentifiersIncluded) Valid() bool {
+	switch e {
+	case CustomerMergeHistoryResponseOperatorIdentifiersIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerMergeHistoryResponseRealExternalCallExecuted.
+const (
+	CustomerMergeHistoryResponseRealExternalCallExecutedFalse CustomerMergeHistoryResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerMergeHistoryResponseRealExternalCallExecuted enum.
+func (e CustomerMergeHistoryResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerMergeHistoryResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerMergeHistoryResponseScope.
+const (
+	ConnectedComponent CustomerMergeHistoryResponseScope = "connected_component"
+)
+
+// Valid indicates whether the value is a known member of the CustomerMergeHistoryResponseScope enum.
+func (e CustomerMergeHistoryResponseScope) Valid() bool {
+	switch e {
+	case ConnectedComponent:
 		return true
 	default:
 		return false
@@ -1738,13 +2027,13 @@ func (e PublicSurveyResultExternalExecuted) Valid() bool {
 
 // Defines values for PublicSurveyResultLocalOnly.
 const (
-	True PublicSurveyResultLocalOnly = true
+	PublicSurveyResultLocalOnlyTrue PublicSurveyResultLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the PublicSurveyResultLocalOnly enum.
 func (e PublicSurveyResultLocalOnly) Valid() bool {
 	switch e {
-	case True:
+	case PublicSurveyResultLocalOnlyTrue:
 		return true
 	default:
 		return false
@@ -1930,16 +2219,16 @@ func (e SegmentRefreshAcceptedStatus) Valid() bool {
 
 // Defines values for UpdateSegmentRequestRefreshMode.
 const (
-	Manual    UpdateSegmentRequestRefreshMode = "manual"
-	Scheduled UpdateSegmentRequestRefreshMode = "scheduled"
+	UpdateSegmentRequestRefreshModeManual    UpdateSegmentRequestRefreshMode = "manual"
+	UpdateSegmentRequestRefreshModeScheduled UpdateSegmentRequestRefreshMode = "scheduled"
 )
 
 // Valid indicates whether the value is a known member of the UpdateSegmentRequestRefreshMode enum.
 func (e UpdateSegmentRequestRefreshMode) Valid() bool {
 	switch e {
-	case Manual:
+	case UpdateSegmentRequestRefreshModeManual:
 		return true
-	case Scheduled:
+	case UpdateSegmentRequestRefreshModeScheduled:
 		return true
 	default:
 		return false
@@ -1955,6 +2244,45 @@ const (
 func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
 	switch e {
 	case ListAutomationTriggerRunsParamsVisibilityMasked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetCustomerActivityAnalyticsParamsWindowDays.
+const (
+	GetCustomerActivityAnalyticsParamsWindowDaysN30 GetCustomerActivityAnalyticsParamsWindowDays = 30
+	GetCustomerActivityAnalyticsParamsWindowDaysN7  GetCustomerActivityAnalyticsParamsWindowDays = 7
+	GetCustomerActivityAnalyticsParamsWindowDaysN90 GetCustomerActivityAnalyticsParamsWindowDays = 90
+)
+
+// Valid indicates whether the value is a known member of the GetCustomerActivityAnalyticsParamsWindowDays enum.
+func (e GetCustomerActivityAnalyticsParamsWindowDays) Valid() bool {
+	switch e {
+	case GetCustomerActivityAnalyticsParamsWindowDaysN30:
+		return true
+	case GetCustomerActivityAnalyticsParamsWindowDaysN7:
+		return true
+	case GetCustomerActivityAnalyticsParamsWindowDaysN90:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListCustomerChatActivityParamsChatType.
+const (
+	ListCustomerChatActivityParamsChatTypeGroup   ListCustomerChatActivityParamsChatType = "group"
+	ListCustomerChatActivityParamsChatTypePrivate ListCustomerChatActivityParamsChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the ListCustomerChatActivityParamsChatType enum.
+func (e ListCustomerChatActivityParamsChatType) Valid() bool {
+	switch e {
+	case ListCustomerChatActivityParamsChatTypeGroup:
+		return true
+	case ListCustomerChatActivityParamsChatTypePrivate:
 		return true
 	default:
 		return false
@@ -2150,6 +2478,96 @@ type Customer struct {
 	UpdatedAt      time.Time              `json:"updated_at"`
 }
 
+// CustomerActivityAnalyticsResponse defines model for CustomerActivityAnalyticsResponse.
+type CustomerActivityAnalyticsResponse struct {
+	ActiveDays               int32                                                     `json:"active_days"`
+	ActorIncluded            CustomerActivityAnalyticsResponseActorIncluded            `json:"actor_included"`
+	CustomerId               int64                                                     `json:"customer_id"`
+	DailyCounts              []CustomerActivityDayCount                                `json:"daily_counts"`
+	From                     time.Time                                                 `json:"from"`
+	IdentityIncluded         CustomerActivityAnalyticsResponseIdentityIncluded         `json:"identity_included"`
+	LastOccurredAt           *time.Time                                                `json:"last_occurred_at"`
+	PayloadIncluded          CustomerActivityAnalyticsResponsePayloadIncluded          `json:"payload_included"`
+	RealExternalCallExecuted CustomerActivityAnalyticsResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Through                  time.Time                                                 `json:"through"`
+	TotalEvents              int64                                                     `json:"total_events"`
+	TypeFacets               []CustomerActivityTypeFacet                               `json:"type_facets"`
+	TypeFacetsTruncated      bool                                                      `json:"type_facets_truncated"`
+	UniqueEventTypes         int32                                                     `json:"unique_event_types"`
+	WindowDays               CustomerActivityAnalyticsResponseWindowDays               `json:"window_days"`
+}
+
+// CustomerActivityAnalyticsResponseActorIncluded defines model for CustomerActivityAnalyticsResponse.ActorIncluded.
+type CustomerActivityAnalyticsResponseActorIncluded bool
+
+// CustomerActivityAnalyticsResponseIdentityIncluded defines model for CustomerActivityAnalyticsResponse.IdentityIncluded.
+type CustomerActivityAnalyticsResponseIdentityIncluded bool
+
+// CustomerActivityAnalyticsResponsePayloadIncluded defines model for CustomerActivityAnalyticsResponse.PayloadIncluded.
+type CustomerActivityAnalyticsResponsePayloadIncluded bool
+
+// CustomerActivityAnalyticsResponseRealExternalCallExecuted defines model for CustomerActivityAnalyticsResponse.RealExternalCallExecuted.
+type CustomerActivityAnalyticsResponseRealExternalCallExecuted bool
+
+// CustomerActivityAnalyticsResponseWindowDays defines model for CustomerActivityAnalyticsResponse.WindowDays.
+type CustomerActivityAnalyticsResponseWindowDays int32
+
+// CustomerActivityDayCount defines model for CustomerActivityDayCount.
+type CustomerActivityDayCount struct {
+	Count int64              `json:"count"`
+	Day   openapi_types.Date `json:"day"`
+}
+
+// CustomerActivityTypeFacet defines model for CustomerActivityTypeFacet.
+type CustomerActivityTypeFacet struct {
+	Count          int64     `json:"count"`
+	EventType      string    `json:"event_type"`
+	LastOccurredAt time.Time `json:"last_occurred_at"`
+}
+
+// CustomerChatActivityItem defines model for CustomerChatActivityItem.
+type CustomerChatActivityItem struct {
+	ChatType    CustomerChatActivityItemChatType `json:"chat_type"`
+	MessageType string                           `json:"message_type"`
+	SentAt      time.Time                        `json:"sent_at"`
+}
+
+// CustomerChatActivityItemChatType defines model for CustomerChatActivityItem.ChatType.
+type CustomerChatActivityItemChatType string
+
+// CustomerChatActivityResponse defines model for CustomerChatActivityResponse.
+type CustomerChatActivityResponse struct {
+	ChatType                 CustomerChatActivityResponseChatType                 `json:"chat_type"`
+	CustomerId               int64                                                `json:"customer_id"`
+	IdentityValuesIncluded   CustomerChatActivityResponseIdentityValuesIncluded   `json:"identity_values_included"`
+	Items                    []CustomerChatActivityItem                           `json:"items"`
+	MessageContentIncluded   CustomerChatActivityResponseMessageContentIncluded   `json:"message_content_included"`
+	NextCursor               *string                                              `json:"next_cursor"`
+	NonAtomicSnapshot        CustomerChatActivityResponseNonAtomicSnapshot        `json:"non_atomic_snapshot"`
+	PreviousCursor           *string                                              `json:"previous_cursor"`
+	ProviderReceiptsIncluded CustomerChatActivityResponseProviderReceiptsIncluded `json:"provider_receipts_included"`
+	RealExternalCallExecuted CustomerChatActivityResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Total                    int64                                                `json:"total"`
+}
+
+// CustomerChatActivityResponseChatType defines model for CustomerChatActivityResponse.ChatType.
+type CustomerChatActivityResponseChatType string
+
+// CustomerChatActivityResponseIdentityValuesIncluded defines model for CustomerChatActivityResponse.IdentityValuesIncluded.
+type CustomerChatActivityResponseIdentityValuesIncluded bool
+
+// CustomerChatActivityResponseMessageContentIncluded defines model for CustomerChatActivityResponse.MessageContentIncluded.
+type CustomerChatActivityResponseMessageContentIncluded bool
+
+// CustomerChatActivityResponseNonAtomicSnapshot defines model for CustomerChatActivityResponse.NonAtomicSnapshot.
+type CustomerChatActivityResponseNonAtomicSnapshot bool
+
+// CustomerChatActivityResponseProviderReceiptsIncluded defines model for CustomerChatActivityResponse.ProviderReceiptsIncluded.
+type CustomerChatActivityResponseProviderReceiptsIncluded bool
+
+// CustomerChatActivityResponseRealExternalCallExecuted defines model for CustomerChatActivityResponse.RealExternalCallExecuted.
+type CustomerChatActivityResponseRealExternalCallExecuted bool
+
 // CustomerContextChatEntry defines model for CustomerContextChatEntry.
 type CustomerContextChatEntry struct {
 	ChatType    CustomerContextChatEntryChatType `json:"chat_type"`
@@ -2242,6 +2660,46 @@ type CustomerListResponse struct {
 	TotalIsEstimate bool       `json:"total_is_estimate"`
 	Watermark       time.Time  `json:"watermark"`
 }
+
+// CustomerMergeHistoryItem defines model for CustomerMergeHistoryItem.
+type CustomerMergeHistoryItem struct {
+	MergeAuditId      int64                        `json:"merge_audit_id"`
+	MergedAt          time.Time                    `json:"merged_at"`
+	MergedCustomerId  int64                        `json:"merged_customer_id"`
+	Mode              CustomerMergeHistoryItemMode `json:"mode"`
+	PolicyVersion     string                       `json:"policy_version"`
+	PrimaryCustomerId int64                        `json:"primary_customer_id"`
+}
+
+// CustomerMergeHistoryItemMode defines model for CustomerMergeHistoryItem.Mode.
+type CustomerMergeHistoryItemMode string
+
+// CustomerMergeHistoryResponse defines model for CustomerMergeHistoryResponse.
+type CustomerMergeHistoryResponse struct {
+	ChatContentIncluded         CustomerMergeHistoryResponseChatContentIncluded         `json:"chat_content_included"`
+	CustomerId                  int64                                                   `json:"customer_id"`
+	IdentityValuesIncluded      CustomerMergeHistoryResponseIdentityValuesIncluded      `json:"identity_values_included"`
+	Items                       []CustomerMergeHistoryItem                              `json:"items"`
+	NextCursor                  *string                                                 `json:"next_cursor"`
+	OperatorIdentifiersIncluded CustomerMergeHistoryResponseOperatorIdentifiersIncluded `json:"operator_identifiers_included"`
+	RealExternalCallExecuted    CustomerMergeHistoryResponseRealExternalCallExecuted    `json:"real_external_call_executed"`
+	Scope                       CustomerMergeHistoryResponseScope                       `json:"scope"`
+}
+
+// CustomerMergeHistoryResponseChatContentIncluded defines model for CustomerMergeHistoryResponse.ChatContentIncluded.
+type CustomerMergeHistoryResponseChatContentIncluded bool
+
+// CustomerMergeHistoryResponseIdentityValuesIncluded defines model for CustomerMergeHistoryResponse.IdentityValuesIncluded.
+type CustomerMergeHistoryResponseIdentityValuesIncluded bool
+
+// CustomerMergeHistoryResponseOperatorIdentifiersIncluded defines model for CustomerMergeHistoryResponse.OperatorIdentifiersIncluded.
+type CustomerMergeHistoryResponseOperatorIdentifiersIncluded bool
+
+// CustomerMergeHistoryResponseRealExternalCallExecuted defines model for CustomerMergeHistoryResponse.RealExternalCallExecuted.
+type CustomerMergeHistoryResponseRealExternalCallExecuted bool
+
+// CustomerMergeHistoryResponseScope defines model for CustomerMergeHistoryResponse.Scope.
+type CustomerMergeHistoryResponseScope string
 
 // CustomerUpdateRequest defines model for CustomerUpdateRequest.
 type CustomerUpdateRequest struct {
@@ -3624,6 +4082,26 @@ type UpdateCustomerParams struct {
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 
+// GetCustomerActivityAnalyticsParams defines parameters for GetCustomerActivityAnalytics.
+type GetCustomerActivityAnalyticsParams struct {
+	WindowDays *GetCustomerActivityAnalyticsParamsWindowDays `form:"window_days,omitempty" json:"window_days,omitempty"`
+}
+
+// GetCustomerActivityAnalyticsParamsWindowDays defines parameters for GetCustomerActivityAnalytics.
+type GetCustomerActivityAnalyticsParamsWindowDays int32
+
+// ListCustomerChatActivityParams defines parameters for ListCustomerChatActivity.
+type ListCustomerChatActivityParams struct {
+	ChatType *ListCustomerChatActivityParamsChatType `form:"chat_type,omitempty" json:"chat_type,omitempty"`
+
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int32  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCustomerChatActivityParamsChatType defines parameters for ListCustomerChatActivity.
+type ListCustomerChatActivityParamsChatType string
+
 // GetCustomerContextParams defines parameters for GetCustomerContext.
 type GetCustomerContextParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
@@ -3636,6 +4114,13 @@ type ListCustomerEventsParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCustomerMergeHistoryParams defines parameters for ListCustomerMergeHistory.
+type ListCustomerMergeHistoryParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int32  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // SetCustomerStageParams defines parameters for SetCustomerStage.
@@ -4668,12 +5153,21 @@ type ServerInterface interface {
 	// Update customer-owned profile fields
 	// (PATCH /api/v1/customers/{customer_id})
 	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams)
+	// Read non-PII local customer activity aggregates for a fixed window
+	// (GET /api/v1/customers/{customer_id}/activity-analytics)
+	GetCustomerActivityAnalytics(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerActivityAnalyticsParams)
+	// List zero-body local chat activity facts for one visible customer
+	// (GET /api/v1/customers/{customer_id}/chat-activity)
+	ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams)
 	// Read a safe local Customer 360 context without external identities or message bodies
 	// (GET /api/v1/customers/{customer_id}/context)
 	GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams)
 	// List append-only customer events using a keyset cursor
 	// (GET /api/v1/customers/{customer_id}/events)
 	ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams)
+	// List redacted local OneID merge history for a customer component
+	// (GET /api/v1/customers/{customer_id}/merge-history)
+	ListCustomerMergeHistory(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerMergeHistoryParams)
 	// Set or clear a customer's stage
 	// (PUT /api/v1/customers/{customer_id}/stage)
 	SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams)
@@ -4914,6 +5408,18 @@ func (_ Unimplemented) UpdateCustomer(w http.ResponseWriter, r *http.Request, cu
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read non-PII local customer activity aggregates for a fixed window
+// (GET /api/v1/customers/{customer_id}/activity-analytics)
+func (_ Unimplemented) GetCustomerActivityAnalytics(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerActivityAnalyticsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List zero-body local chat activity facts for one visible customer
+// (GET /api/v1/customers/{customer_id}/chat-activity)
+func (_ Unimplemented) ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read a safe local Customer 360 context without external identities or message bodies
 // (GET /api/v1/customers/{customer_id}/context)
 func (_ Unimplemented) GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams) {
@@ -4923,6 +5429,12 @@ func (_ Unimplemented) GetCustomerContext(w http.ResponseWriter, r *http.Request
 // List append-only customer events using a keyset cursor
 // (GET /api/v1/customers/{customer_id}/events)
 func (_ Unimplemented) ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List redacted local OneID merge history for a customer component
+// (GET /api/v1/customers/{customer_id}/merge-history)
+func (_ Unimplemented) ListCustomerMergeHistory(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerMergeHistoryParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6248,6 +6760,106 @@ func (siw *ServerInterfaceWrapper) UpdateCustomer(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GetCustomerActivityAnalytics operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerActivityAnalytics(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCustomerActivityAnalyticsParams
+
+	// ------------- Optional query parameter "window_days" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "window_days", r.URL.Query(), &params.WindowDays, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "window_days", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerActivityAnalytics(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomerChatActivity operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerChatActivity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerChatActivityParams
+
+	// ------------- Optional query parameter "chat_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "chat_type", r.URL.Query(), &params.ChatType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chat_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerChatActivity(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetCustomerContext operation middleware
 func (siw *ServerInterfaceWrapper) GetCustomerContext(w http.ResponseWriter, r *http.Request) {
 
@@ -6339,6 +6951,56 @@ func (siw *ServerInterfaceWrapper) ListCustomerEvents(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListCustomerEvents(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomerMergeHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerMergeHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerMergeHistoryParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerMergeHistory(w, r, customerId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9041,10 +9703,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/api/v1/customers/{customer_id}", wrapper.UpdateCustomer)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/activity-analytics", wrapper.GetCustomerActivityAnalytics)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/chat-activity", wrapper.ListCustomerChatActivity)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/context", wrapper.GetCustomerContext)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/events", wrapper.ListCustomerEvents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/merge-history", wrapper.ListCustomerMergeHistory)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/api/v1/customers/{customer_id}/stage", wrapper.SetCustomerStage)
@@ -10176,6 +10847,132 @@ func (response UpdateCustomer422JSONResponse) VisitUpdateCustomerResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetCustomerActivityAnalyticsRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     GetCustomerActivityAnalyticsParams
+}
+
+type GetCustomerActivityAnalyticsResponseObject interface {
+	VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerActivityAnalytics200JSONResponse CustomerActivityAnalyticsResponse
+
+func (response GetCustomerActivityAnalytics200JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerActivityAnalytics400JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerActivityAnalytics401JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerActivityAnalytics403JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomerActivityAnalytics404JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerActivityAnalytics503JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivityRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ListCustomerChatActivityParams
+}
+
+type ListCustomerChatActivityResponseObject interface {
+	VisitListCustomerChatActivityResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerChatActivity200JSONResponse CustomerChatActivityResponse
+
+func (response ListCustomerChatActivity200JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerChatActivity400JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerChatActivity401JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerChatActivity403JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListCustomerChatActivity404JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerChatActivity503JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetCustomerContextRequestObject struct {
 	CustomerId CustomerID `json:"customer_id"`
 	Params     GetCustomerContextParams
@@ -10289,6 +11086,60 @@ type ListCustomerEvents404JSONResponse struct{ NotFoundJSONResponse }
 func (response ListCustomerEvents404JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistoryRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ListCustomerMergeHistoryParams
+}
+
+type ListCustomerMergeHistoryResponseObject interface {
+	VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerMergeHistory200JSONResponse CustomerMergeHistoryResponse
+
+func (response ListCustomerMergeHistory200JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerMergeHistory400JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerMergeHistory401JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerMergeHistory403JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerMergeHistory503JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -13139,12 +13990,21 @@ type StrictServerInterface interface {
 	// Update customer-owned profile fields
 	// (PATCH /api/v1/customers/{customer_id})
 	UpdateCustomer(ctx context.Context, request UpdateCustomerRequestObject) (UpdateCustomerResponseObject, error)
+	// Read non-PII local customer activity aggregates for a fixed window
+	// (GET /api/v1/customers/{customer_id}/activity-analytics)
+	GetCustomerActivityAnalytics(ctx context.Context, request GetCustomerActivityAnalyticsRequestObject) (GetCustomerActivityAnalyticsResponseObject, error)
+	// List zero-body local chat activity facts for one visible customer
+	// (GET /api/v1/customers/{customer_id}/chat-activity)
+	ListCustomerChatActivity(ctx context.Context, request ListCustomerChatActivityRequestObject) (ListCustomerChatActivityResponseObject, error)
 	// Read a safe local Customer 360 context without external identities or message bodies
 	// (GET /api/v1/customers/{customer_id}/context)
 	GetCustomerContext(ctx context.Context, request GetCustomerContextRequestObject) (GetCustomerContextResponseObject, error)
 	// List append-only customer events using a keyset cursor
 	// (GET /api/v1/customers/{customer_id}/events)
 	ListCustomerEvents(ctx context.Context, request ListCustomerEventsRequestObject) (ListCustomerEventsResponseObject, error)
+	// List redacted local OneID merge history for a customer component
+	// (GET /api/v1/customers/{customer_id}/merge-history)
+	ListCustomerMergeHistory(ctx context.Context, request ListCustomerMergeHistoryRequestObject) (ListCustomerMergeHistoryResponseObject, error)
 	// Set or clear a customer's stage
 	// (PUT /api/v1/customers/{customer_id}/stage)
 	SetCustomerStage(ctx context.Context, request SetCustomerStageRequestObject) (SetCustomerStageResponseObject, error)
@@ -13799,6 +14659,60 @@ func (sh *strictHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// GetCustomerActivityAnalytics operation middleware
+func (sh *strictHandler) GetCustomerActivityAnalytics(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerActivityAnalyticsParams) {
+	var request GetCustomerActivityAnalyticsRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerActivityAnalytics(ctx, request.(GetCustomerActivityAnalyticsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerActivityAnalytics")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerActivityAnalyticsResponseObject); ok {
+		if err := validResponse.VisitGetCustomerActivityAnalyticsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomerChatActivity operation middleware
+func (sh *strictHandler) ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams) {
+	var request ListCustomerChatActivityRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerChatActivity(ctx, request.(ListCustomerChatActivityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerChatActivity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerChatActivityResponseObject); ok {
+		if err := validResponse.VisitListCustomerChatActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetCustomerContext operation middleware
 func (sh *strictHandler) GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams) {
 	var request GetCustomerContextRequestObject
@@ -13846,6 +14760,33 @@ func (sh *strictHandler) ListCustomerEvents(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListCustomerEventsResponseObject); ok {
 		if err := validResponse.VisitListCustomerEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomerMergeHistory operation middleware
+func (sh *strictHandler) ListCustomerMergeHistory(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerMergeHistoryParams) {
+	var request ListCustomerMergeHistoryRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerMergeHistory(ctx, request.(ListCustomerMergeHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerMergeHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerMergeHistoryResponseObject); ok {
+		if err := validResponse.VisitListCustomerMergeHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

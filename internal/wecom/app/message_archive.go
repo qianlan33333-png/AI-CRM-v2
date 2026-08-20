@@ -132,10 +132,11 @@ func (service *MessageArchiveService) ListCustomerChatSummaries(
 	ctx context.Context,
 	query wecomport.CustomerChatSummaryQuery,
 ) (wecomport.CustomerChatSummaryPage, error) {
-	if ctx == nil || query.CustomerID <= 0 || query.Limit < 1 || query.Limit > MessageArchiveMaximumLimit || query.Offset < 0 {
+	if ctx == nil || query.CustomerID <= 0 || (query.ChatType != "" && query.ChatType != "private" && query.ChatType != "group") ||
+		query.Limit < 1 || query.Limit > MessageArchiveMaximumLimit || query.Offset < 0 {
 		return wecomport.CustomerChatSummaryPage{}, wecomport.ErrInvalidCustomerChatSummaryQuery
 	}
-	records, total, err := service.List(ctx, ArchiveQuery{CustomerID: query.CustomerID, Limit: query.Limit, Offset: query.Offset})
+	records, total, err := service.List(ctx, ArchiveQuery{CustomerID: query.CustomerID, ChatType: query.ChatType, Limit: query.Limit, Offset: query.Offset})
 	if err != nil || total < int64(len(records)) {
 		return wecomport.CustomerChatSummaryPage{}, errors.Join(wecomport.ErrCustomerChatSummaryUnavailable, err)
 	}

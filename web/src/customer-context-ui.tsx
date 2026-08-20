@@ -7,12 +7,16 @@ import {
   type CustomerContextSnapshot,
   type CustomerContextTransport,
 } from "./customer-context";
+import { CustomerActivityAnalyticsPanel } from "./customer-activity-analytics-ui";
+import type { CustomerActivityAnalyticsTransport } from "./customer-activity-analytics";
 
 export interface CustomerContextPanelProps {
   readonly customerID: number;
   readonly transport?: CustomerContextTransport;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerContextSnapshot;
+  readonly showChatSummary?: boolean;
+  readonly activityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
 }
 
 type PanelState =
@@ -58,6 +62,8 @@ export function CustomerContextPanel({
   transport = generatedCustomerContextTransport,
   onUnauthenticated,
   initialSnapshot,
+  showChatSummary = true,
+  activityAnalyticsTransport,
 }: CustomerContextPanelProps): React.ReactElement {
   const [page, setPage] = useState<PanelState>(() =>
     initialSnapshot
@@ -298,31 +304,40 @@ export function CustomerContextPanel({
           </button>
         </p>
       )}
-      <h3>本地聊天摘要</h3>
-      {!chat.localArchiveAvailable ? (
-        <p className="customer-detail-page__meta" role="status">
-          本地聊天摘要暂不可用。
-        </p>
-      ) : chat.items.length === 0 ? (
-        <p className="customer-detail-page__meta" role="status">
-          暂无本地聊天摘要。
-        </p>
-      ) : (
-        <ul className="customer-detail-page__timeline">
-          {chat.items.map((entry, index) => (
-            <li
-              key={`${entry.sentAt}-${entry.chatType}-${entry.messageType}-${index}`}
-            >
-              <strong>
-                {entry.chatType} / {entry.messageType}
-              </strong>
-              <time dateTime={entry.sentAt}>
-                {formatDateTime(entry.sentAt)}
-              </time>
-            </li>
-          ))}
-        </ul>
+      {showChatSummary && (
+        <>
+          <h3>本地聊天摘要</h3>
+          {!chat.localArchiveAvailable ? (
+            <p className="customer-detail-page__meta" role="status">
+              本地聊天摘要暂不可用。
+            </p>
+          ) : chat.items.length === 0 ? (
+            <p className="customer-detail-page__meta" role="status">
+              暂无本地聊天摘要。
+            </p>
+          ) : (
+            <ul className="customer-detail-page__timeline">
+              {chat.items.map((entry, index) => (
+                <li
+                  key={`${entry.sentAt}-${entry.chatType}-${entry.messageType}-${index}`}
+                >
+                  <strong>
+                    {entry.chatType} / {entry.messageType}
+                  </strong>
+                  <time dateTime={entry.sentAt}>
+                    {formatDateTime(entry.sentAt)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
+      <CustomerActivityAnalyticsPanel
+        customerID={customerID}
+        transport={activityAnalyticsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
     </section>
   );
 }

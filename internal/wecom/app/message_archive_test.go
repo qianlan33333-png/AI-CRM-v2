@@ -98,6 +98,7 @@ type messageArchiveTestStore struct {
 	acceptCalls int
 	records     []ArchiveMessage
 	listQueries []ArchiveQuery
+	total       int64
 }
 
 func (store *messageArchiveTestStore) ReserveMessageArchiveSync(_ context.Context, _ ArchiveSyncCommand, digest []byte) (ArchiveSyncReceipt, []byte, error) {
@@ -122,7 +123,11 @@ func (store *messageArchiveTestStore) MessageArchiveHealth(context.Context) (Arc
 
 func (store *messageArchiveTestStore) ListMessageArchive(_ context.Context, query ArchiveQuery) ([]ArchiveMessage, int64, error) {
 	store.listQueries = append(store.listQueries, query)
-	return append([]ArchiveMessage(nil), store.records...), int64(len(store.records)), nil
+	total := store.total
+	if total == 0 {
+		total = int64(len(store.records))
+	}
+	return append([]ArchiveMessage(nil), store.records...), total, nil
 }
 
 func TestMessageArchiveCustomerChatSummaryProjectsNoMessageBodyOrIdentity(t *testing.T) {
@@ -159,7 +164,7 @@ func TestMessageArchiveCustomerChatSummaryRejectsInvalidInputBeforeArchiveRead(t
 	store := &messageArchiveTestStore{}
 	service := NewMessageArchiveService(messageArchiveTestUoW{}, store, nil)
 	for _, query := range []wecomport.CustomerChatSummaryQuery{
-		{CustomerID: 0, Limit: 20}, {CustomerID: 1, Limit: 0}, {CustomerID: 1, Limit: MessageArchiveMaximumLimit + 1}, {CustomerID: 1, Limit: 20, Offset: -1},
+		{CustomerID: 0, Limit: 20}, {CustomerID: 1, ChatType: "room", Limit: 20}, {CustomerID: 1, Limit: 0}, {CustomerID: 1, Limit: MessageArchiveMaximumLimit + 1}, {CustomerID: 1, Limit: 20, Offset: -1},
 	} {
 		page, err := service.ListCustomerChatSummaries(context.Background(), query)
 		if !errors.Is(err, wecomport.ErrInvalidCustomerChatSummaryQuery) || !reflect.DeepEqual(page, wecomport.CustomerChatSummaryPage{}) {

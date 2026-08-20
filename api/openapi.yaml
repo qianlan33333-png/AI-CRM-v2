@@ -633,6 +633,100 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/merge-history:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: listCustomerMergeHistory
+      summary: List redacted local OneID merge history for a customer component
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: identity.review.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - name: limit
+          in: query
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Redacted, append-only local merge audit facts for the connected customer component.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerMergeHistoryResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/chat-activity:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: listCustomerChatActivity
+      summary: List zero-body local chat activity facts for one visible customer
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: chat_type
+          in: query
+          schema: { type: string, enum: [private, group] }
+        - $ref: "#/components/parameters/Cursor"
+        - name: limit
+          in: query
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Non-atomic local chat metadata page without content, identities, media or provider receipts.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerChatActivityResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/activity-analytics:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: getCustomerActivityAnalytics
+      summary: Read non-PII local customer activity aggregates for a fixed window
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: window_days
+          in: query
+          schema: { type: integer, format: int32, enum: [7, 30, 90], default: 30 }
+      responses:
+        "200":
+          description: Closed local event type and day aggregates without payload, actor or identity data.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerActivityAnalyticsResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/tag-groups:
     get:
       tags: [p4-classification]
@@ -8142,6 +8236,89 @@ components:
         timeline_next_cursor: { type: string, minLength: 1, nullable: true }
         chat: { $ref: "#/components/schemas/CustomerContextChatSummary" }
         non_atomic_snapshot: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    CustomerMergeHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [merge_audit_id, primary_customer_id, merged_customer_id, mode, policy_version, merged_at]
+      properties:
+        merge_audit_id: { type: integer, format: int64, minimum: 1 }
+        primary_customer_id: { type: integer, format: int64, minimum: 1 }
+        merged_customer_id: { type: integer, format: int64, minimum: 1 }
+        mode: { type: string, enum: [auto, manual] }
+        policy_version: { type: string, minLength: 1, maxLength: 200 }
+        merged_at: { type: string, format: date-time }
+    CustomerMergeHistoryResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, scope, items, next_cursor, identity_values_included, operator_identifiers_included, chat_content_included, real_external_call_executed]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        scope: { type: string, enum: [connected_component] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CustomerMergeHistoryItem" } }
+        next_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+        identity_values_included: { type: boolean, enum: [false] }
+        operator_identifiers_included: { type: boolean, enum: [false] }
+        chat_content_included: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    CustomerChatActivityItem:
+      type: object
+      additionalProperties: false
+      required: [chat_type, message_type, sent_at]
+      properties:
+        chat_type: { type: string, enum: [private, group] }
+        message_type: { type: string, minLength: 1, maxLength: 128 }
+        sent_at: { type: string, format: date-time }
+    CustomerChatActivityResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, chat_type, items, total, next_cursor, previous_cursor, non_atomic_snapshot, message_content_included, identity_values_included, provider_receipts_included, real_external_call_executed]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        chat_type: { type: string, enum: [all, private, group] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CustomerChatActivityItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        next_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+        previous_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+        non_atomic_snapshot: { type: boolean, enum: [true] }
+        message_content_included: { type: boolean, enum: [false] }
+        identity_values_included: { type: boolean, enum: [false] }
+        provider_receipts_included: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    CustomerActivityTypeFacet:
+      type: object
+      additionalProperties: false
+      required: [event_type, count, last_occurred_at]
+      properties:
+        event_type: { type: string, minLength: 1, maxLength: 200 }
+        count: { type: integer, format: int64, minimum: 1 }
+        last_occurred_at: { type: string, format: date-time }
+    CustomerActivityDayCount:
+      type: object
+      additionalProperties: false
+      required: [day, count]
+      properties:
+        day: { type: string, format: date }
+        count: { type: integer, format: int64, minimum: 1 }
+    CustomerActivityAnalyticsResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, window_days, from, through, total_events, active_days, unique_event_types, last_occurred_at, type_facets, type_facets_truncated, daily_counts, payload_included, actor_included, identity_included, real_external_call_executed]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        window_days: { type: integer, format: int32, enum: [7, 30, 90] }
+        from: { type: string, format: date-time }
+        through: { type: string, format: date-time }
+        total_events: { type: integer, format: int64, minimum: 0 }
+        active_days: { type: integer, format: int32, minimum: 0, maximum: 91 }
+        unique_event_types: { type: integer, format: int32, minimum: 0 }
+        last_occurred_at: { type: string, format: date-time, nullable: true }
+        type_facets: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/CustomerActivityTypeFacet" } }
+        type_facets_truncated: { type: boolean }
+        daily_counts: { type: array, maxItems: 91, items: { $ref: "#/components/schemas/CustomerActivityDayCount" } }
+        payload_included: { type: boolean, enum: [false] }
+        actor_included: { type: boolean, enum: [false] }
+        identity_included: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
     Tag:
       type: object

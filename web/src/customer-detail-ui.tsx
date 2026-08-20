@@ -2,6 +2,17 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import { CustomerContextPanel } from "./customer-context-ui";
 import type { CustomerContextTransport } from "./customer-context";
+import { CustomerMergeHistoryPanel } from "./customer-merge-history-ui";
+import type {
+  CustomerMergeHistoryRole,
+  CustomerMergeHistoryTransport,
+} from "./customer-merge-history";
+import { CustomerChatActivityPanel } from "./customer-chat-activity-ui";
+import type {
+  CustomerChatActivityRole,
+  CustomerChatActivityTransport,
+} from "./customer-chat-activity";
+import type { CustomerActivityAnalyticsTransport } from "./customer-activity-analytics";
 import {
   generatedCustomerDetailTransport,
   isCustomerGender,
@@ -27,6 +38,11 @@ export interface CustomerDetailPageProps {
   readonly customerID: number;
   readonly transport?: CustomerDetailTransport;
   readonly contextTransport?: CustomerContextTransport;
+  readonly mergeHistoryRole?: CustomerMergeHistoryRole;
+  readonly mergeHistoryTransport?: CustomerMergeHistoryTransport;
+  readonly chatActivityRole?: CustomerChatActivityRole;
+  readonly chatActivityTransport?: CustomerChatActivityTransport;
+  readonly activityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerDetailSnapshot;
@@ -180,6 +196,11 @@ export function CustomerDetailPage({
   customerID,
   transport = generatedCustomerDetailTransport,
   contextTransport,
+  mergeHistoryRole,
+  mergeHistoryTransport,
+  chatActivityRole,
+  chatActivityTransport,
+  activityAnalyticsTransport,
   readCookie = browserCookie,
   onUnauthenticated,
   initialSnapshot,
@@ -507,7 +528,27 @@ export function CustomerDetailPage({
         customerID={customerID}
         transport={contextTransport}
         onUnauthenticated={onUnauthenticated}
+        showChatSummary={!(chatActivityRole && chatActivityTransport)}
+        activityAnalyticsTransport={activityAnalyticsTransport}
       />
+
+      {mergeHistoryTransport && mergeHistoryRole && (
+        <CustomerMergeHistoryPanel
+          customerID={customerID}
+          role={mergeHistoryRole}
+          transport={mergeHistoryTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      )}
+
+      {chatActivityRole && chatActivityTransport && (
+        <CustomerChatActivityPanel
+          customerID={customerID}
+          role={chatActivityRole}
+          transport={chatActivityTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      )}
 
       <div className="customer-detail-page__grid">
         <form

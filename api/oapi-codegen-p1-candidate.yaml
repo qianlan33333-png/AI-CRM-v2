@@ -15,6 +15,7 @@ output-options:
     - p4-product
     - p4-product-entitlement
     - p4-classification
+    - p4-customer-360
     - p4-domain-verification
     - p4-execution-runtime-compat
     - p4-push-center-compat

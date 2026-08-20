@@ -46,6 +46,16 @@ ORDER BY sent_at DESC, id DESC
 LIMIT sqlc.arg(row_limit)::integer
 OFFSET sqlc.arg(row_offset)::integer;
 
+-- name: CountMessageArchiveRecords :one
+SELECT count(*)::bigint
+FROM wecom_message_archive_records
+WHERE customer_id = sqlc.arg(customer_id)::bigint
+  AND (sqlc.arg(chat_type)::text = '' OR chat_type = sqlc.arg(chat_type)::text)
+  AND (
+    sqlc.arg(keyword)::text = ''
+    OR position(lower(sqlc.arg(keyword)::text) IN lower(content_masked)) > 0
+  );
+
 -- name: CountMessageArchiveExternalRecords :one
 SELECT count(*)::bigint
 FROM wecom_message_archive_records

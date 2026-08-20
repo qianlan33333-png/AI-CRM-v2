@@ -38,12 +38,15 @@ type Querier interface {
 	ListChannelImageReferencePackages(ctx context.Context) ([]ListChannelImageReferencePackagesRow, error)
 	// Contact owns the local channel catalog; WeCom remains a provider adapter.
 	ListChannels(ctx context.Context, arg ListChannelsParams) ([]ListChannelsRow, error)
+	ListCustomerEventDailyAnalytics(ctx context.Context, arg ListCustomerEventDailyAnalyticsParams) ([]ListCustomerEventDailyAnalyticsRow, error)
+	ListCustomerEventTypeAnalytics(ctx context.Context, arg ListCustomerEventTypeAnalyticsParams) ([]ListCustomerEventTypeAnalyticsRow, error)
 	ListCustomerEvents(ctx context.Context, arg ListCustomerEventsParams) ([]ListCustomerEventsRow, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error)
 	ListLegacyTags(ctx context.Context) ([]ListLegacyTagsRow, error)
 	ListStages(ctx context.Context) ([]ListStagesRow, error)
 	ListTags(ctx context.Context) ([]ListTagsRow, error)
+	LoadCustomerEventAnalyticsSummary(ctx context.Context, arg LoadCustomerEventAnalyticsSummaryParams) (LoadCustomerEventAnalyticsSummaryRow, error)
 	LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error)
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
 	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
