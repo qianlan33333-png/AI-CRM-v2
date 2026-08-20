@@ -42,6 +42,15 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/v1/customers/1/events", authport.CapabilityCustomerEventsRead},
 		{http.MethodGet, "/api/v1/customers/1/context", authport.CapabilityCustomerEventsRead},
 		{http.MethodGet, "/api/v1/tags", authport.CapabilityCustomersRead},
+		{http.MethodPost, "/api/v1/tags", authport.CapabilityCustomersWrite},
+		{http.MethodPut, "/api/v1/tags/reorder", authport.CapabilityCustomersWrite},
+		{http.MethodPatch, "/api/v1/tags/2", authport.CapabilityCustomersWrite},
+		{http.MethodDelete, "/api/v1/tags/2", authport.CapabilityCustomersWrite},
+		{http.MethodGet, "/api/v1/tag-groups", authport.CapabilityCustomersRead},
+		{http.MethodPost, "/api/v1/tag-groups", authport.CapabilityCustomersWrite},
+		{http.MethodPut, "/api/v1/tag-groups/reorder", authport.CapabilityCustomersWrite},
+		{http.MethodPatch, "/api/v1/tag-groups/1", authport.CapabilityCustomersWrite},
+		{http.MethodDelete, "/api/v1/tag-groups/1", authport.CapabilityCustomersWrite},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve},
@@ -49,6 +58,13 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", authport.CapabilityIdentityReviewWrite},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", authport.CapabilityIdentityReviewWrite},
 		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead},
+		{http.MethodGet, "/api/v1/segments", authport.CapabilitySegmentsRead},
+		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite},
+		{http.MethodGet, "/api/v1/segments/1", authport.CapabilitySegmentsRead},
+		{http.MethodPatch, "/api/v1/segments/1", authport.CapabilitySegmentsWrite},
+		{http.MethodDelete, "/api/v1/segments/1", authport.CapabilitySegmentsWrite},
+		{http.MethodGet, "/api/v1/segments/1/members", authport.CapabilitySegmentsRead},
+		{http.MethodPost, "/api/v1/segments/1/refresh", authport.CapabilitySegmentsWrite},
 		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead},
 		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite},
 		{http.MethodGet, "/api/v1/products/1", authport.CapabilityProductsRead},
@@ -58,6 +74,8 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/v1/product-entitlements/1", authport.CapabilityEntitlementsRead},
 		{http.MethodPost, "/api/v1/product-entitlements/1/revoke", authport.CapabilityEntitlementsWrite},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite},
+		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite},
+		{http.MethodDelete, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 	}
 	for _, test := range tests {
@@ -69,11 +87,15 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 				request.Header.Set("X-CSRF-Token", "router-test-csrf")
 			}
 			if test.capability == authport.CapabilityStagesWrite ||
+				test.capability == authport.CapabilitySegmentsWrite ||
 				test.capability == authport.CapabilityCustomersWrite ||
 				test.capability == authport.CapabilityIdentityBind ||
 				test.capability == authport.CapabilityIdentityIngest ||
 				test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+			}
+			if test.capability == authport.CapabilityStagesWrite || test.capability == authport.CapabilitySegmentsWrite || test.capability == authport.CapabilityCustomersWrite {
+				request.Header.Set("Idempotency-Key", "router-classification-key")
 			}
 			if test.capability == authport.CapabilityProductsWrite || test.capability == authport.CapabilityEntitlementsWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
@@ -117,6 +139,22 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPut, "/api/v1/products/1", `{"expected_version":1,"name":"商品","description":"","price_minor":1,"currency":"CNY","stock_quantity":0}`},
 		{http.MethodPost, "/api/v1/products/1/local-entitlements", `{"order_id":1}`},
 		{http.MethodPost, "/api/v1/product-entitlements/1/revoke", `{"expected_version":1}`},
+		{http.MethodPost, "/api/v1/tag-groups", `{"name":"Lifecycle","first_tag_name":"Warm"}`},
+		{http.MethodPut, "/api/v1/tag-groups/reorder", `{"ids":[1]}`},
+		{http.MethodPatch, "/api/v1/tag-groups/1", `{"name":"Lifecycle"}`},
+		{http.MethodDelete, "/api/v1/tag-groups/1", ``},
+		{http.MethodPost, "/api/v1/tags", `{"group_id":1,"name":"Warm"}`},
+		{http.MethodPut, "/api/v1/tags/reorder", `{"ids":[1]}`},
+		{http.MethodPatch, "/api/v1/tags/1", `{"name":"Warm"}`},
+		{http.MethodDelete, "/api/v1/tags/1", ``},
+		{http.MethodPost, "/api/v1/segments", `{"name":"High intent","definition":{"field":"is_deleted","op":"eq","value":false},"refresh_mode":"manual"}`},
+		{http.MethodPatch, "/api/v1/segments/1", `{"name":"High intent"}`},
+		{http.MethodDelete, "/api/v1/segments/1", ``},
+		{http.MethodPost, "/api/v1/segments/1/refresh", ``},
+		{http.MethodPost, "/api/v1/stages", `{"name":"New"}`},
+		{http.MethodPut, "/api/v1/stages/reorder", `{"ids":[1]}`},
+		{http.MethodPatch, "/api/v1/stages/1", `{"name":"New"}`},
+		{http.MethodDelete, "/api/v1/stages/1", ``},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

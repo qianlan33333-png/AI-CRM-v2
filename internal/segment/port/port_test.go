@@ -13,7 +13,7 @@ func TestSegmentServiceSurfaceIsFrozen(t *testing.T) {
 		methods[index] = typeOf.Method(index).Name
 	}
 	sort.Strings(methods)
-	want := []string{"Create", "Get", "List", "ListMembers", "RequestRefresh", "Update"}
+	want := []string{"Archive", "Create", "Get", "List", "ListMembers", "RequestRefresh", "Update"}
 	if !reflect.DeepEqual(methods, want) {
 		t.Fatalf("methods = %v, want %v", methods, want)
 	}

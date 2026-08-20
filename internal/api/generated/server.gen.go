@@ -155,6 +155,9 @@ type SegmentID = int64
 // StageID defines model for StageID.
 type StageID = int64
 
+// TagGroupID defines model for TagGroupID.
+type TagGroupID = int64
+
 // TagID defines model for TagID.
 type TagID = int64
 

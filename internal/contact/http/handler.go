@@ -67,6 +67,11 @@ func (handler *Handler) CreateStage(writer http.ResponseWriter, request *http.Re
 		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
 		return
 	}
+	key, err := stageIdempotencyKey(request)
+	if err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
 	var config json.RawMessage
 	if body.Config != nil {
 		config, err = json.Marshal(body.Config)
@@ -80,7 +85,7 @@ func (handler *Handler) CreateStage(writer http.ResponseWriter, request *http.Re
 		sortOrder = *body.SortOrder
 	}
 	stage, err := handler.stages.CreateStage(request.Context(), contactport.CreateStageCommand{
-		Name: body.Name, SortOrder: sortOrder, Config: config, Actor: actor(principal),
+		Name: body.Name, SortOrder: sortOrder, Config: config, Actor: actor(principal), IdempotencyKey: key,
 	})
 	if err != nil {
 		writeStageError(writer, request, err)
@@ -105,8 +110,13 @@ func (handler *Handler) RenameStage(writer http.ResponseWriter, request *http.Re
 		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
 		return
 	}
+	key, err := stageIdempotencyKey(request)
+	if err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
 	stage, err := handler.stages.RenameStage(request.Context(), contactport.RenameStageCommand{
-		ID: contactport.StageID(stageID), Name: body.Name, Actor: actor(principal),
+		ID: contactport.StageID(stageID), Name: body.Name, Actor: actor(principal), IdempotencyKey: key,
 	})
 	if err != nil {
 		writeStageError(writer, request, err)
@@ -118,6 +128,81 @@ func (handler *Handler) RenameStage(writer http.ResponseWriter, request *http.Re
 		return
 	}
 	writeStageJSON(writer, http.StatusOK, response)
+}
+
+func (handler *Handler) ReorderStages(writer http.ResponseWriter, request *http.Request, _ generated.ReorderStagesParams) {
+	principal, err := handler.operation(request, authport.CapabilityStagesWrite)
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	var body generated.ReorderStagesRequest
+	if err = decodeStageBody(writer, request, &body); err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	key, err := stageIdempotencyKey(request)
+	if err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	ids := make([]contactport.StageID, len(body.Ids))
+	for index, id := range body.Ids {
+		ids[index] = contactport.StageID(id)
+	}
+	stages, err := handler.stages.ReorderStages(request.Context(), contactport.ReorderStagesCommand{
+		IDs: ids, Actor: actor(principal), IdempotencyKey: key,
+	})
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	items := make([]generated.Stage, len(stages))
+	for index, stage := range stages {
+		items[index], err = responseStage(stage)
+		if err != nil {
+			writeStageError(writer, request, err)
+			return
+		}
+	}
+	writeStageJSON(writer, http.StatusOK, generated.StageListResponse{Items: items})
+}
+
+func (handler *Handler) ArchiveStage(writer http.ResponseWriter, request *http.Request, stageID generated.StageID, _ generated.ArchiveStageParams) {
+	principal, err := handler.operation(request, authport.CapabilityStagesWrite)
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	key, err := stageIdempotencyKey(request)
+	if err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	stage, err := handler.stages.ArchiveStage(request.Context(), contactport.ArchiveStageCommand{
+		ID: contactport.StageID(stageID), Actor: actor(principal), IdempotencyKey: key,
+	})
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	response, err := responseStage(stage)
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	writeStageJSON(writer, http.StatusOK, response)
+}
+
+func stageIdempotencyKey(request *http.Request) (string, error) {
+	if request == nil {
+		return "", errors.New("missing idempotency key")
+	}
+	values := request.Header.Values("Idempotency-Key")
+	if len(values) != 1 || len(values[0]) < 16 || len(values[0]) > 128 || values[0] != string(bytes.TrimSpace([]byte(values[0]))) {
+		return "", errors.New("invalid idempotency key")
+	}
+	return values[0], nil
 }
 
 func (handler *Handler) operation(request *http.Request, capability authport.Capability) (authport.Principal, error) {
@@ -185,6 +270,8 @@ func writeStageError(writer http.ResponseWriter, request *http.Request, err erro
 		code = platformhttp.CodeValidationFailed
 	} else if errors.Is(err, contactport.ErrStageNotFound) {
 		code = platformhttp.CodeNotFound
+	} else if errors.Is(err, contactport.ErrStageConflict) || errors.Is(err, contactport.ErrStageReferenced) {
+		code = platformhttp.CodeConflict
 	} else {
 		var databaseError *pgconn.PgError
 		if errors.As(err, &databaseError) && databaseError.Code == "23505" {

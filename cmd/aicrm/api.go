@@ -111,6 +111,7 @@ type candidateHandler struct {
 	customerContext *customer360http.CustomerContextHandler
 	mutations       *contacthttp.CustomerMutationHandler
 	tags            *contacthttp.TagCatalogHandler
+	localTags       *contacthttp.LocalTagCatalogHandler
 	stages          *contacthttp.Handler
 	segments        *segmenthttp.CRUDHandler
 	products        *producthttp.Handler
@@ -148,6 +149,42 @@ func (handler *candidateHandler) ListTags(writer http.ResponseWriter, request *h
 	handler.tags.ListTags(writer, request)
 }
 
+func (handler *candidateHandler) ListTagGroups(writer http.ResponseWriter, request *http.Request) {
+	handler.localTags.ListTagGroups(writer, request)
+}
+
+func (handler *candidateHandler) CreateTagGroup(writer http.ResponseWriter, request *http.Request, params api.CreateTagGroupParams) {
+	handler.localTags.CreateTagGroup(writer, request, params)
+}
+
+func (handler *candidateHandler) UpdateTagGroup(writer http.ResponseWriter, request *http.Request, groupID api.TagGroupID, params api.UpdateTagGroupParams) {
+	handler.localTags.UpdateTagGroup(writer, request, groupID, params)
+}
+
+func (handler *candidateHandler) ArchiveTagGroup(writer http.ResponseWriter, request *http.Request, groupID api.TagGroupID, params api.ArchiveTagGroupParams) {
+	handler.localTags.ArchiveTagGroup(writer, request, groupID, params)
+}
+
+func (handler *candidateHandler) ReorderTagGroups(writer http.ResponseWriter, request *http.Request, params api.ReorderTagGroupsParams) {
+	handler.localTags.ReorderTagGroups(writer, request, params)
+}
+
+func (handler *candidateHandler) CreateTag(writer http.ResponseWriter, request *http.Request, params api.CreateTagParams) {
+	handler.localTags.CreateTag(writer, request, params)
+}
+
+func (handler *candidateHandler) UpdateTag(writer http.ResponseWriter, request *http.Request, tagID api.TagID, params api.UpdateTagParams) {
+	handler.localTags.UpdateTag(writer, request, tagID, params)
+}
+
+func (handler *candidateHandler) ArchiveTag(writer http.ResponseWriter, request *http.Request, tagID api.TagID, params api.ArchiveTagParams) {
+	handler.localTags.ArchiveTag(writer, request, tagID, params)
+}
+
+func (handler *candidateHandler) ReorderTags(writer http.ResponseWriter, request *http.Request, params api.ReorderTagsParams) {
+	handler.localTags.ReorderTags(writer, request, params)
+}
+
 func (handler *candidateHandler) UpdateCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID, params api.UpdateCustomerParams) {
 	handler.mutations.UpdateCustomer(writer, request, customerID, params)
 }
@@ -172,6 +209,14 @@ func (handler *candidateHandler) CreateStage(writer http.ResponseWriter, request
 	handler.stages.CreateStage(writer, request, params)
 }
 
+func (handler *candidateHandler) ReorderStages(writer http.ResponseWriter, request *http.Request, params api.ReorderStagesParams) {
+	handler.stages.ReorderStages(writer, request, params)
+}
+
+func (handler *candidateHandler) ArchiveStage(writer http.ResponseWriter, request *http.Request, stageID api.StageID, params api.ArchiveStageParams) {
+	handler.stages.ArchiveStage(writer, request, stageID, params)
+}
+
 func (handler *candidateHandler) RenameStage(writer http.ResponseWriter, request *http.Request, stageID api.StageID, params api.RenameStageParams) {
 	handler.stages.RenameStage(writer, request, stageID, params)
 }
@@ -182,6 +227,14 @@ func (handler *candidateHandler) RequestSegmentRefresh(writer http.ResponseWrite
 
 func (handler *candidateHandler) ListSegments(writer http.ResponseWriter, request *http.Request, params api.ListSegmentsParams) {
 	handler.segments.ListSegments(writer, request, params)
+}
+
+func (handler *candidateHandler) GetSegment(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID) {
+	handler.segments.GetSegment(writer, request, segmentID)
+}
+
+func (handler *candidateHandler) ArchiveSegment(writer http.ResponseWriter, request *http.Request, segmentID api.SegmentID, params api.ArchiveSegmentParams) {
+	handler.segments.ArchiveSegment(writer, request, segmentID, params)
 }
 
 func (handler *candidateHandler) ListProducts(writer http.ResponseWriter, request *http.Request, params api.ListProductsParams) {
@@ -493,6 +546,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveystore.NewSubmissionRepository())
 	channelService := contactapp.NewChannelServiceWithImageReferences(uow, contactstore.NewChannelRepository(), mediaRepository, eventstore.NewAppender())
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
+	localTagCatalogHandler, err := contacthttp.NewLocalTagCatalogHandler(legacyTagService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	legacyTagExecutionRepository, err := contactstore.NewLegacyTagExecutionRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -537,7 +595,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerDetail: customerDetailHandler, customerEvents: customerEventHandler, customerContext: customerContextHandler,
-		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
+		mutations: mutationHandler, tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
 		segments:           segmentCRUDHandler,
 		products:           productHandler,
 		productLocal:       productLocalHandler,
@@ -863,6 +921,15 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)},
 		{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)},
 		{http.MethodGet, "/api/v1/tags", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListTags)},
+		{http.MethodPost, "/api/v1/tags", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.CreateTag)},
+		{http.MethodPut, "/api/v1/tags/reorder", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.ReorderTags)},
+		{http.MethodPatch, "/api/v1/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateTag)},
+		{http.MethodDelete, "/api/v1/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.ArchiveTag)},
+		{http.MethodGet, "/api/v1/tag-groups", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListTagGroups)},
+		{http.MethodPost, "/api/v1/tag-groups", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.CreateTagGroup)},
+		{http.MethodPut, "/api/v1/tag-groups/reorder", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.ReorderTagGroups)},
+		{http.MethodPatch, "/api/v1/tag-groups/{group_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateTagGroup)},
+		{http.MethodDelete, "/api/v1/tag-groups/{group_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.ArchiveTagGroup)},
 		{http.MethodPost, "/api/v1/identity/bind", authport.CapabilityIdentityBind, true, http.HandlerFunc(wrapper.BindIdentity)},
 		{http.MethodPost, "/api/v1/identity/ingest", authport.CapabilityIdentityIngest, true, http.HandlerFunc(wrapper.IngestIdentityEvent)},
 		{http.MethodPost, "/api/v1/identity/resolve", authport.CapabilityIdentityResolve, false, http.HandlerFunc(wrapper.ResolveIdentity)},
@@ -870,6 +937,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/v1/identity/merge-reviews/{review_id}/approve", authport.CapabilityIdentityReviewWrite, true, http.HandlerFunc(wrapper.ApproveIdentityMergeReview)},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/{review_id}/reject", authport.CapabilityIdentityReviewWrite, true, http.HandlerFunc(wrapper.RejectIdentityMergeReview)},
 		{http.MethodGet, "/api/v1/segments", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegments)},
+		{http.MethodGet, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.GetSegment)},
 		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.ListProducts)},
 		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CreateProduct)},
 		{http.MethodGet, "/api/v1/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetProduct)},
@@ -880,10 +948,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/v1/product-entitlements/{entitlement_id}/revoke", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.RevokeProductLocalEntitlement)},
 		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
 		{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.UpdateSegment)},
+		{http.MethodDelete, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.ArchiveSegment)},
 		{http.MethodGet, "/api/v1/segments/{segment_id}/members", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegmentMembers)},
 		{http.MethodPost, "/api/v1/segments/{segment_id}/refresh", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.RequestSegmentRefresh)},
 		{http.MethodGet, "/api/v1/stages", authport.CapabilityStagesRead, false, http.HandlerFunc(wrapper.ListStages)},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.CreateStage)},
+		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ReorderStages)},
+		{http.MethodDelete, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ArchiveStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
 	}
 	for _, route := range routes {

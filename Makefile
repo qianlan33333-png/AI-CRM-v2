@@ -309,6 +309,7 @@ p3-s05b-acceptance: override SHELL := /bin/bash
 p3-s05b-acceptance: override .SHELLFLAGS := -eu -o pipefail -c
 p3-s05b-acceptance:
 	@test -n "$${SEGMENT_CRUD_TEST_DATABASE_URL:-}" || { echo "SEGMENT_CRUD_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$SEGMENT_CRUD_TEST_DATABASE_URL" up
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly SEGMENT_CRUD_TEST_DATABASE_URL="$${SEGMENT_CRUD_TEST_DATABASE_URL}" $(GO) test -race -count=1 -timeout=45s -run '^TestSegmentCRUDReceiptAndRuntimeFlow$$' ./acceptance/segment
 
 g2-runtime-image-acceptance:

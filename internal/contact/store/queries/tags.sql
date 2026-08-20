@@ -22,9 +22,20 @@ SELECT id, name, sort_order FROM tag_groups WHERE name NOT LIKE 'archived:%' ORD
 SELECT t.id, t.group_id, g.name AS group_name, t.name, t.sort_order FROM tags t JOIN tag_groups g ON g.id=t.group_id
 WHERE g.name NOT LIKE 'archived:%' AND t.name NOT LIKE 'archived:%' ORDER BY g.sort_order,g.id,t.sort_order,t.id;
 -- name: CreateLegacyTagGroup :one
-INSERT INTO tag_groups(name) VALUES (sqlc.arg(name)) RETURNING id,name,sort_order;
+INSERT INTO tag_groups(name, sort_order)
+SELECT sqlc.arg(name), COALESCE(MAX(sort_order), -1) + 1
+FROM tag_groups
+WHERE name NOT LIKE 'archived:%'
+RETURNING id,name,sort_order;
 -- name: CreateLegacyTag :one
-INSERT INTO tags(group_id,name) VALUES (sqlc.arg(group_id),sqlc.arg(name)) RETURNING id,group_id,name,sort_order;
+INSERT INTO tags(group_id,name,sort_order)
+SELECT g.id, sqlc.arg(name), COALESCE((
+  SELECT MAX(t.sort_order) + 1 FROM tags AS t
+  WHERE t.group_id = g.id AND t.name NOT LIKE 'archived:%'
+), 0)
+FROM tag_groups AS g
+WHERE g.id = sqlc.arg(group_id) AND g.name NOT LIKE 'archived:%'
+RETURNING id,group_id,name,sort_order;
 -- name: UpdateLegacyTagGroup :one
 UPDATE tag_groups SET name=sqlc.arg(name) WHERE id=sqlc.arg(id) AND name NOT LIKE 'archived:%' RETURNING id,name,sort_order;
 -- name: ArchiveLegacyTagGroup :one

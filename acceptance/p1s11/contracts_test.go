@@ -164,7 +164,7 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 			"ApproveMergeReview", "ListMergeReviews", "RejectMergeReview",
 		}},
 		"segment.Service": {(*segmentport.Service)(nil), []string{
-			"Create", "Get", "List", "ListMembers", "RequestRefresh", "Update",
+			"Archive", "Create", "Get", "List", "ListMembers", "RequestRefresh", "Update",
 		}},
 		"auth.Service":        {(*authport.Service)(nil), []string{"Authenticate", "Authorize", "Invalidate", "ValidateCSRF"}},
 		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), []string{"Within"}},
@@ -214,10 +214,10 @@ func TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet(t *testing.T) 
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
-		"AddCustomerTag", "ApproveIdentityMergeReview", "BindIdentity", "CreateProduct", "CreateSegment", "CreateStage", "GetAdminConfigOverview", "GetAuthSession",
+		"AddCustomerTag", "ApproveIdentityMergeReview", "ArchiveSegment", "ArchiveStage", "ArchiveTag", "ArchiveTagGroup", "BindIdentity", "CreateProduct", "CreateSegment", "CreateStage", "CreateTag", "CreateTagGroup", "GetAdminConfigOverview", "GetAuthSession",
 		"GetCustomer", "GetCustomerContext", "GetDomainVerificationFile", "GetLegacyExecutionRuntime", "GetLegacyExecutionRuntimePage", "GetLegacyExecutionTimeline", "GetLegacyHealth", "GetLegacyPushCenterSections", "GetLegacyPushCenterStats", "GetProduct", "GetProductLocalEntitlement", "GetSegment", "GrantProductLocalEntitlement", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerEvents", "ListCustomers", "ListIdentityMergeReviews",
-		"ListProductLocalEntitlements", "ListProducts", "ListSegmentMembers", "ListSegments", "ListStages", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
-		"RemoveCustomerTag", "RenameStage", "RequestSegmentRefresh", "ResolveIdentity", "RevokeProductLocalEntitlement", "SetCustomerStage", "UpdateCustomer", "UpdateProduct", "UpdateSegment",
+		"ListProductLocalEntitlements", "ListProducts", "ListSegmentMembers", "ListSegments", "ListStages", "ListTagGroups", "ListTags", "LogoutAdmin", "RejectIdentityMergeReview",
+		"RemoveCustomerTag", "RenameStage", "ReorderStages", "ReorderTagGroups", "ReorderTags", "RequestSegmentRefresh", "ResolveIdentity", "RevokeProductLocalEntitlement", "SetCustomerStage", "UpdateCustomer", "UpdateProduct", "UpdateSegment", "UpdateTag", "UpdateTagGroup",
 	})
 }
 

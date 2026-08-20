@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
+  archiveSegment,
   buildDefinition,
   editorDraft,
   generatedSegmentTransport,
@@ -40,7 +41,19 @@ const fields = [
 ] as const;
 
 function browserCookie(): string { return typeof document === "undefined" ? "" : document.cookie; }
-function mutationKey(): string { return `segment-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`; }
+function sameSegment(left: SegmentRecord, right: SegmentRecord): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+function mutationKey(): string | undefined {
+  try {
+    const uuid = globalThis.crypto?.randomUUID();
+    return typeof uuid === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid)
+      ? `segment:${uuid}`
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
 function operators(field: SegmentConditionDraft extends infer T ? T extends { readonly field: infer F } ? F : never : never): readonly [string, string][] {
   if (field === "is_deleted") return [["eq", "等于"]];
   if (field === "added_at" || field === "last_interact_at") return [["before", "早于"], ["after", "晚于"]];
@@ -68,6 +81,9 @@ export function SegmentsPage({ role, transport = generatedSegmentTransport, read
   const [notice, setNotice] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const writeInFlight = useRef(false);
+  const outcomeUnknown = useRef(false);
 
   const loadList = useCallback(async (cursor?: string) => {
     setList({ kind: "loading" });
@@ -87,30 +103,124 @@ export function SegmentsPage({ role, transport = generatedSegmentTransport, read
   const csrf = (): string | undefined => { try { return readCSRFCookie(readCookie()); } catch { return undefined; } };
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canWrite || saving) return;
+    if (!canWrite || saving || writeInFlight.current || outcomeUnknown.current) return;
     const definition = buildDefinition(draft.condition);
     if (!definition.ok) { setNotice(definition.message); return; }
     const token = csrf();
     if (!token) { setNotice("安全令牌缺失，未发送保存请求。"); return; }
+	const key = mutationKey();
+	if (!key) { setNotice("安全随机源不可用，未发送保存请求。"); return; }
+    writeInFlight.current = true;
     setSaving(true); setNotice(undefined);
-    const result = await saveSegment(transport, selected, draft, token, mutationKey());
-    setSaving(false);
-    if (result.status !== "saved") { setNotice(messages[result.status]); if (result.status === "unauthenticated") onUnauthenticated?.(); return; }
-    setSelected(result.segment); setDraft(editorDraft(result.segment)); setNotice(selected ? "人群包已保存。" : "人群包已创建。");
-    void loadList(); void loadMembers(result.segment);
+    try {
+	  const result = await saveSegment(transport, selected, draft, token, key);
+      if (result.status !== "saved") {
+        if (result.status === "unavailable") outcomeUnknown.current = true;
+        setNotice(messages[result.status]);
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        return;
+      }
+      const reread = await loadSegments(transport);
+      if (reread.status === "unauthenticated") {
+        onUnauthenticated?.();
+        return;
+      }
+      if (reread.status !== "loaded" || !reread.items.some((item) => sameSegment(item, result.segment))) {
+        outcomeUnknown.current = true;
+        setNotice(messages.unavailable);
+        return;
+      }
+      setList({ kind: "ready", items: reread.items, ...(reread.nextCursor ? { nextCursor: reread.nextCursor } : {}) });
+      setSelected(result.segment); setDraft(editorDraft(result.segment));
+      const membersRead = await loadSegmentMembers(transport, result.segment.id);
+      if (membersRead.status === "unauthenticated") {
+        onUnauthenticated?.();
+        return;
+      }
+      if (membersRead.status !== "loaded") {
+        outcomeUnknown.current = true;
+        setNotice(messages.unavailable);
+        return;
+      }
+      setMembers({ kind: "ready", items: membersRead.items.map(({ id, name }) => ({ id, name })), ...(membersRead.nextCursor ? { nextCursor: membersRead.nextCursor } : {}) });
+      setNotice(selected ? "人群包已保存并已回读确认。" : "人群包已创建并已回读确认。");
+    } finally {
+      writeInFlight.current = false;
+      setSaving(false);
+    }
   };
   const refresh = async () => {
-    if (!selected || refreshing || !canWrite) return;
+    if (!selected || refreshing || writeInFlight.current || outcomeUnknown.current || !canWrite) return;
     const token = csrf();
     if (!token) { setNotice("安全令牌缺失，未发送手动刷新请求。"); return; }
+	const key = mutationKey();
+	if (!key) { setNotice("安全随机源不可用，未发送手动刷新请求。"); return; }
+    writeInFlight.current = true;
     setRefreshing(true); setNotice(undefined);
-    const result = await refreshSegment(transport, selected.id, token, mutationKey());
-    setRefreshing(false);
-    if (result !== "accepted") { setNotice(messages[result]); if (result === "unauthenticated") onUnauthenticated?.(); return; }
-    setNotice("刷新请求已接受并持久化入队；这不表示成员已经更新。当前成员数和预览已重新读取服务端事实。");
-    void loadList(); void loadMembers(selected);
+    try {
+	  const result = await refreshSegment(transport, selected.id, token, key);
+      if (result !== "accepted") {
+        if (result === "unavailable") outcomeUnknown.current = true;
+        setNotice(messages[result]);
+        if (result === "unauthenticated") onUnauthenticated?.();
+        return;
+      }
+      const [reread, membersRead] = await Promise.all([
+        loadSegments(transport),
+        loadSegmentMembers(transport, selected.id),
+      ]);
+      if (reread.status === "unauthenticated" || membersRead.status === "unauthenticated") {
+        onUnauthenticated?.();
+        return;
+      }
+      const confirmed = reread.status === "loaded" &&
+        reread.items.some((item) => item.id === selected.id) &&
+        membersRead.status === "loaded";
+      if (!confirmed) {
+        outcomeUnknown.current = true;
+        setNotice(messages.unavailable);
+        return;
+      }
+      setList({ kind: "ready", items: reread.items, ...(reread.nextCursor ? { nextCursor: reread.nextCursor } : {}) });
+      setMembers({ kind: "ready", items: membersRead.items.map(({ id, name }) => ({ id, name })), ...(membersRead.nextCursor ? { nextCursor: membersRead.nextCursor } : {}) });
+      setNotice("刷新请求已接受并由列表与预览回读确认；这不表示成员已更新或产生任何外部效果。");
+    } finally {
+      writeInFlight.current = false;
+      setRefreshing(false);
+    }
+  };
+  const archive = async () => {
+    if (!selected || !transport.archive || archiving || writeInFlight.current || outcomeUnknown.current || !canWrite) return;
+    if (typeof window === "undefined" || !window.confirm(`确认归档本地人群包“${selected.name}”？归档会保留当前快照且停止后续刷新。`)) return;
+    const token = csrf();
+    const key = mutationKey();
+    if (!token || !key) { setNotice(!token ? "安全令牌缺失，未发送归档请求。" : "安全随机源不可用，未发送归档请求。"); return; }
+    writeInFlight.current = true;
+    setArchiving(true); setNotice(undefined);
+    try {
+      const result = await archiveSegment(transport, selected.id, token, key);
+      if (result.status !== "archived") {
+        if (result.status === "unavailable") outcomeUnknown.current = true;
+        setNotice(messages[result.status]);
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        return;
+      }
+      const reread = await loadSegments(transport);
+      if (reread.status === "unauthenticated") { onUnauthenticated?.(); return; }
+      if (reread.status !== "loaded" || reread.items.some((item) => item.id === selected.id)) {
+        outcomeUnknown.current = true;
+        setNotice(messages.unavailable);
+        return;
+      }
+      setList({ kind: "ready", items: reread.items, ...(reread.nextCursor ? { nextCursor: reread.nextCursor } : {}) });
+      setSelected(undefined); setDraft(editorDraft()); setMembers({ kind: "idle" });
+      setNotice("人群包已归档并已由列表回读确认；保留的快照不会再刷新。");
+    } finally {
+      writeInFlight.current = false;
+      setArchiving(false);
+    }
   };
 
   if (!canWrite) return <section className="segments-page" aria-labelledby="app-title"><p className="route-card__eyebrow">人群包</p><h1 id="app-title">人群包</h1><p className="segments-page__state" role="alert">当前账号没有人群包访问权限。</p></section>;
-  return <section className="segments-page" aria-labelledby="app-title"><div className="segments-page__heading"><div><p className="route-card__eyebrow">受众运营</p><h1 id="app-title">人群包</h1><p>条件、成员数和刷新状态均以服务端当前事实为准。</p></div><button type="button" onClick={() => { setSelected(undefined); setDraft(editorDraft()); setMembers({ kind: "idle" }); setNotice("已开始创建新的人群包。"); }}>新建人群包</button></div>{notice && <p className="segments-page__notice" role="alert">{notice}</p>}<div className="segments-page__grid"><section className="segments-page__panel" aria-labelledby="segment-list-title"><h2 id="segment-list-title">人群包列表</h2>{list.kind === "loading" && <p role="status">正在读取人群包…</p>}{list.kind === "error" && <div role="alert"><p>{messages[list.failure]}</p><button type="button" onClick={() => void loadList()}>重试</button></div>}{list.kind === "ready" && <><ul className="segment-list">{list.items.map((segment) => <li key={segment.id}><button aria-pressed={selected?.id === segment.id} type="button" onClick={() => select(segment)}><strong>{segment.name}</strong><span>{segment.memberCount} 名成员 · {segment.refreshStatus}</span></button></li>)}</ul>{list.items.length === 0 && <p role="status">暂无人群包。请创建第一个人群包。</p>}{list.nextCursor && <button type="button" onClick={() => void loadList(list.nextCursor)}>读取更多人群包</button>}</>}</section><form className="segments-page__panel segment-editor" onSubmit={save}><h2>{selected ? "编辑人群包" : "新建人群包"}</h2><fieldset disabled={saving}><label>名称<input maxLength={200} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.currentTarget.value })} /></label><label>刷新方式<select value={draft.refreshMode} onChange={(event) => setDraft({ ...draft, refreshMode: event.currentTarget.value as SegmentEditorDraft["refreshMode"] })}><option value="manual">手动刷新</option><option value="scheduled">定时刷新</option></select></label>{draft.refreshMode === "scheduled" && <label>定时表达式<input maxLength={200} value={draft.refreshCron} onChange={(event) => setDraft({ ...draft, refreshCron: event.currentTarget.value })} /></label>}<fieldset className="segment-editor__conditions"><legend>条件编辑器</legend><p>只支持已冻结字段与操作符；不接受 JSON、标识符或 SQL 文本。</p><ConditionEditor value={draft.condition} onChange={(condition) => setDraft({ ...draft, condition })} />{draft.condition.kind === "predicate" && <button type="button" onClick={() => setDraft({ ...draft, condition: { kind: "group", combinator: "and", children: [draft.condition] } })}>组合 AND/OR 条件</button>}</fieldset><button type="submit">{saving ? "正在保存…" : selected ? "保存人群包" : "创建人群包"}</button></fieldset></form><section className="segments-page__panel" aria-labelledby="member-preview-title"><h2 id="member-preview-title">成员预览</h2>{!selected && <p>选择一个人群包后预览其已物化成员。</p>}{selected && <><p className="segment-preview__meta">当前人群包：{selected.name} · 服务端成员数：{selected.memberCount}</p><button type="button" disabled={refreshing} onClick={() => void refresh()}>{refreshing ? "正在请求刷新…" : "手动刷新"}</button>{members.kind === "loading" && <p role="status">正在读取已物化成员…</p>}{members.kind === "error" && <div role="alert"><p>{messages[members.failure]}</p><button type="button" onClick={() => void loadMembers(selected)}>重试预览</button></div>}{members.kind === "ready" && <><ol className="segment-preview__members">{members.items.map((member) => <li key={member.id}>{member.name.trim() || "未命名客户"} <span>OneID {member.id}</span></li>)}</ol>{members.items.length === 0 && <p role="status">该人群包当前没有已物化成员。</p>}{members.nextCursor && <button type="button" onClick={() => void loadMembers(selected, members.nextCursor)}>读取更多成员</button>}</>}</>}</section></div></section>;
+  return <section className="segments-page" aria-labelledby="app-title"><div className="segments-page__heading"><div><p className="route-card__eyebrow">受众运营</p><h1 id="app-title">人群包</h1><p>条件、成员数和刷新状态均以服务端当前事实为准。</p></div><button type="button" disabled={outcomeUnknown.current || writeInFlight.current} onClick={() => { setSelected(undefined); setDraft(editorDraft()); setMembers({ kind: "idle" }); setNotice("已开始创建新的人群包。"); }}>新建人群包</button></div>{notice && <p className="segments-page__notice" role="alert">{notice}</p>}<div className="segments-page__grid"><section className="segments-page__panel" aria-labelledby="segment-list-title"><h2 id="segment-list-title">人群包列表</h2>{list.kind === "loading" && <p role="status">正在读取人群包…</p>}{list.kind === "error" && <div role="alert"><p>{messages[list.failure]}</p><button type="button" onClick={() => void loadList()}>重试</button></div>}{list.kind === "ready" && <><ul className="segment-list">{list.items.map((segment) => <li key={segment.id}><button aria-pressed={selected?.id === segment.id} disabled={writeInFlight.current || outcomeUnknown.current} type="button" onClick={() => select(segment)}><strong>{segment.name}</strong><span>{segment.memberCount} 名成员 · {segment.refreshStatus}</span></button></li>)}</ul>{list.items.length === 0 && <p role="status">暂无人群包。请创建第一个人群包。</p>}{list.nextCursor && <button type="button" onClick={() => void loadList(list.nextCursor)}>读取更多人群包</button>}</>}</section><form className="segments-page__panel segment-editor" onSubmit={save}><h2>{selected ? "编辑人群包" : "新建人群包"}</h2><fieldset disabled={saving || archiving || outcomeUnknown.current}><label>名称<input maxLength={200} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.currentTarget.value })} /></label><label>刷新方式<select value={draft.refreshMode} onChange={(event) => setDraft({ ...draft, refreshMode: event.currentTarget.value as SegmentEditorDraft["refreshMode"] })}><option value="manual">手动刷新</option><option value="scheduled">定时刷新</option></select></label>{draft.refreshMode === "scheduled" && <label>定时表达式<input maxLength={200} value={draft.refreshCron} onChange={(event) => setDraft({ ...draft, refreshCron: event.currentTarget.value })} /></label>}<fieldset className="segment-editor__conditions"><legend>条件编辑器</legend><p>只支持已冻结字段与操作符；不接受 JSON、标识符或 SQL 文本。</p><ConditionEditor value={draft.condition} onChange={(condition) => setDraft({ ...draft, condition })} />{draft.condition.kind === "predicate" && <button type="button" onClick={() => setDraft({ ...draft, condition: { kind: "group", combinator: "and", children: [draft.condition] } })}>组合 AND/OR 条件</button>}</fieldset><button type="submit">{saving ? "正在保存…" : selected ? "保存人群包" : "创建人群包"}</button></fieldset></form><section className="segments-page__panel" aria-labelledby="member-preview-title"><h2 id="member-preview-title">成员预览</h2>{!selected && <p>选择一个人群包后预览其已物化成员。</p>}{selected && <><p className="segment-preview__meta">当前人群包：{selected.name} · 服务端成员数：{selected.memberCount}</p><button type="button" disabled={refreshing || archiving || outcomeUnknown.current} onClick={() => void refresh()}>{refreshing ? "正在请求刷新…" : "手动刷新"}</button>{transport.archive && <button type="button" disabled={archiving || refreshing || outcomeUnknown.current} onClick={() => void archive()}>{archiving ? "正在归档…" : "归档人群包"}</button>}{members.kind === "loading" && <p role="status">正在读取已物化成员…</p>}{members.kind === "error" && <div role="alert"><p>{messages[members.failure]}</p><button type="button" onClick={() => void loadMembers(selected)}>重试预览</button></div>}{members.kind === "ready" && <><ol className="segment-preview__members">{members.items.map((member) => <li key={member.id}>{member.name.trim() || "未命名客户"} <span>OneID {member.id}</span></li>)}</ol>{members.items.length === 0 && <p role="status">该人群包当前没有已物化成员。</p>}{members.nextCursor && <button type="button" onClick={() => void loadMembers(selected, members.nextCursor)}>读取更多成员</button>}</>}</>}</section></div></section>;
 }

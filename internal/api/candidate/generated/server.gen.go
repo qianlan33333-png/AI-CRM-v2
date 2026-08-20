@@ -1348,13 +1348,13 @@ func (e LegacyPushCenterStatsResponseCapabilityOwner) Valid() bool {
 
 // Defines values for LegacyPushCenterStatsResponseOk.
 const (
-	True LegacyPushCenterStatsResponseOk = true
+	LegacyPushCenterStatsResponseOkTrue LegacyPushCenterStatsResponseOk = true
 )
 
 // Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseOk enum.
 func (e LegacyPushCenterStatsResponseOk) Valid() bool {
 	switch e {
-	case True:
+	case LegacyPushCenterStatsResponseOkTrue:
 		return true
 	default:
 		return false
@@ -1568,18 +1568,33 @@ func (e LegacyRuntimeHealthSnapshotWarning) Valid() bool {
 	}
 }
 
+// Defines values for LocalCatalogArchiveResponseArchived.
+const (
+	LocalCatalogArchiveResponseArchivedTrue LocalCatalogArchiveResponseArchived = true
+)
+
+// Valid indicates whether the value is a known member of the LocalCatalogArchiveResponseArchived enum.
+func (e LocalCatalogArchiveResponseArchived) Valid() bool {
+	switch e {
+	case LocalCatalogArchiveResponseArchivedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LocalProductEntitlementState.
 const (
-	Active  LocalProductEntitlementState = "active"
-	Revoked LocalProductEntitlementState = "revoked"
+	LocalProductEntitlementStateActive  LocalProductEntitlementState = "active"
+	LocalProductEntitlementStateRevoked LocalProductEntitlementState = "revoked"
 )
 
 // Valid indicates whether the value is a known member of the LocalProductEntitlementState enum.
 func (e LocalProductEntitlementState) Valid() bool {
 	switch e {
-	case Active:
+	case LocalProductEntitlementStateActive:
 		return true
-	case Revoked:
+	case LocalProductEntitlementStateRevoked:
 		return true
 	default:
 		return false
@@ -1625,6 +1640,24 @@ const (
 func (e ResolveIdentityNotFoundStatus) Valid() bool {
 	switch e {
 	case ResolveIdentityNotFoundStatusNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentLifecycleStatus.
+const (
+	SegmentLifecycleStatusActive   SegmentLifecycleStatus = "active"
+	SegmentLifecycleStatusArchived SegmentLifecycleStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the SegmentLifecycleStatus enum.
+func (e SegmentLifecycleStatus) Valid() bool {
+	switch e {
+	case SegmentLifecycleStatusActive:
+		return true
+	case SegmentLifecycleStatusArchived:
 		return true
 	default:
 		return false
@@ -1907,6 +1940,18 @@ type BindIdentityRequest struct {
 // BindIdentityResponse defines model for BindIdentityResponse.
 type BindIdentityResponse struct {
 	union json.RawMessage
+}
+
+// CreateLocalTagGroupRequest defines model for CreateLocalTagGroupRequest.
+type CreateLocalTagGroupRequest struct {
+	FirstTagName string `json:"first_tag_name"`
+	Name         string `json:"name"`
+}
+
+// CreateLocalTagRequest defines model for CreateLocalTagRequest.
+type CreateLocalTagRequest struct {
+	GroupId int64  `json:"group_id"`
+	Name    string `json:"name"`
 }
 
 // CreateProductRequest defines model for CreateProductRequest.
@@ -2726,6 +2771,15 @@ type LegacyRuntimeHealthSnapshotStatus string
 // LegacyRuntimeHealthSnapshotWarning defines model for LegacyRuntimeHealthSnapshot.Warning.
 type LegacyRuntimeHealthSnapshotWarning string
 
+// LocalCatalogArchiveResponse defines model for LocalCatalogArchiveResponse.
+type LocalCatalogArchiveResponse struct {
+	Archived LocalCatalogArchiveResponseArchived `json:"archived"`
+	Id       int64                               `json:"id"`
+}
+
+// LocalCatalogArchiveResponseArchived defines model for LocalCatalogArchiveResponse.Archived.
+type LocalCatalogArchiveResponseArchived bool
+
 // LocalProductEntitlement defines model for LocalProductEntitlement.
 type LocalProductEntitlement struct {
 	GrantedAt time.Time                    `json:"granted_at"`
@@ -2743,6 +2797,44 @@ type LocalProductEntitlementState string
 // LocalProductEntitlementPage defines model for LocalProductEntitlementPage.
 type LocalProductEntitlementPage struct {
 	Items []LocalProductEntitlement `json:"items"`
+}
+
+// LocalTag defines model for LocalTag.
+type LocalTag struct {
+	GroupId   int64  `json:"group_id"`
+	GroupName string `json:"group_name"`
+	Id        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+// LocalTagCatalog defines model for LocalTagCatalog.
+type LocalTagCatalog struct {
+	Groups []LocalTagGroup `json:"groups"`
+	Tags   []LocalTag      `json:"tags"`
+}
+
+// LocalTagGroup defines model for LocalTagGroup.
+type LocalTagGroup struct {
+	Id        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+// LocalTagGroupCreateResponse defines model for LocalTagGroupCreateResponse.
+type LocalTagGroupCreateResponse struct {
+	Group LocalTagGroup `json:"group"`
+	Tag   LocalTag      `json:"tag"`
+}
+
+// LocalTagGroupListResponse defines model for LocalTagGroupListResponse.
+type LocalTagGroupListResponse struct {
+	Items []LocalTagGroup `json:"items"`
+}
+
+// LocalTagListResponse defines model for LocalTagListResponse.
+type LocalTagListResponse struct {
+	Items []LocalTag `json:"items"`
 }
 
 // Product defines model for Product.
@@ -2776,6 +2868,16 @@ type RejectIdentityMergeReviewRequest struct {
 // RenameStageRequest defines model for RenameStageRequest.
 type RenameStageRequest struct {
 	Name string `json:"name"`
+}
+
+// ReorderLocalCatalogRequest defines model for ReorderLocalCatalogRequest.
+type ReorderLocalCatalogRequest struct {
+	Ids []int64 `json:"ids"`
+}
+
+// ReorderStagesRequest defines model for ReorderStagesRequest.
+type ReorderStagesRequest struct {
+	Ids []int64 `json:"ids"`
 }
 
 // ResolveIdentityConflict defines model for ResolveIdentityConflict.
@@ -2821,17 +2923,21 @@ type RevokeProductLocalEntitlementRequest struct {
 
 // Segment defines model for Segment.
 type Segment struct {
-	CreatedAt     time.Time            `json:"created_at"`
-	Definition    SegmentDefinition    `json:"definition"`
-	Id            int64                `json:"id"`
-	MemberCount   int64                `json:"member_count"`
-	Name          string               `json:"name"`
-	RefreshCron   *string              `json:"refresh_cron"`
-	RefreshMode   SegmentRefreshMode   `json:"refresh_mode"`
-	RefreshStatus SegmentRefreshStatus `json:"refresh_status"`
-	RefreshedAt   *time.Time           `json:"refreshed_at"`
-	UpdatedAt     time.Time            `json:"updated_at"`
+	CreatedAt       time.Time              `json:"created_at"`
+	Definition      SegmentDefinition      `json:"definition"`
+	Id              int64                  `json:"id"`
+	LifecycleStatus SegmentLifecycleStatus `json:"lifecycle_status"`
+	MemberCount     int64                  `json:"member_count"`
+	Name            string                 `json:"name"`
+	RefreshCron     *string                `json:"refresh_cron"`
+	RefreshMode     SegmentRefreshMode     `json:"refresh_mode"`
+	RefreshStatus   SegmentRefreshStatus   `json:"refresh_status"`
+	RefreshedAt     *time.Time             `json:"refreshed_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
 }
+
+// SegmentLifecycleStatus defines model for Segment.LifecycleStatus.
+type SegmentLifecycleStatus string
 
 // SegmentRefreshMode defines model for Segment.RefreshMode.
 type SegmentRefreshMode string
@@ -2918,6 +3024,11 @@ type Tag struct {
 // TagListResponse defines model for TagListResponse.
 type TagListResponse struct {
 	Items []Tag `json:"items"`
+}
+
+// UpdateLocalTagNameRequest defines model for UpdateLocalTagNameRequest.
+type UpdateLocalTagNameRequest struct {
+	Name string `json:"name"`
 }
 
 // UpdateProductRequest defines model for UpdateProductRequest.
@@ -3048,6 +3159,9 @@ type StageID = int64
 
 // StageIDFilter defines model for StageIDFilter.
 type StageIDFilter = int64
+
+// TagGroupID defines model for TagGroupID.
+type TagGroupID = int64
 
 // TagID defines model for TagID.
 type TagID = int64
@@ -3302,6 +3416,15 @@ type CreateSegmentParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ArchiveSegmentParams defines parameters for ArchiveSegment.
+type ArchiveSegmentParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // UpdateSegmentParams defines parameters for UpdateSegment.
 type UpdateSegmentParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -3331,12 +3454,108 @@ type RequestSegmentRefreshParams struct {
 type CreateStageParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReorderStagesParams defines parameters for ReorderStages.
+type ReorderStagesParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveStageParams defines parameters for ArchiveStage.
+type ArchiveStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // RenameStageParams defines parameters for RenameStage.
 type RenameStageParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateTagGroupParams defines parameters for CreateTagGroup.
+type CreateTagGroupParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReorderTagGroupsParams defines parameters for ReorderTagGroups.
+type ReorderTagGroupsParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveTagGroupParams defines parameters for ArchiveTagGroup.
+type ArchiveTagGroupParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateTagGroupParams defines parameters for UpdateTagGroup.
+type UpdateTagGroupParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateTagParams defines parameters for CreateTag.
+type CreateTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReorderTagsParams defines parameters for ReorderTags.
+type ReorderTagsParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveTagParams defines parameters for ArchiveTag.
+type ArchiveTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateTagParams defines parameters for UpdateTag.
+type UpdateTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
@@ -3381,8 +3600,29 @@ type UpdateSegmentJSONRequestBody = UpdateSegmentRequest
 // CreateStageJSONRequestBody defines body for CreateStage for application/json ContentType.
 type CreateStageJSONRequestBody = CreateStageRequest
 
+// ReorderStagesJSONRequestBody defines body for ReorderStages for application/json ContentType.
+type ReorderStagesJSONRequestBody = ReorderStagesRequest
+
 // RenameStageJSONRequestBody defines body for RenameStage for application/json ContentType.
 type RenameStageJSONRequestBody = RenameStageRequest
+
+// CreateTagGroupJSONRequestBody defines body for CreateTagGroup for application/json ContentType.
+type CreateTagGroupJSONRequestBody = CreateLocalTagGroupRequest
+
+// ReorderTagGroupsJSONRequestBody defines body for ReorderTagGroups for application/json ContentType.
+type ReorderTagGroupsJSONRequestBody = ReorderLocalCatalogRequest
+
+// UpdateTagGroupJSONRequestBody defines body for UpdateTagGroup for application/json ContentType.
+type UpdateTagGroupJSONRequestBody = UpdateLocalTagNameRequest
+
+// CreateTagJSONRequestBody defines body for CreateTag for application/json ContentType.
+type CreateTagJSONRequestBody = CreateLocalTagRequest
+
+// ReorderTagsJSONRequestBody defines body for ReorderTags for application/json ContentType.
+type ReorderTagsJSONRequestBody = ReorderLocalCatalogRequest
+
+// UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
+type UpdateTagJSONRequestBody = UpdateLocalTagNameRequest
 
 // AsBindIdentityBound returns the union data inside the BindIdentityResponse as a BindIdentityBound
 func (t BindIdentityResponse) AsBindIdentityBound() (BindIdentityBound, error) {
@@ -4114,6 +4354,9 @@ type ServerInterface interface {
 	// Create one declarative audience definition
 	// (POST /api/v1/segments)
 	CreateSegment(w http.ResponseWriter, r *http.Request, params CreateSegmentParams)
+	// Archive one local audience definition without executing it
+	// (DELETE /api/v1/segments/{segment_id})
+	ArchiveSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ArchiveSegmentParams)
 	// Get one declarative audience definition
 	// (GET /api/v1/segments/{segment_id})
 	GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID)
@@ -4132,12 +4375,45 @@ type ServerInterface interface {
 	// Create one global customer stage
 	// (POST /api/v1/stages)
 	CreateStage(w http.ResponseWriter, r *http.Request, params CreateStageParams)
+	// Replace the exact active customer stage order
+	// (PUT /api/v1/stages/reorder)
+	ReorderStages(w http.ResponseWriter, r *http.Request, params ReorderStagesParams)
+	// Archive one unreferenced local customer stage
+	// (DELETE /api/v1/stages/{stage_id})
+	ArchiveStage(w http.ResponseWriter, r *http.Request, stageId StageID, params ArchiveStageParams)
 	// Rename one global customer stage
 	// (PATCH /api/v1/stages/{stage_id})
 	RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams)
+	// List the complete active local CRM tag catalog
+	// (GET /api/v1/tag-groups)
+	ListTagGroups(w http.ResponseWriter, r *http.Request)
+	// Create one local CRM tag group and its first tag
+	// (POST /api/v1/tag-groups)
+	CreateTagGroup(w http.ResponseWriter, r *http.Request, params CreateTagGroupParams)
+	// Replace the exact active local CRM tag group order
+	// (PUT /api/v1/tag-groups/reorder)
+	ReorderTagGroups(w http.ResponseWriter, r *http.Request, params ReorderTagGroupsParams)
+	// Archive one unreferenced local CRM tag group
+	// (DELETE /api/v1/tag-groups/{group_id})
+	ArchiveTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params ArchiveTagGroupParams)
+	// Rename one local CRM tag group
+	// (PATCH /api/v1/tag-groups/{group_id})
+	UpdateTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params UpdateTagGroupParams)
 	// List the local tag catalog in deterministic order
 	// (GET /api/v1/tags)
 	ListTags(w http.ResponseWriter, r *http.Request)
+	// Create one local CRM tag in an active group
+	// (POST /api/v1/tags)
+	CreateTag(w http.ResponseWriter, r *http.Request, params CreateTagParams)
+	// Replace the exact active local CRM tag order
+	// (PUT /api/v1/tags/reorder)
+	ReorderTags(w http.ResponseWriter, r *http.Request, params ReorderTagsParams)
+	// Archive one unreferenced local CRM tag
+	// (DELETE /api/v1/tags/{tag_id})
+	ArchiveTag(w http.ResponseWriter, r *http.Request, tagId TagID, params ArchiveTagParams)
+	// Rename one local CRM tag
+	// (PATCH /api/v1/tags/{tag_id})
+	UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams)
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(w http.ResponseWriter, r *http.Request)
@@ -4348,6 +4624,12 @@ func (_ Unimplemented) CreateSegment(w http.ResponseWriter, r *http.Request, par
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Archive one local audience definition without executing it
+// (DELETE /api/v1/segments/{segment_id})
+func (_ Unimplemented) ArchiveSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ArchiveSegmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Get one declarative audience definition
 // (GET /api/v1/segments/{segment_id})
 func (_ Unimplemented) GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID) {
@@ -4384,15 +4666,81 @@ func (_ Unimplemented) CreateStage(w http.ResponseWriter, r *http.Request, param
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Replace the exact active customer stage order
+// (PUT /api/v1/stages/reorder)
+func (_ Unimplemented) ReorderStages(w http.ResponseWriter, r *http.Request, params ReorderStagesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one unreferenced local customer stage
+// (DELETE /api/v1/stages/{stage_id})
+func (_ Unimplemented) ArchiveStage(w http.ResponseWriter, r *http.Request, stageId StageID, params ArchiveStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Rename one global customer stage
 // (PATCH /api/v1/stages/{stage_id})
 func (_ Unimplemented) RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List the complete active local CRM tag catalog
+// (GET /api/v1/tag-groups)
+func (_ Unimplemented) ListTagGroups(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one local CRM tag group and its first tag
+// (POST /api/v1/tag-groups)
+func (_ Unimplemented) CreateTagGroup(w http.ResponseWriter, r *http.Request, params CreateTagGroupParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the exact active local CRM tag group order
+// (PUT /api/v1/tag-groups/reorder)
+func (_ Unimplemented) ReorderTagGroups(w http.ResponseWriter, r *http.Request, params ReorderTagGroupsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one unreferenced local CRM tag group
+// (DELETE /api/v1/tag-groups/{group_id})
+func (_ Unimplemented) ArchiveTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params ArchiveTagGroupParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rename one local CRM tag group
+// (PATCH /api/v1/tag-groups/{group_id})
+func (_ Unimplemented) UpdateTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params UpdateTagGroupParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List the local tag catalog in deterministic order
 // (GET /api/v1/tags)
 func (_ Unimplemented) ListTags(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one local CRM tag in an active group
+// (POST /api/v1/tags)
+func (_ Unimplemented) CreateTag(w http.ResponseWriter, r *http.Request, params CreateTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the exact active local CRM tag order
+// (PUT /api/v1/tags/reorder)
+func (_ Unimplemented) ReorderTags(w http.ResponseWriter, r *http.Request, params ReorderTagsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one unreferenced local CRM tag
+// (DELETE /api/v1/tags/{tag_id})
+func (_ Unimplemented) ArchiveTag(w http.ResponseWriter, r *http.Request, tagId TagID, params ArchiveTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rename one local CRM tag
+// (PATCH /api/v1/tags/{tag_id})
+func (_ Unimplemented) UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6452,6 +6800,88 @@ func (siw *ServerInterfaceWrapper) CreateSegment(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ArchiveSegment operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveSegment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "segment_id" -------------
+	var segmentId SegmentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "segment_id", chi.URLParam(r, "segment_id"), &segmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ArchiveSegmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveSegment(w, r, segmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSegment operation middleware
 func (siw *ServerInterfaceWrapper) GetSegment(w http.ResponseWriter, r *http.Request) {
 
@@ -6756,8 +7186,186 @@ func (siw *ServerInterfaceWrapper) CreateStage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateStage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReorderStages operation middleware
+func (siw *ServerInterfaceWrapper) ReorderStages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReorderStagesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReorderStages(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ArchiveStage operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "stage_id" -------------
+	var stageId StageID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stage_id", chi.URLParam(r, "stage_id"), &stageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stage_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ArchiveStageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveStage(w, r, stageId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6815,8 +7423,361 @@ func (siw *ServerInterfaceWrapper) RenameStage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RenameStage(w, r, stageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTagGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListTagGroups(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTagGroups(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateTagGroup operation middleware
+func (siw *ServerInterfaceWrapper) CreateTagGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateTagGroupParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTagGroup(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReorderTagGroups operation middleware
+func (siw *ServerInterfaceWrapper) ReorderTagGroups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReorderTagGroupsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReorderTagGroups(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ArchiveTagGroup operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveTagGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "group_id" -------------
+	var groupId TagGroupID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "group_id", chi.URLParam(r, "group_id"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "group_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ArchiveTagGroupParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveTagGroup(w, r, groupId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateTagGroup operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTagGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "group_id" -------------
+	var groupId TagGroupID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "group_id", chi.URLParam(r, "group_id"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "group_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateTagGroupParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateTagGroup(w, r, groupId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6837,6 +7798,316 @@ func (siw *ServerInterfaceWrapper) ListTags(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListTags(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateTag operation middleware
+func (siw *ServerInterfaceWrapper) CreateTag(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateTagParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTag(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReorderTags operation middleware
+func (siw *ServerInterfaceWrapper) ReorderTags(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReorderTagsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReorderTags(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ArchiveTag operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveTag(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId TagID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", chi.URLParam(r, "tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ArchiveTagParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveTag(w, r, tagId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateTag operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTag(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId TagID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", chi.URLParam(r, "tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateTagParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateTag(w, r, tagId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7098,6 +8369,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/v1/segments", wrapper.CreateSegment)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/segments/{segment_id}", wrapper.ArchiveSegment)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/segments/{segment_id}", wrapper.GetSegment)
 	})
 	r.Group(func(r chi.Router) {
@@ -7116,10 +8390,43 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/v1/stages", wrapper.CreateStage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/stages/reorder", wrapper.ReorderStages)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/stages/{stage_id}", wrapper.ArchiveStage)
+	})
+	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/api/v1/stages/{stage_id}", wrapper.RenameStage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/tag-groups", wrapper.ListTagGroups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/tag-groups", wrapper.CreateTagGroup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/tag-groups/reorder", wrapper.ReorderTagGroups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/tag-groups/{group_id}", wrapper.ArchiveTagGroup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/tag-groups/{group_id}", wrapper.UpdateTagGroup)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/tags", wrapper.ListTags)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/tags", wrapper.CreateTag)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/tags/reorder", wrapper.ReorderTags)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/tags/{tag_id}", wrapper.ArchiveTag)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/tags/{tag_id}", wrapper.UpdateTag)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetLegacyHealth)
@@ -9085,6 +10392,78 @@ func (response CreateSegment503JSONResponse) VisitCreateSegmentResponse(w http.R
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ArchiveSegmentRequestObject struct {
+	SegmentId SegmentID `json:"segment_id"`
+	Params    ArchiveSegmentParams
+}
+
+type ArchiveSegmentResponseObject interface {
+	VisitArchiveSegmentResponse(w http.ResponseWriter) error
+}
+
+type ArchiveSegment200JSONResponse Segment
+
+func (response ArchiveSegment200JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveSegment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveSegment400JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveSegment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveSegment401JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveSegment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveSegment403JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveSegment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveSegment404JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveSegment409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveSegment409JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveSegment503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveSegment503JSONResponse) VisitArchiveSegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetSegmentRequestObject struct {
 	SegmentId SegmentID `json:"segment_id"`
 }
@@ -9382,6 +10761,15 @@ func (response ListStages401JSONResponse) VisitListStagesResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListStages403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStages403JSONResponse) VisitListStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListStages503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListStages503JSONResponse) VisitListStagesResponse(w http.ResponseWriter) error {
@@ -9459,6 +10847,152 @@ func (response CreateStage422JSONResponse) VisitCreateStageResponse(w http.Respo
 type CreateStage503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response CreateStage503JSONResponse) VisitCreateStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStagesRequestObject struct {
+	Params ReorderStagesParams
+	Body   *ReorderStagesJSONRequestBody
+}
+
+type ReorderStagesResponseObject interface {
+	VisitReorderStagesResponse(w http.ResponseWriter) error
+}
+
+type ReorderStages200JSONResponse StageListResponse
+
+func (response ReorderStages200JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStages400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderStages400JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderStages401JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStages403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderStages403JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStages409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReorderStages409JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStages422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ReorderStages422JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderStages503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReorderStages503JSONResponse) VisitReorderStagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStageRequestObject struct {
+	StageId StageID `json:"stage_id"`
+	Params  ArchiveStageParams
+}
+
+type ArchiveStageResponseObject interface {
+	VisitArchiveStageResponse(w http.ResponseWriter) error
+}
+
+type ArchiveStage200JSONResponse Stage
+
+func (response ArchiveStage200JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveStage400JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveStage401JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveStage403JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveStage404JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveStage409JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveStage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveStage503JSONResponse) VisitArchiveStageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -9549,6 +11083,353 @@ func (response RenameStage503JSONResponse) VisitRenameStageResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListTagGroupsRequestObject struct {
+}
+
+type ListTagGroupsResponseObject interface {
+	VisitListTagGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListTagGroups200JSONResponse LocalTagCatalog
+
+func (response ListTagGroups200JSONResponse) VisitListTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTagGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListTagGroups401JSONResponse) VisitListTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTagGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListTagGroups403JSONResponse) VisitListTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTagGroups503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListTagGroups503JSONResponse) VisitListTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroupRequestObject struct {
+	Params CreateTagGroupParams
+	Body   *CreateTagGroupJSONRequestBody
+}
+
+type CreateTagGroupResponseObject interface {
+	VisitCreateTagGroupResponse(w http.ResponseWriter) error
+}
+
+type CreateTagGroup201JSONResponse LocalTagGroupCreateResponse
+
+func (response CreateTagGroup201JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateTagGroup400JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateTagGroup401JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateTagGroup403JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateTagGroup409JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CreateTagGroup422JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateTagGroup503JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroupsRequestObject struct {
+	Params ReorderTagGroupsParams
+	Body   *ReorderTagGroupsJSONRequestBody
+}
+
+type ReorderTagGroupsResponseObject interface {
+	VisitReorderTagGroupsResponse(w http.ResponseWriter) error
+}
+
+type ReorderTagGroups200JSONResponse LocalTagGroupListResponse
+
+func (response ReorderTagGroups200JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderTagGroups400JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderTagGroups401JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderTagGroups403JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReorderTagGroups409JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ReorderTagGroups422JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReorderTagGroups503JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroupRequestObject struct {
+	GroupId TagGroupID `json:"group_id"`
+	Params  ArchiveTagGroupParams
+}
+
+type ArchiveTagGroupResponseObject interface {
+	VisitArchiveTagGroupResponse(w http.ResponseWriter) error
+}
+
+type ArchiveTagGroup200JSONResponse LocalCatalogArchiveResponse
+
+func (response ArchiveTagGroup200JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveTagGroup400JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveTagGroup401JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveTagGroup403JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveTagGroup404JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveTagGroup409JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveTagGroup503JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroupRequestObject struct {
+	GroupId TagGroupID `json:"group_id"`
+	Params  UpdateTagGroupParams
+	Body    *UpdateTagGroupJSONRequestBody
+}
+
+type UpdateTagGroupResponseObject interface {
+	VisitUpdateTagGroupResponse(w http.ResponseWriter) error
+}
+
+type UpdateTagGroup200JSONResponse LocalTagGroup
+
+func (response UpdateTagGroup200JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateTagGroup400JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateTagGroup401JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateTagGroup403JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateTagGroup404JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateTagGroup409JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateTagGroup422JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateTagGroup503JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListTagsRequestObject struct {
 }
 
@@ -9586,6 +11467,319 @@ func (response ListTags403JSONResponse) VisitListTagsResponse(w http.ResponseWri
 type ListTags503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListTags503JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagRequestObject struct {
+	Params CreateTagParams
+	Body   *CreateTagJSONRequestBody
+}
+
+type CreateTagResponseObject interface {
+	VisitCreateTagResponse(w http.ResponseWriter) error
+}
+
+type CreateTag201JSONResponse LocalTag
+
+func (response CreateTag201JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateTag400JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateTag401JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateTag403JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateTag404JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateTag409JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CreateTag422JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateTag503JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagsRequestObject struct {
+	Params ReorderTagsParams
+	Body   *ReorderTagsJSONRequestBody
+}
+
+type ReorderTagsResponseObject interface {
+	VisitReorderTagsResponse(w http.ResponseWriter) error
+}
+
+type ReorderTags200JSONResponse LocalTagListResponse
+
+func (response ReorderTags200JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderTags400JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderTags401JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderTags403JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReorderTags409JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ReorderTags422JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReorderTags503JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagRequestObject struct {
+	TagId  TagID `json:"tag_id"`
+	Params ArchiveTagParams
+}
+
+type ArchiveTagResponseObject interface {
+	VisitArchiveTagResponse(w http.ResponseWriter) error
+}
+
+type ArchiveTag200JSONResponse LocalCatalogArchiveResponse
+
+func (response ArchiveTag200JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveTag400JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveTag401JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveTag403JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveTag404JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveTag409JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveTag503JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagRequestObject struct {
+	TagId  TagID `json:"tag_id"`
+	Params UpdateTagParams
+	Body   *UpdateTagJSONRequestBody
+}
+
+type UpdateTagResponseObject interface {
+	VisitUpdateTagResponse(w http.ResponseWriter) error
+}
+
+type UpdateTag200JSONResponse LocalTag
+
+func (response UpdateTag200JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateTag400JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateTag401JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateTag403JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateTag404JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateTag409JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateTag422JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateTag503JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -9761,6 +11955,9 @@ type StrictServerInterface interface {
 	// Create one declarative audience definition
 	// (POST /api/v1/segments)
 	CreateSegment(ctx context.Context, request CreateSegmentRequestObject) (CreateSegmentResponseObject, error)
+	// Archive one local audience definition without executing it
+	// (DELETE /api/v1/segments/{segment_id})
+	ArchiveSegment(ctx context.Context, request ArchiveSegmentRequestObject) (ArchiveSegmentResponseObject, error)
 	// Get one declarative audience definition
 	// (GET /api/v1/segments/{segment_id})
 	GetSegment(ctx context.Context, request GetSegmentRequestObject) (GetSegmentResponseObject, error)
@@ -9779,12 +11976,45 @@ type StrictServerInterface interface {
 	// Create one global customer stage
 	// (POST /api/v1/stages)
 	CreateStage(ctx context.Context, request CreateStageRequestObject) (CreateStageResponseObject, error)
+	// Replace the exact active customer stage order
+	// (PUT /api/v1/stages/reorder)
+	ReorderStages(ctx context.Context, request ReorderStagesRequestObject) (ReorderStagesResponseObject, error)
+	// Archive one unreferenced local customer stage
+	// (DELETE /api/v1/stages/{stage_id})
+	ArchiveStage(ctx context.Context, request ArchiveStageRequestObject) (ArchiveStageResponseObject, error)
 	// Rename one global customer stage
 	// (PATCH /api/v1/stages/{stage_id})
 	RenameStage(ctx context.Context, request RenameStageRequestObject) (RenameStageResponseObject, error)
+	// List the complete active local CRM tag catalog
+	// (GET /api/v1/tag-groups)
+	ListTagGroups(ctx context.Context, request ListTagGroupsRequestObject) (ListTagGroupsResponseObject, error)
+	// Create one local CRM tag group and its first tag
+	// (POST /api/v1/tag-groups)
+	CreateTagGroup(ctx context.Context, request CreateTagGroupRequestObject) (CreateTagGroupResponseObject, error)
+	// Replace the exact active local CRM tag group order
+	// (PUT /api/v1/tag-groups/reorder)
+	ReorderTagGroups(ctx context.Context, request ReorderTagGroupsRequestObject) (ReorderTagGroupsResponseObject, error)
+	// Archive one unreferenced local CRM tag group
+	// (DELETE /api/v1/tag-groups/{group_id})
+	ArchiveTagGroup(ctx context.Context, request ArchiveTagGroupRequestObject) (ArchiveTagGroupResponseObject, error)
+	// Rename one local CRM tag group
+	// (PATCH /api/v1/tag-groups/{group_id})
+	UpdateTagGroup(ctx context.Context, request UpdateTagGroupRequestObject) (UpdateTagGroupResponseObject, error)
 	// List the local tag catalog in deterministic order
 	// (GET /api/v1/tags)
 	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
+	// Create one local CRM tag in an active group
+	// (POST /api/v1/tags)
+	CreateTag(ctx context.Context, request CreateTagRequestObject) (CreateTagResponseObject, error)
+	// Replace the exact active local CRM tag order
+	// (PUT /api/v1/tags/reorder)
+	ReorderTags(ctx context.Context, request ReorderTagsRequestObject) (ReorderTagsResponseObject, error)
+	// Archive one unreferenced local CRM tag
+	// (DELETE /api/v1/tags/{tag_id})
+	ArchiveTag(ctx context.Context, request ArchiveTagRequestObject) (ArchiveTagResponseObject, error)
+	// Rename one local CRM tag
+	// (PATCH /api/v1/tags/{tag_id})
+	UpdateTag(ctx context.Context, request UpdateTagRequestObject) (UpdateTagResponseObject, error)
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(ctx context.Context, request GetLegacyHealthRequestObject) (GetLegacyHealthResponseObject, error)
@@ -10768,6 +12998,33 @@ func (sh *strictHandler) CreateSegment(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ArchiveSegment operation middleware
+func (sh *strictHandler) ArchiveSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ArchiveSegmentParams) {
+	var request ArchiveSegmentRequestObject
+
+	request.SegmentId = segmentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveSegment(ctx, request.(ArchiveSegmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveSegment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveSegmentResponseObject); ok {
+		if err := validResponse.VisitArchiveSegmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetSegment operation middleware
 func (sh *strictHandler) GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID) {
 	var request GetSegmentRequestObject
@@ -10939,6 +13196,66 @@ func (sh *strictHandler) CreateStage(w http.ResponseWriter, r *http.Request, par
 	}
 }
 
+// ReorderStages operation middleware
+func (sh *strictHandler) ReorderStages(w http.ResponseWriter, r *http.Request, params ReorderStagesParams) {
+	var request ReorderStagesRequestObject
+
+	request.Params = params
+
+	var body ReorderStagesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReorderStages(ctx, request.(ReorderStagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReorderStages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReorderStagesResponseObject); ok {
+		if err := validResponse.VisitReorderStagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ArchiveStage operation middleware
+func (sh *strictHandler) ArchiveStage(w http.ResponseWriter, r *http.Request, stageId StageID, params ArchiveStageParams) {
+	var request ArchiveStageRequestObject
+
+	request.StageId = stageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveStage(ctx, request.(ArchiveStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveStageResponseObject); ok {
+		if err := validResponse.VisitArchiveStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RenameStage operation middleware
 func (sh *strictHandler) RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams) {
 	var request RenameStageRequestObject
@@ -10973,6 +13290,157 @@ func (sh *strictHandler) RenameStage(w http.ResponseWriter, r *http.Request, sta
 	}
 }
 
+// ListTagGroups operation middleware
+func (sh *strictHandler) ListTagGroups(w http.ResponseWriter, r *http.Request) {
+	var request ListTagGroupsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTagGroups(ctx, request.(ListTagGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTagGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTagGroupsResponseObject); ok {
+		if err := validResponse.VisitListTagGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateTagGroup operation middleware
+func (sh *strictHandler) CreateTagGroup(w http.ResponseWriter, r *http.Request, params CreateTagGroupParams) {
+	var request CreateTagGroupRequestObject
+
+	request.Params = params
+
+	var body CreateTagGroupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateTagGroup(ctx, request.(CreateTagGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateTagGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateTagGroupResponseObject); ok {
+		if err := validResponse.VisitCreateTagGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReorderTagGroups operation middleware
+func (sh *strictHandler) ReorderTagGroups(w http.ResponseWriter, r *http.Request, params ReorderTagGroupsParams) {
+	var request ReorderTagGroupsRequestObject
+
+	request.Params = params
+
+	var body ReorderTagGroupsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReorderTagGroups(ctx, request.(ReorderTagGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReorderTagGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReorderTagGroupsResponseObject); ok {
+		if err := validResponse.VisitReorderTagGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ArchiveTagGroup operation middleware
+func (sh *strictHandler) ArchiveTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params ArchiveTagGroupParams) {
+	var request ArchiveTagGroupRequestObject
+
+	request.GroupId = groupId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveTagGroup(ctx, request.(ArchiveTagGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveTagGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveTagGroupResponseObject); ok {
+		if err := validResponse.VisitArchiveTagGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateTagGroup operation middleware
+func (sh *strictHandler) UpdateTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params UpdateTagGroupParams) {
+	var request UpdateTagGroupRequestObject
+
+	request.GroupId = groupId
+	request.Params = params
+
+	var body UpdateTagGroupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateTagGroup(ctx, request.(UpdateTagGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateTagGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateTagGroupResponseObject); ok {
+		if err := validResponse.VisitUpdateTagGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListTags operation middleware
 func (sh *strictHandler) ListTags(w http.ResponseWriter, r *http.Request) {
 	var request ListTagsRequestObject
@@ -10990,6 +13458,133 @@ func (sh *strictHandler) ListTags(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListTagsResponseObject); ok {
 		if err := validResponse.VisitListTagsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateTag operation middleware
+func (sh *strictHandler) CreateTag(w http.ResponseWriter, r *http.Request, params CreateTagParams) {
+	var request CreateTagRequestObject
+
+	request.Params = params
+
+	var body CreateTagJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateTag(ctx, request.(CreateTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateTag")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateTagResponseObject); ok {
+		if err := validResponse.VisitCreateTagResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReorderTags operation middleware
+func (sh *strictHandler) ReorderTags(w http.ResponseWriter, r *http.Request, params ReorderTagsParams) {
+	var request ReorderTagsRequestObject
+
+	request.Params = params
+
+	var body ReorderTagsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReorderTags(ctx, request.(ReorderTagsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReorderTags")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReorderTagsResponseObject); ok {
+		if err := validResponse.VisitReorderTagsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ArchiveTag operation middleware
+func (sh *strictHandler) ArchiveTag(w http.ResponseWriter, r *http.Request, tagId TagID, params ArchiveTagParams) {
+	var request ArchiveTagRequestObject
+
+	request.TagId = tagId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveTag(ctx, request.(ArchiveTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveTag")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveTagResponseObject); ok {
+		if err := validResponse.VisitArchiveTagResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateTag operation middleware
+func (sh *strictHandler) UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams) {
+	var request UpdateTagRequestObject
+
+	request.TagId = tagId
+	request.Params = params
+
+	var body UpdateTagJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateTag(ctx, request.(UpdateTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateTag")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateTagResponseObject); ok {
+		if err := validResponse.VisitUpdateTagResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

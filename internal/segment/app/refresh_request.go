@@ -42,6 +42,7 @@ type RefreshReceipt struct {
 }
 
 type RefreshRequestStore interface {
+	EnsureRefreshable(context.Context, segmentport.SegmentID) error
 	ReserveRefreshReceipt(context.Context, segmentport.Actor, string, segmentport.SegmentID) (RefreshReceipt, error)
 	AcceptRefreshReceipt(context.Context, int64, int64) (RefreshReceipt, error)
 }
@@ -80,6 +81,9 @@ func (service *RefreshRequestService) RequestRefresh(
 
 	var accepted segmentport.Segment
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		if err := service.store.EnsureRefreshable(txCtx, command.SegmentID); err != nil {
+			return err
+		}
 		receipt, err := service.store.ReserveRefreshReceipt(txCtx, command.Actor, command.IdempotencyKey, command.SegmentID)
 		if err != nil {
 			return err

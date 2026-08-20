@@ -40,8 +40,9 @@ var (
 type Operation string
 
 const (
-	OperationCreate Operation = "create"
-	OperationUpdate Operation = "update"
+	OperationCreate  Operation = "create"
+	OperationUpdate  Operation = "update"
+	OperationArchive Operation = "archive"
 )
 
 type Receipt struct {
@@ -94,6 +95,7 @@ type CRUDStore interface {
 	LockSegment(context.Context, segmentport.SegmentID) (segmentport.Segment, error)
 	CreateSegment(context.Context, segmentport.CreateCommand, time.Time) (segmentport.Segment, error)
 	UpdateSegment(context.Context, segmentport.Segment, time.Time) (segmentport.Segment, error)
+	ArchiveSegment(context.Context, segmentport.SegmentID, segmentport.Actor, time.Time) (segmentport.Segment, error)
 	ListMemberRecords(context.Context, segmentport.SegmentID, *segmentport.CustomerID, int32) ([]MemberRecord, error)
 	ReserveReceipt(context.Context, ReceiptReservation) (Receipt, bool, error)
 	CompleteReceipt(context.Context, int64, segmentport.SegmentID, time.Time) (Receipt, error)
@@ -211,6 +213,9 @@ func (service *CRUDService) UpdateHTTP(ctx context.Context, input UpdateInput) (
 		if storeErr != nil {
 			return segmentport.Segment{}, storeErr
 		}
+		if current.LifecycleStatus != "" && current.LifecycleStatus != segmentport.LifecycleStatusActive {
+			return segmentport.Segment{}, ErrSegmentCommandConflict
+		}
 		if normalized.Name != nil {
 			current.Name = *normalized.Name
 		}
@@ -229,6 +234,30 @@ func (service *CRUDService) UpdateHTTP(ctx context.Context, input UpdateInput) (
 		}
 		current.RefreshCron = cron
 		return service.store.UpdateSegment(txCtx, current, now)
+	})
+}
+
+// Archive is a local lifecycle transition. It preserves the immutable
+// materialized member snapshot but disables future scheduled refreshes.
+func (service *CRUDService) Archive(ctx context.Context, command segmentport.ArchiveCommand) (segmentport.Segment, error) {
+	if command.SegmentID <= 0 {
+		return segmentport.Segment{}, ErrInvalidSegmentCommand
+	}
+	if _, err := validCommandCommon(command.Actor, command.IdempotencyKey); err != nil {
+		return segmentport.Segment{}, ErrInvalidSegmentCommand
+	}
+	payload, _ := json.Marshal(struct {
+		SegmentID segmentport.SegmentID `json:"segment_id"`
+	}{command.SegmentID})
+	return service.mutate(ctx, OperationArchive, command.Actor, command.IdempotencyKey, sha256.Sum256(payload), func(txCtx context.Context, now time.Time) (segmentport.Segment, error) {
+		current, err := service.store.LockSegment(txCtx, command.SegmentID)
+		if err != nil {
+			return segmentport.Segment{}, err
+		}
+		if current.LifecycleStatus != "" && current.LifecycleStatus != segmentport.LifecycleStatusActive {
+			return segmentport.Segment{}, ErrSegmentCommandConflict
+		}
+		return service.store.ArchiveSegment(txCtx, command.SegmentID, command.Actor, now)
 	})
 }
 
@@ -524,7 +553,8 @@ func validSegments(items []segmentport.Segment) bool {
 
 func validSegment(item segmentport.Segment) bool {
 	if item.ID <= 0 || !validName(item.Name) || item.MemberCount < 0 || item.CreatedAt.IsZero() || item.UpdatedAt.IsZero() || item.CreatedAt.After(item.UpdatedAt) ||
-		(item.RefreshStatus != segmentport.RefreshStatusIdle && item.RefreshStatus != segmentport.RefreshStatusRunning && item.RefreshStatus != segmentport.RefreshStatusFailed) {
+		(item.RefreshStatus != segmentport.RefreshStatusIdle && item.RefreshStatus != segmentport.RefreshStatusRunning && item.RefreshStatus != segmentport.RefreshStatusFailed) ||
+		(item.LifecycleStatus != "" && item.LifecycleStatus != segmentport.LifecycleStatusActive && item.LifecycleStatus != segmentport.LifecycleStatusArchived) {
 		return false
 	}
 	definition, err := canonicalDefinition(item.Definition)

@@ -138,12 +138,19 @@ func (q *Queries) ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (Tag
 }
 
 const createLegacyTag = `-- name: CreateLegacyTag :one
-INSERT INTO tags(group_id,name) VALUES ($1,$2) RETURNING id,group_id,name,sort_order
+INSERT INTO tags(group_id,name,sort_order)
+SELECT g.id, $1, COALESCE((
+  SELECT MAX(t.sort_order) + 1 FROM tags AS t
+  WHERE t.group_id = g.id AND t.name NOT LIKE 'archived:%'
+), 0)
+FROM tag_groups AS g
+WHERE g.id = $2 AND g.name NOT LIKE 'archived:%'
+RETURNING id,group_id,name,sort_order
 `
 
 type CreateLegacyTagParams struct {
-	GroupID pgtype.Int8 `json:"group_id"`
-	Name    string      `json:"name"`
+	Name    string `json:"name"`
+	GroupID int64  `json:"group_id"`
 }
 
 type CreateLegacyTagRow struct {
@@ -154,7 +161,7 @@ type CreateLegacyTagRow struct {
 }
 
 func (q *Queries) CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams) (CreateLegacyTagRow, error) {
-	row := q.db.QueryRow(ctx, createLegacyTag, arg.GroupID, arg.Name)
+	row := q.db.QueryRow(ctx, createLegacyTag, arg.Name, arg.GroupID)
 	var i CreateLegacyTagRow
 	err := row.Scan(
 		&i.ID,
@@ -166,7 +173,11 @@ func (q *Queries) CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams
 }
 
 const createLegacyTagGroup = `-- name: CreateLegacyTagGroup :one
-INSERT INTO tag_groups(name) VALUES ($1) RETURNING id,name,sort_order
+INSERT INTO tag_groups(name, sort_order)
+SELECT $1, COALESCE(MAX(sort_order), -1) + 1
+FROM tag_groups
+WHERE name NOT LIKE 'archived:%'
+RETURNING id,name,sort_order
 `
 
 func (q *Queries) CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error) {

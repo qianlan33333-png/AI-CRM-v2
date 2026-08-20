@@ -72,6 +72,20 @@ func TestRefreshRequestServiceRejectsConflictingOrUnacceptedCommands(t *testing.
 	}
 }
 
+func TestRefreshRequestServiceRejectsArchivedDefinitionBeforeReceiptOrQueue(t *testing.T) {
+	store := &refreshRequestStoreStub{ensureErr: ErrSegmentNotFound}
+	queue := &refreshRequestEnqueuerStub{jobID: 99}
+	_, err := NewRefreshRequestService(immediateUOW{}, store, queue).RequestRefresh(context.Background(), segmentport.RefreshCommand{
+		SegmentID: 7, Actor: "ops:5", IdempotencyKey: "segment-refresh-key-07",
+	})
+	if !errors.Is(err, ErrSegmentNotFound) {
+		t.Fatalf("RequestRefresh() error = %v, want ErrSegmentNotFound", err)
+	}
+	if store.acceptCalls != 0 || queue.calls != 0 {
+		t.Fatalf("receipt/queue calls = %d/%d, want 0/0", store.acceptCalls, queue.calls)
+	}
+}
+
 type immediateUOW struct{}
 
 func (immediateUOW) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -80,9 +94,14 @@ func (immediateUOW) Within(ctx context.Context, callback func(context.Context) e
 
 type refreshRequestStoreStub struct {
 	receipt     RefreshReceipt
+	ensureErr   error
 	reserveErr  error
 	acceptErr   error
 	acceptCalls int
+}
+
+func (stub *refreshRequestStoreStub) EnsureRefreshable(context.Context, segmentport.SegmentID) error {
+	return stub.ensureErr
 }
 
 func (stub *refreshRequestStoreStub) ReserveRefreshReceipt(context.Context, segmentport.Actor, string, segmentport.SegmentID) (RefreshReceipt, error) {

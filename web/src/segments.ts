@@ -1,4 +1,5 @@
 import {
+  archiveSegment as archiveGeneratedSegmentRequest,
   createSegment,
   listSegmentMembers,
   listSegments,
@@ -52,6 +53,7 @@ export interface SegmentRecord {
   readonly memberCount: number;
   readonly refreshedAt?: string;
   readonly refreshStatus: "idle" | "running" | "failed";
+  readonly lifecycleStatus: "active" | "archived";
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -76,6 +78,9 @@ async function generatedMembers(id: number, params: ListSegmentMembersParams, op
 async function generatedRefresh(id: number, options: RequestInit) {
   return requestSegmentRefresh(id, options);
 }
+async function generatedArchive(id: number, options: RequestInit): Promise<SegmentTransportResponse> {
+  return archiveGeneratedSegmentRequest(id, options);
+}
 
 export interface SegmentTransport {
   readonly list: typeof generatedList;
@@ -83,6 +88,12 @@ export interface SegmentTransport {
   readonly update: typeof generatedUpdate;
   readonly members: typeof generatedMembers;
   readonly refresh: typeof generatedRefresh;
+  readonly archive?: (
+    // eslint-disable-next-line no-unused-vars -- named parameter documents the generated transport contract.
+    id: number,
+    // eslint-disable-next-line no-unused-vars -- named parameter documents the generated transport contract.
+    options: RequestInit,
+  ) => Promise<SegmentTransportResponse>;
 }
 
 export const generatedSegmentTransport: SegmentTransport = {
@@ -91,6 +102,7 @@ export const generatedSegmentTransport: SegmentTransport = {
   update: generatedUpdate,
   members: generatedMembers,
   refresh: generatedRefresh,
+  archive: generatedArchive,
 };
 
 export type SegmentFailure =
@@ -108,6 +120,9 @@ export type SegmentMembersResult =
   | { readonly status: SegmentFailure };
 export type SegmentMutationResult =
   | { readonly status: "saved"; readonly segment: SegmentRecord }
+  | { readonly status: SegmentFailure };
+export type SegmentArchiveResult =
+  | { readonly status: "archived"; readonly segment: SegmentRecord }
   | { readonly status: SegmentFailure };
 export type BuildDefinitionResult =
   | { readonly ok: true; readonly definition: SegmentDefinition }
@@ -160,11 +175,11 @@ function parseDefinition(value: unknown, depth = 1, count = { value: 0 }): Segme
 
 export function parseSegment(value: unknown): SegmentRecord | undefined {
   if (!record(value)) return undefined;
-  const allowed = new Set(["id", "name", "definition", "refresh_mode", "refresh_cron", "member_count", "refreshed_at", "refresh_status", "created_at", "updated_at"]);
+  const allowed = new Set(["id", "name", "definition", "refresh_mode", "refresh_cron", "member_count", "refreshed_at", "refresh_status", "lifecycle_status", "created_at", "updated_at"]);
   if (Object.keys(value).length !== allowed.size || Object.keys(value).some((key) => !allowed.has(key))) return undefined;
   const definition = parseDefinition(value.definition);
-  if (!positive(value.id) || typeof value.name !== "string" || value.name.length < 1 || value.name.length > 200 || !definition || (value.refresh_mode !== "manual" && value.refresh_mode !== "scheduled") || (value.refresh_cron !== null && (typeof value.refresh_cron !== "string" || value.refresh_cron.length < 1 || value.refresh_cron.length > 200)) || !nonnegative(value.member_count) || (value.refreshed_at !== null && !timestamp(value.refreshed_at)) || (value.refresh_status !== "idle" && value.refresh_status !== "running" && value.refresh_status !== "failed") || !timestamp(value.created_at) || !timestamp(value.updated_at)) return undefined;
-  return { id: value.id, name: value.name, definition, refreshMode: value.refresh_mode, ...(value.refresh_cron === null ? {} : { refreshCron: value.refresh_cron }), memberCount: value.member_count, ...(value.refreshed_at === null ? {} : { refreshedAt: value.refreshed_at }), refreshStatus: value.refresh_status, createdAt: value.created_at, updatedAt: value.updated_at };
+  if (!positive(value.id) || typeof value.name !== "string" || value.name.length < 1 || value.name.length > 200 || !definition || (value.refresh_mode !== "manual" && value.refresh_mode !== "scheduled") || (value.refresh_cron !== null && (typeof value.refresh_cron !== "string" || value.refresh_cron.length < 1 || value.refresh_cron.length > 200)) || !nonnegative(value.member_count) || (value.refreshed_at !== null && !timestamp(value.refreshed_at)) || (value.refresh_status !== "idle" && value.refresh_status !== "running" && value.refresh_status !== "failed") || (value.lifecycle_status !== "active" && value.lifecycle_status !== "archived") || !timestamp(value.created_at) || !timestamp(value.updated_at)) return undefined;
+  return { id: value.id, name: value.name, definition, refreshMode: value.refresh_mode, ...(value.refresh_cron === null ? {} : { refreshCron: value.refresh_cron }), memberCount: value.member_count, ...(value.refreshed_at === null ? {} : { refreshedAt: value.refreshed_at }), refreshStatus: value.refresh_status, lifecycleStatus: value.lifecycle_status, createdAt: value.created_at, updatedAt: value.updated_at };
 }
 
 function failure(status: number): SegmentFailure {
@@ -181,7 +196,7 @@ export async function loadSegments(transport: SegmentTransport, cursorValue?: st
     const response = await transport.list({ limit: 50, ...(cursorValue ? { cursor: cursorValue } : {}) }, { credentials: "same-origin" });
     if (response.status !== 200 || !record(response.data) || !Array.isArray(response.data.items) || !cursor(response.data.next_cursor)) return response.status === 200 ? { status: "unavailable" } : { status: failure(response.status) };
     const items = response.data.items.map(parseSegment);
-    return items.some((item) => !item) ? { status: "unavailable" } : { status: "loaded", items: items as SegmentRecord[], ...(response.data.next_cursor ? { nextCursor: response.data.next_cursor } : {}) };
+    return items.some((item) => !item || item.lifecycleStatus !== "active") ? { status: "unavailable" } : { status: "loaded", items: items as SegmentRecord[], ...(response.data.next_cursor ? { nextCursor: response.data.next_cursor } : {}) };
   } catch { return { status: "unavailable" }; }
 }
 
@@ -264,4 +279,21 @@ export async function refreshSegment(transport: SegmentTransport, id: number, cs
     if (response.status !== 202 || !record(response.data) || response.data.status !== "accepted" || response.data.segment_id !== id) return response.status === 202 ? "unavailable" : failure(response.status);
     return "accepted";
   } catch { return "unavailable"; }
+}
+
+export async function archiveSegment(
+  transport: SegmentTransport,
+  id: number,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<SegmentArchiveResult> {
+  if (!transport.archive) return { status: "unavailable" };
+  try {
+    const response = await transport.archive(id, requestHeaders(csrfToken, idempotencyKey));
+    if (response.status !== 200) return { status: failure(response.status) };
+    const segment = parseSegment(response.data);
+    return segment && segment.id === id && segment.lifecycleStatus === "archived" ? { status: "archived", segment } : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
 }

@@ -25,9 +25,16 @@ type InsertStageParams struct {
 	Config    []byte `json:"config"`
 }
 
-func (q *Queries) InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error) {
+type InsertStageRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+	Config    []byte `json:"config"`
+}
+
+func (q *Queries) InsertStage(ctx context.Context, arg InsertStageParams) (InsertStageRow, error) {
 	row := q.db.QueryRow(ctx, insertStage, arg.Name, arg.SortOrder, arg.Config)
-	var i Stage
+	var i InsertStageRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -43,15 +50,22 @@ FROM stages
 ORDER BY sort_order ASC, id ASC
 `
 
-func (q *Queries) ListStages(ctx context.Context) ([]Stage, error) {
+type ListStagesRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+	Config    []byte `json:"config"`
+}
+
+func (q *Queries) ListStages(ctx context.Context) ([]ListStagesRow, error) {
 	rows, err := q.db.Query(ctx, listStages)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Stage{}
+	items := []ListStagesRow{}
 	for rows.Next() {
-		var i Stage
+		var i ListStagesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -80,9 +94,16 @@ type RenameStageParams struct {
 	ID   int64  `json:"id"`
 }
 
-func (q *Queries) RenameStage(ctx context.Context, arg RenameStageParams) (Stage, error) {
+type RenameStageRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+	Config    []byte `json:"config"`
+}
+
+func (q *Queries) RenameStage(ctx context.Context, arg RenameStageParams) (RenameStageRow, error) {
 	row := q.db.QueryRow(ctx, renameStage, arg.Name, arg.ID)
-	var i Stage
+	var i RenameStageRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
