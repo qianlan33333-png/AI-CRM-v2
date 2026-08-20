@@ -13,6 +13,7 @@ import (
 const (
 	CloudOrchestratorRootPath          = "/admin/cloud-orchestrator"
 	CloudOrchestratorPlansPath         = "/admin/cloud-orchestrator/plans"
+	CloudOrchestratorPlanDetailPattern = "/admin/cloud-orchestrator/plans/{plan_id}"
 	CloudOrchestratorCampaignsPath     = "/admin/cloud-orchestrator/campaigns"
 	CloudOrchestratorObservabilityPath = "/admin/cloud-orchestrator/observability"
 	legacyAdminPathParameter           = "legacy_admin_path"
@@ -70,7 +71,7 @@ func cloudOrchestratorPageTarget(path string) (target string, root bool, matched
 		return "", false, false
 	}
 	planID := strings.TrimPrefix(path, detailPrefix)
-	if planID == "" || strings.Contains(planID, "/") || strings.ContainsAny(planID, "\x00\r\n") {
+	if planID == "" || planID == "." || planID == ".." || strings.ContainsAny(planID, "/\\\x00\r\n") {
 		return "", false, false
 	}
 	return detailPrefix + planID, false, true
@@ -87,4 +88,19 @@ func cloudOrchestratorPageAuthorized(request *http.Request) bool {
 func setCloudOrchestratorPageHeaders(writer http.ResponseWriter) {
 	writer.Header().Set("Cache-Control", "private, no-store")
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
+}
+
+func CloudOrchestratorPageSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		setCloudOrchestratorPageHeaders(writer)
+		if next != nil {
+			next.ServeHTTP(writer, request)
+		}
+	})
+}
+
+func WriteCloudOrchestratorPageMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
+	setCloudOrchestratorPageHeaders(writer)
+	writer.Header().Set("Allow", http.MethodGet)
+	writer.WriteHeader(http.StatusMethodNotAllowed)
 }

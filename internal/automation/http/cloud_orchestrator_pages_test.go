@@ -82,6 +82,8 @@ func TestCloudOrchestratorPagesRejectUnknownAndNestedDetailPaths(t *testing.T) {
 		"/admin/cloud-orchestrator/unknown",
 		CloudOrchestratorPlansPath + "/",
 		CloudOrchestratorPlansPath + "/plan/nested",
+		CloudOrchestratorPlansPath + "/..",
+		CloudOrchestratorPlansPath + "/plan\\nested",
 		CloudOrchestratorPlansPath + "/plan%0Aheader",
 	} {
 		request := authorizedCloudOrchestratorRequest(http.MethodGet, path)

@@ -1497,6 +1497,152 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/cloud-orchestrator:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorWorkspace
+      summary: Carry an authorized administrator to the local AI assistant plans workspace
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin redirect to the plans carrier; no workflow is read or executed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/admin/cloud-orchestrator/plans"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/plans:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorPlansWorkspace
+      summary: Carry an authorized administrator to the local plans review workspace
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; it does not read plan, audience, approval, or execution data.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/plans/{plan_id}:
+    parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/\\\\]+$" }
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorPlanDetailWorkspace
+      summary: Carry an authorized administrator to one safe local plan-detail shell
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Same-origin SPA carrier containing only the validated plan identifier.
+          headers:
+            Location: { required: true, schema: { type: string, minLength: 1 } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/campaigns:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorCampaignsWorkspace
+      summary: Carry an authorized administrator to the local campaign review shell
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; it does not execute or deliver a campaign.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/observability:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorObservabilityWorkspace
+      summary: Carry an authorized administrator to the local observability shell
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; it does not infer execution or delivery success.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fobservability"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
   /admin/automation-agents:
     get:
       tags: [p4-automation-agents]

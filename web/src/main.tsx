@@ -52,6 +52,16 @@ import { AutomationRunsPage } from "./automation-runs-ui";
 import type { AutomationRunsTransport } from "./automation-runs";
 import { AutomationAgentsPage } from "./automation-agents-ui";
 import type { AutomationAgentsTransport } from "./automation-agents";
+import { CloudOrchestratorWorkspace } from "./cloud-orchestrator-ui";
+import {
+  CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+  CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH,
+  CLOUD_ORCHESTRATOR_PLANS_PATH,
+  CLOUD_ORCHESTRATOR_ROOT_PATH,
+  cloudOrchestratorCarrierRoute,
+  cloudOrchestratorRoute,
+  type CloudOrchestratorRoute,
+} from "./cloud-orchestrator";
 import { GroupInviteLibraryPage } from "./group-invite-library-ui";
 import type { GroupInviteLibraryTransport } from "./group-invite-library";
 import { DeliveryLineagePage } from "./delivery-lineage-ui";
@@ -183,6 +193,30 @@ export const routes = [
     navigationLabel: "自动化话术",
     title: "自动化话术",
     description: "本地自动化话术配置摘要的只读浏览。",
+  },
+  {
+    path: CLOUD_ORCHESTRATOR_ROOT_PATH,
+    navigationLabel: "AI 助手",
+    title: "AI 助手工作区",
+    description: "AI 助手本地审阅工作区入口。",
+  },
+  {
+    path: CLOUD_ORCHESTRATOR_PLANS_PATH,
+    navigationLabel: "AI 助手",
+    title: "运营计划审阅",
+    description: "本地运营计划审阅载体。",
+  },
+  {
+    path: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+    navigationLabel: "Campaign 审阅",
+    title: "Campaign 审阅",
+    description: "本地 Campaign 审阅载体。",
+  },
+  {
+    path: CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH,
+    navigationLabel: "AI 可观察性",
+    title: "AI 助手可观察性",
+    description: "本地可观察性入口载体。",
   },
   {
     path: "/admin/group-invite-library",
@@ -345,6 +379,8 @@ export function publicSurveySlug(search: string): string | undefined {
 // shell route; any other value is ignored and never navigated to.
 export function carrierPathname(pathname: string, search: string): string {
   if (pathname !== "/" || search === "") return pathname;
+  const cloudOrchestratorCarrier = cloudOrchestratorCarrierRoute(search);
+  if (cloudOrchestratorCarrier) return cloudOrchestratorCarrier.pathname;
   let params: URLSearchParams;
   try {
     params = new URLSearchParams(search);
@@ -452,6 +488,7 @@ export function handleNavigationClick(
 
 function PageContent({
   route,
+  cloudOrchestrator,
   principal,
   customerTransport,
   customerDetailTransport,
@@ -483,6 +520,7 @@ function PageContent({
   onUnauthenticated,
 }: {
   route: AppRoute | undefined;
+  cloudOrchestrator?: CloudOrchestratorRoute;
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
   customerDetailTransport?: CustomerDetailTransport;
@@ -513,6 +551,15 @@ function PageContent({
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
+  if (cloudOrchestrator) {
+    return (
+      <CloudOrchestratorWorkspace
+        role={principal.role}
+        route={cloudOrchestrator}
+      />
+    );
+  }
+
   if (customerID !== undefined) {
     return (
       <CustomerDetailPage
@@ -832,6 +879,7 @@ export function navigationLinks(
     permitted.add(DATA_HEALTH_PATH);
     permitted.add(EXECUTION_RUNTIME_PATH);
     permitted.add(OUTBOUND_PATH);
+    permitted.add(CLOUD_ORCHESTRATOR_PLANS_PATH);
   }
   if (
     base.length > 0 &&
@@ -892,6 +940,7 @@ export function App({
   const [logoutState, setLogoutState] = useState<LogoutState>("ready");
   const effectivePathname = carrierPathname(pathname, search);
   const route = routeForPathname(effectivePathname);
+  const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
   const customerID = customerIDForPathname(effectivePathname);
   const publicSurvey =
     pathname === "/" ? publicSurveySlug(search) : undefined;
@@ -1037,6 +1086,7 @@ export function App({
         <main id="main-content" className="shell-main" tabIndex={-1}>
           <PageContent
             route={route}
+            cloudOrchestrator={cloudOrchestrator}
             principal={session.principal}
             customerTransport={customerTransport}
             customerDetailTransport={customerDetailTransport}
