@@ -2,6 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import { CustomerContextPanel } from "./customer-context-ui";
 import type { CustomerContextTransport } from "./customer-context";
+import { CustomerMergeHistoryPanel } from "./customer-merge-history-ui";
+import type {
+  CustomerMergeHistoryRole,
+  CustomerMergeHistoryTransport,
+} from "./customer-merge-history";
 import {
   generatedCustomerDetailTransport,
   isCustomerGender,
@@ -27,6 +32,8 @@ export interface CustomerDetailPageProps {
   readonly customerID: number;
   readonly transport?: CustomerDetailTransport;
   readonly contextTransport?: CustomerContextTransport;
+  readonly mergeHistoryRole?: CustomerMergeHistoryRole;
+  readonly mergeHistoryTransport?: CustomerMergeHistoryTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerDetailSnapshot;
@@ -180,6 +187,8 @@ export function CustomerDetailPage({
   customerID,
   transport = generatedCustomerDetailTransport,
   contextTransport,
+  mergeHistoryRole,
+  mergeHistoryTransport,
   readCookie = browserCookie,
   onUnauthenticated,
   initialSnapshot,
@@ -508,6 +517,15 @@ export function CustomerDetailPage({
         transport={contextTransport}
         onUnauthenticated={onUnauthenticated}
       />
+
+      {mergeHistoryTransport && mergeHistoryRole && (
+        <CustomerMergeHistoryPanel
+          customerID={customerID}
+          role={mergeHistoryRole}
+          transport={mergeHistoryTransport}
+          onUnauthenticated={onUnauthenticated}
+        />
+      )}
 
       <div className="customer-detail-page__grid">
         <form

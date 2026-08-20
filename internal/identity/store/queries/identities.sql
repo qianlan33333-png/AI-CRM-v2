@@ -69,6 +69,32 @@ SELECT primary_customer_id, policy_version
 FROM customer_merges
 WHERE id = sqlc.arg(merge_audit_id)::bigint;
 
+-- name: ListCustomerMergeHistory :many
+WITH RECURSIVE lineage(customer_id) AS (
+  SELECT sqlc.arg(customer_id)::bigint
+  UNION
+  SELECT CASE
+    WHEN merge.primary_customer_id = lineage.customer_id THEN merge.merged_customer_id
+    ELSE merge.primary_customer_id
+  END
+  FROM customer_merges AS merge
+  JOIN lineage
+    ON merge.primary_customer_id = lineage.customer_id
+    OR merge.merged_customer_id = lineage.customer_id
+)
+SELECT merge.id,
+       merge.primary_customer_id,
+       merge.merged_customer_id,
+       merge.mode,
+       merge.policy_version,
+       merge.merged_at
+FROM customer_merges AS merge
+WHERE (merge.primary_customer_id IN (SELECT customer_id FROM lineage)
+       OR merge.merged_customer_id IN (SELECT customer_id FROM lineage))
+  AND (sqlc.arg(after_id)::bigint = 0 OR merge.id < sqlc.arg(after_id)::bigint)
+ORDER BY merge.id DESC
+LIMIT sqlc.arg(page_limit)::integer;
+
 -- name: LoadBindReceipt :one
 SELECT
   payload_hmac,

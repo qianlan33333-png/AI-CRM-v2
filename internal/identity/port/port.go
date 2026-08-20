@@ -124,6 +124,28 @@ type MergeReviewPage struct {
 	NextCursor string
 }
 
+// CustomerMergeHistory is the redacted, append-only merge lineage exposed to
+// local administrators. It intentionally omits identity values, fingerprints,
+// operator identifiers and the private audit detail document.
+type CustomerMergeHistory struct {
+	MergeAuditID      int64
+	PrimaryCustomerID contactport.CustomerID
+	MergedCustomerID  contactport.CustomerID
+	Mode              string
+	PolicyVersion     string
+	MergedAt          time.Time
+}
+
+type CustomerMergeHistoryPage struct {
+	CustomerID contactport.CustomerID
+	Items      []CustomerMergeHistory
+	NextCursor string
+}
+
+type CustomerMergeHistoryReader interface {
+	ListCustomerMergeHistory(context.Context, contactport.CustomerID, string, int32) (CustomerMergeHistoryPage, error)
+}
+
 type ApproveMergeReviewCommand struct {
 	ReviewID          int64
 	ExpectedVersion   int64
