@@ -111,7 +111,7 @@ func (handler *ConsoleHandler) BindIdentity(writer http.ResponseWriter, request 
 }
 
 func (handler *ConsoleHandler) operation(request *http.Request, capability authport.Capability) (authport.Principal, error) {
-	if handler == nil || nilConsoleApplication(handler.application) || request == nil {
+	if request == nil {
 		return authport.Principal{}, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrIdentityResolveFailed)
 	}
 	authorization, ok := authport.AuthorizationFromContext(request.Context())
@@ -121,6 +121,9 @@ func (handler *ConsoleHandler) operation(request *http.Request, capability authp
 	principal, ok := authport.PrincipalFromContext(request.Context())
 	if !ok || principal.AdminUserID <= 0 || (principal.Role != authport.RoleAdmin && principal.Role != authport.RoleOps) {
 		return authport.Principal{}, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized)
+	}
+	if handler == nil || nilConsoleApplication(handler.application) {
+		return authport.Principal{}, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrIdentityResolveFailed)
 	}
 	return principal, nil
 }
@@ -193,23 +196,6 @@ func bindConsoleResponse(result identityport.BindResult) (any, error) {
 			Status     string `json:"status"`
 			CustomerID int64  `json:"customer_id"`
 		}{Status: string(result.Status), CustomerID: int64(result.CustomerID)}, nil
-	case identityport.BindMerged:
-		if result.CustomerID < 1 || result.PrimaryCustomerID < 1 || result.MergeAuditID < 1 || result.ReviewID != 0 {
-			break
-		}
-		return struct {
-			Status            string `json:"status"`
-			CustomerID        int64  `json:"customer_id"`
-			PrimaryCustomerID int64  `json:"primary_customer_id"`
-			MergeAuditID      int64  `json:"merge_audit_id"`
-		}{Status: "merged", CustomerID: int64(result.CustomerID), PrimaryCustomerID: int64(result.PrimaryCustomerID), MergeAuditID: result.MergeAuditID}, nil
-	case identityport.BindManualReview:
-		if result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID > 0 {
-			return struct {
-				Status   string `json:"status"`
-				ReviewID int64  `json:"review_id"`
-			}{Status: "manual_review", ReviewID: result.ReviewID}, nil
-		}
 	case identityport.BindRejected:
 		if result.CustomerID == 0 && result.PrimaryCustomerID == 0 && result.MergeAuditID == 0 && result.ReviewID == 0 {
 			return struct {

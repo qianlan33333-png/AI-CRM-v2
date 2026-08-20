@@ -26,7 +26,8 @@ describe("identity local console contract", () => {
     expect(parseIdentityResolveResult({ status: "found", customer_id: 7 })).toEqual({ status: "found", customerID: 7 });
     expect(parseIdentityResolveResult({ status: "found", customer_id: 7, value: "+86138" })).toBeUndefined();
     expect(parseIdentityResolveResult({ status: "not_found" })).toEqual({ status: "not_found" });
-    expect(parseIdentityBindResult({ status: "merged", customer_id: 7, primary_customer_id: 3, merge_audit_id: 2 })).toEqual({ status: "merged", customerID: 7, primaryCustomerID: 3, mergeAuditID: 2 });
+    expect(parseIdentityBindResult({ status: "merged", customer_id: 7, primary_customer_id: 3, merge_audit_id: 2 })).toBeUndefined();
+    expect(parseIdentityBindResult({ status: "manual_review", review_id: 9 })).toBeUndefined();
     expect(parseIdentityBindResult({ status: "manual_review", review_id: 9, identity_value: "raw" })).toBeUndefined();
   });
 

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getHealthz } from "./api/generated/health";
 import {
   App,
+  IDENTITY_CONSOLE_PATH,
   IMAGE_LIBRARY_PATH,
   HXC_SENDER_PATH,
   QUESTIONNAIRE_LIST_PATH,
@@ -629,7 +630,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(22);
+    expect(routes).toHaveLength(23);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -672,6 +673,13 @@ describe("Web shell routes", () => {
     expect(identityReviews).toContain("待合并列表");
     expect(identityReviews).toContain("审阅与决策");
     expect(identityReviews).not.toContain("模块边界");
+
+    vi.stubGlobal("window", { location: { pathname: IDENTITY_CONSOLE_PATH } });
+    const identityConsole = renderToStaticMarkup(
+      <App initialSession={adminSession} />,
+    );
+    expect(identityConsole).toContain("本地身份控制台");
+    expect(identityConsole).toContain("不触发 Provider、外发或自动合并");
 
     vi.stubGlobal("window", {
       location: { pathname: "/admin/miniprogram-library" },
@@ -750,6 +758,7 @@ describe("Web shell routes", () => {
       "/customers",
       "/stages",
       "/segments",
+      IDENTITY_CONSOLE_PATH,
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
       "/admin/image-library",
@@ -776,6 +785,7 @@ describe("Web shell routes", () => {
       "/customers",
       "/stages",
       "/segments",
+      IDENTITY_CONSOLE_PATH,
       "/identity/merge-reviews",
       "/admin/miniprogram-library",
       "/admin/image-library",
@@ -797,6 +807,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/settings"');
     expect(html).toContain('href="/stages"');
     expect(html).toContain('href="/segments"');
+    expect(html).toContain(`href="${IDENTITY_CONSOLE_PATH}"`);
     expect(html).toContain('href="/identity/merge-reviews"');
     expect(html).toContain('href="/admin/miniprogram-library"');
     expect(html).toContain('href="/admin/image-library"');

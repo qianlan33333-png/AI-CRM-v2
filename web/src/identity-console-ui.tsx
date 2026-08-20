@@ -54,8 +54,6 @@ function bindText(result: IdentityBindResult): string {
   switch (result.status) {
     case "bound": return `已绑定到本地客户 OneID：${result.customerID}`;
     case "already_bound": return `该身份已绑定到本地客户 OneID：${result.customerID}`;
-    case "merged": return `本地归属已合并，主客户 OneID：${result.primaryCustomerID}。`;
-    case "manual_review": return `已创建本地人工待合并审阅：${result.reviewID}。`;
     case "rejected": return "本地规则拒绝该绑定，未写入身份归属。";
   }
 }
@@ -76,6 +74,7 @@ export function IdentityConsolePage({
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const generation = useRef(0);
   const active = useRef<{ readonly token: symbol; readonly action: "resolve" | "bind" }>();
+  const invalidatedBind = useRef(false);
   const key = useRef(commandKey());
   const unauthenticatedNotified = useRef(false);
 
@@ -83,17 +82,18 @@ export function IdentityConsolePage({
     const owner = ++generation.current;
     active.current = undefined;
     unauthenticatedNotified.current = false;
+    if (invalidatedBind.current) {
+      invalidatedBind.current = false;
+      setOutcomeUnknown(true);
+    }
+    setBusy(undefined);
     return () => {
       if (generation.current !== owner) return;
       generation.current += 1;
-      if (active.current?.action === "bind") {
-        active.current = undefined;
-        setOutcomeUnknown(true);
-      } else {
-        active.current = undefined;
-      }
+      if (active.current?.action === "bind") invalidatedBind.current = true;
+      active.current = undefined;
     };
-  }, [transport, role]);
+  }, [transport, role, onUnauthenticated]);
 
   const editRef = (change: Partial<IdentityConsoleRef>) => {
     if (busy || outcomeUnknown) return;

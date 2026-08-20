@@ -11,8 +11,6 @@ export type IdentityConsoleRef = { readonly type: IdentityKind; readonly scope: 
 export type IdentityResolveResult = { readonly status: "found"; readonly customerID: number } | { readonly status: "not_found" | "conflict" };
 export type IdentityBindResult =
   | { readonly status: "bound" | "already_bound"; readonly customerID: number }
-  | { readonly status: "merged"; readonly customerID: number; readonly primaryCustomerID: number; readonly mergeAuditID: number }
-  | { readonly status: "manual_review"; readonly reviewID: number }
   | { readonly status: "rejected" };
 export type IdentityConsoleFailure = "unauthenticated" | "forbidden" | "invalid" | "conflict" | "unavailable";
 export type IdentityConsoleTransportResponse = { readonly status: number; readonly data: unknown };
@@ -63,8 +61,6 @@ export function parseIdentityResolveResult(value: unknown): IdentityResolveResul
 }
 export function parseIdentityBindResult(value: unknown): IdentityBindResult | undefined {
   if (exact(value, ["status", "customer_id"]) && (value.status === "bound" || value.status === "already_bound") && positive(value.customer_id)) return { status: value.status, customerID: value.customer_id };
-  if (exact(value, ["status", "customer_id", "primary_customer_id", "merge_audit_id"]) && value.status === "merged" && positive(value.customer_id) && positive(value.primary_customer_id) && positive(value.merge_audit_id)) return { status: "merged", customerID: value.customer_id, primaryCustomerID: value.primary_customer_id, mergeAuditID: value.merge_audit_id };
-  if (exact(value, ["status", "review_id"]) && value.status === "manual_review" && positive(value.review_id)) return { status: "manual_review", reviewID: value.review_id };
   if (exact(value, ["status"]) && value.status === "rejected") return { status: "rejected" };
   return undefined;
 }

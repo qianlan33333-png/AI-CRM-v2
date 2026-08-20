@@ -57,7 +57,7 @@ func TestConsoleHandlerResolvesDeclaredIdentityWithoutEchoingRawValue(t *testing
 }
 
 func TestConsoleHandlerBindsOneDeclaredIdentityWithReceiptKey(t *testing.T) {
-	stub := &consoleApplicationStub{bindResult: identityport.BindResult{Status: identityport.BindManualReview, ReviewID: 31}}
+	stub := &consoleApplicationStub{bindResult: identityport.BindResult{Status: identityport.BindBound, CustomerID: 42}}
 	handler, err := NewConsoleHandler(stub)
 	if err != nil {
 		t.Fatal(err)
@@ -69,8 +69,49 @@ func TestConsoleHandlerBindsOneDeclaredIdentityWithReceiptKey(t *testing.T) {
 	if response.Code != http.StatusOK || strings.Contains(response.Body.String(), "+8613800138000") || stub.bindCommand.CustomerID != contactport.CustomerID(42) || stub.bindCommand.Actor != contactport.Actor("admin:7") || stub.bindCommand.Ref.Assurance != identityport.AssuranceDeclared || stub.bindCommand.IdempotencyKey != "identity-console-bind-0001" {
 		t.Fatalf("status=%d body=%q command=%+v", response.Code, response.Body.String(), stub.bindCommand)
 	}
-	if !strings.Contains(response.Body.String(), `"status":"manual_review"`) || !strings.Contains(response.Body.String(), `"review_id":31`) {
+	if !strings.Contains(response.Body.String(), `"status":"bound"`) || !strings.Contains(response.Body.String(), `"customer_id":42`) {
 		t.Fatalf("response=%q", response.Body.String())
+	}
+}
+
+func TestConsoleHandlerRejectsMergeOutcomesForDeclaredEvidence(t *testing.T) {
+	for _, result := range []identityport.BindResult{
+		{Status: identityport.BindMerged, CustomerID: 42, PrimaryCustomerID: 42, MergeAuditID: 31},
+		{Status: identityport.BindManualReview, ReviewID: 31},
+	} {
+		stub := &consoleApplicationStub{bindResult: result}
+		handler, err := NewConsoleHandler(stub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request := reviewRequest(t, http.MethodPost, `{"customer_id":42,"ref":{"type":"phone","scope":"phone:e164","value":"+8613800138000"}}`, authport.CapabilityIdentityBind)
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		handler.BindIdentity(response, request, generated.BindIdentityParams{IdempotencyKey: generated.IdempotencyKey("identity-console-bind-0003")})
+		if response.Code != http.StatusServiceUnavailable {
+			t.Fatalf("result=%+v status=%d body=%q", result, response.Code, response.Body.String())
+		}
+	}
+}
+
+func TestConsoleHandlerChecksAuthorizationBeforeDependencies(t *testing.T) {
+	handler := &ConsoleHandler{}
+	salesRequest := reviewRequest(t, http.MethodPost, `{"ref":{"type":"phone","scope":"phone:e164","value":"+861"}}`, authport.CapabilityIdentityResolve)
+	staffID := int64(9)
+	salesRequest = salesRequest.WithContext(authport.WithAuthenticatedSession(salesRequest.Context(), authport.Principal{AdminUserID: 7, Role: authport.RoleSales, StaffID: &staffID}, authport.SessionRef("sales-session")))
+	salesRequest.Header.Set("Content-Type", "application/json")
+	salesResponse := httptest.NewRecorder()
+	handler.ResolveIdentity(salesResponse, salesRequest)
+	if salesResponse.Code != http.StatusForbidden {
+		t.Fatalf("sales status=%d body=%q", salesResponse.Code, salesResponse.Body.String())
+	}
+
+	adminRequest := reviewRequest(t, http.MethodPost, `{"ref":{"type":"phone","scope":"phone:e164","value":"+861"}}`, authport.CapabilityIdentityResolve)
+	adminRequest.Header.Set("Content-Type", "application/json")
+	adminResponse := httptest.NewRecorder()
+	handler.ResolveIdentity(adminResponse, adminRequest)
+	if adminResponse.Code != http.StatusServiceUnavailable {
+		t.Fatalf("admin status=%d body=%q", adminResponse.Code, adminResponse.Body.String())
 	}
 }
 

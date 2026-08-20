@@ -147,6 +147,7 @@ describe("permission navigation", () => {
       "/customers",
       "/stages",
       "/segments",
+      "/identity/console",
       "/identity/merge-reviews",
       "/settings",
     ]);
@@ -155,6 +156,7 @@ describe("permission navigation", () => {
       "/customers",
       "/stages",
       "/segments",
+      "/identity/console",
       "/identity/merge-reviews",
     ]);
     expect(

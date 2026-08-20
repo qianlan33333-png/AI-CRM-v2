@@ -44,14 +44,38 @@ describe("IdentityConsolePage", () => {
   });
 
   it("locks a local write whose outcome is unknown and does not let an old pending response unlock a replacement", async () => {
-    const oldRequest = deferred<{ status: number; data: unknown }>(); const second = deferred<{ status: number; data: unknown }>();
-    const bind = vi.fn(() => bind.mock.calls.length === 1 ? oldRequest.promise : second.promise);
+    const oldRequest = deferred<{ status: number; data: unknown }>();
+    const bind = vi.fn(() => oldRequest.promise);
     const client = { resolve: vi.fn(async () => ({ status: 503, data: {} })), bind } as unknown as IdentityConsoleTransport;
+    const replacement = { resolve: vi.fn(async () => ({ status: 200, data: { status: "not_found" } })), bind: vi.fn() } as unknown as IdentityConsoleTransport;
     const mounted = mount();
     await act(async () => { mounted.root.render(<IdentityConsolePage role="ops" transport={client} readCookie={() => `aicrm_csrf=${csrf}`} />); });
     const fillAndSubmit = async () => { const inputs = all(mounted.container, "INPUT"); await act(async () => { props<{ onChange(event: { currentTarget: { value: string } }): void }>(inputs[0]).onChange({ currentTarget: { value: ref.scope } }); props<{ onChange(event: { currentTarget: { value: string } }): void }>(inputs[1]).onChange({ currentTarget: { value: ref.value } }); props<{ onChange(event: { currentTarget: { value: string } }): void }>(inputs[2]).onChange({ currentTarget: { value: "7" } }); props<{ onChange(event: { currentTarget: { checked: boolean } }): void }>(inputs[3]).onChange({ currentTarget: { checked: true } }); }); await act(async () => { props<{ onSubmit(event: { preventDefault(): void }): void }>(all(mounted.container, "FORM")[0]).onSubmit({ preventDefault() {} }); }); };
     await fillAndSubmit(); expect(bind).toHaveBeenCalledTimes(1);
-    await act(async () => { mounted.root.unmount(); oldRequest.resolve({ status: 200, data: { status: "bound", customer_id: 7 } }); await Promise.resolve(); });
-    expect(bind).toHaveBeenCalledTimes(1); expect(second.promise).toBeInstanceOf(Promise);
+    await act(async () => { mounted.root.render(<IdentityConsolePage role="ops" transport={replacement} readCookie={() => `aicrm_csrf=${csrf}`} />); });
+    expect(mounted.container.textContent).toContain("绑定结果待确认");
+    expect(all(mounted.container, "FORM")).toHaveLength(0);
+    expect(replacement.bind).not.toHaveBeenCalled();
+    await act(async () => { oldRequest.resolve({ status: 200, data: { status: "bound", customer_id: 7 } }); await Promise.resolve(); });
+    expect(mounted.container.textContent).not.toContain("已绑定到本地客户 OneID：7");
+    expect(replacement.bind).not.toHaveBeenCalled();
+    await act(async () => { mounted.root.unmount(); });
+  });
+
+  it("releases an interrupted read flight so a replacement transport can resolve", async () => {
+    const oldRequest = deferred<{ status: number; data: unknown }>();
+    const first = { resolve: vi.fn(() => oldRequest.promise), bind: vi.fn() } as unknown as IdentityConsoleTransport;
+    const replacement = { resolve: vi.fn(async () => ({ status: 200, data: { status: "found", customer_id: 8 } })), bind: vi.fn() } as unknown as IdentityConsoleTransport;
+    const mounted = mount();
+    await act(async () => { mounted.root.render(<IdentityConsolePage role="admin" transport={first} />); });
+    const inputs = all(mounted.container, "INPUT");
+    await act(async () => { props<{ onChange(event: { currentTarget: { value: string } }): void }>(inputs[0]).onChange({ currentTarget: { value: ref.scope } }); props<{ onChange(event: { currentTarget: { value: string } }): void }>(inputs[1]).onChange({ currentTarget: { value: ref.value } }); });
+    await act(async () => { props<{ onClick(): void }>(all(mounted.container, "BUTTON")[0]).onClick(); });
+    expect(first.resolve).toHaveBeenCalledTimes(1);
+    await act(async () => { mounted.root.render(<IdentityConsolePage role="admin" transport={replacement} />); });
+    await act(async () => { props<{ onClick(): void }>(all(mounted.container, "BUTTON")[0]).onClick(); await Promise.resolve(); });
+    expect(replacement.resolve).toHaveBeenCalledTimes(1);
+    expect(mounted.container.textContent).toContain("本地客户 OneID：8");
+    await act(async () => { oldRequest.resolve({ status: 401, data: {} }); await Promise.resolve(); mounted.root.unmount(); });
   });
 });

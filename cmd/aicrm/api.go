@@ -40,6 +40,7 @@ import (
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
@@ -120,6 +121,7 @@ type candidateHandler struct {
 	surveyPublic    *surveyhttp.PublicHandler
 	segmentRefresh  *segmenthttp.RefreshHandler
 	identityReviews *identityhttp.ReviewHandler
+	identityConsole *identityhttp.ConsoleHandler
 	automationRuns  interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
 	}
@@ -127,6 +129,19 @@ type candidateHandler struct {
 		Read(string) (string, error)
 	}
 	legacyHealth *legacyhealth.Handler
+}
+
+type identityConsoleApplication struct {
+	resolver *identityapp.ResolveService
+	binder   *identityapp.BindService
+}
+
+func (application identityConsoleApplication) Resolve(ctx context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
+	return application.resolver.Resolve(ctx, ref)
+}
+
+func (application identityConsoleApplication) Bind(ctx context.Context, command identityport.BindCommand) (identityport.BindResult, error) {
+	return application.binder.Bind(ctx, command)
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
@@ -297,6 +312,14 @@ func (handler *candidateHandler) ApproveIdentityMergeReview(writer http.Response
 
 func (handler *candidateHandler) RejectIdentityMergeReview(writer http.ResponseWriter, request *http.Request, reviewID api.MergeReviewID, params api.RejectIdentityMergeReviewParams) {
 	handler.identityReviews.RejectIdentityMergeReview(writer, request, reviewID, params)
+}
+
+func (handler *candidateHandler) ResolveIdentity(writer http.ResponseWriter, request *http.Request) {
+	handler.identityConsole.ResolveIdentity(writer, request)
+}
+
+func (handler *candidateHandler) BindIdentity(writer http.ResponseWriter, request *http.Request, params api.BindIdentityParams) {
+	handler.identityConsole.BindIdentity(writer, request, params)
 }
 
 func (handler *candidateHandler) ListAutomationTriggerRuns(writer http.ResponseWriter, request *http.Request, params api.ListAutomationTriggerRunsParams) {
@@ -595,6 +618,20 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	identityConsoleHandler, err := identityhttp.NewConsoleHandler(identityConsoleApplication{
+		resolver: identityapp.NewResolveService(uow, identityRepository),
+		binder: identityapp.NewBindServiceWithMergePort(
+			uow,
+			identityRepository,
+			contactstore.NewMergePortRepository(),
+			eventstore.NewAppender(),
+			config.Identity.HMACKey.Value(),
+		),
+	})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	domainVerification, err := domainverification.New(config.DomainVerification.Directory)
 	if err != nil {
 		pool.Close()
@@ -610,6 +647,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyPublic:       surveyPublicHandler,
 		segmentRefresh:     segmentRefreshHandler,
 		identityReviews:    identityReviewHandler,
+		identityConsole:    identityConsoleHandler,
 		automationRuns:     automationstore.NewRepository(pool),
 		domainVerification: domainVerification,
 		legacyHealth: legacyhealth.NewHandler(legacyhealth.NewQuery(legacyhealth.RuntimeSnapshot{
