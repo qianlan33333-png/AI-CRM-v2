@@ -27,6 +27,57 @@ type mappingInventory struct {
 	Candidates map[string]canonicalCandidateOperation
 }
 
+// nativePackageOperation is the explicit owner-approved registry for P4
+// business-package operations which have no legacy route to claim. Keeping
+// these declarations here avoids manufacturing ledger mappings while still
+// making every new route fail closed on its exact security and data boundary.
+type nativePackageOperation struct {
+	path           string
+	method         string
+	evidence       string
+	capability     string
+	authScheme     string
+	classification string
+	dataSource     string
+	csrf           string
+	scopes         map[string]string
+}
+
+const (
+	p4ClassificationPackageEvidence = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
+	p4ProductEntitlementEvidence    = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
+	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
+)
+
+var nativePackageOperations = map[string]nativePackageOperation{
+	"reorderStages":    {"/api/v1/stages/reorder", "PUT", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveStage":     {"/api/v1/stages/{stage_id}", "DELETE", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listTagGroups":    {"/api/v1/tag-groups", "GET", p4ClassificationPackageEvidence, "customers.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"createTagGroup":   {"/api/v1/tag-groups", "POST", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"updateTagGroup":   {"/api/v1/tag-groups/{group_id}", "PATCH", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveTagGroup":  {"/api/v1/tag-groups/{group_id}", "DELETE", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reorderTagGroups": {"/api/v1/tag-groups/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"createTag":        {"/api/v1/tags", "POST", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"updateTag":        {"/api/v1/tags/{tag_id}", "PATCH", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveTag":       {"/api/v1/tags/{tag_id}", "DELETE", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reorderTags":      {"/api/v1/tags/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveSegment":   {"/api/v1/segments/{segment_id}", "DELETE", p4ClassificationPackageEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+
+	"updateProduct":                 {"/api/v1/products/{product_id}", "PUT", p4ProductEntitlementEvidence, "products.write", "human_session", "financial", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listProductLocalEntitlements":  {"/api/v1/products/{product_id}/local-entitlements", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"grantProductLocalEntitlement":  {"/api/v1/products/{product_id}/local-entitlements", "POST", p4ProductEntitlementEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getProductLocalEntitlement":    {"/api/v1/product-entitlements/{entitlement_id}", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"revokeProductLocalEntitlement": {"/api/v1/product-entitlements/{entitlement_id}/revoke", "POST", p4ProductEntitlementEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+
+	"getPublicSurveyDefinition":            {"/api/public/questionnaires/{slug}", "GET", p4SurveyPublicEvidence, "survey.public.read", "public", "public_non_pii", "local_read_model", "none", nil},
+	"submitPublicSurvey":                   {"/api/public/questionnaires/{slug}/submissions", "POST", p4SurveyPublicEvidence, "survey.public.submit", "public", "public_non_pii", "local_command", "none", nil},
+	"queryPublicSurveySubmissionResult":    {"/api/public/survey-submission-results/query", "POST", p4SurveyPublicEvidence, "survey.public.result", "public", "public_non_pii", "local_read_model", "none", nil},
+	"publishQuestionnairePublicDefinition": {"/api/admin/questionnaires/{questionnaire_id}/public-publish", "POST", p4SurveyPublicEvidence, "questionnaires.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"disableQuestionnairePublicDefinition": {"/api/admin/questionnaires/{questionnaire_id}/public-disable", "POST", p4SurveyPublicEvidence, "questionnaires.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getQuestionnairePublicAnalytics":      {"/api/admin/questionnaires/{questionnaire_id}/public-analytics", "GET", p4SurveyPublicEvidence, "questionnaires.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"getPublicSurveyPage":                  {"/q/{slug}", "GET", p4SurveyPublicEvidence, "survey.public.page", "public", "public_non_pii", "static", "none", nil},
+}
+
 var p1CandidateOperations = map[string]bool{
 	"listCustomers": true, "getCustomer": true, "updateCustomer": true,
 	"listCustomerEvents": true, "resolveIdentity": true, "bindIdentity": true,
@@ -575,7 +626,12 @@ func isRunnerDeclaredOperation(operationID string) bool {
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
 		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
 		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID] ||
-		p4LegacyHealthOperations[operationID]
+		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID)
+}
+
+func nativePackageOperationDeclared(operationID string) bool {
+	_, ok := nativePackageOperations[operationID]
+	return ok
 }
 
 func operationForMethod(item *openapi3.PathItem, method string) *openapi3.Operation {
@@ -651,6 +707,43 @@ func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string
 	csrf, csrfOK := op.Extensions["x-aicrm-session-bound-csrf"].(string)
 	if !csrfOK || (method == "GET" && csrf != "none") || (method != "GET" && csrf != "required") {
 		return fmt.Errorf("%s canonical CSRF declaration is incomplete", op.OperationID)
+	}
+	return nil
+}
+
+func validateNativePackageOperation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract nativePackageOperation) error {
+	if path != contract.path || operationForMethod(item, contract.method) != op {
+		return fmt.Errorf("%s path or method differs from owner-approved native package", op.OperationID)
+	}
+	if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
+		return fmt.Errorf("%s native package operation must not claim a legacy mapping", op.OperationID)
+	}
+	if op.Extensions["x-p4-decision-evidence"] != contract.evidence ||
+		op.Extensions["x-aicrm-capability"] != contract.capability ||
+		op.Extensions["x-aicrm-auth-scheme"] != contract.authScheme ||
+		op.Extensions["x-aicrm-data-classification"] != contract.classification ||
+		op.Extensions["x-aicrm-data-source"] != contract.dataSource ||
+		op.Extensions["x-aicrm-external-effect"] != "none" {
+		return fmt.Errorf("%s native package security or data boundary drifted", op.OperationID)
+	}
+	if contract.authScheme == "public" {
+		if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-csrf"] != contract.csrf {
+			return fmt.Errorf("%s public native package authorization drifted", op.OperationID)
+		}
+		if _, declared := op.Extensions["x-aicrm-rbac-scopes"]; declared {
+			return fmt.Errorf("%s public native package operation must not declare RBAC scopes", op.OperationID)
+		}
+		return nil
+	}
+	if op.Extensions["x-aicrm-session-bound-csrf"] != contract.csrf {
+		return fmt.Errorf("%s native package CSRF declaration drifted", op.OperationID)
+	}
+	scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
+		return fmt.Errorf("%s native package RBAC scopes=%v", op.OperationID, scopes)
+	}
+	if len(contract.scopes) < 3 && op.Responses.Value("403") == nil {
+		return fmt.Errorf("%s native package operation denies a role but lacks 403", op.OperationID)
 	}
 	return nil
 }
@@ -1006,6 +1099,10 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 					len(op.Responses.Map()) != 2 {
 					return fmt.Errorf("%s response envelope drifted", op.OperationID)
 				}
+			} else if nativeContract, native := nativePackageOperations[op.OperationID]; native {
+				if err := validateNativePackageOperation(path, item, op, nativeContract); err != nil {
+					return err
+				}
 			} else if canonicalFallback {
 				if err := validateGenericCanonicalAuthorization(op, canonicalContract.Method); err != nil {
 					return err
@@ -1031,10 +1128,11 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] {
+			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) {
 				// The public static route and the public runtime-mode snapshot are
-				// fully constrained in their dedicated branches above and
-				// intentionally have no RBAC capability map.
+				// fully constrained in their dedicated branches above. Native
+				// package operations are likewise validated against their exact
+				// owner-approved registry rather than the legacy authorization map.
 			} else if public, publicOperation := couponPublicAccessContracts[op.OperationID]; publicOperation {
 				authScheme, ok := op.Extensions["x-aicrm-auth-scheme"].(string)
 				if !ok || authScheme != public.authScheme {
