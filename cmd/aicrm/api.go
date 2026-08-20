@@ -1089,6 +1089,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		cloudOrchestratorPages := automationhttp.NewCloudOrchestratorPages()
 		groupOpsPages := automationhttp.NewGroupOpsPages()
 		audiencePackagePages := automationhttp.NewAudiencePackagePages()
+		userOpsPages := automationhttp.NewUserOpsPages()
 		commerceWorkspacePages := producthttp.NewWorkspacePages()
 		isCloudOrchestratorPagePattern := func(pattern string) bool {
 			return pattern == automationhttp.CloudOrchestratorRootPath ||
@@ -1168,6 +1169,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if automationhttp.IsAudiencePackagePagePattern(pattern) {
 				tail = automationhttp.AudiencePackagePageSecurityHeaders(tail)
 			}
+			if automationhttp.IsUserOpsPagePattern(pattern) {
+				tail = automationhttp.UserOpsPageSecurityHeaders(tail)
+			}
 			if producthttp.IsWorkspacePagePattern(pattern) {
 				tail = producthttp.WorkspacePageSecurityHeaders(tail)
 			}
@@ -1186,7 +1190,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyHXCSenderItemPath || pattern == legacyHXCSenderReorderPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isCloudOrchestratorPagePattern(pattern) || automationhttp.IsGroupOpsPagePattern(pattern) || automationhttp.IsAudiencePackagePagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyHXCSenderItemPath || pattern == legacyHXCSenderReorderPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isCloudOrchestratorPagePattern(pattern) || automationhttp.IsGroupOpsPagePattern(pattern) || automationhttp.IsAudiencePackagePagePattern(pattern) || automationhttp.IsUserOpsPagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -1236,6 +1240,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if automationhttp.IsAudiencePackagePagePattern(pattern) {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(automationhttp.WriteAudiencePackagePageMethodNotAllowed))
+					}
+					if automationhttp.IsUserOpsPagePattern(pattern) {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(automationhttp.WriteUserOpsPageMethodNotAllowed))
 					}
 					if producthttp.IsWorkspacePagePattern(pattern) {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(producthttp.WriteWorkspacePageMethodNotAllowed))
@@ -1366,6 +1373,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, automationhttp.GroupOpsPlanDetailPattern, authport.CapabilityAdminRead, false, groupOpsPages},
 			{http.MethodGet, automationhttp.AudiencePackagesPath, authport.CapabilityAdminRead, false, audiencePackagePages},
 			{http.MethodGet, automationhttp.AudiencePackageDetailPattern, authport.CapabilityAdminRead, false, audiencePackagePages},
+			{http.MethodGet, automationhttp.UserOpsPath, authport.CapabilityAdminRead, false, userOpsPages},
+			{http.MethodGet, automationhttp.UserOpsUIPath, authport.CapabilityAdminRead, false, userOpsPages},
 			{http.MethodGet, producthttp.AlipayTransactionsPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
 			{http.MethodGet, producthttp.ServiceProductsPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
 			{http.MethodGet, producthttp.ServiceProductNewPath, authport.CapabilityAdminRead, false, commerceWorkspacePages},
