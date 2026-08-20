@@ -14541,6 +14541,124 @@ export const getAudiencePackageDetailWorkspace = async (
 };
 
 /**
+ * @summary Carry an authorized administrator to the safe local user-operations review workspace
+ */
+export type getUserOpsReviewWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getUserOpsReviewWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUserOpsReviewWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUserOpsReviewWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getUserOpsReviewWorkspaceResponseError = (
+  | getUserOpsReviewWorkspaceResponse302
+  | getUserOpsReviewWorkspaceResponse401
+  | getUserOpsReviewWorkspaceResponse403
+  | getUserOpsReviewWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getUserOpsReviewWorkspaceResponse =
+  getUserOpsReviewWorkspaceResponseError;
+
+export const getGetUserOpsReviewWorkspaceUrl = () => {
+  return `/admin/user-ops`;
+};
+
+export const getUserOpsReviewWorkspace = async (
+  options?: RequestInit,
+): Promise<getUserOpsReviewWorkspaceResponse> => {
+  const res = await fetch(getGetUserOpsReviewWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUserOpsReviewWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUserOpsReviewWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator through the approved alias to the safe local user-operations review workspace
+ */
+export type getUserOpsReviewWorkspaceAliasResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponseError = (
+  | getUserOpsReviewWorkspaceAliasResponse302
+  | getUserOpsReviewWorkspaceAliasResponse401
+  | getUserOpsReviewWorkspaceAliasResponse403
+  | getUserOpsReviewWorkspaceAliasResponse405
+) & {
+  headers: Headers;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse =
+  getUserOpsReviewWorkspaceAliasResponseError;
+
+export const getGetUserOpsReviewWorkspaceAliasUrl = () => {
+  return `/admin/user-ops/ui`;
+};
+
+export const getUserOpsReviewWorkspaceAlias = async (
+  options?: RequestInit,
+): Promise<getUserOpsReviewWorkspaceAliasResponse> => {
+  const res = await fetch(getGetUserOpsReviewWorkspaceAliasUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUserOpsReviewWorkspaceAliasResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUserOpsReviewWorkspaceAliasResponse;
+};
+
+/**
  * @summary Carry an authorized administrator to the local Alipay transaction workspace
  */
 export type getAlipayTransactionsWorkspaceResponse302 = {

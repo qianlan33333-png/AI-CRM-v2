@@ -1767,6 +1767,62 @@ paths:
             Allow: { required: true, schema: { type: string, enum: [GET] } }
             Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/user-ops:
+    get:
+      tags: [p4-user-ops-review-workspaces]
+      operationId: getUserOpsReviewWorkspace
+      summary: Carry an authorized administrator to the safe local user-operations review workspace
+      x-p4-decision-evidence: P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; no customer, DND, export, task, provider, outbound, or delivery fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fuser-ops"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/user-ops/ui:
+    get:
+      tags: [p4-user-ops-review-workspaces]
+      operationId: getUserOpsReviewWorkspaceAlias
+      summary: Carry an authorized administrator through the approved alias to the safe local user-operations review workspace
+      x-p4-decision-evidence: P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA alias; no customer, DND, export, task, provider, outbound, or delivery fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fuser-ops%2Fui"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
   /admin/alipay/transactions:
     get:
       tags: [p4-commerce-workspaces]
