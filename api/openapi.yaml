@@ -5947,7 +5947,7 @@ components:
     LegacyOrderExport:
       type: object
       additionalProperties: false
-      required: [job_id, resource, format, status, created_at, operator, download_url]
+      required: [job_id, resource, format, status, created_at, operator, download_url, content_type, file_name, content_text]
       properties:
         job_id: { type: string, pattern: '^exp_[A-Za-z0-9_-]{8,64}$' }
         resource: { type: string, enum: [orders, payments, refunds] }
@@ -5957,8 +5957,8 @@ components:
         operator: { type: integer, format: int64, minimum: 1 }
         download_url: { type: string, minLength: 1, maxLength: 2048 }
         content_type: { type: string, enum: [text/csv] }
-        file_name: { type: string, maxLength: 100 }
-        content_text: { type: string }
+        file_name: { type: string, minLength: 1, maxLength: 100 }
+        content_text: { type: string, minLength: 1 }
     LegacyOrderExternalEffect:
       type: object
       additionalProperties: false
