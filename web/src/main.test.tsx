@@ -27,6 +27,7 @@ import {
   handleNavigationClick,
   navigateTo,
   navigationLinks,
+  publicSurveySlug,
   routeForPathname,
   routeForURL,
   routes,
@@ -47,6 +48,7 @@ import type { DeliveryLineageTransport } from "./delivery-lineage";
 import type { DataHealthTransport } from "./data-health";
 import type { OrdersTransport } from "./orders";
 import type { AppSettingsTransport } from "./app-settings";
+import type { PublicSurveyTransport } from "./public-survey";
 
 const adminSession = {
   status: "authenticated",
@@ -190,6 +192,58 @@ describe("Web shell routes", () => {
     ]) {
       expect(customerIDForPathname(pathname), pathname).toBeUndefined();
     }
+  });
+
+  it("renders only the strict public-survey root carrier before authentication", () => {
+    expect(publicSurveySlug("?public_survey_slug=summer-2026")).toBe(
+      "summer-2026",
+    );
+    for (const search of [
+      "",
+      "?public_survey_slug=",
+      "?public_survey_slug=Summer",
+      "?public_survey_slug=survey%2Fother",
+      "?public_survey_slug=one&public_survey_slug=two",
+      "?public_survey_slug=one&result_token=secret",
+      "?result_token=secret",
+      "?legacy_admin_path=%2Fadmin%2Fquestionnaires",
+    ]) {
+      expect(publicSurveySlug(search), search).toBeUndefined();
+    }
+
+    vi.stubGlobal("window", {
+      location: { pathname: "/", search: "?public_survey_slug=summer-2026" },
+    });
+    const client: PublicSurveyTransport = {
+      definition: vi.fn(),
+      submit: vi.fn(),
+      result: vi.fn(),
+    };
+    const html = renderToStaticMarkup(
+      <App
+        initialSession={{ status: "unauthenticated" }}
+        publicSurveyTransport={client}
+      />,
+    );
+    expect(html).toContain("正在加载问卷");
+    expect(html).not.toContain("登录运营工作台");
+    expect(html).not.toContain("result_token");
+    expect(client.definition).not.toHaveBeenCalled();
+    expect(client.submit).not.toHaveBeenCalled();
+    expect(client.result).not.toHaveBeenCalled();
+
+    vi.stubGlobal("window", {
+      location: { pathname: "/", search: "?public_survey_slug=summer&result_token=x" },
+    });
+    expect(
+      renderToStaticMarkup(<App initialSession={{ status: "unauthenticated" }} />),
+    ).toContain("登录运营工作台");
+    vi.stubGlobal("window", {
+      location: { pathname: "/q/summer-2026", search: "" },
+    });
+    expect(
+      renderToStaticMarkup(<App initialSession={{ status: "unauthenticated" }} />),
+    ).toContain("登录运营工作台");
   });
 
   it("renders the injected customer-detail route and keeps Customers navigation active", () => {

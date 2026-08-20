@@ -41,6 +41,16 @@ import {
   type QuestionnairePreflightResult,
   type QuestionnaireSubmissionAggregate,
 } from "./questionnaire-list";
+import {
+  disableQuestionnairePublicDefinition,
+  generatedQuestionnairePublicAnalyticsTransport,
+  loadQuestionnairePublicAnalytics,
+  newQuestionnairePublicIdempotencyKey,
+  publishQuestionnairePublicDefinition,
+  type PublicSurveyAnalytics,
+  type PublicSurveyManagementReceipt,
+  type QuestionnairePublicAnalyticsTransport,
+} from "./questionnaire-public-analytics";
 
 const messages: Record<QuestionnaireFailure, string> = {
   unauthenticated: "登录状态已失效，请重新登录。",
@@ -110,6 +120,14 @@ export type QuestionnaireEditorState =
   | { readonly kind: "ready"; readonly item?: QuestionnaireItem; readonly draft: QuestionnaireEditorDraft }
   | { readonly kind: "saving"; readonly item?: QuestionnaireItem; readonly draft: QuestionnaireEditorDraft }
   | { readonly kind: "error"; readonly failure: QuestionnaireFailure; readonly item?: QuestionnaireItem; readonly draft?: QuestionnaireEditorDraft };
+
+export type QuestionnairePublicAnalyticsState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "loading"; readonly item: QuestionnaireItem; readonly previous?: PublicSurveyAnalytics }
+  | { readonly kind: "ready"; readonly item: QuestionnaireItem; readonly analytics: PublicSurveyAnalytics; readonly receipt?: PublicSurveyManagementReceipt }
+  | { readonly kind: "error"; readonly item: QuestionnaireItem; readonly failure: QuestionnaireFailure; readonly previous?: PublicSurveyAnalytics };
+
+export type QuestionnairePublicMutationAction = "publish" | "disable";
 
 export type QuestionnaireMutationAction = "toggle" | "delete" | "duplicate";
 export type QuestionnairePageMutationResult =
@@ -208,6 +226,16 @@ export interface QuestionnaireListContentProps {
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
     item: QuestionnaireItem,
   ) => void;
+  readonly onLoadPublicAnalytics?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    item: QuestionnaireItem,
+  ) => void;
+  readonly onMutatePublic?: (
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    item: QuestionnaireItem,
+    // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
+    action: QuestionnairePublicMutationAction,
+  ) => void;
   readonly onCreate?: VoidFunction;
   readonly onEdit?: (
     // eslint-disable-next-line no-unused-vars -- named callback parameter is required by TS function-type syntax.
@@ -216,6 +244,7 @@ export interface QuestionnaireListContentProps {
   readonly definition?: QuestionnaireDefinitionState;
   readonly preflight?: QuestionnairePreflightState;
   readonly results?: QuestionnaireResultsState;
+  readonly publicAnalytics?: QuestionnairePublicAnalyticsState;
   readonly state: QuestionnaireListState;
 }
 
@@ -311,6 +340,74 @@ function QuestionnaireResultsPanel({
   );
 }
 
+function PublicAnalyticsValues({
+  analytics,
+}: {
+  readonly analytics: PublicSurveyAnalytics;
+}): React.ReactElement {
+  return (
+    <>
+      <dl>
+        <dt>本地提交计数</dt>
+        <dd>{analytics.submissionCount}</dd>
+        <dt>公开定义版本</dt>
+        <dd>{analytics.definitionVersion}</dd>
+      </dl>
+      <table>
+        <thead>
+          <tr>
+            <th>题目序号</th>
+            <th>题型</th>
+            <th>已答计数</th>
+            <th>选项计数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {analytics.questions.map((question) => (
+            <tr key={question.questionID}>
+              <td>{question.sortOrder + 1}</td>
+              <td>{question.type}</td>
+              <td>{question.answeredCount}</td>
+              <td>{question.options.map((option) => `#${option.sortOrder + 1}: ${option.selectionCount}`).join("，")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+function QuestionnairePublicAnalyticsPanel({
+  state,
+}: {
+  readonly state: QuestionnairePublicAnalyticsState;
+}): React.ReactElement | null {
+  if (state.kind === "idle") return null;
+  const title = `匿名公开问卷本地聚合：${state.item.title}`;
+  if (state.kind === "loading") return (
+    <section data-testid="questionnaire-public-analytics">
+      <h2>{title}</h2>
+      {state.previous ? <PublicAnalyticsValues analytics={state.previous} /> : null}
+      <p>{state.previous ? "正在刷新本地匿名聚合。" : "正在读取本地匿名聚合。"}</p>
+    </section>
+  );
+  if (state.kind === "error") return (
+    <section data-testid="questionnaire-public-analytics">
+      <h2>{title}</h2>
+      {state.previous ? <PublicAnalyticsValues analytics={state.previous} /> : null}
+      <p role="alert">{messages[state.failure]}</p>
+    </section>
+  );
+  return (
+    <section data-testid="questionnaire-public-analytics">
+      <h2>{title}</h2>
+      {state.receipt ? <p role="status">本地公开快照状态已确认：{state.receipt.state}。</p> : null}
+      <PublicAnalyticsValues analytics={state.analytics} />
+      <p>仅展示本地计数；不显示身份、答案、令牌或 Provider 结果。</p>
+    </section>
+  );
+}
+
 function DefinitionValues({
   definition,
 }: {
@@ -390,6 +487,7 @@ export function QuestionnaireEditorPanel({
   onDraft,
   onSave,
   outcomeUnknown = false,
+  externalWriteLocked = false,
 }: {
   readonly state: QuestionnaireEditorState;
   readonly onCancel: VoidFunction;
@@ -397,6 +495,7 @@ export function QuestionnaireEditorPanel({
   readonly onDraft: (value: QuestionnaireEditorDraft) => void;
   readonly onSave: VoidFunction;
   readonly outcomeUnknown?: boolean;
+  readonly externalWriteLocked?: boolean;
 }): React.ReactElement | null {
   if (state.kind === "idle") return null;
   if (state.kind === "loading")
@@ -405,13 +504,13 @@ export function QuestionnaireEditorPanel({
     return <section className="route-card"><h2>编辑问卷</h2><p role="alert">{messages[state.failure]}</p><button type="button" onClick={onCancel}>关闭</button></section>;
   const draft = state.draft;
   if (!draft) return null;
-  const saving = state.kind === "saving" || outcomeUnknown;
+  const saving = state.kind === "saving" || outcomeUnknown || externalWriteLocked;
   const change = (value: Partial<QuestionnaireEditorDraft>) => onDraft({ ...draft, ...value });
   return (
     <section className="route-card" data-testid="questionnaire-editor">
       <h2>{state.item ? `编辑问卷：${state.item.title}` : "新建问卷草稿"}</h2>
       <p>仅保存本地问卷定义；不会读取提交答案、打开公开链接或触发任何 Provider。</p>
-      {outcomeUnknown ? <p role="alert">保存结果未知。为避免重复写入，本页已锁定写操作；请刷新后核对本地列表。</p> : state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
+      {outcomeUnknown ? <p role="alert">保存结果未知。为避免重复写入，本页已锁定写操作；请刷新后核对本地列表。</p> : externalWriteLocked ? <p role="status">正在确认另一项本地问卷写入；编辑已暂时锁定。</p> : state.kind === "error" ? <p role="alert">{messages[state.failure]}</p> : null}
       <fieldset disabled={saving}>
         <p><label>名称 <input value={draft.name} onChange={(event) => change({ name: event.currentTarget.value })} /></label></p>
         <p><label>标题 <input value={draft.title} onChange={(event) => change({ title: event.currentTarget.value })} /></label></p>
@@ -474,12 +573,15 @@ export function QuestionnaireListContent({
   notice,
   onLoad,
   onLoadDefinition = noopLoadDefinition,
+  onLoadPublicAnalytics = noopLoadPublicAnalytics,
+  onMutatePublic = noopMutatePublic,
   onCreate = noopCreate,
   onEdit = noopEdit,
   onMutate,
   onLoadResults = noopLoadResults,
   definition = { kind: "idle" },
   preflight,
+  publicAnalytics = { kind: "idle" },
   results = { kind: "idle" },
   state,
 }: QuestionnaireListContentProps): React.ReactElement {
@@ -529,6 +631,7 @@ export function QuestionnaireListContent({
       ) : null}
       <QuestionnaireResultsPanel state={results} />
       <QuestionnaireDefinitionPanel state={definition} />
+      <QuestionnairePublicAnalyticsPanel state={publicAnalytics} />
       {state.items.length === 0 ? (
         <p>当前没有问卷。</p>
       ) : (
@@ -563,8 +666,8 @@ export function QuestionnaireListContent({
                   </button>
                   <button
                     type="button"
-                    disabled={busy !== undefined}
-                    onClick={() => void copyPublicLink(item)}
+                    disabled={busy !== undefined || activePublicPath(publicAnalytics, item.id) === undefined}
+                    onClick={() => void copyPublicLink({ ...item, publicPath: activePublicPath(publicAnalytics, item.id) ?? "" })}
                   >
                     复制公开链接
                   </button>
@@ -585,6 +688,27 @@ export function QuestionnaireListContent({
                     onClick={() => onLoadResults(item)}
                   >
                     查看提交汇总
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined}
+                    onClick={() => onLoadPublicAnalytics(item)}
+                  >
+                    查看匿名公开聚合
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined || item.isDisabled || activePublicDefinitionVersion(publicAnalytics, item.id) !== undefined}
+                    onClick={() => onMutatePublic(item, "publish")}
+                  >
+                    发布匿名公开快照
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== undefined || activePublicDefinitionVersion(publicAnalytics, item.id) === undefined}
+                    onClick={() => onMutatePublic(item, "disable")}
+                  >
+                    停用匿名公开快照
                   </button>
                   <button
                     type="button"
@@ -652,17 +776,21 @@ export function QuestionnaireListContent({
 
 function noopLoadResults(): void {}
 function noopLoadDefinition(): void {}
+function noopLoadPublicAnalytics(): void {}
+function noopMutatePublic(): void {}
 function noopCreate(): void {}
 function noopEdit(): void {}
 
 export function QuestionnaireListPage({
   role,
   transport = generatedQuestionnaireListTransport,
+  publicAnalyticsTransport = generatedQuestionnairePublicAnalyticsTransport,
   readCookie = () => (typeof document === "undefined" ? "" : document.cookie),
   onUnauthenticated,
 }: {
   readonly role: "admin" | "ops" | "sales";
   readonly transport?: QuestionnaireListTransport;
+  readonly publicAnalyticsTransport?: QuestionnairePublicAnalyticsTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
 }): React.ReactElement {
@@ -685,11 +813,17 @@ export function QuestionnaireListPage({
   });
   const [editorOutcomeUnknown, setEditorOutcomeUnknown] = useState(false);
   const [editorWriteLocked, setEditorWriteLocked] = useState(false);
+  const [publicAnalytics, setPublicAnalytics] = useState<QuestionnairePublicAnalyticsState>({ kind: "idle" });
+  const [publicOutcomeUnknown, setPublicOutcomeUnknown] = useState(false);
+  const [publicWriteLocked, setPublicWriteLocked] = useState(false);
   const resultsGeneration = useRef(0);
   const definitionGeneration = useRef(0);
   const editorGeneration = useRef(0);
   const editorSaveToken = useRef<symbol>();
   const editorLifetime = useRef<symbol>();
+  const publicGeneration = useRef(0);
+  const publicMutationToken = useRef<symbol>();
+  const publicLifetime = useRef<symbol>();
   const definitionInflight = useRef(new Set<number>());
   useEffect(() => {
     const lifetime = Symbol("questionnaire-editor-lifetime");
@@ -710,12 +844,28 @@ export function QuestionnaireListPage({
       editorSaveToken.current = undefined;
     };
   }, [role, transport]);
+  useEffect(() => {
+    const lifetime = Symbol("questionnaire-public-lifetime");
+    const replacing = publicLifetime.current !== undefined;
+    publicLifetime.current = lifetime;
+    if (replacing) {
+      setPublicAnalytics({ kind: "idle" });
+      setPublicWriteLocked(false);
+    }
+    return () => {
+      if (publicLifetime.current !== lifetime) return;
+      ++publicGeneration.current;
+      publicMutationToken.current = undefined;
+    };
+  }, [publicAnalyticsTransport, role]);
   const load = useCallback(
     (offset: number) => {
       ++resultsGeneration.current;
       ++definitionGeneration.current;
+      ++publicGeneration.current;
       setResults({ kind: "idle" });
       setDefinition({ kind: "idle" });
+      setPublicAnalytics({ kind: "idle" });
       setState({ kind: "loading" });
       void loadQuestionnaires(transport, offset).then(
         (result: QuestionnaireListResult) => {
@@ -788,7 +938,7 @@ export function QuestionnaireListPage({
   );
   const openEditor = useCallback(
     (item: QuestionnaireItem) => {
-      if (editorOutcomeUnknown || editorSaveToken.current !== undefined) return;
+      if (editorOutcomeUnknown || publicOutcomeUnknown || editorSaveToken.current !== undefined || publicMutationToken.current !== undefined) return;
       const generation = ++editorGeneration.current;
       setEditor({ kind: "loading", item });
       void loadQuestionnaireEditor(transport, item.id).then(
@@ -803,19 +953,19 @@ export function QuestionnaireListPage({
         },
       );
     },
-    [editorOutcomeUnknown, onUnauthenticated, transport],
+    [editorOutcomeUnknown, onUnauthenticated, publicOutcomeUnknown, transport],
   );
   const beginCreate = useCallback(() => {
-    if (editorOutcomeUnknown || editorSaveToken.current !== undefined) return;
+    if (editorOutcomeUnknown || publicOutcomeUnknown || editorSaveToken.current !== undefined || publicMutationToken.current !== undefined) return;
     ++editorGeneration.current;
     setEditor({ kind: "ready", draft: newQuestionnaireEditorDraft() });
-  }, [editorOutcomeUnknown]);
+  }, [editorOutcomeUnknown, publicOutcomeUnknown]);
   const closeEditor = useCallback(() => {
     ++editorGeneration.current;
     setEditor({ kind: "idle" });
   }, []);
   const saveEditor = useCallback(() => {
-    if (editor.kind !== "ready" || editorSaveToken.current !== undefined || editorOutcomeUnknown) return;
+    if (editor.kind !== "ready" || editorSaveToken.current !== undefined || publicMutationToken.current !== undefined || editorOutcomeUnknown || publicOutcomeUnknown) return;
     let csrf: string | undefined;
     try {
       csrf = readCSRFCookie(readCookie());
@@ -878,7 +1028,7 @@ export function QuestionnaireListPage({
         }
       }
     })();
-  }, [editor, editorOutcomeUnknown, load, onUnauthenticated, readCookie, transport]);
+  }, [editor, editorOutcomeUnknown, load, onUnauthenticated, publicOutcomeUnknown, readCookie, transport]);
   useEffect(() => {
     if (role === "admin" || role === "ops") {
       load(0);
@@ -889,7 +1039,7 @@ export function QuestionnaireListPage({
     item: QuestionnaireItem,
     action: QuestionnaireMutationAction,
   ) => {
-    if (busy !== undefined || editorOutcomeUnknown || editorSaveToken.current !== undefined) return;
+    if (busy !== undefined || editorOutcomeUnknown || publicOutcomeUnknown || editorSaveToken.current !== undefined || publicMutationToken.current !== undefined) return;
     setMutationNotice(undefined);
     const result = await performQuestionnairePageMutation({
       action,
@@ -910,6 +1060,104 @@ export function QuestionnaireListPage({
     }
     setState({ kind: "error", failure: result.status });
   };
+  const loadPublicAnalytics = useCallback(
+    (item: QuestionnaireItem, definitionVersion?: number) => {
+      if (editorSaveToken.current !== undefined || publicMutationToken.current !== undefined) return;
+      const generation = ++publicGeneration.current;
+      const previous = retainedPublicAnalytics(publicAnalytics, item.id, definitionVersion);
+      setPublicAnalytics({ kind: "loading", item, previous });
+      void loadQuestionnairePublicAnalytics(
+        publicAnalyticsTransport,
+        item.id,
+        definitionVersion,
+      ).then((result) => {
+        if (generation !== publicGeneration.current) return;
+        if (result.status === "loaded") {
+          setPublicAnalytics({ kind: "ready", item, analytics: result.analytics });
+          return;
+        }
+        if (result.status === "unauthenticated") onUnauthenticated?.();
+        setPublicAnalytics({ kind: "error", item, failure: result.status, previous });
+      });
+    },
+    [onUnauthenticated, publicAnalytics, publicAnalyticsTransport],
+  );
+  const mutatePublic = useCallback(
+    (item: QuestionnaireItem, action: QuestionnairePublicMutationAction) => {
+      if (
+        busy !== undefined || editorOutcomeUnknown || publicOutcomeUnknown ||
+        editorSaveToken.current !== undefined || publicMutationToken.current !== undefined ||
+        (action === "publish" && item.isDisabled)
+      ) return;
+      const confirm = typeof window !== "undefined" && typeof window.confirm === "function"
+        ? window.confirm
+        : undefined;
+      const message = action === "publish"
+        ? `确认发布问卷“${item.title}”的本地匿名公开快照？`
+        : `确认停用问卷“${item.title}”的本地匿名公开快照？`;
+      if (!confirm || !confirm(message)) return;
+      const publicDefinitionVersion = activePublicDefinitionVersion(publicAnalytics, item.id);
+      if (action === "disable" && publicDefinitionVersion === undefined) {
+        setMutationNotice("请先读取该问卷的匿名公开聚合，确认当前公开快照版本后再停用。");
+        return;
+      }
+      let csrf: string | undefined;
+      try {
+        csrf = readCSRFCookie(readCookie());
+      } catch {
+        csrf = undefined;
+      }
+      const key = newQuestionnairePublicIdempotencyKey(action);
+      if (!csrf || !key) {
+        setPublicAnalytics({ kind: "error", item, failure: "forbidden", previous: retainedPublicAnalytics(publicAnalytics, item.id) });
+        return;
+      }
+      const token = Symbol("questionnaire-public-mutation");
+      publicMutationToken.current = token;
+      setPublicWriteLocked(true);
+      const generation = ++publicGeneration.current;
+      setPublicAnalytics({ kind: "loading", item, previous: retainedPublicAnalytics(publicAnalytics, item.id) });
+      void (async () => {
+        try {
+          const result = action === "publish"
+            ? await publishQuestionnairePublicDefinition(publicAnalyticsTransport, item.id, item.slug, item.version, csrf, key)
+            : await disableQuestionnairePublicDefinition(publicAnalyticsTransport, item.id, item.slug, publicDefinitionVersion!, csrf, key);
+          if (generation !== publicGeneration.current) return;
+          if (result.status !== "saved") {
+            if (result.status === "unauthenticated") onUnauthenticated?.();
+            if (result.status === "unavailable") {
+              setPublicOutcomeUnknown(true);
+              setMutationNotice("匿名公开快照写入结果未知。为避免重复写入，请刷新后核对本地状态。");
+            }
+            setPublicAnalytics({ kind: "error", item, failure: result.status, previous: retainedPublicAnalytics(publicAnalytics, item.id) });
+            return;
+          }
+          const confirmationGeneration = ++publicGeneration.current;
+          const analytics = await loadQuestionnairePublicAnalytics(
+            publicAnalyticsTransport,
+            item.id,
+            result.receipt.definitionVersion,
+          );
+          if (confirmationGeneration !== publicGeneration.current) return;
+          if (analytics.status === "loaded") {
+            setPublicAnalytics({ kind: "ready", item, receipt: result.receipt, analytics: analytics.analytics });
+            setMutationNotice(action === "publish" ? "匿名公开快照已确认，并已读取本地聚合。" : "匿名公开快照已停用，并已读取本地聚合。" );
+            return;
+          }
+          if (analytics.status === "unauthenticated") onUnauthenticated?.();
+          setPublicOutcomeUnknown(true);
+          setMutationNotice("匿名公开快照回读未确认。为避免重复写入，请刷新后核对本地状态。");
+          setPublicAnalytics({ kind: "error", item, failure: analytics.status, previous: retainedPublicAnalytics(publicAnalytics, item.id, result.receipt.definitionVersion) });
+        } finally {
+          if (publicMutationToken.current === token) {
+            publicMutationToken.current = undefined;
+            setPublicWriteLocked(false);
+          }
+        }
+      })();
+    },
+    [busy, editorOutcomeUnknown, onUnauthenticated, publicAnalytics, publicAnalyticsTransport, publicOutcomeUnknown, readCookie],
+  );
   if (role !== "admin" && role !== "ops")
     return (
       <section className="route-card">
@@ -921,23 +1169,27 @@ export function QuestionnaireListPage({
     <>
       <QuestionnaireEditorPanel
         state={editor}
-        outcomeUnknown={editorOutcomeUnknown}
+        outcomeUnknown={editorOutcomeUnknown || publicOutcomeUnknown}
+        externalWriteLocked={publicWriteLocked}
         onCancel={closeEditor}
         onDraft={(draft) => setEditor((current) => current.kind === "ready" || current.kind === "error" ? { ...current, kind: "ready", draft } : current)}
         onSave={saveEditor}
       />
       <QuestionnaireListContent
-        busy={busy ?? (editorWriteLocked || editorOutcomeUnknown ? -1 : undefined)}
+        busy={busy ?? (editorWriteLocked || editorOutcomeUnknown || publicWriteLocked || publicOutcomeUnknown ? -1 : undefined)}
         notice={mutationNotice}
         onCreate={beginCreate}
         onEdit={openEditor}
         onLoad={load}
         onLoadDefinition={loadDefinition}
+        onLoadPublicAnalytics={loadPublicAnalytics}
+        onMutatePublic={mutatePublic}
         onLoadResults={loadResults}
         onMutate={({ item, action }) => void mutate(item, action)}
         preflight={preflight}
         definition={definition}
         results={results}
+        publicAnalytics={publicAnalytics}
         state={state}
       />
     </>
@@ -968,4 +1220,33 @@ function retainedDefinition(
     : state.kind === "loading" || state.kind === "error"
       ? state.previous
       : undefined;
+}
+
+function retainedPublicAnalytics(
+  state: QuestionnairePublicAnalyticsState,
+  questionnaireID: number,
+  definitionVersion?: number,
+): PublicSurveyAnalytics | undefined {
+  if (
+    state.kind === "idle" || state.item.id !== questionnaireID ||
+    (definitionVersion !== undefined && state.kind === "ready" && state.analytics.definitionVersion !== definitionVersion)
+  ) return undefined;
+  if (state.kind === "ready") return state.analytics;
+  return definitionVersion === undefined || state.previous?.definitionVersion === definitionVersion ? state.previous : undefined;
+}
+
+function activePublicDefinitionVersion(
+  state: QuestionnairePublicAnalyticsState,
+  questionnaireID: number,
+): number | undefined {
+  if (state.kind !== "ready" || state.item.id !== questionnaireID || state.analytics.state !== "public") return undefined;
+  return state.analytics.definitionVersion;
+}
+
+function activePublicPath(
+  state: QuestionnairePublicAnalyticsState,
+  questionnaireID: number,
+): string | undefined {
+  if (state.kind !== "ready" || state.item.id !== questionnaireID || state.analytics.state !== "public") return undefined;
+  return `/q/${state.analytics.slug}`;
 }

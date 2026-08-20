@@ -3,7 +3,7 @@ module github.com/qianlan33333-png/AI-CRM-v2
 go 1.26.6
 
 require (
-	github.com/go-chi/chi/v5 v5.2.3
+	github.com/go-chi/chi/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/oapi-codegen/runtime v1.2.0
 	github.com/riverqueue/river v0.24.0

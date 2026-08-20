@@ -77,6 +77,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite},
 		{http.MethodDelete, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
+		{http.MethodPost, "/api/admin/questionnaires/1/public-publish", authport.CapabilityQuestionnairesWrite},
+		{http.MethodPost, "/api/admin/questionnaires/1/public-disable", authport.CapabilityQuestionnairesWrite},
+		{http.MethodGet, "/api/admin/questionnaires/1/public-analytics?definition_version=1", authport.CapabilityQuestionnairesRead},
 	}
 	for _, test := range tests {
 		t.Run(test.method+" "+test.path, func(t *testing.T) {
@@ -100,6 +103,11 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			if test.capability == authport.CapabilityProductsWrite || test.capability == authport.CapabilityEntitlementsWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 				request.Header.Set("Idempotency-Key", "router-product-key")
+			}
+			if test.capability == authport.CapabilityQuestionnairesWrite {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-public-survey-key")
+				request.Header.Set("Content-Type", "application/json")
 			}
 			if test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("Idempotency-Key", "router-review-key")
@@ -155,6 +163,8 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPut, "/api/v1/stages/reorder", `{"ids":[1]}`},
 		{http.MethodPatch, "/api/v1/stages/1", `{"name":"New"}`},
 		{http.MethodDelete, "/api/v1/stages/1", ``},
+		{http.MethodPost, "/api/admin/questionnaires/1/public-publish", `{"expected_questionnaire_version":1}`},
+		{http.MethodPost, "/api/admin/questionnaires/1/public-disable", `{"expected_definition_version":1}`},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

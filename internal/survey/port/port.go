@@ -190,3 +190,108 @@ type SubmissionCSVDownload struct {
 	Body        []byte
 	Total       int64
 }
+
+// PublicQuestionnaire is the deliberately small public projection. It never
+// exposes staff-owned configuration, assessment, tags, identity fields, or a
+// redirect target.
+type PublicQuestionnaire struct {
+	ID                ID                `json:"id"`
+	Slug              string            `json:"slug"`
+	Title             string            `json:"title"`
+	Description       string            `json:"description"`
+	AnswerDisplayMode AnswerDisplayMode `json:"answer_display_mode"`
+	Version           int64             `json:"version"`
+	Questions         []PublicQuestion  `json:"questions"`
+}
+
+type PublicQuestion struct {
+	ID        int64          `json:"id"`
+	Type      QuestionType   `json:"type"`
+	Title     string         `json:"title"`
+	Required  bool           `json:"required"`
+	SortOrder int            `json:"sort_order"`
+	Minimum   int            `json:"minimum_selections"`
+	Maximum   int            `json:"maximum_selections"`
+	Options   []PublicOption `json:"options"`
+}
+
+type PublicOption struct {
+	ID         int64  `json:"id"`
+	OptionText string `json:"option_text"`
+	SortOrder  int    `json:"sort_order"`
+}
+
+// PublicSubmissionCommand contains no identity, contact, free-text, redirect,
+// or external-effect data. AnonymousDigest is supplied by the HTTP edge as a
+// one-way digest and is never replaced by the raw browser/network key here.
+type PublicSubmissionCommand struct {
+	Slug            string   `json:"slug"`
+	Version         int64    `json:"version"`
+	SubmissionKey   string   `json:"submission_key"`
+	AnonymousDigest [32]byte `json:"-"`
+	// RateDigest is a server-only, source-bound HMAC. It is intentionally
+	// separate from the browser cookie digest so deleting a cookie cannot reset
+	// the ten-minute anonymous abuse budget; neither raw value is persisted.
+	RateDigest [32]byte                 `json:"-"`
+	Answers    []PublicSubmissionAnswer `json:"answers"`
+}
+
+type PublicSubmissionAnswer struct {
+	QuestionID int64   `json:"question_id"`
+	OptionIDs  []int64 `json:"option_ids"`
+}
+
+type PublicSubmissionReceipt struct {
+	QuestionnaireID   ID     `json:"questionnaire_id"`
+	QuestionnaireSlug string `json:"questionnaire_slug"`
+	DefinitionVersion int64  `json:"definition_version"`
+	SubmissionID      int64  `json:"submission_id"`
+}
+
+// PublicAnalytics is admin-only. It contains aggregate selection counts only;
+// no submission, browser, token, or identity value is part of this projection.
+type PublicAnalytics struct {
+	QuestionnaireID   ID                        `json:"questionnaire_id"`
+	DefinitionVersion int64                     `json:"definition_version"`
+	Slug              string                    `json:"slug"`
+	State             string                    `json:"state"`
+	SubmissionCount   int64                     `json:"submission_count"`
+	Questions         []PublicAnalyticsQuestion `json:"questions"`
+}
+
+type PublicAnalyticsQuestion struct {
+	QuestionID    int64                   `json:"question_id"`
+	Type          QuestionType            `json:"type"`
+	SortOrder     int                     `json:"sort_order"`
+	AnsweredCount int64                   `json:"answered_count"`
+	Options       []PublicAnalyticsOption `json:"options"`
+}
+
+type PublicAnalyticsOption struct {
+	OptionID       int64 `json:"option_id"`
+	SortOrder      int   `json:"sort_order"`
+	SelectionCount int64 `json:"selection_count"`
+}
+
+// PublicSubmissionResult is the only public result lookup projection. The
+// token used to find it is never echoed or stored in this DTO.
+type PublicSubmissionResult struct {
+	SubmissionID      int64     `json:"submission_id"`
+	DefinitionVersion int64     `json:"definition_version"`
+	SubmittedAt       time.Time `json:"submitted_at"`
+	LocalOnly         bool      `json:"local_only"`
+	ExternalExecuted  bool      `json:"external_executed"`
+}
+
+type PublishPublicDefinitionCommand struct {
+	QuestionnaireID              ID
+	ExpectedQuestionnaireVersion int64
+	Actor                        int64
+	IdempotencyKey               string
+}
+type DisablePublicDefinitionCommand struct {
+	QuestionnaireID           ID
+	ExpectedDefinitionVersion int64
+	Actor                     int64
+	IdempotencyKey            string
+}

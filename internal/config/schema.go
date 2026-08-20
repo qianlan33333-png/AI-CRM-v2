@@ -31,6 +31,7 @@ const (
 	weComOAuthSecretEnv       = "AICRM_WECOM_OAUTH_SECRET"
 	weComOAuthCallbackEnv     = "AICRM_WECOM_OAUTH_CALLBACK_URL"
 	identityHMACKeyEnv        = "AICRM_IDENTITY_HMAC_KEY"
+	surveyPublicKeyEnv        = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
 	domainVerificationDirEnv  = "AICRM_DOMAIN_VERIFICATION_DIR"
 	applicationEnvironmentEnv = "AICRM_ENV"
 	releaseSHAEnv             = "AICRM_RELEASE_SHA"
@@ -140,6 +141,19 @@ type Identity struct {
 	HMACKey IdentityHMACKey
 }
 
+// SurveyPublicKey is optional as a whole. A missing key leaves every public
+// Survey operation fail-closed with 503, while an invalid configured value
+// rejects process startup. Generic formatting can never reveal the key.
+type SurveyPublicKey struct{ value [32]byte }
+
+func (key SurveyPublicKey) Value() []byte { return append([]byte(nil), key.value[:]...) }
+func (SurveyPublicKey) String() string    { return "[REDACTED]" }
+func (SurveyPublicKey) GoString() string  { return "[REDACTED]" }
+
+type Survey struct {
+	PublicKey SurveyPublicKey
+}
+
 type Worker struct {
 	PoolMaxConns int32
 	Queues       QueueConcurrency
@@ -171,6 +185,7 @@ type Root struct {
 	Worker             Worker
 	WeCom              WeCom
 	Identity           Identity
+	Survey             Survey
 	DomainVerification DomainVerification
 	Release            Release
 	LegacyHealth       LegacyHealthSnapshot
@@ -219,6 +234,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
+		root.Survey.PublicKey = parseOptionalSurveyPublicKey(lookup, &problems)
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
 		root.Release.Environment, _ = lookup(applicationEnvironmentEnv)
 		root.Release.SHA, _ = lookup(releaseSHAEnv)
@@ -260,6 +276,21 @@ func parseIdentityHMACKey(lookup environmentLookup, problems *[]string) Identity
 		return IdentityHMACKey{}
 	}
 	var key IdentityHMACKey
+	copy(key.value[:], decoded)
+	return key
+}
+
+func parseOptionalSurveyPublicKey(lookup environmentLookup, problems *[]string) SurveyPublicKey {
+	value, present := lookup(surveyPublicKeyEnv)
+	if !present || value == "" {
+		return SurveyPublicKey{}
+	}
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	if err != nil || len(decoded) != 32 || base64.RawURLEncoding.EncodeToString(decoded) != value {
+		*problems = append(*problems, "survey.public_key must be 32-byte canonical base64url")
+		return SurveyPublicKey{}
+	}
+	var key SurveyPublicKey
 	copy(key.value[:], decoded)
 	return key
 }

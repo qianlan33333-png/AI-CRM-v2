@@ -18,6 +18,8 @@ type Querier interface {
 	DeleteDisabledQuestionnaire(ctx context.Context, questionnaireID int64) (int64, error)
 	DeleteQuestionnaireChildren(ctx context.Context, questionnaireID int64) error
 	FinalizeQuestionnaireSlug(ctx context.Context, questionnaireID int64) (string, error)
+	FindPublicSurveyDefinitionBySlug(ctx context.Context, slug string) (FindPublicSurveyDefinitionBySlugRow, error)
+	FindPublicSurveyDefinitionByVersion(ctx context.Context, arg FindPublicSurveyDefinitionByVersionParams) (FindPublicSurveyDefinitionByVersionRow, error)
 	GetQuestionnaire(ctx context.Context, questionnaireID int64) (GetQuestionnaireRow, error)
 	GetQuestionnaireManagementReceipt(ctx context.Context, arg GetQuestionnaireManagementReceiptParams) (GetQuestionnaireManagementReceiptRow, error)
 	GetQuestionnaireOperationReceipt(ctx context.Context, arg GetQuestionnaireOperationReceiptParams) (GetQuestionnaireOperationReceiptRow, error)
@@ -29,6 +31,7 @@ type Querier interface {
 	ListQuestionnaireSubmissionExportRows(ctx context.Context, arg ListQuestionnaireSubmissionExportRowsParams) ([]ListQuestionnaireSubmissionExportRowsRow, error)
 	ListQuestionnaireSubmissions(ctx context.Context, arg ListQuestionnaireSubmissionsParams) ([]ListQuestionnaireSubmissionsRow, error)
 	ListQuestionnairesOffset(ctx context.Context, arg ListQuestionnairesOffsetParams) ([]ListQuestionnairesOffsetRow, error)
+	LookupPublicSurveyResult(ctx context.Context, resultTokenDigest []byte) (LookupPublicSurveyResultRow, error)
 	QuestionnaireSubmissionOwnerExists(ctx context.Context, questionnaireID int64) (bool, error)
 	ReserveQuestionnaireManagementReceipt(ctx context.Context, arg ReserveQuestionnaireManagementReceiptParams) (ReserveQuestionnaireManagementReceiptRow, error)
 	ReserveQuestionnaireOperationReceipt(ctx context.Context, arg ReserveQuestionnaireOperationReceiptParams) (ReserveQuestionnaireOperationReceiptRow, error)

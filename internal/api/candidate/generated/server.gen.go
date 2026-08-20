@@ -592,13 +592,13 @@ func (e LegacyExecutionTimelineUnavailableRealExternalCallExecuted) Valid() bool
 
 // Defines values for LegacyHealthMethodNotAllowedDetail.
 const (
-	MethodNotAllowed LegacyHealthMethodNotAllowedDetail = "Method Not Allowed"
+	LegacyHealthMethodNotAllowedDetailMethodNotAllowed LegacyHealthMethodNotAllowedDetail = "Method Not Allowed"
 )
 
 // Valid indicates whether the value is a known member of the LegacyHealthMethodNotAllowedDetail enum.
 func (e LegacyHealthMethodNotAllowedDetail) Valid() bool {
 	switch e {
-	case MethodNotAllowed:
+	case LegacyHealthMethodNotAllowedDetailMethodNotAllowed:
 		return true
 	default:
 		return false
@@ -1595,6 +1595,156 @@ func (e LocalProductEntitlementState) Valid() bool {
 	case LocalProductEntitlementStateActive:
 		return true
 	case LocalProductEntitlementStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyAnalyticsState.
+const (
+	PublicSurveyAnalyticsStateDisabled PublicSurveyAnalyticsState = "disabled"
+	PublicSurveyAnalyticsStatePublic   PublicSurveyAnalyticsState = "public"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyAnalyticsState enum.
+func (e PublicSurveyAnalyticsState) Valid() bool {
+	switch e {
+	case PublicSurveyAnalyticsStateDisabled:
+		return true
+	case PublicSurveyAnalyticsStatePublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyAnalyticsQuestionType.
+const (
+	PublicSurveyAnalyticsQuestionTypeMultiChoice  PublicSurveyAnalyticsQuestionType = "multi_choice"
+	PublicSurveyAnalyticsQuestionTypeSingleChoice PublicSurveyAnalyticsQuestionType = "single_choice"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyAnalyticsQuestionType enum.
+func (e PublicSurveyAnalyticsQuestionType) Valid() bool {
+	switch e {
+	case PublicSurveyAnalyticsQuestionTypeMultiChoice:
+		return true
+	case PublicSurveyAnalyticsQuestionTypeSingleChoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyDefinitionAnswerDisplayMode.
+const (
+	AllInOne PublicSurveyDefinitionAnswerDisplayMode = "all_in_one"
+	OneByOne PublicSurveyDefinitionAnswerDisplayMode = "one_by_one"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyDefinitionAnswerDisplayMode enum.
+func (e PublicSurveyDefinitionAnswerDisplayMode) Valid() bool {
+	switch e {
+	case AllInOne:
+		return true
+	case OneByOne:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyErrorCode.
+const (
+	PublicSurveyErrorCodeIdempotencyConflict PublicSurveyErrorCode = "idempotency_conflict"
+	PublicSurveyErrorCodeInvalidPublicInput  PublicSurveyErrorCode = "invalid_public_input"
+	PublicSurveyErrorCodeMethodNotAllowed    PublicSurveyErrorCode = "method_not_allowed"
+	PublicSurveyErrorCodeNotFound            PublicSurveyErrorCode = "not_found"
+	PublicSurveyErrorCodeRateLimited         PublicSurveyErrorCode = "rate_limited"
+	PublicSurveyErrorCodeUnavailable         PublicSurveyErrorCode = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyErrorCode enum.
+func (e PublicSurveyErrorCode) Valid() bool {
+	switch e {
+	case PublicSurveyErrorCodeIdempotencyConflict:
+		return true
+	case PublicSurveyErrorCodeInvalidPublicInput:
+		return true
+	case PublicSurveyErrorCodeMethodNotAllowed:
+		return true
+	case PublicSurveyErrorCodeNotFound:
+		return true
+	case PublicSurveyErrorCodeRateLimited:
+		return true
+	case PublicSurveyErrorCodeUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyManagementResponseState.
+const (
+	PublicSurveyManagementResponseStateDisabled PublicSurveyManagementResponseState = "disabled"
+	PublicSurveyManagementResponseStatePublic   PublicSurveyManagementResponseState = "public"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyManagementResponseState enum.
+func (e PublicSurveyManagementResponseState) Valid() bool {
+	switch e {
+	case PublicSurveyManagementResponseStateDisabled:
+		return true
+	case PublicSurveyManagementResponseStatePublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyQuestionType.
+const (
+	PublicSurveyQuestionTypeMultiChoice  PublicSurveyQuestionType = "multi_choice"
+	PublicSurveyQuestionTypeSingleChoice PublicSurveyQuestionType = "single_choice"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyQuestionType enum.
+func (e PublicSurveyQuestionType) Valid() bool {
+	switch e {
+	case PublicSurveyQuestionTypeMultiChoice:
+		return true
+	case PublicSurveyQuestionTypeSingleChoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyResultExternalExecuted.
+const (
+	False PublicSurveyResultExternalExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyResultExternalExecuted enum.
+func (e PublicSurveyResultExternalExecuted) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyResultLocalOnly.
+const (
+	True PublicSurveyResultLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyResultLocalOnly enum.
+func (e PublicSurveyResultLocalOnly) Valid() bool {
+	switch e {
+	case True:
 		return true
 	default:
 		return false
@@ -2859,6 +3009,152 @@ type ProductPage struct {
 	NextCursor *string   `json:"next_cursor,omitempty"`
 }
 
+// PublicSurveyAnalytics defines model for PublicSurveyAnalytics.
+type PublicSurveyAnalytics struct {
+	DefinitionVersion int64                           `json:"definition_version"`
+	QuestionnaireId   int64                           `json:"questionnaire_id"`
+	Questions         []PublicSurveyAnalyticsQuestion `json:"questions"`
+	Slug              string                          `json:"slug"`
+	State             PublicSurveyAnalyticsState      `json:"state"`
+	SubmissionCount   int64                           `json:"submission_count"`
+}
+
+// PublicSurveyAnalyticsState defines model for PublicSurveyAnalytics.State.
+type PublicSurveyAnalyticsState string
+
+// PublicSurveyAnalyticsOption defines model for PublicSurveyAnalyticsOption.
+type PublicSurveyAnalyticsOption struct {
+	OptionId       int64 `json:"option_id"`
+	SelectionCount int64 `json:"selection_count"`
+	SortOrder      int   `json:"sort_order"`
+}
+
+// PublicSurveyAnalyticsQuestion defines model for PublicSurveyAnalyticsQuestion.
+type PublicSurveyAnalyticsQuestion struct {
+	AnsweredCount int64                             `json:"answered_count"`
+	Options       []PublicSurveyAnalyticsOption     `json:"options"`
+	QuestionId    int64                             `json:"question_id"`
+	SortOrder     int                               `json:"sort_order"`
+	Type          PublicSurveyAnalyticsQuestionType `json:"type"`
+}
+
+// PublicSurveyAnalyticsQuestionType defines model for PublicSurveyAnalyticsQuestion.Type.
+type PublicSurveyAnalyticsQuestionType string
+
+// PublicSurveyDefinition defines model for PublicSurveyDefinition.
+type PublicSurveyDefinition struct {
+	AnswerDisplayMode PublicSurveyDefinitionAnswerDisplayMode `json:"answer_display_mode"`
+	Description       string                                  `json:"description"`
+	Id                int64                                   `json:"id"`
+	Questions         []PublicSurveyQuestion                  `json:"questions"`
+	Slug              string                                  `json:"slug"`
+	Title             string                                  `json:"title"`
+	Version           int64                                   `json:"version"`
+}
+
+// PublicSurveyDefinitionAnswerDisplayMode defines model for PublicSurveyDefinition.AnswerDisplayMode.
+type PublicSurveyDefinitionAnswerDisplayMode string
+
+// PublicSurveyDisableRequest defines model for PublicSurveyDisableRequest.
+type PublicSurveyDisableRequest struct {
+	ExpectedDefinitionVersion int64 `json:"expected_definition_version"`
+}
+
+// PublicSurveyError defines model for PublicSurveyError.
+type PublicSurveyError struct {
+	Code PublicSurveyErrorCode `json:"code"`
+}
+
+// PublicSurveyErrorCode defines model for PublicSurveyError.Code.
+type PublicSurveyErrorCode string
+
+// PublicSurveyManagementResponse defines model for PublicSurveyManagementResponse.
+type PublicSurveyManagementResponse struct {
+	DefinitionVersion int64                               `json:"definition_version"`
+	QuestionnaireId   int64                               `json:"questionnaire_id"`
+	Slug              string                              `json:"slug"`
+	State             PublicSurveyManagementResponseState `json:"state"`
+}
+
+// PublicSurveyManagementResponseState defines model for PublicSurveyManagementResponse.State.
+type PublicSurveyManagementResponseState string
+
+// PublicSurveyOption defines model for PublicSurveyOption.
+type PublicSurveyOption struct {
+	Id         int64  `json:"id"`
+	OptionText string `json:"option_text"`
+	SortOrder  int    `json:"sort_order"`
+}
+
+// PublicSurveyPublishRequest defines model for PublicSurveyPublishRequest.
+type PublicSurveyPublishRequest struct {
+	ExpectedQuestionnaireVersion int64 `json:"expected_questionnaire_version"`
+}
+
+// PublicSurveyQuestion defines model for PublicSurveyQuestion.
+type PublicSurveyQuestion struct {
+	Id                int64                    `json:"id"`
+	MaximumSelections int                      `json:"maximum_selections"`
+	MinimumSelections int                      `json:"minimum_selections"`
+	Options           []PublicSurveyOption     `json:"options"`
+	Required          bool                     `json:"required"`
+	SortOrder         int                      `json:"sort_order"`
+	Title             string                   `json:"title"`
+	Type              PublicSurveyQuestionType `json:"type"`
+}
+
+// PublicSurveyQuestionType defines model for PublicSurveyQuestion.Type.
+type PublicSurveyQuestionType string
+
+// PublicSurveyResult defines model for PublicSurveyResult.
+type PublicSurveyResult struct {
+	DefinitionVersion int64                              `json:"definition_version"`
+	ExternalExecuted  PublicSurveyResultExternalExecuted `json:"external_executed"`
+	LocalOnly         PublicSurveyResultLocalOnly        `json:"local_only"`
+	SubmissionId      int64                              `json:"submission_id"`
+	SubmittedAt       time.Time                          `json:"submitted_at"`
+}
+
+// PublicSurveyResultExternalExecuted defines model for PublicSurveyResult.ExternalExecuted.
+type PublicSurveyResultExternalExecuted bool
+
+// PublicSurveyResultLocalOnly defines model for PublicSurveyResult.LocalOnly.
+type PublicSurveyResultLocalOnly bool
+
+// PublicSurveyResultQueryRequest defines model for PublicSurveyResultQueryRequest.
+type PublicSurveyResultQueryRequest struct {
+	ResultToken string `json:"result_token"`
+}
+
+// PublicSurveySubmissionAnswer defines model for PublicSurveySubmissionAnswer.
+type PublicSurveySubmissionAnswer struct {
+	OptionIds  []int64 `json:"option_ids"`
+	QuestionId int64   `json:"question_id"`
+}
+
+// PublicSurveySubmissionReceipt defines model for PublicSurveySubmissionReceipt.
+type PublicSurveySubmissionReceipt struct {
+	DefinitionVersion int64  `json:"definition_version"`
+	QuestionnaireId   int64  `json:"questionnaire_id"`
+	QuestionnaireSlug string `json:"questionnaire_slug"`
+	SubmissionId      int64  `json:"submission_id"`
+}
+
+// PublicSurveySubmissionRequest defines model for PublicSurveySubmissionRequest.
+type PublicSurveySubmissionRequest struct {
+	Answers       []PublicSurveySubmissionAnswer `json:"answers"`
+	SubmissionKey string                         `json:"submission_key"`
+	Version       int64                          `json:"version"`
+}
+
+// PublicSurveySubmissionResponse defines model for PublicSurveySubmissionResponse.
+type PublicSurveySubmissionResponse struct {
+	Receipt PublicSurveySubmissionReceipt `json:"receipt"`
+
+	// ResultToken POST-body-only opaque result credential; it is never accepted in a query parameter or returned by lookup responses.
+	ResultToken string `json:"result_token"`
+}
+
 // RejectIdentityMergeReviewRequest defines model for RejectIdentityMergeReviewRequest.
 type RejectIdentityMergeReviewRequest struct {
 	ExpectedVersion int64  `json:"expected_version"`
@@ -3106,6 +3402,9 @@ type OwnerStaffIDFilter = int64
 // ProductID defines model for ProductID.
 type ProductID = int64
 
+// PublicSurveySlug defines model for PublicSurveySlug.
+type PublicSurveySlug = string
+
 // PushCenterBusinessIDFilter defines model for PushCenterBusinessIDFilter.
 type PushCenterBusinessIDFilter = string
 
@@ -3151,6 +3450,9 @@ type PushCenterTargetTypeFilter = string
 // PushCenterTraceIDFilter defines model for PushCenterTraceIDFilter.
 type PushCenterTraceIDFilter = string
 
+// QuestionnaireID defines model for QuestionnaireID.
+type QuestionnaireID = int64
+
 // SegmentID defines model for SegmentID.
 type SegmentID = int64
 
@@ -3180,6 +3482,27 @@ type Forbidden = ErrorResponse
 
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
+
+// PublicSurveyConflict defines model for PublicSurveyConflict.
+type PublicSurveyConflict = PublicSurveyError
+
+// PublicSurveyGetOnly defines model for PublicSurveyGetOnly.
+type PublicSurveyGetOnly = PublicSurveyError
+
+// PublicSurveyInvalidInput defines model for PublicSurveyInvalidInput.
+type PublicSurveyInvalidInput = PublicSurveyError
+
+// PublicSurveyNotFound defines model for PublicSurveyNotFound.
+type PublicSurveyNotFound = PublicSurveyError
+
+// PublicSurveyPostOnly defines model for PublicSurveyPostOnly.
+type PublicSurveyPostOnly = PublicSurveyError
+
+// PublicSurveyRateLimited defines model for PublicSurveyRateLimited.
+type PublicSurveyRateLimited = PublicSurveyError
+
+// PublicSurveyUnavailable defines model for PublicSurveyUnavailable.
+type PublicSurveyUnavailable = PublicSurveyError
 
 // ServiceUnavailable defines model for ServiceUnavailable.
 type ServiceUnavailable = ErrorResponse
@@ -3246,6 +3569,30 @@ type GetLegacyPushCenterStatsParams struct {
 	SourceRoute    *PushCenterSourceRouteFilter    `form:"source_route,omitempty" json:"source_route,omitempty"`
 	CreatedFrom    *PushCenterCreatedFromFilter    `form:"created_from,omitempty" json:"created_from,omitempty"`
 	CreatedTo      *PushCenterCreatedToFilter      `form:"created_to,omitempty" json:"created_to,omitempty"`
+}
+
+// GetQuestionnairePublicAnalyticsParams defines parameters for GetQuestionnairePublicAnalytics.
+type GetQuestionnairePublicAnalyticsParams struct {
+	// DefinitionVersion Omit to read the current public snapshot; provide a positive version to read one immutable historical snapshot.
+	DefinitionVersion *int64 `form:"definition_version,omitempty" json:"definition_version,omitempty"`
+}
+
+// DisableQuestionnairePublicDefinitionParams defines parameters for DisableQuestionnairePublicDefinition.
+type DisableQuestionnairePublicDefinitionParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PublishQuestionnairePublicDefinitionParams defines parameters for PublishQuestionnairePublicDefinition.
+type PublishQuestionnairePublicDefinitionParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // LogoutAdminParams defines parameters for LogoutAdmin.
@@ -3557,6 +3904,18 @@ type UpdateTagParams struct {
 	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
+
+// DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
+type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest
+
+// PublishQuestionnairePublicDefinitionJSONRequestBody defines body for PublishQuestionnairePublicDefinition for application/json ContentType.
+type PublishQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyPublishRequest
+
+// SubmitPublicSurveyJSONRequestBody defines body for SubmitPublicSurvey for application/json ContentType.
+type SubmitPublicSurveyJSONRequestBody = PublicSurveySubmissionRequest
+
+// QueryPublicSurveySubmissionResultJSONRequestBody defines body for QueryPublicSurveySubmissionResult for application/json ContentType.
+type QueryPublicSurveySubmissionResultJSONRequestBody = PublicSurveyResultQueryRequest
 
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
@@ -4273,6 +4632,24 @@ type ServerInterface interface {
 	// Read the frozen global Push Center statistics without accepting, sending, or retrying work
 	// (GET /api/admin/push-center/stats)
 	GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams)
+	// Read aggregate anonymous local public survey analytics
+	// (GET /api/admin/questionnaires/{questionnaire_id}/public-analytics)
+	GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params GetQuestionnairePublicAnalyticsParams)
+	// Disable one immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-disable)
+	DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params DisableQuestionnairePublicDefinitionParams)
+	// Publish an immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
+	PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams)
+	// Read one immutable anonymous public survey definition
+	// (GET /api/public/questionnaires/{slug})
+	GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
+	// Submit one anonymous selection-only public survey response
+	// (POST /api/public/questionnaires/{slug}/submissions)
+	SubmitPublicSurvey(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
+	// Query one anonymous local-only public survey result by POST body token
+	// (POST /api/public/survey-submission-results/query)
+	QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request)
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(w http.ResponseWriter, r *http.Request)
@@ -4417,6 +4794,9 @@ type ServerInterface interface {
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(w http.ResponseWriter, r *http.Request)
+	// Carry a public survey slug into the same-origin SPA without token parameters
+	// (GET /q/{slug})
+	GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
 	// Read one WeChat or WeCom domain verification file
 	// (GET /{filename})
 	GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string)
@@ -4459,6 +4839,42 @@ func (_ Unimplemented) GetLegacyPushCenterSections(w http.ResponseWriter, r *htt
 // Read the frozen global Push Center statistics without accepting, sending, or retrying work
 // (GET /api/admin/push-center/stats)
 func (_ Unimplemented) GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read aggregate anonymous local public survey analytics
+// (GET /api/admin/questionnaires/{questionnaire_id}/public-analytics)
+func (_ Unimplemented) GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params GetQuestionnairePublicAnalyticsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disable one immutable local anonymous public survey snapshot
+// (POST /api/admin/questionnaires/{questionnaire_id}/public-disable)
+func (_ Unimplemented) DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params DisableQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Publish an immutable local anonymous public survey snapshot
+// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
+func (_ Unimplemented) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one immutable anonymous public survey definition
+// (GET /api/public/questionnaires/{slug})
+func (_ Unimplemented) GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Submit one anonymous selection-only public survey response
+// (POST /api/public/questionnaires/{slug}/submissions)
+func (_ Unimplemented) SubmitPublicSurvey(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Query one anonymous local-only public survey result by POST body token
+// (POST /api/public/survey-submission-results/query)
+func (_ Unimplemented) QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -4747,6 +5163,12 @@ func (_ Unimplemented) UpdateTag(w http.ResponseWriter, r *http.Request, tagId T
 // Read the public legacy configuration-derived runtime-mode snapshot
 // (GET /health)
 func (_ Unimplemented) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Carry a public survey slug into the same-origin SPA without token parameters
+// (GET /q/{slug})
+func (_ Unimplemented) GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5246,6 +5668,276 @@ func (siw *ServerInterfaceWrapper) GetLegacyPushCenterStats(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLegacyPushCenterStats(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetQuestionnairePublicAnalytics operation middleware
+func (siw *ServerInterfaceWrapper) GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "questionnaire_id" -------------
+	var questionnaireId QuestionnaireID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "questionnaire_id", chi.URLParam(r, "questionnaire_id"), &questionnaireId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetQuestionnairePublicAnalyticsParams
+
+	// ------------- Optional query parameter "definition_version" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "definition_version", r.URL.Query(), &params.DefinitionVersion, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definition_version", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetQuestionnairePublicAnalytics(w, r, questionnaireId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableQuestionnairePublicDefinition operation middleware
+func (siw *ServerInterfaceWrapper) DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "questionnaire_id" -------------
+	var questionnaireId QuestionnaireID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "questionnaire_id", chi.URLParam(r, "questionnaire_id"), &questionnaireId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DisableQuestionnairePublicDefinitionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableQuestionnairePublicDefinition(w, r, questionnaireId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishQuestionnairePublicDefinition operation middleware
+func (siw *ServerInterfaceWrapper) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "questionnaire_id" -------------
+	var questionnaireId QuestionnaireID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "questionnaire_id", chi.URLParam(r, "questionnaire_id"), &questionnaireId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PublishQuestionnairePublicDefinitionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishQuestionnairePublicDefinition(w, r, questionnaireId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPublicSurveyDefinition operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug PublicSurveySlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicSurveyDefinition(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitPublicSurvey operation middleware
+func (siw *ServerInterfaceWrapper) SubmitPublicSurvey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug PublicSurveySlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitPublicSurvey(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueryPublicSurveySubmissionResult operation middleware
+func (siw *ServerInterfaceWrapper) QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueryPublicSurveySubmissionResult(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8131,6 +8823,31 @@ func (siw *ServerInterfaceWrapper) GetLegacyHealth(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// GetPublicSurveyPage operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicSurveyPage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "slug" -------------
+	var slug PublicSurveySlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicSurveyPage(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetDomainVerificationFile operation middleware
 func (siw *ServerInterfaceWrapper) GetDomainVerificationFile(w http.ResponseWriter, r *http.Request) {
 
@@ -8288,6 +9005,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/push-center/stats", wrapper.GetLegacyPushCenterStats)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/public-analytics", wrapper.GetQuestionnairePublicAnalytics)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/public-disable", wrapper.DisableQuestionnairePublicDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/public-publish", wrapper.PublishQuestionnairePublicDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/public/questionnaires/{slug}", wrapper.GetPublicSurveyDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/public/questionnaires/{slug}/submissions", wrapper.SubmitPublicSurvey)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/public/survey-submission-results/query", wrapper.QueryPublicSurveySubmissionResult)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/config/overview", wrapper.GetAdminConfigOverview)
 	})
 	r.Group(func(r chi.Router) {
@@ -8432,6 +9167,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/health", wrapper.GetLegacyHealth)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/q/{slug}", wrapper.GetPublicSurveyPage)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/{filename}", wrapper.GetDomainVerificationFile)
 	})
 
@@ -8445,6 +9183,34 @@ type ConflictJSONResponse ErrorResponse
 type ForbiddenJSONResponse ErrorResponse
 
 type NotFoundJSONResponse ErrorResponse
+
+type PublicSurveyConflictJSONResponse PublicSurveyError
+
+type PublicSurveyGetOnlyResponseHeaders struct {
+	Allow string
+}
+type PublicSurveyGetOnlyJSONResponse struct {
+	Body PublicSurveyError
+
+	Headers PublicSurveyGetOnlyResponseHeaders
+}
+
+type PublicSurveyInvalidInputJSONResponse PublicSurveyError
+
+type PublicSurveyNotFoundJSONResponse PublicSurveyError
+
+type PublicSurveyPostOnlyResponseHeaders struct {
+	Allow string
+}
+type PublicSurveyPostOnlyJSONResponse struct {
+	Body PublicSurveyError
+
+	Headers PublicSurveyPostOnlyResponseHeaders
+}
+
+type PublicSurveyRateLimitedJSONResponse PublicSurveyError
+
+type PublicSurveyUnavailableJSONResponse PublicSurveyError
 
 type ServiceUnavailableJSONResponse ErrorResponse
 
@@ -8732,6 +9498,424 @@ type GetLegacyPushCenterStats403JSONResponse struct{ ForbiddenJSONResponse }
 func (response GetLegacyPushCenterStats403JSONResponse) VisitGetLegacyPushCenterStatsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalyticsRequestObject struct {
+	QuestionnaireId QuestionnaireID `json:"questionnaire_id"`
+	Params          GetQuestionnairePublicAnalyticsParams
+}
+
+type GetQuestionnairePublicAnalyticsResponseObject interface {
+	VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error
+}
+
+type GetQuestionnairePublicAnalytics200JSONResponse PublicSurveyAnalytics
+
+func (response GetQuestionnairePublicAnalytics200JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics400JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics401JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics403JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics404JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics503JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinitionRequestObject struct {
+	QuestionnaireId QuestionnaireID `json:"questionnaire_id"`
+	Params          DisableQuestionnairePublicDefinitionParams
+	Body            *DisableQuestionnairePublicDefinitionJSONRequestBody
+}
+
+type DisableQuestionnairePublicDefinitionResponseObject interface {
+	VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error
+}
+
+type DisableQuestionnairePublicDefinition200JSONResponse PublicSurveyManagementResponse
+
+func (response DisableQuestionnairePublicDefinition200JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition400JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition401JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition403JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition404JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition409JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition503JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinitionRequestObject struct {
+	QuestionnaireId QuestionnaireID `json:"questionnaire_id"`
+	Params          PublishQuestionnairePublicDefinitionParams
+	Body            *PublishQuestionnairePublicDefinitionJSONRequestBody
+}
+
+type PublishQuestionnairePublicDefinitionResponseObject interface {
+	VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error
+}
+
+type PublishQuestionnairePublicDefinition200JSONResponse PublicSurveyManagementResponse
+
+func (response PublishQuestionnairePublicDefinition200JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition400JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition401JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition403JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition404JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition409JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition503JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinitionRequestObject struct {
+	Slug PublicSurveySlug `json:"slug"`
+}
+
+type GetPublicSurveyDefinitionResponseObject interface {
+	VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error
+}
+
+type GetPublicSurveyDefinition200JSONResponse PublicSurveyDefinition
+
+func (response GetPublicSurveyDefinition200JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinition400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response GetPublicSurveyDefinition400JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinition404JSONResponse struct {
+	PublicSurveyNotFoundJSONResponse
+}
+
+func (response GetPublicSurveyDefinition404JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinition405JSONResponse struct {
+	PublicSurveyGetOnlyJSONResponse
+}
+
+func (response GetPublicSurveyDefinition405JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetPublicSurveyDefinition503JSONResponse struct {
+	PublicSurveyUnavailableJSONResponse
+}
+
+func (response GetPublicSurveyDefinition503JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurveyRequestObject struct {
+	Slug PublicSurveySlug `json:"slug"`
+	Body *SubmitPublicSurveyJSONRequestBody
+}
+
+type SubmitPublicSurveyResponseObject interface {
+	VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error
+}
+
+type SubmitPublicSurvey202JSONResponse PublicSurveySubmissionResponse
+
+func (response SubmitPublicSurvey202JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response SubmitPublicSurvey400JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey404JSONResponse struct {
+	PublicSurveyNotFoundJSONResponse
+}
+
+func (response SubmitPublicSurvey404JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey405JSONResponse struct {
+	PublicSurveyPostOnlyJSONResponse
+}
+
+func (response SubmitPublicSurvey405JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SubmitPublicSurvey409JSONResponse struct {
+	PublicSurveyConflictJSONResponse
+}
+
+func (response SubmitPublicSurvey409JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey429JSONResponse struct {
+	PublicSurveyRateLimitedJSONResponse
+}
+
+func (response SubmitPublicSurvey429JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey503JSONResponse struct {
+	PublicSurveyUnavailableJSONResponse
+}
+
+func (response SubmitPublicSurvey503JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResultRequestObject struct {
+	Body *QueryPublicSurveySubmissionResultJSONRequestBody
+}
+
+type QueryPublicSurveySubmissionResultResponseObject interface {
+	VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error
+}
+
+type QueryPublicSurveySubmissionResult200JSONResponse PublicSurveyResult
+
+func (response QueryPublicSurveySubmissionResult200JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResult400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult400JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResult404JSONResponse struct {
+	PublicSurveyNotFoundJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult404JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResult405JSONResponse struct {
+	PublicSurveyPostOnlyJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult405JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type QueryPublicSurveySubmissionResult503JSONResponse struct {
+	PublicSurveyUnavailableJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult503JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -11819,6 +13003,51 @@ func (response GetLegacyHealth405JSONResponse) VisitGetLegacyHealthResponse(w ht
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type GetPublicSurveyPageRequestObject struct {
+	Slug PublicSurveySlug `json:"slug"`
+}
+
+type GetPublicSurveyPageResponseObject interface {
+	VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error
+}
+
+type GetPublicSurveyPage302ResponseHeaders struct {
+	Location string
+}
+
+type GetPublicSurveyPage302Response struct {
+	Headers GetPublicSurveyPage302ResponseHeaders
+}
+
+func (response GetPublicSurveyPage302Response) VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(302)
+	return nil
+}
+
+type GetPublicSurveyPage400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response GetPublicSurveyPage400JSONResponse) VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyPage405JSONResponse struct {
+	PublicSurveyGetOnlyJSONResponse
+}
+
+func (response GetPublicSurveyPage405JSONResponse) VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 type GetDomainVerificationFileRequestObject struct {
 	Filename string `json:"filename"`
 }
@@ -11874,6 +13103,24 @@ type StrictServerInterface interface {
 	// Read the frozen global Push Center statistics without accepting, sending, or retrying work
 	// (GET /api/admin/push-center/stats)
 	GetLegacyPushCenterStats(ctx context.Context, request GetLegacyPushCenterStatsRequestObject) (GetLegacyPushCenterStatsResponseObject, error)
+	// Read aggregate anonymous local public survey analytics
+	// (GET /api/admin/questionnaires/{questionnaire_id}/public-analytics)
+	GetQuestionnairePublicAnalytics(ctx context.Context, request GetQuestionnairePublicAnalyticsRequestObject) (GetQuestionnairePublicAnalyticsResponseObject, error)
+	// Disable one immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-disable)
+	DisableQuestionnairePublicDefinition(ctx context.Context, request DisableQuestionnairePublicDefinitionRequestObject) (DisableQuestionnairePublicDefinitionResponseObject, error)
+	// Publish an immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
+	PublishQuestionnairePublicDefinition(ctx context.Context, request PublishQuestionnairePublicDefinitionRequestObject) (PublishQuestionnairePublicDefinitionResponseObject, error)
+	// Read one immutable anonymous public survey definition
+	// (GET /api/public/questionnaires/{slug})
+	GetPublicSurveyDefinition(ctx context.Context, request GetPublicSurveyDefinitionRequestObject) (GetPublicSurveyDefinitionResponseObject, error)
+	// Submit one anonymous selection-only public survey response
+	// (POST /api/public/questionnaires/{slug}/submissions)
+	SubmitPublicSurvey(ctx context.Context, request SubmitPublicSurveyRequestObject) (SubmitPublicSurveyResponseObject, error)
+	// Query one anonymous local-only public survey result by POST body token
+	// (POST /api/public/survey-submission-results/query)
+	QueryPublicSurveySubmissionResult(ctx context.Context, request QueryPublicSurveySubmissionResultRequestObject) (QueryPublicSurveySubmissionResultResponseObject, error)
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(ctx context.Context, request GetAdminConfigOverviewRequestObject) (GetAdminConfigOverviewResponseObject, error)
@@ -12018,6 +13265,9 @@ type StrictServerInterface interface {
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(ctx context.Context, request GetLegacyHealthRequestObject) (GetLegacyHealthResponseObject, error)
+	// Carry a public survey slug into the same-origin SPA without token parameters
+	// (GET /q/{slug})
+	GetPublicSurveyPage(ctx context.Context, request GetPublicSurveyPageRequestObject) (GetPublicSurveyPageResponseObject, error)
 	// Read one WeChat or WeCom domain verification file
 	// (GET /{filename})
 	GetDomainVerificationFile(ctx context.Context, request GetDomainVerificationFileRequestObject) (GetDomainVerificationFileResponseObject, error)
@@ -12197,6 +13447,191 @@ func (sh *strictHandler) GetLegacyPushCenterStats(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyPushCenterStatsResponseObject); ok {
 		if err := validResponse.VisitGetLegacyPushCenterStatsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetQuestionnairePublicAnalytics operation middleware
+func (sh *strictHandler) GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params GetQuestionnairePublicAnalyticsParams) {
+	var request GetQuestionnairePublicAnalyticsRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetQuestionnairePublicAnalytics(ctx, request.(GetQuestionnairePublicAnalyticsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetQuestionnairePublicAnalytics")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetQuestionnairePublicAnalyticsResponseObject); ok {
+		if err := validResponse.VisitGetQuestionnairePublicAnalyticsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableQuestionnairePublicDefinition operation middleware
+func (sh *strictHandler) DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params DisableQuestionnairePublicDefinitionParams) {
+	var request DisableQuestionnairePublicDefinitionRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.Params = params
+
+	var body DisableQuestionnairePublicDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableQuestionnairePublicDefinition(ctx, request.(DisableQuestionnairePublicDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableQuestionnairePublicDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableQuestionnairePublicDefinitionResponseObject); ok {
+		if err := validResponse.VisitDisableQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishQuestionnairePublicDefinition operation middleware
+func (sh *strictHandler) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	var request PublishQuestionnairePublicDefinitionRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.Params = params
+
+	var body PublishQuestionnairePublicDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishQuestionnairePublicDefinition(ctx, request.(PublishQuestionnairePublicDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishQuestionnairePublicDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishQuestionnairePublicDefinitionResponseObject); ok {
+		if err := validResponse.VisitPublishQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicSurveyDefinition operation middleware
+func (sh *strictHandler) GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	var request GetPublicSurveyDefinitionRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicSurveyDefinition(ctx, request.(GetPublicSurveyDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicSurveyDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicSurveyDefinitionResponseObject); ok {
+		if err := validResponse.VisitGetPublicSurveyDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitPublicSurvey operation middleware
+func (sh *strictHandler) SubmitPublicSurvey(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	var request SubmitPublicSurveyRequestObject
+
+	request.Slug = slug
+
+	var body SubmitPublicSurveyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitPublicSurvey(ctx, request.(SubmitPublicSurveyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitPublicSurvey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitPublicSurveyResponseObject); ok {
+		if err := validResponse.VisitSubmitPublicSurveyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueryPublicSurveySubmissionResult operation middleware
+func (sh *strictHandler) QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request) {
+	var request QueryPublicSurveySubmissionResultRequestObject
+
+	var body QueryPublicSurveySubmissionResultJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueryPublicSurveySubmissionResult(ctx, request.(QueryPublicSurveySubmissionResultRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueryPublicSurveySubmissionResult")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueryPublicSurveySubmissionResultResponseObject); ok {
+		if err := validResponse.VisitQueryPublicSurveySubmissionResultResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -13609,6 +15044,32 @@ func (sh *strictHandler) GetLegacyHealth(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyHealthResponseObject); ok {
 		if err := validResponse.VisitGetLegacyHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicSurveyPage operation middleware
+func (sh *strictHandler) GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	var request GetPublicSurveyPageRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicSurveyPage(ctx, request.(GetPublicSurveyPageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicSurveyPage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicSurveyPageResponseObject); ok {
+		if err := validResponse.VisitGetPublicSurveyPageResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

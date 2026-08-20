@@ -328,6 +328,33 @@ func TestLoadLegacyHealthEnvironmentBoundaries(t *testing.T) {
 	}
 }
 
+func TestLoadSurveyPublicKeyIsOptionalStrictAndRedacted(t *testing.T) {
+	base := map[string]string{
+		databaseURLEnv:      "postgres://db/aicrm",
+		apiListenAddressEnv: "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:  "1",
+		identityHMACKeyEnv:  strings.Repeat("A", 43),
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(base))
+	if err != nil || string(root.Survey.PublicKey.Value()) != string(make([]byte, 32)) {
+		t.Fatalf("optional survey key load = %#v, %v", root.Survey, err)
+	}
+	values := cloneValues(base)
+	values[surveyPublicKeyEnv] = strings.Repeat("A", 43)
+	root, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || len(root.Survey.PublicKey.Value()) != 32 {
+		t.Fatalf("configured survey key load = %#v, %v", root.Survey, err)
+	}
+	if strings.Contains(fmt.Sprintf("%#v", root), values[surveyPublicKeyEnv]) {
+		t.Fatal("Root formatting exposed the Survey public key")
+	}
+	values[surveyPublicKeyEnv] = "bad-survey-key-sentinel"
+	_, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err == nil || err.Error() != "invalid startup configuration: survey.public_key must be 32-byte canonical base64url" || strings.Contains(err.Error(), "sentinel") {
+		t.Fatalf("invalid survey key error = %v", err)
+	}
+}
+
 func mapLookup(values map[string]string) environmentLookup {
 	return func(key string) (string, bool) {
 		value, ok := values[key]

@@ -49,7 +49,7 @@ ORVAL ?= ./node_modules/.bin/orval
 version-check:
 	@test "$$($(GO) env GOVERSION)" = "go1.26.6"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/jackc/pgx/v5)" = "v5.9.2"
-	@test "$$($(GO) list -m -f '{{.Version}}' github.com/go-chi/chi/v5)" = "v5.2.3"
+	@test "$$($(GO) list -m -f '{{.Version}}' github.com/go-chi/chi/v5)" = "v5.3.1"
 	@test "$$($(GO) list -m -f '{{.Version}}' golang.org/x/text)" = "v0.39.0"
 	@test "$$($(GO) list -m -f '{{.Version}}' github.com/oapi-codegen/runtime)" = "v1.2.0"
 	@test "$$($(GO) tool -modfile=$(TOOLS_MOD) oapi-codegen --version | tail -n 1)" = "v2.6.0"
@@ -561,6 +561,8 @@ p4-f01a-survey-acceptance:
 p4-f01ab-survey-acceptance:
 	@test -n "$${P4F01AB_SURVEY_TEST_DATABASE_URL:-}" || { echo "P4F01AB_SURVEY_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/survey/f01ab_migration_compatibility.sh
+	@P4SURVEY_PUBLIC_TEST_DATABASE_URL="$$P4F01AB_SURVEY_TEST_DATABASE_URL" GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/survey/public_anonymous_migration_compatibility.sh
+	@AICRM_SURVEY_TEST_DATABASE_URL="$$P4F01AB_SURVEY_TEST_DATABASE_URL" /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s -run '^TestPublicRepositoryPostgreSQLRoundTrip$$' ./internal/survey/store
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/survey/... ./internal/events/store ./internal/platform/http ./internal/auth/... ./acceptance/survey
 
 p4-c01-channel-acceptance:

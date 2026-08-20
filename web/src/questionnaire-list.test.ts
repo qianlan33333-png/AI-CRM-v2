@@ -233,6 +233,8 @@ const parsed: QuestionnaireItem = {
   id: 41,
   name: "welcome",
   title: "欢迎问卷",
+  slug: "welcome",
+  version: 1,
   publicPath: "/q/welcome",
   isDisabled: false,
   status: "active",
