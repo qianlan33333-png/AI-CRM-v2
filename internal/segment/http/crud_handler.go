@@ -24,8 +24,10 @@ const segmentBodyMaximum = 64 << 10
 
 type crudApplication interface {
 	List(context.Context, string, int32) (segmentport.Page, error)
+	Get(context.Context, segmentport.SegmentID) (segmentport.Segment, error)
 	Create(context.Context, segmentport.CreateCommand) (segmentport.Segment, error)
 	UpdateHTTP(context.Context, segmentapp.UpdateInput) (segmentport.Segment, error)
+	Archive(context.Context, segmentport.ArchiveCommand) (segmentport.Segment, error)
 	ListMemberRecords(context.Context, segmentport.SegmentID, string, int32) (segmentapp.MemberPage, error)
 }
 
@@ -91,6 +93,24 @@ func (handler *CRUDHandler) CreateSegment(writer http.ResponseWriter, request *h
 	writeCRUDJSON(writer, http.StatusCreated, response)
 }
 
+func (handler *CRUDHandler) GetSegment(writer http.ResponseWriter, request *http.Request, segmentID generated.SegmentID) {
+	if _, err := handler.operation(request, authport.CapabilitySegmentsRead); err != nil {
+		writeCRUDError(writer, request, err, false)
+		return
+	}
+	segment, err := handler.application.Get(request.Context(), segmentport.SegmentID(segmentID))
+	if err != nil {
+		writeCRUDError(writer, request, err, false)
+		return
+	}
+	response, err := generatedSegment(segment)
+	if err != nil {
+		writeCRUDError(writer, request, err, false)
+		return
+	}
+	writeCRUDJSON(writer, http.StatusOK, response)
+}
+
 func (handler *CRUDHandler) UpdateSegment(writer http.ResponseWriter, request *http.Request, segmentID generated.SegmentID, params generated.UpdateSegmentParams) {
 	principal, err := handler.operation(request, authport.CapabilitySegmentsWrite)
 	if err != nil {
@@ -110,6 +130,27 @@ func (handler *CRUDHandler) UpdateSegment(writer http.ResponseWriter, request *h
 	body.Actor = segmentActor(principal)
 	body.IdempotencyKey = string(params.IdempotencyKey)
 	segment, err := handler.application.UpdateHTTP(request.Context(), body)
+	if err != nil {
+		writeCRUDError(writer, request, err, false)
+		return
+	}
+	response, err := generatedSegment(segment)
+	if err != nil {
+		writeCRUDError(writer, request, err, false)
+		return
+	}
+	writeCRUDJSON(writer, http.StatusOK, response)
+}
+
+func (handler *CRUDHandler) ArchiveSegment(writer http.ResponseWriter, request *http.Request, segmentID generated.SegmentID, params generated.ArchiveSegmentParams) {
+	principal, err := handler.operation(request, authport.CapabilitySegmentsWrite)
+	if err != nil {
+		writeCRUDError(writer, request, err, false)
+		return
+	}
+	segment, err := handler.application.Archive(request.Context(), segmentport.ArchiveCommand{
+		SegmentID: segmentport.SegmentID(segmentID), Actor: segmentActor(principal), IdempotencyKey: string(params.IdempotencyKey),
+	})
 	if err != nil {
 		writeCRUDError(writer, request, err, false)
 		return
@@ -325,6 +366,10 @@ func crudPageParams(cursor *generated.Cursor, limit *generated.Limit) (string, i
 }
 
 func generatedSegment(item segmentport.Segment) (generated.Segment, error) {
+	if item.ID <= 0 || item.Name == "" || item.CreatedAt.IsZero() || item.UpdatedAt.IsZero() || item.CreatedAt.After(item.UpdatedAt) ||
+		(item.LifecycleStatus != segmentport.LifecycleStatusActive && item.LifecycleStatus != segmentport.LifecycleStatusArchived) {
+		return generated.Segment{}, errors.New("invalid segment projection")
+	}
 	var definition generated.SegmentDefinition
 	if err := json.Unmarshal(item.Definition, &definition); err != nil {
 		return generated.Segment{}, err
@@ -332,7 +377,8 @@ func generatedSegment(item segmentport.Segment) (generated.Segment, error) {
 	return generated.Segment{
 		Id: int64(item.ID), Name: item.Name, Definition: definition, RefreshMode: generated.SegmentRefreshMode(item.RefreshMode),
 		RefreshCron: cloneCRUDString(item.RefreshCron), MemberCount: item.MemberCount, RefreshedAt: cloneCRUDTime(item.RefreshedAt),
-		RefreshStatus: generated.SegmentRefreshStatus(item.RefreshStatus), CreatedAt: item.CreatedAt.UTC(), UpdatedAt: item.UpdatedAt.UTC(),
+		RefreshStatus: generated.SegmentRefreshStatus(item.RefreshStatus), LifecycleStatus: generated.SegmentLifecycleStatus(item.LifecycleStatus),
+		CreatedAt: item.CreatedAt.UTC(), UpdatedAt: item.UpdatedAt.UTC(),
 	}, nil
 }
 

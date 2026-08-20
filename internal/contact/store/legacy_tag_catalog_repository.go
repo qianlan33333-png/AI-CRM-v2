@@ -72,7 +72,7 @@ func (r *LegacyTagCatalogRepository) CreateLegacyTag(ctx context.Context, g int6
 	if e != nil {
 		return contactapp.LegacyTag{}, e
 	}
-	row, e := q.CreateLegacyTag(ctx, contactdb.CreateLegacyTagParams{GroupID: pgxInt8(g), Name: name})
+	row, e := q.CreateLegacyTag(ctx, contactdb.CreateLegacyTagParams{GroupID: g, Name: name})
 	if e != nil {
 		return contactapp.LegacyTag{}, classifyLegacyTagStore(e)
 	}

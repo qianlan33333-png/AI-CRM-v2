@@ -72,7 +72,10 @@ func (repository *Repository) InsertStage(ctx context.Context, command contactpo
 	if err != nil {
 		return contactport.Stage{}, err
 	}
-	return stageFromRow(row), nil
+	return contactport.Stage{
+		ID: contactport.StageID(row.ID), Name: row.Name,
+		SortOrder: row.SortOrder, Config: row.Config,
+	}, nil
 }
 
 func (repository *Repository) RenameStage(ctx context.Context, command contactport.RenameStageCommand) (contactport.Stage, error) {
@@ -143,13 +146,6 @@ func queriesFromContext(ctx context.Context) (*contactdb.Queries, error) {
 		return nil, err
 	}
 	return contactdb.New(tx), nil
-}
-
-func stageFromRow(row contactdb.Stage) contactport.Stage {
-	return contactport.Stage{
-		ID: contactport.StageID(row.ID), Name: row.Name,
-		SortOrder: row.SortOrder, Config: row.Config,
-	}
 }
 
 type stageScanner interface{ Scan(...any) error }

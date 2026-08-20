@@ -1,4 +1,5 @@
 import {
+  archiveSegment as archiveGeneratedSegmentRequest,
   createSegment,
   listSegmentMembers,
   listSegments,
@@ -77,6 +78,9 @@ async function generatedMembers(id: number, params: ListSegmentMembersParams, op
 async function generatedRefresh(id: number, options: RequestInit) {
   return requestSegmentRefresh(id, options);
 }
+async function generatedArchive(id: number, options: RequestInit): Promise<SegmentTransportResponse> {
+  return archiveGeneratedSegmentRequest(id, options);
+}
 
 export interface SegmentTransport {
   readonly list: typeof generatedList;
@@ -98,6 +102,7 @@ export const generatedSegmentTransport: SegmentTransport = {
   update: generatedUpdate,
   members: generatedMembers,
   refresh: generatedRefresh,
+  archive: generatedArchive,
 };
 
 export type SegmentFailure =

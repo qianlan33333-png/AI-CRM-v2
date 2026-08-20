@@ -110,6 +110,32 @@ func TestStageHandlerCreateAndRenamePassAdminActor(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "reorder", method: http.MethodPut, path: "/api/v1/stages/reorder", body: `{"ids":[9,8]}`,
+			service: &stageServiceStub{reorder: func(_ context.Context, command contactport.ReorderStagesCommand) ([]contactport.Stage, error) {
+				return []contactport.Stage{{ID: command.IDs[0], Name: "qualified", SortOrder: 0, Config: json.RawMessage(`{}`)}, {ID: command.IDs[1], Name: "won", SortOrder: 1, Config: json.RawMessage(`{}`)}}, nil
+			}},
+			wantStatus: http.StatusOK,
+			assert: func(t *testing.T, service *stageServiceStub) {
+				t.Helper()
+				if service.reorderCalls != 1 || len(service.reorderCommand.IDs) != 2 || service.reorderCommand.IDs[0] != 9 || service.reorderCommand.Actor != "admin:77" || service.reorderCommand.IdempotencyKey != "stage-http-key-0001" {
+					t.Fatalf("reorder command = %#v", service.reorderCommand)
+				}
+			},
+		},
+		{
+			name: "archive", method: http.MethodDelete, path: "/api/v1/stages/9",
+			service: &stageServiceStub{archive: func(_ context.Context, command contactport.ArchiveStageCommand) (contactport.Stage, error) {
+				return contactport.Stage{ID: command.ID, Name: "qualified", SortOrder: 0, Config: json.RawMessage(`{}`)}, nil
+			}},
+			wantStatus: http.StatusOK,
+			assert: func(t *testing.T, service *stageServiceStub) {
+				t.Helper()
+				if service.archiveCalls != 1 || service.archiveCommand.ID != 9 || service.archiveCommand.Actor != "admin:77" || service.archiveCommand.IdempotencyKey != "stage-http-key-0001" {
+					t.Fatalf("archive command = %#v", service.archiveCommand)
+				}
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -360,17 +386,20 @@ type stageServiceStub struct {
 	reorder func(context.Context, contactport.ReorderStagesCommand) ([]contactport.Stage, error)
 	archive func(context.Context, contactport.ArchiveStageCommand) (contactport.Stage, error)
 
-	listCalls     int
-	createCalls   int
-	renameCalls   int
-	reorderCalls  int
-	archiveCalls  int
-	createCommand contactport.CreateStageCommand
-	renameCommand contactport.RenameStageCommand
+	listCalls      int
+	createCalls    int
+	renameCalls    int
+	reorderCalls   int
+	archiveCalls   int
+	createCommand  contactport.CreateStageCommand
+	renameCommand  contactport.RenameStageCommand
+	reorderCommand contactport.ReorderStagesCommand
+	archiveCommand contactport.ArchiveStageCommand
 }
 
 func (stub *stageServiceStub) ReorderStages(ctx context.Context, command contactport.ReorderStagesCommand) ([]contactport.Stage, error) {
 	stub.reorderCalls++
+	stub.reorderCommand = command
 	if stub.reorder == nil {
 		return nil, nil
 	}
@@ -379,6 +408,7 @@ func (stub *stageServiceStub) ReorderStages(ctx context.Context, command contact
 
 func (stub *stageServiceStub) ArchiveStage(ctx context.Context, command contactport.ArchiveStageCommand) (contactport.Stage, error) {
 	stub.archiveCalls++
+	stub.archiveCommand = command
 	if stub.archive == nil {
 		return contactport.Stage{}, nil
 	}
@@ -435,7 +465,7 @@ func stageRequest(
 	t.Helper()
 
 	request := httptest.NewRequest(method, path, strings.NewReader(body))
-	if method == http.MethodPost || method == http.MethodPatch {
+	if method == http.MethodPost || method == http.MethodPatch || method == http.MethodPut || method == http.MethodDelete {
 		request.Header.Set("X-CSRF-Token", "csrf-test-token")
 		request.Header.Set("Idempotency-Key", "stage-http-key-0001")
 	}
@@ -495,8 +525,8 @@ func assertStageResponseHeaders(t *testing.T, response *httptest.ResponseRecorde
 
 func assertServiceUntouched(t *testing.T, service *stageServiceStub) {
 	t.Helper()
-	if service.listCalls != 0 || service.createCalls != 0 || service.renameCalls != 0 {
-		t.Fatalf("service calls list/create/rename = %d/%d/%d, want 0/0/0", service.listCalls, service.createCalls, service.renameCalls)
+	if service.listCalls != 0 || service.createCalls != 0 || service.renameCalls != 0 || service.reorderCalls != 0 || service.archiveCalls != 0 {
+		t.Fatalf("service calls list/create/rename/reorder/archive = %d/%d/%d/%d/%d, want all zero", service.listCalls, service.createCalls, service.renameCalls, service.reorderCalls, service.archiveCalls)
 	}
 }
 

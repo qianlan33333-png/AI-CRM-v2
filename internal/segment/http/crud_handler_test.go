@@ -19,7 +19,7 @@ import (
 func TestCRUDHandlerClosesFrozenRuntimeOperations(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 8, 13, 9, 0, 0, 0, time.UTC)
-	segment := segmentport.Segment{ID: 7, Name: "高意向", Definition: []byte(`{"field":"is_deleted","op":"eq","value":false}`), RefreshMode: segmentport.RefreshModeManual, RefreshStatus: segmentport.RefreshStatusIdle, CreatedAt: now, UpdatedAt: now}
+	segment := segmentport.Segment{ID: 7, Name: "高意向", Definition: []byte(`{"field":"is_deleted","op":"eq","value":false}`), RefreshMode: segmentport.RefreshModeManual, RefreshStatus: segmentport.RefreshStatusIdle, LifecycleStatus: segmentport.LifecycleStatusActive, CreatedAt: now, UpdatedAt: now}
 	member := segmentapp.MemberRecord{ID: 9, Name: "客户", Extra: []byte(`{"source":"fixture"}`), CreatedAt: now, UpdatedAt: now}
 	stub := &crudApplicationStub{segment: segment, page: segmentport.Page{Items: []segmentport.Segment{segment}}, memberPage: segmentapp.MemberPage{Items: []segmentapp.MemberRecord{member}}}
 	handler, err := NewCRUDHandler(stub)
@@ -32,6 +32,11 @@ func TestCRUDHandlerClosesFrozenRuntimeOperations(t *testing.T) {
 	if list.Code != http.StatusOK {
 		t.Fatalf("list status = %d: %s", list.Code, list.Body.String())
 	}
+	get := httptest.NewRecorder()
+	handler.GetSegment(get, crudRequest(t, http.MethodGet, "/api/v1/segments/7", "", authport.CapabilitySegmentsRead), 7)
+	if get.Code != http.StatusOK || !strings.Contains(get.Body.String(), `"lifecycle_status":"active"`) {
+		t.Fatalf("get = %d: %s", get.Code, get.Body.String())
+	}
 
 	create := httptest.NewRecorder()
 	handler.CreateSegment(create, crudRequest(t, http.MethodPost, "/api/v1/segments", `{"name":"高意向","definition":{"field":"is_deleted","op":"eq","value":false},"refresh_mode":"manual"}`, authport.CapabilitySegmentsWrite), generated.CreateSegmentParams{IdempotencyKey: "segment-create-0001"})
@@ -43,6 +48,13 @@ func TestCRUDHandlerClosesFrozenRuntimeOperations(t *testing.T) {
 	handler.UpdateSegment(update, crudRequest(t, http.MethodPatch, "/api/v1/segments/7", `{"refresh_mode":"manual","refresh_cron":null}`, authport.CapabilitySegmentsWrite), 7, generated.UpdateSegmentParams{IdempotencyKey: "segment-update-0001"})
 	if update.Code != http.StatusOK || !stub.update.RefreshCronSet || stub.update.RefreshCron != nil || stub.update.SegmentID != 7 {
 		t.Fatalf("mutation response = %d %#v: %s", update.Code, stub.update, update.Body.String())
+	}
+
+	stub.segment.LifecycleStatus = segmentport.LifecycleStatusArchived
+	archive := httptest.NewRecorder()
+	handler.ArchiveSegment(archive, crudRequest(t, http.MethodDelete, "/api/v1/segments/7", "", authport.CapabilitySegmentsWrite), 7, generated.ArchiveSegmentParams{IdempotencyKey: "segment-archive-0001"})
+	if archive.Code != http.StatusOK || stub.archive.SegmentID != 7 || stub.archive.IdempotencyKey != "segment-archive-0001" || !strings.Contains(archive.Body.String(), `"lifecycle_status":"archived"`) {
+		t.Fatalf("archive = %d %#v: %s", archive.Code, stub.archive, archive.Body.String())
 	}
 
 	members := httptest.NewRecorder()
@@ -110,11 +122,15 @@ type crudApplicationStub struct {
 	memberPage segmentapp.MemberPage
 	create     segmentport.CreateCommand
 	update     segmentapp.UpdateInput
+	archive    segmentport.ArchiveCommand
 	err        error
 }
 
 func (stub *crudApplicationStub) List(context.Context, string, int32) (segmentport.Page, error) {
 	return stub.page, stub.err
+}
+func (stub *crudApplicationStub) Get(context.Context, segmentport.SegmentID) (segmentport.Segment, error) {
+	return stub.segment, stub.err
 }
 func (stub *crudApplicationStub) Create(_ context.Context, command segmentport.CreateCommand) (segmentport.Segment, error) {
 	stub.create = command
@@ -122,6 +138,10 @@ func (stub *crudApplicationStub) Create(_ context.Context, command segmentport.C
 }
 func (stub *crudApplicationStub) UpdateHTTP(_ context.Context, input segmentapp.UpdateInput) (segmentport.Segment, error) {
 	stub.update = input
+	return stub.segment, stub.err
+}
+func (stub *crudApplicationStub) Archive(_ context.Context, command segmentport.ArchiveCommand) (segmentport.Segment, error) {
+	stub.archive = command
 	return stub.segment, stub.err
 }
 func (stub *crudApplicationStub) ListMemberRecords(context.Context, segmentport.SegmentID, string, int32) (segmentapp.MemberPage, error) {

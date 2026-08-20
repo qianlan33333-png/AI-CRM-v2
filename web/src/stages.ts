@@ -1,6 +1,8 @@
 import {
+  archiveStage,
   createStage,
   listStages,
+  reorderStages,
   renameStage,
   type CreateStageRequest,
   type RenameStageRequest,
@@ -41,6 +43,20 @@ async function renameGeneratedStage(
   return renameStage(stageID, request, options);
 }
 
+async function reorderGeneratedStages(
+  request: { readonly ids: readonly number[] },
+  options: RequestInit,
+): Promise<StageTransportResponse> {
+  return reorderStages({ ids: [...request.ids] }, options);
+}
+
+async function archiveGeneratedStage(
+  stageID: number,
+  options: RequestInit,
+): Promise<StageTransportResponse> {
+  return archiveStage(stageID, options);
+}
+
 export type StageTransport = {
   list: typeof loadGeneratedStages;
   create: typeof createGeneratedStage;
@@ -63,6 +79,8 @@ export const generatedStageTransport: StageTransport = {
   list: loadGeneratedStages,
   create: createGeneratedStage,
   rename: renameGeneratedStage,
+  reorder: reorderGeneratedStages,
+  archive: archiveGeneratedStage,
 };
 
 export type StageLoadResult =

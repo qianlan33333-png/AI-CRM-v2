@@ -130,6 +130,70 @@ func (handler *Handler) RenameStage(writer http.ResponseWriter, request *http.Re
 	writeStageJSON(writer, http.StatusOK, response)
 }
 
+func (handler *Handler) ReorderStages(writer http.ResponseWriter, request *http.Request, _ generated.ReorderStagesParams) {
+	principal, err := handler.operation(request, authport.CapabilityStagesWrite)
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	var body generated.ReorderStagesRequest
+	if err = decodeStageBody(writer, request, &body); err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	key, err := stageIdempotencyKey(request)
+	if err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	ids := make([]contactport.StageID, len(body.Ids))
+	for index, id := range body.Ids {
+		ids[index] = contactport.StageID(id)
+	}
+	stages, err := handler.stages.ReorderStages(request.Context(), contactport.ReorderStagesCommand{
+		IDs: ids, Actor: actor(principal), IdempotencyKey: key,
+	})
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	items := make([]generated.Stage, len(stages))
+	for index, stage := range stages {
+		items[index], err = responseStage(stage)
+		if err != nil {
+			writeStageError(writer, request, err)
+			return
+		}
+	}
+	writeStageJSON(writer, http.StatusOK, generated.StageListResponse{Items: items})
+}
+
+func (handler *Handler) ArchiveStage(writer http.ResponseWriter, request *http.Request, stageID generated.StageID, _ generated.ArchiveStageParams) {
+	principal, err := handler.operation(request, authport.CapabilityStagesWrite)
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	key, err := stageIdempotencyKey(request)
+	if err != nil {
+		writeStageError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, err))
+		return
+	}
+	stage, err := handler.stages.ArchiveStage(request.Context(), contactport.ArchiveStageCommand{
+		ID: contactport.StageID(stageID), Actor: actor(principal), IdempotencyKey: key,
+	})
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	response, err := responseStage(stage)
+	if err != nil {
+		writeStageError(writer, request, err)
+		return
+	}
+	writeStageJSON(writer, http.StatusOK, response)
+}
+
 func stageIdempotencyKey(request *http.Request) (string, error) {
 	if request == nil {
 		return "", errors.New("missing idempotency key")
