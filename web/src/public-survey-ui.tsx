@@ -1,0 +1,13 @@
+import React, { useEffect, useRef, useState } from "react";
+import { createPublicSubmissionFlight, createPublicSurveyController, type PublicAnswer, type PublicDefinition, type PublicSurveyTransport } from "./public-survey";
+
+export function PublicSurveyPage({ slug, transport }: { slug: string; transport?: PublicSurveyTransport }) {
+  const [definition, setDefinition] = useState<PublicDefinition>(); const [answers, setAnswers] = useState<PublicAnswer[]>([]); const [state, setState] = useState<"loading"|"ready"|"submitting"|"accepted"|"unknown"|"error">("loading"); const [controller] = useState(() => transport ? createPublicSurveyController(transport, `/q/${slug}`) : undefined); const flight = useRef(createPublicSubmissionFlight(()=>{const key=crypto.getRandomValues(new Uint8Array(32));return btoa(String.fromCharCode(...key)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"")}));
+  useEffect(() => { if (!controller) { setState("error"); return }; void controller.load().then((v) => { setDefinition(v); setState("ready") }, () => setState("error")) }, [controller]);
+  if (state === "loading") return <main className="route-card"><p>正在加载问卷…</p></main>;
+  if (state === "error" || !definition || !controller) return <main className="route-card"><h1>问卷暂不可用</h1><p>请稍后重试。</p></main>;
+  if (state === "accepted") return <main className="route-card"><h1>提交已受理</h1><p>本次问卷仅在本地受理，不会触发外部动作。</p></main>;
+  if (state === "unknown") return <main className="route-card"><h1>提交状态待确认</h1><p>为避免重复提交，本页面不会自动重试；请稍后刷新并联系运营人员核查。</p></main>;
+  return <main className="route-card"><h1>{definition.title}</h1><p>{definition.description}</p><form onSubmit={(event) => { event.preventDefault(); setState("submitting"); void flight.current.submit((submissionKey) => controller.submit({ version: definition.version, submission_key: submissionKey, answers }).then(() => controller.result())).then(() => setState("accepted"), () => setState("unknown")) }}>
+    {definition.questions.map((question) => <fieldset key={question.id}><legend>{question.title}</legend>{question.options.map((option) => <label key={option.id}><input type={question.type === "multi_choice" ? "checkbox" : "radio"} name={`q-${question.id}`} value={option.id} onChange={(event) => setAnswers((current) => { const old=current.find((a)=>a.question_id===question.id)?.option_ids ?? []; const next=question.type==="multi_choice" ? (event.currentTarget.checked ? [...old,option.id] : old.filter((id)=>id!==option.id)) : [option.id]; return [...current.filter((a)=>a.question_id!==question.id),{question_id:question.id,option_ids:next}] })}/>{option.option_text}</label>)}</fieldset>)}<button disabled={state === "submitting"} type="submit">提交</button></form></main>;
+}
