@@ -15,6 +15,7 @@ type Definition json.RawMessage
 
 type RefreshMode string
 type RefreshStatus string
+type LifecycleStatus string
 
 const (
 	RefreshModeManual    RefreshMode = "manual"
@@ -23,19 +24,23 @@ const (
 	RefreshStatusIdle    RefreshStatus = "idle"
 	RefreshStatusRunning RefreshStatus = "running"
 	RefreshStatusFailed  RefreshStatus = "failed"
+
+	LifecycleStatusActive   LifecycleStatus = "active"
+	LifecycleStatusArchived LifecycleStatus = "archived"
 )
 
 type Segment struct {
-	ID            SegmentID
-	Name          string
-	Definition    Definition
-	RefreshMode   RefreshMode
-	RefreshCron   *string
-	MemberCount   int64
-	RefreshedAt   *time.Time
-	RefreshStatus RefreshStatus
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID              SegmentID
+	Name            string
+	Definition      Definition
+	RefreshMode     RefreshMode
+	RefreshCron     *string
+	MemberCount     int64
+	RefreshedAt     *time.Time
+	RefreshStatus   RefreshStatus
+	LifecycleStatus LifecycleStatus
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type Page struct {
@@ -73,6 +78,12 @@ type RefreshCommand struct {
 	IdempotencyKey string
 }
 
+type ArchiveCommand struct {
+	SegmentID      SegmentID
+	Actor          Actor
+	IdempotencyKey string
+}
+
 // Service is the only Segment dependency available to another domain. Every
 // write command is idempotent; implementation and worker activation are later
 // slices.
@@ -83,4 +94,5 @@ type Service interface {
 	Update(context.Context, UpdateCommand) (Segment, error)
 	ListMembers(context.Context, SegmentID, string, int32) (MemberPage, error)
 	RequestRefresh(context.Context, RefreshCommand) (Segment, error)
+	Archive(context.Context, ArchiveCommand) (Segment, error)
 }

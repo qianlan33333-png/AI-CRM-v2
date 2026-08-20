@@ -2,7 +2,10 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -121,6 +124,152 @@ func (r *LegacyTagCatalogRepository) ArchiveLegacyTag(ctx context.Context, id in
 		return contactapp.LegacyTag{}, classifyLegacyTagStore(e)
 	}
 	return r.inflate(ctx, row.ID, row.GroupID, row.Name, row.SortOrder)
+}
+func (*LegacyTagCatalogRepository) CountLegacyTagReferences(ctx context.Context, id int64) (int64, error) {
+	if id <= 0 {
+		return 0, contactapp.ErrLegacyTagNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = tx.QueryRow(ctx, `SELECT count(*) FROM customer_tags WHERE tag_id = $1`, id).Scan(&count)
+	return count, err
+}
+
+func (*LegacyTagCatalogRepository) CountLegacyTagGroupReferences(ctx context.Context, id int64) (int64, error) {
+	if id <= 0 {
+		return 0, contactapp.ErrLegacyTagNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = tx.QueryRow(ctx, `
+		SELECT count(*)
+		FROM customer_tags AS ct
+		JOIN tags AS t ON t.id = ct.tag_id
+		WHERE t.group_id = $1`, id).Scan(&count)
+	return count, err
+}
+
+func (*LegacyTagCatalogRepository) GetLegacyTagGroup(ctx context.Context, id int64) (contactapp.LegacyTagGroup, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactapp.LegacyTagGroup{}, err
+	}
+	var out contactapp.LegacyTagGroup
+	err = tx.QueryRow(ctx, `SELECT id, name, sort_order FROM public.tag_groups WHERE id = $1`, id).Scan(&out.ID, &out.Name, &out.SortOrder)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactapp.LegacyTagGroup{}, contactapp.ErrLegacyTagNotFound
+	}
+	return out, err
+}
+
+func (*LegacyTagCatalogRepository) GetLegacyTag(ctx context.Context, id int64) (contactapp.LegacyTag, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactapp.LegacyTag{}, err
+	}
+	var out contactapp.LegacyTag
+	err = tx.QueryRow(ctx, `SELECT t.id, t.group_id, g.name, t.name, t.sort_order FROM public.tags AS t JOIN public.tag_groups AS g ON g.id = t.group_id WHERE t.id = $1`, id).Scan(&out.ID, &out.GroupID, &out.GroupName, &out.Name, &out.SortOrder)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactapp.LegacyTag{}, contactapp.ErrLegacyTagNotFound
+	}
+	return out, err
+}
+
+func (repository *LegacyTagCatalogRepository) ReorderLegacyTagGroups(ctx context.Context, ids []int64) ([]contactapp.LegacyTagGroup, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for index, id := range ids {
+		result, err := tx.Exec(ctx, `UPDATE public.tag_groups SET sort_order = $2 WHERE id = $1 AND name NOT LIKE 'archived:%'`, id, int32(index))
+		if err != nil {
+			return nil, err
+		}
+		if result.RowsAffected() != 1 {
+			return nil, contactapp.ErrLegacyTagConflict
+		}
+	}
+	return repository.ListLegacyTagGroups(ctx)
+}
+
+func (repository *LegacyTagCatalogRepository) ReorderLegacyTags(ctx context.Context, ids []int64) ([]contactapp.LegacyTag, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for index, id := range ids {
+		result, err := tx.Exec(ctx, `UPDATE public.tags SET sort_order = $2 WHERE id = $1 AND name NOT LIKE 'archived:%'`, id, int32(index))
+		if err != nil {
+			return nil, err
+		}
+		if result.RowsAffected() != 1 {
+			return nil, contactapp.ErrLegacyTagConflict
+		}
+	}
+	return repository.ListLegacyTags(ctx)
+}
+
+func (*LegacyTagCatalogRepository) ReserveLocalTagReceipt(ctx context.Context, reservation contactapp.LocalTagReceiptReservation) (contactapp.LocalTagReceipt, bool, error) {
+	if reservation.Operation == "" || reservation.Actor < 1 || len(reservation.IdempotencyKey) < 16 || len(reservation.IdempotencyKey) > 128 || len(reservation.PayloadDigest) != sha256.Size {
+		return contactapp.LocalTagReceipt{}, false, contactapp.ErrInvalidLegacyTag
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactapp.LocalTagReceipt{}, false, err
+	}
+	keyDigest := sha256.Sum256([]byte(reservation.IdempotencyKey))
+	actor := strconv.FormatInt(reservation.Actor, 10)
+	var receipt contactapp.LocalTagReceipt
+	err = tx.QueryRow(ctx, `
+		INSERT INTO public.tag_catalog_operation_receipts (operation, actor, key_digest, payload_digest, created_at)
+		VALUES ($1, $2, $3, $4, now())
+		ON CONFLICT (operation, actor, key_digest) DO NOTHING
+		RETURNING id, operation, actor::bigint, payload_digest, state, result_ids`, reservation.Operation, actor, keyDigest[:], reservation.PayloadDigest).
+		Scan(&receipt.ID, &receipt.Operation, &receipt.Actor, &receipt.PayloadDigest, &receipt.State, &receipt.ResultIDs)
+	if err == nil {
+		receipt.IdempotencyKey = reservation.IdempotencyKey
+		return receipt, true, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return contactapp.LocalTagReceipt{}, false, err
+	}
+	err = tx.QueryRow(ctx, `SELECT id, operation, actor::bigint, payload_digest, state, result_ids FROM public.tag_catalog_operation_receipts WHERE operation = $1 AND actor = $2 AND key_digest = $3`, reservation.Operation, actor, keyDigest[:]).
+		Scan(&receipt.ID, &receipt.Operation, &receipt.Actor, &receipt.PayloadDigest, &receipt.State, &receipt.ResultIDs)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactapp.LocalTagReceipt{}, false, contactapp.ErrLegacyTagUnavailable
+	}
+	if err != nil {
+		return contactapp.LocalTagReceipt{}, false, err
+	}
+	receipt.IdempotencyKey = reservation.IdempotencyKey
+	return receipt, false, nil
+}
+
+func (*LegacyTagCatalogRepository) CompleteLocalTagReceipt(ctx context.Context, id int64, resultIDs []int64, completedAt time.Time) (contactapp.LocalTagReceipt, error) {
+	if id <= 0 || len(resultIDs) == 0 || completedAt.IsZero() {
+		return contactapp.LocalTagReceipt{}, contactapp.ErrLegacyTagConflict
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactapp.LocalTagReceipt{}, err
+	}
+	var receipt contactapp.LocalTagReceipt
+	err = tx.QueryRow(ctx, `
+		UPDATE public.tag_catalog_operation_receipts
+		SET state = 'completed', result_ids = $2, completed_at = $3
+		WHERE id = $1 AND state = 'in_progress'
+		RETURNING id, operation, actor::bigint, payload_digest, state, result_ids`, id, resultIDs, completedAt).
+		Scan(&receipt.ID, &receipt.Operation, &receipt.Actor, &receipt.PayloadDigest, &receipt.State, &receipt.ResultIDs)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactapp.LocalTagReceipt{}, contactapp.ErrLegacyTagConflict
+	}
+	return receipt, err
 }
 func (r *LegacyTagCatalogRepository) inflate(ctx context.Context, id int64, g pgtype.Int8, name string, sort int32) (contactapp.LegacyTag, error) {
 	if !g.Valid {

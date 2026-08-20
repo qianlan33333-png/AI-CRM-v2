@@ -45,6 +45,18 @@ export type StageTransport = {
   list: typeof loadGeneratedStages;
   create: typeof createGeneratedStage;
   rename: typeof renameGeneratedStage;
+  readonly reorder?: (
+    // eslint-disable-next-line no-unused-vars -- named parameter documents the generated transport contract.
+    request: { readonly ids: readonly number[] },
+    // eslint-disable-next-line no-unused-vars -- named parameter documents the generated transport contract.
+    options: RequestInit,
+  ) => Promise<StageTransportResponse>;
+  readonly archive?: (
+    // eslint-disable-next-line no-unused-vars -- named parameter documents the generated transport contract.
+    stageID: number,
+    // eslint-disable-next-line no-unused-vars -- named parameter documents the generated transport contract.
+    options: RequestInit,
+  ) => Promise<StageTransportResponse>;
 };
 
 export const generatedStageTransport: StageTransport = {
@@ -75,6 +87,28 @@ export type StageCreateResult =
 export type StageRenameResult =
   | { readonly status: "renamed"; readonly stage: StageRecord }
   | FailedStageMutation;
+
+export type StageReorderResult =
+  | { readonly status: "reordered"; readonly items: readonly StageRecord[] }
+  | FailedStageMutation;
+
+export type StageArchiveResult =
+  | { readonly status: "archived"; readonly stage: StageRecord }
+  | FailedStageMutation;
+
+export function newStageIdempotencyKey(
+  operation: "create" | "rename" | "reorder" | "archive",
+  source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
+): string | undefined {
+  try {
+    const uuid = source?.randomUUID();
+    return typeof uuid === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid)
+      ? `stage-${operation}:${uuid}`
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function plainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -158,11 +192,12 @@ export async function submitStageCreate(
   transport: StageTransport,
   request: CreateStageRequest,
   csrfToken: string,
+	 idempotencyKey: string,
 ): Promise<StageCreateResult> {
   try {
     const response = await transport.create(request, {
       credentials: "same-origin",
-      headers: { "X-CSRF-Token": csrfToken },
+      headers: { "X-CSRF-Token": csrfToken, "Idempotency-Key": idempotencyKey },
     });
     if (response.status !== 201) {
       return { status: mutationFailure(response.status) };
@@ -179,11 +214,12 @@ export async function submitStageRename(
   stageID: number,
   request: RenameStageRequest,
   csrfToken: string,
+	 idempotencyKey: string,
 ): Promise<StageRenameResult> {
   try {
     const response = await transport.rename(stageID, request, {
       credentials: "same-origin",
-      headers: { "X-CSRF-Token": csrfToken },
+      headers: { "X-CSRF-Token": csrfToken, "Idempotency-Key": idempotencyKey },
     });
     if (response.status !== 200) {
       return { status: mutationFailure(response.status) };
@@ -191,6 +227,60 @@ export async function submitStageRename(
     const stage = parseStage(response.data);
     if (!stage || stage.id !== stageID) return { status: "unavailable" };
     return { status: "renamed", stage };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function submitStageReorder(
+  transport: StageTransport,
+  ids: readonly number[],
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<StageReorderResult> {
+  if (!transport.reorder) return { status: "unavailable" };
+  try {
+    const response = await transport.reorder(
+      { ids },
+      {
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": csrfToken, "Idempotency-Key": idempotencyKey },
+      },
+    );
+    if (response.status !== 200) return { status: mutationFailure(response.status) };
+    const items = parseStageList(response.data);
+    const expected = new Set(ids);
+    if (
+      !items ||
+      items.length !== ids.length ||
+      new Set(items.map((item) => item.id)).size !== ids.length ||
+      items.some((item, index) => item.id !== ids[index] || !expected.has(item.id))
+    ) {
+      return { status: "unavailable" };
+    }
+    return { status: "reordered", items };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+export async function submitStageArchive(
+  transport: StageTransport,
+  stageID: number,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<StageArchiveResult> {
+  if (!transport.archive) return { status: "unavailable" };
+  try {
+    const response = await transport.archive(stageID, {
+      credentials: "same-origin",
+      headers: { "X-CSRF-Token": csrfToken, "Idempotency-Key": idempotencyKey },
+    });
+    if (response.status !== 200) return { status: mutationFailure(response.status) };
+    const stage = parseStage(response.data);
+    return stage && stage.id === stageID
+      ? { status: "archived", stage }
+      : { status: "unavailable" };
   } catch {
     return { status: "unavailable" };
   }

@@ -3,7 +3,9 @@ import {
   loadStages,
   parseStage,
   parseStageList,
+  submitStageArchive,
   submitStageCreate,
+  submitStageReorder,
   submitStageRename,
   type StageTransport,
 } from "./stages";
@@ -101,20 +103,22 @@ describe("stage transport classification", () => {
     });
   });
 
-  it("creates with exact input, same-origin credentials, and CSRF header", async () => {
+	const key = "stage-create:123e4567-e89b-42d3-a456-426614174000";
+  it("creates with exact input, same-origin credentials, CSRF, and idempotency", async () => {
     const client = transport({ status: 201, data: rawStage });
     await expect(
       submitStageCreate(
         client,
-        { name: "  原样名称  ", sort_order: 9 },
-        "token",
+		{ name: "  原样名称  ", sort_order: 9 },
+		"token",
+		key,
       ),
     ).resolves.toMatchObject({ status: "created", stage: { id: 7 } });
     expect(client.create).toHaveBeenCalledWith(
       { name: "  原样名称  ", sort_order: 9 },
       {
         credentials: "same-origin",
-        headers: { "X-CSRF-Token": "token" },
+		headers: { "X-CSRF-Token": "token", "Idempotency-Key": key },
       },
     );
   });
@@ -131,21 +135,21 @@ describe("stage transport classification", () => {
   ] as const)("classifies mutation status %i as %s", async (status, want) => {
     const client = transport({ status, data: {} });
     await expect(
-      submitStageCreate(client, { name: "阶段" }, "token"),
+		submitStageCreate(client, { name: "阶段" }, "token", key),
     ).resolves.toEqual({ status: want });
   });
 
   it("renames the requested id and rejects mismatched or malformed success bodies", async () => {
     const client = transport({ status: 200, data: rawStage });
     await expect(
-      submitStageRename(client, 7, { name: "新名称" }, "token"),
+		submitStageRename(client, 7, { name: "新名称" }, "token", key),
     ).resolves.toMatchObject({ status: "renamed", stage: { id: 7 } });
     expect(client.rename).toHaveBeenCalledWith(
       7,
       { name: "新名称" },
       {
         credentials: "same-origin",
-        headers: { "X-CSRF-Token": "token" },
+		headers: { "X-CSRF-Token": "token", "Idempotency-Key": key },
       },
     );
 
@@ -154,7 +158,7 @@ describe("stage transport classification", () => {
       data: { ...rawStage, id: 8 },
     });
     await expect(
-      submitStageRename(client, 7, { name: "新名称" }, "token"),
+		submitStageRename(client, 7, { name: "新名称" }, "token", key),
     ).resolves.toEqual({ status: "unavailable" });
   });
 
@@ -163,10 +167,52 @@ describe("stage transport classification", () => {
     vi.mocked(client.create).mockRejectedValue(new Error("secret endpoint"));
     vi.mocked(client.rename).mockRejectedValue(new Error("secret endpoint"));
     await expect(
-      submitStageCreate(client, { name: "阶段" }, "token"),
+		submitStageCreate(client, { name: "阶段" }, "token", key),
     ).resolves.toEqual({ status: "unavailable" });
     await expect(
-      submitStageRename(client, 7, { name: "阶段" }, "token"),
+		submitStageRename(client, 7, { name: "阶段" }, "token", key),
     ).resolves.toEqual({ status: "unavailable" });
+  });
+
+  it("reorders only the complete exact server ordering and uses one protected request", async () => {
+    const reorder = vi.fn(async () => ({
+      status: 200,
+      data: {
+        items: [
+          { ...rawStage, id: 2, name: "第二" },
+          { ...rawStage, id: 1, name: "第一" },
+        ],
+      },
+    }));
+    const client: StageTransport = {
+      ...transport(),
+      reorder,
+    };
+    await expect(submitStageReorder(client, [2, 1], "token", key)).resolves.toMatchObject({
+      status: "reordered",
+      items: [{ id: 2 }, { id: 1 }],
+    });
+    expect(client.reorder).toHaveBeenCalledWith(
+      { ids: [2, 1] },
+      { credentials: "same-origin", headers: { "X-CSRF-Token": "token", "Idempotency-Key": key } },
+    );
+    reorder.mockResolvedValue({
+      status: 200,
+      data: { items: [{ ...rawStage, id: 1 }, { ...rawStage, id: 2 }] },
+    });
+    await expect(submitStageReorder(client, [2, 1], "token", key)).resolves.toEqual({ status: "unavailable" });
+  });
+
+  it("archives only the requested exact stage and never sends when the generated operation is absent", async () => {
+    await expect(submitStageArchive(transport(), 7, "token", key)).resolves.toEqual({ status: "unavailable" });
+    const client: StageTransport = {
+      ...transport(),
+      archive: vi.fn(async () => ({ status: 200, data: rawStage })),
+    };
+    await expect(submitStageArchive(client, 7, "token", key)).resolves.toMatchObject({ status: "archived", stage: { id: 7 } });
+    expect(client.archive).toHaveBeenCalledWith(
+      7,
+      { credentials: "same-origin", headers: { "X-CSRF-Token": "token", "Idempotency-Key": key } },
+    );
   });
 });

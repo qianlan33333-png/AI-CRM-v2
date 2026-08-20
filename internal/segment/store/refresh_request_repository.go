@@ -39,6 +39,29 @@ func NewRefreshRequestRepository(pool *pgxpool.Pool) (*RefreshRequestRepository,
 	return &RefreshRequestRepository{client: client}, nil
 }
 
+// EnsureRefreshable closes the archive race at command acceptance: archived
+// definitions retain their snapshot but may never receive another refresh job.
+func (repository *RefreshRequestRepository) EnsureRefreshable(ctx context.Context, segmentID segmentport.SegmentID) error {
+	if repository == nil || segmentID <= 0 {
+		return segmentapp.ErrInvalidRefreshRequest
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	var active bool
+	if err := tx.QueryRow(ctx, `SELECT lifecycle_status = 'active' FROM public.segments WHERE id = $1 FOR UPDATE`, int64(segmentID)).Scan(&active); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return segmentapp.ErrSegmentNotFound
+		}
+		return err
+	}
+	if !active {
+		return segmentapp.ErrSegmentNotFound
+	}
+	return nil
+}
+
 func (repository *RefreshRequestRepository) ReserveRefreshReceipt(
 	ctx context.Context,
 	actor segmentport.Actor,

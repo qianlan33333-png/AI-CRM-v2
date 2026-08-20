@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  archiveSegment,
   buildDefinition,
   editorDraft,
   loadSegmentMembers,
@@ -19,6 +20,7 @@ const segment = {
   member_count: 2,
   refreshed_at: "2026-08-13T08:00:00Z",
   refresh_status: "idle",
+  lifecycle_status: "active",
   created_at: "2026-08-12T08:00:00Z",
   updated_at: "2026-08-13T08:00:00Z",
 };
@@ -96,5 +98,15 @@ describe("segment mutations", () => {
     await expect(refreshSegment(client, 17, "csrf-token", "refresh-key")).resolves.toBe("accepted");
     expect(client.refresh).toHaveBeenCalledWith(17, { credentials: "same-origin", headers: { "X-CSRF-Token": "csrf-token", "Idempotency-Key": "refresh-key" } });
     await expect(refreshSegment(transport({ status: 202, data: { status: "accepted", segment_id: 18 } }), 17, "csrf-token", "refresh-key")).resolves.toBe("unavailable");
+  });
+
+  it("archives only through a generated same-origin operation with CSRF and idempotency", async () => {
+    await expect(archiveSegment(transport(), 17, "csrf-token", "archive-key")).resolves.toEqual({ status: "unavailable" });
+    const archive = vi.fn(async () => ({ status: 200, data: { ...segment, lifecycle_status: "archived" } }));
+    const client: SegmentTransport = { ...transport(), archive };
+    await expect(archiveSegment(client, 17, "csrf-token", "archive-key")).resolves.toMatchObject({ status: "archived", segment: { id: 17 } });
+    expect(archive).toHaveBeenCalledWith(17, { credentials: "same-origin", headers: { "X-CSRF-Token": "csrf-token", "Idempotency-Key": "archive-key" } });
+    archive.mockResolvedValue({ status: 200, data: { ...segment, id: 18 } });
+    await expect(archiveSegment(client, 17, "csrf-token", "archive-key")).resolves.toEqual({ status: "unavailable" });
   });
 });

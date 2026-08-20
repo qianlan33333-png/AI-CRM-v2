@@ -17,6 +17,8 @@ type StageID int64
 var (
 	ErrInvalidStage          = errors.New("invalid stage")
 	ErrStageNotFound         = errors.New("stage not found")
+	ErrStageReferenced       = errors.New("stage is still referenced by customers")
+	ErrStageConflict         = errors.New("stage command conflict")
 	ErrInvalidMergeCommand   = errors.New("invalid contact merge command")
 	ErrMergeCustomerNotFound = errors.New("contact merge customer not found")
 	ErrMergeConflict         = errors.New("contact merge conflict")
@@ -68,16 +70,33 @@ type Stage struct {
 }
 
 type CreateStageCommand struct {
-	Name      string
-	SortOrder int32
-	Config    json.RawMessage
-	Actor     Actor
+	Name           string
+	SortOrder      int32
+	Config         json.RawMessage
+	Actor          Actor
+	IdempotencyKey string
 }
 
 type RenameStageCommand struct {
-	ID    StageID
-	Name  string
-	Actor Actor
+	ID             StageID
+	Name           string
+	Actor          Actor
+	IdempotencyKey string
+}
+
+// ReorderStagesCommand is an exact active-stage ordering. Callers must supply
+// every active stage exactly once; this prevents a stale client from silently
+// dropping a stage from the local lifecycle.
+type ReorderStagesCommand struct {
+	IDs            []StageID
+	Actor          Actor
+	IdempotencyKey string
+}
+
+type ArchiveStageCommand struct {
+	ID             StageID
+	Actor          Actor
+	IdempotencyKey string
 }
 
 // StageService is the only public stage mutation boundary. Implementations
@@ -86,6 +105,8 @@ type StageService interface {
 	ListStages(context.Context) ([]Stage, error)
 	CreateStage(context.Context, CreateStageCommand) (Stage, error)
 	RenameStage(context.Context, RenameStageCommand) (Stage, error)
+	ReorderStages(context.Context, ReorderStagesCommand) ([]Stage, error)
+	ArchiveStage(context.Context, ArchiveStageCommand) (Stage, error)
 }
 
 type CreateForIdentityCommand struct {

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -41,19 +40,29 @@ func (uow *fakeStageUoW) Within(ctx context.Context, callback func(context.Conte
 }
 
 type fakeStageRepository struct {
-	listStages   []contactport.Stage
-	insertStage  contactport.Stage
-	renameStage  contactport.Stage
-	listErr      error
-	insertErr    error
-	renameErr    error
-	listCalls    int
-	insertCalls  int
-	renameCalls  int
-	listAttempts []int
-	inserted     []contactport.CreateStageCommand
-	renamed      []contactport.RenameStageCommand
-	sequence     *[]string
+	listStages    []contactport.Stage
+	insertStage   contactport.Stage
+	renameStage   contactport.Stage
+	archiveStage  contactport.Stage
+	reorderStages []contactport.Stage
+	listErr       error
+	insertErr     error
+	renameErr     error
+	archiveErr    error
+	reorderErr    error
+	listCalls     int
+	insertCalls   int
+	renameCalls   int
+	archiveCalls  int
+	reorderCalls  int
+	listAttempts  []int
+	inserted      []contactport.CreateStageCommand
+	renamed       []contactport.RenameStageCommand
+	archived      []contactport.ArchiveStageCommand
+	reordered     [][]contactport.StageID
+	sequence      *[]string
+	receipt       StageReceipt
+	receiptOwned  bool
 }
 
 func (repository *fakeStageRepository) ListStages(ctx context.Context) ([]contactport.Stage, error) {
@@ -63,6 +72,18 @@ func (repository *fakeStageRepository) ListStages(ctx context.Context) ([]contac
 		*repository.sequence = append(*repository.sequence, "repository.list")
 	}
 	return repository.listStages, repository.listErr
+}
+
+func (repository *fakeStageRepository) GetStage(_ context.Context, id contactport.StageID) (contactport.Stage, error) {
+	if repository.archiveStage.ID == id {
+		return repository.archiveStage, nil
+	}
+	for _, stage := range repository.listStages {
+		if stage.ID == id {
+			return stage, nil
+		}
+	}
+	return contactport.Stage{}, contactport.ErrStageNotFound
 }
 
 func (repository *fakeStageRepository) InsertStage(ctx context.Context, command contactport.CreateStageCommand) (contactport.Stage, error) {
@@ -83,13 +104,46 @@ func (repository *fakeStageRepository) RenameStage(ctx context.Context, command 
 	return repository.renameStage, repository.renameErr
 }
 
+func (repository *fakeStageRepository) ReorderStages(_ context.Context, ids []contactport.StageID) ([]contactport.Stage, error) {
+	repository.reorderCalls++
+	repository.reordered = append(repository.reordered, append([]contactport.StageID(nil), ids...))
+	if repository.sequence != nil {
+		*repository.sequence = append(*repository.sequence, "repository.reorder")
+	}
+	return repository.reorderStages, repository.reorderErr
+}
+
+func (repository *fakeStageRepository) ArchiveStage(_ context.Context, command contactport.ArchiveStageCommand, _ time.Time) (contactport.Stage, error) {
+	repository.archiveCalls++
+	repository.archived = append(repository.archived, command)
+	if repository.sequence != nil {
+		*repository.sequence = append(*repository.sequence, "repository.archive")
+	}
+	return repository.archiveStage, repository.archiveErr
+}
+
+func (repository *fakeStageRepository) ReserveStageReceipt(_ context.Context, reservation StageReceiptReservation) (StageReceipt, bool, error) {
+	if repository.receipt.ID == 0 {
+		repository.receipt = StageReceipt{ID: 1, Operation: reservation.Operation, Actor: reservation.Actor, KeyDigest: reservation.KeyDigest, PayloadDigest: reservation.PayloadDigest, State: "in_progress"}
+		repository.receiptOwned = true
+	}
+	return repository.receipt, repository.receiptOwned, nil
+}
+
+func (repository *fakeStageRepository) CompleteStageReceipt(_ context.Context, _ int64, ids []contactport.StageID, _ time.Time) (StageReceipt, error) {
+	repository.receipt.State = "completed"
+	repository.receipt.ResultIDs = append([]contactport.StageID(nil), ids...)
+	repository.receiptOwned = false
+	return repository.receipt, nil
+}
+
 func stageAttempt(ctx context.Context) int {
 	attempt, _ := ctx.Value(stageAttemptContextKey{}).(int)
 	return attempt
 }
 
 func (repository *fakeStageRepository) calls() int {
-	return repository.listCalls + repository.insertCalls + repository.renameCalls
+	return repository.listCalls + repository.insertCalls + repository.renameCalls + repository.archiveCalls + repository.reorderCalls
 }
 
 type fakeStageAppender struct {
@@ -123,7 +177,6 @@ func newTestStageService(
 		now: func() time.Time {
 			return time.Date(2026, time.August, 11, 9, 30, 0, 0, time.UTC)
 		},
-		newEventKey: func() (string, error) { return "test-key", nil },
 	}
 }
 
@@ -136,7 +189,6 @@ func TestStageServiceFailsClosedWithoutRequiredDependencies(t *testing.T) {
 		{name: "repository", mutate: func(service *StageService) { service.repository = nil }},
 		{name: "event appender", mutate: func(service *StageService) { service.events = nil }},
 		{name: "clock", mutate: func(service *StageService) { service.now = nil }},
-		{name: "event key generator", mutate: func(service *StageService) { service.newEventKey = nil }},
 	}
 
 	for _, testCase := range tests {
@@ -306,18 +358,16 @@ func TestStageServiceMutationsAppendEventsAfterRepository(t *testing.T) {
 			name: "create",
 			run: func(service *StageService) (contactport.Stage, error) {
 				return service.CreateStage(context.Background(), contactport.CreateStageCommand{
-					Name: "prospect", SortOrder: -2, Actor: "admin:7",
+					Name: "prospect", SortOrder: -2, Actor: "admin:7", IdempotencyKey: "stage-create-key-01",
 				})
 			},
 			stage:         contactport.Stage{ID: 21, Name: "prospect", SortOrder: -2, Config: json.RawMessage(`[]`)},
 			wantSequence:  []string{"repository.insert", "event.append"},
 			wantType:      "stage.created",
-			wantKeyPrefix: "stage.created:",
+			wantKeyPrefix: "stage.create:",
 			wantPayload: map[string]json.RawMessage{
-				"stage_id":   json.RawMessage(`21`),
-				"name":       json.RawMessage(`"prospect"`),
-				"sort_order": json.RawMessage(`-2`),
-				"actor":      json.RawMessage(`"admin:7"`),
+				"stage_ids": json.RawMessage(`[21]`),
+				"actor":     json.RawMessage(`"admin:7"`),
 			},
 			assertCommand: func(t *testing.T, repository *fakeStageRepository) {
 				t.Helper()
@@ -333,17 +383,16 @@ func TestStageServiceMutationsAppendEventsAfterRepository(t *testing.T) {
 			name: "rename",
 			run: func(service *StageService) (contactport.Stage, error) {
 				return service.RenameStage(context.Background(), contactport.RenameStageCommand{
-					ID: 24, Name: "qualified", Actor: "admin:8",
+					ID: 24, Name: "qualified", Actor: "admin:8", IdempotencyKey: "stage-rename-key-01",
 				})
 			},
 			stage:         contactport.Stage{ID: 24, Name: "qualified", SortOrder: 5, Config: json.RawMessage(`{"color":"blue"}`)},
 			wantSequence:  []string{"repository.rename", "event.append"},
 			wantType:      "stage.renamed",
-			wantKeyPrefix: "stage.renamed:",
+			wantKeyPrefix: "stage.rename:",
 			wantPayload: map[string]json.RawMessage{
-				"stage_id": json.RawMessage(`24`),
-				"name":     json.RawMessage(`"qualified"`),
-				"actor":    json.RawMessage(`"admin:8"`),
+				"stage_ids": json.RawMessage(`[24]`),
+				"actor":     json.RawMessage(`"admin:8"`),
 			},
 			assertCommand: func(t *testing.T, repository *fakeStageRepository) {
 				t.Helper()
@@ -362,8 +411,6 @@ func TestStageServiceMutationsAppendEventsAfterRepository(t *testing.T) {
 			events := &fakeStageAppender{sequence: &sequence}
 			service := newTestStageService(uow, repository, events)
 			service.now = func() time.Time { return now }
-			service.newEventKey = func() (string, error) { return "fixed-key", nil }
-
 			stage, err := testCase.run(service)
 			if err != nil {
 				t.Fatalf("mutation error = %v", err)
@@ -386,7 +433,6 @@ func TestStageServiceMutationsAppendEventsAfterRepository(t *testing.T) {
 func TestStageServiceMutationErrorsPropagateAndReturnZeroStage(t *testing.T) {
 	repositoryErr := errors.New("repository unavailable")
 	appenderErr := errors.New("event append unavailable")
-	keyErr := errors.New("event key unavailable")
 	uowErr := errors.New("transaction unavailable")
 	tests := []struct {
 		name           string
@@ -455,7 +501,7 @@ func TestStageServiceMutationErrorsPropagateAndReturnZeroStage(t *testing.T) {
 			configure: func(_ *fakeStageUoW, _ *fakeStageRepository, _ *fakeStageAppender, service *StageService) {
 				service.now = func() time.Time { return time.Time{} }
 			},
-			wantCallbacks: 1,
+			wantCallbacks: 0,
 		},
 		{
 			name: "rename invalid clock",
@@ -465,27 +511,7 @@ func TestStageServiceMutationErrorsPropagateAndReturnZeroStage(t *testing.T) {
 			configure: func(_ *fakeStageUoW, _ *fakeStageRepository, _ *fakeStageAppender, service *StageService) {
 				service.now = func() time.Time { return time.Time{} }
 			},
-			wantCallbacks: 1,
-		},
-		{
-			name: "create event key error",
-			run: func(service *StageService) (contactport.Stage, error) {
-				return service.CreateStage(context.Background(), validCreateStageCommand())
-			},
-			configure: func(_ *fakeStageUoW, _ *fakeStageRepository, _ *fakeStageAppender, service *StageService) {
-				service.newEventKey = func() (string, error) { return "", keyErr }
-			},
-			wantErr: keyErr, wantCallbacks: 1,
-		},
-		{
-			name: "rename event key error",
-			run: func(service *StageService) (contactport.Stage, error) {
-				return service.RenameStage(context.Background(), validRenameStageCommand())
-			},
-			configure: func(_ *fakeStageUoW, _ *fakeStageRepository, _ *fakeStageAppender, service *StageService) {
-				service.newEventKey = func() (string, error) { return "", keyErr }
-			},
-			wantErr: keyErr, wantCallbacks: 1,
+			wantCallbacks: 0,
 		},
 	}
 
@@ -509,110 +535,97 @@ func TestStageServiceMutationErrorsPropagateAndReturnZeroStage(t *testing.T) {
 				t.Fatal("mutation error = nil, want failure")
 			}
 			assertZeroStage(t, stage)
-			if uow.calls != 1 || uow.callbackCalls != testCase.wantCallbacks || repository.calls() != testCase.wantRepoCalls || events.calls != testCase.wantEventCalls {
-				t.Fatalf("failure calls = uow:%d callbacks:%d repository:%d events:%d, want 1/%d/%d/%d", uow.calls, uow.callbackCalls, repository.calls(), events.calls, testCase.wantCallbacks, testCase.wantRepoCalls, testCase.wantEventCalls)
+			wantUOWCalls := 1
+			if strings.Contains(testCase.name, "invalid clock") {
+				wantUOWCalls = 0
+			}
+			if uow.calls != wantUOWCalls || uow.callbackCalls != testCase.wantCallbacks || repository.calls() != testCase.wantRepoCalls || events.calls != testCase.wantEventCalls {
+				t.Fatalf("failure calls = uow:%d callbacks:%d repository:%d events:%d, want %d/%d/%d/%d", uow.calls, uow.callbackCalls, repository.calls(), events.calls, wantUOWCalls, testCase.wantCallbacks, testCase.wantRepoCalls, testCase.wantEventCalls)
 			}
 		})
-	}
-}
-
-func TestStageServiceGeneratesNewKeyForEachTransactionAttempt(t *testing.T) {
-	tests := []struct {
-		name       string
-		run        func(*StageService) (contactport.Stage, error)
-		stage      contactport.Stage
-		wantPrefix string
-	}{
-		{
-			name: "create",
-			run: func(service *StageService) (contactport.Stage, error) {
-				return service.CreateStage(context.Background(), validCreateStageCommand())
-			},
-			stage: contactport.Stage{ID: 3, Name: "prospect"}, wantPrefix: "stage.created:",
-		},
-		{
-			name: "rename",
-			run: func(service *StageService) (contactport.Stage, error) {
-				return service.RenameStage(context.Background(), validRenameStageCommand())
-			},
-			stage: contactport.Stage{ID: 3, Name: "qualified"}, wantPrefix: "stage.renamed:",
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			uow := &fakeStageUoW{attempts: 3}
-			repository := &fakeStageRepository{insertStage: testCase.stage, renameStage: testCase.stage}
-			events := &fakeStageAppender{}
-			service := newTestStageService(uow, repository, events)
-			keys := []string{"retry-one", "retry-two", "retry-three"}
-			keyCalls := 0
-			service.newEventKey = func() (string, error) {
-				key := keys[keyCalls]
-				keyCalls++
-				return key, nil
-			}
-
-			stage, err := testCase.run(service)
-			if err != nil {
-				t.Fatalf("mutation error = %v", err)
-			}
-			if !reflect.DeepEqual(stage, testCase.stage) {
-				t.Fatalf("mutation stage = %#v, want %#v", stage, testCase.stage)
-			}
-			if uow.calls != 1 || uow.callbackCalls != 3 || repository.calls() != 3 || events.calls != 3 || keyCalls != 3 {
-				t.Fatalf("retry calls = uow:%d callbacks:%d repository:%d events:%d keys:%d, want 1/3/3/3/3", uow.calls, uow.callbackCalls, repository.calls(), events.calls, keyCalls)
-			}
-			if !reflect.DeepEqual(events.attempts, []int{1, 2, 3}) {
-				t.Fatalf("event attempts = %v, want [1 2 3]", events.attempts)
-			}
-
-			seen := make(map[string]struct{}, len(events.events))
-			for index, event := range events.events {
-				if !strings.HasPrefix(event.IdempotencyKey, testCase.wantPrefix) {
-					t.Fatalf("event %d key = %q, want prefix %q", index, event.IdempotencyKey, testCase.wantPrefix)
-				}
-				if event.IdempotencyKey != testCase.wantPrefix+keys[index] {
-					t.Fatalf("event %d key = %q, want %q", index, event.IdempotencyKey, testCase.wantPrefix+keys[index])
-				}
-				if _, exists := seen[event.IdempotencyKey]; exists {
-					t.Fatalf("event %d repeated key %q", index, event.IdempotencyKey)
-				}
-				seen[event.IdempotencyKey] = struct{}{}
-			}
-		})
-	}
-}
-
-func TestRandomEventKeyIsDistinct128BitHex(t *testing.T) {
-	first, err := randomEventKey()
-	if err != nil {
-		t.Fatalf("first randomEventKey() error = %v", err)
-	}
-	second, err := randomEventKey()
-	if err != nil {
-		t.Fatalf("second randomEventKey() error = %v", err)
-	}
-	for index, key := range []string{first, second} {
-		if len(key) != 32 {
-			t.Fatalf("key %d length = %d, want 32", index, len(key))
-		}
-		decoded, err := hex.DecodeString(key)
-		if err != nil || len(decoded) != 16 || strings.ToLower(key) != key {
-			t.Fatalf("key %d = %q, want 16-byte lowercase hex: decoded=%x error=%v", index, key, decoded, err)
-		}
-	}
-	if first == second {
-		t.Fatalf("randomEventKey() repeated %q", first)
 	}
 }
 
 func validCreateStageCommand() contactport.CreateStageCommand {
-	return contactport.CreateStageCommand{Name: "prospect", SortOrder: 2, Config: json.RawMessage(`[]`), Actor: "admin:1"}
+	return contactport.CreateStageCommand{Name: "prospect", SortOrder: 2, Config: json.RawMessage(`[]`), Actor: "admin:1", IdempotencyKey: "stage-create-key-01"}
+}
+
+func TestStageServiceReorderAndArchiveUseOneLocalUOWEvent(t *testing.T) {
+	first := contactport.Stage{ID: 1, Name: "new", SortOrder: 0, Config: json.RawMessage(`{}`)}
+	second := contactport.Stage{ID: 2, Name: "qualified", SortOrder: 1, Config: json.RawMessage(`{}`)}
+
+	t.Run("reorder exact active set", func(t *testing.T) {
+		sequence := []string{}
+		uow := &fakeStageUoW{}
+		repository := &fakeStageRepository{listStages: []contactport.Stage{first, second}, reorderStages: []contactport.Stage{second, first}, sequence: &sequence}
+		events := &fakeStageAppender{sequence: &sequence}
+		stages, err := newTestStageService(uow, repository, events).ReorderStages(context.Background(), contactport.ReorderStagesCommand{IDs: []contactport.StageID{2, 1}, Actor: "admin:9", IdempotencyKey: "stage-reorder-key"})
+		if err != nil || !reflect.DeepEqual(stages, []contactport.Stage{second, first}) {
+			t.Fatalf("ReorderStages() = %#v, %v", stages, err)
+		}
+		if !reflect.DeepEqual(sequence, []string{"repository.list", "repository.reorder", "event.append"}) || len(events.events) != 1 || events.events[0].Type != "stage.reordered" {
+			t.Fatalf("sequence/events = %#v/%#v", sequence, events.events)
+		}
+	})
+
+	t.Run("archive preserves customer references", func(t *testing.T) {
+		sequence := []string{}
+		uow := &fakeStageUoW{}
+		repository := &fakeStageRepository{archiveStage: first, sequence: &sequence}
+		events := &fakeStageAppender{sequence: &sequence}
+		stage, err := newTestStageService(uow, repository, events).ArchiveStage(context.Background(), contactport.ArchiveStageCommand{ID: 1, Actor: "admin:9", IdempotencyKey: "stage-archive-key"})
+		if err != nil || stage.ID != 1 || !reflect.DeepEqual(sequence, []string{"repository.archive", "event.append"}) || len(events.events) != 1 || events.events[0].Type != "stage.archived" {
+			t.Fatalf("ArchiveStage() stage=%#v err=%v sequence=%#v events=%#v", stage, err, sequence, events.events)
+		}
+	})
+}
+
+func TestStageServiceReorderRejectsStaleOrDuplicateSetsBeforeWrite(t *testing.T) {
+	for name, command := range map[string]contactport.ReorderStagesCommand{
+		"duplicate": {IDs: []contactport.StageID{1, 1}, Actor: "admin:1", IdempotencyKey: "stage-duplicate-key"},
+		"missing":   {IDs: []contactport.StageID{1}, Actor: "admin:1", IdempotencyKey: "stage-missing-key---"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			uow := &fakeStageUoW{}
+			repository := &fakeStageRepository{listStages: []contactport.Stage{{ID: 1}, {ID: 2}}}
+			_, err := newTestStageService(uow, repository, &fakeStageAppender{}).ReorderStages(context.Background(), command)
+			if !errors.Is(err, contactport.ErrInvalidStage) && !errors.Is(err, contactport.ErrStageConflict) {
+				t.Fatalf("ReorderStages(%#v) error = %v", command, err)
+			}
+			if repository.reorderCalls != 0 {
+				t.Fatalf("reorder write calls = %d, want 0", repository.reorderCalls)
+			}
+		})
+	}
+}
+
+func TestStageCreateReceiptReplaysAndRejectsPayloadDrift(t *testing.T) {
+	created := contactport.Stage{ID: 7, Name: "prospect", SortOrder: 0, Config: json.RawMessage(`{}`)}
+	uow := &fakeStageUoW{}
+	repository := &fakeStageRepository{insertStage: created, listStages: []contactport.Stage{created}}
+	events := &fakeStageAppender{}
+	service := newTestStageService(uow, repository, events)
+	command := contactport.CreateStageCommand{Name: "prospect", Actor: "admin:7", IdempotencyKey: "stage-create-key-07"}
+
+	first, err := service.CreateStage(context.Background(), command)
+	if err != nil || first.ID != created.ID {
+		t.Fatalf("first CreateStage() = %#v, %v", first, err)
+	}
+	second, err := service.CreateStage(context.Background(), command)
+	if err != nil || second.ID != created.ID {
+		t.Fatalf("replay CreateStage() = %#v, %v", second, err)
+	}
+	if repository.insertCalls != 1 || events.calls != 1 {
+		t.Fatalf("replay writes/events = %d/%d, want 1/1", repository.insertCalls, events.calls)
+	}
+	_, err = service.CreateStage(context.Background(), contactport.CreateStageCommand{Name: "different", Actor: command.Actor, IdempotencyKey: command.IdempotencyKey})
+	if !errors.Is(err, contactport.ErrStageConflict) || repository.insertCalls != 1 || events.calls != 1 {
+		t.Fatalf("payload drift err/writes/events = %v/%d/%d", err, repository.insertCalls, events.calls)
+	}
 }
 
 func validRenameStageCommand() contactport.RenameStageCommand {
-	return contactport.RenameStageCommand{ID: 1, Name: "qualified", Actor: "admin:1"}
+	return contactport.RenameStageCommand{ID: 1, Name: "qualified", Actor: "admin:1", IdempotencyKey: "stage-rename-key-01"}
 }
 
 func assertZeroStage(t *testing.T, stage contactport.Stage) {
@@ -642,9 +655,6 @@ func assertStageEvent(
 	}
 	if !strings.HasPrefix(event.IdempotencyKey, wantKeyPrefix) {
 		t.Fatalf("event key = %q, want prefix %q", event.IdempotencyKey, wantKeyPrefix)
-	}
-	if event.IdempotencyKey != wantKeyPrefix+"fixed-key" {
-		t.Fatalf("event key = %q, want %q", event.IdempotencyKey, wantKeyPrefix+"fixed-key")
 	}
 
 	var payload map[string]json.RawMessage

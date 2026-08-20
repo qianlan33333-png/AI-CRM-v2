@@ -83,6 +83,7 @@ func GenerateStageSnapshot() ([]byte, error) {
 		request.Header.Set("Content-Type", "application/json")
 		if item.capability == authport.CapabilityStagesWrite {
 			request.Header.Set("X-CSRF-Token", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+			request.Header.Set("Idempotency-Key", "stage-snapshot-key-0001")
 		}
 		ctx := authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, "snapshot-session")
 		ctx, err = authport.WithAuthorization(ctx, authport.Authorization{Capability: item.capability, Scope: authport.ScopeGlobal})
@@ -145,5 +146,19 @@ func (service *snapshotStageService) RenameStage(_ context.Context, command cont
 		return contactport.Stage{}, errors.New("unexpected rename")
 	}
 	service.stage.Name = command.Name
+	return service.stage, nil
+}
+
+func (service *snapshotStageService) ReorderStages(_ context.Context, _ contactport.ReorderStagesCommand) ([]contactport.Stage, error) {
+	if service.stage.ID == 0 {
+		return []contactport.Stage{}, nil
+	}
+	return []contactport.Stage{service.stage}, nil
+}
+
+func (service *snapshotStageService) ArchiveStage(_ context.Context, command contactport.ArchiveStageCommand) (contactport.Stage, error) {
+	if service.stage.ID == 0 || service.stage.ID != command.ID {
+		return contactport.Stage{}, contactport.ErrStageNotFound
+	}
 	return service.stage, nil
 }

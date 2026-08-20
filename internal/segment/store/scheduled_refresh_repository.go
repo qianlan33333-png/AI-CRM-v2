@@ -6,14 +6,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
-	segmentdb "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/generated"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
 )
 
 // ScheduledRefreshRepository is a read-only worker projection. RefreshOnce
 // remains the only Segment member-replacement writer.
 type ScheduledRefreshRepository struct {
-	queries *segmentdb.Queries
+	pool *pgxpool.Pool
 }
 
 var _ segmentworker.ScheduledRefreshFinder = (*ScheduledRefreshRepository)(nil)
@@ -22,27 +21,36 @@ func NewScheduledRefreshRepository(pool *pgxpool.Pool) (*ScheduledRefreshReposit
 	if pool == nil {
 		return nil, segmentapp.ErrSegmentRefreshFailed
 	}
-	return &ScheduledRefreshRepository{queries: segmentdb.New(pool)}, nil
+	return &ScheduledRefreshRepository{pool: pool}, nil
 }
 
 func (repository *ScheduledRefreshRepository) ListScheduledRefreshCandidates(
 	ctx context.Context,
 ) ([]segmentworker.ScheduledRefreshCandidate, error) {
-	if repository == nil || repository.queries == nil || ctx == nil {
+	if repository == nil || repository.pool == nil || ctx == nil {
 		return nil, segmentapp.ErrSegmentRefreshFailed
 	}
-	rows, err := repository.queries.ListScheduledSegmentRefreshes(ctx)
+	rows, err := repository.pool.Query(ctx, `
+		SELECT id, refresh_cron FROM segments
+		WHERE refresh_mode = 'scheduled' AND refresh_cron IS NOT NULL AND lifecycle_status = 'active'
+		ORDER BY id`)
 	if err != nil {
 		return nil, mapRefreshDatabaseError(err)
 	}
-	candidates := make([]segmentworker.ScheduledRefreshCandidate, 0, len(rows))
-	for _, row := range rows {
-		if row.ID <= 0 || !row.RefreshCron.Valid || row.RefreshCron.String == "" {
+	defer rows.Close()
+	candidates := make([]segmentworker.ScheduledRefreshCandidate, 0)
+	for rows.Next() {
+		var id int64
+		var cron string
+		if err := rows.Scan(&id, &cron); err != nil || id <= 0 || cron == "" {
 			return nil, segmentapp.ErrSegmentRefreshFailed
 		}
 		candidates = append(candidates, segmentworker.ScheduledRefreshCandidate{
-			SegmentID: segmentport.SegmentID(row.ID), RefreshCron: row.RefreshCron.String,
+			SegmentID: segmentport.SegmentID(id), RefreshCron: cron,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, mapRefreshDatabaseError(err)
 	}
 	return candidates, nil
 }

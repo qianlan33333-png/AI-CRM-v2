@@ -21,43 +21,66 @@ var _ segmentapp.CRUDStore = (*CRUDRepository)(nil)
 func NewCRUDRepository() *CRUDRepository { return &CRUDRepository{} }
 
 func (repository *CRUDRepository) ListSegments(ctx context.Context, query segmentapp.SegmentPageQuery) ([]segmentport.Segment, error) {
-	queries, err := crudQueries(ctx)
+	tx, err := platformstore.TxFromContext(ctx)
 	if err != nil || repository == nil || query.Limit < 1 {
 		return nil, crudStoreError(err)
 	}
-	rows, err := queries.ListSegments(ctx, segmentdb.ListSegmentsParams{AfterID: crudOptionalID(query.AfterID), RowLimit: query.Limit})
+	var after any
+	if query.AfterID != nil {
+		after = int64(*query.AfterID)
+	}
+	rows, err := tx.Query(ctx, `
+		SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
+		       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
+		FROM segments
+		WHERE lifecycle_status = 'active' AND ($1::bigint IS NULL OR id > $1::bigint)
+		ORDER BY id LIMIT $2::integer`, after, query.Limit)
 	if err != nil {
 		return nil, crudStoreError(err)
 	}
-	result := make([]segmentport.Segment, len(rows))
-	for index, row := range rows {
-		result[index] = crudSegment(row.ID, row.Name, row.Definition, row.RefreshMode, row.RefreshCron, row.MemberCount, row.RefreshedAt, row.RefreshStatus, row.CreatedAt, row.UpdatedAt)
+	defer rows.Close()
+	result := make([]segmentport.Segment, 0)
+	for rows.Next() {
+		item, scanErr := scanLifecycleSegment(rows)
+		if scanErr != nil {
+			return nil, crudStoreError(scanErr)
+		}
+		result = append(result, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, crudStoreError(err)
 	}
 	return result, nil
 }
 
 func (repository *CRUDRepository) GetSegment(ctx context.Context, id segmentport.SegmentID) (segmentport.Segment, error) {
-	queries, err := crudQueries(ctx)
+	tx, err := platformstore.TxFromContext(ctx)
 	if err != nil || repository == nil || id <= 0 {
 		return segmentport.Segment{}, crudStoreError(err)
 	}
-	row, err := queries.GetSegment(ctx, int64(id))
+	item, err := queryLifecycleSegment(ctx, tx, `
+		SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
+		       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
+		FROM segments WHERE id = $1`, int64(id))
 	if err != nil {
 		return segmentport.Segment{}, crudStoreError(err)
 	}
-	return crudSegment(row.ID, row.Name, row.Definition, row.RefreshMode, row.RefreshCron, row.MemberCount, row.RefreshedAt, row.RefreshStatus, row.CreatedAt, row.UpdatedAt), nil
+	return item, nil
 }
 
 func (repository *CRUDRepository) LockSegment(ctx context.Context, id segmentport.SegmentID) (segmentport.Segment, error) {
-	queries, err := crudQueries(ctx)
+	tx, err := platformstore.TxFromContext(ctx)
 	if err != nil || repository == nil || id <= 0 {
 		return segmentport.Segment{}, crudStoreError(err)
 	}
-	row, err := queries.LockSegmentForUpdate(ctx, int64(id))
+	item, err := queryLifecycleSegment(ctx, tx, `
+		SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
+		       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
+		FROM segments WHERE id = $1 FOR UPDATE`, int64(id))
 	if err != nil {
 		return segmentport.Segment{}, crudStoreError(err)
 	}
-	return crudSegment(row.ID, row.Name, row.Definition, row.RefreshMode, row.RefreshCron, row.MemberCount, row.RefreshedAt, row.RefreshStatus, row.CreatedAt, row.UpdatedAt), nil
+	return item, nil
 }
 
 func (repository *CRUDRepository) CreateSegment(ctx context.Context, command segmentport.CreateCommand, now time.Time) (segmentport.Segment, error) {
@@ -88,6 +111,43 @@ func (repository *CRUDRepository) UpdateSegment(ctx context.Context, segment seg
 		return segmentport.Segment{}, crudStoreError(err)
 	}
 	return crudSegment(row.ID, row.Name, row.Definition, row.RefreshMode, row.RefreshCron, row.MemberCount, row.RefreshedAt, row.RefreshStatus, row.CreatedAt, row.UpdatedAt), nil
+}
+
+func (repository *CRUDRepository) ArchiveSegment(ctx context.Context, id segmentport.SegmentID, actor segmentport.Actor, now time.Time) (segmentport.Segment, error) {
+	if repository == nil || id <= 0 || actor == "" || now.IsZero() {
+		return segmentport.Segment{}, segmentapp.ErrSegmentCRUDUnavailable
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return segmentport.Segment{}, err
+	}
+	var row struct {
+		id            int64
+		name          string
+		definition    []byte
+		refreshMode   string
+		refreshCron   pgtype.Text
+		memberCount   int64
+		refreshedAt   pgtype.Timestamptz
+		refreshStatus string
+		createdAt     pgtype.Timestamptz
+		updatedAt     pgtype.Timestamptz
+		lifecycle     string
+	}
+	err = tx.QueryRow(ctx, `
+		UPDATE segments
+		SET lifecycle_status = 'archived', archived_at = $2, archived_by = $3, updated_at = $2
+		WHERE id = $1 AND lifecycle_status = 'active'
+		RETURNING id, name, definition, refresh_mode, refresh_cron, member_count,
+		          refreshed_at, refresh_status, created_at, updated_at, lifecycle_status`, int64(id), now.UTC(), string(actor)).Scan(
+		&row.id, &row.name, &row.definition, &row.refreshMode, &row.refreshCron, &row.memberCount, &row.refreshedAt, &row.refreshStatus, &row.createdAt, &row.updatedAt, &row.lifecycle)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return segmentport.Segment{}, segmentapp.ErrSegmentNotFound
+	}
+	if err != nil {
+		return segmentport.Segment{}, err
+	}
+	return crudLifecycleSegment(row.id, row.name, row.definition, row.refreshMode, row.refreshCron, row.memberCount, row.refreshedAt, row.refreshStatus, row.createdAt, row.updatedAt, row.lifecycle), nil
 }
 
 func (repository *CRUDRepository) ListMemberRecords(ctx context.Context, segmentID segmentport.SegmentID, after *segmentport.CustomerID, limit int32) ([]segmentapp.MemberRecord, error) {
@@ -174,11 +234,37 @@ func crudStoreError(err error) error {
 }
 
 func crudSegment(id int64, name string, definition []byte, refreshMode string, refreshCron pgtype.Text, memberCount int64, refreshedAt pgtype.Timestamptz, refreshStatus string, createdAt, updatedAt pgtype.Timestamptz) segmentport.Segment {
+	return crudLifecycleSegment(id, name, definition, refreshMode, refreshCron, memberCount, refreshedAt, refreshStatus, createdAt, updatedAt, "active")
+}
+
+func crudLifecycleSegment(id int64, name string, definition []byte, refreshMode string, refreshCron pgtype.Text, memberCount int64, refreshedAt pgtype.Timestamptz, refreshStatus string, createdAt, updatedAt pgtype.Timestamptz, lifecycle string) segmentport.Segment {
 	return segmentport.Segment{
 		ID: segmentport.SegmentID(id), Name: name, Definition: append([]byte(nil), definition...), RefreshMode: segmentport.RefreshMode(refreshMode),
 		RefreshCron: crudText(refreshCron), MemberCount: memberCount, RefreshedAt: crudTime(refreshedAt), RefreshStatus: segmentport.RefreshStatus(refreshStatus),
-		CreatedAt: createdAt.Time, UpdatedAt: updatedAt.Time,
+		LifecycleStatus: segmentport.LifecycleStatus(lifecycle), CreatedAt: createdAt.Time, UpdatedAt: updatedAt.Time,
 	}
+}
+
+type lifecycleSegmentScanner interface{ Scan(...any) error }
+
+func scanLifecycleSegment(row lifecycleSegmentScanner) (segmentport.Segment, error) {
+	var id int64
+	var name, refreshMode, refreshStatus, lifecycle string
+	var definition []byte
+	var refreshCron pgtype.Text
+	var memberCount int64
+	var refreshedAt, createdAt, updatedAt pgtype.Timestamptz
+	if err := row.Scan(&id, &name, &definition, &refreshMode, &refreshCron, &memberCount, &refreshedAt, &refreshStatus, &createdAt, &updatedAt, &lifecycle); err != nil {
+		return segmentport.Segment{}, err
+	}
+	if lifecycle != "active" && lifecycle != "archived" {
+		return segmentport.Segment{}, segmentapp.ErrSegmentCRUDUnavailable
+	}
+	return crudLifecycleSegment(id, name, definition, refreshMode, refreshCron, memberCount, refreshedAt, refreshStatus, createdAt, updatedAt, lifecycle), nil
+}
+
+func queryLifecycleSegment(ctx context.Context, tx pgx.Tx, query string, args ...any) (segmentport.Segment, error) {
+	return scanLifecycleSegment(tx.QueryRow(ctx, query, args...))
 }
 
 func crudReceipt(id int64, operation, actor string, key, payload []byte, state string, result pgtype.Int8) (segmentapp.Receipt, error) {

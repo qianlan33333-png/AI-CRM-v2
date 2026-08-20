@@ -164,7 +164,7 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 			"ApproveMergeReview", "ListMergeReviews", "RejectMergeReview",
 		}},
 		"segment.Service": {(*segmentport.Service)(nil), []string{
-			"Create", "Get", "List", "ListMembers", "RequestRefresh", "Update",
+			"Archive", "Create", "Get", "List", "ListMembers", "RequestRefresh", "Update",
 		}},
 		"auth.Service":        {(*authport.Service)(nil), []string{"Authenticate", "Authorize", "Invalidate", "ValidateCSRF"}},
 		"platform.UnitOfWork": {(*platformport.UnitOfWork)(nil), []string{"Within"}},

@@ -354,15 +354,35 @@ func TestNewStageHandlerRejectsNilServices(t *testing.T) {
 }
 
 type stageServiceStub struct {
-	list   func(context.Context) ([]contactport.Stage, error)
-	create func(context.Context, contactport.CreateStageCommand) (contactport.Stage, error)
-	rename func(context.Context, contactport.RenameStageCommand) (contactport.Stage, error)
+	list    func(context.Context) ([]contactport.Stage, error)
+	create  func(context.Context, contactport.CreateStageCommand) (contactport.Stage, error)
+	rename  func(context.Context, contactport.RenameStageCommand) (contactport.Stage, error)
+	reorder func(context.Context, contactport.ReorderStagesCommand) ([]contactport.Stage, error)
+	archive func(context.Context, contactport.ArchiveStageCommand) (contactport.Stage, error)
 
 	listCalls     int
 	createCalls   int
 	renameCalls   int
+	reorderCalls  int
+	archiveCalls  int
 	createCommand contactport.CreateStageCommand
 	renameCommand contactport.RenameStageCommand
+}
+
+func (stub *stageServiceStub) ReorderStages(ctx context.Context, command contactport.ReorderStagesCommand) ([]contactport.Stage, error) {
+	stub.reorderCalls++
+	if stub.reorder == nil {
+		return nil, nil
+	}
+	return stub.reorder(ctx, command)
+}
+
+func (stub *stageServiceStub) ArchiveStage(ctx context.Context, command contactport.ArchiveStageCommand) (contactport.Stage, error) {
+	stub.archiveCalls++
+	if stub.archive == nil {
+		return contactport.Stage{}, nil
+	}
+	return stub.archive(ctx, command)
 }
 
 func (stub *stageServiceStub) ListStages(ctx context.Context) ([]contactport.Stage, error) {
@@ -417,6 +437,7 @@ func stageRequest(
 	request := httptest.NewRequest(method, path, strings.NewReader(body))
 	if method == http.MethodPost || method == http.MethodPatch {
 		request.Header.Set("X-CSRF-Token", "csrf-test-token")
+		request.Header.Set("Idempotency-Key", "stage-http-key-0001")
 	}
 	ctx := context.Background()
 	if principalID != 0 {
