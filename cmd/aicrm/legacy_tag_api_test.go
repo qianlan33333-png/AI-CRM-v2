@@ -66,11 +66,13 @@ func (stub *legacyTagLiveStub) Request(_ context.Context, command contactapp.Leg
 }
 
 type legacyTagStatusStub struct {
-	status contactapp.LegacyTagExecutionStatus
+	status contactapp.LegacyTagExecutionGate
 	err    error
+	calls  int
 }
 
-func (stub *legacyTagStatusStub) Get(context.Context) (contactapp.LegacyTagExecutionStatus, error) {
+func (stub *legacyTagStatusStub) Get(context.Context) (contactapp.LegacyTagExecutionGate, error) {
+	stub.calls++
 	return stub.status, stub.err
 }
 
@@ -218,6 +220,41 @@ func TestB02LegacyTagCatalogReadRequiresGlobalAdminOrOps(t *testing.T) {
 	legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.LegacyWecomTagsPage).ServeHTTP(page, legacyRequest(http.MethodGet, "/admin/wecom-tags", legacyToken(154)))
 	if page.Code != http.StatusForbidden || page.Header().Get("Location") != "" || tags.listCalls != 0 {
 		t.Fatalf("sales page=%d location=%q list_calls=%d body=%s", page.Code, page.Header().Get("Location"), tags.listCalls, page.Body.String())
+	}
+}
+
+func TestB02ABLegacyTagExecutionGateRequiresGlobalAdminOrOps(t *testing.T) {
+	for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
+		t.Run(string(role), func(t *testing.T) {
+			status := &legacyTagStatusStub{status: legacyTagExecutionGateFixture()}
+			auth := &legacyTagReadAuthStub{
+				principal:     authport.Principal{AdminUserID: 7, Role: role},
+				authorization: authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal},
+			}
+			handler := &Handler{auth: auth, legacyTagStatus: status}
+			response := httptest.NewRecorder()
+			legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.GetLegacyTagExecutionStatus).ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/wecom/tags/live/gate", legacyToken(155)))
+			if response.Code != http.StatusOK || status.calls != 1 {
+				t.Fatalf("%s gate=%d service_calls=%d body=%s", role, response.Code, status.calls, response.Body.String())
+			}
+		})
+	}
+
+	staffID := int64(71)
+	status := &legacyTagStatusStub{status: legacyTagExecutionGateFixture()}
+	auth := &legacyTagReadAuthStub{
+		principal: authport.Principal{AdminUserID: 8, Role: authport.RoleSales, StaffID: &staffID},
+		authorization: authport.Authorization{
+			Capability:   authport.CapabilityCustomersRead,
+			Scope:        authport.ScopeOwnerStaff,
+			OwnerStaffID: staffID,
+		},
+	}
+	handler := &Handler{auth: auth, legacyTagStatus: status}
+	response := httptest.NewRecorder()
+	legacyRoute(t, handler, authport.CapabilityCustomersRead, handler.GetLegacyTagExecutionStatus).ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/wecom/tags/live/gate", legacyToken(156)))
+	if response.Code != http.StatusForbidden || status.calls != 0 {
+		t.Fatalf("sales gate=%d service_calls=%d body=%s", response.Code, status.calls, response.Body.String())
 	}
 }
 
@@ -376,7 +413,7 @@ func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testi
 	tags := &legacyTagStub{catalog: legacyTagFixture()}
 	sync := &legacyTagSyncStub{}
 	live := &legacyTagLiveStub{}
-	status := &legacyTagStatusStub{status: contactapp.LegacyTagExecutionStatus{Payload: []byte(`{"accepted":true,"queued":true,"attempted":false,"executed":false,"outcome_unknown":false,"reconciled":false,"real_external_call_executed":false}`)}}
+	status := &legacyTagStatusStub{status: legacyTagExecutionGateFixture()}
 	router, auth := legacyTagRouterWithExecution(t, tags, sync, live, status)
 
 	for _, target := range []string{"/api/admin/wecom/tag-groups", "/api/admin/wecom/tag-groups/1", "/api/admin/wecom/tags/2", "/api/admin/wecom/tags/live/gate"} {
@@ -384,6 +421,9 @@ func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testi
 		router.ServeHTTP(response, legacyRequest(http.MethodGet, target, legacyToken(145)))
 		if response.Code != http.StatusOK || strings.Contains(response.Body.String(), `"executed":true`) || !strings.Contains(response.Body.String(), `"real_external_call_executed":false`) {
 			t.Fatalf("read %s=%d %s", target, response.Code, response.Body.String())
+		}
+		if target == "/api/admin/wecom/tags/live/gate" && (!exactLegacyTagResponseKeys(mustJSONMap(t, response.Body.Bytes()), "provider_execution_eligible", "local_command_acceptance_available", "local_queue_available", "sync_executed", "observed_at", "real_external_call_executed") || strings.Contains(response.Body.String(), "mode") || strings.Contains(response.Body.String(), "payload")) {
+			t.Fatalf("gate projection=%s", response.Body.String())
 		}
 	}
 	page := httptest.NewRecorder()
@@ -446,7 +486,20 @@ func legacyTagFixture() contactapp.LegacyTagCatalog {
 	return contactapp.LegacyTagCatalog{Groups: []contactapp.LegacyTagGroup{{ID: 1, Name: "客户阶段"}}, Tags: []contactapp.LegacyTag{{ID: 2, GroupID: 1, GroupName: "客户阶段", Name: "新客"}}, SyncedAt: now}
 }
 func legacyTagRouter(t *testing.T, tags legacyTagApplication) (http.Handler, *recordingAuth) {
-	return legacyTagRouterWithExecution(t, tags, &legacyTagSyncStub{}, &legacyTagLiveStub{}, &legacyTagStatusStub{status: contactapp.LegacyTagExecutionStatus{Payload: []byte(`{"accepted":true,"queued":true,"attempted":false,"executed":false,"outcome_unknown":false,"reconciled":false,"real_external_call_executed":false}`)}})
+	return legacyTagRouterWithExecution(t, tags, &legacyTagSyncStub{}, &legacyTagLiveStub{}, &legacyTagStatusStub{status: legacyTagExecutionGateFixture()})
+}
+
+func legacyTagExecutionGateFixture() contactapp.LegacyTagExecutionGate {
+	return contactapp.LegacyTagExecutionGate{LocalCommandAcceptanceAvailable: true, LocalQueueAvailable: true, ObservedAt: time.Date(2026, 8, 20, 9, 0, 0, 0, time.UTC)}
+}
+
+func mustJSONMap(t *testing.T, body []byte) map[string]any {
+	t.Helper()
+	var value map[string]any
+	if err := json.Unmarshal(body, &value); err != nil {
+		t.Fatalf("decode JSON: %v", err)
+	}
+	return value
 }
 func legacyTagRouterWithExecution(t *testing.T, tags legacyTagApplication, sync legacyTagSyncApplication, live legacyTagLiveMutationApplication, status legacyTagExecutionStatusApplication) (http.Handler, *recordingAuth) {
 	t.Helper()

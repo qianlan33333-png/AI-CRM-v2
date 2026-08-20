@@ -29,7 +29,7 @@ type Querier interface {
 	GetCustomerMergeLineage(ctx context.Context, mergedCustomerID int64) (int64, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
 	GetExternalEventIdempotency(ctx context.Context, idempotencyKey string) (GetExternalEventIdempotencyRow, error)
-	GetLegacyTagExecutionStatus(ctx context.Context) ([]byte, error)
+	GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error)
 	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
 	GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error)
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)

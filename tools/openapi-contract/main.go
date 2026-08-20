@@ -1631,14 +1631,14 @@ func validateTagABContract(doc *openapi3.T) error {
 		!legacyTagBooleanEnum(acceptance.Value, "real_external_call_executed", false) ||
 		!legacyTagBooleanEnum(acceptance.Value, "sync_executed", false) ||
 		!legacyTagStringEnum(acceptance.Value, "state", "queued") ||
-		!legacyTagBooleanEnum(gateSchema.Value, "accepted", true) ||
-		!legacyTagBooleanEnum(gateSchema.Value, "queued", true) ||
-		!legacyTagBooleanEnum(gateSchema.Value, "attempted", false) ||
-		!legacyTagBooleanEnum(gateSchema.Value, "executed", false) ||
-		!legacyTagBooleanEnum(gateSchema.Value, "outcome_unknown", false) ||
-		!legacyTagBooleanEnum(gateSchema.Value, "reconciled", false) ||
+		gateSchema.Value.AdditionalProperties.Has == nil || *gateSchema.Value.AdditionalProperties.Has ||
+		!reflect.DeepEqual(gateSchema.Value.Required, []string{"provider_execution_eligible", "local_command_acceptance_available", "local_queue_available", "sync_executed", "observed_at", "real_external_call_executed"}) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "provider_execution_eligible", false) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "local_command_acceptance_available", true) ||
+		!legacyTagBooleanEnum(gateSchema.Value, "local_queue_available", true) ||
 		!legacyTagBooleanEnum(gateSchema.Value, "real_external_call_executed", false) ||
-		!legacyTagBooleanEnum(gateSchema.Value, "sync_executed", false) {
+		!legacyTagBooleanEnum(gateSchema.Value, "sync_executed", false) ||
+		gateSchema.Value.Properties["observed_at"] == nil || gateSchema.Value.Properties["observed_at"].Value == nil || gateSchema.Value.Properties["observed_at"].Value.Format != "date-time" {
 		return errors.New("P4-B02AB Tag A+B execution state must remain fail-closed")
 	}
 	return nil

@@ -177,7 +177,10 @@ func (repository *LegacyTagExecutionRepository) ReadLegacyTagExecutionStatus(ctx
 	if err != nil {
 		return contactapp.LegacyTagExecutionStatus{}, err
 	}
-	return contactapp.LegacyTagExecutionStatus{Payload: append([]byte(nil), payload...)}, nil
+	if !payload.UpdatedAt.Valid {
+		return contactapp.LegacyTagExecutionStatus{}, contactapp.ErrLegacyTagExecutionUnavailable
+	}
+	return contactapp.LegacyTagExecutionStatus{Payload: append([]byte(nil), payload.Payload...), ObservedAt: payload.UpdatedAt.Time.UTC()}, nil
 }
 
 func legacyTagKeyDigest(key string) [sha256.Size]byte { return sha256.Sum256([]byte(key)) }

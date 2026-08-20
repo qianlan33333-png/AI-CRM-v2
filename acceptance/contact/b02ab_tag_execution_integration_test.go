@@ -61,8 +61,8 @@ func TestB02ABTagExecutionQueuesExactlyOnceWithoutProviderCall(t *testing.T) {
 	}
 
 	status, err := statusService.Get(ctx)
-	if err != nil || !json.Valid(status.Payload) || string(status.Payload) == "" || !containsJSONBoolean(status.Payload, "executed", false) || !containsJSONBoolean(status.Payload, "real_external_call_executed", false) {
-		t.Fatalf("gate=%s err=%v", status.Payload, err)
+	if err != nil || status.ProviderExecutionEligible || !status.LocalCommandAcceptanceAvailable || !status.LocalQueueAvailable || status.SyncExecuted || status.RealExternalCallExecuted || status.ObservedAt.IsZero() {
+		t.Fatalf("safe gate=%#v err=%v", status, err)
 	}
 	if contactapp.LegacyTagSyncCanAutoRetry(contactapp.LegacyTagSyncOutcomeUnknown) || contactapp.LegacyTagLiveMutationCanAutoRetry(contactapp.LegacyTagLiveMutationOutcomeUnknown) {
 		t.Fatal("outcome_unknown must not auto-retry")
@@ -176,11 +176,6 @@ func TestB02ABTagExecutionConcurrentReplayAndIncompleteReceiptRollback(t *testin
 }
 
 type b02ABFailingEvents struct{}
-
-func containsJSONBoolean(raw []byte, key string, want bool) bool {
-	var object map[string]any
-	return json.Unmarshal(raw, &object) == nil && object[key] == want
-}
 
 func (b02ABFailingEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
 	return 0, errors.New("event append blocked")

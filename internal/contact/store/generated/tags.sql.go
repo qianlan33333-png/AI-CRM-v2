@@ -188,14 +188,19 @@ func (q *Queries) CreateLegacyTagGroup(ctx context.Context, name string) (TagGro
 }
 
 const getLegacyTagExecutionStatus = `-- name: GetLegacyTagExecutionStatus :one
-SELECT payload FROM legacy_tag_execution_status WHERE singleton = true
+SELECT payload, updated_at FROM legacy_tag_execution_status WHERE singleton = true
 `
 
-func (q *Queries) GetLegacyTagExecutionStatus(ctx context.Context) ([]byte, error) {
+type GetLegacyTagExecutionStatusRow struct {
+	Payload   []byte             `json:"payload"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error) {
 	row := q.db.QueryRow(ctx, getLegacyTagExecutionStatus)
-	var payload []byte
-	err := row.Scan(&payload)
-	return payload, err
+	var i GetLegacyTagExecutionStatusRow
+	err := row.Scan(&i.Payload, &i.UpdatedAt)
+	return i, err
 }
 
 const getLegacyTagLiveMutationReceipt = `-- name: GetLegacyTagLiveMutationReceipt :one

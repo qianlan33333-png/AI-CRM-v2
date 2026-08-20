@@ -67,20 +67,25 @@ func (jobs *legacyTagLiveMutationJobs) EnqueueLegacyTagLiveMutation(_ context.Co
 	return jobs.id, nil
 }
 
-func TestP4CustomerTagsReadsOpaqueExecutionStatusWithoutProviderCall(t *testing.T) {
+func TestP4CustomerTagsProjectsOnlyTheSafeExecutionGateWithoutProviderCall(t *testing.T) {
 	u := &legacyTagUOW{}
-	reader := &legacyTagExecutionStatusReader{u: u, status: LegacyTagExecutionStatus{Payload: []byte(`{"adapter_mode":"queued_external_effect","revision":1}`)}}
+	observedAt := time.Date(2026, 8, 20, 9, 0, 0, 0, time.UTC)
+	reader := &legacyTagExecutionStatusReader{u: u, status: LegacyTagExecutionStatus{ObservedAt: observedAt, Payload: []byte(`{"mode":"provider_execution_unavailable","accepted":true,"queued":true,"attempted":false,"executed":false,"outcome_unknown":false,"reconciled":false,"real_external_call_executed":false,"sync_executed":false,"sensitive_future_field":"discard"}`)}}
 	got, err := NewLegacyTagExecutionStatusService(u, reader).Get(context.Background())
-	if err != nil || !legacyTagLiveJSONEqual(got.Payload, []byte(`{"revision":1.0,"adapter_mode":"queued_external_effect"}`)) {
+	if err != nil || got != (LegacyTagExecutionGate{ProviderExecutionEligible: false, LocalCommandAcceptanceAvailable: true, LocalQueueAvailable: true, SyncExecuted: false, ObservedAt: observedAt, RealExternalCallExecuted: false}) {
 		t.Fatalf("Get() = %#v, %v", got, err)
 	}
 	if u.calls != 1 || reader.calls != 1 {
 		t.Fatalf("uow/reader calls = %d/%d, want 1/1", u.calls, reader.calls)
 	}
 
-	reader.status = LegacyTagExecutionStatus{Payload: []byte(`null`)}
+	reader.status = LegacyTagExecutionStatus{ObservedAt: observedAt, Payload: []byte(`null`)}
 	if _, err := NewLegacyTagExecutionStatusService(u, reader).Get(context.Background()); !errors.Is(err, ErrInvalidLegacyTagExecutionStatus) {
 		t.Fatalf("invalid status error = %v", err)
+	}
+	reader.status = LegacyTagExecutionStatus{ObservedAt: observedAt, Payload: []byte(`{"mode":"provider_execution_unavailable","accepted":true,"queued":true,"attempted":true,"executed":false,"outcome_unknown":false,"reconciled":false,"real_external_call_executed":false,"sync_executed":false}`)}
+	if _, err := NewLegacyTagExecutionStatusService(u, reader).Get(context.Background()); !errors.Is(err, ErrInvalidLegacyTagExecutionStatus) {
+		t.Fatalf("attempted source must fail closed: %v", err)
 	}
 }
 
