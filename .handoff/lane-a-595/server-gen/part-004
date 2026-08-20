@@ -1,0 +1,1095 @@
+erge with any union data inside the ResolveIdentityResponse, using the provided ResolveIdentityNotFound
+func (t *ResolveIdentityResponse) MergeResolveIdentityNotFound(v ResolveIdentityNotFound) error {
+	v.Status = "not_found"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsResolveIdentityConflict returns the union data inside the ResolveIdentityResponse as a ResolveIdentityConflict
+func (t ResolveIdentityResponse) AsResolveIdentityConflict() (ResolveIdentityConflict, error) {
+	var body ResolveIdentityConflict
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResolveIdentityConflict overwrites any union data inside the ResolveIdentityResponse as the provided ResolveIdentityConflict
+func (t *ResolveIdentityResponse) FromResolveIdentityConflict(v ResolveIdentityConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResolveIdentityConflict performs a merge with any union data inside the ResolveIdentityResponse, using the provided ResolveIdentityConflict
+func (t *ResolveIdentityResponse) MergeResolveIdentityConflict(v ResolveIdentityConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ResolveIdentityResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t ResolveIdentityResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "conflict":
+		return t.AsResolveIdentityConflict()
+	case "found":
+		return t.AsResolveIdentityFound()
+	case "not_found":
+		return t.AsResolveIdentityNotFound()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t ResolveIdentityResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ResolveIdentityResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSegmentDefinitionAnd returns the union data inside the SegmentDefinition as a SegmentDefinitionAnd
+func (t SegmentDefinition) AsSegmentDefinitionAnd() (SegmentDefinitionAnd, error) {
+	var body SegmentDefinitionAnd
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionAnd overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionAnd
+func (t *SegmentDefinition) FromSegmentDefinitionAnd(v SegmentDefinitionAnd) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionAnd performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionAnd
+func (t *SegmentDefinition) MergeSegmentDefinitionAnd(v SegmentDefinitionAnd) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSegmentDefinitionOr returns the union data inside the SegmentDefinition as a SegmentDefinitionOr
+func (t SegmentDefinition) AsSegmentDefinitionOr() (SegmentDefinitionOr, error) {
+	var body SegmentDefinitionOr
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionOr overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionOr
+func (t *SegmentDefinition) FromSegmentDefinitionOr(v SegmentDefinitionOr) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionOr performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionOr
+func (t *SegmentDefinition) MergeSegmentDefinitionOr(v SegmentDefinitionOr) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSegmentDefinitionPredicate returns the union data inside the SegmentDefinition as a SegmentDefinitionPredicate
+func (t SegmentDefinition) AsSegmentDefinitionPredicate() (SegmentDefinitionPredicate, error) {
+	var body SegmentDefinitionPredicate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSegmentDefinitionPredicate overwrites any union data inside the SegmentDefinition as the provided SegmentDefinitionPredicate
+func (t *SegmentDefinition) FromSegmentDefinitionPredicate(v SegmentDefinitionPredicate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSegmentDefinitionPredicate performs a merge with any union data inside the SegmentDefinition, using the provided SegmentDefinitionPredicate
+func (t *SegmentDefinition) MergeSegmentDefinitionPredicate(v SegmentDefinitionPredicate) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SegmentDefinition) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SegmentDefinition) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// ServerInterface represents all server handlers.
+type ServerInterface interface {
+	// Carry the safe local execution-runtime observation into the existing admin shell
+	// (GET /admin/execution-runtime)
+	GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request)
+	// List real D01 Automation trigger receipts through the frozen legacy path
+	// (GET /api/admin/automation-conversion/agent-runs)
+	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
+	// Read the frozen observed execution runtime without invoking a worker or provider
+	// (GET /api/admin/execution-runtime)
+	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
+	// Read one frozen observed execution timeline without asserting a provider receipt
+	// (GET /api/admin/executions/{execution_id})
+	GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string)
+	// Read the frozen global Push Center section aggregation without touching a worker or provider
+	// (GET /api/admin/push-center/sections)
+	GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams)
+	// Read the frozen global Push Center statistics without accepting, sending, or retrying work
+	// (GET /api/admin/push-center/stats)
+	GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams)
+	// Read aggregate anonymous local public survey analytics
+	// (GET /api/admin/questionnaires/{questionnaire_id}/public-analytics)
+	GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params GetQuestionnairePublicAnalyticsParams)
+	// Disable one immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-disable)
+	DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params DisableQuestionnairePublicDefinitionParams)
+	// Publish an immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
+	PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams)
+	// Read one immutable anonymous public survey definition
+	// (GET /api/public/questionnaires/{slug})
+	GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
+	// Submit one anonymous selection-only public survey response
+	// (POST /api/public/questionnaires/{slug}/submissions)
+	SubmitPublicSurvey(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
+	// Query one anonymous local-only public survey result by POST body token
+	// (POST /api/public/survey-submission-results/query)
+	QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request)
+	// List non-secret configuration readiness
+	// (GET /api/v1/admin/config/overview)
+	GetAdminConfigOverview(w http.ResponseWriter, r *http.Request)
+	// Invalidate the current admin session
+	// (POST /api/v1/auth/logout)
+	LogoutAdmin(w http.ResponseWriter, r *http.Request, params LogoutAdminParams)
+	// Return the authenticated admin principal
+	// (GET /api/v1/auth/session)
+	GetAuthSession(w http.ResponseWriter, r *http.Request)
+	// List customers using a keyset cursor
+	// (GET /api/v1/customers)
+	ListCustomers(w http.ResponseWriter, r *http.Request, params ListCustomersParams)
+	// Get a channel-neutral customer by OneID
+	// (GET /api/v1/customers/{customer_id})
+	GetCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID)
+	// Update customer-owned profile fields
+	// (PATCH /api/v1/customers/{customer_id})
+	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams)
+	// Read non-PII local customer activity aggregates for a fixed window
+	// (GET /api/v1/customers/{customer_id}/activity-analytics)
+	GetCustomerActivityAnalytics(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerActivityAnalyticsParams)
+	// List zero-body local chat activity facts for one visible customer
+	// (GET /api/v1/customers/{customer_id}/chat-activity)
+	ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams)
+	// Read a safe local Customer 360 context without external identities or message bodies
+	// (GET /api/v1/customers/{customer_id}/context)
+	GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams)
+	// List append-only customer events using a keyset cursor
+	// (GET /api/v1/customers/{customer_id}/events)
+	ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams)
+	// List redacted local OneID merge history for a customer component
+	// (GET /api/v1/customers/{customer_id}/merge-history)
+	ListCustomerMergeHistory(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerMergeHistoryParams)
+	// Set or clear a customer's stage
+	// (PUT /api/v1/customers/{customer_id}/stage)
+	SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams)
+	// Idempotently remove one local tag from a customer
+	// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
+	RemoveCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params RemoveCustomerTagParams)
+	// Idempotently apply one local tag to a customer
+	// (PUT /api/v1/customers/{customer_id}/tags/{tag_id})
+	AddCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params AddCustomerTagParams)
+	// Bind a scoped identity to a channel-neutral customer
+	// (POST /api/v1/identity/bind)
+	BindIdentity(w http.ResponseWriter, r *http.Request, params BindIdentityParams)
+	// Attribute or persist an external event without guessing identity
+	// (POST /api/v1/identity/ingest)
+	IngestIdentityEvent(w http.ResponseWriter, r *http.Request, params IngestIdentityEventParams)
+	// List pending identity merge reviews without exposing raw identities
+	// (GET /api/v1/identity/merge-reviews)
+	ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams)
+	// Approve one versioned merge review with an explicit primary customer
+	// (POST /api/v1/identity/merge-reviews/{review_id}/approve)
+	ApproveIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params ApproveIdentityMergeReviewParams)
+	// Reject one versioned merge review without changing bindings
+	// (POST /api/v1/identity/merge-reviews/{review_id}/reject)
+	RejectIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params RejectIdentityMergeReviewParams)
+	// Resolve one scoped identity without implicit creation
+	// (POST /api/v1/identity/resolve)
+	ResolveIdentity(w http.ResponseWriter, r *http.Request)
+	// Get one local product entitlement
+	// (GET /api/v1/product-entitlements/{entitlement_id})
+	GetProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID)
+	// Revoke one local entitlement using optimistic concurrency
+	// (POST /api/v1/product-entitlements/{entitlement_id}/revoke)
+	RevokeProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID, params RevokeProductLocalEntitlementParams)
+	// List ordinary products using a keyset cursor
+	// (GET /api/v1/products)
+	ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams)
+	// Create one ordinary product
+	// (POST /api/v1/products)
+	CreateProduct(w http.ResponseWriter, r *http.Request, params CreateProductParams)
+	// Get one ordinary product
+	// (GET /api/v1/products/{product_id})
+	GetProduct(w http.ResponseWriter, r *http.Request, productId ProductID)
+	// Update one local ordinary product using optimistic concurrency
+	// (PUT /api/v1/products/{product_id})
+	UpdateProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params UpdateProductParams)
+	// List local product entitlements without invoking payment or providers
+	// (GET /api/v1/products/{product_id}/local-entitlements)
+	ListProductLocalEntitlements(w http.ResponseWriter, r *http.Request, productId ProductID, params ListProductLocalEntitlementsParams)
+	// Grant a local entitlement from one existing paid local order projection
+	// (POST /api/v1/products/{product_id}/local-entitlements)
+	GrantProductLocalEntitlement(w http.ResponseWriter, r *http.Request, productId ProductID, params GrantProductLocalEntitlementParams)
+	// List materialized audience definitions with a keyset cursor
+	// (GET /api/v1/segments)
+	ListSegments(w http.ResponseWriter, r *http.Request, params ListSegmentsParams)
+	// Create one declarative audience definition
+	// (POST /api/v1/segments)
+	CreateSegment(w http.ResponseWriter, r *http.Request, params CreateSegmentParams)
+	// Archive one local audience definition without executing it
+	// (DELETE /api/v1/segments/{segment_id})
+	ArchiveSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ArchiveSegmentParams)
+	// Get one declarative audience definition
+	// (GET /api/v1/segments/{segment_id})
+	GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID)
+	// Update one declarative audience definition
+	// (PATCH /api/v1/segments/{segment_id})
+	UpdateSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params UpdateSegmentParams)
+	// Preview the current materialized members using a keyset cursor
+	// (GET /api/v1/segments/{segment_id}/members)
+	ListSegmentMembers(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ListSegmentMembersParams)
+	// Durably request one materialized audience refresh
+	// (POST /api/v1/segments/{segment_id}/refresh)
+	RequestSegmentRefresh(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params RequestSegmentRefreshParams)
+	// List global customer stages in deterministic order
+	// (GET /api/v1/stages)
+	ListStages(w http.ResponseWriter, r *http.Request)
+	// Create one global customer stage
+	// (POST /api/v1/stages)
+	CreateStage(w http.ResponseWriter, r *http.Request, params CreateStageParams)
+	// Replace the exact active customer stage order
+	// (PUT /api/v1/stages/reorder)
+	ReorderStages(w http.ResponseWriter, r *http.Request, params ReorderStagesParams)
+	// Archive one unreferenced local customer stage
+	// (DELETE /api/v1/stages/{stage_id})
+	ArchiveStage(w http.ResponseWriter, r *http.Request, stageId StageID, params ArchiveStageParams)
+	// Rename one global customer stage
+	// (PATCH /api/v1/stages/{stage_id})
+	RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams)
+	// List the complete active local CRM tag catalog
+	// (GET /api/v1/tag-groups)
+	ListTagGroups(w http.ResponseWriter, r *http.Request)
+	// Create one local CRM tag group and its first tag
+	// (POST /api/v1/tag-groups)
+	CreateTagGroup(w http.ResponseWriter, r *http.Request, params CreateTagGroupParams)
+	// Replace the exact active local CRM tag group order
+	// (PUT /api/v1/tag-groups/reorder)
+	ReorderTagGroups(w http.ResponseWriter, r *http.Request, params ReorderTagGroupsParams)
+	// Archive one unreferenced local CRM tag group
+	// (DELETE /api/v1/tag-groups/{group_id})
+	ArchiveTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params ArchiveTagGroupParams)
+	// Rename one local CRM tag group
+	// (PATCH /api/v1/tag-groups/{group_id})
+	UpdateTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params UpdateTagGroupParams)
+	// List the local tag catalog in deterministic order
+	// (GET /api/v1/tags)
+	ListTags(w http.ResponseWriter, r *http.Request)
+	// Create one local CRM tag in an active group
+	// (POST /api/v1/tags)
+	CreateTag(w http.ResponseWriter, r *http.Request, params CreateTagParams)
+	// Replace the exact active local CRM tag order
+	// (PUT /api/v1/tags/reorder)
+	ReorderTags(w http.ResponseWriter, r *http.Request, params ReorderTagsParams)
+	// Archive one unreferenced local CRM tag
+	// (DELETE /api/v1/tags/{tag_id})
+	ArchiveTag(w http.ResponseWriter, r *http.Request, tagId TagID, params ArchiveTagParams)
+	// Rename one local CRM tag
+	// (PATCH /api/v1/tags/{tag_id})
+	UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams)
+	// Read the public legacy configuration-derived runtime-mode snapshot
+	// (GET /health)
+	GetLegacyHealth(w http.ResponseWriter, r *http.Request)
+	// Carry a public survey slug into the same-origin SPA without token parameters
+	// (GET /q/{slug})
+	GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
+	// Read one WeChat or WeCom domain verification file
+	// (GET /{filename})
+	GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string)
+}
+
+// Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
+
+type Unimplemented struct{}
+
+// Carry the safe local execution-runtime observation into the existing admin shell
+// (GET /admin/execution-runtime)
+func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List real D01 Automation trigger receipts through the frozen legacy path
+// (GET /api/admin/automation-conversion/agent-runs)
+func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the frozen observed execution runtime without invoking a worker or provider
+// (GET /api/admin/execution-runtime)
+func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one frozen observed execution timeline without asserting a provider receipt
+// (GET /api/admin/executions/{execution_id})
+func (_ Unimplemented) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the frozen global Push Center section aggregation without touching a worker or provider
+// (GET /api/admin/push-center/sections)
+func (_ Unimplemented) GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the frozen global Push Center statistics without accepting, sending, or retrying work
+// (GET /api/admin/push-center/stats)
+func (_ Unimplemented) GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read aggregate anonymous local public survey analytics
+// (GET /api/admin/questionnaires/{questionnaire_id}/public-analytics)
+func (_ Unimplemented) GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params GetQuestionnairePublicAnalyticsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disable one immutable local anonymous public survey snapshot
+// (POST /api/admin/questionnaires/{questionnaire_id}/public-disable)
+func (_ Unimplemented) DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params DisableQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Publish an immutable local anonymous public survey snapshot
+// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
+func (_ Unimplemented) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one immutable anonymous public survey definition
+// (GET /api/public/questionnaires/{slug})
+func (_ Unimplemented) GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Submit one anonymous selection-only public survey response
+// (POST /api/public/questionnaires/{slug}/submissions)
+func (_ Unimplemented) SubmitPublicSurvey(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Query one anonymous local-only public survey result by POST body token
+// (POST /api/public/survey-submission-results/query)
+func (_ Unimplemented) QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List non-secret configuration readiness
+// (GET /api/v1/admin/config/overview)
+func (_ Unimplemented) GetAdminConfigOverview(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Invalidate the current admin session
+// (POST /api/v1/auth/logout)
+func (_ Unimplemented) LogoutAdmin(w http.ResponseWriter, r *http.Request, params LogoutAdminParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Return the authenticated admin principal
+// (GET /api/v1/auth/session)
+func (_ Unimplemented) GetAuthSession(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List customers using a keyset cursor
+// (GET /api/v1/customers)
+func (_ Unimplemented) ListCustomers(w http.ResponseWriter, r *http.Request, params ListCustomersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a channel-neutral customer by OneID
+// (GET /api/v1/customers/{customer_id})
+func (_ Unimplemented) GetCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update customer-owned profile fields
+// (PATCH /api/v1/customers/{customer_id})
+func (_ Unimplemented) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerID, params UpdateCustomerParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read non-PII local customer activity aggregates for a fixed window
+// (GET /api/v1/customers/{customer_id}/activity-analytics)
+func (_ Unimplemented) GetCustomerActivityAnalytics(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerActivityAnalyticsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List zero-body local chat activity facts for one visible customer
+// (GET /api/v1/customers/{customer_id}/chat-activity)
+func (_ Unimplemented) ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a safe local Customer 360 context without external identities or message bodies
+// (GET /api/v1/customers/{customer_id}/context)
+func (_ Unimplemented) GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List append-only customer events using a keyset cursor
+// (GET /api/v1/customers/{customer_id}/events)
+func (_ Unimplemented) ListCustomerEvents(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List redacted local OneID merge history for a customer component
+// (GET /api/v1/customers/{customer_id}/merge-history)
+func (_ Unimplemented) ListCustomerMergeHistory(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerMergeHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Set or clear a customer's stage
+// (PUT /api/v1/customers/{customer_id}/stage)
+func (_ Unimplemented) SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Idempotently remove one local tag from a customer
+// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
+func (_ Unimplemented) RemoveCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params RemoveCustomerTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Idempotently apply one local tag to a customer
+// (PUT /api/v1/customers/{customer_id}/tags/{tag_id})
+func (_ Unimplemented) AddCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params AddCustomerTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Bind a scoped identity to a channel-neutral customer
+// (POST /api/v1/identity/bind)
+func (_ Unimplemented) BindIdentity(w http.ResponseWriter, r *http.Request, params BindIdentityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Attribute or persist an external event without guessing identity
+// (POST /api/v1/identity/ingest)
+func (_ Unimplemented) IngestIdentityEvent(w http.ResponseWriter, r *http.Request, params IngestIdentityEventParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List pending identity merge reviews without exposing raw identities
+// (GET /api/v1/identity/merge-reviews)
+func (_ Unimplemented) ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Approve one versioned merge review with an explicit primary customer
+// (POST /api/v1/identity/merge-reviews/{review_id}/approve)
+func (_ Unimplemented) ApproveIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params ApproveIdentityMergeReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reject one versioned merge review without changing bindings
+// (POST /api/v1/identity/merge-reviews/{review_id}/reject)
+func (_ Unimplemented) RejectIdentityMergeReview(w http.ResponseWriter, r *http.Request, reviewId MergeReviewID, params RejectIdentityMergeReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Resolve one scoped identity without implicit creation
+// (POST /api/v1/identity/resolve)
+func (_ Unimplemented) ResolveIdentity(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one local product entitlement
+// (GET /api/v1/product-entitlements/{entitlement_id})
+func (_ Unimplemented) GetProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke one local entitlement using optimistic concurrency
+// (POST /api/v1/product-entitlements/{entitlement_id}/revoke)
+func (_ Unimplemented) RevokeProductLocalEntitlement(w http.ResponseWriter, r *http.Request, entitlementId EntitlementID, params RevokeProductLocalEntitlementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List ordinary products using a keyset cursor
+// (GET /api/v1/products)
+func (_ Unimplemented) ListProducts(w http.ResponseWriter, r *http.Request, params ListProductsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one ordinary product
+// (POST /api/v1/products)
+func (_ Unimplemented) CreateProduct(w http.ResponseWriter, r *http.Request, params CreateProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one ordinary product
+// (GET /api/v1/products/{product_id})
+func (_ Unimplemented) GetProduct(w http.ResponseWriter, r *http.Request, productId ProductID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update one local ordinary product using optimistic concurrency
+// (PUT /api/v1/products/{product_id})
+func (_ Unimplemented) UpdateProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params UpdateProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local product entitlements without invoking payment or providers
+// (GET /api/v1/products/{product_id}/local-entitlements)
+func (_ Unimplemented) ListProductLocalEntitlements(w http.ResponseWriter, r *http.Request, productId ProductID, params ListProductLocalEntitlementsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Grant a local entitlement from one existing paid local order projection
+// (POST /api/v1/products/{product_id}/local-entitlements)
+func (_ Unimplemented) GrantProductLocalEntitlement(w http.ResponseWriter, r *http.Request, productId ProductID, params GrantProductLocalEntitlementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List materialized audience definitions with a keyset cursor
+// (GET /api/v1/segments)
+func (_ Unimplemented) ListSegments(w http.ResponseWriter, r *http.Request, params ListSegmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one declarative audience definition
+// (POST /api/v1/segments)
+func (_ Unimplemented) CreateSegment(w http.ResponseWriter, r *http.Request, params CreateSegmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one local audience definition without executing it
+// (DELETE /api/v1/segments/{segment_id})
+func (_ Unimplemented) ArchiveSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ArchiveSegmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one declarative audience definition
+// (GET /api/v1/segments/{segment_id})
+func (_ Unimplemented) GetSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update one declarative audience definition
+// (PATCH /api/v1/segments/{segment_id})
+func (_ Unimplemented) UpdateSegment(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params UpdateSegmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Preview the current materialized members using a keyset cursor
+// (GET /api/v1/segments/{segment_id}/members)
+func (_ Unimplemented) ListSegmentMembers(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params ListSegmentMembersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Durably request one materialized audience refresh
+// (POST /api/v1/segments/{segment_id}/refresh)
+func (_ Unimplemented) RequestSegmentRefresh(w http.ResponseWriter, r *http.Request, segmentId SegmentID, params RequestSegmentRefreshParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List global customer stages in deterministic order
+// (GET /api/v1/stages)
+func (_ Unimplemented) ListStages(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one global customer stage
+// (POST /api/v1/stages)
+func (_ Unimplemented) CreateStage(w http.ResponseWriter, r *http.Request, params CreateStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the exact active customer stage order
+// (PUT /api/v1/stages/reorder)
+func (_ Unimplemented) ReorderStages(w http.ResponseWriter, r *http.Request, params ReorderStagesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one unreferenced local customer stage
+// (DELETE /api/v1/stages/{stage_id})
+func (_ Unimplemented) ArchiveStage(w http.ResponseWriter, r *http.Request, stageId StageID, params ArchiveStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rename one global customer stage
+// (PATCH /api/v1/stages/{stage_id})
+func (_ Unimplemented) RenameStage(w http.ResponseWriter, r *http.Request, stageId StageID, params RenameStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the complete active local CRM tag catalog
+// (GET /api/v1/tag-groups)
+func (_ Unimplemented) ListTagGroups(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one local CRM tag group and its first tag
+// (POST /api/v1/tag-groups)
+func (_ Unimplemented) CreateTagGroup(w http.ResponseWriter, r *http.Request, params CreateTagGroupParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the exact active local CRM tag group order
+// (PUT /api/v1/tag-groups/reorder)
+func (_ Unimplemented) ReorderTagGroups(w http.ResponseWriter, r *http.Request, params ReorderTagGroupsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one unreferenced local CRM tag group
+// (DELETE /api/v1/tag-groups/{group_id})
+func (_ Unimplemented) ArchiveTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params ArchiveTagGroupParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rename one local CRM tag group
+// (PATCH /api/v1/tag-groups/{group_id})
+func (_ Unimplemented) UpdateTagGroup(w http.ResponseWriter, r *http.Request, groupId TagGroupID, params UpdateTagGroupParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the local tag catalog in deterministic order
+// (GET /api/v1/tags)
+func (_ Unimplemented) ListTags(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one local CRM tag in an active group
+// (POST /api/v1/tags)
+func (_ Unimplemented) CreateTag(w http.ResponseWriter, r *http.Request, params CreateTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the exact active local CRM tag order
+// (PUT /api/v1/tags/reorder)
+func (_ Unimplemented) ReorderTags(w http.ResponseWriter, r *http.Request, params ReorderTagsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one unreferenced local CRM tag
+// (DELETE /api/v1/tags/{tag_id})
+func (_ Unimplemented) ArchiveTag(w http.ResponseWriter, r *http.Request, tagId TagID, params ArchiveTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rename one local CRM tag
+// (PATCH /api/v1/tags/{tag_id})
+func (_ Unimplemented) UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the public legacy configuration-derived runtime-mode snapshot
+// (GET /health)
+func (_ Unimplemented) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Carry a public survey slug into the same-origin SPA without token parameters
+// (GET /q/{slug})
+func (_ Unimplemented) GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one WeChat or WeCom domain verification file
+// (GET /{filename})
+func (_ Unimplemented) GetDomainVerificationFile(w http.ResponseWriter, r *http.Request, filename string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ServerInterfaceWrapper converts contexts to parameters.
+type ServerInterfaceWrapper struct {
+	Handler            ServerInterface
+	HandlerMiddlewares []MiddlewareFunc
+	ErrorHandlerFunc   func(w http.ResponseWriter, r *http.Request, err error)
+}
+
+type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetLegacyExecutionRuntimePage operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyExecutionRuntimePage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAutomationTriggerRuns operation middleware
+func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAutomationTriggerRunsParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "request_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "request_id", r.URL.Query(), &params.RequestId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "request_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "run_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "run_id", r.URL.Query(), &params.RunId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "run_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "agent_code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "agent_code", r.URL.Query(), &params.AgentCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "agent_code", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "run_status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "run_status", r.URL.Query(), &params.RunStatus, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "run_status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "trigger_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "trigger_source", r.URL.Query(), &params.TriggerSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trigger_source", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "unionid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "unionid", r.URL.Query(), &params.Unionid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "unionid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "userid", r.URL.Query(), &params.Userid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "started_after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "started_after", r.URL.Query(), &params.StartedAfter, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "started_after", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "started_before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "started_before", r.URL.Query(), &params.StartedBefore, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "started_before", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "has_error" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "has_error", r.URL.Query(), &params.HasError, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "has_error", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "visibility" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "visibility", r.URL.Query(), &params.Visibility, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "visibility", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyExecutionRuntime operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyExecutionRuntime(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyExecutionTimeline operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "execution_id" -------------
+	var executionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "execution_id", chi.URLParam(r, "execution_id"), &executionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "execution_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyExecutionTimeline(w, r, executionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyPushCenterSections operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLegacyPushCenterSectionsParams
+
+	// ------------- Optional query parameter "section" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "section", r.URL.Query(), &params.Section, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "section", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "effect_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "effect_type", r.URL.Query(), &params.EffectType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_type", r.URL.Query(), &params.BusinessType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_id", r.URL.Query(), &params.BusinessId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "target_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_type", r.URL.Query(), &params.TargetType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "target_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_id", r.URL.Query(), &params.TargetId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "external_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_userid", r.URL.Query(), &params.ExternalUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "owner_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_userid", r.URL.Query(), &params.OwnerUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "trace_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "trace_id", r.URL.Query(), &params.TraceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trace_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "idempotency_key" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "idempotency_key", r.URL.Query(), &params.IdempotencyKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "idempotency_key", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_module" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_module", r.URL.Query(), &params.SourceModule, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_module", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_route" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_route", r.URL.Query(), &params.SourceRoute, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_route", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "created_from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_from", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_from", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "created_to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_to", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParamet

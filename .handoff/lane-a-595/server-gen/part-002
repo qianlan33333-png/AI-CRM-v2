@@ -1,0 +1,953 @@
+r string
+
+// LegacyExecutionNotFoundOk defines model for LegacyExecutionNotFound.Ok.
+type LegacyExecutionNotFoundOk bool
+
+// LegacyExecutionNotFoundRealExternalCallExecuted defines model for LegacyExecutionNotFound.RealExternalCallExecuted.
+type LegacyExecutionNotFoundRealExternalCallExecuted bool
+
+// LegacyExecutionRuntimeControl defines model for LegacyExecutionRuntimeControl.
+type LegacyExecutionRuntimeControl struct {
+	Details map[string]string `json:"details"`
+	Name    string            `json:"name"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// State Observed local state; never a provider success claim.
+	State string `json:"state"`
+}
+
+// LegacyExecutionRuntimeObservation defines model for LegacyExecutionRuntimeObservation.
+type LegacyExecutionRuntimeObservation struct {
+	// Attempt Observed attempt count, not a delivery result.
+	Attempt int               `json:"attempt"`
+	Details map[string]string `json:"details"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// Queue Observed queue name, not an execution or receipt result.
+	Queue  string `json:"queue"`
+	Source string `json:"source"`
+
+	// Status Observed status, not a provider receipt or executed-success assertion.
+	Status    string `json:"status"`
+	StatusUrl string `json:"status_url"`
+}
+
+// LegacyExecutionRuntimeResponse defines model for LegacyExecutionRuntimeResponse.
+type LegacyExecutionRuntimeResponse struct {
+	Control      *LegacyExecutionRuntimeControl      `json:"control"`
+	Observations []LegacyExecutionRuntimeObservation `json:"observations"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt   time.Time                                  `json:"observed_at"`
+	ObservedOnly LegacyExecutionRuntimeResponseObservedOnly `json:"observed_only"`
+
+	// Ok False with HTTP 200 when the local control plane is absent.
+	Ok                       bool                                                   `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionRuntimeResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Truncated                bool                                                   `json:"truncated"`
+}
+
+// LegacyExecutionRuntimeResponseObservedOnly defines model for LegacyExecutionRuntimeResponse.ObservedOnly.
+type LegacyExecutionRuntimeResponseObservedOnly bool
+
+// LegacyExecutionRuntimeResponseRealExternalCallExecuted defines model for LegacyExecutionRuntimeResponse.RealExternalCallExecuted.
+type LegacyExecutionRuntimeResponseRealExternalCallExecuted bool
+
+// LegacyExecutionRuntimeUnavailable defines model for LegacyExecutionRuntimeUnavailable.
+type LegacyExecutionRuntimeUnavailable struct {
+	Error                    LegacyExecutionRuntimeUnavailableError                    `json:"error"`
+	Ok                       LegacyExecutionRuntimeUnavailableOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionRuntimeUnavailableRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionRuntimeUnavailableError defines model for LegacyExecutionRuntimeUnavailable.Error.
+type LegacyExecutionRuntimeUnavailableError string
+
+// LegacyExecutionRuntimeUnavailableOk defines model for LegacyExecutionRuntimeUnavailable.Ok.
+type LegacyExecutionRuntimeUnavailableOk bool
+
+// LegacyExecutionRuntimeUnavailableRealExternalCallExecuted defines model for LegacyExecutionRuntimeUnavailable.RealExternalCallExecuted.
+type LegacyExecutionRuntimeUnavailableRealExternalCallExecuted bool
+
+// LegacyExecutionTimelineResponse defines model for LegacyExecutionTimelineResponse.
+type LegacyExecutionTimelineResponse struct {
+	ExecutionId string               `json:"execution_id"`
+	Graph       LegacyExecutionGraph `json:"graph"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt               time.Time                                               `json:"observed_at"`
+	ObservedOnly             LegacyExecutionTimelineResponseObservedOnly             `json:"observed_only"`
+	RealExternalCallExecuted LegacyExecutionTimelineResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionTimelineResponseObservedOnly defines model for LegacyExecutionTimelineResponse.ObservedOnly.
+type LegacyExecutionTimelineResponseObservedOnly bool
+
+// LegacyExecutionTimelineResponseRealExternalCallExecuted defines model for LegacyExecutionTimelineResponse.RealExternalCallExecuted.
+type LegacyExecutionTimelineResponseRealExternalCallExecuted bool
+
+// LegacyExecutionTimelineUnavailable defines model for LegacyExecutionTimelineUnavailable.
+type LegacyExecutionTimelineUnavailable struct {
+	Error                    LegacyExecutionTimelineUnavailableError                    `json:"error"`
+	Ok                       LegacyExecutionTimelineUnavailableOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionTimelineUnavailableRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionTimelineUnavailableError defines model for LegacyExecutionTimelineUnavailable.Error.
+type LegacyExecutionTimelineUnavailableError string
+
+// LegacyExecutionTimelineUnavailableOk defines model for LegacyExecutionTimelineUnavailable.Ok.
+type LegacyExecutionTimelineUnavailableOk bool
+
+// LegacyExecutionTimelineUnavailableRealExternalCallExecuted defines model for LegacyExecutionTimelineUnavailable.RealExternalCallExecuted.
+type LegacyExecutionTimelineUnavailableRealExternalCallExecuted bool
+
+// LegacyHealthMethodNotAllowed defines model for LegacyHealthMethodNotAllowed.
+type LegacyHealthMethodNotAllowed struct {
+	Detail LegacyHealthMethodNotAllowedDetail `json:"detail"`
+}
+
+// LegacyHealthMethodNotAllowedDetail defines model for LegacyHealthMethodNotAllowed.Detail.
+type LegacyHealthMethodNotAllowedDetail string
+
+// LegacyPushCenterCounts defines model for LegacyPushCenterCounts.
+type LegacyPushCenterCounts struct {
+	ByEffectiveStatus map[string]int64 `json:"by_effective_status"`
+	BySection         map[string]int64 `json:"by_section"`
+	ByStatus          map[string]int64 `json:"by_status"`
+	Failed            int64            `json:"failed"`
+	Pending           int64            `json:"pending"`
+	Running           int64            `json:"running"`
+	Sent              int64            `json:"sent"`
+	ShadowWarning     int64            `json:"shadow_warning"`
+	Succeeded         int64            `json:"succeeded"`
+	Total             int64            `json:"total"`
+}
+
+// LegacyPushCenterDegradedCounts defines model for LegacyPushCenterDegradedCounts.
+type LegacyPushCenterDegradedCounts struct {
+	ByEffectiveStatus map[string]interface{}                `json:"by_effective_status"`
+	BySection         map[string]interface{}                `json:"by_section"`
+	ByStatus          map[string]interface{}                `json:"by_status"`
+	Failed            LegacyPushCenterDegradedCountsFailed  `json:"failed"`
+	Pending           LegacyPushCenterDegradedCountsPending `json:"pending"`
+	Running           LegacyPushCenterDegradedCountsRunning `json:"running"`
+	Sent              LegacyPushCenterDegradedCountsSent    `json:"sent"`
+	Total             LegacyPushCenterDegradedCountsTotal   `json:"total"`
+}
+
+// LegacyPushCenterDegradedCountsFailed defines model for LegacyPushCenterDegradedCounts.Failed.
+type LegacyPushCenterDegradedCountsFailed int64
+
+// LegacyPushCenterDegradedCountsPending defines model for LegacyPushCenterDegradedCounts.Pending.
+type LegacyPushCenterDegradedCountsPending int64
+
+// LegacyPushCenterDegradedCountsRunning defines model for LegacyPushCenterDegradedCounts.Running.
+type LegacyPushCenterDegradedCountsRunning int64
+
+// LegacyPushCenterDegradedCountsSent defines model for LegacyPushCenterDegradedCounts.Sent.
+type LegacyPushCenterDegradedCountsSent int64
+
+// LegacyPushCenterDegradedCountsTotal defines model for LegacyPushCenterDegradedCounts.Total.
+type LegacyPushCenterDegradedCountsTotal int64
+
+// LegacyPushCenterFilters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+type LegacyPushCenterFilters struct {
+	BusinessId     *string `json:"business_id,omitempty"`
+	BusinessType   *string `json:"business_type,omitempty"`
+	CreatedFrom    *string `json:"created_from,omitempty"`
+	CreatedTo      *string `json:"created_to,omitempty"`
+	EffectType     *string `json:"effect_type,omitempty"`
+	ExternalUserid *string `json:"external_userid,omitempty"`
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+	OwnerUserid    *string `json:"owner_userid,omitempty"`
+	Section        *string `json:"section,omitempty"`
+	SourceModule   *string `json:"source_module,omitempty"`
+	SourceRoute    *string `json:"source_route,omitempty"`
+	Status         *string `json:"status,omitempty"`
+	TargetId       *string `json:"target_id,omitempty"`
+	TargetType     *string `json:"target_type,omitempty"`
+	TraceId        *string `json:"trace_id,omitempty"`
+}
+
+// LegacyPushCenterInternalEventSummary defines model for LegacyPushCenterInternalEventSummary.
+type LegacyPushCenterInternalEventSummary struct {
+	Blocked         interface{} `json:"blocked"`
+	Eligible        interface{} `json:"eligible"`
+	FailedRetryable interface{} `json:"failed_retryable"`
+	FailedTerminal  interface{} `json:"failed_terminal"`
+	RawDue          interface{} `json:"raw_due"`
+	RawOpen         interface{} `json:"raw_open"`
+}
+
+// LegacyPushCenterLaneSummary defines model for LegacyPushCenterLaneSummary.
+type LegacyPushCenterLaneSummary struct {
+	AcceptedLastMinute       interface{}                          `json:"accepted_last_minute"`
+	BlockedUntil             interface{}                          `json:"blocked_until"`
+	Dlq                      interface{}                          `json:"dlq"`
+	Eligible                 interface{}                          `json:"eligible"`
+	Enabled                  interface{}                          `json:"enabled"`
+	EstimatedDrainSeconds    interface{}                          `json:"estimated_drain_seconds"`
+	Held                     interface{}                          `json:"held"`
+	InFlight                 interface{}                          `json:"in_flight"`
+	InternalEvent            LegacyPushCenterInternalEventSummary `json:"internal_event"`
+	Lane                     LegacyPushCenterLaneSummaryLane      `json:"lane"`
+	MaxInFlight              interface{}                          `json:"max_in_flight"`
+	OldestEligibleAgeSeconds interface{}                          `json:"oldest_eligible_age_seconds"`
+	P95ProviderCallMs        interface{}                          `json:"p95_provider_call_ms"`
+	P95QueueWaitMs           interface{}                          `json:"p95_queue_wait_ms"`
+	PolicyGated              interface{}                          `json:"policy_gated"`
+	PolicyVersion            interface{}                          `json:"policy_version"`
+	RateLimitCountLastHour   interface{}                          `json:"rate_limit_count_last_hour"`
+	RateLimited              interface{}                          `json:"rate_limited"`
+	RawOpen                  interface{}                          `json:"raw_open"`
+	RetryWait                interface{}                          `json:"retry_wait"`
+	RolloutMode              interface{}                          `json:"rollout_mode"`
+	Scheduled                interface{}                          `json:"scheduled"`
+	TaskAcceptanceRate1m     interface{}                          `json:"task_acceptance_rate_1m"`
+	ThroughputLastMinute     interface{}                          `json:"throughput_last_minute"`
+	Unknown                  interface{}                          `json:"unknown"`
+}
+
+// LegacyPushCenterLaneSummaryLane defines model for LegacyPushCenterLaneSummary.Lane.
+type LegacyPushCenterLaneSummaryLane string
+
+// LegacyPushCenterRuntimeQueue defines model for LegacyPushCenterRuntimeQueue.
+type LegacyPushCenterRuntimeQueue struct {
+	ActiveGeneration interface{}                          `json:"active_generation"`
+	ClaimEnabled     interface{}                          `json:"claim_enabled"`
+	Dlq              interface{}                          `json:"dlq"`
+	Eligible         interface{}                          `json:"eligible"`
+	Held             interface{}                          `json:"held"`
+	InFlight         interface{}                          `json:"in_flight"`
+	InternalEvent    LegacyPushCenterInternalEventSummary `json:"internal_event"`
+	Lanes            []LegacyPushCenterLaneSummary        `json:"lanes"`
+	PolicyGated      interface{}                          `json:"policy_gated"`
+	PolicyVersion    interface{}                          `json:"policy_version"`
+	RateLimited      interface{}                          `json:"rate_limited"`
+	RawOpen          interface{}                          `json:"raw_open"`
+	RetryWait        interface{}                          `json:"retry_wait"`
+	RolloutMode      interface{}                          `json:"rollout_mode"`
+	Scheduled        interface{}                          `json:"scheduled"`
+	Unknown          interface{}                          `json:"unknown"`
+}
+
+// LegacyPushCenterSection defines model for LegacyPushCenterSection.
+type LegacyPushCenterSection struct {
+	CapabilityKey string                     `json:"capability_key"`
+	Count         int64                      `json:"count"`
+	EffectTypes   []string                   `json:"effect_types"`
+	Key           LegacyPushCenterSectionKey `json:"key"`
+	Label         string                     `json:"label"`
+}
+
+// LegacyPushCenterSectionKey defines model for LegacyPushCenterSection.Key.
+type LegacyPushCenterSectionKey string
+
+// LegacyPushCenterSectionsDegradedResponse defines model for LegacyPushCenterSectionsDegradedResponse.
+type LegacyPushCenterSectionsDegradedResponse struct {
+	CapabilityOwner LegacyPushCenterSectionsDegradedResponseCapabilityOwner `json:"capability_owner"`
+	Counts          LegacyPushCenterDegradedCounts                          `json:"counts"`
+	Degraded        LegacyPushCenterSectionsDegradedResponseDegraded        `json:"degraded"`
+	Diagnostics     struct {
+		AllowFixtureRepoInProd LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd `json:"allow_fixture_repo_in_prod"`
+		ErrorClass             string                                                                    `json:"error_class"`
+		FixtureMode            LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode            `json:"fixture_mode"`
+		ProductionDataReady    LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady    `json:"production_data_ready"`
+	} `json:"diagnostics"`
+	Error        LegacyPushCenterSectionsDegradedResponseError        `json:"error"`
+	ErrorCode    LegacyPushCenterSectionsDegradedResponseErrorCode    `json:"error_code"`
+	FallbackUsed LegacyPushCenterSectionsDegradedResponseFallbackUsed `json:"fallback_used"`
+
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters                  LegacyPushCenterFilters                                          `json:"filters"`
+	Items                    []interface{}                                                    `json:"items"`
+	Limit                    LegacyPushCenterSectionsDegradedResponseLimit                    `json:"limit"`
+	Offset                   LegacyPushCenterSectionsDegradedResponseOffset                   `json:"offset"`
+	Ok                       LegacyPushCenterSectionsDegradedResponseOk                       `json:"ok"`
+	PageError                LegacyPushCenterSectionsDegradedResponsePageError                `json:"page_error"`
+	ReadModelStatus          LegacyPushCenterSectionsDegradedResponseReadModelStatus          `json:"read_model_status"`
+	RealExternalCallExecuted LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RouteOwner               LegacyPushCenterSectionsDegradedResponseRouteOwner               `json:"route_owner"`
+	Sections                 []interface{}                                                    `json:"sections"`
+	SourceStatus             LegacyPushCenterSectionsDegradedResponseSourceStatus             `json:"source_status"`
+	StatusCode               LegacyPushCenterSectionsDegradedResponseStatusCode               `json:"status_code"`
+	StatusDefinitions        []LegacyPushCenterStatusDefinition                               `json:"status_definitions"`
+	Total                    LegacyPushCenterSectionsDegradedResponseTotal                    `json:"total"`
+}
+
+// LegacyPushCenterSectionsDegradedResponseCapabilityOwner defines model for LegacyPushCenterSectionsDegradedResponse.CapabilityOwner.
+type LegacyPushCenterSectionsDegradedResponseCapabilityOwner string
+
+// LegacyPushCenterSectionsDegradedResponseDegraded defines model for LegacyPushCenterSectionsDegradedResponse.Degraded.
+type LegacyPushCenterSectionsDegradedResponseDegraded bool
+
+// LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd defines model for LegacyPushCenterSectionsDegradedResponse.Diagnostics.AllowFixtureRepoInProd.
+type LegacyPushCenterSectionsDegradedResponseDiagnosticsAllowFixtureRepoInProd bool
+
+// LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode defines model for LegacyPushCenterSectionsDegradedResponse.Diagnostics.FixtureMode.
+type LegacyPushCenterSectionsDegradedResponseDiagnosticsFixtureMode bool
+
+// LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady defines model for LegacyPushCenterSectionsDegradedResponse.Diagnostics.ProductionDataReady.
+type LegacyPushCenterSectionsDegradedResponseDiagnosticsProductionDataReady bool
+
+// LegacyPushCenterSectionsDegradedResponseError defines model for LegacyPushCenterSectionsDegradedResponse.Error.
+type LegacyPushCenterSectionsDegradedResponseError string
+
+// LegacyPushCenterSectionsDegradedResponseErrorCode defines model for LegacyPushCenterSectionsDegradedResponse.ErrorCode.
+type LegacyPushCenterSectionsDegradedResponseErrorCode string
+
+// LegacyPushCenterSectionsDegradedResponseFallbackUsed defines model for LegacyPushCenterSectionsDegradedResponse.FallbackUsed.
+type LegacyPushCenterSectionsDegradedResponseFallbackUsed bool
+
+// LegacyPushCenterSectionsDegradedResponseLimit defines model for LegacyPushCenterSectionsDegradedResponse.Limit.
+type LegacyPushCenterSectionsDegradedResponseLimit int
+
+// LegacyPushCenterSectionsDegradedResponseOffset defines model for LegacyPushCenterSectionsDegradedResponse.Offset.
+type LegacyPushCenterSectionsDegradedResponseOffset int
+
+// LegacyPushCenterSectionsDegradedResponseOk defines model for LegacyPushCenterSectionsDegradedResponse.Ok.
+type LegacyPushCenterSectionsDegradedResponseOk bool
+
+// LegacyPushCenterSectionsDegradedResponsePageError defines model for LegacyPushCenterSectionsDegradedResponse.PageError.
+type LegacyPushCenterSectionsDegradedResponsePageError string
+
+// LegacyPushCenterSectionsDegradedResponseReadModelStatus defines model for LegacyPushCenterSectionsDegradedResponse.ReadModelStatus.
+type LegacyPushCenterSectionsDegradedResponseReadModelStatus string
+
+// LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted defines model for LegacyPushCenterSectionsDegradedResponse.RealExternalCallExecuted.
+type LegacyPushCenterSectionsDegradedResponseRealExternalCallExecuted bool
+
+// LegacyPushCenterSectionsDegradedResponseRouteOwner defines model for LegacyPushCenterSectionsDegradedResponse.RouteOwner.
+type LegacyPushCenterSectionsDegradedResponseRouteOwner string
+
+// LegacyPushCenterSectionsDegradedResponseSourceStatus defines model for LegacyPushCenterSectionsDegradedResponse.SourceStatus.
+type LegacyPushCenterSectionsDegradedResponseSourceStatus string
+
+// LegacyPushCenterSectionsDegradedResponseStatusCode defines model for LegacyPushCenterSectionsDegradedResponse.StatusCode.
+type LegacyPushCenterSectionsDegradedResponseStatusCode int
+
+// LegacyPushCenterSectionsDegradedResponseTotal defines model for LegacyPushCenterSectionsDegradedResponse.Total.
+type LegacyPushCenterSectionsDegradedResponseTotal int
+
+// LegacyPushCenterSectionsResponse defines model for LegacyPushCenterSectionsResponse.
+type LegacyPushCenterSectionsResponse struct {
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters           LegacyPushCenterFilters                    `json:"filters"`
+	Ok                LegacyPushCenterSectionsResponseOk         `json:"ok"`
+	RouteOwner        LegacyPushCenterSectionsResponseRouteOwner `json:"route_owner"`
+	Sections          []LegacyPushCenterSection                  `json:"sections"`
+	StatusDefinitions []LegacyPushCenterStatusDefinition         `json:"status_definitions"`
+}
+
+// LegacyPushCenterSectionsResponseOk defines model for LegacyPushCenterSectionsResponse.Ok.
+type LegacyPushCenterSectionsResponseOk bool
+
+// LegacyPushCenterSectionsResponseRouteOwner defines model for LegacyPushCenterSectionsResponse.RouteOwner.
+type LegacyPushCenterSectionsResponseRouteOwner string
+
+// LegacyPushCenterStatsDegradedResponse defines model for LegacyPushCenterStatsDegradedResponse.
+type LegacyPushCenterStatsDegradedResponse struct {
+	CapabilityOwner LegacyPushCenterStatsDegradedResponseCapabilityOwner `json:"capability_owner"`
+	Counts          LegacyPushCenterDegradedCounts                       `json:"counts"`
+	Degraded        LegacyPushCenterStatsDegradedResponseDegraded        `json:"degraded"`
+	Diagnostics     struct {
+		AllowFixtureRepoInProd LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd `json:"allow_fixture_repo_in_prod"`
+		ErrorClass             string                                                                 `json:"error_class"`
+		FixtureMode            LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode            `json:"fixture_mode"`
+		ProductionDataReady    LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady    `json:"production_data_ready"`
+	} `json:"diagnostics"`
+	Error        LegacyPushCenterStatsDegradedResponseError        `json:"error"`
+	ErrorCode    LegacyPushCenterStatsDegradedResponseErrorCode    `json:"error_code"`
+	FallbackUsed LegacyPushCenterStatsDegradedResponseFallbackUsed `json:"fallback_used"`
+
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters                  LegacyPushCenterFilters                                       `json:"filters"`
+	Items                    []interface{}                                                 `json:"items"`
+	Limit                    LegacyPushCenterStatsDegradedResponseLimit                    `json:"limit"`
+	Offset                   LegacyPushCenterStatsDegradedResponseOffset                   `json:"offset"`
+	Ok                       LegacyPushCenterStatsDegradedResponseOk                       `json:"ok"`
+	PageError                LegacyPushCenterStatsDegradedResponsePageError                `json:"page_error"`
+	ReadModelStatus          LegacyPushCenterStatsDegradedResponseReadModelStatus          `json:"read_model_status"`
+	RealExternalCallExecuted LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RouteOwner               LegacyPushCenterStatsDegradedResponseRouteOwner               `json:"route_owner"`
+	RuntimeQueue             LegacyPushCenterStatsDegradedResponse_RuntimeQueue            `json:"runtime_queue"`
+	Sections                 []interface{}                                                 `json:"sections"`
+	SourceStatus             LegacyPushCenterStatsDegradedResponseSourceStatus             `json:"source_status"`
+	StatusCode               LegacyPushCenterStatsDegradedResponseStatusCode               `json:"status_code"`
+	StatusDefinitions        []LegacyPushCenterStatusDefinition                            `json:"status_definitions"`
+	Total                    LegacyPushCenterStatsDegradedResponseTotal                    `json:"total"`
+}
+
+// LegacyPushCenterStatsDegradedResponseCapabilityOwner defines model for LegacyPushCenterStatsDegradedResponse.CapabilityOwner.
+type LegacyPushCenterStatsDegradedResponseCapabilityOwner string
+
+// LegacyPushCenterStatsDegradedResponseDegraded defines model for LegacyPushCenterStatsDegradedResponse.Degraded.
+type LegacyPushCenterStatsDegradedResponseDegraded bool
+
+// LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd defines model for LegacyPushCenterStatsDegradedResponse.Diagnostics.AllowFixtureRepoInProd.
+type LegacyPushCenterStatsDegradedResponseDiagnosticsAllowFixtureRepoInProd bool
+
+// LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode defines model for LegacyPushCenterStatsDegradedResponse.Diagnostics.FixtureMode.
+type LegacyPushCenterStatsDegradedResponseDiagnosticsFixtureMode bool
+
+// LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady defines model for LegacyPushCenterStatsDegradedResponse.Diagnostics.ProductionDataReady.
+type LegacyPushCenterStatsDegradedResponseDiagnosticsProductionDataReady bool
+
+// LegacyPushCenterStatsDegradedResponseError defines model for LegacyPushCenterStatsDegradedResponse.Error.
+type LegacyPushCenterStatsDegradedResponseError string
+
+// LegacyPushCenterStatsDegradedResponseErrorCode defines model for LegacyPushCenterStatsDegradedResponse.ErrorCode.
+type LegacyPushCenterStatsDegradedResponseErrorCode string
+
+// LegacyPushCenterStatsDegradedResponseFallbackUsed defines model for LegacyPushCenterStatsDegradedResponse.FallbackUsed.
+type LegacyPushCenterStatsDegradedResponseFallbackUsed bool
+
+// LegacyPushCenterStatsDegradedResponseLimit defines model for LegacyPushCenterStatsDegradedResponse.Limit.
+type LegacyPushCenterStatsDegradedResponseLimit int
+
+// LegacyPushCenterStatsDegradedResponseOffset defines model for LegacyPushCenterStatsDegradedResponse.Offset.
+type LegacyPushCenterStatsDegradedResponseOffset int
+
+// LegacyPushCenterStatsDegradedResponseOk defines model for LegacyPushCenterStatsDegradedResponse.Ok.
+type LegacyPushCenterStatsDegradedResponseOk bool
+
+// LegacyPushCenterStatsDegradedResponsePageError defines model for LegacyPushCenterStatsDegradedResponse.PageError.
+type LegacyPushCenterStatsDegradedResponsePageError string
+
+// LegacyPushCenterStatsDegradedResponseReadModelStatus defines model for LegacyPushCenterStatsDegradedResponse.ReadModelStatus.
+type LegacyPushCenterStatsDegradedResponseReadModelStatus string
+
+// LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted defines model for LegacyPushCenterStatsDegradedResponse.RealExternalCallExecuted.
+type LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted bool
+
+// LegacyPushCenterStatsDegradedResponseRouteOwner defines model for LegacyPushCenterStatsDegradedResponse.RouteOwner.
+type LegacyPushCenterStatsDegradedResponseRouteOwner string
+
+// LegacyPushCenterStatsDegradedResponseRuntimeQueue0 defines model for .
+type LegacyPushCenterStatsDegradedResponseRuntimeQueue0 = map[string]interface{}
+
+// LegacyPushCenterStatsDegradedResponse_RuntimeQueue defines model for LegacyPushCenterStatsDegradedResponse.RuntimeQueue.
+type LegacyPushCenterStatsDegradedResponse_RuntimeQueue struct {
+	union json.RawMessage
+}
+
+// LegacyPushCenterStatsDegradedResponseSourceStatus defines model for LegacyPushCenterStatsDegradedResponse.SourceStatus.
+type LegacyPushCenterStatsDegradedResponseSourceStatus string
+
+// LegacyPushCenterStatsDegradedResponseStatusCode defines model for LegacyPushCenterStatsDegradedResponse.StatusCode.
+type LegacyPushCenterStatsDegradedResponseStatusCode int
+
+// LegacyPushCenterStatsDegradedResponseTotal defines model for LegacyPushCenterStatsDegradedResponse.Total.
+type LegacyPushCenterStatsDegradedResponseTotal int
+
+// LegacyPushCenterStatsResponse defines model for LegacyPushCenterStatsResponse.
+type LegacyPushCenterStatsResponse struct {
+	CapabilityOwner LegacyPushCenterStatsResponseCapabilityOwner `json:"capability_owner"`
+	Counts          LegacyPushCenterCounts                       `json:"counts"`
+
+	// Filters Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+	Filters                  LegacyPushCenterFilters                               `json:"filters"`
+	Ok                       LegacyPushCenterStatsResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyPushCenterStatsResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RouteOwner               LegacyPushCenterStatsResponseRouteOwner               `json:"route_owner"`
+	RuntimeQueue             LegacyPushCenterStatsResponse_RuntimeQueue            `json:"runtime_queue"`
+	Sections                 []LegacyPushCenterSection                             `json:"sections"`
+	StatusDefinitions        []LegacyPushCenterStatusDefinition                    `json:"status_definitions"`
+}
+
+// LegacyPushCenterStatsResponseCapabilityOwner defines model for LegacyPushCenterStatsResponse.CapabilityOwner.
+type LegacyPushCenterStatsResponseCapabilityOwner string
+
+// LegacyPushCenterStatsResponseOk defines model for LegacyPushCenterStatsResponse.Ok.
+type LegacyPushCenterStatsResponseOk bool
+
+// LegacyPushCenterStatsResponseRealExternalCallExecuted defines model for LegacyPushCenterStatsResponse.RealExternalCallExecuted.
+type LegacyPushCenterStatsResponseRealExternalCallExecuted bool
+
+// LegacyPushCenterStatsResponseRouteOwner defines model for LegacyPushCenterStatsResponse.RouteOwner.
+type LegacyPushCenterStatsResponseRouteOwner string
+
+// LegacyPushCenterStatsResponseRuntimeQueue0 defines model for .
+type LegacyPushCenterStatsResponseRuntimeQueue0 = map[string]interface{}
+
+// LegacyPushCenterStatsResponse_RuntimeQueue defines model for LegacyPushCenterStatsResponse.RuntimeQueue.
+type LegacyPushCenterStatsResponse_RuntimeQueue struct {
+	union json.RawMessage
+}
+
+// LegacyPushCenterStatusDefinition defines model for LegacyPushCenterStatusDefinition.
+type LegacyPushCenterStatusDefinition struct {
+	Definition string                              `json:"definition"`
+	Key        LegacyPushCenterStatusDefinitionKey `json:"key"`
+	Label      string                              `json:"label"`
+}
+
+// LegacyPushCenterStatusDefinitionKey defines model for LegacyPushCenterStatusDefinition.Key.
+type LegacyPushCenterStatusDefinitionKey string
+
+// LegacyRuntimeHealthSnapshot defines model for LegacyRuntimeHealthSnapshot.
+type LegacyRuntimeHealthSnapshot struct {
+	Database                        LegacyRuntimeHealthSnapshotDatabase             `json:"database"`
+	DatabaseMode                    LegacyRuntimeHealthSnapshotDatabaseMode         `json:"database_mode"`
+	FixtureMode                     bool                                            `json:"fixture_mode"`
+	LegacyRuntimeEnabled            LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled `json:"legacy_runtime_enabled"`
+	Ok                              bool                                            `json:"ok"`
+	ProductionDataMode              bool                                            `json:"production_data_mode"`
+	ProductionDataReady             bool                                            `json:"production_data_ready"`
+	RepositoryPolicy                LegacyRuntimeHealthSnapshotRepositoryPolicy     `json:"repository_policy"`
+	RuntimeOwner                    LegacyRuntimeHealthSnapshotRuntimeOwner         `json:"runtime_owner"`
+	SecretKeyPresent                bool                                            `json:"secret_key_present"`
+	Service                         LegacyRuntimeHealthSnapshotService              `json:"service"`
+	Status                          LegacyRuntimeHealthSnapshotStatus               `json:"status"`
+	Warning                         LegacyRuntimeHealthSnapshotWarning              `json:"warning"`
+	WechatShopCallbackTokenPresent  bool                                            `json:"wechat_shop_callback_token_present"`
+	WechatShopCallbackTokenRequired bool                                            `json:"wechat_shop_callback_token_required"`
+}
+
+// LegacyRuntimeHealthSnapshotDatabase defines model for LegacyRuntimeHealthSnapshot.Database.
+type LegacyRuntimeHealthSnapshotDatabase string
+
+// LegacyRuntimeHealthSnapshotDatabaseMode defines model for LegacyRuntimeHealthSnapshot.DatabaseMode.
+type LegacyRuntimeHealthSnapshotDatabaseMode string
+
+// LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled defines model for LegacyRuntimeHealthSnapshot.LegacyRuntimeEnabled.
+type LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled bool
+
+// LegacyRuntimeHealthSnapshotRepositoryPolicy defines model for LegacyRuntimeHealthSnapshot.RepositoryPolicy.
+type LegacyRuntimeHealthSnapshotRepositoryPolicy string
+
+// LegacyRuntimeHealthSnapshotRuntimeOwner defines model for LegacyRuntimeHealthSnapshot.RuntimeOwner.
+type LegacyRuntimeHealthSnapshotRuntimeOwner string
+
+// LegacyRuntimeHealthSnapshotService defines model for LegacyRuntimeHealthSnapshot.Service.
+type LegacyRuntimeHealthSnapshotService string
+
+// LegacyRuntimeHealthSnapshotStatus defines model for LegacyRuntimeHealthSnapshot.Status.
+type LegacyRuntimeHealthSnapshotStatus string
+
+// LegacyRuntimeHealthSnapshotWarning defines model for LegacyRuntimeHealthSnapshot.Warning.
+type LegacyRuntimeHealthSnapshotWarning string
+
+// LocalCatalogArchiveResponse defines model for LocalCatalogArchiveResponse.
+type LocalCatalogArchiveResponse struct {
+	Archived LocalCatalogArchiveResponseArchived `json:"archived"`
+	Id       int64                               `json:"id"`
+}
+
+// LocalCatalogArchiveResponseArchived defines model for LocalCatalogArchiveResponse.Archived.
+type LocalCatalogArchiveResponseArchived bool
+
+// LocalProductEntitlement defines model for LocalProductEntitlement.
+type LocalProductEntitlement struct {
+	GrantedAt time.Time                    `json:"granted_at"`
+	Id        int64                        `json:"id"`
+	OrderId   int64                        `json:"order_id"`
+	ProductId int64                        `json:"product_id"`
+	RevokedAt *time.Time                   `json:"revoked_at"`
+	State     LocalProductEntitlementState `json:"state"`
+	Version   int64                        `json:"version"`
+}
+
+// LocalProductEntitlementState defines model for LocalProductEntitlement.State.
+type LocalProductEntitlementState string
+
+// LocalProductEntitlementPage defines model for LocalProductEntitlementPage.
+type LocalProductEntitlementPage struct {
+	Items []LocalProductEntitlement `json:"items"`
+}
+
+// LocalTag defines model for LocalTag.
+type LocalTag struct {
+	GroupId   int64  `json:"group_id"`
+	GroupName string `json:"group_name"`
+	Id        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+// LocalTagCatalog defines model for LocalTagCatalog.
+type LocalTagCatalog struct {
+	Groups []LocalTagGroup `json:"groups"`
+	Tags   []LocalTag      `json:"tags"`
+}
+
+// LocalTagGroup defines model for LocalTagGroup.
+type LocalTagGroup struct {
+	Id        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+// LocalTagGroupCreateResponse defines model for LocalTagGroupCreateResponse.
+type LocalTagGroupCreateResponse struct {
+	Group LocalTagGroup `json:"group"`
+	Tag   LocalTag      `json:"tag"`
+}
+
+// LocalTagGroupListResponse defines model for LocalTagGroupListResponse.
+type LocalTagGroupListResponse struct {
+	Items []LocalTagGroup `json:"items"`
+}
+
+// LocalTagListResponse defines model for LocalTagListResponse.
+type LocalTagListResponse struct {
+	Items []LocalTag `json:"items"`
+}
+
+// Product defines model for Product.
+type Product struct {
+	CreatedAt     time.Time `json:"created_at"`
+	CreatedBy     int64     `json:"created_by"`
+	Currency      string    `json:"currency"`
+	Description   string    `json:"description"`
+	Id            int64     `json:"id"`
+	Images        []string  `json:"images"`
+	Name          string    `json:"name"`
+	PriceMinor    int64     `json:"price_minor"`
+	ProductCode   string    `json:"product_code"`
+	StockQuantity int32     `json:"stock_quantity"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	Version       int64     `json:"version"`
+}
+
+// ProductPage defines model for ProductPage.
+type ProductPage struct {
+	Items      []Product `json:"items"`
+	NextCursor *string   `json:"next_cursor,omitempty"`
+}
+
+// PublicSurveyAnalytics defines model for PublicSurveyAnalytics.
+type PublicSurveyAnalytics struct {
+	DefinitionVersion int64                           `json:"definition_version"`
+	QuestionnaireId   int64                           `json:"questionnaire_id"`
+	Questions         []PublicSurveyAnalyticsQuestion `json:"questions"`
+	Slug              string                          `json:"slug"`
+	State             PublicSurveyAnalyticsState      `json:"state"`
+	SubmissionCount   int64                           `json:"submission_count"`
+}
+
+// PublicSurveyAnalyticsState defines model for PublicSurveyAnalytics.State.
+type PublicSurveyAnalyticsState string
+
+// PublicSurveyAnalyticsOption defines model for PublicSurveyAnalyticsOption.
+type PublicSurveyAnalyticsOption struct {
+	OptionId       int64 `json:"option_id"`
+	SelectionCount int64 `json:"selection_count"`
+	SortOrder      int   `json:"sort_order"`
+}
+
+// PublicSurveyAnalyticsQuestion defines model for PublicSurveyAnalyticsQuestion.
+type PublicSurveyAnalyticsQuestion struct {
+	AnsweredCount int64                             `json:"answered_count"`
+	Options       []PublicSurveyAnalyticsOption     `json:"options"`
+	QuestionId    int64                             `json:"question_id"`
+	SortOrder     int                               `json:"sort_order"`
+	Type          PublicSurveyAnalyticsQuestionType `json:"type"`
+}
+
+// PublicSurveyAnalyticsQuestionType defines model for PublicSurveyAnalyticsQuestion.Type.
+type PublicSurveyAnalyticsQuestionType string
+
+// PublicSurveyDefinition defines model for PublicSurveyDefinition.
+type PublicSurveyDefinition struct {
+	AnswerDisplayMode PublicSurveyDefinitionAnswerDisplayMode `json:"answer_display_mode"`
+	Description       string                                  `json:"description"`
+	Id                int64                                   `json:"id"`
+	Questions         []PublicSurveyQuestion                  `json:"questions"`
+	Slug              string                                  `json:"slug"`
+	Title             string                                  `json:"title"`
+	Version           int64                                   `json:"version"`
+}
+
+// PublicSurveyDefinitionAnswerDisplayMode defines model for PublicSurveyDefinition.AnswerDisplayMode.
+type PublicSurveyDefinitionAnswerDisplayMode string
+
+// PublicSurveyDisableRequest defines model for PublicSurveyDisableRequest.
+type PublicSurveyDisableRequest struct {
+	ExpectedDefinitionVersion int64 `json:"expected_definition_version"`
+}
+
+// PublicSurveyError defines model for PublicSurveyError.
+type PublicSurveyError struct {
+	Code PublicSurveyErrorCode `json:"code"`
+}
+
+// PublicSurveyErrorCode defines model for PublicSurveyError.Code.
+type PublicSurveyErrorCode string
+
+// PublicSurveyManagementResponse defines model for PublicSurveyManagementResponse.
+type PublicSurveyManagementResponse struct {
+	DefinitionVersion int64                               `json:"definition_version"`
+	QuestionnaireId   int64                               `json:"questionnaire_id"`
+	Slug              string                              `json:"slug"`
+	State             PublicSurveyManagementResponseState `json:"state"`
+}
+
+// PublicSurveyManagementResponseState defines model for PublicSurveyManagementResponse.State.
+type PublicSurveyManagementResponseState string
+
+// PublicSurveyOption defines model for PublicSurveyOption.
+type PublicSurveyOption struct {
+	Id         int64  `json:"id"`
+	OptionText string `json:"option_text"`
+	SortOrder  int    `json:"sort_order"`
+}
+
+// PublicSurveyPublishRequest defines model for PublicSurveyPublishRequest.
+type PublicSurveyPublishRequest struct {
+	ExpectedQuestionnaireVersion int64 `json:"expected_questionnaire_version"`
+}
+
+// PublicSurveyQuestion defines model for PublicSurveyQuestion.
+type PublicSurveyQuestion struct {
+	Id                int64                    `json:"id"`
+	MaximumSelections int                      `json:"maximum_selections"`
+	MinimumSelections int                      `json:"minimum_selections"`
+	Options           []PublicSurveyOption     `json:"options"`
+	Required          bool                     `json:"required"`
+	SortOrder         int                      `json:"sort_order"`
+	Title             string                   `json:"title"`
+	Type              PublicSurveyQuestionType `json:"type"`
+}
+
+// PublicSurveyQuestionType defines model for PublicSurveyQuestion.Type.
+type PublicSurveyQuestionType string
+
+// PublicSurveyResult defines model for PublicSurveyResult.
+type PublicSurveyResult struct {
+	DefinitionVersion int64                              `json:"definition_version"`
+	ExternalExecuted  PublicSurveyResultExternalExecuted `json:"external_executed"`
+	LocalOnly         PublicSurveyResultLocalOnly        `json:"local_only"`
+	SubmissionId      int64                              `json:"submission_id"`
+	SubmittedAt       time.Time                          `json:"submitted_at"`
+}
+
+// PublicSurveyResultExternalExecuted defines model for PublicSurveyResult.ExternalExecuted.
+type PublicSurveyResultExternalExecuted bool
+
+// PublicSurveyResultLocalOnly defines model for PublicSurveyResult.LocalOnly.
+type PublicSurveyResultLocalOnly bool
+
+// PublicSurveyResultQueryRequest defines model for PublicSurveyResultQueryRequest.
+type PublicSurveyResultQueryRequest struct {
+	ResultToken string `json:"result_token"`
+}
+
+// PublicSurveySubmissionAnswer defines model for PublicSurveySubmissionAnswer.
+type PublicSurveySubmissionAnswer struct {
+	OptionIds  []int64 `json:"option_ids"`
+	QuestionId int64   `json:"question_id"`
+}
+
+// PublicSurveySubmissionReceipt defines model for PublicSurveySubmissionReceipt.
+type PublicSurveySubmissionReceipt struct {
+	DefinitionVersion int64  `json:"definition_version"`
+	QuestionnaireId   int64  `json:"questionnaire_id"`
+	QuestionnaireSlug string `json:"questionnaire_slug"`
+	SubmissionId      int64  `json:"submission_id"`
+}
+
+// PublicSurveySubmissionRequest defines model for PublicSurveySubmissionRequest.
+type PublicSurveySubmissionRequest struct {
+	Answers       []PublicSurveySubmissionAnswer `json:"answers"`
+	SubmissionKey string                         `json:"submission_key"`
+	Version       int64                          `json:"version"`
+}
+
+// PublicSurveySubmissionResponse defines model for PublicSurveySubmissionResponse.
+type PublicSurveySubmissionResponse struct {
+	Receipt PublicSurveySubmissionReceipt `json:"receipt"`
+
+	// ResultToken POST-body-only opaque result credential; it is never accepted in a query parameter or returned by lookup responses.
+	ResultToken string `json:"result_token"`
+}
+
+// RejectIdentityMergeReviewRequest defines model for RejectIdentityMergeReviewRequest.
+type RejectIdentityMergeReviewRequest struct {
+	ExpectedVersion int64  `json:"expected_version"`
+	Reason          string `json:"reason"`
+}
+
+// RenameStageRequest defines model for RenameStageRequest.
+type RenameStageRequest struct {
+	Name string `json:"name"`
+}
+
+// ReorderLocalCatalogRequest defines model for ReorderLocalCatalogRequest.
+type ReorderLocalCatalogRequest struct {
+	Ids []int64 `json:"ids"`
+}
+
+// ReorderStagesRequest defines model for ReorderStagesRequest.
+type ReorderStagesRequest struct {
+	Ids []int64 `json:"ids"`
+}
+
+// ResolveIdentityConflict defines model for ResolveIdentityConflict.
+type ResolveIdentityConflict struct {
+	Status ResolveIdentityConflictStatus `json:"status"`
+}
+
+// ResolveIdentityConflictStatus defines model for ResolveIdentityConflict.Status.
+type ResolveIdentityConflictStatus string
+
+// ResolveIdentityFound defines model for ResolveIdentityFound.
+type ResolveIdentityFound struct {
+	CustomerId int64                      `json:"customer_id"`
+	Status     ResolveIdentityFoundStatus `json:"status"`
+}
+
+// ResolveIdentityFoundStatus defines model for ResolveIdentityFound.Status.
+type ResolveIdentityFoundStatus string
+
+// ResolveIdentityNotFound defines model for ResolveIdentityNotFound.
+type ResolveIdentityNotFound struct {
+	Status ResolveIdentityNotFoundStatus `json:"status"`
+}
+
+// ResolveIdentityNotFoundStatus defines model for ResolveIdentityNotFound.Status.
+type ResolveIdentityNotFoundStatus string
+
+// ResolveIdentityRequest defines model for ResolveIdentityRequest.
+type ResolveIdentityRequest struct {
+	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+	Ref IdentityRef `json:"ref"`
+}
+
+// ResolveIdentityResponse defines model for ResolveIdentityResponse.
+type ResolveIdentityResponse struct {
+	union json.RawMessage
+}
+
+// RevokeProductLocalEntitlementRequest defines model for RevokeProductLocalEntitlementRequest.
+type RevokeProductLocalEntitlementRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
+// Segment defines model for Segment.
+type Segment struct {
+	CreatedAt       time.Time              `json:"created_at"`
+	Definition      SegmentDefinition      `json:"definition"`
+	Id              int64                  `json:"id"`
+	LifecycleStatus SegmentLifecycleStatus `json:"lifecycle_status"`
+	MemberCount     int64                  `json:"member_count"`
+	Name            string                 `json:"name"`
+	RefreshCron     *string                `json:"refresh_cron"`
+	RefreshMode     SegmentRefreshMode     `json:"refresh_mode"`
+	RefreshStatus   SegmentRefreshStatus   `json:"refresh_status"`
+	RefreshedAt     *time.Time             `json:"refreshed_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
+}
+
+// SegmentLifecycleStatus defines model for Segment.LifecycleStatus.
+type SegmentLifecycleStatus string
+
+// SegmentRefreshMode defines model for Segment.RefreshMode.
+type SegmentRefreshMode string
+
+// SegmentRefreshStatus defines model for Segment.RefreshStatus.
+type SegmentRefreshStatus string
+
+// SegmentDefinition defines model for SegmentDefinition.
+type SegmentDefinition struct {
+	union json.RawMessage
+}
+
+// SegmentDefinitionAnd defines model for SegmentDefinitionAnd.
+type SegmentDefinitionAnd struct {
+	And []SegmentDefinition `json:"and"`
+}
+
+// SegmentDefinitionOr defines model for SegmentDefinitionOr.
+type SegmentDefinitionOr struct {
+	Or []SegmentDefinition `json:"or"`
+}
+
+// SegmentDefinitionPredicate defines model for SegmentDefinitionPredicate.
+type SegmentDefinitionPredicate struct {
+	Field SegmentDefinitionPredicateField `json:"field"`
+	Op    SegmentDefinitionPredicateOp    `json:"op"`
+	Value interface{}                     `json:"value"`
+}
+
+// SegmentDefinitionPredicateField defines model for SegmentDefinitionPredicate.Field.
+type SegmentDefinitionPredicateField string
+
+// SegmentDefinitionPredicateOp defines model for SegmentDefinitionPredicate.Op.
+type SegmentDefinitionPredicateOp string
+
+// SegmentMemberPage defines model for SegmentMemberPage.
+type SegmentMemberPage struct {
+	Items      []Customer `json:"items"`
+	NextCursor *string    `json:"next_cursor"`
+}
+
+// SegmentPage defines model for SegmentPage.
+type SegmentPage struct {
+	Items      []Segment `json:"items"`
+	NextCursor *string   `json:"next_cursor"`
+}
+
+// SegmentRefreshAccepted defines model for SegmentRefreshAccepted.
+type SegmentRefreshAccepted struct {
+	SegmentId int64                        `json:"segment_id"`
+	Status    SegmentRefreshAcceptedStatus `json:"status"`
+}
+
+// SegmentRefreshAcceptedStatus defines model for SegmentRefreshAccepted.Status.
+type SegmentRefreshAcceptedStatus string
+
+// SetCustomerStageRequest defines model for SetCustomerStageRequest.
+type SetCustomerStageRequest struct {
+	StageId *int64 `json:"stage_id"`
+}
+
+// Stage defines model for Stage.
+type Stage struct {
+	Config    interface{} `json:"config"`
+	Id        int64       `json:"id"`
+	Name      string      `json:"name"`
+	SortOrder int32       `json:"sort_order"`
+}
+
+// StageListResponse defines model for StageListResponse.
+type StageListResponse struct {
+	Items []Stage `json:"items"`
+}
+
+// Tag defines model for Tag.
+type Tag struct {
+	GroupId   *int64  `json:"group_id,omitempty"`
+	GroupName *string `json:"group_name,omitempty"`
+	Id        int64   `json:"id"`
+	Name      string  `json:"name"`
+	SortOrder int32   `json:"sort_order"`
+}
+
+// TagListResponse defines model for TagListResponse.
+type TagListResponse struct {
+	Items []Tag `json:"items"`
+}
+
+// UpdateLocalTagNameRequest defines model for UpdateLocalTagNameRequest.
+type UpdateLocalTagNameRequest struct {
+	Name string `json:"name"`
+}
+
+// UpdateProductRequest defines model for UpdateProductRequest.
+type UpdateProductRequest struct {
+	Currency        string `json:"currency"`
+	Description     string `json:"description"`
+	ExpectedVersion int64  `json:"expected_version"`
+	Name            string `json:"name"`
+	PriceMinor      int64  `json:"price_minor"`
+	StockQuantity   int32  `json:"stock_quantity"`
+}
+
+// UpdateSegmentRequest defines model for UpdateSegmentRequest.
+type UpdateSegmentRequest struct 

@@ -1,0 +1,822 @@
+to another canonical command.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LegacyImageDeleteConflict"
+                  - $ref: "#/components/schemas/ErrorResponse"
+        "405":
+          description: "Chi rejects methods other than GET, PUT, and DELETE before authentication."
+        "503":
+          description: Local Media, receipt, event, or required reference reads are unavailable; no partial mutation is exposed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+  /api/admin/image-library/{image_id}/variants/{variant_key}:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImageVariant
+      summary: Read one validated local image blob or deterministic in-memory variant
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0366]
+      x-p4-decision-evidence: P4-IMAGE-VARIANTS-0366-2026-08-19
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images_and_media_image_blobs.read_only
+      x-aicrm-external-effect: none
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+        - name: variant_key
+          in: path
+          required: true
+          schema: { type: string, enum: [thumb_160, thumb_320, mobile_1080, large_1440, original] }
+        - name: If-None-Match
+          in: header
+          required: false
+          description: RFC weak entity-tag comparison; invalid values return the complete 200 image response.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Fully validated local PNG, JPEG, or GIF body. No partial image is written on failure.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [image/png, image/jpeg, image/gif] } }
+            Content-Length: { required: true, schema: { type: integer, minimum: 1, maximum: 10485760 } }
+            ETag: { required: true, schema: { type: string, pattern: '^"[0-9a-f]{64}"$' } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-cache'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/gif: { schema: { type: string, format: binary } }
+        "304":
+          description: Current ETag weakly matched; the response body is empty.
+          headers:
+            ETag: { required: true, schema: { type: string, pattern: '^"[0-9a-f]{64}"$' } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-cache'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Image metadata or blob was not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "405": { description: Chi rejects non-GET methods before authentication. }
+        "422":
+          description: The path image id or variant key is invalid.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "503":
+          description: Local PostgreSQL data, checksum, image decoding, resizing, or encoding is unavailable or unsafe.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+  /api/admin/image-library/upload:
+    post:
+      tags: [p4-media-compat]
+      operationId: uploadLegacyImage
+      summary: Safely persist one legacy UI PNG, JPEG, or GIF image
+      x-legacy-mapping-ids: [LEGACY-API-0361]
+      x-p4-decision-evidence: P4-H01A1-2026-08-14
+      x-aicrm-capability: media.images.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional legacy-compatible actor-scoped business key. The server mints a one-request key when omitted.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [image]
+              properties:
+                image: { type: string, format: binary }
+                name: { type: string, default: "", maxLength: 200 }
+                description: { type: string, default: "", maxLength: 10000 }
+                tags: { type: string, default: "", maxLength: 10000 }
+                category: { type: string, default: "", maxLength: 200 }
+            encoding:
+              image:
+                contentType: image/png, image/jpeg, image/gif
+      responses:
+        "200":
+          description: Exact legacy success envelope backed by the local PostgreSQL UoW.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageUploadSuccess" }
+        "400":
+          description: Exact legacy media-library error envelope.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageUploadError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/group-invite-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: listLegacyGroupInvites
+      summary: List local group-invite card metadata without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0335]
+      x-p4-decision-evidence: P4-H03-2026-08-15
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+        - { name: enabled_only, in: query, required: false, schema: { type: boolean, default: true } }
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 128 } }
+      responses:
+        "200": { description: Local group-invite page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-media-compat]
+      operationId: createLegacyGroupInvite
+      summary: Persist one local group-invite card without creating a WeCom join way
+      x-legacy-mapping-ids: [LEGACY-API-0336]
+      x-p4-decision-evidence: P4-H03-2026-08-15
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteCreateRequest" } } } }
+      responses:
+        "200": { description: Locally persisted group-invite card, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/group-invite-library/{item_id}:
+    parameters:
+      - { name: item_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyGroupInvite
+      summary: Get one active local group-invite card
+      x-legacy-mapping-ids: [LEGACY-API-0338]
+      x-p4-decision-evidence: P4-H03-2026-08-15
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local group-invite card, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-media-compat]
+      operationId: updateLegacyGroupInvite
+      summary: Update local group-invite card metadata without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0339]
+      x-p4-decision-evidence: P4-H03-2026-08-15
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local group-invite card, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-media-compat]
+      operationId: archiveLegacyGroupInvite
+      summary: Archive one local group-invite card without deleting history or calling WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0337]
+      x-p4-decision-evidence: P4-H03-2026-08-15
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      responses:
+        "200": { description: Archived local group-invite card, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyGroupInviteArchiveResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/hxc-send-config:
+    get:
+      tags: [p4-hxc-compat]
+      operationId: getLegacyHXCSendConfigPage
+      summary: Carry the read-only HXC sender view into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0051]
+      x-p4-decision-evidence: P4-HXC-SENDER-READ-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable HXC carrier path.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fhxc-send-config$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/hxc-dashboard/send-config:
+    get:
+      tags: [p4-hxc-compat]
+      operationId: getLegacyHXCSendConfig
+      summary: Read local HXC sender configuration and eligible staff without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0348]
+      x-p4-decision-evidence: P4-HXC-SENDER-READ-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local read-only HXC sender projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderReadResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local projection is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderUnavailableResponse" } } } }
+        "405":
+          description: The legacy route only accepts GET and POST.
+          headers: { Allow: { required: true, schema: { type: string, enum: ["GET, POST"] } } }
+    post:
+      tags: [p4-hxc-compat]
+      operationId: upsertLegacyHXCSendConfig
+      summary: Create or edit one local HXC sender configuration without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0350]
+      x-p4-decision-evidence: P4-HXC-SENDER-MANAGEMENT-2026-08-20
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderSaveRequest" } } } }
+      responses:
+        "200": { description: Local save committed and read back, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationResponse" } } } }
+        "400": { description: Invalid closed local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Receipt or local configuration conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "503": { description: Local commit or readback is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+  /api/admin/hxc-dashboard/send-config/reorder:
+    put:
+      tags: [p4-hxc-compat]
+      operationId: reorderLegacyHXCSendConfigs
+      summary: Reorder the complete local HXC sender configuration set
+      x-p4-decision-evidence: P4-HXC-SENDER-MANAGEMENT-2026-08-20
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderReorderRequest" } } } }
+      responses:
+        "200": { description: Local order committed and read back, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationResponse" } } } }
+        "400": { description: Invalid closed local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Receipt or local configuration conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "503": { description: Local commit or readback is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+  /api/admin/hxc-dashboard/send-config/{sender_userid}:
+    delete:
+      tags: [p4-hxc-compat]
+      operationId: archiveLegacyHXCSendConfig
+      summary: Archive one local HXC sender configuration without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0351]
+      x-p4-decision-evidence: P4-HXC-SENDER-MANAGEMENT-2026-08-20
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: sensitive
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: sender_userid, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/\\\\]+$" } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Local archive committed and read back, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationResponse" } } } }
+        "400": { description: Invalid closed local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Receipt or local configuration conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "503": { description: Local commit or readback is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+  /api/admin/delivery-lineage:
+    get:
+      tags: [p4-delivery-lineage-compat]
+      operationId: getLegacyDeliveryLineage
+      summary: Read local delivery-processing lineage without asserting external delivery
+      x-legacy-mapping-ids: [LEGACY-API-0308]
+      x-p4-decision-evidence: P4-0308-FROZEN-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Read-only internal processing lineage, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDeliveryLineageResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { description: A local read dependency or deterministic merge is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDeliveryLineageUnavailable" } } } }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/customers/profile/tags:
+    get:
+      tags: [p4-customer-profile-tags-compat]
+      operationId: getLegacyCustomerProfileTags
+      summary: Read the Contact-owned local tag-name projection for one resolved customer
+      x-legacy-mapping-ids: [LEGACY-API-0301]
+      x-p4-decision-evidence: P4-0301-OWNER-FREEZE-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: unionid, in: query, required: false, description: Frozen legacy identity hint. When both legal hints are supplied they must resolve to one customer., schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: external_userid, in: query, required: false, description: Frozen WeCom external-user identity hint scoped by the configured corporate ID. When both legal hints are supplied they must resolve to one customer., schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: user_id, in: query, required: false, deprecated: true, description: Legacy ambiguous hint. It is rejected with unsupported_identity_hint and is never resolved., schema: { type: string, maxLength: 1024 } }
+      responses:
+        "200": { description: "Contact-owned local tag names, including an authoritative empty projection", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Neither frozen identity hint resolves to a customer, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsNotFound" } } } }
+        "409": { description: The supplied frozen hints conflict or are ambiguous, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsConflict" } } } }
+        "422": { description: "The request has no legal hint, has an invalid hint, or uses user_id", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsValidationError" } } } }
+        "503": { description: Identity resolution or the Contact-owned local projection is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileTagsUnavailable" } } } }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /admin/miniprogram-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyMiniProgramLibraryPage
+      summary: Carry the frozen Mini Program library page into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0054]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable legacy path; no new UI is introduced.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fminiprogram-library$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/miniprogram-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: listLegacyMiniPrograms
+      summary: List local Mini Program material metadata without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0390]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, default: 100 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: enabled_only, in: query, required: false, schema: { type: boolean, default: true } }
+        - { name: q, in: query, required: false, schema: { type: string, default: "" } }
+      responses:
+        "200": { description: Local Mini Program page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-media-compat]
+      operationId: createLegacyMiniProgram
+      summary: Persist one local Mini Program material and optionally read the Media-owned thumbnail cache
+      x-legacy-mapping-ids: [LEGACY-API-0391]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramCreateRequest" } } } }
+      responses:
+        "200": { description: Locally persisted Mini Program material, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/miniprogram-library/{item_id}:
+    parameters:
+      - { name: item_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyMiniProgram
+      summary: Get one local Mini Program material without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0393]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local Mini Program material, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-media-compat]
+      operationId: updateLegacyMiniProgram
+      summary: Update local Mini Program material without accepting provider cache fields
+      x-legacy-mapping-ids: [LEGACY-API-0394]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local Mini Program material, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-media-compat]
+      operationId: deleteLegacyMiniProgram
+      summary: Physically delete one legacy Mini Program material while preserving its immutable receipt
+      x-legacy-mapping-ids: [LEGACY-API-0392]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Physical-delete receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramDeleteResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/miniprogram-library/{item_id}/test-resolve:
+    post:
+      tags: [p4-media-compat]
+      operationId: testResolveLegacyMiniProgram
+      summary: Read only the Media-owned local thumbnail cache and persist no provider effect
+      x-legacy-mapping-ids: [LEGACY-API-0395]
+      x-p4-decision-evidence: P4-MINIPROGRAM-LIBRARY-AB-2026-08-17
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: item_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Local thumbnail-cache resolution fact, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyMiniProgramResolveResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/execution-runtime:
+    get:
+      tags: [p4-execution-runtime-compat]
+      operationId: getLegacyExecutionRuntimePage
+      summary: Carry the safe local execution-runtime observation into the existing admin shell
+      x-p4-decision-evidence: P4-EXECUTION-RUNTIME-AB-2026-08-16
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier redirect; it does not read a runtime model or invoke a worker or provider.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fexecution-runtime"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /api/admin/execution-runtime:
+    get:
+      tags: [p4-execution-runtime-compat]
+      operationId: getLegacyExecutionRuntime
+      summary: Read the frozen observed execution runtime without invoking a worker or provider
+      x-legacy-mapping-ids: [LEGACY-API-0314]
+      x-p4-decision-evidence: P4-EXECUTION-RUNTIME-AB-2026-08-16
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Observed runtime or an explicit missing local control plane, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionRuntimeResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Execution Runtime read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionRuntimeUnavailable" } } } }
+  /api/admin/data-health/checks:
+    get:
+      tags: [p4-data-health]
+      operationId: listLegacyDataHealthChecks
+      summary: Read the local data-health registry without external calls
+      x-legacy-mapping-ids: [LEGACY-API-0305]
+      x-p4-decision-evidence: P4-DATA-HEALTH-0305-0307-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local data-health check registry, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthChecksResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local data-health observation is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthObservationUnavailable" } } } }
+  /api/admin/data-health/checks/{check_id}:
+    get:
+      tags: [p4-data-health]
+      operationId: getLegacyDataHealthCheck
+      summary: Read one local data-health check without external calls
+      x-legacy-mapping-ids: [LEGACY-API-0306]
+      x-p4-decision-evidence: P4-DATA-HEALTH-0305-0307-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: check_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 100 } }
+      responses:
+        "200": { description: Local data-health check, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthCheckResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown check ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthCheckNotFound" } } } }
+        "503": { description: Local data-health observation is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthObservationUnavailable" } } } }
+  /api/admin/data-health/summary:
+    get:
+      tags: [p4-data-health]
+      operationId: getLegacyDataHealthSummary
+      summary: Read the local data-health summary without external calls
+      x-legacy-mapping-ids: [LEGACY-API-0307]
+      x-p4-decision-evidence: P4-DATA-HEALTH-0305-0307-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local data-health summary, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthSummaryResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local data-health observation is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDataHealthObservationUnavailable" } } } }
+  /api/admin/executions/{execution_id}:
+    get:
+      tags: [p4-execution-runtime-compat]
+      operationId: getLegacyExecutionTimeline
+      summary: Read one frozen observed execution timeline without asserting a provider receipt
+      x-legacy-mapping-ids: [LEGACY-API-0315]
+      x-p4-decision-evidence: P4-EXECUTION-RUNTIME-AB-2026-08-16
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - name: execution_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        "200": { description: Observed execution timeline, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionTimelineResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Missing or invalid execution identifier, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionNotFound" } } } }
+        "503": { description: Execution timeline read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyExecutionTimelineUnavailable" } } } }
+  /api/admin/push-center/sections:
+    get:
+      tags: [p4-push-center-compat]
+      operationId: getLegacyPushCenterSections
+      summary: Read the frozen global Push Center section aggregation without touching a worker or provider
+      x-legacy-mapping-ids: [LEGACY-API-0421]
+      x-p4-decision-evidence: P4-PUSH-CENTER-0421-0422-2026-08-16
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/PushCenterSectionFilter"
+        - $ref: "#/components/parameters/PushCenterEffectTypeFilter"
+        - $ref: "#/components/parameters/PushCenterStatusFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessTypeFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessIDFilter"
+        - $ref: "#/components/parameters/PushCenterTargetTypeFilter"
+        - $ref: "#/components/parameters/PushCenterTargetIDFilter"
+        - $ref: "#/components/parameters/PushCenterExternalUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterOwnerUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterTraceIDFilter"
+        - $ref: "#/components/parameters/PushCenterIdempotencyKeyFilter"
+        - $ref: "#/components/parameters/PushCenterSourceModuleFilter"
+        - $ref: "#/components/parameters/PushCenterSourceRouteFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedFromFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedToFilter"
+      responses:
+        "200": { description: Normal aggregation or explicit production-read degradation, content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyPushCenterSectionsResponse" }, { $ref: "#/components/schemas/LegacyPushCenterSectionsDegradedResponse" }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/push-center/stats:
+    get:
+      tags: [p4-push-center-compat]
+      operationId: getLegacyPushCenterStats
+      summary: Read the frozen global Push Center statistics without accepting, sending, or retrying work
+      x-legacy-mapping-ids: [LEGACY-API-0422]
+      x-p4-decision-evidence: P4-PUSH-CENTER-0421-0422-2026-08-16
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/PushCenterSectionFilter"
+        - $ref: "#/components/parameters/PushCenterEffectTypeFilter"
+        - $ref: "#/components/parameters/PushCenterStatusFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessTypeFilter"
+        - $ref: "#/components/parameters/PushCenterBusinessIDFilter"
+        - $ref: "#/components/parameters/PushCenterTargetTypeFilter"
+        - $ref: "#/components/parameters/PushCenterTargetIDFilter"
+        - $ref: "#/components/parameters/PushCenterExternalUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterOwnerUserIDFilter"
+        - $ref: "#/components/parameters/PushCenterTraceIDFilter"
+        - $ref: "#/components/parameters/PushCenterIdempotencyKeyFilter"
+        - $ref: "#/components/parameters/PushCenterSourceModuleFilter"
+        - $ref: "#/components/parameters/PushCenterSourceRouteFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedFromFilter"
+        - $ref: "#/components/parameters/PushCenterCreatedToFilter"
+      responses:
+        "200": { description: Normal aggregation or explicit production-read degradation, content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyPushCenterStatsResponse" }, { $ref: "#/components/schemas/LegacyPushCenterStatsDegradedResponse" }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/push-center/jobs:
+    get:
+      tags: [p4-outbound-operations]
+      operationId: listLegacyOutboundJobs
+      summary: Read bounded local outbound-job projections without starting a worker or provider call
+      x-legacy-mapping-ids: [LEGACY-API-0416]
+      x-p4-decision-evidence: P4-OUTBOUND-OPERATIONS-2026-08-20
+      x-aicrm-capability: outbound.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled] } }
+        - { name: business_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: owner_userid, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Bounded local outbound-job page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundJobListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/push-center/jobs/{job_id}/reconciliation:
+    get:
+      tags: [p4-outbound-operations]
+      operationId: getLegacyOutboundJobReconciliation
+      summary: Reconcile persisted local attempts and local control receipts without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0419]
+      x-p4-decision-evidence: P4-OUTBOUND-OPERATIONS-2026-08-20
+      x-aicrm-capability: outbound.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-external-effect: none
+      parameters: [{ name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local outbound reconciliation, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundJobReconciliationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/push-center/jobs/{job_id}/cancel:
+    post:
+      tags: [p4-outbound-operations]
+      operationId: cancelLegacyOutboundJob
+      summary: Cancel only a still-pending local outbound task before a worker can claim it
+      x-p4-decision-evidence: P4-OUTBOUND-OPERATIONS-2026-08-20
+      x-aicrm-capability: outbound.control
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202": { description: Completed local pre-worker cancellation receipt; it is not a provider receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundCancelResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/internal-events:
+    get:
+      tags: [p4-internal-events]
+      operationId: listLegacyInternalEvents
+      summary: Read the bounded local internal-event and delivery projection
+      x-legacy-mapping-ids: [LEGACY-API-0367]
+      x-p4-decision

@@ -1,0 +1,668 @@
+trol: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products/new:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductCreateWorkspace
+      summary: Carry an authorized administrator to the local service-product creation shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no create command or provider action is available., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fservice-period-products%2Fnew"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products/{service_product_id}/edit:
+    parameters:
+      - { name: service_product_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductEditWorkspace
+      summary: Carry an authorized administrator to one safe local service-product edit shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated resource identifier., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products/{service_product_id}/data:
+    parameters:
+      - { name: service_product_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductDataWorkspace
+      summary: Carry an authorized administrator to one safe local service-product member-data shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated resource identifier; no member facts are read., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/products/new:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayProductCreateWorkspace
+      summary: Carry an authorized administrator to the local WeChat Pay product creation shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no payment-product create or provider call occurs., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-pay%2Fproducts%2Fnew"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/products/{product_id}/edit:
+    parameters:
+      - { name: product_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayProductEditWorkspace
+      summary: Carry an authorized administrator to one safe local WeChat Pay product edit shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated product identifier., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/transactions:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayTransactionsWorkspace
+      summary: Carry an authorized administrator to the local WeChat Pay transaction workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no transaction or provider fact is read., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-pay%2Ftransactions"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-pay/transactions/{order_id}:
+    parameters:
+      - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatPayTransactionWorkspace
+      summary: Carry an authorized administrator to one safe local WeChat Pay transaction-detail shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated order identifier; no refund is attempted., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-shop/transactions:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatShopTransactionsWorkspace
+      summary: Carry an authorized administrator to the local WeChat Shop transaction workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no shop transaction or provider fact is read., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-shop%2Ftransactions"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/wechat-shop/transactions/{order_id}:
+    parameters:
+      - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/%\\\\]+$" } }
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getWeChatShopTransactionWorkspace
+      summary: Carry an authorized administrator to one safe local WeChat Shop transaction-detail shell
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier containing only the validated order identifier; no refund is attempted., headers: { Location: { required: true, schema: { type: string, minLength: 1 } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/automation-agents:
+    get:
+      tags: [p4-automation-agents]
+      operationId: getLegacyAutomationAgentListPage
+      summary: Carry an authorized administrator to the local automation-agent browser
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-BROWSER-061-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier redirect; it neither reads agent content nor invokes automation, publishing, or a provider.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fautomation-agents"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /api/admin/automation-agents:
+    get:
+      tags: [p4-automation-agents]
+      operationId: listLegacyAutomationAgents
+      summary: Read local automation-agent summary metadata without prompts, content, material IDs, bindings, or external calls
+      x-legacy-mapping-ids: [LEGACY-API-0129]
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-BROWSER-061-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Complete bounded local automation-agent summary list, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListResponse" } } } }
+        "400": { description: Unsupported legacy automation_type query value, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentListError" } } } }
+    post:
+      tags: [p4-automation-agents]
+      operationId: createLegacyAutomationAgent
+      summary: Create one local automation-agent configuration without running or sending it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAutomationAgentCreateRequest" }
+      responses:
+        "200": { description: Confirmed local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Local idempotency or code conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "410": { description: Retired webhook or audience-package field, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    get:
+      tags: [p4-automation-agents]
+      operationId: getLegacyAutomationAgent
+      summary: Read one complete local automation-agent configuration
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Complete local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+    patch:
+      tags: [p4-automation-agents]
+      operationId: updateLegacyAutomationAgent
+      summary: Update the local automation-agent draft without running or sending it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAutomationAgentUpdateRequest" }
+      responses:
+        "200": { description: Confirmed updated local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local update, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "410": { description: Retired webhook or audience-package field, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+    delete:
+      tags: [p4-automation-agents]
+      operationId: archiveLegacyAutomationAgent
+      summary: Archive one local automation-agent configuration
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200": { description: Confirmed local archive, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentArchiveResponse" } } } }
+        "400": { description: Invalid archive command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/fixed-content:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    put:
+      tags: [p4-automation-agents]
+      operationId: saveLegacyAutomationAgentFixedContent
+      summary: Save local fixed content and validated local media references
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContentRequest" }
+      responses:
+        "200": { description: Confirmed local fixed content, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local fixed content, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID or image reference, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/activate:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: activateLegacyAutomationAgent
+      summary: Activate one local automation-agent configuration without running it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed active local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/copy:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: copyLegacyAutomationAgent
+      summary: Copy one local automation-agent configuration without running it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed copied local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown source configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or code conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/pause:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: pauseLegacyAutomationAgent
+      summary: Pause one local automation-agent configuration
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed paused local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    post:
+      tags: [p4-automation-agents]
+      operationId: publishLegacyAutomationAgent
+      summary: Publish the local draft version without running or sending it
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Confirmed locally published draft version, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
+        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/wecom/tags:
+    get:
+      tags: [p4-tag-compat]
+      operationId: listLegacyWecomTags
+      summary: Read the local tag catalog without WeCom execution
+      x-legacy-mapping-ids: [LEGACY-API-0555]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Frozen catalog or fail-closed degraded empty catalog, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagCatalogResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [p4-tag-compat]
+      operationId: createLegacyWecomTag
+      summary: Create one tag in the local Contact-owned catalog
+      x-legacy-mapping-ids: [LEGACY-API-0556]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagCreateRequest" } } } }
+      responses: { "200": { description: Closed local tag-created or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyTagCreateSuccess" }, { $ref: "#/components/schemas/LegacyTagCreateValidatedSuccess" }] } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /admin/wecom-tags:
+    get:
+      tags: [p4-tag-compat]
+      operationId: legacyWecomTagsAdminShell
+      summary: Delegate the legacy tag page to the existing generic admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0086]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "302": { description: Existing generic admin shell location; no tag page body is invented. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/wecom/tag-groups:
+    get:
+      tags: [p4-tag-compat]
+      operationId: listLegacyWecomTagGroups
+      summary: List local tag groups without executing WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0551]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Local tag groups, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupsResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-tag-compat]
+      operationId: createLegacyWecomTagGroup
+      summary: Create one local tag group and its required first tag
+      x-legacy-mapping-ids: [LEGACY-API-0552]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupCreateRequest" } } } }
+      responses: { "200": { description: Closed local group-created or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyTagGroupCreateSuccess" }, { $ref: "#/components/schemas/LegacyTagGroupCreateValidatedSuccess" }] } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tag-groups/{group_id}:
+    parameters: [{ name: group_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-tag-compat]
+      operationId: getLegacyWecomTagGroup
+      summary: Get one local tag group without executing WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0554]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Local tag group, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-tag-compat]
+      operationId: updateLegacyWecomTagGroupPut
+      summary: Update one local group name using the frozen PUT compatibility method
+      x-legacy-mapping-ids: [LEGACY-API-0553]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupUpdateRequest" } } } }
+      responses: { "200": { description: Local group update envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+    patch:
+      tags: [p4-tag-compat]
+      operationId: updateLegacyWecomTagGroupPatch
+      summary: Update one local group name using the frozen PATCH compatibility method
+      x-legacy-mapping-ids: [LEGACY-API-0553]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupUpdateRequest" } } } }
+      responses:
+        "200": { description: Local group update envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupUpdateResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-tag-compat]
+      operationId: archiveLegacyWecomTagGroup
+      summary: Archive one local group and hide its tags
+      x-legacy-mapping-ids: [LEGACY-API-0553]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagArchiveRequest" } } } }
+      responses: { "200": { description: Closed local group-archived or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagGroupArchiveResponse" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/{tag_id}:
+    parameters: [{ name: tag_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-tag-compat]
+      operationId: getLegacyWecomTag
+      summary: Get one local tag without executing WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0563]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Local tag, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-tag-compat]
+      operationId: updateLegacyWecomTagPut
+      summary: Update one local tag name using the frozen PUT compatibility method
+      x-legacy-mapping-ids: [LEGACY-API-0562]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagUpdateRequest" } } } }
+      responses: { "200": { description: Local tag update envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+    patch:
+      tags: [p4-tag-compat]
+      operationId: updateLegacyWecomTagPatch
+      summary: Update one local tag name using the frozen PATCH compatibility method
+      x-legacy-mapping-ids: [LEGACY-API-0562]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagUpdateRequest" } } } }
+      responses:
+        "200": { description: Local tag update envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagUpdateResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-tag-compat]
+      operationId: archiveLegacyWecomTag
+      summary: Archive one local tag
+      x-legacy-mapping-ids: [LEGACY-API-0562]
+      x-p4-decision-evidence: P4-B02-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagArchiveRequest" } } } }
+      responses: { "200": { description: Closed local tag-archived or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagArchiveResponse" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/live/gate:
+    get:
+      tags: [p4-tag-compat]
+      operationId: getLegacyWecomTagExecutionGate
+      summary: Read the local fail-closed tag execution gate
+      x-legacy-mapping-ids: [LEGACY-API-0557]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200":
+          description: Local execution-state projection, not a provider receipt.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagExecutionGate" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wecom/tags/live/mark:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagLiveMark
+      summary: Accept a legacy live-mark request for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0558]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagOpaqueLiveMutationRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no provider operation was attempted, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/live/unmark:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagLiveUnmark
+      summary: Accept a legacy live-unmark request for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0559]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagOpaqueLiveMutationRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no provider operation was attempted, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/com

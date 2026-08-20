@@ -1,0 +1,275 @@
+minLength: 1, maxLength: 200 }
+        configured: { type: boolean, enum: [true] }
+        masked: { type: boolean, enum: [true] }
+    LegacyAppSettingsResourceSaveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, changed, changed_count, config, source_status, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        changed: { type: array, maxItems: 12, items: { oneOf: [{ $ref: "#/components/schemas/LegacyAppSettingsResourceChangedEditable" }, { $ref: "#/components/schemas/LegacyAppSettingsResourceChangedMasked" }] } }
+        changed_count: { type: integer, minimum: 0, maximum: 12 }
+        config: { $ref: "#/components/schemas/LegacyAppSettingsProjection" }
+        source_status: { type: string, enum: [next_command] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyAppSettingsResourceSaveError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [payload_must_be_object, confirmation_required, settings_must_be_object, invalid_setting_value, invalid_action_token, secret_input_forbidden, settings_idempotency_conflict, invalid_setting, settings_unavailable] }
+    LegacyAppSettingsSaveForm:
+      type: object
+      additionalProperties: false
+      required: [csrf_token, admin_action_token, confirm]
+      properties:
+        csrf_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+        confirm: { type: string, enum: ["1"] }
+        operator: { type: string, description: Ignored; actor is always derived from the authenticated Principal. }
+        setting__wecom.corp_id: { type: string, minLength: 1, maxLength: 256 }
+        setting__wecom.agent_id: { type: string, pattern: '^[1-9][0-9]*$' }
+        setting__outbound.rate_per_second: { type: string, pattern: '^([1-9]|[1-4][0-9]|50)$' }
+        setting__outbound.max_attempts: { type: string, pattern: '^([1-9]|10)$' }
+        setting__database.url: { type: string, maxLength: 0, default: "" }
+        setting__wecom.secret: { type: string, maxLength: 0, default: "" }
+        setting__wecom.callback_token: { type: string, maxLength: 0, default: "" }
+        setting__wecom.callback_aes_key: { type: string, maxLength: 0, default: "" }
+        setting__ai.api_key: { type: string, maxLength: 0, default: "" }
+        setting__auth.jwt_secret: { type: string, maxLength: 0, default: "" }
+        setting__extension.api_key_pepper: { type: string, maxLength: 0, default: "" }
+        setting__gateway.webhook_master_key: { type: string, maxLength: 0, default: "" }
+    LegacyPushCenterSection:
+      type: object
+      additionalProperties: false
+      required: [key, label, effect_types, capability_key, count]
+      properties:
+        key: { type: string, enum: [questionnaire, order, ai_assist, private_broadcast, group_ops, group_broadcast, customer_webhook, tags, welcome, payment, integrations, test_receiver, other] }
+        label: { type: string }
+        effect_types: { type: array, items: { type: string } }
+        capability_key: { type: string }
+        count: { type: integer, format: int64, minimum: 0 }
+    LegacyPushCenterStatusDefinition:
+      type: object
+      additionalProperties: false
+      required: [key, label, definition]
+      properties:
+        key: { type: string, enum: [pending, running, succeeded, sent, simulated, unknown_after_dispatch, failed, sent_with_shadow_warning, shadow_failed_not_business_failed] }
+        label: { type: string }
+        definition: { type: string }
+    LegacyPushCenterFilters:
+      type: object
+      additionalProperties: false
+      description: Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+      properties:
+        section: { type: string }
+        effect_type: { type: string }
+        status: { type: string }
+        business_type: { type: string }
+        business_id: { type: string }
+        target_type: { type: string }
+        target_id: { type: string }
+        external_userid: { type: string }
+        owner_userid: { type: string }
+        trace_id: { type: string }
+        idempotency_key: { type: string }
+        source_module: { type: string }
+        source_route: { type: string }
+        created_from: { type: string }
+        created_to: { type: string }
+    LegacyPushCenterCounts:
+      type: object
+      additionalProperties: false
+      required: [total, by_effective_status, by_status, by_section, pending, running, succeeded, sent, failed, shadow_warning]
+      properties:
+        total: { type: integer, format: int64, minimum: 0 }
+        by_effective_status: { type: object, additionalProperties: { type: integer, format: int64, minimum: 0 } }
+        by_status: { type: object, additionalProperties: { type: integer, format: int64, minimum: 0 } }
+        by_section: { type: object, additionalProperties: { type: integer, format: int64, minimum: 0 } }
+        pending: { type: integer, format: int64, minimum: 0 }
+        running: { type: integer, format: int64, minimum: 0 }
+        succeeded: { type: integer, format: int64, minimum: 0 }
+        sent: { type: integer, format: int64, minimum: 0 }
+        failed: { type: integer, format: int64, minimum: 0 }
+        shadow_warning: { type: integer, format: int64, minimum: 0 }
+    LegacyPushCenterDegradedCounts:
+      type: object
+      additionalProperties: false
+      required: [total, by_effective_status, by_status, by_section, pending, running, sent, failed]
+      properties:
+        total: { type: integer, format: int64, enum: [0] }
+        by_effective_status: { type: object, additionalProperties: false }
+        by_status: { type: object, additionalProperties: false }
+        by_section: { type: object, additionalProperties: false }
+        pending: { type: integer, format: int64, enum: [0] }
+        running: { type: integer, format: int64, enum: [0] }
+        sent: { type: integer, format: int64, enum: [0] }
+        failed: { type: integer, format: int64, enum: [0] }
+    LegacyPushCenterInternalEventSummary:
+      type: object
+      additionalProperties: false
+      required: [raw_open, raw_due, eligible, failed_retryable, failed_terminal, blocked]
+      properties:
+        raw_open: {}
+        raw_due: {}
+        eligible: {}
+        failed_retryable: {}
+        failed_terminal: {}
+        blocked: {}
+    LegacyPushCenterLaneSummary:
+      type: object
+      additionalProperties: false
+      required: [lane, max_in_flight, enabled, rollout_mode, blocked_until, policy_version, raw_open, held, eligible, policy_gated, scheduled, retry_wait, rate_limited, in_flight, unknown, dlq, oldest_eligible_age_seconds, internal_event, throughput_last_minute, accepted_last_minute, p95_queue_wait_ms, p95_provider_call_ms, estimated_drain_seconds, rate_limit_count_last_hour, task_acceptance_rate_1m]
+      properties:
+        lane: { type: string, enum: [ai_generation, outbound_webhook, wecom_ai_assistant_bulk, wecom_bulk, wecom_interactive, wecom_media] }
+        max_in_flight: {}
+        enabled: {}
+        rollout_mode: {}
+        blocked_until: {}
+        policy_version: {}
+        raw_open: {}
+        held: {}
+        eligible: {}
+        policy_gated: {}
+        scheduled: {}
+        retry_wait: {}
+        rate_limited: {}
+        in_flight: {}
+        unknown: {}
+        dlq: {}
+        oldest_eligible_age_seconds: {}
+        internal_event: { $ref: "#/components/schemas/LegacyPushCenterInternalEventSummary" }
+        throughput_last_minute: {}
+        accepted_last_minute: {}
+        p95_queue_wait_ms: {}
+        p95_provider_call_ms: {}
+        estimated_drain_seconds: {}
+        rate_limit_count_last_hour: {}
+        task_acceptance_rate_1m: {}
+    LegacyPushCenterRuntimeQueue:
+      type: object
+      additionalProperties: false
+      required: [policy_version, active_generation, claim_enabled, rollout_mode, lanes, raw_open, held, eligible, policy_gated, scheduled, retry_wait, rate_limited, in_flight, unknown, dlq, internal_event]
+      properties:
+        policy_version: {}
+        active_generation: {}
+        claim_enabled: {}
+        rollout_mode: {}
+        lanes: { type: array, items: { $ref: "#/components/schemas/LegacyPushCenterLaneSummary" } }
+        raw_open: {}
+        held: {}
+        eligible: {}
+        policy_gated: {}
+        scheduled: {}
+        retry_wait: {}
+        rate_limited: {}
+        in_flight: {}
+        unknown: {}
+        dlq: {}
+        internal_event: { $ref: "#/components/schemas/LegacyPushCenterInternalEventSummary" }
+    LegacyPushCenterSectionsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, sections, status_definitions, filters, route_owner]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        sections: { type: array, minItems: 13, maxItems: 13, items: { $ref: "#/components/schemas/LegacyPushCenterSection" } }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        route_owner: { type: string, enum: [ai_crm_next] }
+    LegacyPushCenterStatsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, counts, sections, status_definitions, filters, route_owner, real_external_call_executed, runtime_queue, capability_owner]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        counts: { $ref: "#/components/schemas/LegacyPushCenterCounts" }
+        sections: { type: array, minItems: 13, maxItems: 13, items: { $ref: "#/components/schemas/LegacyPushCenterSection" } }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        runtime_queue: { oneOf: [{ type: object, additionalProperties: false, maxProperties: 0 }, { $ref: "#/components/schemas/LegacyPushCenterRuntimeQueue" }] }
+        capability_owner: { type: string, enum: [ai_crm_next/platform_foundation/push_center] }
+    LegacyPushCenterSectionsDegradedResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, degraded, error, error_code, source_status, read_model_status, capability_owner, page_error, diagnostics, route_owner, fallback_used, real_external_call_executed, status_code, items, total, counts, status_definitions, filters, limit, offset, sections]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        degraded: { type: boolean, enum: [true] }
+        error: { type: string, enum: [""] }
+        error_code: { type: string, enum: [production_read_unavailable] }
+        source_status: { type: string, enum: [production_unavailable] }
+        read_model_status: { type: string, enum: [unavailable] }
+        capability_owner: { type: string, enum: [ai_crm_next/platform_foundation/push_center] }
+        page_error: { type: string, enum: [推送中心读模型暂不可用，请稍后重试。] }
+        diagnostics: { type: object, additionalProperties: false, required: [production_data_ready, fixture_mode, allow_fixture_repo_in_prod, error_class], properties: { production_data_ready: { type: boolean, enum: [false] }, fixture_mode: { type: boolean, enum: [false] }, allow_fixture_repo_in_prod: { type: boolean, enum: [false] }, error_class: { type: string } } }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [200] }
+        items: { type: array, maxItems: 0, items: {} }
+        total: { type: integer, enum: [0] }
+        counts: { $ref: "#/components/schemas/LegacyPushCenterDegradedCounts" }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        limit: { type: integer, enum: [50] }
+        offset: { type: integer, enum: [0] }
+        sections: { type: array, maxItems: 0, items: {} }
+    LegacyPushCenterStatsDegradedResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, degraded, error, error_code, source_status, read_model_status, capability_owner, page_error, diagnostics, route_owner, fallback_used, real_external_call_executed, status_code, items, total, counts, status_definitions, filters, limit, offset, sections, runtime_queue]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        degraded: { type: boolean, enum: [true] }
+        error: { type: string, enum: [""] }
+        error_code: { type: string, enum: [production_read_unavailable] }
+        source_status: { type: string, enum: [production_unavailable] }
+        read_model_status: { type: string, enum: [unavailable] }
+        capability_owner: { type: string, enum: [ai_crm_next/platform_foundation/push_center] }
+        page_error: { type: string, enum: [推送中心读模型暂不可用，请稍后重试。] }
+        diagnostics: { type: object, additionalProperties: false, required: [production_data_ready, fixture_mode, allow_fixture_repo_in_prod, error_class], properties: { production_data_ready: { type: boolean, enum: [false] }, fixture_mode: { type: boolean, enum: [false] }, allow_fixture_repo_in_prod: { type: boolean, enum: [false] }, error_class: { type: string } } }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [200] }
+        items: { type: array, maxItems: 0, items: {} }
+        total: { type: integer, enum: [0] }
+        counts: { $ref: "#/components/schemas/LegacyPushCenterDegradedCounts" }
+        status_definitions: { type: array, minItems: 9, maxItems: 9, items: { $ref: "#/components/schemas/LegacyPushCenterStatusDefinition" } }
+        filters: { $ref: "#/components/schemas/LegacyPushCenterFilters" }
+        limit: { type: integer, enum: [50] }
+        offset: { type: integer, enum: [0] }
+        sections: { type: array, maxItems: 0, items: {} }
+        runtime_queue: { oneOf: [{ type: object, additionalProperties: false, maxProperties: 0 }, { $ref: "#/components/schemas/LegacyPushCenterRuntimeQueue" }] }
+    AutomationTriggerRun:
+      type: object
+      additionalProperties: false
+      required: [run_id, request_id, agent_code, run_status, trigger_source, customer_id, tag_id, source_event_id, triggered_event_id, started_at, completed_at, has_error]
+      properties:
+        run_id: { type: string, pattern: '^automation-trigger:[1-9][0-9]*$' }
+        request_id: { type: string, pattern: '^event:[1-9][0-9]*$' }
+        agent_code: { type: string, enum: [tag-trigger-v1] }
+        run_status: { type: string, enum: [completed] }
+        trigger_source: { type: string, enum: [customer.tag_applied] }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        source_event_id: { type: integer, format: int64, minimum: 1 }
+        triggered_event_id: { type: integer, format: int64, minimum: 1 }
+        started_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+        has_error: { type: boolean, enum: [false] }
+    AutomationTriggerRunListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, total, page, page_size, visibility]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AutomationTriggerRun" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        page: { type: integer, format: int32, minimum: 1 }
+        page_size: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        visibility: { type: string, enum: [masked] }

@@ -1,0 +1,1848 @@
+data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCloudOrchestratorPlansWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCloudOrchestratorPlansWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getCloudOrchestratorPlansWorkspaceResponseError = (
+  | getCloudOrchestratorPlansWorkspaceResponse302
+  | getCloudOrchestratorPlansWorkspaceResponse401
+  | getCloudOrchestratorPlansWorkspaceResponse403
+  | getCloudOrchestratorPlansWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getCloudOrchestratorPlansWorkspaceResponse =
+  getCloudOrchestratorPlansWorkspaceResponseError;
+
+export const getGetCloudOrchestratorPlansWorkspaceUrl = () => {
+  return `/admin/cloud-orchestrator/plans`;
+};
+
+export const getCloudOrchestratorPlansWorkspace = async (
+  options?: RequestInit,
+): Promise<getCloudOrchestratorPlansWorkspaceResponse> => {
+  const res = await fetch(getGetCloudOrchestratorPlansWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudOrchestratorPlansWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudOrchestratorPlansWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local plan-detail shell
+ */
+export type getCloudOrchestratorPlanDetailWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getCloudOrchestratorPlanDetailWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCloudOrchestratorPlanDetailWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCloudOrchestratorPlanDetailWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getCloudOrchestratorPlanDetailWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getCloudOrchestratorPlanDetailWorkspaceResponseError = (
+  | getCloudOrchestratorPlanDetailWorkspaceResponse302
+  | getCloudOrchestratorPlanDetailWorkspaceResponse401
+  | getCloudOrchestratorPlanDetailWorkspaceResponse403
+  | getCloudOrchestratorPlanDetailWorkspaceResponse404
+  | getCloudOrchestratorPlanDetailWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getCloudOrchestratorPlanDetailWorkspaceResponse =
+  getCloudOrchestratorPlanDetailWorkspaceResponseError;
+
+export const getGetCloudOrchestratorPlanDetailWorkspaceUrl = (
+  planId: string,
+) => {
+  return `/admin/cloud-orchestrator/plans/${planId}`;
+};
+
+export const getCloudOrchestratorPlanDetailWorkspace = async (
+  planId: string,
+  options?: RequestInit,
+): Promise<getCloudOrchestratorPlanDetailWorkspaceResponse> => {
+  const res = await fetch(
+    getGetCloudOrchestratorPlanDetailWorkspaceUrl(planId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudOrchestratorPlanDetailWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudOrchestratorPlanDetailWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local campaign review shell
+ */
+export type getCloudOrchestratorCampaignsWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getCloudOrchestratorCampaignsWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCloudOrchestratorCampaignsWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCloudOrchestratorCampaignsWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getCloudOrchestratorCampaignsWorkspaceResponseError = (
+  | getCloudOrchestratorCampaignsWorkspaceResponse302
+  | getCloudOrchestratorCampaignsWorkspaceResponse401
+  | getCloudOrchestratorCampaignsWorkspaceResponse403
+  | getCloudOrchestratorCampaignsWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getCloudOrchestratorCampaignsWorkspaceResponse =
+  getCloudOrchestratorCampaignsWorkspaceResponseError;
+
+export const getGetCloudOrchestratorCampaignsWorkspaceUrl = () => {
+  return `/admin/cloud-orchestrator/campaigns`;
+};
+
+export const getCloudOrchestratorCampaignsWorkspace = async (
+  options?: RequestInit,
+): Promise<getCloudOrchestratorCampaignsWorkspaceResponse> => {
+  const res = await fetch(getGetCloudOrchestratorCampaignsWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudOrchestratorCampaignsWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudOrchestratorCampaignsWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local observability shell
+ */
+export type getCloudOrchestratorObservabilityWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getCloudOrchestratorObservabilityWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCloudOrchestratorObservabilityWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCloudOrchestratorObservabilityWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getCloudOrchestratorObservabilityWorkspaceResponseError = (
+  | getCloudOrchestratorObservabilityWorkspaceResponse302
+  | getCloudOrchestratorObservabilityWorkspaceResponse401
+  | getCloudOrchestratorObservabilityWorkspaceResponse403
+  | getCloudOrchestratorObservabilityWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getCloudOrchestratorObservabilityWorkspaceResponse =
+  getCloudOrchestratorObservabilityWorkspaceResponseError;
+
+export const getGetCloudOrchestratorObservabilityWorkspaceUrl = () => {
+  return `/admin/cloud-orchestrator/observability`;
+};
+
+export const getCloudOrchestratorObservabilityWorkspace = async (
+  options?: RequestInit,
+): Promise<getCloudOrchestratorObservabilityWorkspaceResponse> => {
+  const res = await fetch(getGetCloudOrchestratorObservabilityWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudOrchestratorObservabilityWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudOrchestratorObservabilityWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the safe local group-operations plan workspace
+ */
+export type getGroupOpsPlansWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getGroupOpsPlansWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getGroupOpsPlansWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getGroupOpsPlansWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getGroupOpsPlansWorkspaceResponseError = (
+  | getGroupOpsPlansWorkspaceResponse302
+  | getGroupOpsPlansWorkspaceResponse401
+  | getGroupOpsPlansWorkspaceResponse403
+  | getGroupOpsPlansWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getGroupOpsPlansWorkspaceResponse =
+  getGroupOpsPlansWorkspaceResponseError;
+
+export const getGetGroupOpsPlansWorkspaceUrl = () => {
+  return `/admin/automation-conversion/group-ops/ui`;
+};
+
+export const getGroupOpsPlansWorkspace = async (
+  options?: RequestInit,
+): Promise<getGroupOpsPlansWorkspaceResponse> => {
+  const res = await fetch(getGetGroupOpsPlansWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGroupOpsPlansWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getGroupOpsPlansWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local group-operations plan-detail workspace
+ */
+export type getGroupOpsPlanDetailWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponseError = (
+  | getGroupOpsPlanDetailWorkspaceResponse302
+  | getGroupOpsPlanDetailWorkspaceResponse401
+  | getGroupOpsPlanDetailWorkspaceResponse403
+  | getGroupOpsPlanDetailWorkspaceResponse404
+  | getGroupOpsPlanDetailWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse =
+  getGroupOpsPlanDetailWorkspaceResponseError;
+
+export const getGetGroupOpsPlanDetailWorkspaceUrl = (planId: string) => {
+  return `/admin/automation-conversion/group-ops/plans/${planId}`;
+};
+
+export const getGroupOpsPlanDetailWorkspace = async (
+  planId: string,
+  options?: RequestInit,
+): Promise<getGroupOpsPlanDetailWorkspaceResponse> => {
+  const res = await fetch(getGetGroupOpsPlanDetailWorkspaceUrl(planId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGroupOpsPlanDetailWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getGroupOpsPlanDetailWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the safe local audience-package workspace
+ */
+export type getAudiencePackagesWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getAudiencePackagesWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAudiencePackagesWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAudiencePackagesWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getAudiencePackagesWorkspaceResponseError = (
+  | getAudiencePackagesWorkspaceResponse302
+  | getAudiencePackagesWorkspaceResponse401
+  | getAudiencePackagesWorkspaceResponse403
+  | getAudiencePackagesWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getAudiencePackagesWorkspaceResponse =
+  getAudiencePackagesWorkspaceResponseError;
+
+export const getGetAudiencePackagesWorkspaceUrl = () => {
+  return `/admin/automation-conversion`;
+};
+
+export const getAudiencePackagesWorkspace = async (
+  options?: RequestInit,
+): Promise<getAudiencePackagesWorkspaceResponse> => {
+  const res = await fetch(getGetAudiencePackagesWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAudiencePackagesWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAudiencePackagesWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local audience-package detail workspace
+ */
+export type getAudiencePackageDetailWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getAudiencePackageDetailWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAudiencePackageDetailWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAudiencePackageDetailWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAudiencePackageDetailWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getAudiencePackageDetailWorkspaceResponseError = (
+  | getAudiencePackageDetailWorkspaceResponse302
+  | getAudiencePackageDetailWorkspaceResponse401
+  | getAudiencePackageDetailWorkspaceResponse403
+  | getAudiencePackageDetailWorkspaceResponse404
+  | getAudiencePackageDetailWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getAudiencePackageDetailWorkspaceResponse =
+  getAudiencePackageDetailWorkspaceResponseError;
+
+export const getGetAudiencePackageDetailWorkspaceUrl = (packageId: string) => {
+  return `/admin/automation-conversion/packages/${packageId}`;
+};
+
+export const getAudiencePackageDetailWorkspace = async (
+  packageId: string,
+  options?: RequestInit,
+): Promise<getAudiencePackageDetailWorkspaceResponse> => {
+  const res = await fetch(getGetAudiencePackageDetailWorkspaceUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAudiencePackageDetailWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAudiencePackageDetailWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the safe local user-operations review workspace
+ */
+export type getUserOpsReviewWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getUserOpsReviewWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUserOpsReviewWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUserOpsReviewWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getUserOpsReviewWorkspaceResponseError = (
+  | getUserOpsReviewWorkspaceResponse302
+  | getUserOpsReviewWorkspaceResponse401
+  | getUserOpsReviewWorkspaceResponse403
+  | getUserOpsReviewWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getUserOpsReviewWorkspaceResponse =
+  getUserOpsReviewWorkspaceResponseError;
+
+export const getGetUserOpsReviewWorkspaceUrl = () => {
+  return `/admin/user-ops`;
+};
+
+export const getUserOpsReviewWorkspace = async (
+  options?: RequestInit,
+): Promise<getUserOpsReviewWorkspaceResponse> => {
+  const res = await fetch(getGetUserOpsReviewWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUserOpsReviewWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUserOpsReviewWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator through the approved alias to the safe local user-operations review workspace
+ */
+export type getUserOpsReviewWorkspaceAliasResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponseError = (
+  | getUserOpsReviewWorkspaceAliasResponse302
+  | getUserOpsReviewWorkspaceAliasResponse401
+  | getUserOpsReviewWorkspaceAliasResponse403
+  | getUserOpsReviewWorkspaceAliasResponse405
+) & {
+  headers: Headers;
+};
+
+export type getUserOpsReviewWorkspaceAliasResponse =
+  getUserOpsReviewWorkspaceAliasResponseError;
+
+export const getGetUserOpsReviewWorkspaceAliasUrl = () => {
+  return `/admin/user-ops/ui`;
+};
+
+export const getUserOpsReviewWorkspaceAlias = async (
+  options?: RequestInit,
+): Promise<getUserOpsReviewWorkspaceAliasResponse> => {
+  const res = await fetch(getGetUserOpsReviewWorkspaceAliasUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUserOpsReviewWorkspaceAliasResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUserOpsReviewWorkspaceAliasResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local Alipay transaction workspace
+ */
+export type getAlipayTransactionsWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getAlipayTransactionsWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAlipayTransactionsWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAlipayTransactionsWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getAlipayTransactionsWorkspaceResponseError = (
+  | getAlipayTransactionsWorkspaceResponse302
+  | getAlipayTransactionsWorkspaceResponse401
+  | getAlipayTransactionsWorkspaceResponse403
+  | getAlipayTransactionsWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getAlipayTransactionsWorkspaceResponse =
+  getAlipayTransactionsWorkspaceResponseError;
+
+export const getGetAlipayTransactionsWorkspaceUrl = () => {
+  return `/admin/alipay/transactions`;
+};
+
+export const getAlipayTransactionsWorkspace = async (
+  options?: RequestInit,
+): Promise<getAlipayTransactionsWorkspaceResponse> => {
+  const res = await fetch(getGetAlipayTransactionsWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAlipayTransactionsWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAlipayTransactionsWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local service-product list workspace
+ */
+export type getServiceProductsWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getServiceProductsWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServiceProductsWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServiceProductsWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getServiceProductsWorkspaceResponseError = (
+  | getServiceProductsWorkspaceResponse302
+  | getServiceProductsWorkspaceResponse401
+  | getServiceProductsWorkspaceResponse403
+  | getServiceProductsWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getServiceProductsWorkspaceResponse =
+  getServiceProductsWorkspaceResponseError;
+
+export const getGetServiceProductsWorkspaceUrl = () => {
+  return `/admin/service-period-products`;
+};
+
+export const getServiceProductsWorkspace = async (
+  options?: RequestInit,
+): Promise<getServiceProductsWorkspaceResponse> => {
+  const res = await fetch(getGetServiceProductsWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServiceProductsWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServiceProductsWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local service-product creation shell
+ */
+export type getServiceProductCreateWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getServiceProductCreateWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServiceProductCreateWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServiceProductCreateWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getServiceProductCreateWorkspaceResponseError = (
+  | getServiceProductCreateWorkspaceResponse302
+  | getServiceProductCreateWorkspaceResponse401
+  | getServiceProductCreateWorkspaceResponse403
+  | getServiceProductCreateWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getServiceProductCreateWorkspaceResponse =
+  getServiceProductCreateWorkspaceResponseError;
+
+export const getGetServiceProductCreateWorkspaceUrl = () => {
+  return `/admin/service-period-products/new`;
+};
+
+export const getServiceProductCreateWorkspace = async (
+  options?: RequestInit,
+): Promise<getServiceProductCreateWorkspaceResponse> => {
+  const res = await fetch(getGetServiceProductCreateWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServiceProductCreateWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServiceProductCreateWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local service-product edit shell
+ */
+export type getServiceProductEditWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getServiceProductEditWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServiceProductEditWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServiceProductEditWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServiceProductEditWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getServiceProductEditWorkspaceResponseError = (
+  | getServiceProductEditWorkspaceResponse302
+  | getServiceProductEditWorkspaceResponse401
+  | getServiceProductEditWorkspaceResponse403
+  | getServiceProductEditWorkspaceResponse404
+  | getServiceProductEditWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getServiceProductEditWorkspaceResponse =
+  getServiceProductEditWorkspaceResponseError;
+
+export const getGetServiceProductEditWorkspaceUrl = (
+  serviceProductId: string,
+) => {
+  return `/admin/service-period-products/${serviceProductId}/edit`;
+};
+
+export const getServiceProductEditWorkspace = async (
+  serviceProductId: string,
+  options?: RequestInit,
+): Promise<getServiceProductEditWorkspaceResponse> => {
+  const res = await fetch(
+    getGetServiceProductEditWorkspaceUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServiceProductEditWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServiceProductEditWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local service-product member-data shell
+ */
+export type getServiceProductDataWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getServiceProductDataWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServiceProductDataWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServiceProductDataWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServiceProductDataWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getServiceProductDataWorkspaceResponseError = (
+  | getServiceProductDataWorkspaceResponse302
+  | getServiceProductDataWorkspaceResponse401
+  | getServiceProductDataWorkspaceResponse403
+  | getServiceProductDataWorkspaceResponse404
+  | getServiceProductDataWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getServiceProductDataWorkspaceResponse =
+  getServiceProductDataWorkspaceResponseError;
+
+export const getGetServiceProductDataWorkspaceUrl = (
+  serviceProductId: string,
+) => {
+  return `/admin/service-period-products/${serviceProductId}/data`;
+};
+
+export const getServiceProductDataWorkspace = async (
+  serviceProductId: string,
+  options?: RequestInit,
+): Promise<getServiceProductDataWorkspaceResponse> => {
+  const res = await fetch(
+    getGetServiceProductDataWorkspaceUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServiceProductDataWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServiceProductDataWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local WeChat Pay product creation shell
+ */
+export type getWeChatPayProductCreateWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getWeChatPayProductCreateWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeChatPayProductCreateWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeChatPayProductCreateWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getWeChatPayProductCreateWorkspaceResponseError = (
+  | getWeChatPayProductCreateWorkspaceResponse302
+  | getWeChatPayProductCreateWorkspaceResponse401
+  | getWeChatPayProductCreateWorkspaceResponse403
+  | getWeChatPayProductCreateWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getWeChatPayProductCreateWorkspaceResponse =
+  getWeChatPayProductCreateWorkspaceResponseError;
+
+export const getGetWeChatPayProductCreateWorkspaceUrl = () => {
+  return `/admin/wechat-pay/products/new`;
+};
+
+export const getWeChatPayProductCreateWorkspace = async (
+  options?: RequestInit,
+): Promise<getWeChatPayProductCreateWorkspaceResponse> => {
+  const res = await fetch(getGetWeChatPayProductCreateWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeChatPayProductCreateWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeChatPayProductCreateWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local WeChat Pay product edit shell
+ */
+export type getWeChatPayProductEditWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getWeChatPayProductEditWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeChatPayProductEditWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeChatPayProductEditWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getWeChatPayProductEditWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getWeChatPayProductEditWorkspaceResponseError = (
+  | getWeChatPayProductEditWorkspaceResponse302
+  | getWeChatPayProductEditWorkspaceResponse401
+  | getWeChatPayProductEditWorkspaceResponse403
+  | getWeChatPayProductEditWorkspaceResponse404
+  | getWeChatPayProductEditWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getWeChatPayProductEditWorkspaceResponse =
+  getWeChatPayProductEditWorkspaceResponseError;
+
+export const getGetWeChatPayProductEditWorkspaceUrl = (productId: string) => {
+  return `/admin/wechat-pay/products/${productId}/edit`;
+};
+
+export const getWeChatPayProductEditWorkspace = async (
+  productId: string,
+  options?: RequestInit,
+): Promise<getWeChatPayProductEditWorkspaceResponse> => {
+  const res = await fetch(getGetWeChatPayProductEditWorkspaceUrl(productId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeChatPayProductEditWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeChatPayProductEditWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local WeChat Pay transaction workspace
+ */
+export type getWeChatPayTransactionsWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getWeChatPayTransactionsWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeChatPayTransactionsWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeChatPayTransactionsWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getWeChatPayTransactionsWorkspaceResponseError = (
+  | getWeChatPayTransactionsWorkspaceResponse302
+  | getWeChatPayTransactionsWorkspaceResponse401
+  | getWeChatPayTransactionsWorkspaceResponse403
+  | getWeChatPayTransactionsWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getWeChatPayTransactionsWorkspaceResponse =
+  getWeChatPayTransactionsWorkspaceResponseError;
+
+export const getGetWeChatPayTransactionsWorkspaceUrl = () => {
+  return `/admin/wechat-pay/transactions`;
+};
+
+export const getWeChatPayTransactionsWorkspace = async (
+  options?: RequestInit,
+): Promise<getWeChatPayTransactionsWorkspaceResponse> => {
+  const res = await fetch(getGetWeChatPayTransactionsWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeChatPayTransactionsWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeChatPayTransactionsWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local WeChat Pay transaction-detail shell
+ */
+export type getWeChatPayTransactionWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getWeChatPayTransactionWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeChatPayTransactionWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeChatPayTransactionWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getWeChatPayTransactionWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getWeChatPayTransactionWorkspaceResponseError = (
+  | getWeChatPayTransactionWorkspaceResponse302
+  | getWeChatPayTransactionWorkspaceResponse401
+  | getWeChatPayTransactionWorkspaceResponse403
+  | getWeChatPayTransactionWorkspaceResponse404
+  | getWeChatPayTransactionWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getWeChatPayTransactionWorkspaceResponse =
+  getWeChatPayTransactionWorkspaceResponseError;
+
+export const getGetWeChatPayTransactionWorkspaceUrl = (orderId: string) => {
+  return `/admin/wechat-pay/transactions/${orderId}`;
+};
+
+export const getWeChatPayTransactionWorkspace = async (
+  orderId: string,
+  options?: RequestInit,
+): Promise<getWeChatPayTransactionWorkspaceResponse> => {
+  const res = await fetch(getGetWeChatPayTransactionWorkspaceUrl(orderId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeChatPayTransactionWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeChatPayTransactionWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local WeChat Shop transaction workspace
+ */
+export type getWeChatShopTransactionsWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getWeChatShopTransactionsWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeChatShopTransactionsWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeChatShopTransactionsWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getWeChatShopTransactionsWorkspaceResponseError = (
+  | getWeChatShopTransactionsWorkspaceResponse302
+  | getWeChatShopTransactionsWorkspaceResponse401
+  | getWeChatShopTransactionsWorkspaceResponse403
+  | getWeChatShopTransactionsWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getWeChatShopTransactionsWorkspaceResponse =
+  getWeChatShopTransactionsWorkspaceResponseError;
+
+export const getGetWeChatShopTransactionsWorkspaceUrl = () => {
+  return `/admin/wechat-shop/transactions`;
+};
+
+export const getWeChatShopTransactionsWorkspace = async (
+  options?: RequestInit,
+): Promise<getWeChatShopTransactionsWorkspaceResponse> => {
+  const res = await fetch(getGetWeChatShopTransactionsWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeChatShopTransactionsWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeChatShopTransactionsWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local WeChat Shop transaction-detail shell
+ */
+export type getWeChatShopTransactionWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getWeChatShopTransactionWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeChatShopTransactionWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeChatShopTransactionWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getWeChatShopTransactionWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getWeChatShopTransactionWorkspaceResponseError = (
+  | getWeChatShopTransactionWorkspaceResponse302
+  | getWeChatShopTransactionWorkspaceResponse401
+  | getWeChatShopTransactionWorkspaceResponse403
+  | getWeChatShopTransactionWorkspaceResponse404
+  | getWeChatShopTransactionWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getWeChatShopTransactionWorkspaceResponse =
+  getWeChatShopTransactionWorkspaceResponseError;
+
+export const getGetWeChatShopTransactionWorkspaceUrl = (orderId: string) => {
+  return `/admin/wechat-shop/transactions/${orderId}`;
+};
+
+export const getWeChatShopTransactionWorkspace = async (
+  orderId: string,
+  options?: RequestInit,
+): Promise<getWeChatShopTransactionWorkspaceResponse> => {
+  const res = await fetch(getGetWeChatShopTransactionWorkspaceUrl(orderId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeChatShopTransactionWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeChatShopTransactionWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local automation-agent browser
+ */
+export type getLegacyAutomationAgentListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyAutomationAgentListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAutomationAgentListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAutomationAgentListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyAutomationAgentListPageResponseError = (
+  | getLegacyAutomationAgentListPageResponse302
+  | getLegacyAutomationAgentListPageResponse401
+  | getLegacyAutomationAgentListPageResponse403
+  | getLegacyAutomationAgentListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAutomationAgentListPageResponse =
+  getLegacyAutomationAgentListPageResponseError;
+
+export const getGetLegacyAutomationAgentListPageUrl = () => {
+  return `/admin/automation-agents`;
+};
+
+export const getLegacyAutomationAgentListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyAutomationAgentListPageResponse> => {
+  const res = await fetch(getGetLegacyAutomationAgentListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAutomationAgentListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAutomationAgentListPageResponse;
+};
+
+/**
+ * @summary Read local automation-agent summary metadata without prompts, content, material IDs, bindings, or external calls
+ */
+export type listLegacyAutomationAgentsResponse200 = {
+  data: LegacyAutomationAgentListResponse;
+  status: 200;
+};
+
+export type listLegacyAutomationAgentsResponse400 = {
+  data: LegacyAutomationAgentListError;
+  status: 400;
+};
+
+export type listLegacyAutomationAgentsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyAutomationAgentsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyAutomationAgentsResponse503 = {
+  data: LegacyAutomationAgentListError;
+  status: 503;
+};
+
+export type listLegacyAutomationAgentsResponseSuccess =
+  listLegacyAutomationAgentsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyAutomationAgentsResponseError = (
+  | listLegacyAutomationAgentsResponse400
+  | listLegacyAutomationAgentsResponse401
+  | listLegacyAutomationAgentsResponse403
+  | listLegacyAutomationAgentsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyAutomationAgentsResponse =
+  | listLegacyAutomationAgentsResponseSuccess
+  | listLegacyAutomationAgentsResponseError;
+
+export const getListLegacyAutomationAgentsUrl = () => {
+  return `/api/admin/automation-agents`;
+};
+
+export const listLegacyAutomationAgents = async (
+  options?: RequestInit,
+): Promise<listLegacyAutomationAgentsResponse> => {
+  const res = await fetch(getListLegacyAutomationAgentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyAutomationAgentsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyAutomationAgentsResponse;
+};
+
+/**
+ * @summary Create one local automation-agent configuration without running or sending it
+ */
+export type createLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type createLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type createLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type createLegacyAutomationAgentResponse410 = {
+  data: LegacyAutomationAgentError;
+  status: 410;
+};
+
+export type createLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type createLegacyAutomationAgentResponseSuccess =
+  createLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyAutomationAgentResponseError = (
+  | createLegacyAutomationAgentResponse400
+  | createLegacyAutomationAgentResponse401
+  | createLegacyAutomationAgentResponse403
+  | createLegacyAutomationAgentResponse409
+  | createLegacyAutomationAgentResponse410
+  | createLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyAutomationAgentResponse =
+  | createLegacyAutomationAgentResponseSuccess
+  | createLegacyAutomationAgentResponseError;
+
+export const getCreateLegacyAutomationAgentUrl = () => {
+  return `/api/admin/automation-agents`;
+};
+
+export const createLegacyAutomationAgent = async (
+  legacyAutomationAgentCreateRequest: LegacyAutomationAgentCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyAutomationAgentResponse> => {
+  const res = await fetch(getCreateLegacyAutomationAgentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAutomationAgentCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Read one complete local automation-agent configuration
+ */
+export type getLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type getLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type getLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type getLegacyAutomationAgentResponseSuccess =
+  getLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAutomationAgentResponseError = (
+  | getLegacyAutomationAgentResponse401
+  | getLegacyAutomationAgentResponse403
+  | getLegacyAutomationAgentResponse404
+  | getLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAutomationAgentResponse =
+  | getLegacyAutomationAgentResponseSuccess
+  | getLegacyAutomationAgentResponseError;
+
+export const getGetLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}`;
+};
+
+export const getLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<getLegacyAutomationAgentResponse> => {
+  const res = await fetch(getGetLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Update the local automation-agent draft without running or sending it
+ */
+export type updateLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type updateLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type updateLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type updateLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type updateLegacyAutomationAgentResponse410 = {
+  data: LegacyAutomationAgentError;
+  status: 410;
+};
+
+export type updateLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type updateLegacyAutomationAgentResponseSuccess =
+  updateLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyAutomationAgentResponseError = (
+  | updateLegacyAutomationAgentResponse400
+  | updateLegacyAutomationAgentResponse401
+  | updateLegacyAutomationAgentResponse403
+  | updateLegacyAutomationAgentResponse404
+  | updateLegacyAutomationAgentResponse409
+  | updateLegacyAutomationAgentResponse410
+  | updateLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyAutomationAgentResponse =
+  | updateLegacyAutomationAgentResponseSuccess
+  | updateLegacyAutomationAgentResponseError;
+
+export const getUpdateLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}`;
+};
+
+export const updateLegacyAutomationAgent = async (
+  agentId: number,
+  legacyAutomationAgentUpdateRequest: LegacyAutomationAgentUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyAutomationAgentResponse> => {
+  const res = await fetch(getUpdateLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAutomationAgentUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Archive one local automation-agent configuration
+ */
+export type archiveLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentArchiveResponse;
+  status: 200;
+};
+
+export type archiveLegacyAutomationAgentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type archiveLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type archiveLegacyAutomationAgentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type archiveLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type archiveLegacyAutomationAgentResponseSuccess =
+  archiveLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyAutomationAgentResponseError = (
+  | archiveLegacyAutomationAgentResponse400
+  | archiveLegacyAutomationAgentResponse401
+  | archiveLegacyAutomationAgentResponse403
+  | archiveLegacyAutomationAgentResponse404
+  | archiveLegacyAutomationAgentResponse409
+  | archiveLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyAutomationAgentResponse =
+  | archiveLegacyAutomationAgentResponseSuccess
+  | archiveLegacyAutomationAgentResponseError;
+
+export const getArchiveLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}`;
+};
+
+export const archiveLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<archiveLegacyAutomationAgentResponse> => {
+  const res = await fetch(getArchiveLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Save local fixed content and validated local media references
+ */
+export type saveLegacyAutomationAgentFixedContentResponse200 = {
+  data: LegacyAutomationAgentDetailResponse;
+  status: 200;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse400 = {
+  data: LegacyAutomationAgentError;
+  status: 400;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse409 = {
+  data: LegacyAutomationAgentError;
+  status: 409;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponseSuccess =
+  saveLegacyAutomationAgentFixedContentResponse200 & {
+    headers: Headers;
+  };
+export type saveLegacyAutomationAgentFixedContentResponseError = (
+  | saveLegacyAutomationAgentFixedContentResponse400
+  | saveLegacyAutomationAgentFixedContentResponse401
+  | saveLegacyAutomationAgentFixedContentResponse403
+  | saveLegacyAutomationAgentFixedContentResponse404
+  | saveLegacyAutomationAgentFixedContentResponse409
+  | saveLegacyAutomationAgentFixedContentResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveLegacyAutomationAgentFixedContentResponse =
+  | saveLegacyAutomationAgentFixedContentResponseSuccess
+  | saveLegacyAutomationAgentFixedContentResponseError;
+
+export const getSaveLegacyAutomationAgentFixedContentUrl = (
+  agentId: number,
+) => {
+  return `/api/admin/automation-agents/${agentId}/fixed-content`;
+};
+
+export const saveLegacyAutomationAgentFixedContent = async (
+  agentId: number,
+  legacyAutomationAgentFixedContentRequest: LegacyAutomationAgentFixedContentRequest,
+  options?: RequestInit,
+): Promise<saveLegacyAutomationAgentFixedContentResponse> => {
+  const res = await fetch(
+    getSaveLegacyAutomationAgentFixedContentUrl(agentId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(legacyAutomationAgentFixedContentRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveLegacyAutomationAgentFixedContentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveLegacyAutomationAgentFixedContentResponse;
+};
+
+/**
+ * @summary Activate 

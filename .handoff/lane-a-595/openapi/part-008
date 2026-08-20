@@ -1,0 +1,877 @@
+}
+        placeholder_text: { type: string, maxLength: 500 }
+        validation: { $ref: "#/components/schemas/LegacyQuestionnaireValidation" }
+        options: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/LegacyQuestionnaireOption" } }
+    LegacyQuestionnaireCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, title, description, answer_display_mode, assessment_enabled, assessment_config, slug, is_disabled, questions, score_rules]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        title: { type: string, minLength: 1, maxLength: 300 }
+        description: { type: string, maxLength: 10000 }
+        answer_display_mode: { type: string, enum: [all_in_one, one_by_one] }
+        assessment_enabled: { type: boolean, enum: [false] }
+        assessment_config: { type: object, maxProperties: 0 }
+        slug: { type: string, maxLength: 200 }
+        is_disabled: { type: boolean }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/LegacyQuestionnaireQuestion" } }
+        score_rules: { type: array, maxItems: 0, items: { type: object } }
+    LegacyQuestionnaire:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest"
+        - type: object
+          required: [id, enabled, status, version, question_count, submission_count, created_at, updated_at, public_path, submitted_path]
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            enabled: { type: boolean }
+            status: { type: string, enum: [active, disabled] }
+            version: { type: integer, format: int64, minimum: 1 }
+            question_count: { type: integer, minimum: 1, maximum: 100 }
+            submission_count: { type: integer, format: int64, minimum: 0 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+            public_path: { type: string }
+            submitted_path: { type: string }
+    LegacyQuestionnaireListResponse:
+      type: object
+      required: [ok, questionnaires, items, data, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaires: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaire" } }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaire" } }
+        data: { type: object, required: [questionnaires], properties: { questionnaires: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaire" } } } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 200 }
+        offset: { type: integer, minimum: 0 }
+    LegacyQuestionnaireDetailResponse:
+      type: object
+      required: [ok, questionnaire, questions, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire: { $ref: "#/components/schemas/LegacyQuestionnaire" }
+        questions: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireQuestion" } }
+        data: { type: object, required: [questionnaire], properties: { questionnaire: { $ref: "#/components/schemas/LegacyQuestionnaire" } } }
+    LegacyQuestionnaireCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireDetailResponse"
+        - type: object
+          required: [questionnaire_id]
+          properties: { questionnaire_id: { type: integer, format: int64, minimum: 1 } }
+    LegacyQuestionnaireDuplicateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title: { type: string, maxLength: 300 }
+        slug: { type: string, maxLength: 200 }
+    LegacyQuestionnaireDisableRequest:
+      type: object
+      additionalProperties: false
+      properties: { is_disabled: { type: boolean } }
+    LegacyQuestionnaireMutationResponse:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireDetailResponse"
+        - type: object
+          required: [questionnaire_id, write_model_status]
+          properties:
+            questionnaire_id: { type: integer, format: int64, minimum: 1 }
+            write_model_status: { type: string, enum: [updated, duplicated, enabled, disabled, deleted] }
+            source_questionnaire_id: { type: integer, format: int64, minimum: 1 }
+    LegacyQuestionnaireDeleteResponse:
+      allOf:
+        - $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse"
+        - type: object
+          required: [deleted, delete_mode]
+          properties:
+            deleted: { type: boolean, enum: [true] }
+            delete_mode: { type: string, enum: [hard_delete] }
+    LegacyQuestionnairePreflightChecks:
+      type: object
+      additionalProperties: false
+      required: [wechat_oauth_configured, wecom_contact_configured, debug_session_api_enabled, wecom_tags_api_available, questionnaire_admin_ui_enabled, identity_map_available]
+      properties:
+        wechat_oauth_configured: { type: boolean, enum: [false] }
+        wecom_contact_configured: { type: boolean, enum: [false] }
+        debug_session_api_enabled: { type: boolean, enum: [false] }
+        wecom_tags_api_available: { type: boolean, enum: [false] }
+        questionnaire_admin_ui_enabled: { type: boolean, enum: [true] }
+        identity_map_available: { type: boolean, enum: [false] }
+    LegacyQuestionnairePreflightResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, checks, status]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        checks: { $ref: "#/components/schemas/LegacyQuestionnairePreflightChecks" }
+        status: { type: string, enum: [partial, ok] }
+    LegacyQuestionnaireError:
+      type: object
+      additionalProperties: false
+      required: [ok, message, detail]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        message: { type: string }
+        detail: { type: string }
+    LegacyQuestionnaireSubmissionResultsResponse:
+      type: object
+      required: [ok, questionnaire_id, results]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        results:
+          type: object
+          required: [submission_count, latest_submitted_at, average_score, rules]
+          properties:
+            submission_count: { type: integer, format: int64, minimum: 0 }
+            latest_submitted_at: { type: string, format: date-time, nullable: true }
+            average_score: { type: number, format: double }
+            rules: { type: array, maxItems: 0, items: { type: object } }
+        data: { type: object }
+        side_effect_executed: { type: boolean, enum: [false] }
+    LegacyQuestionnaireSubmissionAnswer:
+      type: object
+      required: [question_id, question_type, question_title, sort_order, selected_options, text_value]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        question_type: { type: string, enum: [single_choice, multi_choice, textarea, mobile] }
+        question_title: { type: string, minLength: 1, maxLength: 500 }
+        sort_order: { type: integer, minimum: 0 }
+        selected_options:
+          type: array
+          items:
+            type: object
+            required: [option_id, option_text]
+            properties:
+              option_id: { type: integer, format: int64, minimum: 1 }
+              option_text: { type: string, maxLength: 500 }
+        text_value: { type: string, maxLength: 10000 }
+    LegacyQuestionnaireSubmission:
+      type: object
+      required: [id, submission_id, questionnaire_id, submitted_at, created_at, respondent_key, openid, unionid, external_userid, customer_name, follow_user_userid, matched_by, mobile, source_channel, campaign_id, staff_id, score, total_score, final_tags, result_token, redirect_url_snapshot, answers]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        respondent_key: { type: string, maxLength: 200 }
+        openid: { type: string, maxLength: 200 }
+        unionid: { type: string, maxLength: 200 }
+        external_userid: { type: string, maxLength: 200 }
+        customer_name: { type: string, maxLength: 300 }
+        follow_user_userid: { type: string, maxLength: 200 }
+        matched_by: { type: string, maxLength: 50 }
+        mobile: { type: string, maxLength: 32 }
+        source_channel: { type: string, maxLength: 100 }
+        campaign_id: { type: string, maxLength: 200 }
+        staff_id: { type: string, maxLength: 200 }
+        score: { type: number, format: double }
+        total_score: { type: number, format: double }
+        final_tags: { type: array, items: { type: string, maxLength: 200 } }
+        result_token: { type: string, maxLength: 200 }
+        redirect_url_snapshot: { type: string, maxLength: 2000 }
+        answers: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireSubmissionAnswer" } }
+    LegacyQuestionnaireSubmissionListResponse:
+      type: object
+      required: [ok, questionnaire_id, items, submissions, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireSubmission" } }
+        submissions: { type: array, items: { $ref: "#/components/schemas/LegacyQuestionnaireSubmission" } }
+        data: { type: object }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+        side_effect_executed: { type: boolean, enum: [false] }
+    LegacyImageCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [data_url, file_name]
+      properties:
+        data_url:
+          type: string
+          description: One canonical standard-base64 data URL with an exact lower-case image/png, image/jpeg, or image/gif prefix. Raw bytes and alternate alphabets are rejected.
+          pattern: '^data:image/(png|jpeg|gif);base64,[A-Za-z0-9+/]+={0,2}$'
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        name: { type: string, maxLength: 200, default: '' }
+        description: { type: string, maxLength: 10000, default: '' }
+        tags:
+          type: array
+          default: []
+          maxItems: 50
+          items: { type: string, minLength: 1, maxLength: 64, pattern: '^[^,]*$' }
+        category: { type: string, maxLength: 200, default: '' }
+        enabled: { type: boolean, default: true }
+    LegacyImageCreateItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, file_size, mime_type, width, height, enabled, description, tags, category, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        enabled: { type: boolean }
+        description: { type: string, maxLength: 10000 }
+        tags: { type: array, maxItems: 50, items: { type: string, maxLength: 64 } }
+        category: { type: string, maxLength: 200 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+    LegacyImageCreateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, item, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyImageCreateItem" }
+        source_status: { type: string, enum: [local_repository_write] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageCreateError:
+      type: object
+      additionalProperties: false
+      required: [code, message, request_id]
+      properties:
+        code: { type: string, enum: [MALFORMED_REQUEST, CONFLICT, DEPENDENCY_UNAVAILABLE] }
+        message: { type: string }
+        request_id: { type: string, minLength: 1 }
+    LegacyImageListItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, mime_type, file_size, enabled, description, tags, category, width, height, created_at, updated_at, thumb_160_url, thumb_320_url, thumb_url, preview_url, mobile_1080_url, large_1440_url, original_url]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        enabled: { type: boolean, description: Actual persisted enabled state. }
+        description: { type: string, maxLength: 10000 }
+        tags:
+          type: array
+          maxItems: 50
+          items: { type: string, maxLength: 64 }
+        category: { type: string, maxLength: 200 }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+        thumb_160_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_160$' }
+        thumb_320_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        thumb_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        preview_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        mobile_1080_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        large_1440_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/large_1440$' }
+        original_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/original$' }
+    LegacyImageListSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset, count, has_more, next_offset, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyImageListItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int64, minimum: 1, maximum: 500 }
+        offset: { type: integer, format: int64, minimum: 0 }
+        count: { type: integer, format: int64, minimum: 0, maximum: 500 }
+        has_more: { type: boolean }
+        next_offset: { type: integer, format: int64, minimum: 0, nullable: true }
+        source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageFacetsSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, categories, tags, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        categories: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string, maxLength: 64 } }
+        source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageDetailItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, mime_type, file_size, description, category, width, height, created_at, updated_at, content_type, tags, enabled, source, source_url, thumb_media_id, thumb_media_id_expires_at, ai_metadata, thumb_160_url, thumb_320_url, thumb_url, preview_url, mobile_1080_url, large_1440_url, original_url]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        description: { type: string, maxLength: 10000 }
+        category: { type: string, maxLength: 200 }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+        content_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        tags:
+          type: array
+          maxItems: 50
+          items: { type: string, maxLength: 64 }
+        enabled: { type: boolean, description: Actual persisted enabled state; disabled rows remain directly readable by image detail. }
+        source: { type: string, enum: [upload] }
+        source_url: { type: string, enum: [''] }
+        thumb_media_id: { type: string, enum: [''] }
+        thumb_media_id_expires_at: { type: string, enum: [''] }
+        ai_metadata: { type: object, additionalProperties: false }
+        thumb_160_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_160$' }
+        thumb_320_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        thumb_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        preview_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        mobile_1080_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        large_1440_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/large_1440$' }
+        original_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/original$' }
+        variant_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/(thumb_160|thumb_320|mobile_1080|large_1440|original)$' }
+        data_base64: { type: string, minLength: 1 }
+        data_url: { type: string, pattern: '^data:image/(png|jpeg|gif);base64,.+$' }
+    LegacyImageDetailSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, item, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyImageDetailItem" }
+        source_status: { type: string, enum: [next_media_library] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageDeleteReferencesCleared:
+      type: object
+      additionalProperties: false
+      required: [miniprograms_cleared, campaign_steps_cleared]
+      properties:
+        miniprograms_cleared: { type: integer, minimum: 0, maximum: 0 }
+        campaign_steps_cleared: { type: integer, minimum: 0, maximum: 0 }
+    LegacyImageDeleteSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, deleted, hard_deleted, id, references_cleared, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        deleted: { type: boolean, enum: [true] }
+        hard_deleted: { type: boolean, enum: [true] }
+        id: { type: integer, format: int64, minimum: 1 }
+        references_cleared: { $ref: "#/components/schemas/LegacyImageDeleteReferencesCleared" }
+        source_status: { type: string, enum: [local_delete] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageDeleteReferenceID:
+      type: object
+      additionalProperties: false
+      required: [id]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+    LegacyImageDeleteReferences:
+      type: object
+      additionalProperties: false
+      required: [miniprograms, campaign_steps, group_invites, automation_agents, channels, import_preflights]
+      properties:
+        miniprograms: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        campaign_steps: { type: array, maxItems: 0, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        group_invites: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        automation_agents: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        channels: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        import_preflights: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+    LegacyImageDeleteConflict:
+      type: object
+      additionalProperties: false
+      required: [ok, error, references, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [image_has_references] }
+        references: { $ref: "#/components/schemas/LegacyImageDeleteReferences" }
+        source_status: { type: string, enum: [local_delete] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageMetadataUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, maxLength: 200, description: TrimSpace; absent leaves the stored value unchanged. }
+        description: { type: string, maxLength: 10000, description: TrimSpace; absent leaves the stored value unchanged. }
+        tags:
+          type: array
+          maxItems: 50
+          description: UTF-8 tags are TrimSpace-normalized and exact-first-occurrence deduplicated before comma-joined persistence.
+          items: { type: string, minLength: 1, maxLength: 64, pattern: '^[^,]*$' }
+        category: { type: string, maxLength: 200, description: TrimSpace; absent leaves the stored value unchanged. }
+        enabled: { type: boolean, description: Absent leaves the stored value unchanged. }
+    LegacyImageMetadataUpdateItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, mime_type, file_size, enabled, description, tags, category, width, height, created_at, updated_at, content_type, source, source_url, thumb_media_id, thumb_media_id_expires_at, ai_metadata, thumb_160_url, thumb_320_url, thumb_url, preview_url, mobile_1080_url, large_1440_url, original_url]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        enabled: { type: boolean, description: Actual persisted enabled state. }
+        description: { type: string, maxLength: 10000 }
+        tags: { type: array, maxItems: 50, items: { type: string, maxLength: 64 } }
+        category: { type: string, maxLength: 200 }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        created_at: { type: string, format: date-time, minLength: 1 }
+        updated_at: { type: string, format: date-time, minLength: 1 }
+        content_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        source: { type: string, enum: [upload] }
+        source_url: { type: string, enum: [''] }
+        thumb_media_id: { type: string, enum: [''] }
+        thumb_media_id_expires_at: { type: string, enum: [''] }
+        ai_metadata: { type: object, additionalProperties: false }
+        thumb_160_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_160$' }
+        thumb_320_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        thumb_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/thumb_320$' }
+        preview_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        mobile_1080_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/mobile_1080$' }
+        large_1440_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/large_1440$' }
+        original_url: { type: string, pattern: '^/api/admin/image-library/[1-9][0-9]*/variants/original$' }
+    LegacyImageMetadataUpdateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, item, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyImageMetadataUpdateItem" }
+        source_status: { type: string, enum: [local_repository_write] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageUploadItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, file_size, mime_type, width, height, description, tags, category, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string }
+        file_name: { type: string, minLength: 1, maxLength: 255 }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        mime_type: { type: string, enum: [image/png, image/jpeg, image/gif] }
+        width: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        height: { type: integer, format: int32, minimum: 1, maximum: 10000 }
+        description: { type: string }
+        tags: { type: string }
+        category: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LegacyImageUploadSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, item, source_status, route_owner, fallback_used, real_external_call_executed, storage_adapter_mode, adapter_mode]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyImageUploadItem" }
+        source_status: { type: string, enum: [local_upload] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        storage_adapter_mode: { type: string, enum: [postgresql] }
+        adapter_mode: { type: string, enum: [postgresql] }
+    LegacyImageUploadError:
+      type: object
+      additionalProperties: false
+      required: [ok, error, source_status, route_owner, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, minLength: 1 }
+        source_status: { type: string, enum: [next_media_library_error] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyGroupInviteFields:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1 }
+        title: { type: string, minLength: 1, maxLength: 128, x-utf8-max-bytes: 128 }
+        description: { type: string, maxLength: 512, x-utf8-max-bytes: 512 }
+        join_url: { type: string, format: uri, maxLength: 2048, pattern: '^https://work[.]weixin[.]qq[.]com/gm/[^?#]+$' }
+        cover_image_id: { type: integer, format: int64, minimum: 0 }
+        enabled: { type: boolean }
+    LegacyGroupInviteCreateRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyGroupInviteFields"
+        - type: object
+          required: [title, join_url]
+    LegacyGroupInviteUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyGroupInviteFields"
+        - type: object
+          minProperties: 1
+    LegacyGroupInvite:
+      allOf:
+        - $ref: "#/components/schemas/LegacyGroupInviteFields"
+        - type: object
+          required: [id, name, title, description, join_url, enabled, created_by, updated_by, version, created_at, updated_at]
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            created_by: { type: integer, format: int64, minimum: 1 }
+            updated_by: { type: integer, format: int64, minimum: 1 }
+            version: { type: integer, format: int64, minimum: 1 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+            archived_at: { type: string, format: date-time }
+    LegacyGroupInviteListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, group_invites, total, limit, offset, provider_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyGroupInvite" } }
+        group_invites: { type: array, items: { $ref: "#/components/schemas/LegacyGroupInvite" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        provider_call_executed: { type: boolean, enum: [false] }
+    LegacyGroupInviteDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, group_invite, provider_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyGroupInvite" }
+        group_invite: { $ref: "#/components/schemas/LegacyGroupInvite" }
+        provider_call_executed: { type: boolean, enum: [false] }
+    LegacyGroupInviteMutationResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, item, group_invite, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyGroupInvite" }
+        group_invite: { $ref: "#/components/schemas/LegacyGroupInvite" }
+        item_id: { type: integer, format: int64, minimum: 1 }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyGroupInviteArchiveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, archived, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyGroupInvite" }
+        archived: { type: boolean, enum: [true] }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyHXCSenderConfig:
+      type: object
+      additionalProperties: false
+      required: [id, sender_userid, display_name, priority, is_active, created_at, updated_at]
+      properties:
+        id: { type: string }
+        sender_userid: { type: string, minLength: 1 }
+        display_name: { type: string, maxLength: 200 }
+        priority: { type: integer, minimum: 0, maximum: 100000 }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LegacyHXCDirectoryCandidate:
+      type: object
+      additionalProperties: false
+      required: [wecom_userid, display_name, position, wecom_status, is_sender, priority, is_active]
+      properties:
+        wecom_userid: { type: string, minLength: 1 }
+        display_name: { type: string, minLength: 1, maxLength: 200 }
+        position: { type: string, enum: [""] }
+        wecom_status: { type: integer, enum: [0] }
+        is_sender: { type: boolean }
+        priority: { type: integer, minimum: 0, maximum: 100000 }
+        is_active: { type: boolean }
+    LegacyHXCSenderReadResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, source_status, route_owner, fallback_used, real_external_call_executed, send_configs, directory_candidates, members, directory_count, sender_count, active_sender_count, last_synced_at, warnings, degraded, empty_state]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        source_status: { type: string, enum: [v2_local_staff] }
+        route_owner: { type: string, enum: [aicrm_v2] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        send_configs: { type: array, items: { $ref: "#/components/schemas/LegacyHXCSenderConfig" } }
+        directory_candidates: { type: array, items: { $ref: "#/components/schemas/LegacyHXCDirectoryCandidate" } }
+        members: { type: array, items: { $ref: "#/components/schemas/LegacyHXCDirectoryCandidate" } }
+        directory_count: { type: integer, minimum: 0 }
+        sender_count: { type: integer, minimum: 0 }
+        active_sender_count: { type: integer, minimum: 0 }
+        last_synced_at: { type: string, description: UTC RFC3339Nano or empty when no eligible staff. }
+        warnings: { type: array, minItems: 1, maxItems: 1, items: { type: string, enum: ["HXC senders use the local staff projection; no WeCom directory call was executed."] } }
+        degraded: { type: boolean, enum: [false] }
+        empty_state: { type: boolean }
+    LegacyHXCSenderSaveRequest:
+      type: object
+      additionalProperties: false
+      required: [id, sender_userid, display_name, priority, is_active]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 200 }
+        sender_userid: { type: string, minLength: 1, maxLength: 200 }
+        display_name: { type: string, maxLength: 200 }
+        priority: { type: integer, minimum: 0, maximum: 100000 }
+        is_active: { type: boolean }
+    LegacyHXCSenderReorderRequest:
+      type: object
+      additionalProperties: false
+      required: [ids]
+      properties:
+        ids: { type: array, minItems: 1, maxItems: 1000, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 200 } }
+    LegacyHXCSenderMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, operation, items, local_only, provider_call_executed, real_external_call_executed, readback_confirmed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        operation: { type: string, enum: [saved, reordered, archived] }
+        item: { $ref: "#/components/schemas/LegacyHXCSenderConfig" }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyHXCSenderConfig" } }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        readback_confirmed: { type: boolean, enum: [true] }
+    LegacyHXCSenderMutationError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [400, 409, 503] }
+        error_code: { type: string, enum: [invalid_hxc_send_config, hxc_send_config_conflict, hxc_send_config_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyHXCSenderUnavailableResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [503] }
+        error_code: { type: string, enum: [hxc_send_config_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyDeliveryLineageRecord:
+      type: object
+      additionalProperties: false
+      required: [lineage_id, record_kind, internal_state, attempt_count, updated_at, external_delivery, external_receipt]
+      properties:
+        lineage_id: { type: string, pattern: '^(outbound-task:[1-9][0-9]*|event-delivery:v1:[0-9a-f]{64})$' }
+        record_kind: { type: string, enum: [outbound_task, event_delivery] }
+        internal_state: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled, processing, completed] }
+        attempt_count: { type: integer, minimum: 0 }
+        updated_at: { type: string, format: date-time }
+        external_delivery: { type: string, enum: [unknown] }
+        external_receipt: { type: string, enum: [unknown] }
+    LegacyDeliveryLineageInterpretation:
+      type: object
+      additionalProperties: false
+      required: [kind, external_delivery, external_receipt]
+      properties:
+        kind: { type: string, enum: [internal_processing_only] }
+        external_delivery: { type: string, enum: [unknown] }
+        external_receipt: { type: string, enum: [unknown] }
+    LegacyDeliveryLineageResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, limit, offset, has_more, interpretation]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyDeliveryLineageRecord" } }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        interpretation: { $ref: "#/components/schemas/LegacyDeliveryLineageInterpretation" }
+    LegacyDeliveryLineageUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [503] }
+        error_code: { type: string, enum: [delivery_lineage_unavailable] }
+    LegacyCustomerProfileTag:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+    LegacyCustomerProfileTagsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, tags]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        tags: { type: array, items: { $ref: "#/components/schemas/LegacyCustomerProfileTag" } }
+    LegacyCustomerProfileTagsNotFound:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [404] }
+        error_code: { type: string, enum: [customer_not_found] }
+    LegacyCustomerProfileTagsConflict:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [409] }
+        error_code: { type: string, enum: [identity_hint_conflict] }
+    LegacyCustomerProfileTagsValidationError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [422] }
+        error_code: { type: string, enum: [invalid_identity_hint, unsupported_identity_hint] }
+    LegacyCustomerProfileTagsUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [503] }
+        error_code: { type: string, enum: [customer_profile_tags_unavailable] }
+    LegacyMiniProgramCreateRequest:
+      type: object
+      additionalProperties: false
+      anyOf:
+        - { required: [appid, pagepath, name] }
+        - { required: [appid, pagepath, title] }
+        - { required: [appid, page_path, name] }
+        - { required: [appid, page_path, title] }
+        - { required: [app_id, pagepath, name] }
+        - { required: [app_id, pagepath, title] }
+        - { required: [app_id, page_path, name] }
+        - { required: [app_id, page_path, title] }
+      properties:
+        name: { type: string, maxLength: 200 }
+        appid: { type: string, minLength: 1, maxLength: 120 }
+        app_id: { type: string, minLength: 1, maxLength: 120 }
+        pagepath: { type: string, minLength: 1, maxLength: 500 }
+        page_path: { type: string, minLength: 1, maxLength: 500 }
+        title: { type: string, maxLength: 200 }
+        thumb_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        resolve_thumb_media: { type: boolean, default: true }
+        enabled: { type: boolean, default: true }
+    LegacyMiniProgramUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 200 }
+        appid: { type: string, minLength: 1, maxLength: 120 }
+        app_id: { type: string, minLength: 1, maxLength: 120 }
+        pagepath: { type: string, minLength: 1, maxLength: 500 }
+        page_path: { type: string, minLength: 1, maxLength: 500 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        thumb_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        resolve_thumb_media: { type: boolean }
+        enabled: { type: boolean }
+    LegacyMiniProgram:
+      type: object
+      additionalProperties: false
+      required: [id, name, appid, pagepath, page_path, title, thumb_image_url, thumb_image_base64, thumb_media_id, enabled, created_at, updated_at, created_by, updated_by, version]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, maxLength: 200 }
+        appid: { type: string, minLength: 1, maxLength: 120 }
+        pagepath: { type: string, minLength: 1, maxLength: 500 }
+        page_path: { type: string, minLength: 1, maxLength: 500 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        thumb_image_url: { type: string, maxLength: 2048 }
+        thumb_image_base64: { type: string, enum: [""] }
+        thumb_media_id: { type: string, maxLength: 255, readOnly: true }
+        thumb_media_id_expires_at: { type: string, format: date-time, readOnly: true }
+        thumb_image_id: { type: integer, format: int64, minimum: 1 }
+        enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 1 }
+    LegacyMiniProgramThumbnailResolution:
+      type: object
+      additionalProperties: false
+      required: [status, cache_owner, cache_receipt, side_effect_executed, real_external_call_executed]
+      properties:
+        status: { type: string, enum: [resolved, not_available, outcome_unknown] }
+        cache_owner: { type: string, enum: [media.thumbnail_cache] }
+        cache_receipt: { type: string, minLength: 1, maxLength: 512 }
+        thumb_media_id: { type: string, minLength: 1, maxLength: 255, readOnly: true }
+        thumb_media_id_expires_at: { type: string, format: date-time, readOnly: true }
+        side_effect_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, miniprograms, total, limit, offset, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyMiniProgram" } }
+        miniprograms: { type: array, items: { $ref: "#/components/schemas/LegacyMiniProgram" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1 }
+        offset: { type: integer, minimum: 0 }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, miniprogram, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        miniprogram: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, miniprogram, item_id, changed, thumb_resolve, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        miniprogram: { $ref: "#/components/schemas/LegacyMiniProgram" }
+        item_id: { type: integer, format: int64, minimum: 1 }
+        changed: { type: boolean }
+        thumb_resolve: { allOf: [{ $ref: "#/components/schemas/LegacyMiniProgramThumbnailResolution" }], nullable: true }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyMiniProgramDeleteResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, id, item_id, deleted, local_only, provider_call_executed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        id: { type: integer, format: int64, minimum: 1 }
+        item_id: { type: integer, format: int64, minimum: 1 }
+        deleted: { type: boolean, e

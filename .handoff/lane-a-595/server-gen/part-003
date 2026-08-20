@@ -1,0 +1,1138 @@
+{
+	Definition  *SegmentDefinition               `json:"definition,omitempty"`
+	Name        *string                          `json:"name,omitempty"`
+	RefreshCron *string                          `json:"refresh_cron,omitempty"`
+	RefreshMode *UpdateSegmentRequestRefreshMode `json:"refresh_mode,omitempty"`
+}
+
+// UpdateSegmentRequestRefreshMode defines model for UpdateSegmentRequest.RefreshMode.
+type UpdateSegmentRequestRefreshMode string
+
+// AddedAfterFilter defines model for AddedAfterFilter.
+type AddedAfterFilter = time.Time
+
+// AddedBeforeFilter defines model for AddedBeforeFilter.
+type AddedBeforeFilter = time.Time
+
+// AutomationAgentID defines model for AutomationAgentID.
+type AutomationAgentID = int64
+
+// CSRFToken defines model for CSRFToken.
+type CSRFToken = string
+
+// ChannelIDFilter defines model for ChannelIDFilter.
+type ChannelIDFilter = int64
+
+// Cursor defines model for Cursor.
+type Cursor = string
+
+// CustomerID defines model for CustomerID.
+type CustomerID = int64
+
+// CustomerKeyword defines model for CustomerKeyword.
+type CustomerKeyword = string
+
+// EntitlementID defines model for EntitlementID.
+type EntitlementID = int64
+
+// EntitlementLimit defines model for EntitlementLimit.
+type EntitlementLimit = int
+
+// IdempotencyKey defines model for IdempotencyKey.
+type IdempotencyKey = string
+
+// IsDeletedFilter defines model for IsDeletedFilter.
+type IsDeletedFilter = bool
+
+// LastInteractAfterFilter defines model for LastInteractAfterFilter.
+type LastInteractAfterFilter = time.Time
+
+// LastInteractBeforeFilter defines model for LastInteractBeforeFilter.
+type LastInteractBeforeFilter = time.Time
+
+// Limit defines model for Limit.
+type Limit = int
+
+// MergeReviewID defines model for MergeReviewID.
+type MergeReviewID = int64
+
+// OwnerStaffIDFilter defines model for OwnerStaffIDFilter.
+type OwnerStaffIDFilter = int64
+
+// ProductID defines model for ProductID.
+type ProductID = int64
+
+// PublicSurveySlug defines model for PublicSurveySlug.
+type PublicSurveySlug = string
+
+// PushCenterBusinessIDFilter defines model for PushCenterBusinessIDFilter.
+type PushCenterBusinessIDFilter = string
+
+// PushCenterBusinessTypeFilter defines model for PushCenterBusinessTypeFilter.
+type PushCenterBusinessTypeFilter = string
+
+// PushCenterCreatedFromFilter defines model for PushCenterCreatedFromFilter.
+type PushCenterCreatedFromFilter = string
+
+// PushCenterCreatedToFilter defines model for PushCenterCreatedToFilter.
+type PushCenterCreatedToFilter = string
+
+// PushCenterEffectTypeFilter defines model for PushCenterEffectTypeFilter.
+type PushCenterEffectTypeFilter = string
+
+// PushCenterExternalUserIDFilter defines model for PushCenterExternalUserIDFilter.
+type PushCenterExternalUserIDFilter = string
+
+// PushCenterIdempotencyKeyFilter defines model for PushCenterIdempotencyKeyFilter.
+type PushCenterIdempotencyKeyFilter = string
+
+// PushCenterOwnerUserIDFilter defines model for PushCenterOwnerUserIDFilter.
+type PushCenterOwnerUserIDFilter = string
+
+// PushCenterSectionFilter defines model for PushCenterSectionFilter.
+type PushCenterSectionFilter = string
+
+// PushCenterSourceModuleFilter defines model for PushCenterSourceModuleFilter.
+type PushCenterSourceModuleFilter = string
+
+// PushCenterSourceRouteFilter defines model for PushCenterSourceRouteFilter.
+type PushCenterSourceRouteFilter = string
+
+// PushCenterStatusFilter defines model for PushCenterStatusFilter.
+type PushCenterStatusFilter = string
+
+// PushCenterTargetIDFilter defines model for PushCenterTargetIDFilter.
+type PushCenterTargetIDFilter = string
+
+// PushCenterTargetTypeFilter defines model for PushCenterTargetTypeFilter.
+type PushCenterTargetTypeFilter = string
+
+// PushCenterTraceIDFilter defines model for PushCenterTraceIDFilter.
+type PushCenterTraceIDFilter = string
+
+// QuestionnaireID defines model for QuestionnaireID.
+type QuestionnaireID = int64
+
+// SegmentID defines model for SegmentID.
+type SegmentID = int64
+
+// StageID defines model for StageID.
+type StageID = int64
+
+// StageIDFilter defines model for StageIDFilter.
+type StageIDFilter = int64
+
+// TagGroupID defines model for TagGroupID.
+type TagGroupID = int64
+
+// TagID defines model for TagID.
+type TagID = int64
+
+// TagIDFilter defines model for TagIDFilter.
+type TagIDFilter = int64
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorResponse
+
+// Conflict defines model for Conflict.
+type Conflict = ErrorResponse
+
+// Forbidden defines model for Forbidden.
+type Forbidden = ErrorResponse
+
+// NotFound defines model for NotFound.
+type NotFound = ErrorResponse
+
+// PublicSurveyConflict defines model for PublicSurveyConflict.
+type PublicSurveyConflict = PublicSurveyError
+
+// PublicSurveyGetOnly defines model for PublicSurveyGetOnly.
+type PublicSurveyGetOnly = PublicSurveyError
+
+// PublicSurveyInvalidInput defines model for PublicSurveyInvalidInput.
+type PublicSurveyInvalidInput = PublicSurveyError
+
+// PublicSurveyNotFound defines model for PublicSurveyNotFound.
+type PublicSurveyNotFound = PublicSurveyError
+
+// PublicSurveyPostOnly defines model for PublicSurveyPostOnly.
+type PublicSurveyPostOnly = PublicSurveyError
+
+// PublicSurveyRateLimited defines model for PublicSurveyRateLimited.
+type PublicSurveyRateLimited = PublicSurveyError
+
+// PublicSurveyUnavailable defines model for PublicSurveyUnavailable.
+type PublicSurveyUnavailable = PublicSurveyError
+
+// ServiceUnavailable defines model for ServiceUnavailable.
+type ServiceUnavailable = ErrorResponse
+
+// Unauthorized defines model for Unauthorized.
+type Unauthorized = ErrorResponse
+
+// UnprocessableEntity defines model for UnprocessableEntity.
+type UnprocessableEntity = ErrorResponse
+
+// ListAutomationTriggerRunsParams defines parameters for ListAutomationTriggerRuns.
+type ListAutomationTriggerRunsParams struct {
+	Page          *int32                                     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize      *int32                                     `form:"page_size,omitempty" json:"page_size,omitempty"`
+	RequestId     *string                                    `form:"request_id,omitempty" json:"request_id,omitempty"`
+	RunId         *string                                    `form:"run_id,omitempty" json:"run_id,omitempty"`
+	AgentCode     *string                                    `form:"agent_code,omitempty" json:"agent_code,omitempty"`
+	RunStatus     *string                                    `form:"run_status,omitempty" json:"run_status,omitempty"`
+	TriggerSource *string                                    `form:"trigger_source,omitempty" json:"trigger_source,omitempty"`
+	Unionid       *string                                    `form:"unionid,omitempty" json:"unionid,omitempty"`
+	Userid        *string                                    `form:"userid,omitempty" json:"userid,omitempty"`
+	StartedAfter  *time.Time                                 `form:"started_after,omitempty" json:"started_after,omitempty"`
+	StartedBefore *time.Time                                 `form:"started_before,omitempty" json:"started_before,omitempty"`
+	HasError      *bool                                      `form:"has_error,omitempty" json:"has_error,omitempty"`
+	Visibility    *ListAutomationTriggerRunsParamsVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
+}
+
+// ListAutomationTriggerRunsParamsVisibility defines parameters for ListAutomationTriggerRuns.
+type ListAutomationTriggerRunsParamsVisibility string
+
+// GetLegacyPushCenterSectionsParams defines parameters for GetLegacyPushCenterSections.
+type GetLegacyPushCenterSectionsParams struct {
+	Section        *PushCenterSectionFilter        `form:"section,omitempty" json:"section,omitempty"`
+	EffectType     *PushCenterEffectTypeFilter     `form:"effect_type,omitempty" json:"effect_type,omitempty"`
+	Status         *PushCenterStatusFilter         `form:"status,omitempty" json:"status,omitempty"`
+	BusinessType   *PushCenterBusinessTypeFilter   `form:"business_type,omitempty" json:"business_type,omitempty"`
+	BusinessId     *PushCenterBusinessIDFilter     `form:"business_id,omitempty" json:"business_id,omitempty"`
+	TargetType     *PushCenterTargetTypeFilter     `form:"target_type,omitempty" json:"target_type,omitempty"`
+	TargetId       *PushCenterTargetIDFilter       `form:"target_id,omitempty" json:"target_id,omitempty"`
+	ExternalUserid *PushCenterExternalUserIDFilter `form:"external_userid,omitempty" json:"external_userid,omitempty"`
+	OwnerUserid    *PushCenterOwnerUserIDFilter    `form:"owner_userid,omitempty" json:"owner_userid,omitempty"`
+	TraceId        *PushCenterTraceIDFilter        `form:"trace_id,omitempty" json:"trace_id,omitempty"`
+	IdempotencyKey *PushCenterIdempotencyKeyFilter `form:"idempotency_key,omitempty" json:"idempotency_key,omitempty"`
+	SourceModule   *PushCenterSourceModuleFilter   `form:"source_module,omitempty" json:"source_module,omitempty"`
+	SourceRoute    *PushCenterSourceRouteFilter    `form:"source_route,omitempty" json:"source_route,omitempty"`
+	CreatedFrom    *PushCenterCreatedFromFilter    `form:"created_from,omitempty" json:"created_from,omitempty"`
+	CreatedTo      *PushCenterCreatedToFilter      `form:"created_to,omitempty" json:"created_to,omitempty"`
+}
+
+// GetLegacyPushCenterStatsParams defines parameters for GetLegacyPushCenterStats.
+type GetLegacyPushCenterStatsParams struct {
+	Section        *PushCenterSectionFilter        `form:"section,omitempty" json:"section,omitempty"`
+	EffectType     *PushCenterEffectTypeFilter     `form:"effect_type,omitempty" json:"effect_type,omitempty"`
+	Status         *PushCenterStatusFilter         `form:"status,omitempty" json:"status,omitempty"`
+	BusinessType   *PushCenterBusinessTypeFilter   `form:"business_type,omitempty" json:"business_type,omitempty"`
+	BusinessId     *PushCenterBusinessIDFilter     `form:"business_id,omitempty" json:"business_id,omitempty"`
+	TargetType     *PushCenterTargetTypeFilter     `form:"target_type,omitempty" json:"target_type,omitempty"`
+	TargetId       *PushCenterTargetIDFilter       `form:"target_id,omitempty" json:"target_id,omitempty"`
+	ExternalUserid *PushCenterExternalUserIDFilter `form:"external_userid,omitempty" json:"external_userid,omitempty"`
+	OwnerUserid    *PushCenterOwnerUserIDFilter    `form:"owner_userid,omitempty" json:"owner_userid,omitempty"`
+	TraceId        *PushCenterTraceIDFilter        `form:"trace_id,omitempty" json:"trace_id,omitempty"`
+	IdempotencyKey *PushCenterIdempotencyKeyFilter `form:"idempotency_key,omitempty" json:"idempotency_key,omitempty"`
+	SourceModule   *PushCenterSourceModuleFilter   `form:"source_module,omitempty" json:"source_module,omitempty"`
+	SourceRoute    *PushCenterSourceRouteFilter    `form:"source_route,omitempty" json:"source_route,omitempty"`
+	CreatedFrom    *PushCenterCreatedFromFilter    `form:"created_from,omitempty" json:"created_from,omitempty"`
+	CreatedTo      *PushCenterCreatedToFilter      `form:"created_to,omitempty" json:"created_to,omitempty"`
+}
+
+// GetQuestionnairePublicAnalyticsParams defines parameters for GetQuestionnairePublicAnalytics.
+type GetQuestionnairePublicAnalyticsParams struct {
+	// DefinitionVersion Omit to read the current public snapshot; provide a positive version to read one immutable historical snapshot.
+	DefinitionVersion *int64 `form:"definition_version,omitempty" json:"definition_version,omitempty"`
+}
+
+// DisableQuestionnairePublicDefinitionParams defines parameters for DisableQuestionnairePublicDefinition.
+type DisableQuestionnairePublicDefinitionParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PublishQuestionnairePublicDefinitionParams defines parameters for PublishQuestionnairePublicDefinition.
+type PublishQuestionnairePublicDefinitionParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// LogoutAdminParams defines parameters for LogoutAdmin.
+type LogoutAdminParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// ListCustomersParams defines parameters for ListCustomers.
+type ListCustomersParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor             *Cursor                   `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit              *Limit                    `form:"limit,omitempty" json:"limit,omitempty"`
+	Keyword            *CustomerKeyword          `form:"keyword,omitempty" json:"keyword,omitempty"`
+	OwnerStaffId       *OwnerStaffIDFilter       `form:"owner_staff_id,omitempty" json:"owner_staff_id,omitempty"`
+	StageId            *StageIDFilter            `form:"stage_id,omitempty" json:"stage_id,omitempty"`
+	ChannelId          *ChannelIDFilter          `form:"channel_id,omitempty" json:"channel_id,omitempty"`
+	TagId              *TagIDFilter              `form:"tag_id,omitempty" json:"tag_id,omitempty"`
+	IsDeleted          *IsDeletedFilter          `form:"is_deleted,omitempty" json:"is_deleted,omitempty"`
+	AddedAfter         *AddedAfterFilter         `form:"added_after,omitempty" json:"added_after,omitempty"`
+	AddedBefore        *AddedBeforeFilter        `form:"added_before,omitempty" json:"added_before,omitempty"`
+	LastInteractAfter  *LastInteractAfterFilter  `form:"last_interact_after,omitempty" json:"last_interact_after,omitempty"`
+	LastInteractBefore *LastInteractBeforeFilter `form:"last_interact_before,omitempty" json:"last_interact_before,omitempty"`
+}
+
+// UpdateCustomerParams defines parameters for UpdateCustomer.
+type UpdateCustomerParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// GetCustomerActivityAnalyticsParams defines parameters for GetCustomerActivityAnalytics.
+type GetCustomerActivityAnalyticsParams struct {
+	WindowDays *GetCustomerActivityAnalyticsParamsWindowDays `form:"window_days,omitempty" json:"window_days,omitempty"`
+}
+
+// GetCustomerActivityAnalyticsParamsWindowDays defines parameters for GetCustomerActivityAnalytics.
+type GetCustomerActivityAnalyticsParamsWindowDays int32
+
+// ListCustomerChatActivityParams defines parameters for ListCustomerChatActivity.
+type ListCustomerChatActivityParams struct {
+	ChatType *ListCustomerChatActivityParamsChatType `form:"chat_type,omitempty" json:"chat_type,omitempty"`
+
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int32  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCustomerChatActivityParamsChatType defines parameters for ListCustomerChatActivity.
+type ListCustomerChatActivityParamsChatType string
+
+// GetCustomerContextParams defines parameters for GetCustomerContext.
+type GetCustomerContextParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCustomerEventsParams defines parameters for ListCustomerEvents.
+type ListCustomerEventsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCustomerMergeHistoryParams defines parameters for ListCustomerMergeHistory.
+type ListCustomerMergeHistoryParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int32  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// SetCustomerStageParams defines parameters for SetCustomerStage.
+type SetCustomerStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// RemoveCustomerTagParams defines parameters for RemoveCustomerTag.
+type RemoveCustomerTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// AddCustomerTagParams defines parameters for AddCustomerTag.
+type AddCustomerTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// BindIdentityParams defines parameters for BindIdentity.
+type BindIdentityParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// IngestIdentityEventParams defines parameters for IngestIdentityEvent.
+type IngestIdentityEventParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListIdentityMergeReviewsParams defines parameters for ListIdentityMergeReviews.
+type ListIdentityMergeReviewsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ApproveIdentityMergeReviewParams defines parameters for ApproveIdentityMergeReview.
+type ApproveIdentityMergeReviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RejectIdentityMergeReviewParams defines parameters for RejectIdentityMergeReview.
+type RejectIdentityMergeReviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RevokeProductLocalEntitlementParams defines parameters for RevokeProductLocalEntitlement.
+type RevokeProductLocalEntitlementParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListProductsParams defines parameters for ListProducts.
+type ListProductsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateProductParams defines parameters for CreateProduct.
+type CreateProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateProductParams defines parameters for UpdateProduct.
+type UpdateProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListProductLocalEntitlementsParams defines parameters for ListProductLocalEntitlements.
+type ListProductLocalEntitlementsParams struct {
+	Limit *EntitlementLimit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GrantProductLocalEntitlementParams defines parameters for GrantProductLocalEntitlement.
+type GrantProductLocalEntitlementParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListSegmentsParams defines parameters for ListSegments.
+type ListSegmentsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateSegmentParams defines parameters for CreateSegment.
+type CreateSegmentParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveSegmentParams defines parameters for ArchiveSegment.
+type ArchiveSegmentParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateSegmentParams defines parameters for UpdateSegment.
+type UpdateSegmentParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListSegmentMembersParams defines parameters for ListSegmentMembers.
+type ListSegmentMembersParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// RequestSegmentRefreshParams defines parameters for RequestSegmentRefresh.
+type RequestSegmentRefreshParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateStageParams defines parameters for CreateStage.
+type CreateStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReorderStagesParams defines parameters for ReorderStages.
+type ReorderStagesParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveStageParams defines parameters for ArchiveStage.
+type ArchiveStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RenameStageParams defines parameters for RenameStage.
+type RenameStageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateTagGroupParams defines parameters for CreateTagGroup.
+type CreateTagGroupParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReorderTagGroupsParams defines parameters for ReorderTagGroups.
+type ReorderTagGroupsParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveTagGroupParams defines parameters for ArchiveTagGroup.
+type ArchiveTagGroupParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateTagGroupParams defines parameters for UpdateTagGroup.
+type UpdateTagGroupParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateTagParams defines parameters for CreateTag.
+type CreateTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReorderTagsParams defines parameters for ReorderTags.
+type ReorderTagsParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveTagParams defines parameters for ArchiveTag.
+type ArchiveTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateTagParams defines parameters for UpdateTag.
+type UpdateTagParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
+type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest
+
+// PublishQuestionnairePublicDefinitionJSONRequestBody defines body for PublishQuestionnairePublicDefinition for application/json ContentType.
+type PublishQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyPublishRequest
+
+// SubmitPublicSurveyJSONRequestBody defines body for SubmitPublicSurvey for application/json ContentType.
+type SubmitPublicSurveyJSONRequestBody = PublicSurveySubmissionRequest
+
+// QueryPublicSurveySubmissionResultJSONRequestBody defines body for QueryPublicSurveySubmissionResult for application/json ContentType.
+type QueryPublicSurveySubmissionResultJSONRequestBody = PublicSurveyResultQueryRequest
+
+// UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
+type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
+
+// SetCustomerStageJSONRequestBody defines body for SetCustomerStage for application/json ContentType.
+type SetCustomerStageJSONRequestBody = SetCustomerStageRequest
+
+// BindIdentityJSONRequestBody defines body for BindIdentity for application/json ContentType.
+type BindIdentityJSONRequestBody = BindIdentityRequest
+
+// IngestIdentityEventJSONRequestBody defines body for IngestIdentityEvent for application/json ContentType.
+type IngestIdentityEventJSONRequestBody = IngestIdentityEventRequest
+
+// ApproveIdentityMergeReviewJSONRequestBody defines body for ApproveIdentityMergeReview for application/json ContentType.
+type ApproveIdentityMergeReviewJSONRequestBody = ApproveIdentityMergeReviewRequest
+
+// RejectIdentityMergeReviewJSONRequestBody defines body for RejectIdentityMergeReview for application/json ContentType.
+type RejectIdentityMergeReviewJSONRequestBody = RejectIdentityMergeReviewRequest
+
+// ResolveIdentityJSONRequestBody defines body for ResolveIdentity for application/json ContentType.
+type ResolveIdentityJSONRequestBody = ResolveIdentityRequest
+
+// RevokeProductLocalEntitlementJSONRequestBody defines body for RevokeProductLocalEntitlement for application/json ContentType.
+type RevokeProductLocalEntitlementJSONRequestBody = RevokeProductLocalEntitlementRequest
+
+// CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
+type CreateProductJSONRequestBody = CreateProductRequest
+
+// UpdateProductJSONRequestBody defines body for UpdateProduct for application/json ContentType.
+type UpdateProductJSONRequestBody = UpdateProductRequest
+
+// GrantProductLocalEntitlementJSONRequestBody defines body for GrantProductLocalEntitlement for application/json ContentType.
+type GrantProductLocalEntitlementJSONRequestBody = GrantProductLocalEntitlementRequest
+
+// CreateSegmentJSONRequestBody defines body for CreateSegment for application/json ContentType.
+type CreateSegmentJSONRequestBody = CreateSegmentRequest
+
+// UpdateSegmentJSONRequestBody defines body for UpdateSegment for application/json ContentType.
+type UpdateSegmentJSONRequestBody = UpdateSegmentRequest
+
+// CreateStageJSONRequestBody defines body for CreateStage for application/json ContentType.
+type CreateStageJSONRequestBody = CreateStageRequest
+
+// ReorderStagesJSONRequestBody defines body for ReorderStages for application/json ContentType.
+type ReorderStagesJSONRequestBody = ReorderStagesRequest
+
+// RenameStageJSONRequestBody defines body for RenameStage for application/json ContentType.
+type RenameStageJSONRequestBody = RenameStageRequest
+
+// CreateTagGroupJSONRequestBody defines body for CreateTagGroup for application/json ContentType.
+type CreateTagGroupJSONRequestBody = CreateLocalTagGroupRequest
+
+// ReorderTagGroupsJSONRequestBody defines body for ReorderTagGroups for application/json ContentType.
+type ReorderTagGroupsJSONRequestBody = ReorderLocalCatalogRequest
+
+// UpdateTagGroupJSONRequestBody defines body for UpdateTagGroup for application/json ContentType.
+type UpdateTagGroupJSONRequestBody = UpdateLocalTagNameRequest
+
+// CreateTagJSONRequestBody defines body for CreateTag for application/json ContentType.
+type CreateTagJSONRequestBody = CreateLocalTagRequest
+
+// ReorderTagsJSONRequestBody defines body for ReorderTags for application/json ContentType.
+type ReorderTagsJSONRequestBody = ReorderLocalCatalogRequest
+
+// UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
+type UpdateTagJSONRequestBody = UpdateLocalTagNameRequest
+
+// AsBindIdentityBound returns the union data inside the BindIdentityResponse as a BindIdentityBound
+func (t BindIdentityResponse) AsBindIdentityBound() (BindIdentityBound, error) {
+	var body BindIdentityBound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityBound overwrites any union data inside the BindIdentityResponse as the provided BindIdentityBound
+func (t *BindIdentityResponse) FromBindIdentityBound(v BindIdentityBound) error {
+	v.Status = "bound"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityBound performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityBound
+func (t *BindIdentityResponse) MergeBindIdentityBound(v BindIdentityBound) error {
+	v.Status = "bound"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityAlreadyBound returns the union data inside the BindIdentityResponse as a BindIdentityAlreadyBound
+func (t BindIdentityResponse) AsBindIdentityAlreadyBound() (BindIdentityAlreadyBound, error) {
+	var body BindIdentityAlreadyBound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityAlreadyBound overwrites any union data inside the BindIdentityResponse as the provided BindIdentityAlreadyBound
+func (t *BindIdentityResponse) FromBindIdentityAlreadyBound(v BindIdentityAlreadyBound) error {
+	v.Status = "already_bound"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityAlreadyBound performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityAlreadyBound
+func (t *BindIdentityResponse) MergeBindIdentityAlreadyBound(v BindIdentityAlreadyBound) error {
+	v.Status = "already_bound"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityMerged returns the union data inside the BindIdentityResponse as a BindIdentityMerged
+func (t BindIdentityResponse) AsBindIdentityMerged() (BindIdentityMerged, error) {
+	var body BindIdentityMerged
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityMerged overwrites any union data inside the BindIdentityResponse as the provided BindIdentityMerged
+func (t *BindIdentityResponse) FromBindIdentityMerged(v BindIdentityMerged) error {
+	v.Status = "merged"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityMerged performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityMerged
+func (t *BindIdentityResponse) MergeBindIdentityMerged(v BindIdentityMerged) error {
+	v.Status = "merged"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityManualReview returns the union data inside the BindIdentityResponse as a BindIdentityManualReview
+func (t BindIdentityResponse) AsBindIdentityManualReview() (BindIdentityManualReview, error) {
+	var body BindIdentityManualReview
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityManualReview overwrites any union data inside the BindIdentityResponse as the provided BindIdentityManualReview
+func (t *BindIdentityResponse) FromBindIdentityManualReview(v BindIdentityManualReview) error {
+	v.Status = "manual_review"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityManualReview performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityManualReview
+func (t *BindIdentityResponse) MergeBindIdentityManualReview(v BindIdentityManualReview) error {
+	v.Status = "manual_review"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsBindIdentityRejected returns the union data inside the BindIdentityResponse as a BindIdentityRejected
+func (t BindIdentityResponse) AsBindIdentityRejected() (BindIdentityRejected, error) {
+	var body BindIdentityRejected
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromBindIdentityRejected overwrites any union data inside the BindIdentityResponse as the provided BindIdentityRejected
+func (t *BindIdentityResponse) FromBindIdentityRejected(v BindIdentityRejected) error {
+	v.Status = "rejected"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeBindIdentityRejected performs a merge with any union data inside the BindIdentityResponse, using the provided BindIdentityRejected
+func (t *BindIdentityResponse) MergeBindIdentityRejected(v BindIdentityRejected) error {
+	v.Status = "rejected"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t BindIdentityResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t BindIdentityResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "already_bound":
+		return t.AsBindIdentityAlreadyBound()
+	case "bound":
+		return t.AsBindIdentityBound()
+	case "manual_review":
+		return t.AsBindIdentityManualReview()
+	case "merged":
+		return t.AsBindIdentityMerged()
+	case "rejected":
+		return t.AsBindIdentityRejected()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t BindIdentityResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *BindIdentityResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsIngestIdentityEventAttributed returns the union data inside the IngestIdentityEventResponse as a IngestIdentityEventAttributed
+func (t IngestIdentityEventResponse) AsIngestIdentityEventAttributed() (IngestIdentityEventAttributed, error) {
+	var body IngestIdentityEventAttributed
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIngestIdentityEventAttributed overwrites any union data inside the IngestIdentityEventResponse as the provided IngestIdentityEventAttributed
+func (t *IngestIdentityEventResponse) FromIngestIdentityEventAttributed(v IngestIdentityEventAttributed) error {
+	v.Status = "attributed"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIngestIdentityEventAttributed performs a merge with any union data inside the IngestIdentityEventResponse, using the provided IngestIdentityEventAttributed
+func (t *IngestIdentityEventResponse) MergeIngestIdentityEventAttributed(v IngestIdentityEventAttributed) error {
+	v.Status = "attributed"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsIngestIdentityEventPending returns the union data inside the IngestIdentityEventResponse as a IngestIdentityEventPending
+func (t IngestIdentityEventResponse) AsIngestIdentityEventPending() (IngestIdentityEventPending, error) {
+	var body IngestIdentityEventPending
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIngestIdentityEventPending overwrites any union data inside the IngestIdentityEventResponse as the provided IngestIdentityEventPending
+func (t *IngestIdentityEventResponse) FromIngestIdentityEventPending(v IngestIdentityEventPending) error {
+	v.Status = "pending"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIngestIdentityEventPending performs a merge with any union data inside the IngestIdentityEventResponse, using the provided IngestIdentityEventPending
+func (t *IngestIdentityEventResponse) MergeIngestIdentityEventPending(v IngestIdentityEventPending) error {
+	v.Status = "pending"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsIngestIdentityEventConflict returns the union data inside the IngestIdentityEventResponse as a IngestIdentityEventConflict
+func (t IngestIdentityEventResponse) AsIngestIdentityEventConflict() (IngestIdentityEventConflict, error) {
+	var body IngestIdentityEventConflict
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromIngestIdentityEventConflict overwrites any union data inside the IngestIdentityEventResponse as the provided IngestIdentityEventConflict
+func (t *IngestIdentityEventResponse) FromIngestIdentityEventConflict(v IngestIdentityEventConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeIngestIdentityEventConflict performs a merge with any union data inside the IngestIdentityEventResponse, using the provided IngestIdentityEventConflict
+func (t *IngestIdentityEventResponse) MergeIngestIdentityEventConflict(v IngestIdentityEventConflict) error {
+	v.Status = "conflict"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t IngestIdentityEventResponse) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t IngestIdentityEventResponse) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "attributed":
+		return t.AsIngestIdentityEventAttributed()
+	case "conflict":
+		return t.AsIngestIdentityEventConflict()
+	case "pending":
+		return t.AsIngestIdentityEventPending()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t IngestIdentityEventResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *IngestIdentityEventResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLegacyPushCenterStatsDegradedResponseRuntimeQueue0 returns the union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as a LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+func (t LegacyPushCenterStatsDegradedResponse_RuntimeQueue) AsLegacyPushCenterStatsDegradedResponseRuntimeQueue0() (LegacyPushCenterStatsDegradedResponseRuntimeQueue0, error) {
+	var body LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterStatsDegradedResponseRuntimeQueue0 overwrites any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as the provided LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) FromLegacyPushCenterStatsDegradedResponseRuntimeQueue0(v LegacyPushCenterStatsDegradedResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterStatsDegradedResponseRuntimeQueue0 performs a merge with any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue, using the provided LegacyPushCenterStatsDegradedResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) MergeLegacyPushCenterStatsDegradedResponseRuntimeQueue0(v LegacyPushCenterStatsDegradedResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLegacyPushCenterRuntimeQueue returns the union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as a LegacyPushCenterRuntimeQueue
+func (t LegacyPushCenterStatsDegradedResponse_RuntimeQueue) AsLegacyPushCenterRuntimeQueue() (LegacyPushCenterRuntimeQueue, error) {
+	var body LegacyPushCenterRuntimeQueue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterRuntimeQueue overwrites any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue as the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) FromLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterRuntimeQueue performs a merge with any union data inside the LegacyPushCenterStatsDegradedResponse_RuntimeQueue, using the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) MergeLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LegacyPushCenterStatsDegradedResponse_RuntimeQueue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LegacyPushCenterStatsDegradedResponse_RuntimeQueue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLegacyPushCenterStatsResponseRuntimeQueue0 returns the union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as a LegacyPushCenterStatsResponseRuntimeQueue0
+func (t LegacyPushCenterStatsResponse_RuntimeQueue) AsLegacyPushCenterStatsResponseRuntimeQueue0() (LegacyPushCenterStatsResponseRuntimeQueue0, error) {
+	var body LegacyPushCenterStatsResponseRuntimeQueue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterStatsResponseRuntimeQueue0 overwrites any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as the provided LegacyPushCenterStatsResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) FromLegacyPushCenterStatsResponseRuntimeQueue0(v LegacyPushCenterStatsResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterStatsResponseRuntimeQueue0 performs a merge with any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue, using the provided LegacyPushCenterStatsResponseRuntimeQueue0
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) MergeLegacyPushCenterStatsResponseRuntimeQueue0(v LegacyPushCenterStatsResponseRuntimeQueue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLegacyPushCenterRuntimeQueue returns the union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as a LegacyPushCenterRuntimeQueue
+func (t LegacyPushCenterStatsResponse_RuntimeQueue) AsLegacyPushCenterRuntimeQueue() (LegacyPushCenterRuntimeQueue, error) {
+	var body LegacyPushCenterRuntimeQueue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLegacyPushCenterRuntimeQueue overwrites any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue as the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) FromLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLegacyPushCenterRuntimeQueue performs a merge with any union data inside the LegacyPushCenterStatsResponse_RuntimeQueue, using the provided LegacyPushCenterRuntimeQueue
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) MergeLegacyPushCenterRuntimeQueue(v LegacyPushCenterRuntimeQueue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LegacyPushCenterStatsResponse_RuntimeQueue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LegacyPushCenterStatsResponse_RuntimeQueue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsResolveIdentityFound returns the union data inside the ResolveIdentityResponse as a ResolveIdentityFound
+func (t ResolveIdentityResponse) AsResolveIdentityFound() (ResolveIdentityFound, error) {
+	var body ResolveIdentityFound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResolveIdentityFound overwrites any union data inside the ResolveIdentityResponse as the provided ResolveIdentityFound
+func (t *ResolveIdentityResponse) FromResolveIdentityFound(v ResolveIdentityFound) error {
+	v.Status = "found"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResolveIdentityFound performs a merge with any union data inside the ResolveIdentityResponse, using the provided ResolveIdentityFound
+func (t *ResolveIdentityResponse) MergeResolveIdentityFound(v ResolveIdentityFound) error {
+	v.Status = "found"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsResolveIdentityNotFound returns the union data inside the ResolveIdentityResponse as a ResolveIdentityNotFound
+func (t ResolveIdentityResponse) AsResolveIdentityNotFound() (ResolveIdentityNotFound, error) {
+	var body ResolveIdentityNotFound
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResolveIdentityNotFound overwrites any union data inside the ResolveIdentityResponse as the provided ResolveIdentityNotFound
+func (t *ResolveIdentityResponse) FromResolveIdentityNotFound(v ResolveIdentityNotFound) error {
+	v.Status = "not_found"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResolveIdentityNotFound performs a m

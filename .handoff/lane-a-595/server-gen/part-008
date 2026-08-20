@@ -1,0 +1,1475 @@
+blicAnalytics200JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics400JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics401JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics403JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics404JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetQuestionnairePublicAnalytics503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetQuestionnairePublicAnalytics503JSONResponse) VisitGetQuestionnairePublicAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinitionRequestObject struct {
+	QuestionnaireId QuestionnaireID `json:"questionnaire_id"`
+	Params          DisableQuestionnairePublicDefinitionParams
+	Body            *DisableQuestionnairePublicDefinitionJSONRequestBody
+}
+
+type DisableQuestionnairePublicDefinitionResponseObject interface {
+	VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error
+}
+
+type DisableQuestionnairePublicDefinition200JSONResponse PublicSurveyManagementResponse
+
+func (response DisableQuestionnairePublicDefinition200JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition400JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition401JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition403JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition404JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition409JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DisableQuestionnairePublicDefinition503JSONResponse) VisitDisableQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinitionRequestObject struct {
+	QuestionnaireId QuestionnaireID `json:"questionnaire_id"`
+	Params          PublishQuestionnairePublicDefinitionParams
+	Body            *PublishQuestionnairePublicDefinitionJSONRequestBody
+}
+
+type PublishQuestionnairePublicDefinitionResponseObject interface {
+	VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error
+}
+
+type PublishQuestionnairePublicDefinition200JSONResponse PublicSurveyManagementResponse
+
+func (response PublishQuestionnairePublicDefinition200JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition400JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition401JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition403JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition404JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition409JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PublishQuestionnairePublicDefinition503JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinitionRequestObject struct {
+	Slug PublicSurveySlug `json:"slug"`
+}
+
+type GetPublicSurveyDefinitionResponseObject interface {
+	VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error
+}
+
+type GetPublicSurveyDefinition200JSONResponse PublicSurveyDefinition
+
+func (response GetPublicSurveyDefinition200JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinition400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response GetPublicSurveyDefinition400JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinition404JSONResponse struct {
+	PublicSurveyNotFoundJSONResponse
+}
+
+func (response GetPublicSurveyDefinition404JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyDefinition405JSONResponse struct {
+	PublicSurveyGetOnlyJSONResponse
+}
+
+func (response GetPublicSurveyDefinition405JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetPublicSurveyDefinition503JSONResponse struct {
+	PublicSurveyUnavailableJSONResponse
+}
+
+func (response GetPublicSurveyDefinition503JSONResponse) VisitGetPublicSurveyDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurveyRequestObject struct {
+	Slug PublicSurveySlug `json:"slug"`
+	Body *SubmitPublicSurveyJSONRequestBody
+}
+
+type SubmitPublicSurveyResponseObject interface {
+	VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error
+}
+
+type SubmitPublicSurvey202JSONResponse PublicSurveySubmissionResponse
+
+func (response SubmitPublicSurvey202JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response SubmitPublicSurvey400JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey404JSONResponse struct {
+	PublicSurveyNotFoundJSONResponse
+}
+
+func (response SubmitPublicSurvey404JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey405JSONResponse struct {
+	PublicSurveyPostOnlyJSONResponse
+}
+
+func (response SubmitPublicSurvey405JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type SubmitPublicSurvey409JSONResponse struct {
+	PublicSurveyConflictJSONResponse
+}
+
+func (response SubmitPublicSurvey409JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey429JSONResponse struct {
+	PublicSurveyRateLimitedJSONResponse
+}
+
+func (response SubmitPublicSurvey429JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SubmitPublicSurvey503JSONResponse struct {
+	PublicSurveyUnavailableJSONResponse
+}
+
+func (response SubmitPublicSurvey503JSONResponse) VisitSubmitPublicSurveyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResultRequestObject struct {
+	Body *QueryPublicSurveySubmissionResultJSONRequestBody
+}
+
+type QueryPublicSurveySubmissionResultResponseObject interface {
+	VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error
+}
+
+type QueryPublicSurveySubmissionResult200JSONResponse PublicSurveyResult
+
+func (response QueryPublicSurveySubmissionResult200JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResult400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult400JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResult404JSONResponse struct {
+	PublicSurveyNotFoundJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult404JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicSurveySubmissionResult405JSONResponse struct {
+	PublicSurveyPostOnlyJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult405JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type QueryPublicSurveySubmissionResult503JSONResponse struct {
+	PublicSurveyUnavailableJSONResponse
+}
+
+func (response QueryPublicSurveySubmissionResult503JSONResponse) VisitQueryPublicSurveySubmissionResultResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminConfigOverviewRequestObject struct {
+}
+
+type GetAdminConfigOverviewResponseObject interface {
+	VisitGetAdminConfigOverviewResponse(w http.ResponseWriter) error
+}
+
+type GetAdminConfigOverview200JSONResponse AdminConfigOverviewResponse
+
+func (response GetAdminConfigOverview200JSONResponse) VisitGetAdminConfigOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminConfigOverview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminConfigOverview401JSONResponse) VisitGetAdminConfigOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminConfigOverview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminConfigOverview403JSONResponse) VisitGetAdminConfigOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type LogoutAdminRequestObject struct {
+	Params LogoutAdminParams
+}
+
+type LogoutAdminResponseObject interface {
+	VisitLogoutAdminResponse(w http.ResponseWriter) error
+}
+
+type LogoutAdmin204Response struct {
+}
+
+func (response LogoutAdmin204Response) VisitLogoutAdminResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type LogoutAdmin401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response LogoutAdmin401JSONResponse) VisitLogoutAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type LogoutAdmin403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response LogoutAdmin403JSONResponse) VisitLogoutAdminResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAuthSessionRequestObject struct {
+}
+
+type GetAuthSessionResponseObject interface {
+	VisitGetAuthSessionResponse(w http.ResponseWriter) error
+}
+
+type GetAuthSession200JSONResponse AuthSessionResponse
+
+func (response GetAuthSession200JSONResponse) VisitGetAuthSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAuthSession401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAuthSession401JSONResponse) VisitGetAuthSessionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomersRequestObject struct {
+	Params ListCustomersParams
+}
+
+type ListCustomersResponseObject interface {
+	VisitListCustomersResponse(w http.ResponseWriter) error
+}
+
+type ListCustomers200JSONResponse CustomerListResponse
+
+func (response ListCustomers200JSONResponse) VisitListCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomers400JSONResponse) VisitListCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomers401JSONResponse) VisitListCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomers403JSONResponse) VisitListCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+}
+
+type GetCustomerResponseObject interface {
+	VisitGetCustomerResponse(w http.ResponseWriter) error
+}
+
+type GetCustomer200JSONResponse CustomerDetailResponse
+
+func (response GetCustomer200JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomer401JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomer403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomer403JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomer404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomer404JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomerRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     UpdateCustomerParams
+	Body       *UpdateCustomerJSONRequestBody
+}
+
+type UpdateCustomerResponseObject interface {
+	VisitUpdateCustomerResponse(w http.ResponseWriter) error
+}
+
+type UpdateCustomer200JSONResponse Customer
+
+func (response UpdateCustomer200JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateCustomer400JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateCustomer401JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateCustomer403JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateCustomer404JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateCustomer409JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCustomer422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateCustomer422JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalyticsRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     GetCustomerActivityAnalyticsParams
+}
+
+type GetCustomerActivityAnalyticsResponseObject interface {
+	VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerActivityAnalytics200JSONResponse CustomerActivityAnalyticsResponse
+
+func (response GetCustomerActivityAnalytics200JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerActivityAnalytics400JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerActivityAnalytics401JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerActivityAnalytics403JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomerActivityAnalytics404JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerActivityAnalytics503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerActivityAnalytics503JSONResponse) VisitGetCustomerActivityAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivityRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ListCustomerChatActivityParams
+}
+
+type ListCustomerChatActivityResponseObject interface {
+	VisitListCustomerChatActivityResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerChatActivity200JSONResponse CustomerChatActivityResponse
+
+func (response ListCustomerChatActivity200JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerChatActivity400JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerChatActivity401JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerChatActivity403JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListCustomerChatActivity404JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerChatActivity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerChatActivity503JSONResponse) VisitListCustomerChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContextRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     GetCustomerContextParams
+}
+
+type GetCustomerContextResponseObject interface {
+	VisitGetCustomerContextResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerContext200JSONResponse CustomerContextResponse
+
+func (response GetCustomerContext200JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerContext400JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerContext401JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerContext403JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomerContext404JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContext503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerContext503JSONResponse) VisitGetCustomerContextResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerEventsRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ListCustomerEventsParams
+}
+
+type ListCustomerEventsResponseObject interface {
+	VisitListCustomerEventsResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerEvents200JSONResponse CustomerEventListResponse
+
+func (response ListCustomerEvents200JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerEvents400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerEvents400JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerEvents401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerEvents401JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerEvents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerEvents403JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerEvents404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListCustomerEvents404JSONResponse) VisitListCustomerEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistoryRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ListCustomerMergeHistoryParams
+}
+
+type ListCustomerMergeHistoryResponseObject interface {
+	VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerMergeHistory200JSONResponse CustomerMergeHistoryResponse
+
+func (response ListCustomerMergeHistory200JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerMergeHistory400JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerMergeHistory401JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerMergeHistory403JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerMergeHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerMergeHistory503JSONResponse) VisitListCustomerMergeHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStageRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     SetCustomerStageParams
+	Body       *SetCustomerStageJSONRequestBody
+}
+
+type SetCustomerStageResponseObject interface {
+	VisitSetCustomerStageResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerStage200JSONResponse Customer
+
+func (response SetCustomerStage200JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetCustomerStage400JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetCustomerStage401JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetCustomerStage403JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetCustomerStage404JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetCustomerStage409JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetCustomerStage422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response SetCustomerStage422JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTagRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	TagId      TagID      `json:"tag_id"`
+	Params     RemoveCustomerTagParams
+}
+
+type RemoveCustomerTagResponseObject interface {
+	VisitRemoveCustomerTagResponse(w http.ResponseWriter) error
+}
+
+type RemoveCustomerTag204Response struct {
+}
+
+func (response RemoveCustomerTag204Response) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveCustomerTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RemoveCustomerTag400JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RemoveCustomerTag401JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RemoveCustomerTag403JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RemoveCustomerTag404JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RemoveCustomerTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RemoveCustomerTag409JSONResponse) VisitRemoveCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTagRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	TagId      TagID      `json:"tag_id"`
+	Params     AddCustomerTagParams
+}
+
+type AddCustomerTagResponseObject interface {
+	VisitAddCustomerTagResponse(w http.ResponseWriter) error
+}
+
+type AddCustomerTag204Response struct {
+}
+
+func (response AddCustomerTag204Response) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type AddCustomerTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AddCustomerTag400JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AddCustomerTag401JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AddCustomerTag403JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AddCustomerTag404JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AddCustomerTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AddCustomerTag409JSONResponse) VisitAddCustomerTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentityRequestObject struct {
+	Params BindIdentityParams
+	Body   *BindIdentityJSONRequestBody
+}
+
+type BindIdentityResponseObject interface {
+	VisitBindIdentityResponse(w http.ResponseWriter) error
+}
+
+type BindIdentity200JSONResponse BindIdentityResponse
+
+func (response BindIdentity200JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response BindIdentity400JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response BindIdentity401JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response BindIdentity403JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity409JSONResponse struct{ ConflictJSONResponse }
+
+func (response BindIdentity409JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response BindIdentity422JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindIdentity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response BindIdentity503JSONResponse) VisitBindIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEventRequestObject struct {
+	Params IngestIdentityEventParams
+	Body   *IngestIdentityEventJSONRequestBody
+}
+
+type IngestIdentityEventResponseObject interface {
+	VisitIngestIdentityEventResponse(w http.ResponseWriter) error
+}
+
+type IngestIdentityEvent200JSONResponse IngestIdentityEventResponse
+
+func (response IngestIdentityEvent200JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response IngestIdentityEvent400JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IngestIdentityEvent401JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IngestIdentityEvent403JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent409JSONResponse struct{ ConflictJSONResponse }
+
+func (response IngestIdentityEvent409JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response IngestIdentityEvent422JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type IngestIdentityEvent503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response IngestIdentityEvent503JSONResponse) VisitIngestIdentityEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviewsRequestObject struct {
+	Params ListIdentityMergeReviewsParams
+}
+
+type ListIdentityMergeReviewsResponseObject interface {
+	VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error
+}
+
+type ListIdentityMergeReviews200JSONResponse IdentityMergeReviewPage
+
+func (response ListIdentityMergeReviews200JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListIdentityMergeReviews400JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListIdentityMergeReviews401JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListIdentityMergeReviews403JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListIdentityMergeReviews503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListIdentityMergeReviews503JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReviewRequestObject struct {
+	ReviewId MergeReviewID `json:"review_id"`
+	Params   ApproveIdentityMergeReviewParams
+	Body     *ApproveIdentityMergeReviewJSONRequestBody
+}
+
+type ApproveIdentityMergeReviewResponseObject interface {
+	VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error
+}
+
+type ApproveIdentityMergeReview200JSONResponse IdentityMergeReview
+
+func (response ApproveIdentityMergeReview200JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ApproveIdentityMergeReview400JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ApproveIdentityMergeReview401JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ApproveIdentityMergeReview403JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ApproveIdentityMergeReview404JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ApproveIdentityMergeReview409JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ApproveIdentityMergeReview422JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveIdentityMergeReview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ApproveIdentityMergeReview503JSONResponse) VisitApproveIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReviewRequestObject struct {
+	ReviewId MergeReviewID `json:"review_id"`
+	Params   RejectIdentityMergeReviewParams
+	Body     *RejectIdentityMergeReviewJSONRequestBody
+}
+
+type RejectIdentityMergeReviewResponseObject interface {
+	VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error
+}
+
+type RejectIdentityMergeReview200JSONResponse IdentityMergeReview
+
+func (response RejectIdentityMergeReview200JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RejectIdentityMergeReview400JSONResponse) VisitRejectIdentityMergeReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RejectIdentityMergeReview401

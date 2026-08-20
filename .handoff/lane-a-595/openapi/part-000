@@ -1,0 +1,977 @@
+openapi: 3.0.3
+info:
+  title: AI-CRM v2 API
+  version: 0.6.0-p3-segment-contract
+  description: Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
+security:
+  - AdminSession: []
+paths:
+  /api/v1/products:
+    get:
+      tags: [p4-product]
+      operationId: listProducts
+      summary: List ordinary products using a keyset cursor
+      x-legacy-mapping-ids: [LEGACY-API-0525]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/Cursor"}, {$ref: "#/components/parameters/Limit"}]
+      responses:
+        "200": {description: Product page, content: {application/json: {schema: {$ref: "#/components/schemas/ProductPage"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+    post:
+      tags: [p4-product]
+      operationId: createProduct
+      summary: Create one ordinary product
+      x-legacy-mapping-ids: [LEGACY-API-0526]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/CreateProductRequest"}}}}
+      responses:
+        "201": {description: Product created, content: {application/json: {schema: {$ref: "#/components/schemas/Product"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/v1/products/{product_id}:
+    get:
+      tags: [p4-product]
+      operationId: getProduct
+      summary: Get one ordinary product
+      x-legacy-mapping-ids: [LEGACY-API-0530]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/ProductID"}]
+      responses:
+        "200": {description: Product, content: {application/json: {schema: {$ref: "#/components/schemas/Product"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+    put:
+      tags: [p4-product]
+      operationId: updateProduct
+      summary: Update one local ordinary product using optimistic concurrency
+      x-p4-decision-evidence: P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/ProductID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/UpdateProductRequest"}}}}
+      responses:
+        "200": {description: Updated local product, content: {application/json: {schema: {$ref: "#/components/schemas/Product"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/v1/products/{product_id}/local-entitlements:
+    get:
+      tags: [p4-product-entitlement]
+      operationId: listProductLocalEntitlements
+      summary: List local product entitlements without invoking payment or providers
+      x-p4-decision-evidence: P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/ProductID"}, {$ref: "#/components/parameters/EntitlementLimit"}]
+      responses:
+        "200": {description: Local entitlement list ordered by id descending, content: {application/json: {schema: {$ref: "#/components/schemas/LocalProductEntitlementPage"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+    post:
+      tags: [p4-product-entitlement]
+      operationId: grantProductLocalEntitlement
+      summary: Grant a local entitlement from one existing paid local order projection
+      x-p4-decision-evidence: P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: entitlements.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/ProductID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/GrantProductLocalEntitlementRequest"}}}}
+      responses:
+        "201": {description: Granted local entitlement, content: {application/json: {schema: {$ref: "#/components/schemas/LocalProductEntitlement"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/v1/product-entitlements/{entitlement_id}:
+    get:
+      tags: [p4-product-entitlement]
+      operationId: getProductLocalEntitlement
+      summary: Get one local product entitlement
+      x-p4-decision-evidence: P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/EntitlementID"}]
+      responses:
+        "200": {description: Local entitlement, content: {application/json: {schema: {$ref: "#/components/schemas/LocalProductEntitlement"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/v1/product-entitlements/{entitlement_id}/revoke:
+    post:
+      tags: [p4-product-entitlement]
+      operationId: revokeProductLocalEntitlement
+      summary: Revoke one local entitlement using optimistic concurrency
+      x-p4-decision-evidence: P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: entitlements.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/EntitlementID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/RevokeProductLocalEntitlementRequest"}}}}
+      responses:
+        "200": {description: Revoked local entitlement, content: {application/json: {schema: {$ref: "#/components/schemas/LocalProductEntitlement"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /admin/wechat-pay/products:
+    get:
+      tags: [p4-product-compat]
+      operationId: getLegacyProductListPage
+      summary: Redirect the frozen product list entrypoint to the exact local SPA carrier
+      x-legacy-mapping-ids: [LEGACY-API-0079]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier redirect; it does not read product data or invoke payment providers.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fwechat-pay%2Fproducts"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /healthz:
+    get:
+      tags: [health]
+      operationId: getHealthz
+      summary: Process liveness
+      security: []
+      responses:
+        "200":
+          description: The process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /health:
+    get:
+      tags: [p4-legacy-health]
+      operationId: getLegacyHealth
+      summary: Read the public legacy configuration-derived runtime-mode snapshot
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0757]
+      x-p4-decision-evidence: P4-S04-LEGACY-HEALTH-2026-08-18
+      x-aicrm-capability: health_read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: read_model
+      x-aicrm-rate-limit: health
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Runtime-mode snapshot. It is not a liveness, readiness, database, worker, or provider proof.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyRuntimeHealthSnapshot" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyHealthMethodNotAllowed" }
+  /api/system/health:
+    get:
+      tags: [p4-system-health]
+      operationId: getSystemHealth
+      summary: Read bounded public system readiness without dependency details
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0741]
+      x-p4-decision-evidence: P4-SYSTEM-HEALTH-0741-2026-08-17
+      x-aicrm-capability: health.read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: bounded_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Required components are ready; warnings may remain.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: [no-store] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemHealthResponse" }
+        "503":
+          description: One or more required components failed closed.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: [no-store] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemHealthResponse" }
+  /{filename}:
+    get:
+      tags: [p4-domain-verification]
+      operationId: getDomainVerificationFile
+      summary: Read one WeChat or WeCom domain verification file
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0781]
+      x-p4-decision-evidence: P4-S04-DOMAIN-VERIFICATION-2026-08-16
+      x-aicrm-capability: domain_verification.read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema: { type: string, pattern: "^(?:WW|MP)_verify_[A-Za-z0-9_-]+\\.txt$" }
+      responses:
+        "200":
+          description: UTF-8 verification text without surrounding whitespace
+          headers:
+            Cache-Control:
+              required: true
+              schema: { type: string, enum: [no-store] }
+          content:
+            text/plain:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin:
+    get:
+      tags: [p4-admin-shell-compat]
+      operationId: getLegacyAdminShell
+      summary: Render the frozen server-side Admin Shell shortcut page
+      x-legacy-mapping-ids: [LEGACY-API-0001]
+      x-p4-decision-evidence: P4-ADMIN-SHELL-AB-2026-08-16
+      x-aicrm-capability: admin.shell.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Frozen server-rendered Admin Shell shortcut page, content: { text/html: { schema: { type: string } } } }
+        "302": { description: "Missing, expired, malformed, or ambiguous browser session redirects to the local login path with next=/admin", headers: { Location: { required: true, schema: { type: string } } } }
+        "403": { description: "Sales, unknown identity, bearer principal, or non-global grant is denied", content: { application/json: { schema: { $ref: "#/components/schemas/AdminShellAccessDenied" } } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/logout:
+    get:
+      tags: [p4-admin-shell-compat]
+      operationId: getLegacyAdminLogoutCompat
+      summary: Redirect an authenticated Admin Shell browser to the existing logout owner
+      x-legacy-mapping-ids: [LEGACY-API-0053]
+      x-p4-decision-evidence: P4-ADMIN-SHELL-AB-2026-08-16
+      x-aicrm-capability: admin.shell.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: "Authenticated browser redirects exactly to /logout; a missing, expired, malformed, or ambiguous browser session redirects to the local login path with next=/admin/logout", headers: { Location: { required: true, schema: { type: string } } } }
+        "403": { description: "Sales, unknown identity, bearer principal, or non-global grant is denied", content: { application/json: { schema: { $ref: "#/components/schemas/AdminShellAccessDenied" } } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/api-docs:
+    get:
+      tags: [p4-api-docs-compat]
+      operationId: getLegacyApiDocsPage
+      summary: Render the frozen server-side API documentation page from the embedded canonical OpenAPI contract
+      x-legacy-mapping-ids: [LEGACY-API-0003]
+      x-p4-decision-evidence: P4-API-DOCS-0003-0033-R2-2026-08-18
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: embedded_openapi
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Frozen server-rendered API documentation page, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { description: "Safe internal error envelope without spec, stack, or cause leakage", content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/mcp-tools:
+    get:
+      tags: [p4-api-docs-compat]
+      operationId: getLegacyMcpToolsRedirect
+      summary: Redirect an authenticated Admin Config browser exactly to /admin/api-docs
+      x-legacy-mapping-ids: [LEGACY-API-0033]
+      x-p4-decision-evidence: P4-API-DOCS-0003-0033-R2-2026-08-18
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: "Authorized browser redirects exactly to /admin/api-docs with an empty body; the original query and body are never parsed, logged, or echoed", headers: { Location: { required: true, schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/customers:
+    get:
+      tags: [p4-customer-compat]
+      operationId: listLegacyCustomers
+      summary: List the channel-neutral customer projection for the frozen old UI
+      x-legacy-mapping-ids: [LEGACY-API-0609]
+      x-p4-decision-evidence: P4-B01-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - { name: owner_userid, in: query, schema: { type: string } }
+        - { name: tag, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: is_bound, in: query, schema: { type: string } }
+        - { name: mobile, in: query, schema: { type: string } }
+        - { name: keyword, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 0, default: 0 } }
+      responses:
+        "200": { description: Frozen legacy customer list envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/customers/{external_userid}:
+    get:
+      tags: [p4-customer-compat]
+      operationId: getLegacyCustomer
+      summary: Resolve a WeCom external identity and read its channel-neutral customer projection
+      x-legacy-mapping-ids: [LEGACY-API-0619]
+      x-p4-decision-evidence: P4-B01-2026-08-15
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - { name: external_userid, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 1024 } }
+      responses:
+        "200": { description: Frozen legacy customer detail envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers:
+    get:
+      tags: [p3-contact]
+      operationId: listCustomers
+      summary: List customers using a keyset cursor
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0609]
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/CustomerKeyword"
+        - $ref: "#/components/parameters/OwnerStaffIDFilter"
+        - $ref: "#/components/parameters/StageIDFilter"
+        - $ref: "#/components/parameters/ChannelIDFilter"
+        - $ref: "#/components/parameters/TagIDFilter"
+        - $ref: "#/components/parameters/IsDeletedFilter"
+        - $ref: "#/components/parameters/AddedAfterFilter"
+        - $ref: "#/components/parameters/AddedBeforeFilter"
+        - $ref: "#/components/parameters/LastInteractAfterFilter"
+        - $ref: "#/components/parameters/LastInteractBeforeFilter"
+      responses:
+        "200":
+          description: Customer page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerListResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/customers/{customer_id}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p3-contact]
+      operationId: getCustomer
+      summary: Get a channel-neutral customer by OneID
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0619, LEGACY-API-0743]
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      responses:
+        "200":
+          description: Customer profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetailResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [p3-contact]
+      operationId: updateCustomer
+      summary: Update customer-owned profile fields
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0736]
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdateRequest"
+      responses:
+        "200":
+          description: Updated customer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+  /api/v1/customers/{customer_id}/stage:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    put:
+      tags: [p3-contact]
+      operationId: setCustomerStage
+      summary: Set or clear a customer's stage
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetCustomerStageRequest"
+      responses:
+        "200":
+          description: Updated customer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+  /api/v1/customers/{customer_id}/tags/{tag_id}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+      - $ref: "#/components/parameters/TagID"
+    put:
+      tags: [p3-contact]
+      operationId: addCustomerTag
+      summary: Idempotently apply one local tag to a customer
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      responses:
+        "204": { description: Tag is present. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [p3-contact]
+      operationId: removeCustomerTag
+      summary: Idempotently remove one local tag from a customer
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      responses:
+        "204": { description: Tag is absent. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/customers/{customer_id}/events:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p3-contact]
+      operationId: listCustomerEvents
+      summary: List append-only customer events using a keyset cursor
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0620, LEGACY-API-0739, LEGACY-API-0745]
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Customer event page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerEventListResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/customers/{customer_id}/context:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p3-contact]
+      operationId: getCustomerContext
+      summary: Read a safe local Customer 360 context without external identities or message bodies
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Non-atomic safe local customer, CRM tag, timeline and zero-body chat summary projection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerContextResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/merge-history:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: listCustomerMergeHistory
+      summary: List redacted local OneID merge history for a customer component
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: identity.review.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - name: limit
+          in: query
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Redacted, append-only local merge audit facts for the connected customer component.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerMergeHistoryResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/chat-activity:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: listCustomerChatActivity
+      summary: List zero-body local chat activity facts for one visible customer
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: chat_type
+          in: query
+          schema: { type: string, enum: [private, group] }
+        - $ref: "#/components/parameters/Cursor"
+        - name: limit
+          in: query
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Non-atomic local chat metadata page without content, identities, media or provider receipts.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerChatActivityResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/activity-analytics:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: getCustomerActivityAnalytics
+      summary: Read non-PII local customer activity aggregates for a fixed window
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: customer.events.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: window_days
+          in: query
+          schema: { type: integer, format: int32, enum: [7, 30, 90], default: 30 }
+      responses:
+        "200":
+          description: Closed local event type and day aggregates without payload, actor or identity data.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerActivityAnalyticsResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/tag-groups:
+    get:
+      tags: [p4-classification]
+      operationId: listTagGroups
+      summary: List the complete active local CRM tag catalog
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Active local CRM tag groups and tags, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTagCatalog" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-classification]
+      operationId: createTagGroup
+      summary: Create one local CRM tag group and its first tag
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CreateLocalTagGroupRequest" } } } }
+      responses:
+        "201": { description: Created local CRM tag group and first tag, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTagGroupCreateResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/tag-groups/reorder:
+    put:
+      tags: [p4-classification]
+      operationId: reorderTagGroups
+      summary: Replace the exact active local CRM tag group order
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ReorderLocalCatalogRequest" } } } }
+      responses:
+        "200": { description: Reordered local CRM tag groups, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTagGroupListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/tag-groups/{group_id}:
+    parameters: [{$ref: "#/components/parameters/TagGroupID"}]
+    patch:
+      tags: [p4-classification]
+      operationId: updateTagGroup
+      summary: Rename one local CRM tag group
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/UpdateLocalTagNameRequest" } } } }
+      responses:
+        "200": { description: Updated local CRM tag group, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTagGroup" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-classification]
+      operationId: archiveTagGroup
+      summary: Archive one unreferenced local CRM tag group
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Local CRM tag group archive tombstone, content: { application/json: { schema: { $ref: "#/components/schemas/LocalCatalogArchiveResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/tags:
+    get:
+      tags: [p3-contact]
+      operationId: listTags
+      summary: List the local tag catalog in deterministic order
+      x-legacy-mapping-ids: [LEGACY-API-0551, LEGACY-API-0555]
+      x-p3-decision-evidence: P3-C00-2026-08-12
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      responses:
+        "200":
+          description: Tag catalog.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagListResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-classification]
+      operationId: createTag
+      summary: Create one local CRM tag in an active group
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CreateLocalTagRequest" } } } }
+      responses:
+        "201": { description: Created local CRM tag, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTag" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/tags/reorder:
+    put:
+      tags: [p4-classification]
+      operationId: reorderTags
+      summary: Replace the exact active local CRM tag order
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ReorderLocalCatalogRequest" } } } }
+      responses:
+        "200": { description: Reordered local CRM tags, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTagListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/tags/{tag_id}:
+    parameters: [{$ref: "#/components/parameters/TagID"}]
+    patch:
+      tags: [p4-classification]
+      operationId: updateTag
+      summary: Rename one local CRM tag
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/UpdateLocalTagNameRequest" } } } }
+      responses:
+        "200": { description: Updated local CRM tag, content: { application/json: { schema: { $ref: "#/components/schemas/LocalTag" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-classification]
+      operationId: archiveTag
+      summary: Archive one unreferenced local CRM tag
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Local CRM tag archive tombstone, content: { application/json: { schema: { $ref: "#/components/schemas/LocalCatalogArchiveResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments:
+    get:
+      tags: [p3-segment]
+      operationId: listSegments
+      summary: List materialized audience definitions with a keyset cursor
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Segment page.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SegmentPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p3-segment]
+      operationId: createSegment
+      summary: Create one declarative audience definition
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.write
+     

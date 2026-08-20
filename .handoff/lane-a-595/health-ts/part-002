@@ -1,0 +1,1593 @@
+ired: boolean;
+  /** @minimum 0 */
+  sort_order: number;
+  /** @maxLength 500 */
+  placeholder_text: string;
+  validation?: LegacyQuestionnaireValidation;
+  /** @maxItems 100 */
+  options: LegacyQuestionnaireOption[];
+}
+
+export type LegacyQuestionnaireCreateRequestAnswerDisplayMode =
+  (typeof LegacyQuestionnaireCreateRequestAnswerDisplayMode)[keyof typeof LegacyQuestionnaireCreateRequestAnswerDisplayMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireCreateRequestAnswerDisplayMode = {
+  all_in_one: "all_in_one",
+  one_by_one: "one_by_one",
+} as const;
+
+export type LegacyQuestionnaireCreateRequestAssessmentConfig = {
+  [key: string]: unknown;
+};
+
+export type LegacyQuestionnaireCreateRequestScoreRulesItem = {
+  [key: string]: unknown;
+};
+
+export interface LegacyQuestionnaireCreateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  title: string;
+  /** @maxLength 10000 */
+  description: string;
+  answer_display_mode: LegacyQuestionnaireCreateRequestAnswerDisplayMode;
+  assessment_enabled: boolean;
+  assessment_config: LegacyQuestionnaireCreateRequestAssessmentConfig;
+  /** @maxLength 200 */
+  slug: string;
+  is_disabled: boolean;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  questions: LegacyQuestionnaireQuestion[];
+  /** @maxItems 0 */
+  score_rules: LegacyQuestionnaireCreateRequestScoreRulesItem[];
+}
+
+export type LegacyQuestionnaireAllOfStatus =
+  (typeof LegacyQuestionnaireAllOfStatus)[keyof typeof LegacyQuestionnaireAllOfStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireAllOfStatus = {
+  active: "active",
+  disabled: "disabled",
+} as const;
+
+export type LegacyQuestionnaireAllOf = {
+  /** @minimum 1 */
+  id: number;
+  enabled: boolean;
+  status: LegacyQuestionnaireAllOfStatus;
+  /** @minimum 1 */
+  version: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  question_count: number;
+  /** @minimum 0 */
+  submission_count: number;
+  created_at: string;
+  updated_at: string;
+  public_path: string;
+  submitted_path: string;
+};
+
+export type LegacyQuestionnaire = LegacyQuestionnaireCreateRequest &
+  LegacyQuestionnaireAllOf;
+
+export type LegacyQuestionnaireListResponseData = {
+  questionnaires: LegacyQuestionnaire[];
+};
+
+export interface LegacyQuestionnaireListResponse {
+  ok: boolean;
+  questionnaires: LegacyQuestionnaire[];
+  items: LegacyQuestionnaire[];
+  data: LegacyQuestionnaireListResponseData;
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type LegacyQuestionnaireDetailResponseData = {
+  questionnaire: LegacyQuestionnaire;
+};
+
+export interface LegacyQuestionnaireDetailResponse {
+  ok: boolean;
+  questionnaire: LegacyQuestionnaire;
+  questions: LegacyQuestionnaireQuestion[];
+  data: LegacyQuestionnaireDetailResponseData;
+}
+
+export type LegacyQuestionnaireCreateResponseAllOf = {
+  /** @minimum 1 */
+  questionnaire_id: number;
+};
+
+export type LegacyQuestionnaireCreateResponse =
+  LegacyQuestionnaireDetailResponse & LegacyQuestionnaireCreateResponseAllOf;
+
+export interface LegacyQuestionnaireDuplicateRequest {
+  /** @maxLength 300 */
+  title?: string;
+  /** @maxLength 200 */
+  slug?: string;
+}
+
+export interface LegacyQuestionnaireDisableRequest {
+  is_disabled?: boolean;
+}
+
+export type LegacyQuestionnaireMutationResponseAllOfWriteModelStatus =
+  (typeof LegacyQuestionnaireMutationResponseAllOfWriteModelStatus)[keyof typeof LegacyQuestionnaireMutationResponseAllOfWriteModelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireMutationResponseAllOfWriteModelStatus = {
+  updated: "updated",
+  duplicated: "duplicated",
+  enabled: "enabled",
+  disabled: "disabled",
+  deleted: "deleted",
+} as const;
+
+export type LegacyQuestionnaireMutationResponseAllOf = {
+  /** @minimum 1 */
+  questionnaire_id: number;
+  write_model_status: LegacyQuestionnaireMutationResponseAllOfWriteModelStatus;
+  /** @minimum 1 */
+  source_questionnaire_id?: number;
+};
+
+export type LegacyQuestionnaireMutationResponse =
+  LegacyQuestionnaireDetailResponse & LegacyQuestionnaireMutationResponseAllOf;
+
+export type LegacyQuestionnaireDeleteResponseAllOfDeleteMode =
+  (typeof LegacyQuestionnaireDeleteResponseAllOfDeleteMode)[keyof typeof LegacyQuestionnaireDeleteResponseAllOfDeleteMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireDeleteResponseAllOfDeleteMode = {
+  hard_delete: "hard_delete",
+} as const;
+
+export type LegacyQuestionnaireDeleteResponseAllOf = {
+  deleted: boolean;
+  delete_mode: LegacyQuestionnaireDeleteResponseAllOfDeleteMode;
+};
+
+export type LegacyQuestionnaireDeleteResponse =
+  LegacyQuestionnaireMutationResponse & LegacyQuestionnaireDeleteResponseAllOf;
+
+export interface LegacyQuestionnairePreflightChecks {
+  wechat_oauth_configured: boolean;
+  wecom_contact_configured: boolean;
+  debug_session_api_enabled: boolean;
+  wecom_tags_api_available: boolean;
+  questionnaire_admin_ui_enabled: boolean;
+  identity_map_available: boolean;
+}
+
+export type LegacyQuestionnairePreflightResponseStatus =
+  (typeof LegacyQuestionnairePreflightResponseStatus)[keyof typeof LegacyQuestionnairePreflightResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnairePreflightResponseStatus = {
+  partial: "partial",
+  ok: "ok",
+} as const;
+
+export interface LegacyQuestionnairePreflightResponse {
+  ok: boolean;
+  checks: LegacyQuestionnairePreflightChecks;
+  status: LegacyQuestionnairePreflightResponseStatus;
+}
+
+export interface LegacyQuestionnaireError {
+  ok: boolean;
+  message: string;
+  detail: string;
+}
+
+export type LegacyQuestionnaireSubmissionResultsResponseResultsRulesItem = {
+  [key: string]: unknown;
+};
+
+export type LegacyQuestionnaireSubmissionResultsResponseResults = {
+  /** @minimum 0 */
+  submission_count: number;
+  /** @nullable */
+  latest_submitted_at: string | null;
+  average_score: number;
+  /** @maxItems 0 */
+  rules: LegacyQuestionnaireSubmissionResultsResponseResultsRulesItem[];
+};
+
+export type LegacyQuestionnaireSubmissionResultsResponseData = {
+  [key: string]: unknown;
+};
+
+export interface LegacyQuestionnaireSubmissionResultsResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  results: LegacyQuestionnaireSubmissionResultsResponseResults;
+  data?: LegacyQuestionnaireSubmissionResultsResponseData;
+  side_effect_executed?: boolean;
+}
+
+export type LegacyQuestionnaireSubmissionAnswerQuestionType =
+  (typeof LegacyQuestionnaireSubmissionAnswerQuestionType)[keyof typeof LegacyQuestionnaireSubmissionAnswerQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyQuestionnaireSubmissionAnswerQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+  textarea: "textarea",
+  mobile: "mobile",
+} as const;
+
+export type LegacyQuestionnaireSubmissionAnswerSelectedOptionsItem = {
+  /** @minimum 1 */
+  option_id: number;
+  /** @maxLength 500 */
+  option_text: string;
+};
+
+export interface LegacyQuestionnaireSubmissionAnswer {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: LegacyQuestionnaireSubmissionAnswerQuestionType;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  question_title: string;
+  /** @minimum 0 */
+  sort_order: number;
+  selected_options: LegacyQuestionnaireSubmissionAnswerSelectedOptionsItem[];
+  /** @maxLength 10000 */
+  text_value: string;
+}
+
+export interface LegacyQuestionnaireSubmission {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  submission_id: number;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  submitted_at: string;
+  created_at: string;
+  /** @maxLength 200 */
+  respondent_key: string;
+  /** @maxLength 200 */
+  openid: string;
+  /** @maxLength 200 */
+  unionid: string;
+  /** @maxLength 200 */
+  external_userid: string;
+  /** @maxLength 300 */
+  customer_name: string;
+  /** @maxLength 200 */
+  follow_user_userid: string;
+  /** @maxLength 50 */
+  matched_by: string;
+  /** @maxLength 32 */
+  mobile: string;
+  /** @maxLength 100 */
+  source_channel: string;
+  /** @maxLength 200 */
+  campaign_id: string;
+  /** @maxLength 200 */
+  staff_id: string;
+  score: number;
+  total_score: number;
+  final_tags: string[];
+  /** @maxLength 200 */
+  result_token: string;
+  /** @maxLength 2000 */
+  redirect_url_snapshot: string;
+  answers: LegacyQuestionnaireSubmissionAnswer[];
+}
+
+export type LegacyQuestionnaireSubmissionListResponseData = {
+  [key: string]: unknown;
+};
+
+export interface LegacyQuestionnaireSubmissionListResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  items: LegacyQuestionnaireSubmission[];
+  submissions: LegacyQuestionnaireSubmission[];
+  data?: LegacyQuestionnaireSubmissionListResponseData;
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  side_effect_executed?: boolean;
+}
+
+export interface LegacyImageCreateRequest {
+  /**
+   * One canonical standard-base64 data URL with an exact lower-case image/png, image/jpeg, or image/gif prefix. Raw bytes and alternate alphabets are rejected.
+   * @pattern ^data:image/(png|jpeg|gif);base64,[A-Za-z0-9+/]+={0,2}$
+   */
+  data_url: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  /** @maxLength 200 */
+  name?: string;
+  /** @maxLength 10000 */
+  description?: string;
+  /** @maxItems 50 */
+  tags?: string[];
+  /** @maxLength 200 */
+  category?: string;
+  enabled?: boolean;
+}
+
+export type LegacyImageCreateItemMimeType =
+  (typeof LegacyImageCreateItemMimeType)[keyof typeof LegacyImageCreateItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export interface LegacyImageCreateItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  mime_type: LegacyImageCreateItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  enabled: boolean;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  /** @maxLength 200 */
+  category: string;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+}
+
+export type LegacyImageCreateSuccessSourceStatus =
+  (typeof LegacyImageCreateSuccessSourceStatus)[keyof typeof LegacyImageCreateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessSourceStatus = {
+  local_repository_write: "local_repository_write",
+} as const;
+
+export type LegacyImageCreateSuccessRouteOwner =
+  (typeof LegacyImageCreateSuccessRouteOwner)[keyof typeof LegacyImageCreateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageCreateSuccessStorageAdapterMode =
+  (typeof LegacyImageCreateSuccessStorageAdapterMode)[keyof typeof LegacyImageCreateSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageCreateSuccessAdapterMode =
+  (typeof LegacyImageCreateSuccessAdapterMode)[keyof typeof LegacyImageCreateSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageCreateSuccess {
+  ok: boolean;
+  item: LegacyImageCreateItem;
+  source_status: LegacyImageCreateSuccessSourceStatus;
+  route_owner: LegacyImageCreateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageCreateSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageCreateSuccessAdapterMode;
+}
+
+export type LegacyImageCreateErrorCode =
+  (typeof LegacyImageCreateErrorCode)[keyof typeof LegacyImageCreateErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageCreateErrorCode = {
+  MALFORMED_REQUEST: "MALFORMED_REQUEST",
+  CONFLICT: "CONFLICT",
+  DEPENDENCY_UNAVAILABLE: "DEPENDENCY_UNAVAILABLE",
+} as const;
+
+export interface LegacyImageCreateError {
+  code: LegacyImageCreateErrorCode;
+  message: string;
+  /** @minLength 1 */
+  request_id: string;
+}
+
+export type LegacyImageListItemMimeType =
+  (typeof LegacyImageListItemMimeType)[keyof typeof LegacyImageListItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export interface LegacyImageListItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  mime_type: LegacyImageListItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  /** Actual persisted enabled state. */
+  enabled: boolean;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  /** @maxLength 200 */
+  category: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_160$ */
+  thumb_160_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_320_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  preview_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  mobile_1080_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/large_1440$ */
+  large_1440_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/original$ */
+  original_url: string;
+}
+
+export type LegacyImageListSuccessSourceStatus =
+  (typeof LegacyImageListSuccessSourceStatus)[keyof typeof LegacyImageListSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessSourceStatus = {
+  next_media_library: "next_media_library",
+} as const;
+
+export type LegacyImageListSuccessRouteOwner =
+  (typeof LegacyImageListSuccessRouteOwner)[keyof typeof LegacyImageListSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageListSuccessStorageAdapterMode =
+  (typeof LegacyImageListSuccessStorageAdapterMode)[keyof typeof LegacyImageListSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageListSuccessAdapterMode =
+  (typeof LegacyImageListSuccessAdapterMode)[keyof typeof LegacyImageListSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageListSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageListSuccess {
+  ok: boolean;
+  items: LegacyImageListItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /**
+   * @minimum 0
+   * @maximum 500
+   */
+  count: number;
+  has_more: boolean;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  next_offset: number | null;
+  source_status: LegacyImageListSuccessSourceStatus;
+  route_owner: LegacyImageListSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageListSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageListSuccessAdapterMode;
+}
+
+export type LegacyImageFacetsSuccessSourceStatus =
+  (typeof LegacyImageFacetsSuccessSourceStatus)[keyof typeof LegacyImageFacetsSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessSourceStatus = {
+  next_media_library: "next_media_library",
+} as const;
+
+export type LegacyImageFacetsSuccessRouteOwner =
+  (typeof LegacyImageFacetsSuccessRouteOwner)[keyof typeof LegacyImageFacetsSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageFacetsSuccessStorageAdapterMode =
+  (typeof LegacyImageFacetsSuccessStorageAdapterMode)[keyof typeof LegacyImageFacetsSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageFacetsSuccessAdapterMode =
+  (typeof LegacyImageFacetsSuccessAdapterMode)[keyof typeof LegacyImageFacetsSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageFacetsSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageFacetsSuccess {
+  ok: boolean;
+  categories: string[];
+  tags: string[];
+  source_status: LegacyImageFacetsSuccessSourceStatus;
+  route_owner: LegacyImageFacetsSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageFacetsSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageFacetsSuccessAdapterMode;
+}
+
+export type LegacyImageDetailItemMimeType =
+  (typeof LegacyImageDetailItemMimeType)[keyof typeof LegacyImageDetailItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export type LegacyImageDetailItemContentType =
+  (typeof LegacyImageDetailItemContentType)[keyof typeof LegacyImageDetailItemContentType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemContentType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export type LegacyImageDetailItemSource =
+  (typeof LegacyImageDetailItemSource)[keyof typeof LegacyImageDetailItemSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemSource = {
+  upload: "upload",
+} as const;
+
+export type LegacyImageDetailItemSourceUrl =
+  (typeof LegacyImageDetailItemSourceUrl)[keyof typeof LegacyImageDetailItemSourceUrl];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemSourceUrl = {
+  "": "",
+} as const;
+
+export type LegacyImageDetailItemThumbMediaId =
+  (typeof LegacyImageDetailItemThumbMediaId)[keyof typeof LegacyImageDetailItemThumbMediaId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemThumbMediaId = {
+  "": "",
+} as const;
+
+export type LegacyImageDetailItemThumbMediaIdExpiresAt =
+  (typeof LegacyImageDetailItemThumbMediaIdExpiresAt)[keyof typeof LegacyImageDetailItemThumbMediaIdExpiresAt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailItemThumbMediaIdExpiresAt = {
+  "": "",
+} as const;
+
+export type LegacyImageDetailItemAiMetadata = { [key: string]: unknown };
+
+export interface LegacyImageDetailItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  mime_type: LegacyImageDetailItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxLength 200 */
+  category: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+  content_type: LegacyImageDetailItemContentType;
+  /** @maxItems 50 */
+  tags: string[];
+  /** Actual persisted enabled state; disabled rows remain directly readable by image detail. */
+  enabled: boolean;
+  source: LegacyImageDetailItemSource;
+  source_url: LegacyImageDetailItemSourceUrl;
+  thumb_media_id: LegacyImageDetailItemThumbMediaId;
+  thumb_media_id_expires_at: LegacyImageDetailItemThumbMediaIdExpiresAt;
+  ai_metadata: LegacyImageDetailItemAiMetadata;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_160$ */
+  thumb_160_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_320_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  preview_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  mobile_1080_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/large_1440$ */
+  large_1440_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/original$ */
+  original_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/(thumb_160|thumb_320|mobile_1080|large_1440|original)$ */
+  variant_url?: string;
+  /** @minLength 1 */
+  data_base64?: string;
+  /** @pattern ^data:image/(png|jpeg|gif);base64,.+$ */
+  data_url?: string;
+}
+
+export type LegacyImageDetailSuccessSourceStatus =
+  (typeof LegacyImageDetailSuccessSourceStatus)[keyof typeof LegacyImageDetailSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessSourceStatus = {
+  next_media_library: "next_media_library",
+} as const;
+
+export type LegacyImageDetailSuccessRouteOwner =
+  (typeof LegacyImageDetailSuccessRouteOwner)[keyof typeof LegacyImageDetailSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageDetailSuccessStorageAdapterMode =
+  (typeof LegacyImageDetailSuccessStorageAdapterMode)[keyof typeof LegacyImageDetailSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageDetailSuccessAdapterMode =
+  (typeof LegacyImageDetailSuccessAdapterMode)[keyof typeof LegacyImageDetailSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDetailSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageDetailSuccess {
+  ok: boolean;
+  item: LegacyImageDetailItem;
+  source_status: LegacyImageDetailSuccessSourceStatus;
+  route_owner: LegacyImageDetailSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageDetailSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageDetailSuccessAdapterMode;
+}
+
+export interface LegacyImageDeleteReferencesCleared {
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  miniprograms_cleared: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  campaign_steps_cleared: number;
+}
+
+export type LegacyImageDeleteSuccessSourceStatus =
+  (typeof LegacyImageDeleteSuccessSourceStatus)[keyof typeof LegacyImageDeleteSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessSourceStatus = {
+  local_delete: "local_delete",
+} as const;
+
+export type LegacyImageDeleteSuccessRouteOwner =
+  (typeof LegacyImageDeleteSuccessRouteOwner)[keyof typeof LegacyImageDeleteSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageDeleteSuccessStorageAdapterMode =
+  (typeof LegacyImageDeleteSuccessStorageAdapterMode)[keyof typeof LegacyImageDeleteSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageDeleteSuccessAdapterMode =
+  (typeof LegacyImageDeleteSuccessAdapterMode)[keyof typeof LegacyImageDeleteSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageDeleteSuccess {
+  ok: boolean;
+  deleted: boolean;
+  hard_deleted: boolean;
+  /** @minimum 1 */
+  id: number;
+  references_cleared: LegacyImageDeleteReferencesCleared;
+  source_status: LegacyImageDeleteSuccessSourceStatus;
+  route_owner: LegacyImageDeleteSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageDeleteSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageDeleteSuccessAdapterMode;
+}
+
+export interface LegacyImageDeleteReferenceID {
+  /** @minimum 1 */
+  id: number;
+}
+
+export interface LegacyImageDeleteReferences {
+  miniprograms: LegacyImageDeleteReferenceID[];
+  /** @maxItems 0 */
+  campaign_steps: LegacyImageDeleteReferenceID[];
+  group_invites: LegacyImageDeleteReferenceID[];
+  automation_agents: LegacyImageDeleteReferenceID[];
+  channels: LegacyImageDeleteReferenceID[];
+  import_preflights: LegacyImageDeleteReferenceID[];
+}
+
+export type LegacyImageDeleteConflictError =
+  (typeof LegacyImageDeleteConflictError)[keyof typeof LegacyImageDeleteConflictError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictError = {
+  image_has_references: "image_has_references",
+} as const;
+
+export type LegacyImageDeleteConflictSourceStatus =
+  (typeof LegacyImageDeleteConflictSourceStatus)[keyof typeof LegacyImageDeleteConflictSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictSourceStatus = {
+  local_delete: "local_delete",
+} as const;
+
+export type LegacyImageDeleteConflictRouteOwner =
+  (typeof LegacyImageDeleteConflictRouteOwner)[keyof typeof LegacyImageDeleteConflictRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageDeleteConflictStorageAdapterMode =
+  (typeof LegacyImageDeleteConflictStorageAdapterMode)[keyof typeof LegacyImageDeleteConflictStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageDeleteConflictAdapterMode =
+  (typeof LegacyImageDeleteConflictAdapterMode)[keyof typeof LegacyImageDeleteConflictAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageDeleteConflictAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageDeleteConflict {
+  ok: boolean;
+  error: LegacyImageDeleteConflictError;
+  references: LegacyImageDeleteReferences;
+  source_status: LegacyImageDeleteConflictSourceStatus;
+  route_owner: LegacyImageDeleteConflictRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageDeleteConflictStorageAdapterMode;
+  adapter_mode: LegacyImageDeleteConflictAdapterMode;
+}
+
+export interface LegacyImageMetadataUpdateRequest {
+  /**
+   * TrimSpace; absent leaves the stored value unchanged.
+   * @maxLength 200
+   */
+  name?: string;
+  /**
+   * TrimSpace; absent leaves the stored value unchanged.
+   * @maxLength 10000
+   */
+  description?: string;
+  /**
+   * UTF-8 tags are TrimSpace-normalized and exact-first-occurrence deduplicated before comma-joined persistence.
+   * @maxItems 50
+   */
+  tags?: string[];
+  /**
+   * TrimSpace; absent leaves the stored value unchanged.
+   * @maxLength 200
+   */
+  category?: string;
+  /** Absent leaves the stored value unchanged. */
+  enabled?: boolean;
+}
+
+export type LegacyImageMetadataUpdateItemMimeType =
+  (typeof LegacyImageMetadataUpdateItemMimeType)[keyof typeof LegacyImageMetadataUpdateItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export type LegacyImageMetadataUpdateItemContentType =
+  (typeof LegacyImageMetadataUpdateItemContentType)[keyof typeof LegacyImageMetadataUpdateItemContentType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateItemContentType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export type LegacyImageMetadataUpdateItemSource =
+  (typeof LegacyImageMetadataUpdateItemSource)[keyof typeof LegacyImageMetadataUpdateItemSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateItemSource = {
+  upload: "upload",
+} as const;
+
+export type LegacyImageMetadataUpdateItemSourceUrl =
+  (typeof LegacyImageMetadataUpdateItemSourceUrl)[keyof typeof LegacyImageMetadataUpdateItemSourceUrl];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateItemSourceUrl = {
+  "": "",
+} as const;
+
+export type LegacyImageMetadataUpdateItemThumbMediaId =
+  (typeof LegacyImageMetadataUpdateItemThumbMediaId)[keyof typeof LegacyImageMetadataUpdateItemThumbMediaId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateItemThumbMediaId = {
+  "": "",
+} as const;
+
+export type LegacyImageMetadataUpdateItemThumbMediaIdExpiresAt =
+  (typeof LegacyImageMetadataUpdateItemThumbMediaIdExpiresAt)[keyof typeof LegacyImageMetadataUpdateItemThumbMediaIdExpiresAt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateItemThumbMediaIdExpiresAt = {
+  "": "",
+} as const;
+
+export type LegacyImageMetadataUpdateItemAiMetadata = {
+  [key: string]: unknown;
+};
+
+export interface LegacyImageMetadataUpdateItem {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  mime_type: LegacyImageMetadataUpdateItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  /** Actual persisted enabled state. */
+  enabled: boolean;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  /** @maxLength 200 */
+  category: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  /** @minLength 1 */
+  created_at: string;
+  /** @minLength 1 */
+  updated_at: string;
+  content_type: LegacyImageMetadataUpdateItemContentType;
+  source: LegacyImageMetadataUpdateItemSource;
+  source_url: LegacyImageMetadataUpdateItemSourceUrl;
+  thumb_media_id: LegacyImageMetadataUpdateItemThumbMediaId;
+  thumb_media_id_expires_at: LegacyImageMetadataUpdateItemThumbMediaIdExpiresAt;
+  ai_metadata: LegacyImageMetadataUpdateItemAiMetadata;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_160$ */
+  thumb_160_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_320_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/thumb_320$ */
+  thumb_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  preview_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/mobile_1080$ */
+  mobile_1080_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/large_1440$ */
+  large_1440_url: string;
+  /** @pattern ^/api/admin/image-library/[1-9][0-9]*\/variants/original$ */
+  original_url: string;
+}
+
+export type LegacyImageMetadataUpdateSuccessSourceStatus =
+  (typeof LegacyImageMetadataUpdateSuccessSourceStatus)[keyof typeof LegacyImageMetadataUpdateSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateSuccessSourceStatus = {
+  local_repository_write: "local_repository_write",
+} as const;
+
+export type LegacyImageMetadataUpdateSuccessRouteOwner =
+  (typeof LegacyImageMetadataUpdateSuccessRouteOwner)[keyof typeof LegacyImageMetadataUpdateSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageMetadataUpdateSuccessStorageAdapterMode =
+  (typeof LegacyImageMetadataUpdateSuccessStorageAdapterMode)[keyof typeof LegacyImageMetadataUpdateSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageMetadataUpdateSuccessAdapterMode =
+  (typeof LegacyImageMetadataUpdateSuccessAdapterMode)[keyof typeof LegacyImageMetadataUpdateSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageMetadataUpdateSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageMetadataUpdateSuccess {
+  ok: boolean;
+  item: LegacyImageMetadataUpdateItem;
+  source_status: LegacyImageMetadataUpdateSuccessSourceStatus;
+  route_owner: LegacyImageMetadataUpdateSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageMetadataUpdateSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageMetadataUpdateSuccessAdapterMode;
+}
+
+export type LegacyImageUploadItemMimeType =
+  (typeof LegacyImageUploadItemMimeType)[keyof typeof LegacyImageUploadItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadItemMimeType = {
+  "image/png": "image/png",
+  "image/jpeg": "image/jpeg",
+  "image/gif": "image/gif",
+} as const;
+
+export interface LegacyImageUploadItem {
+  /** @minimum 1 */
+  id: number;
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  file_name: string;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  mime_type: LegacyImageUploadItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  width: number;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  height: number;
+  description: string;
+  tags: string;
+  category: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyImageUploadSuccessSourceStatus =
+  (typeof LegacyImageUploadSuccessSourceStatus)[keyof typeof LegacyImageUploadSuccessSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessSourceStatus = {
+  local_upload: "local_upload",
+} as const;
+
+export type LegacyImageUploadSuccessRouteOwner =
+  (typeof LegacyImageUploadSuccessRouteOwner)[keyof typeof LegacyImageUploadSuccessRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyImageUploadSuccessStorageAdapterMode =
+  (typeof LegacyImageUploadSuccessStorageAdapterMode)[keyof typeof LegacyImageUploadSuccessStorageAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessStorageAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export type LegacyImageUploadSuccessAdapterMode =
+  (typeof LegacyImageUploadSuccessAdapterMode)[keyof typeof LegacyImageUploadSuccessAdapterMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadSuccessAdapterMode = {
+  postgresql: "postgresql",
+} as const;
+
+export interface LegacyImageUploadSuccess {
+  ok: boolean;
+  item: LegacyImageUploadItem;
+  source_status: LegacyImageUploadSuccessSourceStatus;
+  route_owner: LegacyImageUploadSuccessRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  storage_adapter_mode: LegacyImageUploadSuccessStorageAdapterMode;
+  adapter_mode: LegacyImageUploadSuccessAdapterMode;
+}
+
+export type LegacyImageUploadErrorSourceStatus =
+  (typeof LegacyImageUploadErrorSourceStatus)[keyof typeof LegacyImageUploadErrorSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadErrorSourceStatus = {
+  next_media_library_error: "next_media_library_error",
+} as const;
+
+export type LegacyImageUploadErrorRouteOwner =
+  (typeof LegacyImageUploadErrorRouteOwner)[keyof typeof LegacyImageUploadErrorRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyImageUploadErrorRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyImageUploadError {
+  ok: boolean;
+  /** @minLength 1 */
+  error: string;
+  source_status: LegacyImageUploadErrorSourceStatus;
+  route_owner: LegacyImageUploadErrorRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyGroupInviteFields {
+  /** @minLength 1 */
+  name?: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  title?: string;
+  /** @maxLength 512 */
+  description?: string;
+  /**
+   * @maxLength 2048
+   * @pattern ^https://work[.]weixin[.]qq[.]com/gm/[^?#]+$
+   */
+  join_url?: string;
+  /** @minimum 0 */
+  cover_image_id?: number;
+  enabled?: boolean;
+}
+
+export type LegacyGroupInviteCreateRequestAllOf = { [key: string]: unknown };
+
+export type LegacyGroupInviteCreateRequest = LegacyGroupInviteFields &
+  LegacyGroupInviteCreateRequestAllOf &
+  Required<
+    Pick<
+      LegacyGroupInviteFields & LegacyGroupInviteCreateRequestAllOf,
+      "title" | "join_url"
+    >
+  >;
+
+export type LegacyGroupInviteUpdateRequestAllOf = { [key: string]: unknown };
+
+export type LegacyGroupInviteUpdateRequest = LegacyGroupInviteFields &
+  LegacyGroupInviteUpdateRequestAllOf;
+
+export type LegacyGroupInviteAllOf = {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+  archived_at?: string;
+};
+
+export type LegacyGroupInvite = LegacyGroupInviteFields &
+  LegacyGroupInviteAllOf &
+  Required<
+    Pick<
+      LegacyGroupInviteFields & LegacyGroupInviteAllOf,
+      "name" | "title" | "description" | "join_url" | "enabled"
+    >
+  >;
+
+export interface LegacyGroupInviteListResponse {
+  ok: boolean;
+  items: LegacyGroupInvite[];
+  group_invites: LegacyGroupInvite[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  provider_call_executed: boolean;
+}
+
+export interface LegacyGroupInviteDetailResponse {
+  ok: boolean;
+  item: LegacyGroupInvite;
+  group_invite: LegacyGroupInvite;
+  provider_call_executed: boolean;
+}
+
+export interface LegacyGroupInviteMutationResponse {
+  ok: boolean;
+  item: LegacyGroupInvite;
+  group_invite: LegacyGroupInvite;
+  /** @minimum 1 */
+  item_id?: number;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+  [key: string]: unknown;
+}
+
+export interface LegacyGroupInviteArchiveResponse {
+  ok: boolean;
+  item: LegacyGroupInvite;
+  archived: boolean;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyHXCSenderConfig {
+  id: string;
+  /** @minLength 1 */
+  sender_userid: string;
+  /** @maxLength 200 */
+  display_name: string;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyHXCDirectoryCandidatePosition =
+  (typeof LegacyHXCDirectoryCandidatePosition)[keyof typeof LegacyHXCDirectoryCandidatePosition];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCDirectoryCandidatePosition = {
+  "": "",
+} as const;
+
+export type LegacyHXCDirectoryCandidateWecomStatus =
+  (typeof LegacyHXCDirectoryCandidateWecomStatus)[keyof typeof LegacyHXCDirectoryCandidateWecomStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCDirectoryCandidateWecomStatus = {
+  NUMBER_0: 0,
+} as const;
+
+export interface LegacyHXCDirectoryCandidate {
+  /** @minLength 1 */
+  wecom_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  display_name: string;
+  position: LegacyHXCDirectoryCandidatePosition;
+  wecom_status: LegacyHXCDirectoryCandidateWecomStatus;
+  is_sender: boolean;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  priority: number;
+  is_active: boolean;
+}
+
+export type LegacyHXCSenderReadResponseSourceStatus =
+  (typeof LegacyHXCSenderReadResponseSourceStatus)[keyof typeof LegacyHXCSenderReadResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderReadResponseSourceStatus = {
+  v2_local_staff: "v2_local_staff",
+} as const;
+
+export type LegacyHXCSenderReadResponseRouteOwner =
+  (typeof LegacyHXCSenderReadResponseRouteOwner)[keyof typeof LegacyHXCSenderReadResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderReadResponseRouteOwner = {
+  aicrm_v2: "aicrm_v2",
+} as const;
+
+export type LegacyHXCSenderReadResponseWarningsItem =
+  (typeof LegacyHXCSenderReadResponseWarningsItem)[keyof typeof LegacyHXCSenderReadResponseWarningsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderReadResponseWarningsItem = {
+  "HXC_senders_use_the_local_staff_projection;_no_WeCom_directory_call_was_executed":
+    "HXC senders use the local staff projection; no WeCom directory call was executed.",
+} as const;
+
+export interface LegacyHXCSenderReadResponse {
+  ok: boolean;
+  source_status: LegacyHXCSenderReadResponseSourceStatus;
+  route_owner: LegacyHXCSenderReadResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  send_configs: LegacyHXCSenderConfig[];
+  directory_candidates: LegacyHXCDirectoryCandidate[];
+  members: LegacyHXCDirectoryCandidate[];
+  /** @minimum 0 */
+  directory_count: number;
+  /** @minimum 0 */
+  sender_count: number;
+  /** @minimum 0 */
+  active_sender_count: number;
+  /** UTC RFC3339Nano or empty when no eligible staff. */
+  last_synced_at: string;
+  /**
+   * @minItems 1
+   * @maxItems 1
+   */
+  warnings: LegacyHXCSenderReadResponseWarningsItem[];
+  degraded: boolean;
+  empty_state: boolean;
+}
+
+export interface LegacyHXCSenderSaveRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  sender_userid: string;
+  /** @maxLength 200 */
+  display_name: string;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  priority: number;
+  is_active: boolean;
+}
+
+export interface LegacyHXCSenderReorderRequest {
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  ids: string[];
+}
+
+export type LegacyHXCSenderMutationResponseOperation =
+  (typeof LegacyHXCSenderMutationResponseOperation)[keyof typeof LegacyHXCSenderMutationResponseOperation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderMutationResponseOperation = {
+  saved: "saved",
+  reordered: "reordered",
+  archived: "archived",
+} as const;
+
+export interface LegacyHXCSenderMutationResponse {
+  ok: boolean;
+  operation: LegacyHXCSenderMutationResponseOperation;
+  item?: LegacyHXCSenderConfig;
+  items: LegacyHXCSenderConfig[];
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+  readback_confirmed: boolean;
+}
+
+export type LegacyHXCSenderMutationErrorStatusCode =
+  (typeof LegacyHXCSenderMutationErrorStatusCode)[keyof typeof LegacyHXCSenderMutationErrorStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderMutationErrorStatusCode = {
+  NUMBER_400: 400,
+  NUMBER_409: 409,
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyHXCSenderMutationErrorErrorCode =
+  (typeof LegacyHXCSenderMutationErrorErrorCode)[keyof typeof LegacyHXCSenderMutationErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderMutationErrorErrorCode = {
+  invalid_hxc_send_config: "invalid_hxc_send_config",
+  hxc_send_config_conflict: "hxc_send_config_conflict",
+  hxc_send_config_unavailable: "hxc_send_config_unavailable",
+} as const;
+
+export interface LegacyHXCSenderMutationError {
+  ok: boolean;
+  status_code: LegacyHXCSenderMutationErrorStatusCode;
+  error_code: LegacyHXCSenderMutationErrorErrorCode;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyHXCSenderUnavailableResponseStatusCode =
+  (typeof LegacyHXCSenderUnavailableResponseStatusCode)[keyof typeof LegacyHXCSenderUnavailableResponseStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderUnavailableResponseStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyHXCSenderUnavailableResponseErrorCode =
+  (typeof LegacyHXCSenderUnavailableResponseErrorCode)[keyof typeof LegacyHXCSenderUnavailableResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderUnavailableResponseErrorCode = {
+  hxc_send_config_unavailable: "hxc_send_config_unavailable",
+} as const;
+
+export interface LegacyHXCSenderUnavailableResponse {
+  ok: boolean;
+  status_code: LegacyHXCSenderUnavailableResponseStatusCode;
+  error_code: LegacyHXCSenderUnavailableResponseErrorCode;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDeliveryLineageRecordRecordKind =
+  (typeof LegacyDeliveryLineageRecordRecordKind)[keyof typeof LegacyDeliveryLineageRecordRecordKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordRecordKind = {
+  outbound_task: "outbound_task",
+  event_delivery: "event_delivery",
+} as const;
+
+export type LegacyDeliveryLineageRecordInternalState =
+  (typeof LegacyDeliveryLineageRecordInternalState)[keyof typeof LegacyDeliveryLineageRecordInternalState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordInternalState = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+  processing: "processing",
+  completed: "completed",
+} as const;
+
+export type LegacyDeliveryLineageRecordExternalDelivery =
+  (typeof LegacyDeliveryLineageRecordExternalDelivery)[keyof typeof LegacyDeliveryLineageRecordExternalDelivery];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordExternalDelivery = {
+  unknown: "unknown",
+} as const;
+
+export type LegacyDeliveryLineageRecordExternalReceipt =
+  (typeof LegacyDeliveryLineageRecordExternalReceipt)[keyof typeof LegacyDeliveryLineageRecordExternalReceipt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageRecordExternalReceipt = {
+  unknown: "unknown",
+} as const;
+
+export interface LegacyDeliveryLineageRecord {
+  /** @pattern ^(outbound-task:[1-9][0-9]*|event-delivery:v1:[0-9a-f]{64})$ */
+  lineage_id: string;
+  record_kind: LegacyDeliveryLineageRecordRecordKind;
+  internal_state: LegacyDeliveryLineageRecordInternalState;
+  /** @minimum 0 */
+  attempt_count: number;
+  updated_at: string;
+  external_delivery: LegacyDeliveryLineageRecordExternalDelivery;
+  external_receipt: LegacyDeliveryLineageRecordExternalReceipt;
+}
+
+export type LegacyDeliveryLineageInterpretationKind =
+  (typeof LegacyDeliveryLineageInterpretationKind)[keyof typeof LegacyDeliveryLineageInterpretationKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageInterpretationKind = {
+  internal_processing_only: "internal_processing_only",
+} as const;
+
+export type LegacyDeliveryLineageInterpretationExternalDelivery =
+  (typeof LegacyDeliveryLineageInterpretationExternalDelivery)[keyof typeof LegacyDeliveryLineageInterpretationExternalDelivery];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageInterpretationExternalDelivery = {
+  unknown: "unkn

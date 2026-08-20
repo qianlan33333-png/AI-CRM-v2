@@ -1,0 +1,1531 @@
+solveIdentityConflict;
+
+export type ResolveIdentityFoundStatus =
+  (typeof ResolveIdentityFoundStatus)[keyof typeof ResolveIdentityFoundStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ResolveIdentityFoundStatus = {
+  found: "found",
+} as const;
+
+export interface ResolveIdentityFound {
+  status: ResolveIdentityFoundStatus;
+  /** @minimum 1 */
+  customer_id: number;
+}
+
+export type ResolveIdentityNotFoundStatus =
+  (typeof ResolveIdentityNotFoundStatus)[keyof typeof ResolveIdentityNotFoundStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ResolveIdentityNotFoundStatus = {
+  not_found: "not_found",
+} as const;
+
+export interface ResolveIdentityNotFound {
+  status: ResolveIdentityNotFoundStatus;
+}
+
+export type ResolveIdentityConflictStatus =
+  (typeof ResolveIdentityConflictStatus)[keyof typeof ResolveIdentityConflictStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ResolveIdentityConflictStatus = {
+  conflict: "conflict",
+} as const;
+
+export interface ResolveIdentityConflict {
+  status: ResolveIdentityConflictStatus;
+}
+
+export interface BindIdentityRequest {
+  /** @minimum 1 */
+  customer_id: number;
+  ref: IdentityRef;
+}
+
+export type BindIdentityResponse =
+  | BindIdentityBound
+  | BindIdentityAlreadyBound
+  | BindIdentityMerged
+  | BindIdentityManualReview
+  | BindIdentityRejected;
+
+export type BindIdentityBoundStatus =
+  (typeof BindIdentityBoundStatus)[keyof typeof BindIdentityBoundStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BindIdentityBoundStatus = {
+  bound: "bound",
+} as const;
+
+export interface BindIdentityBound {
+  status: BindIdentityBoundStatus;
+  /** @minimum 1 */
+  customer_id: number;
+}
+
+export type BindIdentityAlreadyBoundStatus =
+  (typeof BindIdentityAlreadyBoundStatus)[keyof typeof BindIdentityAlreadyBoundStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BindIdentityAlreadyBoundStatus = {
+  already_bound: "already_bound",
+} as const;
+
+export interface BindIdentityAlreadyBound {
+  status: BindIdentityAlreadyBoundStatus;
+  /** @minimum 1 */
+  customer_id: number;
+}
+
+export type BindIdentityMergedStatus =
+  (typeof BindIdentityMergedStatus)[keyof typeof BindIdentityMergedStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BindIdentityMergedStatus = {
+  merged: "merged",
+} as const;
+
+export interface BindIdentityMerged {
+  status: BindIdentityMergedStatus;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  primary_customer_id: number;
+  /** @minimum 1 */
+  merge_audit_id: number;
+}
+
+export type BindIdentityManualReviewStatus =
+  (typeof BindIdentityManualReviewStatus)[keyof typeof BindIdentityManualReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BindIdentityManualReviewStatus = {
+  manual_review: "manual_review",
+} as const;
+
+export interface BindIdentityManualReview {
+  status: BindIdentityManualReviewStatus;
+  /** @minimum 1 */
+  review_id: number;
+}
+
+export type BindIdentityRejectedStatus =
+  (typeof BindIdentityRejectedStatus)[keyof typeof BindIdentityRejectedStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BindIdentityRejectedStatus = {
+  rejected: "rejected",
+} as const;
+
+export interface BindIdentityRejected {
+  status: BindIdentityRejectedStatus;
+}
+
+export type IngestIdentityEventRequestPayload = { [key: string]: unknown };
+
+export interface IngestIdentityEventRequest {
+  /** @minItems 1 */
+  refs: IdentityRef[];
+  /** @minLength 1 */
+  event_type: string;
+  payload: IngestIdentityEventRequestPayload;
+  occurred_at: string;
+}
+
+export type IngestIdentityEventResponse =
+  | IngestIdentityEventAttributed
+  | IngestIdentityEventPending
+  | IngestIdentityEventConflict;
+
+export type IngestIdentityEventAttributedStatus =
+  (typeof IngestIdentityEventAttributedStatus)[keyof typeof IngestIdentityEventAttributedStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IngestIdentityEventAttributedStatus = {
+  attributed: "attributed",
+} as const;
+
+export interface IngestIdentityEventAttributed {
+  status: IngestIdentityEventAttributedStatus;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  event_id: number;
+}
+
+export type IngestIdentityEventPendingStatus =
+  (typeof IngestIdentityEventPendingStatus)[keyof typeof IngestIdentityEventPendingStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IngestIdentityEventPendingStatus = {
+  pending: "pending",
+} as const;
+
+export interface IngestIdentityEventPending {
+  status: IngestIdentityEventPendingStatus;
+  /** @minimum 1 */
+  pending_event_id: number;
+}
+
+export type IngestIdentityEventConflictStatus =
+  (typeof IngestIdentityEventConflictStatus)[keyof typeof IngestIdentityEventConflictStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IngestIdentityEventConflictStatus = {
+  conflict: "conflict",
+} as const;
+
+export interface IngestIdentityEventConflict {
+  status: IngestIdentityEventConflictStatus;
+  /** @minimum 1 */
+  pending_event_id: number;
+}
+
+export type IdentityMergeReviewStatus =
+  (typeof IdentityMergeReviewStatus)[keyof typeof IdentityMergeReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IdentityMergeReviewStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export type IdentityMergeReviewType =
+  (typeof IdentityMergeReviewType)[keyof typeof IdentityMergeReviewType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IdentityMergeReviewType = {
+  unionid: "unionid",
+  phone: "phone",
+} as const;
+
+export interface IdentityMergeReview {
+  /** @minimum 1 */
+  review_id: number;
+  status: IdentityMergeReviewStatus;
+  type: IdentityMergeReviewType;
+  /** @minLength 1 */
+  scope: string;
+  /**
+   * Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
+   * @pattern ^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$
+   */
+  identity_fingerprint: string;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  customer_ids: number[];
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  /**
+   * Explicitly null while pending; non-null after approval or rejection.
+   * @nullable
+   */
+  resolved_at: string | null;
+}
+
+export interface IdentityMergeReviewPage {
+  items: IdentityMergeReview[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+}
+
+export interface ApproveIdentityMergeReviewRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /** @minimum 1 */
+  primary_customer_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}
+
+export interface RejectIdentityMergeReviewRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}
+
+export type AuthSessionResponseRole =
+  (typeof AuthSessionResponseRole)[keyof typeof AuthSessionResponseRole];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AuthSessionResponseRole = {
+  admin: "admin",
+  ops: "ops",
+  sales: "sales",
+} as const;
+
+export interface AuthSessionResponse {
+  /** @minimum 1 */
+  admin_user_id: number;
+  role: AuthSessionResponseRole;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  staff_id?: number | null;
+}
+
+export type AdminConfigEntrySourceStatus =
+  (typeof AdminConfigEntrySourceStatus)[keyof typeof AdminConfigEntrySourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminConfigEntrySourceStatus = {
+  configured: "configured",
+  missing: "missing",
+  invalid: "invalid",
+} as const;
+
+export interface AdminConfigEntry {
+  /** @minLength 1 */
+  key: string;
+  configured: boolean;
+  source_status: AdminConfigEntrySourceStatus;
+}
+
+export interface AdminConfigOverviewResponse {
+  items: AdminConfigEntry[];
+}
+
+export type LegacyAppSettingMetadataKey =
+  (typeof LegacyAppSettingMetadataKey)[keyof typeof LegacyAppSettingMetadataKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataKey = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+  databaseurl: "database.url",
+  wecomsecret: "wecom.secret",
+  wecomcallback_token: "wecom.callback_token",
+  wecomcallback_aes_key: "wecom.callback_aes_key",
+  aiapi_key: "ai.api_key",
+  authjwt_secret: "auth.jwt_secret",
+  extensionapi_key_pepper: "extension.api_key_pepper",
+  gatewaywebhook_master_key: "gateway.webhook_master_key",
+} as const;
+
+export type LegacyAppSettingMetadataMode =
+  (typeof LegacyAppSettingMetadataMode)[keyof typeof LegacyAppSettingMetadataMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataMode = {
+  editable: "editable",
+  masked: "masked",
+} as const;
+
+export type LegacyAppSettingMetadataInputType =
+  (typeof LegacyAppSettingMetadataInputType)[keyof typeof LegacyAppSettingMetadataInputType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataInputType = {
+  text: "text",
+  number: "number",
+  password: "password",
+} as const;
+
+export type LegacyAppSettingMetadataDescription =
+  (typeof LegacyAppSettingMetadataDescription)[keyof typeof LegacyAppSettingMetadataDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingMetadataDescription = {
+  "": "",
+} as const;
+
+export interface LegacyAppSettingMetadata {
+  key: LegacyAppSettingMetadataKey;
+  label: string;
+  mode: LegacyAppSettingMetadataMode;
+  input_type: LegacyAppSettingMetadataInputType;
+  description: LegacyAppSettingMetadataDescription;
+}
+
+export type LegacyEditableAppSettingKey =
+  (typeof LegacyEditableAppSettingKey)[keyof typeof LegacyEditableAppSettingKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingKey = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+} as const;
+
+export type LegacyEditableAppSettingLabel =
+  (typeof LegacyEditableAppSettingLabel)[keyof typeof LegacyEditableAppSettingLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingLabel = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+} as const;
+
+export type LegacyEditableAppSettingMode =
+  (typeof LegacyEditableAppSettingMode)[keyof typeof LegacyEditableAppSettingMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingMode = {
+  editable: "editable",
+} as const;
+
+export type LegacyEditableAppSettingInputType =
+  (typeof LegacyEditableAppSettingInputType)[keyof typeof LegacyEditableAppSettingInputType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingInputType = {
+  text: "text",
+  number: "number",
+} as const;
+
+export type LegacyEditableAppSettingDescription =
+  (typeof LegacyEditableAppSettingDescription)[keyof typeof LegacyEditableAppSettingDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingDescription = {
+  "": "",
+} as const;
+
+export type LegacyEditableAppSettingSource =
+  (typeof LegacyEditableAppSettingSource)[keyof typeof LegacyEditableAppSettingSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingSource = {
+  app_settings: "app_settings",
+  config: "config",
+} as const;
+
+export type LegacyEditableAppSettingVersion =
+  (typeof LegacyEditableAppSettingVersion)[keyof typeof LegacyEditableAppSettingVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingVersion = {
+  "": "",
+} as const;
+
+export type LegacyEditableAppSettingLastActionType =
+  (typeof LegacyEditableAppSettingLastActionType)[keyof typeof LegacyEditableAppSettingLastActionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyEditableAppSettingLastActionType = {
+  create: "create",
+  update: "update",
+  empty: "empty",
+} as const;
+
+export interface LegacyEditableAppSetting {
+  key: LegacyEditableAppSettingKey;
+  label: LegacyEditableAppSettingLabel;
+  mode: LegacyEditableAppSettingMode;
+  input_type: LegacyEditableAppSettingInputType;
+  description: LegacyEditableAppSettingDescription;
+  value: string;
+  display_value: string;
+  configured: boolean;
+  source: LegacyEditableAppSettingSource;
+  version: LegacyEditableAppSettingVersion;
+  updated_at: string;
+  last_modified_at: string;
+  last_modified_by: string;
+  last_action_type: LegacyEditableAppSettingLastActionType;
+}
+
+export type LegacyMaskedAppSettingKey =
+  (typeof LegacyMaskedAppSettingKey)[keyof typeof LegacyMaskedAppSettingKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingKey = {
+  databaseurl: "database.url",
+  wecomsecret: "wecom.secret",
+  wecomcallback_token: "wecom.callback_token",
+  wecomcallback_aes_key: "wecom.callback_aes_key",
+  aiapi_key: "ai.api_key",
+  authjwt_secret: "auth.jwt_secret",
+  extensionapi_key_pepper: "extension.api_key_pepper",
+  gatewaywebhook_master_key: "gateway.webhook_master_key",
+} as const;
+
+export type LegacyMaskedAppSettingLabel =
+  (typeof LegacyMaskedAppSettingLabel)[keyof typeof LegacyMaskedAppSettingLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingLabel = {
+  databaseurl: "database.url",
+  wecomsecret: "wecom.secret",
+  wecomcallback_token: "wecom.callback_token",
+  wecomcallback_aes_key: "wecom.callback_aes_key",
+  aiapi_key: "ai.api_key",
+  authjwt_secret: "auth.jwt_secret",
+  extensionapi_key_pepper: "extension.api_key_pepper",
+  gatewaywebhook_master_key: "gateway.webhook_master_key",
+} as const;
+
+export type LegacyMaskedAppSettingMode =
+  (typeof LegacyMaskedAppSettingMode)[keyof typeof LegacyMaskedAppSettingMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingMode = {
+  masked: "masked",
+} as const;
+
+export type LegacyMaskedAppSettingInputType =
+  (typeof LegacyMaskedAppSettingInputType)[keyof typeof LegacyMaskedAppSettingInputType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingInputType = {
+  password: "password",
+} as const;
+
+export type LegacyMaskedAppSettingDescription =
+  (typeof LegacyMaskedAppSettingDescription)[keyof typeof LegacyMaskedAppSettingDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMaskedAppSettingDescription = {
+  "": "",
+} as const;
+
+export interface LegacyMaskedAppSetting {
+  key: LegacyMaskedAppSettingKey;
+  label: LegacyMaskedAppSettingLabel;
+  mode: LegacyMaskedAppSettingMode;
+  input_type: LegacyMaskedAppSettingInputType;
+  description: LegacyMaskedAppSettingDescription;
+  configured: boolean;
+  masked: boolean;
+}
+
+export type LegacyAppSettingsSummaryCardLabel =
+  (typeof LegacyAppSettingsSummaryCardLabel)[keyof typeof LegacyAppSettingsSummaryCardLabel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsSummaryCardLabel = {
+  可直接编辑: "可直接编辑",
+  敏感信息: "敏感信息",
+  已配置: "已配置",
+} as const;
+
+export type LegacyAppSettingsSummaryCardDescription =
+  (typeof LegacyAppSettingsSummaryCardDescription)[keyof typeof LegacyAppSettingsSummaryCardDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsSummaryCardDescription = {
+  可以直接修改的设置项: "可以直接修改的设置项",
+  只显示掩码的设置项: "只显示掩码的设置项",
+  当前已经配置完成的设置项: "当前已经配置完成的设置项",
+} as const;
+
+export interface LegacyAppSettingsSummaryCard {
+  label: LegacyAppSettingsSummaryCardLabel;
+  /**
+   * @minimum 0
+   * @maximum 12
+   */
+  value: number;
+  description: LegacyAppSettingsSummaryCardDescription;
+}
+
+export type LegacyAppSettingsAuditEntryActionType =
+  (typeof LegacyAppSettingsAuditEntryActionType)[keyof typeof LegacyAppSettingsAuditEntryActionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsAuditEntryActionType = {
+  create: "create",
+  update: "update",
+} as const;
+
+export type LegacyAppSettingsAuditEntryTargetId =
+  (typeof LegacyAppSettingsAuditEntryTargetId)[keyof typeof LegacyAppSettingsAuditEntryTargetId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsAuditEntryTargetId = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+  outboundrate_per_second: "outbound.rate_per_second",
+  outboundmax_attempts: "outbound.max_attempts",
+} as const;
+
+export interface LegacyAppSettingsAuditEntry {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  operator: string;
+  action_type: LegacyAppSettingsAuditEntryActionType;
+  target_id: LegacyAppSettingsAuditEntryTargetId;
+  created_at: string;
+}
+
+export type LegacyAppSettingsProjectionRowsItem =
+  LegacyEditableAppSetting | LegacyMaskedAppSetting;
+
+export type LegacyAppSettingsProjectionMetadataMap = {
+  [key: string]: LegacyAppSettingMetadata;
+};
+
+export interface LegacyAppSettingsProjection {
+  /** @maxItems 12 */
+  rows: LegacyAppSettingsProjectionRowsItem[];
+  metadata_map: LegacyAppSettingsProjectionMetadataMap;
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  summary_cards: LegacyAppSettingsSummaryCard[];
+  /** @maxItems 10 */
+  audit_entries: LegacyAppSettingsAuditEntry[];
+}
+
+export type AdminShellAccessDeniedError =
+  (typeof AdminShellAccessDeniedError)[keyof typeof AdminShellAccessDeniedError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminShellAccessDeniedError = {
+  admin_capability_required: "admin_capability_required",
+  principal_type_forbidden: "principal_type_forbidden",
+} as const;
+
+export type AdminShellAccessDeniedRequiredCapability =
+  (typeof AdminShellAccessDeniedRequiredCapability)[keyof typeof AdminShellAccessDeniedRequiredCapability];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminShellAccessDeniedRequiredCapability = {
+  admin_read: "admin_read",
+} as const;
+
+export type AdminShellAccessDeniedRouteOwner =
+  (typeof AdminShellAccessDeniedRouteOwner)[keyof typeof AdminShellAccessDeniedRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminShellAccessDeniedRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface AdminShellAccessDenied {
+  ok: boolean;
+  error: AdminShellAccessDeniedError;
+  required_capability: AdminShellAccessDeniedRequiredCapability;
+  route_owner: AdminShellAccessDeniedRouteOwner;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyAppSettingsResponseSourceStatus =
+  (typeof LegacyAppSettingsResponseSourceStatus)[keyof typeof LegacyAppSettingsResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsResponseSourceStatus = {
+  next_read_model: "next_read_model",
+} as const;
+
+export interface LegacyAppSettingsResponse {
+  ok: boolean;
+  config: LegacyAppSettingsProjection;
+  source_status: LegacyAppSettingsResponseSourceStatus;
+  fallback_used: boolean;
+  /**
+   * Present only for an authenticated caller and bound to PUT /api/admin/config/app-settings.
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token?: string;
+}
+
+export type LegacyAppSettingsResourceSaveRequestSettings = {
+  [key: string]: string | number;
+};
+
+export interface LegacyAppSettingsResourceSaveRequest {
+  settings?: LegacyAppSettingsResourceSaveRequestSettings;
+  confirm: boolean;
+  /**
+   * Used only when the action-token header is absent.
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token?: string;
+  /** Ignored; actor is always derived from the authenticated Principal. */
+  operator?: string;
+  [key: string]: unknown;
+}
+
+export type LegacyAppSettingsResourceChangedEditableValue = string | number;
+
+export interface LegacyAppSettingsResourceChangedEditable {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  key: string;
+  value: LegacyAppSettingsResourceChangedEditableValue;
+}
+
+export interface LegacyAppSettingsResourceChangedMasked {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  key: string;
+  configured: boolean;
+  masked: boolean;
+}
+
+export type LegacyAppSettingsResourceSaveResponseChangedItem =
+  | LegacyAppSettingsResourceChangedEditable
+  | LegacyAppSettingsResourceChangedMasked;
+
+export type LegacyAppSettingsResourceSaveResponseSourceStatus =
+  (typeof LegacyAppSettingsResourceSaveResponseSourceStatus)[keyof typeof LegacyAppSettingsResourceSaveResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsResourceSaveResponseSourceStatus = {
+  next_command: "next_command",
+} as const;
+
+export interface LegacyAppSettingsResourceSaveResponse {
+  ok: boolean;
+  /** @maxItems 12 */
+  changed: LegacyAppSettingsResourceSaveResponseChangedItem[];
+  /**
+   * @minimum 0
+   * @maximum 12
+   */
+  changed_count: number;
+  config: LegacyAppSettingsProjection;
+  source_status: LegacyAppSettingsResourceSaveResponseSourceStatus;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyAppSettingsResourceSaveErrorError =
+  (typeof LegacyAppSettingsResourceSaveErrorError)[keyof typeof LegacyAppSettingsResourceSaveErrorError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsResourceSaveErrorError = {
+  payload_must_be_object: "payload_must_be_object",
+  confirmation_required: "confirmation_required",
+  settings_must_be_object: "settings_must_be_object",
+  invalid_setting_value: "invalid_setting_value",
+  invalid_action_token: "invalid_action_token",
+  secret_input_forbidden: "secret_input_forbidden",
+  settings_idempotency_conflict: "settings_idempotency_conflict",
+  invalid_setting: "invalid_setting",
+  settings_unavailable: "settings_unavailable",
+} as const;
+
+export interface LegacyAppSettingsResourceSaveError {
+  ok: boolean;
+  error: LegacyAppSettingsResourceSaveErrorError;
+}
+
+export type LegacyAppSettingsSaveFormConfirm =
+  (typeof LegacyAppSettingsSaveFormConfirm)[keyof typeof LegacyAppSettingsSaveFormConfirm];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAppSettingsSaveFormConfirm = {
+  NUMBER_1: "1",
+} as const;
+
+export interface LegacyAppSettingsSaveForm {
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  csrf_token: string;
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token: string;
+  confirm: LegacyAppSettingsSaveFormConfirm;
+  /** Ignored; actor is always derived from the authenticated Principal. */
+  operator?: string;
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  "setting__wecom.corp_id"?: string;
+  /** @pattern ^[1-9][0-9]*$ */
+  "setting__wecom.agent_id"?: string;
+  /** @pattern ^([1-9]|[1-4][0-9]|50)$ */
+  "setting__outbound.rate_per_second"?: string;
+  /** @pattern ^([1-9]|10)$ */
+  "setting__outbound.max_attempts"?: string;
+  /** @maxLength 0 */
+  "setting__database.url"?: string;
+  /** @maxLength 0 */
+  "setting__wecom.secret"?: string;
+  /** @maxLength 0 */
+  "setting__wecom.callback_token"?: string;
+  /** @maxLength 0 */
+  "setting__wecom.callback_aes_key"?: string;
+  /** @maxLength 0 */
+  "setting__ai.api_key"?: string;
+  /** @maxLength 0 */
+  "setting__auth.jwt_secret"?: string;
+  /** @maxLength 0 */
+  "setting__extension.api_key_pepper"?: string;
+  /** @maxLength 0 */
+  "setting__gateway.webhook_master_key"?: string;
+}
+
+export type LegacyPushCenterSectionKey =
+  (typeof LegacyPushCenterSectionKey)[keyof typeof LegacyPushCenterSectionKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionKey = {
+  questionnaire: "questionnaire",
+  order: "order",
+  ai_assist: "ai_assist",
+  private_broadcast: "private_broadcast",
+  group_ops: "group_ops",
+  group_broadcast: "group_broadcast",
+  customer_webhook: "customer_webhook",
+  tags: "tags",
+  welcome: "welcome",
+  payment: "payment",
+  integrations: "integrations",
+  test_receiver: "test_receiver",
+  other: "other",
+} as const;
+
+export interface LegacyPushCenterSection {
+  key: LegacyPushCenterSectionKey;
+  label: string;
+  effect_types: string[];
+  capability_key: string;
+  /** @minimum 0 */
+  count: number;
+}
+
+export type LegacyPushCenterStatusDefinitionKey =
+  (typeof LegacyPushCenterStatusDefinitionKey)[keyof typeof LegacyPushCenterStatusDefinitionKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatusDefinitionKey = {
+  pending: "pending",
+  running: "running",
+  succeeded: "succeeded",
+  sent: "sent",
+  simulated: "simulated",
+  unknown_after_dispatch: "unknown_after_dispatch",
+  failed: "failed",
+  sent_with_shadow_warning: "sent_with_shadow_warning",
+  shadow_failed_not_business_failed: "shadow_failed_not_business_failed",
+} as const;
+
+export interface LegacyPushCenterStatusDefinition {
+  key: LegacyPushCenterStatusDefinitionKey;
+  label: string;
+  definition: string;
+}
+
+/**
+ * Every present property is a non-empty, trimmed request value and is internal PII when it identifies a recipient or owner.
+ */
+export interface LegacyPushCenterFilters {
+  section?: string;
+  effect_type?: string;
+  status?: string;
+  business_type?: string;
+  business_id?: string;
+  target_type?: string;
+  target_id?: string;
+  external_userid?: string;
+  owner_userid?: string;
+  trace_id?: string;
+  idempotency_key?: string;
+  source_module?: string;
+  source_route?: string;
+  created_from?: string;
+  created_to?: string;
+}
+
+export type LegacyPushCenterCountsByEffectiveStatus = { [key: string]: number };
+
+export type LegacyPushCenterCountsByStatus = { [key: string]: number };
+
+export type LegacyPushCenterCountsBySection = { [key: string]: number };
+
+export interface LegacyPushCenterCounts {
+  /** @minimum 0 */
+  total: number;
+  by_effective_status: LegacyPushCenterCountsByEffectiveStatus;
+  by_status: LegacyPushCenterCountsByStatus;
+  by_section: LegacyPushCenterCountsBySection;
+  /** @minimum 0 */
+  pending: number;
+  /** @minimum 0 */
+  running: number;
+  /** @minimum 0 */
+  succeeded: number;
+  /** @minimum 0 */
+  sent: number;
+  /** @minimum 0 */
+  failed: number;
+  /** @minimum 0 */
+  shadow_warning: number;
+}
+
+export type LegacyPushCenterDegradedCountsTotal =
+  (typeof LegacyPushCenterDegradedCountsTotal)[keyof typeof LegacyPushCenterDegradedCountsTotal];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsTotal = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsByEffectiveStatus = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterDegradedCountsByStatus = { [key: string]: unknown };
+
+export type LegacyPushCenterDegradedCountsBySection = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterDegradedCountsPending =
+  (typeof LegacyPushCenterDegradedCountsPending)[keyof typeof LegacyPushCenterDegradedCountsPending];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsPending = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsRunning =
+  (typeof LegacyPushCenterDegradedCountsRunning)[keyof typeof LegacyPushCenterDegradedCountsRunning];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsRunning = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsSent =
+  (typeof LegacyPushCenterDegradedCountsSent)[keyof typeof LegacyPushCenterDegradedCountsSent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsSent = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterDegradedCountsFailed =
+  (typeof LegacyPushCenterDegradedCountsFailed)[keyof typeof LegacyPushCenterDegradedCountsFailed];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterDegradedCountsFailed = {
+  NUMBER_0: 0,
+} as const;
+
+export interface LegacyPushCenterDegradedCounts {
+  total: LegacyPushCenterDegradedCountsTotal;
+  by_effective_status: LegacyPushCenterDegradedCountsByEffectiveStatus;
+  by_status: LegacyPushCenterDegradedCountsByStatus;
+  by_section: LegacyPushCenterDegradedCountsBySection;
+  pending: LegacyPushCenterDegradedCountsPending;
+  running: LegacyPushCenterDegradedCountsRunning;
+  sent: LegacyPushCenterDegradedCountsSent;
+  failed: LegacyPushCenterDegradedCountsFailed;
+}
+
+export interface LegacyPushCenterInternalEventSummary {
+  raw_open: unknown;
+  raw_due: unknown;
+  eligible: unknown;
+  failed_retryable: unknown;
+  failed_terminal: unknown;
+  blocked: unknown;
+}
+
+export type LegacyPushCenterLaneSummaryLane =
+  (typeof LegacyPushCenterLaneSummaryLane)[keyof typeof LegacyPushCenterLaneSummaryLane];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterLaneSummaryLane = {
+  ai_generation: "ai_generation",
+  outbound_webhook: "outbound_webhook",
+  wecom_ai_assistant_bulk: "wecom_ai_assistant_bulk",
+  wecom_bulk: "wecom_bulk",
+  wecom_interactive: "wecom_interactive",
+  wecom_media: "wecom_media",
+} as const;
+
+export interface LegacyPushCenterLaneSummary {
+  lane: LegacyPushCenterLaneSummaryLane;
+  max_in_flight: unknown;
+  enabled: unknown;
+  rollout_mode: unknown;
+  blocked_until: unknown;
+  policy_version: unknown;
+  raw_open: unknown;
+  held: unknown;
+  eligible: unknown;
+  policy_gated: unknown;
+  scheduled: unknown;
+  retry_wait: unknown;
+  rate_limited: unknown;
+  in_flight: unknown;
+  unknown: unknown;
+  dlq: unknown;
+  oldest_eligible_age_seconds: unknown;
+  internal_event: LegacyPushCenterInternalEventSummary;
+  throughput_last_minute: unknown;
+  accepted_last_minute: unknown;
+  p95_queue_wait_ms: unknown;
+  p95_provider_call_ms: unknown;
+  estimated_drain_seconds: unknown;
+  rate_limit_count_last_hour: unknown;
+  task_acceptance_rate_1m: unknown;
+}
+
+export interface LegacyPushCenterRuntimeQueue {
+  policy_version: unknown;
+  active_generation: unknown;
+  claim_enabled: unknown;
+  rollout_mode: unknown;
+  lanes: LegacyPushCenterLaneSummary[];
+  raw_open: unknown;
+  held: unknown;
+  eligible: unknown;
+  policy_gated: unknown;
+  scheduled: unknown;
+  retry_wait: unknown;
+  rate_limited: unknown;
+  in_flight: unknown;
+  unknown: unknown;
+  dlq: unknown;
+  internal_event: LegacyPushCenterInternalEventSummary;
+}
+
+export type LegacyPushCenterSectionsResponseRouteOwner =
+  (typeof LegacyPushCenterSectionsResponseRouteOwner)[keyof typeof LegacyPushCenterSectionsResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface LegacyPushCenterSectionsResponse {
+  ok: boolean;
+  /**
+   * @minItems 13
+   * @maxItems 13
+   */
+  sections: LegacyPushCenterSection[];
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  route_owner: LegacyPushCenterSectionsResponseRouteOwner;
+}
+
+export type LegacyPushCenterStatsResponseRouteOwner =
+  (typeof LegacyPushCenterStatsResponseRouteOwner)[keyof typeof LegacyPushCenterStatsResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyPushCenterStatsResponseRuntimeQueueOneOf = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterStatsResponseRuntimeQueue =
+  LegacyPushCenterStatsResponseRuntimeQueueOneOf | LegacyPushCenterRuntimeQueue;
+
+export type LegacyPushCenterStatsResponseCapabilityOwner =
+  (typeof LegacyPushCenterStatsResponseCapabilityOwner)[keyof typeof LegacyPushCenterStatsResponseCapabilityOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsResponseCapabilityOwner = {
+  "ai_crm_next/platform_foundation/push_center":
+    "ai_crm_next/platform_foundation/push_center",
+} as const;
+
+export interface LegacyPushCenterStatsResponse {
+  ok: boolean;
+  counts: LegacyPushCenterCounts;
+  /**
+   * @minItems 13
+   * @maxItems 13
+   */
+  sections: LegacyPushCenterSection[];
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  route_owner: LegacyPushCenterStatsResponseRouteOwner;
+  real_external_call_executed: boolean;
+  runtime_queue: LegacyPushCenterStatsResponseRuntimeQueue;
+  capability_owner: LegacyPushCenterStatsResponseCapabilityOwner;
+}
+
+export type LegacyPushCenterSectionsDegradedResponseError =
+  (typeof LegacyPushCenterSectionsDegradedResponseError)[keyof typeof LegacyPushCenterSectionsDegradedResponseError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseError = {
+  "": "",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseErrorCode =
+  (typeof LegacyPushCenterSectionsDegradedResponseErrorCode)[keyof typeof LegacyPushCenterSectionsDegradedResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseErrorCode = {
+  production_read_unavailable: "production_read_unavailable",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseSourceStatus =
+  (typeof LegacyPushCenterSectionsDegradedResponseSourceStatus)[keyof typeof LegacyPushCenterSectionsDegradedResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseSourceStatus = {
+  production_unavailable: "production_unavailable",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseReadModelStatus =
+  (typeof LegacyPushCenterSectionsDegradedResponseReadModelStatus)[keyof typeof LegacyPushCenterSectionsDegradedResponseReadModelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseReadModelStatus = {
+  unavailable: "unavailable",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseCapabilityOwner =
+  (typeof LegacyPushCenterSectionsDegradedResponseCapabilityOwner)[keyof typeof LegacyPushCenterSectionsDegradedResponseCapabilityOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseCapabilityOwner = {
+  "ai_crm_next/platform_foundation/push_center":
+    "ai_crm_next/platform_foundation/push_center",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponsePageError =
+  (typeof LegacyPushCenterSectionsDegradedResponsePageError)[keyof typeof LegacyPushCenterSectionsDegradedResponsePageError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponsePageError = {
+  "推送中心读模型暂不可用，请稍后重试。":
+    "推送中心读模型暂不可用，请稍后重试。",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseDiagnostics = {
+  production_data_ready: boolean;
+  fixture_mode: boolean;
+  allow_fixture_repo_in_prod: boolean;
+  error_class: string;
+};
+
+export type LegacyPushCenterSectionsDegradedResponseRouteOwner =
+  (typeof LegacyPushCenterSectionsDegradedResponseRouteOwner)[keyof typeof LegacyPushCenterSectionsDegradedResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseStatusCode =
+  (typeof LegacyPushCenterSectionsDegradedResponseStatusCode)[keyof typeof LegacyPushCenterSectionsDegradedResponseStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseStatusCode = {
+  NUMBER_200: 200,
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseTotal =
+  (typeof LegacyPushCenterSectionsDegradedResponseTotal)[keyof typeof LegacyPushCenterSectionsDegradedResponseTotal];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseTotal = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseLimit =
+  (typeof LegacyPushCenterSectionsDegradedResponseLimit)[keyof typeof LegacyPushCenterSectionsDegradedResponseLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseLimit = {
+  NUMBER_50: 50,
+} as const;
+
+export type LegacyPushCenterSectionsDegradedResponseOffset =
+  (typeof LegacyPushCenterSectionsDegradedResponseOffset)[keyof typeof LegacyPushCenterSectionsDegradedResponseOffset];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterSectionsDegradedResponseOffset = {
+  NUMBER_0: 0,
+} as const;
+
+export interface LegacyPushCenterSectionsDegradedResponse {
+  ok: boolean;
+  degraded: boolean;
+  error: LegacyPushCenterSectionsDegradedResponseError;
+  error_code: LegacyPushCenterSectionsDegradedResponseErrorCode;
+  source_status: LegacyPushCenterSectionsDegradedResponseSourceStatus;
+  read_model_status: LegacyPushCenterSectionsDegradedResponseReadModelStatus;
+  capability_owner: LegacyPushCenterSectionsDegradedResponseCapabilityOwner;
+  page_error: LegacyPushCenterSectionsDegradedResponsePageError;
+  diagnostics: LegacyPushCenterSectionsDegradedResponseDiagnostics;
+  route_owner: LegacyPushCenterSectionsDegradedResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  status_code: LegacyPushCenterSectionsDegradedResponseStatusCode;
+  /** @maxItems 0 */
+  items: unknown[];
+  total: LegacyPushCenterSectionsDegradedResponseTotal;
+  counts: LegacyPushCenterDegradedCounts;
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  limit: LegacyPushCenterSectionsDegradedResponseLimit;
+  offset: LegacyPushCenterSectionsDegradedResponseOffset;
+  /** @maxItems 0 */
+  sections: unknown[];
+}
+
+export type LegacyPushCenterStatsDegradedResponseError =
+  (typeof LegacyPushCenterStatsDegradedResponseError)[keyof typeof LegacyPushCenterStatsDegradedResponseError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseError = {
+  "": "",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseErrorCode =
+  (typeof LegacyPushCenterStatsDegradedResponseErrorCode)[keyof typeof LegacyPushCenterStatsDegradedResponseErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseErrorCode = {
+  production_read_unavailable: "production_read_unavailable",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseSourceStatus =
+  (typeof LegacyPushCenterStatsDegradedResponseSourceStatus)[keyof typeof LegacyPushCenterStatsDegradedResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseSourceStatus = {
+  production_unavailable: "production_unavailable",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseReadModelStatus =
+  (typeof LegacyPushCenterStatsDegradedResponseReadModelStatus)[keyof typeof LegacyPushCenterStatsDegradedResponseReadModelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseReadModelStatus = {
+  unavailable: "unavailable",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseCapabilityOwner =
+  (typeof LegacyPushCenterStatsDegradedResponseCapabilityOwner)[keyof typeof LegacyPushCenterStatsDegradedResponseCapabilityOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseCapabilityOwner = {
+  "ai_crm_next/platform_foundation/push_center":
+    "ai_crm_next/platform_foundation/push_center",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponsePageError =
+  (typeof LegacyPushCenterStatsDegradedResponsePageError)[keyof typeof LegacyPushCenterStatsDegradedResponsePageError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponsePageError = {
+  "推送中心读模型暂不可用，请稍后重试。":
+    "推送中心读模型暂不可用，请稍后重试。",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseDiagnostics = {
+  production_data_ready: boolean;
+  fixture_mode: boolean;
+  allow_fixture_repo_in_prod: boolean;
+  error_class: string;
+};
+
+export type LegacyPushCenterStatsDegradedResponseRouteOwner =
+  (typeof LegacyPushCenterStatsDegradedResponseRouteOwner)[keyof typeof LegacyPushCenterStatsDegradedResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseStatusCode =
+  (typeof LegacyPushCenterStatsDegradedResponseStatusCode)[keyof typeof LegacyPushCenterStatsDegradedResponseStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseStatusCode = {
+  NUMBER_200: 200,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseTotal =
+  (typeof LegacyPushCenterStatsDegradedResponseTotal)[keyof typeof LegacyPushCenterStatsDegradedResponseTotal];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseTotal = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseLimit =
+  (typeof LegacyPushCenterStatsDegradedResponseLimit)[keyof typeof LegacyPushCenterStatsDegradedResponseLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseLimit = {
+  NUMBER_50: 50,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseOffset =
+  (typeof LegacyPushCenterStatsDegradedResponseOffset)[keyof typeof LegacyPushCenterStatsDegradedResponseOffset];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyPushCenterStatsDegradedResponseOffset = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyPushCenterStatsDegradedResponseRuntimeQueueOneOf = {
+  [key: string]: unknown;
+};
+
+export type LegacyPushCenterStatsDegradedResponseRuntimeQueue =
+  | LegacyPushCenterStatsDegradedResponseRuntimeQueueOneOf
+  | LegacyPushCenterRuntimeQueue;
+
+export interface LegacyPushCenterStatsDegradedResponse {
+  ok: boolean;
+  degraded: boolean;
+  error: LegacyPushCenterStatsDegradedResponseError;
+  error_code: LegacyPushCenterStatsDegradedResponseErrorCode;
+  source_status: LegacyPushCenterStatsDegradedResponseSourceStatus;
+  read_model_status: LegacyPushCenterStatsDegradedResponseReadModelStatus;
+  capability_owner: LegacyPushCenterStatsDegradedResponseCapabilityOwner;
+  page_error: LegacyPushCenterStatsDegradedResponsePageError;
+  diagnostics: LegacyPushCenterStatsDegradedResponseDiagnostics;
+  route_owner: LegacyPushCenterStatsDegradedResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+  status_code: LegacyPushCenterStatsDegradedResponseStatusCode;
+  /** @maxItems 0 */
+  items: unknown[];
+  total: LegacyPushCenterStatsDegradedResponseTotal;
+  counts: LegacyPushCenterDegradedCounts;
+  /**
+   * @minItems 9
+   * @maxItems 9
+   */
+  status_definitions: LegacyPushCenterStatusDefinition[];
+  filters: LegacyPushCenterFilters;
+  limit: LegacyPushCenterStatsDegradedResponseLimit;
+  offset: LegacyPushCenterStatsDegradedResponseOffset;
+  /** @maxItems 0 */
+  sections: unknown[];
+  runtime_queue: LegacyPushCenterStatsDegradedResponseRuntimeQueue;
+}
+
+export type AutomationTriggerRunAgentCode =
+  (typeof AutomationTriggerRunAgentCode)[keyof typeof AutomationTriggerRunAgentCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunAgentCode = {
+  "tag-trigger-v1": "tag-trigger-v1",
+} as const;
+
+export type AutomationTriggerRunRunStatus =
+  (typeof AutomationTriggerRunRunStatus)[keyof typeof AutomationTriggerRunRunStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunRunStatus = {
+  completed: "completed",
+} as const;
+
+export type AutomationTriggerRunTriggerSource =
+  (typeof AutomationTriggerRunTriggerSource)[keyof typeof AutomationTriggerRunTriggerSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunTriggerSource = {
+  customertag_applied: "customer.tag_applied",
+} as const;
+
+export interface AutomationTriggerRun {
+  /** @pattern ^automation-trigger:[1-9][0-9]*$ */
+  run_id: string;
+  /** @pattern ^event:[1-9][0-9]*$ */
+  request_id: string;
+  agent_code: AutomationTriggerRunAgentCode;
+  run_status: AutomationTriggerRunRunStatus;
+  trigger_source: AutomationTriggerRunTriggerSource;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  tag_id: number;
+  /** @minimum 1 */
+  source_event_id: number;
+  /** @minimum 1 */
+  triggered_event_id: number;
+  started_at: string;
+  completed_at: string;
+  has_error: boolean;
+}
+
+export type AutomationTriggerRunListResponseVisibility =
+  (typeof AutomationTriggerRunListResponseVisibility)[keyof typeof AutomationTriggerRunListResponseVisibility];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationTriggerRunListResponseVisibility = {
+  masked: "masked",
+} as const;
+
+export interface AutomationTriggerRunListResponse {
+  items: AutomationTriggerRun[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size: number;
+  visibility: AutomationTriggerRunListResponseVisibility;
+}
+
+/**
+ * Request validation failed.
+ */
+export type BadRequestResponse = ErrorResponse;
+
+/**
+ * Authentication required.
+ */
+export type UnauthorizedResponse = ErrorResponse;
+
+/**
+ * Principal lacks the capability.
+ */
+export type ForbiddenResponse = ErrorResponse;
+
+/**
+ * Resource not found.
+ */
+export type NotFoundResponse = ErrorResponse;
+
+/**
+ * Current state conflicts with the command.
+ */
+export type ConflictResponse = ErrorResponse;
+
+/**
+ * The command violates a field-level validation rule.
+ */
+export type UnprocessableEntityResponse = ErrorResponse;
+
+/**
+ * A required dependency is unavailable.
+ */
+export type ServiceUnavailableResponse = ErrorResponse;
+
+/**
+ * Public survey input is malformed, unsupported, or unsafe.
+ */
+export type PublicSurveyInvalidInputResponse = PublicSurveyError;
+
+/**
+ * The public survey definition or result does not exist.
+ */
+export type PublicSurveyNotFoundResponse = PublicSurveyError;
+
+/**
+ * The anonymous submission or management idempotency command conflicts with stored local state.
+ */
+export type PublicSurveyConflictResponse = PublicSurveyError;
+
+/**
+ * The local anonymous browser/source rate budget is exhausted.
+ */
+export type PublicSurveyRateLimitedResponse = PublicSurveyError;
+
+/**
+ * The local Survey dependency is unavailable.
+ */
+export type PublicSurveyUnavailableResponse = PublicSurveyError;
+
+/**
+ * This public survey route accepts only GET.
+ */
+export type PublicSurveyGetOnlyResponse = PublicSurveyError;
+
+/**
+ * This public survey route accepts only POST.
+ */
+export type PublicSurveyPostOnlyResponse = PublicSurveyError;
+
+export type EntitlementLimitParameter = number;
+
+/**
+ * CSRF token bound to the server-side browser session.
+ */
+export type CSRFTokenParameter = string;
+
+/**
+ * Stable caller key; reusing it with a different normalized command is a conflict.
+ */
+export type IdempotencyKeyParameter = string;
+
+/**
+ * Opaque keyset cursor; clients must not parse or synthesize it.
+ */
+export type CursorParameter = string;
+
+export type LimitParameter = number;
+
+export type CustomerKeywordParameter = string;
+
+export type OwnerStaffIDFilterParameter = number;
+
+export type StageIDFilterParameter = number;
+
+export type ChannelIDFilterParameter = number;
+
+export type TagIDFilterParameter = number;
+
+export type IsDeletedFilterParameter = boolean;
+
+export type AddedAfterFilterParameter = string;
+
+export type AddedBeforeFilterParameter = string;
+
+export type LastInteractAfterFilterParameter = string;
+
+export type LastInteractBeforeFilterParameter = string;
+
+export type PushCenterSectionFilterParameter = string;
+
+export type PushCent

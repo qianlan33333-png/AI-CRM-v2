@@ -1,0 +1,1952 @@
+own",
+} as const;
+
+export type LegacyDeliveryLineageInterpretationExternalReceipt =
+  (typeof LegacyDeliveryLineageInterpretationExternalReceipt)[keyof typeof LegacyDeliveryLineageInterpretationExternalReceipt];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageInterpretationExternalReceipt = {
+  unknown: "unknown",
+} as const;
+
+export interface LegacyDeliveryLineageInterpretation {
+  kind: LegacyDeliveryLineageInterpretationKind;
+  external_delivery: LegacyDeliveryLineageInterpretationExternalDelivery;
+  external_receipt: LegacyDeliveryLineageInterpretationExternalReceipt;
+}
+
+export interface LegacyDeliveryLineageResponse {
+  ok: boolean;
+  items: LegacyDeliveryLineageRecord[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  interpretation: LegacyDeliveryLineageInterpretation;
+}
+
+export type LegacyDeliveryLineageUnavailableStatusCode =
+  (typeof LegacyDeliveryLineageUnavailableStatusCode)[keyof typeof LegacyDeliveryLineageUnavailableStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageUnavailableStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyDeliveryLineageUnavailableErrorCode =
+  (typeof LegacyDeliveryLineageUnavailableErrorCode)[keyof typeof LegacyDeliveryLineageUnavailableErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDeliveryLineageUnavailableErrorCode = {
+  delivery_lineage_unavailable: "delivery_lineage_unavailable",
+} as const;
+
+export interface LegacyDeliveryLineageUnavailable {
+  ok: boolean;
+  status_code: LegacyDeliveryLineageUnavailableStatusCode;
+  error_code: LegacyDeliveryLineageUnavailableErrorCode;
+}
+
+export interface LegacyCustomerProfileTag {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+}
+
+export interface LegacyCustomerProfileTagsResponse {
+  ok: boolean;
+  tags: LegacyCustomerProfileTag[];
+}
+
+export type LegacyCustomerProfileTagsNotFoundStatusCode =
+  (typeof LegacyCustomerProfileTagsNotFoundStatusCode)[keyof typeof LegacyCustomerProfileTagsNotFoundStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsNotFoundStatusCode = {
+  NUMBER_404: 404,
+} as const;
+
+export type LegacyCustomerProfileTagsNotFoundErrorCode =
+  (typeof LegacyCustomerProfileTagsNotFoundErrorCode)[keyof typeof LegacyCustomerProfileTagsNotFoundErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsNotFoundErrorCode = {
+  customer_not_found: "customer_not_found",
+} as const;
+
+export interface LegacyCustomerProfileTagsNotFound {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsNotFoundStatusCode;
+  error_code: LegacyCustomerProfileTagsNotFoundErrorCode;
+}
+
+export type LegacyCustomerProfileTagsConflictStatusCode =
+  (typeof LegacyCustomerProfileTagsConflictStatusCode)[keyof typeof LegacyCustomerProfileTagsConflictStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsConflictStatusCode = {
+  NUMBER_409: 409,
+} as const;
+
+export type LegacyCustomerProfileTagsConflictErrorCode =
+  (typeof LegacyCustomerProfileTagsConflictErrorCode)[keyof typeof LegacyCustomerProfileTagsConflictErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsConflictErrorCode = {
+  identity_hint_conflict: "identity_hint_conflict",
+} as const;
+
+export interface LegacyCustomerProfileTagsConflict {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsConflictStatusCode;
+  error_code: LegacyCustomerProfileTagsConflictErrorCode;
+}
+
+export type LegacyCustomerProfileTagsValidationErrorStatusCode =
+  (typeof LegacyCustomerProfileTagsValidationErrorStatusCode)[keyof typeof LegacyCustomerProfileTagsValidationErrorStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsValidationErrorStatusCode = {
+  NUMBER_422: 422,
+} as const;
+
+export type LegacyCustomerProfileTagsValidationErrorErrorCode =
+  (typeof LegacyCustomerProfileTagsValidationErrorErrorCode)[keyof typeof LegacyCustomerProfileTagsValidationErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsValidationErrorErrorCode = {
+  invalid_identity_hint: "invalid_identity_hint",
+  unsupported_identity_hint: "unsupported_identity_hint",
+} as const;
+
+export interface LegacyCustomerProfileTagsValidationError {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsValidationErrorStatusCode;
+  error_code: LegacyCustomerProfileTagsValidationErrorErrorCode;
+}
+
+export type LegacyCustomerProfileTagsUnavailableStatusCode =
+  (typeof LegacyCustomerProfileTagsUnavailableStatusCode)[keyof typeof LegacyCustomerProfileTagsUnavailableStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsUnavailableStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyCustomerProfileTagsUnavailableErrorCode =
+  (typeof LegacyCustomerProfileTagsUnavailableErrorCode)[keyof typeof LegacyCustomerProfileTagsUnavailableErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileTagsUnavailableErrorCode = {
+  customer_profile_tags_unavailable: "customer_profile_tags_unavailable",
+} as const;
+
+export interface LegacyCustomerProfileTagsUnavailable {
+  ok: boolean;
+  status_code: LegacyCustomerProfileTagsUnavailableStatusCode;
+  error_code: LegacyCustomerProfileTagsUnavailableErrorCode;
+}
+
+export type LegacyMiniProgramCreateRequest =
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    })
+  | (unknown & {
+      /** @maxLength 200 */
+      name?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      appid?: string;
+      /**
+       * @minLength 1
+       * @maxLength 120
+       */
+      app_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      pagepath?: string;
+      /**
+       * @minLength 1
+       * @maxLength 500
+       */
+      page_path?: string;
+      /** @maxLength 200 */
+      title?: string;
+      /**
+       * @minimum 1
+       * @nullable
+       */
+      thumb_image_id?: number | null;
+      resolve_thumb_media?: boolean;
+      enabled?: boolean;
+    });
+
+export interface LegacyMiniProgramUpdateRequest {
+  /** @maxLength 200 */
+  name?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  appid?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  app_id?: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  pagepath?: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  page_path?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title?: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  thumb_image_id?: number | null;
+  resolve_thumb_media?: boolean;
+  enabled?: boolean;
+}
+
+export type LegacyMiniProgramThumbImageBase64 =
+  (typeof LegacyMiniProgramThumbImageBase64)[keyof typeof LegacyMiniProgramThumbImageBase64];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMiniProgramThumbImageBase64 = {
+  "": "",
+} as const;
+
+export interface LegacyMiniProgram {
+  /** @minimum 1 */
+  id: number;
+  /** @maxLength 200 */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  appid: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  pagepath: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  page_path: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /** @maxLength 2048 */
+  thumb_image_url: string;
+  thumb_image_base64: LegacyMiniProgramThumbImageBase64;
+  /** @maxLength 255 */
+  readonly thumb_media_id: string;
+  readonly thumb_media_id_expires_at?: string;
+  /** @minimum 1 */
+  thumb_image_id?: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  /** @minimum 1 */
+  version: number;
+}
+
+export type LegacyMiniProgramThumbnailResolutionStatus =
+  (typeof LegacyMiniProgramThumbnailResolutionStatus)[keyof typeof LegacyMiniProgramThumbnailResolutionStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMiniProgramThumbnailResolutionStatus = {
+  resolved: "resolved",
+  not_available: "not_available",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export type LegacyMiniProgramThumbnailResolutionCacheOwner =
+  (typeof LegacyMiniProgramThumbnailResolutionCacheOwner)[keyof typeof LegacyMiniProgramThumbnailResolutionCacheOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMiniProgramThumbnailResolutionCacheOwner = {
+  mediathumbnail_cache: "media.thumbnail_cache",
+} as const;
+
+export interface LegacyMiniProgramThumbnailResolution {
+  status: LegacyMiniProgramThumbnailResolutionStatus;
+  cache_owner: LegacyMiniProgramThumbnailResolutionCacheOwner;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  cache_receipt: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  readonly thumb_media_id?: string;
+  readonly thumb_media_id_expires_at?: string;
+  side_effect_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramListResponse {
+  ok: boolean;
+  items: LegacyMiniProgram[];
+  miniprograms: LegacyMiniProgram[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramDetailResponse {
+  ok: boolean;
+  item: LegacyMiniProgram;
+  miniprogram: LegacyMiniProgram;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type LegacyMiniProgramMutationResponseThumbResolve =
+  LegacyMiniProgramThumbnailResolution | null;
+
+export interface LegacyMiniProgramMutationResponse {
+  ok: boolean;
+  item: LegacyMiniProgram;
+  miniprogram: LegacyMiniProgram;
+  /** @minimum 1 */
+  item_id: number;
+  changed: boolean;
+  /** @nullable */
+  thumb_resolve: LegacyMiniProgramMutationResponseThumbResolve;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramDeleteResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  item_id: number;
+  deleted: boolean;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface LegacyMiniProgramResolveResponse {
+  ok: boolean;
+  item: LegacyMiniProgram;
+  miniprogram: LegacyMiniProgram;
+  resolution: LegacyMiniProgramThumbnailResolution;
+  changed: boolean;
+  /** @maxLength 255 */
+  readonly thumb_media_id: string;
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface Product {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  /** @maxItems 20 */
+  images: string[];
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  /** @minimum 1 */
+  version: number;
+}
+
+export interface ProductPage {
+  items: Product[];
+  next_cursor?: string;
+}
+
+export interface CreateProductRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  /** @maxItems 20 */
+  images: string[];
+}
+
+export interface UpdateProductRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+}
+
+export interface GrantProductLocalEntitlementRequest {
+  /** @minimum 1 */
+  order_id: number;
+}
+
+export interface RevokeProductLocalEntitlementRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export type LocalProductEntitlementState =
+  (typeof LocalProductEntitlementState)[keyof typeof LocalProductEntitlementState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LocalProductEntitlementState = {
+  active: "active",
+  revoked: "revoked",
+} as const;
+
+export interface LocalProductEntitlement {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  product_id: number;
+  /** @minimum 1 */
+  order_id: number;
+  state: LocalProductEntitlementState;
+  /** @minimum 1 */
+  version: number;
+  granted_at: string;
+  /** @nullable */
+  revoked_at: string | null;
+}
+
+export interface LocalProductEntitlementPage {
+  /** @maxItems 100 */
+  items: LocalProductEntitlement[];
+}
+
+export type HealthResponseStatus =
+  (typeof HealthResponseStatus)[keyof typeof HealthResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HealthResponseStatus = {
+  ok: "ok",
+} as const;
+
+export interface HealthResponse {
+  status: HealthResponseStatus;
+}
+
+export type SystemHealthComponentName =
+  (typeof SystemHealthComponentName)[keyof typeof SystemHealthComponentName];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthComponentName = {
+  wecom: "wecom",
+  release: "release",
+  runtime_units: "runtime_units",
+  database: "database",
+  migration: "migration",
+  queues: "queues",
+} as const;
+
+export type SystemHealthComponentStatus =
+  (typeof SystemHealthComponentStatus)[keyof typeof SystemHealthComponentStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthComponentStatus = {
+  ready: "ready",
+  warning: "warning",
+  failed: "failed",
+} as const;
+
+export interface SystemHealthComponent {
+  name: SystemHealthComponentName;
+  status: SystemHealthComponentStatus;
+  real_calls_enabled?: boolean;
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  unknown_after_dispatch_count?: number;
+}
+
+export type SystemHealthResponseStatus =
+  (typeof SystemHealthResponseStatus)[keyof typeof SystemHealthResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseStatus = {
+  ready: "ready",
+  not_ready: "not_ready",
+} as const;
+
+export type SystemHealthResponseHttpStatus =
+  (typeof SystemHealthResponseHttpStatus)[keyof typeof SystemHealthResponseHttpStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseHttpStatus = {
+  NUMBER_200: 200,
+  NUMBER_503: 503,
+} as const;
+
+export type SystemHealthResponseFailedComponentsItem =
+  (typeof SystemHealthResponseFailedComponentsItem)[keyof typeof SystemHealthResponseFailedComponentsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseFailedComponentsItem = {
+  wecom: "wecom",
+  release: "release",
+  runtime_units: "runtime_units",
+  database: "database",
+  migration: "migration",
+  queues: "queues",
+} as const;
+
+export type SystemHealthResponseWarningComponentsItem =
+  (typeof SystemHealthResponseWarningComponentsItem)[keyof typeof SystemHealthResponseWarningComponentsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SystemHealthResponseWarningComponentsItem = {
+  wecom: "wecom",
+  release: "release",
+  runtime_units: "runtime_units",
+  database: "database",
+  migration: "migration",
+  queues: "queues",
+} as const;
+
+export interface SystemHealthResponse {
+  ok: boolean;
+  status: SystemHealthResponseStatus;
+  http_status: SystemHealthResponseHttpStatus;
+  failed_components: SystemHealthResponseFailedComponentsItem[];
+  warning_components: SystemHealthResponseWarningComponentsItem[];
+  /**
+   * @minItems 6
+   * @maxItems 6
+   */
+  components: SystemHealthComponent[];
+  pii_in_output: boolean;
+  secrets_in_output: boolean;
+}
+
+export type LegacyRuntimeHealthSnapshotStatus =
+  (typeof LegacyRuntimeHealthSnapshotStatus)[keyof typeof LegacyRuntimeHealthSnapshotStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotStatus = {
+  ok: "ok",
+  degraded: "degraded",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotService =
+  (typeof LegacyRuntimeHealthSnapshotService)[keyof typeof LegacyRuntimeHealthSnapshotService];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotService = {
+  "aicrm-next": "aicrm-next",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotDatabase =
+  (typeof LegacyRuntimeHealthSnapshotDatabase)[keyof typeof LegacyRuntimeHealthSnapshotDatabase];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotDatabase = {
+  postgres: "postgres",
+  fixture: "fixture",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotDatabaseMode =
+  (typeof LegacyRuntimeHealthSnapshotDatabaseMode)[keyof typeof LegacyRuntimeHealthSnapshotDatabaseMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotDatabaseMode = {
+  postgres: "postgres",
+  fixture: "fixture",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotRepositoryPolicy =
+  (typeof LegacyRuntimeHealthSnapshotRepositoryPolicy)[keyof typeof LegacyRuntimeHealthSnapshotRepositoryPolicy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotRepositoryPolicy = {
+  production_repositories_required: "production_repositories_required",
+  fixture_repositories_allowed: "fixture_repositories_allowed",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotRuntimeOwner =
+  (typeof LegacyRuntimeHealthSnapshotRuntimeOwner)[keyof typeof LegacyRuntimeHealthSnapshotRuntimeOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotRuntimeOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export type LegacyRuntimeHealthSnapshotWarning =
+  (typeof LegacyRuntimeHealthSnapshotWarning)[keyof typeof LegacyRuntimeHealthSnapshotWarning];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyRuntimeHealthSnapshotWarning = {
+  "": "",
+  fixture_data_mode: "fixture data mode",
+  "production_runtime_is_using_fixture_data;_production_data_is_not_ready":
+    "production runtime is using fixture data; production data is not ready",
+} as const;
+
+export interface LegacyRuntimeHealthSnapshot {
+  ok: boolean;
+  status: LegacyRuntimeHealthSnapshotStatus;
+  service: LegacyRuntimeHealthSnapshotService;
+  secret_key_present: boolean;
+  wechat_shop_callback_token_present: boolean;
+  wechat_shop_callback_token_required: boolean;
+  database: LegacyRuntimeHealthSnapshotDatabase;
+  database_mode: LegacyRuntimeHealthSnapshotDatabaseMode;
+  fixture_mode: boolean;
+  production_data_ready: boolean;
+  production_data_mode: boolean;
+  repository_policy: LegacyRuntimeHealthSnapshotRepositoryPolicy;
+  runtime_owner: LegacyRuntimeHealthSnapshotRuntimeOwner;
+  legacy_runtime_enabled: boolean;
+  warning: LegacyRuntimeHealthSnapshotWarning;
+}
+
+export type LegacyHealthMethodNotAllowedDetail =
+  (typeof LegacyHealthMethodNotAllowedDetail)[keyof typeof LegacyHealthMethodNotAllowedDetail];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHealthMethodNotAllowedDetail = {
+  Method_Not_Allowed: "Method Not Allowed",
+} as const;
+
+export interface LegacyHealthMethodNotAllowed {
+  detail: LegacyHealthMethodNotAllowedDetail;
+}
+
+export type LegacyDataHealthCheckCheckId =
+  (typeof LegacyDataHealthCheckCheckId)[keyof typeof LegacyDataHealthCheckCheckId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckCheckId = {
+  database_readiness: "database_readiness",
+  migration_compatibility: "migration_compatibility",
+  outbound_outcome_unknown_backlog: "outbound_outcome_unknown_backlog",
+  release_sha_complete: "release_sha_complete",
+} as const;
+
+export type LegacyDataHealthCheckStatus =
+  (typeof LegacyDataHealthCheckStatus)[keyof typeof LegacyDataHealthCheckStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckStatus = {
+  ok: "ok",
+  warn: "warn",
+  fail: "fail",
+} as const;
+
+export type LegacyDataHealthCheckSeverity =
+  (typeof LegacyDataHealthCheckSeverity)[keyof typeof LegacyDataHealthCheckSeverity];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckSeverity = {
+  green: "green",
+  yellow: "yellow",
+  red: "red",
+} as const;
+
+export type LegacyDataHealthCheckEvidenceEnvironment =
+  (typeof LegacyDataHealthCheckEvidenceEnvironment)[keyof typeof LegacyDataHealthCheckEvidenceEnvironment];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckEvidenceEnvironment = {
+  production: "production",
+  non_production: "non_production",
+} as const;
+
+export type LegacyDataHealthCheckEvidence = {
+  database_readable?: boolean;
+  schema_compatible?: boolean;
+  sha_complete?: boolean;
+  environment?: LegacyDataHealthCheckEvidenceEnvironment;
+  queue_observation_available?: boolean;
+  /** @minimum 0 */
+  outcome_unknown_count?: number;
+};
+
+export type LegacyDataHealthCheckGateDecision =
+  (typeof LegacyDataHealthCheckGateDecision)[keyof typeof LegacyDataHealthCheckGateDecision];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckGateDecision = {
+  pass: "pass",
+  warn: "warn",
+  block: "block",
+} as const;
+
+export type LegacyDataHealthCheckOwner =
+  (typeof LegacyDataHealthCheckOwner)[keyof typeof LegacyDataHealthCheckOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckOwner = {
+  platform_readiness: "platform_readiness",
+} as const;
+
+export type LegacyDataHealthCheckReplayPolicy =
+  (typeof LegacyDataHealthCheckReplayPolicy)[keyof typeof LegacyDataHealthCheckReplayPolicy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckReplayPolicy = {
+  manual_after_remediation: "manual_after_remediation",
+} as const;
+
+export interface LegacyDataHealthCheck {
+  check_id: LegacyDataHealthCheckCheckId;
+  title: string;
+  status: LegacyDataHealthCheckStatus;
+  severity: LegacyDataHealthCheckSeverity;
+  summary: string;
+  evidence: LegacyDataHealthCheckEvidence;
+  remediation: string;
+  gate_decision: LegacyDataHealthCheckGateDecision;
+  reason_code: string;
+  owner: LegacyDataHealthCheckOwner;
+  candidate_related: boolean;
+  first_observed_at: string;
+  last_observed_at: string;
+  replay_policy: LegacyDataHealthCheckReplayPolicy;
+}
+
+export type LegacyDataHealthChecksResponseRegistryId =
+  (typeof LegacyDataHealthChecksResponseRegistryId)[keyof typeof LegacyDataHealthChecksResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthChecksResponseRegistryId = {
+  "v2-core-readinessv1": "v2-core-readiness.v1",
+} as const;
+
+export interface LegacyDataHealthChecksResponse {
+  ok: boolean;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  checks: LegacyDataHealthCheck[];
+  registry_id: LegacyDataHealthChecksResponseRegistryId;
+  /** @pattern ^[a-f0-9]{64}$ */
+  registry_sha256: string;
+  registry_matches_manifest: boolean;
+  /**
+   * @minItems 19
+   * @maxItems 19
+   */
+  excluded_legacy_check_ids: string[];
+  observed_at: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthCheckResponseRegistryId =
+  (typeof LegacyDataHealthCheckResponseRegistryId)[keyof typeof LegacyDataHealthCheckResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckResponseRegistryId = {
+  "v2-core-readinessv1": "v2-core-readiness.v1",
+} as const;
+
+export interface LegacyDataHealthCheckResponse {
+  ok: boolean;
+  check: LegacyDataHealthCheck;
+  registry_id: LegacyDataHealthCheckResponseRegistryId;
+  /** @pattern ^[a-f0-9]{64}$ */
+  registry_sha256: string;
+  registry_matches_manifest: boolean;
+  observed_at: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthSummaryResponseOverallStatus =
+  (typeof LegacyDataHealthSummaryResponseOverallStatus)[keyof typeof LegacyDataHealthSummaryResponseOverallStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthSummaryResponseOverallStatus = {
+  ok: "ok",
+  warn: "warn",
+  fail: "fail",
+} as const;
+
+export type LegacyDataHealthSummaryResponseCountsNotApplicable =
+  (typeof LegacyDataHealthSummaryResponseCountsNotApplicable)[keyof typeof LegacyDataHealthSummaryResponseCountsNotApplicable];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthSummaryResponseCountsNotApplicable = {
+  NUMBER_0: 0,
+} as const;
+
+export type LegacyDataHealthSummaryResponseCounts = {
+  /** @minimum 0 */
+  ok: number;
+  /** @minimum 0 */
+  warn: number;
+  /** @minimum 0 */
+  fail: number;
+  not_applicable: LegacyDataHealthSummaryResponseCountsNotApplicable;
+};
+
+export type LegacyDataHealthSummaryResponseGateCounts = {
+  /** @minimum 0 */
+  pass: number;
+  /** @minimum 0 */
+  warn: number;
+  /** @minimum 0 */
+  block: number;
+};
+
+export type LegacyDataHealthSummaryResponseRegistryId =
+  (typeof LegacyDataHealthSummaryResponseRegistryId)[keyof typeof LegacyDataHealthSummaryResponseRegistryId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthSummaryResponseRegistryId = {
+  "v2-core-readinessv1": "v2-core-readiness.v1",
+} as const;
+
+export interface LegacyDataHealthSummaryResponse {
+  ok: boolean;
+  overall_status: LegacyDataHealthSummaryResponseOverallStatus;
+  counts: LegacyDataHealthSummaryResponseCounts;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  checks: LegacyDataHealthCheck[];
+  gate_counts: LegacyDataHealthSummaryResponseGateCounts;
+  registry_id: LegacyDataHealthSummaryResponseRegistryId;
+  /** @pattern ^[a-f0-9]{64}$ */
+  registry_sha256: string;
+  registry_matches_manifest: boolean;
+  /**
+   * @minItems 19
+   * @maxItems 19
+   */
+  excluded_legacy_check_ids: string[];
+  observed_at: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthCheckNotFoundStatusCode =
+  (typeof LegacyDataHealthCheckNotFoundStatusCode)[keyof typeof LegacyDataHealthCheckNotFoundStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckNotFoundStatusCode = {
+  NUMBER_404: 404,
+} as const;
+
+export type LegacyDataHealthCheckNotFoundErrorCode =
+  (typeof LegacyDataHealthCheckNotFoundErrorCode)[keyof typeof LegacyDataHealthCheckNotFoundErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthCheckNotFoundErrorCode = {
+  data_health_check_not_found: "data_health_check_not_found",
+} as const;
+
+export interface LegacyDataHealthCheckNotFound {
+  ok: boolean;
+  status_code: LegacyDataHealthCheckNotFoundStatusCode;
+  error_code: LegacyDataHealthCheckNotFoundErrorCode;
+  check_id: string;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyDataHealthObservationUnavailableStatusCode =
+  (typeof LegacyDataHealthObservationUnavailableStatusCode)[keyof typeof LegacyDataHealthObservationUnavailableStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthObservationUnavailableStatusCode = {
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyDataHealthObservationUnavailableErrorCode =
+  (typeof LegacyDataHealthObservationUnavailableErrorCode)[keyof typeof LegacyDataHealthObservationUnavailableErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyDataHealthObservationUnavailableErrorCode = {
+  data_health_observation_unavailable: "data_health_observation_unavailable",
+} as const;
+
+export interface LegacyDataHealthObservationUnavailable {
+  ok: boolean;
+  status_code: LegacyDataHealthObservationUnavailableStatusCode;
+  error_code: LegacyDataHealthObservationUnavailableErrorCode;
+  real_external_call_executed: boolean;
+}
+
+export interface ErrorResponse {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  message: string;
+  /** @minLength 1 */
+  request_id: string;
+  details?: FieldError[];
+}
+
+export interface FieldError {
+  /** @minLength 1 */
+  field: string;
+  /** @minLength 1 */
+  reason: string;
+}
+
+export type CustomerExtra = { [key: string]: unknown };
+
+export interface Customer {
+  /** @minimum 1 */
+  id: number;
+  name: string;
+  /** @nullable */
+  avatar_url?: string | null;
+  /**
+   * @minimum -32768
+   * @maximum 32767
+   * @nullable
+   */
+  gender?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  stage_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  /** @nullable */
+  added_at?: string | null;
+  /** @nullable */
+  last_interact_at?: string | null;
+  is_deleted: boolean;
+  extra: CustomerExtra;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CustomerUpdateRequestExtra = { [key: string]: unknown };
+
+export interface CustomerUpdateRequest {
+  name?: string;
+  /** @nullable */
+  avatar_url?: string | null;
+  /**
+   * @minimum -32768
+   * @maximum 32767
+   * @nullable
+   */
+  gender?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  extra?: CustomerUpdateRequestExtra;
+}
+
+export interface SetCustomerStageRequest {
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  stage_id: number | null;
+}
+
+export interface CustomerListResponse {
+  items: Customer[];
+  /**
+   * @minLength 1
+   * @nullable
+   */
+  next_cursor: string | null;
+  /** @minimum 0 */
+  total: number;
+  total_is_estimate: boolean;
+  watermark: string;
+}
+
+export interface CustomerDetailResponse {
+  customer: Customer;
+  tags: Tag[];
+}
+
+export type CustomerEventPayload = { [key: string]: unknown };
+
+export interface CustomerEvent {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minLength 1 */
+  event_type: string;
+  payload: CustomerEventPayload;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  actor: string;
+  occurred_at: string;
+}
+
+export interface CustomerEventListResponse {
+  items: CustomerEvent[];
+  /**
+   * @minLength 1
+   * @nullable
+   */
+  next_cursor: string | null;
+}
+
+export interface CustomerContextCustomer {
+  /** @minimum 1 */
+  id: number;
+  name: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  stage_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  /** @nullable */
+  added_at?: string | null;
+  /** @nullable */
+  last_interact_at?: string | null;
+}
+
+export interface CustomerContextTag {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_id?: number | null;
+  /** @nullable */
+  group_name?: string | null;
+  group_sort_order: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  sort_order: number;
+}
+
+export interface CustomerContextTimelineEntry {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  occurred_at: string;
+}
+
+export type CustomerContextChatEntryChatType =
+  (typeof CustomerContextChatEntryChatType)[keyof typeof CustomerContextChatEntryChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerContextChatEntryChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CustomerContextChatEntry {
+  chat_type: CustomerContextChatEntryChatType;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  message_type: string;
+  sent_at: string;
+}
+
+export interface CustomerContextChatSummary {
+  local_archive_available: boolean;
+  /** @maxItems 20 */
+  items: CustomerContextChatEntry[];
+  /** @minimum 0 */
+  total: number;
+}
+
+export interface CustomerContextResponse {
+  customer: CustomerContextCustomer;
+  tags: CustomerContextTag[];
+  timeline: CustomerContextTimelineEntry[];
+  /**
+   * @minLength 1
+   * @nullable
+   */
+  timeline_next_cursor: string | null;
+  chat: CustomerContextChatSummary;
+  non_atomic_snapshot: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type CustomerMergeHistoryItemMode =
+  (typeof CustomerMergeHistoryItemMode)[keyof typeof CustomerMergeHistoryItemMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerMergeHistoryItemMode = {
+  auto: "auto",
+  manual: "manual",
+} as const;
+
+export interface CustomerMergeHistoryItem {
+  /** @minimum 1 */
+  merge_audit_id: number;
+  /** @minimum 1 */
+  primary_customer_id: number;
+  /** @minimum 1 */
+  merged_customer_id: number;
+  mode: CustomerMergeHistoryItemMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  policy_version: string;
+  merged_at: string;
+}
+
+export type CustomerMergeHistoryResponseScope =
+  (typeof CustomerMergeHistoryResponseScope)[keyof typeof CustomerMergeHistoryResponseScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerMergeHistoryResponseScope = {
+  connected_component: "connected_component",
+} as const;
+
+export interface CustomerMergeHistoryResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  scope: CustomerMergeHistoryResponseScope;
+  /** @maxItems 100 */
+  items: CustomerMergeHistoryItem[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+  identity_values_included: boolean;
+  operator_identifiers_included: boolean;
+  chat_content_included: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type CustomerChatActivityItemChatType =
+  (typeof CustomerChatActivityItemChatType)[keyof typeof CustomerChatActivityItemChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerChatActivityItemChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CustomerChatActivityItem {
+  chat_type: CustomerChatActivityItemChatType;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  message_type: string;
+  sent_at: string;
+}
+
+export type CustomerChatActivityResponseChatType =
+  (typeof CustomerChatActivityResponseChatType)[keyof typeof CustomerChatActivityResponseChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerChatActivityResponseChatType = {
+  all: "all",
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CustomerChatActivityResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  chat_type: CustomerChatActivityResponseChatType;
+  /** @maxItems 100 */
+  items: CustomerChatActivityItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  previous_cursor: string | null;
+  non_atomic_snapshot: boolean;
+  message_content_included: boolean;
+  identity_values_included: boolean;
+  provider_receipts_included: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface CustomerActivityTypeFacet {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  /** @minimum 1 */
+  count: number;
+  last_occurred_at: string;
+}
+
+export interface CustomerActivityDayCount {
+  day: string;
+  /** @minimum 1 */
+  count: number;
+}
+
+export type CustomerActivityAnalyticsResponseWindowDays =
+  (typeof CustomerActivityAnalyticsResponseWindowDays)[keyof typeof CustomerActivityAnalyticsResponseWindowDays];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerActivityAnalyticsResponseWindowDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+  NUMBER_90: 90,
+} as const;
+
+export interface CustomerActivityAnalyticsResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  window_days: CustomerActivityAnalyticsResponseWindowDays;
+  from: string;
+  through: string;
+  /** @minimum 0 */
+  total_events: number;
+  /**
+   * @minimum 0
+   * @maximum 91
+   */
+  active_days: number;
+  /** @minimum 0 */
+  unique_event_types: number;
+  /** @nullable */
+  last_occurred_at: string | null;
+  /** @maxItems 50 */
+  type_facets: CustomerActivityTypeFacet[];
+  type_facets_truncated: boolean;
+  /** @maxItems 91 */
+  daily_counts: CustomerActivityDayCount[];
+  payload_included: boolean;
+  actor_included: boolean;
+  identity_included: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface Tag {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_id?: number | null;
+  /** @nullable */
+  group_name?: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  sort_order: number;
+}
+
+export interface TagListResponse {
+  items: Tag[];
+}
+
+export interface LocalTagGroup {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export interface LocalTag {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  group_name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @minimum 0 */
+  sort_order: number;
+}
+
+export interface LocalTagCatalog {
+  /** @maxItems 1000 */
+  groups: LocalTagGroup[];
+  /** @maxItems 10000 */
+  tags: LocalTag[];
+}
+
+export interface CreateLocalTagGroupRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  first_tag_name: string;
+}
+
+export interface LocalTagGroupCreateResponse {
+  group: LocalTagGroup;
+  tag: LocalTag;
+}
+
+export interface UpdateLocalTagNameRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+}
+
+export interface ReorderLocalCatalogRequest {
+  /**
+   * @minItems 1
+   * @maxItems 10000
+   */
+  ids: number[];
+}
+
+export interface LocalTagGroupListResponse {
+  /** @maxItems 1000 */
+  items: LocalTagGroup[];
+}
+
+export interface LocalTagListResponse {
+  /** @maxItems 10000 */
+  items: LocalTag[];
+}
+
+export interface CreateLocalTagRequest {
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+}
+
+export interface LocalCatalogArchiveResponse {
+  /** @minimum 1 */
+  id: number;
+  archived: boolean;
+}
+
+export type SegmentDefinition =
+  SegmentDefinitionAnd | SegmentDefinitionOr | SegmentDefinitionPredicate;
+
+export interface SegmentDefinitionAnd {
+  /**
+   * @minItems 1
+   * @maxItems 64
+   */
+  and: SegmentDefinition[];
+}
+
+export interface SegmentDefinitionOr {
+  /**
+   * @minItems 1
+   * @maxItems 64
+   */
+  or: SegmentDefinition[];
+}
+
+export type SegmentDefinitionPredicateField =
+  (typeof SegmentDefinitionPredicateField)[keyof typeof SegmentDefinitionPredicateField];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SegmentDefinitionPredicateField = {
+  stage_id: "stage_id",
+  owner_staff_id: "owner_staff_id",
+  channel_id: "channel_id",
+  tag_id: "tag_id",
+  added_at: "added_at",
+  last_interact_at: "last_interact_at",
+  is_deleted: "is_deleted",
+} as const;
+
+export type SegmentDefinitionPredicateOp =
+  (typeof SegmentDefinitionPredicateOp)[keyof typeof SegmentDefinitionPredicateOp];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SegmentDefinitionPredicateOp = {
+  eq: "eq",
+  in: "in",
+  has_any: "has_any",
+  before: "before",
+  after: "after",
+} as const;
+
+export interface SegmentDefinitionPredicate {
+  field: SegmentDefinitionPredicateField;
+  op: SegmentDefinitionPredicateOp;
+  value: unknown;
+}
+
+export type SegmentRefreshMode =
+  (typeof SegmentRefreshMode)[keyof typeof SegmentRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SegmentRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export type SegmentRefreshStatus =
+  (typeof SegmentRefreshStatus)[keyof typeof SegmentRefreshStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SegmentRefreshStatus = {
+  idle: "idle",
+  running: "running",
+  failed: "failed",
+} as const;
+
+export type SegmentLifecycleStatus =
+  (typeof SegmentLifecycleStatus)[keyof typeof SegmentLifecycleStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SegmentLifecycleStatus = {
+  active: "active",
+  archived: "archived",
+} as const;
+
+export interface Segment {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  definition: SegmentDefinition;
+  refresh_mode: SegmentRefreshMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  refresh_cron: string | null;
+  /** @minimum 0 */
+  member_count: number;
+  /** @nullable */
+  refreshed_at: string | null;
+  refresh_status: SegmentRefreshStatus;
+  lifecycle_status: SegmentLifecycleStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SegmentPage {
+  items: Segment[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+}
+
+export interface SegmentMemberPage {
+  items: Customer[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor: string | null;
+}
+
+export type CreateSegmentRequestRefreshMode =
+  (typeof CreateSegmentRequestRefreshMode)[keyof typeof CreateSegmentRequestRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateSegmentRequestRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export interface CreateSegmentRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  definition: SegmentDefinition;
+  refresh_mode: CreateSegmentRequestRefreshMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  refresh_cron?: string | null;
+}
+
+export type UpdateSegmentRequestRefreshMode =
+  (typeof UpdateSegmentRequestRefreshMode)[keyof typeof UpdateSegmentRequestRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateSegmentRequestRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export interface UpdateSegmentRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name?: string;
+  definition?: SegmentDefinition;
+  refresh_mode?: UpdateSegmentRequestRefreshMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  refresh_cron?: string | null;
+}
+
+export type SegmentRefreshAcceptedStatus =
+  (typeof SegmentRefreshAcceptedStatus)[keyof typeof SegmentRefreshAcceptedStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SegmentRefreshAcceptedStatus = {
+  accepted: "accepted",
+} as const;
+
+export interface SegmentRefreshAccepted {
+  status: SegmentRefreshAcceptedStatus;
+  /** @minimum 1 */
+  segment_id: number;
+}
+
+export interface Stage {
+  /** @minimum 1 */
+  id: number;
+  /** @minLength 1 */
+  name: string;
+  sort_order: number;
+  config: unknown;
+}
+
+export interface StageListResponse {
+  items: Stage[];
+}
+
+export interface ReorderStagesRequest {
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  ids: number[];
+}
+
+export interface CreateStageRequest {
+  /** @minLength 1 */
+  name: string;
+  sort_order?: number;
+  config?: unknown;
+}
+
+export interface RenameStageRequest {
+  /** @minLength 1 */
+  name: string;
+}
+
+export type IdentityRefType =
+  (typeof IdentityRefType)[keyof typeof IdentityRefType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IdentityRefType = {
+  wecom_external_userid: "wecom_external_userid",
+  unionid: "unionid",
+  mp_openid: "mp_openid",
+  oa_openid: "oa_openid",
+  alipay_user_id: "alipay_user_id",
+  phone: "phone",
+  ext: "ext",
+} as const;
+
+/**
+ * Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+ */
+export interface IdentityRef {
+  type: IdentityRefType;
+  /** @minLength 1 */
+  scope: string;
+  /** @minLength 1 */
+  value: string;
+}
+
+export interface ResolveIdentityRequest {
+  ref: IdentityRef;
+}
+
+export type ResolveIdentityResponse =
+  ResolveIdentityFound | ResolveIdentityNotFound | Re

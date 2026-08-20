@@ -1,0 +1,1222 @@
+
+
+type CreateTagGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateTagGroup403JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateTagGroup409JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CreateTagGroup422JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagGroup503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateTagGroup503JSONResponse) VisitCreateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroupsRequestObject struct {
+	Params ReorderTagGroupsParams
+	Body   *ReorderTagGroupsJSONRequestBody
+}
+
+type ReorderTagGroupsResponseObject interface {
+	VisitReorderTagGroupsResponse(w http.ResponseWriter) error
+}
+
+type ReorderTagGroups200JSONResponse LocalTagGroupListResponse
+
+func (response ReorderTagGroups200JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderTagGroups400JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderTagGroups401JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderTagGroups403JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReorderTagGroups409JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ReorderTagGroups422JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagGroups503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReorderTagGroups503JSONResponse) VisitReorderTagGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroupRequestObject struct {
+	GroupId TagGroupID `json:"group_id"`
+	Params  ArchiveTagGroupParams
+}
+
+type ArchiveTagGroupResponseObject interface {
+	VisitArchiveTagGroupResponse(w http.ResponseWriter) error
+}
+
+type ArchiveTagGroup200JSONResponse LocalCatalogArchiveResponse
+
+func (response ArchiveTagGroup200JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveTagGroup400JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveTagGroup401JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveTagGroup403JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveTagGroup404JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveTagGroup409JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagGroup503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveTagGroup503JSONResponse) VisitArchiveTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroupRequestObject struct {
+	GroupId TagGroupID `json:"group_id"`
+	Params  UpdateTagGroupParams
+	Body    *UpdateTagGroupJSONRequestBody
+}
+
+type UpdateTagGroupResponseObject interface {
+	VisitUpdateTagGroupResponse(w http.ResponseWriter) error
+}
+
+type UpdateTagGroup200JSONResponse LocalTagGroup
+
+func (response UpdateTagGroup200JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateTagGroup400JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateTagGroup401JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateTagGroup403JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateTagGroup404JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateTagGroup409JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateTagGroup422JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagGroup503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateTagGroup503JSONResponse) VisitUpdateTagGroupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTagsRequestObject struct {
+}
+
+type ListTagsResponseObject interface {
+	VisitListTagsResponse(w http.ResponseWriter) error
+}
+
+type ListTags200JSONResponse TagListResponse
+
+func (response ListTags200JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTags401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListTags401JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTags403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListTags403JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListTags503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListTags503JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTagRequestObject struct {
+	Params CreateTagParams
+	Body   *CreateTagJSONRequestBody
+}
+
+type CreateTagResponseObject interface {
+	VisitCreateTagResponse(w http.ResponseWriter) error
+}
+
+type CreateTag201JSONResponse LocalTag
+
+func (response CreateTag201JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateTag400JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateTag401JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateTag403JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateTag404JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateTag409JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CreateTag422JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateTag503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateTag503JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTagsRequestObject struct {
+	Params ReorderTagsParams
+	Body   *ReorderTagsJSONRequestBody
+}
+
+type ReorderTagsResponseObject interface {
+	VisitReorderTagsResponse(w http.ResponseWriter) error
+}
+
+type ReorderTags200JSONResponse LocalTagListResponse
+
+func (response ReorderTags200JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderTags400JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderTags401JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderTags403JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReorderTags409JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ReorderTags422JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReorderTags503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReorderTags503JSONResponse) VisitReorderTagsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTagRequestObject struct {
+	TagId  TagID `json:"tag_id"`
+	Params ArchiveTagParams
+}
+
+type ArchiveTagResponseObject interface {
+	VisitArchiveTagResponse(w http.ResponseWriter) error
+}
+
+type ArchiveTag200JSONResponse LocalCatalogArchiveResponse
+
+func (response ArchiveTag200JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveTag400JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveTag401JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveTag403JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveTag404JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveTag409JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveTag503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveTag503JSONResponse) VisitArchiveTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTagRequestObject struct {
+	TagId  TagID `json:"tag_id"`
+	Params UpdateTagParams
+	Body   *UpdateTagJSONRequestBody
+}
+
+type UpdateTagResponseObject interface {
+	VisitUpdateTagResponse(w http.ResponseWriter) error
+}
+
+type UpdateTag200JSONResponse LocalTag
+
+func (response UpdateTag200JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateTag400JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateTag401JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateTag403JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateTag404JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateTag409JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response UpdateTag422JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateTag503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateTag503JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyHealthRequestObject struct {
+}
+
+type GetLegacyHealthResponseObject interface {
+	VisitGetLegacyHealthResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyHealth200JSONResponse LegacyRuntimeHealthSnapshot
+
+func (response GetLegacyHealth200JSONResponse) VisitGetLegacyHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyHealth405ResponseHeaders struct {
+	Allow string
+}
+
+type GetLegacyHealth405JSONResponse struct {
+	Body    LegacyHealthMethodNotAllowed
+	Headers GetLegacyHealth405ResponseHeaders
+}
+
+func (response GetLegacyHealth405JSONResponse) VisitGetLegacyHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetPublicSurveyPageRequestObject struct {
+	Slug PublicSurveySlug `json:"slug"`
+}
+
+type GetPublicSurveyPageResponseObject interface {
+	VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error
+}
+
+type GetPublicSurveyPage302ResponseHeaders struct {
+	Location string
+}
+
+type GetPublicSurveyPage302Response struct {
+	Headers GetPublicSurveyPage302ResponseHeaders
+}
+
+func (response GetPublicSurveyPage302Response) VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(302)
+	return nil
+}
+
+type GetPublicSurveyPage400JSONResponse struct {
+	PublicSurveyInvalidInputJSONResponse
+}
+
+func (response GetPublicSurveyPage400JSONResponse) VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetPublicSurveyPage405JSONResponse struct {
+	PublicSurveyGetOnlyJSONResponse
+}
+
+func (response GetPublicSurveyPage405JSONResponse) VisitGetPublicSurveyPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetDomainVerificationFileRequestObject struct {
+	Filename string `json:"filename"`
+}
+
+type GetDomainVerificationFileResponseObject interface {
+	VisitGetDomainVerificationFileResponse(w http.ResponseWriter) error
+}
+
+type GetDomainVerificationFile200ResponseHeaders struct {
+	CacheControl string
+}
+
+type GetDomainVerificationFile200TextResponse struct {
+	Body    string
+	Headers GetDomainVerificationFile200ResponseHeaders
+}
+
+func (response GetDomainVerificationFile200TextResponse) VisitGetDomainVerificationFileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.WriteHeader(200)
+
+	_, err := w.Write([]byte(response.Body))
+	return err
+}
+
+type GetDomainVerificationFile404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetDomainVerificationFile404JSONResponse) VisitGetDomainVerificationFileResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+// StrictServerInterface represents all server handlers.
+type StrictServerInterface interface {
+	// Carry the safe local execution-runtime observation into the existing admin shell
+	// (GET /admin/execution-runtime)
+	GetLegacyExecutionRuntimePage(ctx context.Context, request GetLegacyExecutionRuntimePageRequestObject) (GetLegacyExecutionRuntimePageResponseObject, error)
+	// List real D01 Automation trigger receipts through the frozen legacy path
+	// (GET /api/admin/automation-conversion/agent-runs)
+	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
+	// Read the frozen observed execution runtime without invoking a worker or provider
+	// (GET /api/admin/execution-runtime)
+	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
+	// Read one frozen observed execution timeline without asserting a provider receipt
+	// (GET /api/admin/executions/{execution_id})
+	GetLegacyExecutionTimeline(ctx context.Context, request GetLegacyExecutionTimelineRequestObject) (GetLegacyExecutionTimelineResponseObject, error)
+	// Read the frozen global Push Center section aggregation without touching a worker or provider
+	// (GET /api/admin/push-center/sections)
+	GetLegacyPushCenterSections(ctx context.Context, request GetLegacyPushCenterSectionsRequestObject) (GetLegacyPushCenterSectionsResponseObject, error)
+	// Read the frozen global Push Center statistics without accepting, sending, or retrying work
+	// (GET /api/admin/push-center/stats)
+	GetLegacyPushCenterStats(ctx context.Context, request GetLegacyPushCenterStatsRequestObject) (GetLegacyPushCenterStatsResponseObject, error)
+	// Read aggregate anonymous local public survey analytics
+	// (GET /api/admin/questionnaires/{questionnaire_id}/public-analytics)
+	GetQuestionnairePublicAnalytics(ctx context.Context, request GetQuestionnairePublicAnalyticsRequestObject) (GetQuestionnairePublicAnalyticsResponseObject, error)
+	// Disable one immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-disable)
+	DisableQuestionnairePublicDefinition(ctx context.Context, request DisableQuestionnairePublicDefinitionRequestObject) (DisableQuestionnairePublicDefinitionResponseObject, error)
+	// Publish an immutable local anonymous public survey snapshot
+	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
+	PublishQuestionnairePublicDefinition(ctx context.Context, request PublishQuestionnairePublicDefinitionRequestObject) (PublishQuestionnairePublicDefinitionResponseObject, error)
+	// Read one immutable anonymous public survey definition
+	// (GET /api/public/questionnaires/{slug})
+	GetPublicSurveyDefinition(ctx context.Context, request GetPublicSurveyDefinitionRequestObject) (GetPublicSurveyDefinitionResponseObject, error)
+	// Submit one anonymous selection-only public survey response
+	// (POST /api/public/questionnaires/{slug}/submissions)
+	SubmitPublicSurvey(ctx context.Context, request SubmitPublicSurveyRequestObject) (SubmitPublicSurveyResponseObject, error)
+	// Query one anonymous local-only public survey result by POST body token
+	// (POST /api/public/survey-submission-results/query)
+	QueryPublicSurveySubmissionResult(ctx context.Context, request QueryPublicSurveySubmissionResultRequestObject) (QueryPublicSurveySubmissionResultResponseObject, error)
+	// List non-secret configuration readiness
+	// (GET /api/v1/admin/config/overview)
+	GetAdminConfigOverview(ctx context.Context, request GetAdminConfigOverviewRequestObject) (GetAdminConfigOverviewResponseObject, error)
+	// Invalidate the current admin session
+	// (POST /api/v1/auth/logout)
+	LogoutAdmin(ctx context.Context, request LogoutAdminRequestObject) (LogoutAdminResponseObject, error)
+	// Return the authenticated admin principal
+	// (GET /api/v1/auth/session)
+	GetAuthSession(ctx context.Context, request GetAuthSessionRequestObject) (GetAuthSessionResponseObject, error)
+	// List customers using a keyset cursor
+	// (GET /api/v1/customers)
+	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
+	// Get a channel-neutral customer by OneID
+	// (GET /api/v1/customers/{customer_id})
+	GetCustomer(ctx context.Context, request GetCustomerRequestObject) (GetCustomerResponseObject, error)
+	// Update customer-owned profile fields
+	// (PATCH /api/v1/customers/{customer_id})
+	UpdateCustomer(ctx context.Context, request UpdateCustomerRequestObject) (UpdateCustomerResponseObject, error)
+	// Read non-PII local customer activity aggregates for a fixed window
+	// (GET /api/v1/customers/{customer_id}/activity-analytics)
+	GetCustomerActivityAnalytics(ctx context.Context, request GetCustomerActivityAnalyticsRequestObject) (GetCustomerActivityAnalyticsResponseObject, error)
+	// List zero-body local chat activity facts for one visible customer
+	// (GET /api/v1/customers/{customer_id}/chat-activity)
+	ListCustomerChatActivity(ctx context.Context, request ListCustomerChatActivityRequestObject) (ListCustomerChatActivityResponseObject, error)
+	// Read a safe local Customer 360 context without external identities or message bodies
+	// (GET /api/v1/customers/{customer_id}/context)
+	GetCustomerContext(ctx context.Context, request GetCustomerContextRequestObject) (GetCustomerContextResponseObject, error)
+	// List append-only customer events using a keyset cursor
+	// (GET /api/v1/customers/{customer_id}/events)
+	ListCustomerEvents(ctx context.Context, request ListCustomerEventsRequestObject) (ListCustomerEventsResponseObject, error)
+	// List redacted local OneID merge history for a customer component
+	// (GET /api/v1/customers/{customer_id}/merge-history)
+	ListCustomerMergeHistory(ctx context.Context, request ListCustomerMergeHistoryRequestObject) (ListCustomerMergeHistoryResponseObject, error)
+	// Set or clear a customer's stage
+	// (PUT /api/v1/customers/{customer_id}/stage)
+	SetCustomerStage(ctx context.Context, request SetCustomerStageRequestObject) (SetCustomerStageResponseObject, error)
+	// Idempotently remove one local tag from a customer
+	// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
+	RemoveCustomerTag(ctx context.Context, request RemoveCustomerTagRequestObject) (RemoveCustomerTagResponseObject, error)
+	// Idempotently apply one local tag to a customer
+	// (PUT /api/v1/customers/{customer_id}/tags/{tag_id})
+	AddCustomerTag(ctx context.Context, request AddCustomerTagRequestObject) (AddCustomerTagResponseObject, error)
+	// Bind a scoped identity to a channel-neutral customer
+	// (POST /api/v1/identity/bind)
+	BindIdentity(ctx context.Context, request BindIdentityRequestObject) (BindIdentityResponseObject, error)
+	// Attribute or persist an external event without guessing identity
+	// (POST /api/v1/identity/ingest)
+	IngestIdentityEvent(ctx context.Context, request IngestIdentityEventRequestObject) (IngestIdentityEventResponseObject, error)
+	// List pending identity merge reviews without exposing raw identities
+	// (GET /api/v1/identity/merge-reviews)
+	ListIdentityMergeReviews(ctx context.Context, request ListIdentityMergeReviewsRequestObject) (ListIdentityMergeReviewsResponseObject, error)
+	// Approve one versioned merge review with an explicit primary customer
+	// (POST /api/v1/identity/merge-reviews/{review_id}/approve)
+	ApproveIdentityMergeReview(ctx context.Context, request ApproveIdentityMergeReviewRequestObject) (ApproveIdentityMergeReviewResponseObject, error)
+	// Reject one versioned merge review without changing bindings
+	// (POST /api/v1/identity/merge-reviews/{review_id}/reject)
+	RejectIdentityMergeReview(ctx context.Context, request RejectIdentityMergeReviewRequestObject) (RejectIdentityMergeReviewResponseObject, error)
+	// Resolve one scoped identity without implicit creation
+	// (POST /api/v1/identity/resolve)
+	ResolveIdentity(ctx context.Context, request ResolveIdentityRequestObject) (ResolveIdentityResponseObject, error)
+	// Get one local product entitlement
+	// (GET /api/v1/product-entitlements/{entitlement_id})
+	GetProductLocalEntitlement(ctx context.Context, request GetProductLocalEntitlementRequestObject) (GetProductLocalEntitlementResponseObject, error)
+	// Revoke one local entitlement using optimistic concurrency
+	// (POST /api/v1/product-entitlements/{entitlement_id}/revoke)
+	RevokeProductLocalEntitlement(ctx context.Context, request RevokeProductLocalEntitlementRequestObject) (RevokeProductLocalEntitlementResponseObject, error)
+	// List ordinary products using a keyset cursor
+	// (GET /api/v1/products)
+	ListProducts(ctx context.Context, request ListProductsRequestObject) (ListProductsResponseObject, error)
+	// Create one ordinary product
+	// (POST /api/v1/products)
+	CreateProduct(ctx context.Context, request CreateProductRequestObject) (CreateProductResponseObject, error)
+	// Get one ordinary product
+	// (GET /api/v1/products/{product_id})
+	GetProduct(ctx context.Context, request GetProductRequestObject) (GetProductResponseObject, error)
+	// Update one local ordinary product using optimistic concurrency
+	// (PUT /api/v1/products/{product_id})
+	UpdateProduct(ctx context.Context, request UpdateProductRequestObject) (UpdateProductResponseObject, error)
+	// List local product entitlements without invoking payment or providers
+	// (GET /api/v1/products/{product_id}/local-entitlements)
+	ListProductLocalEntitlements(ctx context.Context, request ListProductLocalEntitlementsRequestObject) (ListProductLocalEntitlementsResponseObject, error)
+	// Grant a local entitlement from one existing paid local order projection
+	// (POST /api/v1/products/{product_id}/local-entitlements)
+	GrantProductLocalEntitlement(ctx context.Context, request GrantProductLocalEntitlementRequestObject) (GrantProductLocalEntitlementResponseObject, error)
+	// List materialized audience definitions with a keyset cursor
+	// (GET /api/v1/segments)
+	ListSegments(ctx context.Context, request ListSegmentsRequestObject) (ListSegmentsResponseObject, error)
+	// Create one declarative audience definition
+	// (POST /api/v1/segments)
+	CreateSegment(ctx context.Context, request CreateSegmentRequestObject) (CreateSegmentResponseObject, error)
+	// Archive one local audience definition without executing it
+	// (DELETE /api/v1/segments/{segment_id})
+	ArchiveSegment(ctx context.Context, request ArchiveSegmentRequestObject) (ArchiveSegmentResponseObject, error)
+	// Get one declarative audience definition
+	// (GET /api/v1/segments/{segment_id})
+	GetSegment(ctx context.Context, request GetSegmentRequestObject) (GetSegmentResponseObject, error)
+	// Update one declarative audience definition
+	// (PATCH /api/v1/segments/{segment_id})
+	UpdateSegment(ctx context.Context, request UpdateSegmentRequestObject) (UpdateSegmentResponseObject, error)
+	// Preview the current materialized members using a keyset cursor
+	// (GET /api/v1/segments/{segment_id}/members)
+	ListSegmentMembers(ctx context.Context, request ListSegmentMembersRequestObject) (ListSegmentMembersResponseObject, error)
+	// Durably request one materialized audience refresh
+	// (POST /api/v1/segments/{segment_id}/refresh)
+	RequestSegmentRefresh(ctx context.Context, request RequestSegmentRefreshRequestObject) (RequestSegmentRefreshResponseObject, error)
+	// List global customer stages in deterministic order
+	// (GET /api/v1/stages)
+	ListStages(ctx context.Context, request ListStagesRequestObject) (ListStagesResponseObject, error)
+	// Create one global customer stage
+	// (POST /api/v1/stages)
+	CreateStage(ctx context.Context, request CreateStageRequestObject) (CreateStageResponseObject, error)
+	// Replace the exact active customer stage order
+	// (PUT /api/v1/stages/reorder)
+	ReorderStages(ctx context.Context, request ReorderStagesRequestObject) (ReorderStagesResponseObject, error)
+	// Archive one unreferenced local customer stage
+	// (DELETE /api/v1/stages/{stage_id})
+	ArchiveStage(ctx context.Context, request ArchiveStageRequestObject) (ArchiveStageResponseObject, error)
+	// Rename one global customer stage
+	// (PATCH /api/v1/stages/{stage_id})
+	RenameStage(ctx context.Context, request RenameStageRequestObject) (RenameStageResponseObject, error)
+	// List the complete active local CRM tag catalog
+	// (GET /api/v1/tag-groups)
+	ListTagGroups(ctx context.Context, request ListTagGroupsRequestObject) (ListTagGroupsResponseObject, error)
+	// Create one local CRM tag group and its first tag
+	// (POST /api/v1/tag-groups)
+	CreateTagGroup(ctx context.Context, request CreateTagGroupRequestObject) (CreateTagGroupResponseObject, error)
+	// Replace the exact active local CRM tag group order
+	// (PUT /api/v1/tag-groups/reorder)
+	ReorderTagGroups(ctx context.Context, request ReorderTagGroupsRequestObject) (ReorderTagGroupsResponseObject, error)
+	// Archive one unreferenced local CRM tag group
+	// (DELETE /api/v1/tag-groups/{group_id})
+	ArchiveTagGroup(ctx context.Context, request ArchiveTagGroupRequestObject) (ArchiveTagGroupResponseObject, error)
+	// Rename one local CRM tag group
+	// (PATCH /api/v1/tag-groups/{group_id})
+	UpdateTagGroup(ctx context.Context, request UpdateTagGroupRequestObject) (UpdateTagGroupResponseObject, error)
+	// List the local tag catalog in deterministic order
+	// (GET /api/v1/tags)
+	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
+	// Create one local CRM tag in an active group
+	// (POST /api/v1/tags)
+	CreateTag(ctx context.Context, request CreateTagRequestObject) (CreateTagResponseObject, error)
+	// Replace the exact active local CRM tag order
+	// (PUT /api/v1/tags/reorder)
+	ReorderTags(ctx context.Context, request ReorderTagsRequestObject) (ReorderTagsResponseObject, error)
+	// Archive one unreferenced local CRM tag
+	// (DELETE /api/v1/tags/{tag_id})
+	ArchiveTag(ctx context.Context, request ArchiveTagRequestObject) (ArchiveTagResponseObject, error)
+	// Rename one local CRM tag
+	// (PATCH /api/v1/tags/{tag_id})
+	UpdateTag(ctx context.Context, request UpdateTagRequestObject) (UpdateTagResponseObject, error)
+	// Read the public legacy configuration-derived runtime-mode snapshot
+	// (GET /health)
+	GetLegacyHealth(ctx context.Context, request GetLegacyHealthRequestObject) (GetLegacyHealthResponseObject, error)
+	// Carry a public survey slug into the same-origin SPA without token parameters
+	// (GET /q/{slug})
+	GetPublicSurveyPage(ctx context.Context, request GetPublicSurveyPageRequestObject) (GetPublicSurveyPageResponseObject, error)
+	// Read one WeChat or WeCom domain verification file
+	// (GET /{filename})
+	GetDomainVerificationFile(ctx context.Context, request GetDomainVerificationFileRequestObject) (GetDomainVerificationFileResponseObject, error)
+}
+
+type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
+type StrictMiddlewareFunc = strictnethttp.StrictHTTPMiddlewareFunc
+
+type StrictHTTPServerOptions struct {
+	RequestErrorHandlerFunc  func(w http.ResponseWriter, r *http.Request, err error)
+	ResponseErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
+}
+
+func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
+	return &strictHandler{ssi: ssi, middlewares: middlewares, options: StrictHTTPServerOptions{
+		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		},
+		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		},
+	}}
+}
+
+func NewStrictHandlerWithOptions(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc, options StrictHTTPServerOptions) ServerInterface {
+	return &strictHandler{ssi: ssi, middlewares: middlewares, options: options}
+}
+
+type strictHandler struct {
+	ssi         StrictServerInterface
+	middlewares []StrictMiddlewareFunc
+	options     StrictHTTPServerOptions
+}
+
+// GetLegacyExecutionRuntimePage operation middleware
+func (sh *strictHandler) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+	var request GetLegacyExecutionRuntimePageRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyExecutionRuntimePage(ctx, request.(GetLegacyExecutionRuntimePageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyExecutionRuntimePage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyExecutionRuntimePageResponseObject); ok {
+		if err := validResponse.VisitGetLegacyExecutionRuntimePageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAutomationTriggerRuns operation middleware
+func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	var request ListAutomationTriggerRunsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAutomationTriggerRuns(ctx, request.(ListAutomationTriggerRunsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAutomationTriggerRuns")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
+		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyExecutionRuntime operation middleware
+func (sh *strictHandler) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
+	var request GetLegacyExecutionRuntimeRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyExecutionRuntime(ctx, request.(GetLegacyExecutionRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyExecutionRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyExecutionRuntimeResponseObject); ok {
+		if err := validResponse.VisitGetLegacyExecutionRuntimeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyExecutionTimeline operation middleware
+func (sh *strictHandler) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
+	var request GetLegacyExecutionTimelineRequestObject
+
+	request.ExecutionId = executionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyExecutionTimeline(ctx, request.(GetLegacyExecutionTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyExecutionTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyExecutionTimelineResponseObject); ok {
+		if err := validResponse.VisitGetLegacyExecutionTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyPushCenterSections operation middleware
+func (sh *strictHandler) GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams) {
+	var request GetLegacyPushCenterSectionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyPushCenterSections(ctx, request.(GetLegacyPushCenterSectionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyPushCenterSections")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyPushCenterSectionsResponseObject); ok {
+		if err := validResponse.VisitGetLegacyPushCenterSectionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyPushCenterStats operation middleware
+func (sh *strictHandler) GetLegacyPushCenterStats(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterStatsParams) {
+	var request GetLegacyPushCenterStatsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyPushCenterStats(ctx, request.(GetLegacyPushCenterStatsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyPushCenterStats")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyPushCenterStatsResponseObject); ok {
+		if err := validResponse.VisitGetLegacyPushCenterStatsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetQuestionnairePublicAnalytics operation middleware
+func (sh *strictHandler) GetQuestionnairePublicAnalytics(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params GetQuestionnairePublicAnalyticsParams) {
+	var request GetQuestionnairePublicAnalyticsRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetQuestionnairePublicAnalytics(ctx, request.(GetQuestionnairePublicAnalyticsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetQuestionnairePublicAnalytics")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetQuestionnairePublicAnalyticsResponseObject); ok {
+		if err := validResponse.VisitGetQuestionnairePublicAnalyticsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableQuestionnairePublicDefinition operation middleware
+func (sh *strictHandler) DisableQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params DisableQuestionnairePublicDefinitionParams) {
+	var request DisableQuestionnairePublicDefinitionRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.Params = params
+
+	var body DisableQuestionnairePublicDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableQuestionnairePublicDefinition(ctx, request.(DisableQuestionnairePublicDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableQuestionnairePublicDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableQuestionnairePublicDefinitionResponseObject); ok {
+		if err := validResponse.VisitDisableQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishQuestionnairePublicDefinition operation middleware
+func (sh *strictHandler) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	var request PublishQuestionnairePublicDefinitionRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.Params = params
+
+	var body PublishQuestionnairePublicDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishQuestionnairePublicDefinition(ctx, request.(PublishQuestionnairePublicDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishQuestionnairePublicDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishQuestionnairePublicDefinitionResponseObject); ok {
+		if err := validResponse.VisitPublishQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicSurveyDefinition operation middleware
+func (sh *strictHandler) GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
+	var request GetPublicSurveyDefinitionRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicSurveyDefinition(ctx, request.(GetPublicSu

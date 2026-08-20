@@ -1,0 +1,1979 @@
+ntResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSegmentResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getSegmentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSegmentResponseSuccess = getSegmentResponse200 & {
+  headers: Headers;
+};
+export type getSegmentResponseError = (
+  | getSegmentResponse401
+  | getSegmentResponse403
+  | getSegmentResponse404
+  | getSegmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSegmentResponse =
+  getSegmentResponseSuccess | getSegmentResponseError;
+
+export const getGetSegmentUrl = (segmentId: number) => {
+  return `/api/v1/segments/${segmentId}`;
+};
+
+export const getSegment = async (
+  segmentId: number,
+  options?: RequestInit,
+): Promise<getSegmentResponse> => {
+  const res = await fetch(getGetSegmentUrl(segmentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSegmentResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSegmentResponse;
+};
+
+/**
+ * @summary Update one declarative audience definition
+ */
+export type updateSegmentResponse200 = {
+  data: Segment;
+  status: 200;
+};
+
+export type updateSegmentResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateSegmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateSegmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateSegmentResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateSegmentResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateSegmentResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type updateSegmentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateSegmentResponseSuccess = updateSegmentResponse200 & {
+  headers: Headers;
+};
+export type updateSegmentResponseError = (
+  | updateSegmentResponse400
+  | updateSegmentResponse401
+  | updateSegmentResponse403
+  | updateSegmentResponse404
+  | updateSegmentResponse409
+  | updateSegmentResponse422
+  | updateSegmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateSegmentResponse =
+  updateSegmentResponseSuccess | updateSegmentResponseError;
+
+export const getUpdateSegmentUrl = (segmentId: number) => {
+  return `/api/v1/segments/${segmentId}`;
+};
+
+export const updateSegment = async (
+  segmentId: number,
+  updateSegmentRequest: UpdateSegmentRequest,
+  options?: RequestInit,
+): Promise<updateSegmentResponse> => {
+  const res = await fetch(getUpdateSegmentUrl(segmentId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateSegmentRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateSegmentResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateSegmentResponse;
+};
+
+/**
+ * @summary Archive one local audience definition without executing it
+ */
+export type archiveSegmentResponse200 = {
+  data: Segment;
+  status: 200;
+};
+
+export type archiveSegmentResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveSegmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveSegmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveSegmentResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveSegmentResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type archiveSegmentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveSegmentResponseSuccess = archiveSegmentResponse200 & {
+  headers: Headers;
+};
+export type archiveSegmentResponseError = (
+  | archiveSegmentResponse400
+  | archiveSegmentResponse401
+  | archiveSegmentResponse403
+  | archiveSegmentResponse404
+  | archiveSegmentResponse409
+  | archiveSegmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveSegmentResponse =
+  archiveSegmentResponseSuccess | archiveSegmentResponseError;
+
+export const getArchiveSegmentUrl = (segmentId: number) => {
+  return `/api/v1/segments/${segmentId}`;
+};
+
+export const archiveSegment = async (
+  segmentId: number,
+  options?: RequestInit,
+): Promise<archiveSegmentResponse> => {
+  const res = await fetch(getArchiveSegmentUrl(segmentId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveSegmentResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveSegmentResponse;
+};
+
+/**
+ * @summary Preview the current materialized members using a keyset cursor
+ */
+export type listSegmentMembersResponse200 = {
+  data: SegmentMemberPage;
+  status: 200;
+};
+
+export type listSegmentMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSegmentMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSegmentMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSegmentMembersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listSegmentMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSegmentMembersResponseSuccess =
+  listSegmentMembersResponse200 & {
+    headers: Headers;
+  };
+export type listSegmentMembersResponseError = (
+  | listSegmentMembersResponse400
+  | listSegmentMembersResponse401
+  | listSegmentMembersResponse403
+  | listSegmentMembersResponse404
+  | listSegmentMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSegmentMembersResponse =
+  listSegmentMembersResponseSuccess | listSegmentMembersResponseError;
+
+export const getListSegmentMembersUrl = (
+  segmentId: number,
+  params?: ListSegmentMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/segments/${segmentId}/members?${stringifiedParams}`
+    : `/api/v1/segments/${segmentId}/members`;
+};
+
+export const listSegmentMembers = async (
+  segmentId: number,
+  params?: ListSegmentMembersParams,
+  options?: RequestInit,
+): Promise<listSegmentMembersResponse> => {
+  const res = await fetch(getListSegmentMembersUrl(segmentId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSegmentMembersResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSegmentMembersResponse;
+};
+
+/**
+ * @summary Durably request one materialized audience refresh
+ */
+export type requestSegmentRefreshResponse202 = {
+  data: SegmentRefreshAccepted;
+  status: 202;
+};
+
+export type requestSegmentRefreshResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type requestSegmentRefreshResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type requestSegmentRefreshResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type requestSegmentRefreshResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type requestSegmentRefreshResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type requestSegmentRefreshResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type requestSegmentRefreshResponseSuccess =
+  requestSegmentRefreshResponse202 & {
+    headers: Headers;
+  };
+export type requestSegmentRefreshResponseError = (
+  | requestSegmentRefreshResponse400
+  | requestSegmentRefreshResponse401
+  | requestSegmentRefreshResponse403
+  | requestSegmentRefreshResponse404
+  | requestSegmentRefreshResponse409
+  | requestSegmentRefreshResponse503
+) & {
+  headers: Headers;
+};
+
+export type requestSegmentRefreshResponse =
+  requestSegmentRefreshResponseSuccess | requestSegmentRefreshResponseError;
+
+export const getRequestSegmentRefreshUrl = (segmentId: number) => {
+  return `/api/v1/segments/${segmentId}/refresh`;
+};
+
+export const requestSegmentRefresh = async (
+  segmentId: number,
+  options?: RequestInit,
+): Promise<requestSegmentRefreshResponse> => {
+  const res = await fetch(getRequestSegmentRefreshUrl(segmentId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: requestSegmentRefreshResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as requestSegmentRefreshResponse;
+};
+
+/**
+ * @summary List global customer stages in deterministic order
+ */
+export type listStagesResponse200 = {
+  data: StageListResponse;
+  status: 200;
+};
+
+export type listStagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listStagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listStagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listStagesResponseSuccess = listStagesResponse200 & {
+  headers: Headers;
+};
+export type listStagesResponseError = (
+  listStagesResponse401 | listStagesResponse403 | listStagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listStagesResponse =
+  listStagesResponseSuccess | listStagesResponseError;
+
+export const getListStagesUrl = () => {
+  return `/api/v1/stages`;
+};
+
+export const listStages = async (
+  options?: RequestInit,
+): Promise<listStagesResponse> => {
+  const res = await fetch(getListStagesUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStagesResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listStagesResponse;
+};
+
+/**
+ * @summary Create one global customer stage
+ */
+export type createStageResponse201 = {
+  data: Stage;
+  status: 201;
+};
+
+export type createStageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createStageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createStageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createStageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createStageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type createStageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createStageResponseSuccess = createStageResponse201 & {
+  headers: Headers;
+};
+export type createStageResponseError = (
+  | createStageResponse400
+  | createStageResponse401
+  | createStageResponse403
+  | createStageResponse409
+  | createStageResponse422
+  | createStageResponse503
+) & {
+  headers: Headers;
+};
+
+export type createStageResponse =
+  createStageResponseSuccess | createStageResponseError;
+
+export const getCreateStageUrl = () => {
+  return `/api/v1/stages`;
+};
+
+export const createStage = async (
+  createStageRequest: CreateStageRequest,
+  options?: RequestInit,
+): Promise<createStageResponse> => {
+  const res = await fetch(getCreateStageUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createStageRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createStageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createStageResponse;
+};
+
+/**
+ * @summary Replace the exact active customer stage order
+ */
+export type reorderStagesResponse200 = {
+  data: StageListResponse;
+  status: 200;
+};
+
+export type reorderStagesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reorderStagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reorderStagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reorderStagesResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reorderStagesResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type reorderStagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reorderStagesResponseSuccess = reorderStagesResponse200 & {
+  headers: Headers;
+};
+export type reorderStagesResponseError = (
+  | reorderStagesResponse400
+  | reorderStagesResponse401
+  | reorderStagesResponse403
+  | reorderStagesResponse409
+  | reorderStagesResponse422
+  | reorderStagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type reorderStagesResponse =
+  reorderStagesResponseSuccess | reorderStagesResponseError;
+
+export const getReorderStagesUrl = () => {
+  return `/api/v1/stages/reorder`;
+};
+
+export const reorderStages = async (
+  reorderStagesRequest: ReorderStagesRequest,
+  options?: RequestInit,
+): Promise<reorderStagesResponse> => {
+  const res = await fetch(getReorderStagesUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(reorderStagesRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reorderStagesResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reorderStagesResponse;
+};
+
+/**
+ * @summary Rename one global customer stage
+ */
+export type renameStageResponse200 = {
+  data: Stage;
+  status: 200;
+};
+
+export type renameStageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type renameStageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type renameStageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type renameStageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type renameStageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type renameStageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type renameStageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type renameStageResponseSuccess = renameStageResponse200 & {
+  headers: Headers;
+};
+export type renameStageResponseError = (
+  | renameStageResponse400
+  | renameStageResponse401
+  | renameStageResponse403
+  | renameStageResponse404
+  | renameStageResponse409
+  | renameStageResponse422
+  | renameStageResponse503
+) & {
+  headers: Headers;
+};
+
+export type renameStageResponse =
+  renameStageResponseSuccess | renameStageResponseError;
+
+export const getRenameStageUrl = (stageId: number) => {
+  return `/api/v1/stages/${stageId}`;
+};
+
+export const renameStage = async (
+  stageId: number,
+  renameStageRequest: RenameStageRequest,
+  options?: RequestInit,
+): Promise<renameStageResponse> => {
+  const res = await fetch(getRenameStageUrl(stageId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(renameStageRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: renameStageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as renameStageResponse;
+};
+
+/**
+ * @summary Archive one unreferenced local customer stage
+ */
+export type archiveStageResponse200 = {
+  data: Stage;
+  status: 200;
+};
+
+export type archiveStageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveStageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveStageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveStageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveStageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type archiveStageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveStageResponseSuccess = archiveStageResponse200 & {
+  headers: Headers;
+};
+export type archiveStageResponseError = (
+  | archiveStageResponse400
+  | archiveStageResponse401
+  | archiveStageResponse403
+  | archiveStageResponse404
+  | archiveStageResponse409
+  | archiveStageResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveStageResponse =
+  archiveStageResponseSuccess | archiveStageResponseError;
+
+export const getArchiveStageUrl = (stageId: number) => {
+  return `/api/v1/stages/${stageId}`;
+};
+
+export const archiveStage = async (
+  stageId: number,
+  options?: RequestInit,
+): Promise<archiveStageResponse> => {
+  const res = await fetch(getArchiveStageUrl(stageId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveStageResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveStageResponse;
+};
+
+/**
+ * @summary Resolve one scoped identity without implicit creation
+ */
+export type resolveIdentityResponse200 = {
+  data: ResolveIdentityResponse;
+  status: 200;
+};
+
+export type resolveIdentityResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type resolveIdentityResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type resolveIdentityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type resolveIdentityResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type resolveIdentityResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type resolveIdentityResponseSuccess = resolveIdentityResponse200 & {
+  headers: Headers;
+};
+export type resolveIdentityResponseError = (
+  | resolveIdentityResponse400
+  | resolveIdentityResponse401
+  | resolveIdentityResponse403
+  | resolveIdentityResponse422
+  | resolveIdentityResponse503
+) & {
+  headers: Headers;
+};
+
+export type resolveIdentityResponse =
+  resolveIdentityResponseSuccess | resolveIdentityResponseError;
+
+export const getResolveIdentityUrl = () => {
+  return `/api/v1/identity/resolve`;
+};
+
+export const resolveIdentity = async (
+  resolveIdentityRequest: ResolveIdentityRequest,
+  options?: RequestInit,
+): Promise<resolveIdentityResponse> => {
+  const res = await fetch(getResolveIdentityUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(resolveIdentityRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: resolveIdentityResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as resolveIdentityResponse;
+};
+
+/**
+ * @summary Bind a scoped identity to a channel-neutral customer
+ */
+export type bindIdentityResponse200 = {
+  data: BindIdentityResponse;
+  status: 200;
+};
+
+export type bindIdentityResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type bindIdentityResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type bindIdentityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type bindIdentityResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type bindIdentityResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type bindIdentityResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type bindIdentityResponseSuccess = bindIdentityResponse200 & {
+  headers: Headers;
+};
+export type bindIdentityResponseError = (
+  | bindIdentityResponse400
+  | bindIdentityResponse401
+  | bindIdentityResponse403
+  | bindIdentityResponse409
+  | bindIdentityResponse422
+  | bindIdentityResponse503
+) & {
+  headers: Headers;
+};
+
+export type bindIdentityResponse =
+  bindIdentityResponseSuccess | bindIdentityResponseError;
+
+export const getBindIdentityUrl = () => {
+  return `/api/v1/identity/bind`;
+};
+
+export const bindIdentity = async (
+  bindIdentityRequest: BindIdentityRequest,
+  options?: RequestInit,
+): Promise<bindIdentityResponse> => {
+  const res = await fetch(getBindIdentityUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bindIdentityRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: bindIdentityResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as bindIdentityResponse;
+};
+
+/**
+ * @summary Attribute or persist an external event without guessing identity
+ */
+export type ingestIdentityEventResponse200 = {
+  data: IngestIdentityEventResponse;
+  status: 200;
+};
+
+export type ingestIdentityEventResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type ingestIdentityEventResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type ingestIdentityEventResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type ingestIdentityEventResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type ingestIdentityEventResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type ingestIdentityEventResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type ingestIdentityEventResponseSuccess =
+  ingestIdentityEventResponse200 & {
+    headers: Headers;
+  };
+export type ingestIdentityEventResponseError = (
+  | ingestIdentityEventResponse400
+  | ingestIdentityEventResponse401
+  | ingestIdentityEventResponse403
+  | ingestIdentityEventResponse409
+  | ingestIdentityEventResponse422
+  | ingestIdentityEventResponse503
+) & {
+  headers: Headers;
+};
+
+export type ingestIdentityEventResponse =
+  ingestIdentityEventResponseSuccess | ingestIdentityEventResponseError;
+
+export const getIngestIdentityEventUrl = () => {
+  return `/api/v1/identity/ingest`;
+};
+
+export const ingestIdentityEvent = async (
+  ingestIdentityEventRequest: IngestIdentityEventRequest,
+  options?: RequestInit,
+): Promise<ingestIdentityEventResponse> => {
+  const res = await fetch(getIngestIdentityEventUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(ingestIdentityEventRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: ingestIdentityEventResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as ingestIdentityEventResponse;
+};
+
+/**
+ * @summary List pending identity merge reviews without exposing raw identities
+ */
+export type listIdentityMergeReviewsResponse200 = {
+  data: IdentityMergeReviewPage;
+  status: 200;
+};
+
+export type listIdentityMergeReviewsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listIdentityMergeReviewsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listIdentityMergeReviewsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listIdentityMergeReviewsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listIdentityMergeReviewsResponseSuccess =
+  listIdentityMergeReviewsResponse200 & {
+    headers: Headers;
+  };
+export type listIdentityMergeReviewsResponseError = (
+  | listIdentityMergeReviewsResponse400
+  | listIdentityMergeReviewsResponse401
+  | listIdentityMergeReviewsResponse403
+  | listIdentityMergeReviewsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listIdentityMergeReviewsResponse =
+  | listIdentityMergeReviewsResponseSuccess
+  | listIdentityMergeReviewsResponseError;
+
+export const getListIdentityMergeReviewsUrl = (
+  params?: ListIdentityMergeReviewsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/identity/merge-reviews?${stringifiedParams}`
+    : `/api/v1/identity/merge-reviews`;
+};
+
+export const listIdentityMergeReviews = async (
+  params?: ListIdentityMergeReviewsParams,
+  options?: RequestInit,
+): Promise<listIdentityMergeReviewsResponse> => {
+  const res = await fetch(getListIdentityMergeReviewsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listIdentityMergeReviewsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listIdentityMergeReviewsResponse;
+};
+
+/**
+ * @summary Approve one versioned merge review with an explicit primary customer
+ */
+export type approveIdentityMergeReviewResponse200 = {
+  data: IdentityMergeReview;
+  status: 200;
+};
+
+export type approveIdentityMergeReviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type approveIdentityMergeReviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type approveIdentityMergeReviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type approveIdentityMergeReviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type approveIdentityMergeReviewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type approveIdentityMergeReviewResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type approveIdentityMergeReviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type approveIdentityMergeReviewResponseSuccess =
+  approveIdentityMergeReviewResponse200 & {
+    headers: Headers;
+  };
+export type approveIdentityMergeReviewResponseError = (
+  | approveIdentityMergeReviewResponse400
+  | approveIdentityMergeReviewResponse401
+  | approveIdentityMergeReviewResponse403
+  | approveIdentityMergeReviewResponse404
+  | approveIdentityMergeReviewResponse409
+  | approveIdentityMergeReviewResponse422
+  | approveIdentityMergeReviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type approveIdentityMergeReviewResponse =
+  | approveIdentityMergeReviewResponseSuccess
+  | approveIdentityMergeReviewResponseError;
+
+export const getApproveIdentityMergeReviewUrl = (reviewId: number) => {
+  return `/api/v1/identity/merge-reviews/${reviewId}/approve`;
+};
+
+export const approveIdentityMergeReview = async (
+  reviewId: number,
+  approveIdentityMergeReviewRequest: ApproveIdentityMergeReviewRequest,
+  options?: RequestInit,
+): Promise<approveIdentityMergeReviewResponse> => {
+  const res = await fetch(getApproveIdentityMergeReviewUrl(reviewId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(approveIdentityMergeReviewRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveIdentityMergeReviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as approveIdentityMergeReviewResponse;
+};
+
+/**
+ * @summary Reject one versioned merge review without changing bindings
+ */
+export type rejectIdentityMergeReviewResponse200 = {
+  data: IdentityMergeReview;
+  status: 200;
+};
+
+export type rejectIdentityMergeReviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type rejectIdentityMergeReviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type rejectIdentityMergeReviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type rejectIdentityMergeReviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type rejectIdentityMergeReviewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type rejectIdentityMergeReviewResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type rejectIdentityMergeReviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type rejectIdentityMergeReviewResponseSuccess =
+  rejectIdentityMergeReviewResponse200 & {
+    headers: Headers;
+  };
+export type rejectIdentityMergeReviewResponseError = (
+  | rejectIdentityMergeReviewResponse400
+  | rejectIdentityMergeReviewResponse401
+  | rejectIdentityMergeReviewResponse403
+  | rejectIdentityMergeReviewResponse404
+  | rejectIdentityMergeReviewResponse409
+  | rejectIdentityMergeReviewResponse422
+  | rejectIdentityMergeReviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type rejectIdentityMergeReviewResponse =
+  | rejectIdentityMergeReviewResponseSuccess
+  | rejectIdentityMergeReviewResponseError;
+
+export const getRejectIdentityMergeReviewUrl = (reviewId: number) => {
+  return `/api/v1/identity/merge-reviews/${reviewId}/reject`;
+};
+
+export const rejectIdentityMergeReview = async (
+  reviewId: number,
+  rejectIdentityMergeReviewRequest: RejectIdentityMergeReviewRequest,
+  options?: RequestInit,
+): Promise<rejectIdentityMergeReviewResponse> => {
+  const res = await fetch(getRejectIdentityMergeReviewUrl(reviewId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectIdentityMergeReviewRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: rejectIdentityMergeReviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as rejectIdentityMergeReviewResponse;
+};
+
+/**
+ * @summary Return the authenticated admin principal
+ */
+export type getAuthSessionResponse200 = {
+  data: AuthSessionResponse;
+  status: 200;
+};
+
+export type getAuthSessionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAuthSessionResponseSuccess = getAuthSessionResponse200 & {
+  headers: Headers;
+};
+export type getAuthSessionResponseError = getAuthSessionResponse401 & {
+  headers: Headers;
+};
+
+export type getAuthSessionResponse =
+  getAuthSessionResponseSuccess | getAuthSessionResponseError;
+
+export const getGetAuthSessionUrl = () => {
+  return `/api/v1/auth/session`;
+};
+
+export const getAuthSession = async (
+  options?: RequestInit,
+): Promise<getAuthSessionResponse> => {
+  const res = await fetch(getGetAuthSessionUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAuthSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAuthSessionResponse;
+};
+
+/**
+ * @summary Invalidate the current admin session
+ */
+export type logoutAdminResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type logoutAdminResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type logoutAdminResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type logoutAdminResponseSuccess = logoutAdminResponse204 & {
+  headers: Headers;
+};
+export type logoutAdminResponseError = (
+  logoutAdminResponse401 | logoutAdminResponse403
+) & {
+  headers: Headers;
+};
+
+export type logoutAdminResponse =
+  logoutAdminResponseSuccess | logoutAdminResponseError;
+
+export const getLogoutAdminUrl = () => {
+  return `/api/v1/auth/logout`;
+};
+
+export const logoutAdmin = async (
+  options?: RequestInit,
+): Promise<logoutAdminResponse> => {
+  const res = await fetch(getLogoutAdminUrl(), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: logoutAdminResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as logoutAdminResponse;
+};
+
+/**
+ * @summary List non-secret configuration readiness
+ */
+export type getAdminConfigOverviewResponse200 = {
+  data: AdminConfigOverviewResponse;
+  status: 200;
+};
+
+export type getAdminConfigOverviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAdminConfigOverviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAdminConfigOverviewResponseSuccess =
+  getAdminConfigOverviewResponse200 & {
+    headers: Headers;
+  };
+export type getAdminConfigOverviewResponseError = (
+  getAdminConfigOverviewResponse401 | getAdminConfigOverviewResponse403
+) & {
+  headers: Headers;
+};
+
+export type getAdminConfigOverviewResponse =
+  getAdminConfigOverviewResponseSuccess | getAdminConfigOverviewResponseError;
+
+export const getGetAdminConfigOverviewUrl = () => {
+  return `/api/v1/admin/config/overview`;
+};
+
+export const getAdminConfigOverview = async (
+  options?: RequestInit,
+): Promise<getAdminConfigOverviewResponse> => {
+  const res = await fetch(getGetAdminConfigOverviewUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminConfigOverviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAdminConfigOverviewResponse;
+};
+
+/**
+ * @summary Render the frozen server-side app-settings page
+ */
+export type getLegacyAppSettingsPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyAppSettingsPageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyAppSettingsPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAppSettingsPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAppSettingsPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAppSettingsPageResponseSuccess =
+  getLegacyAppSettingsPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAppSettingsPageResponseError = (
+  | getLegacyAppSettingsPageResponse400
+  | getLegacyAppSettingsPageResponse401
+  | getLegacyAppSettingsPageResponse403
+  | getLegacyAppSettingsPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAppSettingsPageResponse =
+  | getLegacyAppSettingsPageResponseSuccess
+  | getLegacyAppSettingsPageResponseError;
+
+export const getGetLegacyAppSettingsPageUrl = (
+  params?: GetLegacyAppSettingsPageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/admin/config/app-settings?${stringifiedParams}`
+    : `/admin/config/app-settings`;
+};
+
+export const getLegacyAppSettingsPage = async (
+  params?: GetLegacyAppSettingsPageParams,
+  options?: RequestInit,
+): Promise<getLegacyAppSettingsPageResponse> => {
+  const res = await fetch(getGetLegacyAppSettingsPageUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAppSettingsPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAppSettingsPageResponse;
+};
+
+/**
+ * @summary Validate and save non-secret app settings before redirecting to the page
+ */
+export type saveLegacyAppSettingsPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type saveLegacyAppSettingsPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveLegacyAppSettingsPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveLegacyAppSettingsPageResponseError = (
+  | saveLegacyAppSettingsPageResponse302
+  | saveLegacyAppSettingsPageResponse401
+  | saveLegacyAppSettingsPageResponse403
+) & {
+  headers: Headers;
+};
+
+export type saveLegacyAppSettingsPageResponse =
+  saveLegacyAppSettingsPageResponseError;
+
+export const getSaveLegacyAppSettingsPageUrl = () => {
+  return `/admin/config/app-settings/save`;
+};
+
+export const saveLegacyAppSettingsPage = async (
+  legacyAppSettingsSaveForm: LegacyAppSettingsSaveForm,
+  options?: RequestInit,
+): Promise<saveLegacyAppSettingsPageResponse> => {
+  const formUrlEncoded = new URLSearchParams();
+  formUrlEncoded.append(`csrf_token`, legacyAppSettingsSaveForm.csrf_token);
+  formUrlEncoded.append(
+    `admin_action_token`,
+    legacyAppSettingsSaveForm.admin_action_token,
+  );
+  formUrlEncoded.append(`confirm`, legacyAppSettingsSaveForm.confirm);
+  if (legacyAppSettingsSaveForm.operator !== undefined) {
+    formUrlEncoded.append(`operator`, legacyAppSettingsSaveForm.operator);
+  }
+  if (legacyAppSettingsSaveForm["setting__wecom.corp_id"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__wecom.corp_id`,
+      legacyAppSettingsSaveForm["setting__wecom.corp_id"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__wecom.agent_id"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__wecom.agent_id`,
+      legacyAppSettingsSaveForm["setting__wecom.agent_id"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__outbound.rate_per_second"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__outbound.rate_per_second`,
+      legacyAppSettingsSaveForm["setting__outbound.rate_per_second"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__outbound.max_attempts"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__outbound.max_attempts`,
+      legacyAppSettingsSaveForm["setting__outbound.max_attempts"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__database.url"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__database.url`,
+      legacyAppSettingsSaveForm["setting__database.url"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__wecom.secret"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__wecom.secret`,
+      legacyAppSettingsSaveForm["setting__wecom.secret"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__wecom.callback_token"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__wecom.callback_token`,
+      legacyAppSettingsSaveForm["setting__wecom.callback_token"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__wecom.callback_aes_key"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__wecom.callback_aes_key`,
+      legacyAppSettingsSaveForm["setting__wecom.callback_aes_key"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__ai.api_key"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__ai.api_key`,
+      legacyAppSettingsSaveForm["setting__ai.api_key"],
+    );
+  }
+  if (legacyAppSettingsSaveForm["setting__auth.jwt_secret"] !== undefined) {
+    formUrlEncoded.append(
+      `setting__auth.jwt_secret`,
+      legacyAppSettingsSaveForm["setting__auth.jwt_secret"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__extension.api_key_pepper"] !== undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__extension.api_key_pepper`,
+      legacyAppSettingsSaveForm["setting__extension.api_key_pepper"],
+    );
+  }
+  if (
+    legacyAppSettingsSaveForm["setting__gateway.webhook_master_key"] !==
+    undefined
+  ) {
+    formUrlEncoded.append(
+      `setting__gateway.webhook_master_key`,
+      legacyAppSettingsSaveForm["setting__gateway.webhook_master_key"],
+    );
+  }
+
+  const res = await fetch(getSaveLegacyAppSettingsPageUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...options?.headers,
+    },
+    body: formUrlEncoded,
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveLegacyAppSettingsPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveLegacyAppSettingsPageResponse;
+};
+
+/**
+ * @summary Read the frozen twelve-key compatibility projection
+ */
+export type getLegacyAppSettingsResourceResponse200 = {
+  data: LegacyAppSettingsResponse;
+  status: 200;
+};
+
+export type getLegacyAppSettingsResourceResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyAppSettingsResourceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAppSettingsResourceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAppSettingsResourceResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAppSettingsResourceResponseSuccess =
+  getLegacyAppSettingsResourceResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAppSettingsResourceResponseError = (
+  | getLegacyAppSettingsResourceResponse400
+  | getLegacyAppSettingsResourceResponse401
+  | getLegacyAppSettingsResourceResponse403
+  | getLegacyAppSettingsResourceResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAppSettingsResourceResponse =
+  | getLegacyAppSettingsResourceResponseSuccess
+  | getLegacyAppSettingsResourceResponseError;
+
+export const getGetLegacyAppSettingsResourceUrl = (
+  params?: GetLegacyAppSettingsResourceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/config/app-settings?${stringifiedParams}`
+    : `/api/admin/config/app-settings`;
+};
+
+export const getLegacyAppSettingsResource = async (
+  params?: GetLegacyAppSettingsResourceParams,
+  options?: RequestInit,
+): Promise<getLegacyAppSettingsResourceResponse> => {
+  const res = await fetch(getGetLegacyAppSettingsResourceUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAppSettingsResourceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAppSettingsResourceResponse;
+};
+
+/**
+ * @summary Save non-secret app settings through the frozen JSON compatibility transport
+ */
+export type saveLegacyAppSettingsResourceResponse200 = {
+  data: LegacyAppSettingsResourceSaveResponse;
+  status: 200;
+};
+
+export type saveLegacyAppSettingsResourceResponse400 = {
+  data: LegacyAppSettingsResourceSaveError;
+  status: 400;
+};
+
+export type saveLegacyAppSettingsResourceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveLegacyAppSettingsResourceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveLegacyAppSettingsResourceResponse409 = {
+  data: LegacyAppSettingsResourceSaveError;
+  status: 409;
+};
+
+export type saveLegacyAppSettingsResourceResponse503 = {
+  data: LegacyAppSettingsResourceSaveError;
+  status: 503;
+};
+
+export type saveLegacyAppSettingsResourceResponseSuccess =
+  saveLegacyAppSettingsResourceResponse200 & {
+    headers: Headers;
+  };
+export type saveLegacyAppSettingsResourceResponseError = (
+  | saveLegacyAppSettingsResourceResponse400
+  | saveLegacyAppSettingsResourceResponse401
+  | saveLegacyAppSettingsResourceResponse403
+  | saveLegacyAppSettingsResourceResponse409
+  | saveLegacyAppSettingsResourceResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveLegacyAppSettingsResourceResponse =
+  | saveLegacyAppSettingsResourceResponseSuccess
+  | saveLegacyAppSettingsResourceResponseError;
+
+export const getSaveLegacyAppSettingsResourceUrl = () => {
+  return `/api/admin/config/app-settings`;
+};
+
+export const saveLegacyAppSettingsResource = async (
+  legacyAppSettingsResourceSaveRequest: LegacyAppSettingsResourceSaveRequest,
+  options?: RequestInit,
+): Promise<saveLegacyAppSettingsResourceResponse> => {
+  const res = await fetch(getSaveLegacyAppSettingsResourceUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAppSettingsResourceSaveRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveLegacyAppSettingsResourceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveLegacyAppSettingsResourceResponse;
+};
+
+/**
+ * @summary List real D01 Automation trigger receipts through the frozen legacy path
+ */
+export type listAutomationTriggerRunsResponse200 = {
+  data: AutomationTriggerRunListResponse;
+  status: 200;
+};
+
+export type listAutomationTriggerRunsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAutomationTriggerRunsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationTriggerRunsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationTriggerRunsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationTriggerRunsResponseSuccess =
+  listAutomationTriggerRunsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationTriggerRunsResponseError = (
+  | listAutomationTriggerRunsResponse400
+  | listAutomationTriggerRunsResponse401
+  | listAutomationTriggerRunsResponse403
+  | listAutomationTriggerRunsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationTriggerRunsResponse =
+  | listAutomationTriggerRunsResponseSuccess
+  | listAutomationTriggerRunsResponseError;
+
+export const getListAutomationTriggerRunsUrl = (
+  params?: ListAutomationTriggerRunsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/agent-runs?${stringifiedParams}`
+    : `/api/admin/automation-conversion/agent-runs`;
+};
+
+export const listAutomationTriggerRuns = async (
+  params?: ListAutomationTriggerRunsParams,
+  options?: RequestInit,
+): Promise<listAutomationTriggerRunsResponse> => {
+  const res = await fetch(getListAutomationTriggerRunsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationTriggerRunsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationTriggerRunsResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local AI assistant plans workspace
+ */
+export type getCloudOrchestratorWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getCloudOrchestratorWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCloudOrchestratorWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCloudOrchestratorWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getCloudOrchestratorWorkspaceResponseError = (
+  | getCloudOrchestratorWorkspaceResponse302
+  | getCloudOrchestratorWorkspaceResponse401
+  | getCloudOrchestratorWorkspaceResponse403
+  | getCloudOrchestratorWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getCloudOrchestratorWorkspaceResponse =
+  getCloudOrchestratorWorkspaceResponseError;
+
+export const getGetCloudOrchestratorWorkspaceUrl = () => {
+  return `/admin/cloud-orchestrator`;
+};
+
+export const getCloudOrchestratorWorkspace = async (
+  options?: RequestInit,
+): Promise<getCloudOrchestratorWorkspaceResponse> => {
+  const res = await fetch(getGetCloudOrchestratorWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudOrchestratorWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudOrchestratorWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to the local plans review workspace
+ */
+export type getCloudOrchestratorPlansWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getCloudOrchestratorPlansWorkspaceResponse401 = {
+  

@@ -1,0 +1,1904 @@
+nUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}/stop`;
+};
+
+export const stopLegacyCoupon = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<stopLegacyCouponResponse> => {
+  const res = await fetch(getStopLegacyCouponUrl(couponId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: stopLegacyCouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as stopLegacyCouponResponse;
+};
+
+/**
+ * @summary Render the frozen legacy coupon list page
+ */
+export type getLegacyCouponListPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyCouponListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCouponListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCouponListPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCouponListPageResponseSuccess =
+  getLegacyCouponListPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyCouponListPageResponseError = (
+  | getLegacyCouponListPageResponse401
+  | getLegacyCouponListPageResponse403
+  | getLegacyCouponListPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCouponListPageResponse =
+  getLegacyCouponListPageResponseSuccess | getLegacyCouponListPageResponseError;
+
+export const getGetLegacyCouponListPageUrl = () => {
+  return `/admin/coupons`;
+};
+
+export const getLegacyCouponListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyCouponListPageResponse> => {
+  const res = await fetch(getGetLegacyCouponListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCouponListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCouponListPageResponse;
+};
+
+/**
+ * @summary Render the frozen legacy new-coupon form
+ */
+export type getLegacyCouponNewPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyCouponNewPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCouponNewPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCouponNewPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCouponNewPageResponseSuccess =
+  getLegacyCouponNewPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyCouponNewPageResponseError = (
+  | getLegacyCouponNewPageResponse401
+  | getLegacyCouponNewPageResponse403
+  | getLegacyCouponNewPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCouponNewPageResponse =
+  getLegacyCouponNewPageResponseSuccess | getLegacyCouponNewPageResponseError;
+
+export const getGetLegacyCouponNewPageUrl = () => {
+  return `/admin/coupons/new`;
+};
+
+export const getLegacyCouponNewPage = async (
+  options?: RequestInit,
+): Promise<getLegacyCouponNewPageResponse> => {
+  const res = await fetch(getGetLegacyCouponNewPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCouponNewPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCouponNewPageResponse;
+};
+
+/**
+ * @summary Render the frozen legacy coupon claim-data page
+ */
+export type getLegacyCouponDataPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyCouponDataPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCouponDataPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCouponDataPageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyCouponDataPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCouponDataPageResponseSuccess =
+  getLegacyCouponDataPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyCouponDataPageResponseError = (
+  | getLegacyCouponDataPageResponse401
+  | getLegacyCouponDataPageResponse403
+  | getLegacyCouponDataPageResponse404
+  | getLegacyCouponDataPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCouponDataPageResponse =
+  getLegacyCouponDataPageResponseSuccess | getLegacyCouponDataPageResponseError;
+
+export const getGetLegacyCouponDataPageUrl = (couponId: number) => {
+  return `/admin/coupons/${couponId}/data`;
+};
+
+export const getLegacyCouponDataPage = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<getLegacyCouponDataPageResponse> => {
+  const res = await fetch(getGetLegacyCouponDataPageUrl(couponId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCouponDataPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCouponDataPageResponse;
+};
+
+/**
+ * @summary Render the frozen legacy coupon edit form
+ */
+export type getLegacyCouponEditPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyCouponEditPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCouponEditPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCouponEditPageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyCouponEditPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCouponEditPageResponseSuccess =
+  getLegacyCouponEditPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyCouponEditPageResponseError = (
+  | getLegacyCouponEditPageResponse401
+  | getLegacyCouponEditPageResponse403
+  | getLegacyCouponEditPageResponse404
+  | getLegacyCouponEditPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCouponEditPageResponse =
+  getLegacyCouponEditPageResponseSuccess | getLegacyCouponEditPageResponseError;
+
+export const getGetLegacyCouponEditPageUrl = (couponId: number) => {
+  return `/admin/coupons/${couponId}/edit`;
+};
+
+export const getLegacyCouponEditPage = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<getLegacyCouponEditPageResponse> => {
+  const res = await fetch(getGetLegacyCouponEditPageUrl(couponId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCouponEditPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCouponEditPageResponse;
+};
+
+/**
+ * @summary List allowlisted ordinary-product options for a coupon rule
+ */
+export type listLegacyCouponProductOptionsResponse200 = {
+  data: LegacyCouponProductOptionsResponse;
+  status: 200;
+};
+
+export type listLegacyCouponProductOptionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyCouponProductOptionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyCouponProductOptionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyCouponProductOptionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyCouponProductOptionsResponseSuccess =
+  listLegacyCouponProductOptionsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyCouponProductOptionsResponseError = (
+  | listLegacyCouponProductOptionsResponse400
+  | listLegacyCouponProductOptionsResponse401
+  | listLegacyCouponProductOptionsResponse403
+  | listLegacyCouponProductOptionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyCouponProductOptionsResponse =
+  | listLegacyCouponProductOptionsResponseSuccess
+  | listLegacyCouponProductOptionsResponseError;
+
+export const getListLegacyCouponProductOptionsUrl = (
+  params?: ListLegacyCouponProductOptionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/coupons/product-options?${stringifiedParams}`
+    : `/api/admin/coupons/product-options`;
+};
+
+export const listLegacyCouponProductOptions = async (
+  params?: ListLegacyCouponProductOptionsParams,
+  options?: RequestInit,
+): Promise<listLegacyCouponProductOptionsResponse> => {
+  const res = await fetch(getListLegacyCouponProductOptionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyCouponProductOptionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyCouponProductOptionsResponse;
+};
+
+/**
+ * @summary Archive a coupon without modifying its claims
+ */
+export type archiveLegacyCouponResponse200 = {
+  data: LegacyCouponBoardMutationResponse;
+  status: 200;
+};
+
+export type archiveLegacyCouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyCouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveLegacyCouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type archiveLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveLegacyCouponResponseSuccess =
+  archiveLegacyCouponResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyCouponResponseError = (
+  | archiveLegacyCouponResponse400
+  | archiveLegacyCouponResponse401
+  | archiveLegacyCouponResponse403
+  | archiveLegacyCouponResponse404
+  | archiveLegacyCouponResponse409
+  | archiveLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyCouponResponse =
+  archiveLegacyCouponResponseSuccess | archiveLegacyCouponResponseError;
+
+export const getArchiveLegacyCouponUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}/archive`;
+};
+
+export const archiveLegacyCoupon = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<archiveLegacyCouponResponse> => {
+  const res = await fetch(getArchiveLegacyCouponUrl(couponId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyCouponResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyCouponResponse;
+};
+
+/**
+ * @summary List opaque local coupon claim facts for an administrator
+ */
+export type listLegacyCouponClaimsResponse200 = {
+  data: LegacyCouponClaimListResponse;
+  status: 200;
+};
+
+export type listLegacyCouponClaimsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyCouponClaimsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyCouponClaimsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyCouponClaimsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyCouponClaimsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyCouponClaimsResponseSuccess =
+  listLegacyCouponClaimsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyCouponClaimsResponseError = (
+  | listLegacyCouponClaimsResponse400
+  | listLegacyCouponClaimsResponse401
+  | listLegacyCouponClaimsResponse403
+  | listLegacyCouponClaimsResponse404
+  | listLegacyCouponClaimsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyCouponClaimsResponse =
+  listLegacyCouponClaimsResponseSuccess | listLegacyCouponClaimsResponseError;
+
+export const getListLegacyCouponClaimsUrl = (
+  couponId: number,
+  params?: ListLegacyCouponClaimsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/coupons/${couponId}/claims?${stringifiedParams}`
+    : `/api/admin/coupons/${couponId}/claims`;
+};
+
+export const listLegacyCouponClaims = async (
+  couponId: number,
+  params?: ListLegacyCouponClaimsParams,
+  options?: RequestInit,
+): Promise<listLegacyCouponClaimsResponse> => {
+  const res = await fetch(getListLegacyCouponClaimsUrl(couponId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyCouponClaimsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyCouponClaimsResponse;
+};
+
+/**
+ * @summary Copy a coupon rule into a fresh local draft
+ */
+export type copyLegacyCouponResponse200 = {
+  data: LegacyCouponBoardMutationResponse;
+  status: 200;
+};
+
+export type copyLegacyCouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type copyLegacyCouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type copyLegacyCouponResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type copyLegacyCouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type copyLegacyCouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type copyLegacyCouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type copyLegacyCouponResponseSuccess = copyLegacyCouponResponse200 & {
+  headers: Headers;
+};
+export type copyLegacyCouponResponseError = (
+  | copyLegacyCouponResponse400
+  | copyLegacyCouponResponse401
+  | copyLegacyCouponResponse403
+  | copyLegacyCouponResponse404
+  | copyLegacyCouponResponse409
+  | copyLegacyCouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type copyLegacyCouponResponse =
+  copyLegacyCouponResponseSuccess | copyLegacyCouponResponseError;
+
+export const getCopyLegacyCouponUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}/copy`;
+};
+
+export const copyLegacyCoupon = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<copyLegacyCouponResponse> => {
+  const res = await fetch(getCopyLegacyCouponUrl(couponId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: copyLegacyCouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as copyLegacyCouponResponse;
+};
+
+/**
+ * @summary Return the deterministic local public coupon URL for a published rule
+ */
+export type getLegacyCouponShareResponse200 = {
+  data: LegacyCouponShareResponse;
+  status: 200;
+};
+
+export type getLegacyCouponShareResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyCouponShareResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyCouponShareResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyCouponShareResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type getLegacyCouponShareResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyCouponShareResponseSuccess =
+  getLegacyCouponShareResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyCouponShareResponseError = (
+  | getLegacyCouponShareResponse401
+  | getLegacyCouponShareResponse403
+  | getLegacyCouponShareResponse404
+  | getLegacyCouponShareResponse409
+  | getLegacyCouponShareResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyCouponShareResponse =
+  getLegacyCouponShareResponseSuccess | getLegacyCouponShareResponseError;
+
+export const getGetLegacyCouponShareUrl = (couponId: number) => {
+  return `/api/admin/coupons/${couponId}/share`;
+};
+
+export const getLegacyCouponShare = async (
+  couponId: number,
+  options?: RequestInit,
+): Promise<getLegacyCouponShareResponse> => {
+  const res = await fetch(getGetLegacyCouponShareUrl(couponId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyCouponShareResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyCouponShareResponse;
+};
+
+/**
+ * @summary List coupons the payment-identity session may claim for one target
+ */
+export type listH5AvailableCouponsResponse200 = {
+  data: H5CouponAvailableResponse;
+  status: 200;
+};
+
+export type listH5AvailableCouponsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listH5AvailableCouponsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listH5AvailableCouponsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listH5AvailableCouponsResponseSuccess =
+  listH5AvailableCouponsResponse200 & {
+    headers: Headers;
+  };
+export type listH5AvailableCouponsResponseError = (
+  | listH5AvailableCouponsResponse400
+  | listH5AvailableCouponsResponse401
+  | listH5AvailableCouponsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listH5AvailableCouponsResponse =
+  listH5AvailableCouponsResponseSuccess | listH5AvailableCouponsResponseError;
+
+export const getListH5AvailableCouponsUrl = (
+  params: ListH5AvailableCouponsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/h5/coupons/available?${stringifiedParams}`
+    : `/api/h5/coupons/available`;
+};
+
+export const listH5AvailableCoupons = async (
+  params: ListH5AvailableCouponsParams,
+  options?: RequestInit,
+): Promise<listH5AvailableCouponsResponse> => {
+  const res = await fetch(getListH5AvailableCouponsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listH5AvailableCouponsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listH5AvailableCouponsResponse;
+};
+
+/**
+ * @summary Read one published local coupon through its public slug
+ */
+export type getH5CouponStateResponse200 = {
+  data: H5CouponDetailResponse;
+  status: 200;
+};
+
+export type getH5CouponStateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getH5CouponStateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getH5CouponStateResponseSuccess = getH5CouponStateResponse200 & {
+  headers: Headers;
+};
+export type getH5CouponStateResponseError = (
+  getH5CouponStateResponse404 | getH5CouponStateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getH5CouponStateResponse =
+  getH5CouponStateResponseSuccess | getH5CouponStateResponseError;
+
+export const getGetH5CouponStateUrl = (publicSlug: string) => {
+  return `/api/h5/coupons/${publicSlug}`;
+};
+
+export const getH5CouponState = async (
+  publicSlug: string,
+  options?: RequestInit,
+): Promise<getH5CouponStateResponse> => {
+  const res = await fetch(getGetH5CouponStateUrl(publicSlug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getH5CouponStateResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getH5CouponStateResponse;
+};
+
+/**
+ * @summary Claim one published coupon using a resolved payment-identity session
+ */
+export type claimH5CouponResponse200 = {
+  data: H5CouponClaimResponse;
+  status: 200;
+};
+
+export type claimH5CouponResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type claimH5CouponResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type claimH5CouponResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type claimH5CouponResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type claimH5CouponResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type claimH5CouponResponseSuccess = claimH5CouponResponse200 & {
+  headers: Headers;
+};
+export type claimH5CouponResponseError = (
+  | claimH5CouponResponse400
+  | claimH5CouponResponse401
+  | claimH5CouponResponse404
+  | claimH5CouponResponse409
+  | claimH5CouponResponse503
+) & {
+  headers: Headers;
+};
+
+export type claimH5CouponResponse =
+  claimH5CouponResponseSuccess | claimH5CouponResponseError;
+
+export const getClaimH5CouponUrl = (publicSlug: string) => {
+  return `/api/h5/coupons/${publicSlug}/claim`;
+};
+
+export const claimH5Coupon = async (
+  publicSlug: string,
+  options?: RequestInit,
+): Promise<claimH5CouponResponse> => {
+  const res = await fetch(getClaimH5CouponUrl(publicSlug), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: claimH5CouponResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as claimH5CouponResponse;
+};
+
+/**
+ * @summary Read owner-scoped coupon claim projection through a sidebar grant
+ */
+export type listSidebarCouponsResponse200 = {
+  data: SidebarCouponListResponse;
+  status: 200;
+};
+
+export type listSidebarCouponsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarCouponsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarCouponsResponseSuccess =
+  listSidebarCouponsResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarCouponsResponseError = (
+  listSidebarCouponsResponse401 | listSidebarCouponsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarCouponsResponse =
+  listSidebarCouponsResponseSuccess | listSidebarCouponsResponseError;
+
+export const getListSidebarCouponsUrl = () => {
+  return `/api/sidebar/v2/coupons`;
+};
+
+export const listSidebarCoupons = async (
+  options?: RequestInit,
+): Promise<listSidebarCouponsResponse> => {
+  const res = await fetch(getListSidebarCouponsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarCouponsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarCouponsResponse;
+};
+
+/**
+ * @summary Render the public compatibility coupon page
+ */
+export type getPublicCouponPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getPublicCouponPageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getPublicCouponPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getPublicCouponPageResponseSuccess =
+  getPublicCouponPageResponse200 & {
+    headers: Headers;
+  };
+export type getPublicCouponPageResponseError = (
+  getPublicCouponPageResponse404 | getPublicCouponPageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getPublicCouponPageResponse =
+  getPublicCouponPageResponseSuccess | getPublicCouponPageResponseError;
+
+export const getGetPublicCouponPageUrl = (publicSlug: string) => {
+  return `/c/${publicSlug}`;
+};
+
+export const getPublicCouponPage = async (
+  publicSlug: string,
+  options?: RequestInit,
+): Promise<getPublicCouponPageResponse> => {
+  const res = await fetch(getGetPublicCouponPageUrl(publicSlug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPublicCouponPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getPublicCouponPageResponse;
+};
+
+/**
+ * @summary Read one immutable anonymous public survey definition
+ */
+export type getPublicSurveyDefinitionResponse200 = {
+  data: PublicSurveyDefinition;
+  status: 200;
+};
+
+export type getPublicSurveyDefinitionResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type getPublicSurveyDefinitionResponse404 = {
+  data: PublicSurveyNotFoundResponse;
+  status: 404;
+};
+
+export type getPublicSurveyDefinitionResponse405 = {
+  data: PublicSurveyGetOnlyResponse;
+  status: 405;
+};
+
+export type getPublicSurveyDefinitionResponse503 = {
+  data: PublicSurveyUnavailableResponse;
+  status: 503;
+};
+
+export type getPublicSurveyDefinitionResponseSuccess =
+  getPublicSurveyDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type getPublicSurveyDefinitionResponseError = (
+  | getPublicSurveyDefinitionResponse400
+  | getPublicSurveyDefinitionResponse404
+  | getPublicSurveyDefinitionResponse405
+  | getPublicSurveyDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getPublicSurveyDefinitionResponse =
+  | getPublicSurveyDefinitionResponseSuccess
+  | getPublicSurveyDefinitionResponseError;
+
+export const getGetPublicSurveyDefinitionUrl = (slug: string) => {
+  return `/api/public/questionnaires/${slug}`;
+};
+
+export const getPublicSurveyDefinition = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<getPublicSurveyDefinitionResponse> => {
+  const res = await fetch(getGetPublicSurveyDefinitionUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPublicSurveyDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getPublicSurveyDefinitionResponse;
+};
+
+/**
+ * @summary Submit one anonymous selection-only public survey response
+ */
+export type submitPublicSurveyResponse202 = {
+  data: PublicSurveySubmissionResponse;
+  status: 202;
+};
+
+export type submitPublicSurveyResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type submitPublicSurveyResponse404 = {
+  data: PublicSurveyNotFoundResponse;
+  status: 404;
+};
+
+export type submitPublicSurveyResponse405 = {
+  data: PublicSurveyPostOnlyResponse;
+  status: 405;
+};
+
+export type submitPublicSurveyResponse409 = {
+  data: PublicSurveyConflictResponse;
+  status: 409;
+};
+
+export type submitPublicSurveyResponse429 = {
+  data: PublicSurveyRateLimitedResponse;
+  status: 429;
+};
+
+export type submitPublicSurveyResponse503 = {
+  data: PublicSurveyUnavailableResponse;
+  status: 503;
+};
+
+export type submitPublicSurveyResponseSuccess =
+  submitPublicSurveyResponse202 & {
+    headers: Headers;
+  };
+export type submitPublicSurveyResponseError = (
+  | submitPublicSurveyResponse400
+  | submitPublicSurveyResponse404
+  | submitPublicSurveyResponse405
+  | submitPublicSurveyResponse409
+  | submitPublicSurveyResponse429
+  | submitPublicSurveyResponse503
+) & {
+  headers: Headers;
+};
+
+export type submitPublicSurveyResponse =
+  submitPublicSurveyResponseSuccess | submitPublicSurveyResponseError;
+
+export const getSubmitPublicSurveyUrl = (slug: string) => {
+  return `/api/public/questionnaires/${slug}/submissions`;
+};
+
+export const submitPublicSurvey = async (
+  slug: string,
+  publicSurveySubmissionRequest: PublicSurveySubmissionRequest,
+  options?: RequestInit,
+): Promise<submitPublicSurveyResponse> => {
+  const res = await fetch(getSubmitPublicSurveyUrl(slug), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicSurveySubmissionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: submitPublicSurveyResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as submitPublicSurveyResponse;
+};
+
+/**
+ * @summary Query one anonymous local-only public survey result by POST body token
+ */
+export type queryPublicSurveySubmissionResultResponse200 = {
+  data: PublicSurveyResult;
+  status: 200;
+};
+
+export type queryPublicSurveySubmissionResultResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type queryPublicSurveySubmissionResultResponse404 = {
+  data: PublicSurveyNotFoundResponse;
+  status: 404;
+};
+
+export type queryPublicSurveySubmissionResultResponse405 = {
+  data: PublicSurveyPostOnlyResponse;
+  status: 405;
+};
+
+export type queryPublicSurveySubmissionResultResponse503 = {
+  data: PublicSurveyUnavailableResponse;
+  status: 503;
+};
+
+export type queryPublicSurveySubmissionResultResponseSuccess =
+  queryPublicSurveySubmissionResultResponse200 & {
+    headers: Headers;
+  };
+export type queryPublicSurveySubmissionResultResponseError = (
+  | queryPublicSurveySubmissionResultResponse400
+  | queryPublicSurveySubmissionResultResponse404
+  | queryPublicSurveySubmissionResultResponse405
+  | queryPublicSurveySubmissionResultResponse503
+) & {
+  headers: Headers;
+};
+
+export type queryPublicSurveySubmissionResultResponse =
+  | queryPublicSurveySubmissionResultResponseSuccess
+  | queryPublicSurveySubmissionResultResponseError;
+
+export const getQueryPublicSurveySubmissionResultUrl = () => {
+  return `/api/public/survey-submission-results/query`;
+};
+
+export const queryPublicSurveySubmissionResult = async (
+  publicSurveyResultQueryRequest: PublicSurveyResultQueryRequest,
+  options?: RequestInit,
+): Promise<queryPublicSurveySubmissionResultResponse> => {
+  const res = await fetch(getQueryPublicSurveySubmissionResultUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicSurveyResultQueryRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queryPublicSurveySubmissionResultResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queryPublicSurveySubmissionResultResponse;
+};
+
+/**
+ * @summary Publish an immutable local anonymous public survey snapshot
+ */
+export type publishQuestionnairePublicDefinitionResponse200 = {
+  data: PublicSurveyManagementResponse;
+  status: 200;
+};
+
+export type publishQuestionnairePublicDefinitionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type publishQuestionnairePublicDefinitionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type publishQuestionnairePublicDefinitionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type publishQuestionnairePublicDefinitionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type publishQuestionnairePublicDefinitionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type publishQuestionnairePublicDefinitionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type publishQuestionnairePublicDefinitionResponseSuccess =
+  publishQuestionnairePublicDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type publishQuestionnairePublicDefinitionResponseError = (
+  | publishQuestionnairePublicDefinitionResponse400
+  | publishQuestionnairePublicDefinitionResponse401
+  | publishQuestionnairePublicDefinitionResponse403
+  | publishQuestionnairePublicDefinitionResponse404
+  | publishQuestionnairePublicDefinitionResponse409
+  | publishQuestionnairePublicDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type publishQuestionnairePublicDefinitionResponse =
+  | publishQuestionnairePublicDefinitionResponseSuccess
+  | publishQuestionnairePublicDefinitionResponseError;
+
+export const getPublishQuestionnairePublicDefinitionUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/public-publish`;
+};
+
+export const publishQuestionnairePublicDefinition = async (
+  questionnaireId: number,
+  publicSurveyPublishRequest: PublicSurveyPublishRequest,
+  options?: RequestInit,
+): Promise<publishQuestionnairePublicDefinitionResponse> => {
+  const res = await fetch(
+    getPublishQuestionnairePublicDefinitionUrl(questionnaireId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(publicSurveyPublishRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: publishQuestionnairePublicDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as publishQuestionnairePublicDefinitionResponse;
+};
+
+/**
+ * @summary Disable one immutable local anonymous public survey snapshot
+ */
+export type disableQuestionnairePublicDefinitionResponse200 = {
+  data: PublicSurveyManagementResponse;
+  status: 200;
+};
+
+export type disableQuestionnairePublicDefinitionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type disableQuestionnairePublicDefinitionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type disableQuestionnairePublicDefinitionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type disableQuestionnairePublicDefinitionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type disableQuestionnairePublicDefinitionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type disableQuestionnairePublicDefinitionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type disableQuestionnairePublicDefinitionResponseSuccess =
+  disableQuestionnairePublicDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type disableQuestionnairePublicDefinitionResponseError = (
+  | disableQuestionnairePublicDefinitionResponse400
+  | disableQuestionnairePublicDefinitionResponse401
+  | disableQuestionnairePublicDefinitionResponse403
+  | disableQuestionnairePublicDefinitionResponse404
+  | disableQuestionnairePublicDefinitionResponse409
+  | disableQuestionnairePublicDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type disableQuestionnairePublicDefinitionResponse =
+  | disableQuestionnairePublicDefinitionResponseSuccess
+  | disableQuestionnairePublicDefinitionResponseError;
+
+export const getDisableQuestionnairePublicDefinitionUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/public-disable`;
+};
+
+export const disableQuestionnairePublicDefinition = async (
+  questionnaireId: number,
+  publicSurveyDisableRequest: PublicSurveyDisableRequest,
+  options?: RequestInit,
+): Promise<disableQuestionnairePublicDefinitionResponse> => {
+  const res = await fetch(
+    getDisableQuestionnairePublicDefinitionUrl(questionnaireId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(publicSurveyDisableRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: disableQuestionnairePublicDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as disableQuestionnairePublicDefinitionResponse;
+};
+
+/**
+ * @summary Read aggregate anonymous local public survey analytics
+ */
+export type getQuestionnairePublicAnalyticsResponse200 = {
+  data: PublicSurveyAnalytics;
+  status: 200;
+};
+
+export type getQuestionnairePublicAnalyticsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getQuestionnairePublicAnalyticsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getQuestionnairePublicAnalyticsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getQuestionnairePublicAnalyticsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getQuestionnairePublicAnalyticsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getQuestionnairePublicAnalyticsResponseSuccess =
+  getQuestionnairePublicAnalyticsResponse200 & {
+    headers: Headers;
+  };
+export type getQuestionnairePublicAnalyticsResponseError = (
+  | getQuestionnairePublicAnalyticsResponse400
+  | getQuestionnairePublicAnalyticsResponse401
+  | getQuestionnairePublicAnalyticsResponse403
+  | getQuestionnairePublicAnalyticsResponse404
+  | getQuestionnairePublicAnalyticsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getQuestionnairePublicAnalyticsResponse =
+  | getQuestionnairePublicAnalyticsResponseSuccess
+  | getQuestionnairePublicAnalyticsResponseError;
+
+export const getGetQuestionnairePublicAnalyticsUrl = (
+  questionnaireId: number,
+  params?: GetQuestionnairePublicAnalyticsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/questionnaires/${questionnaireId}/public-analytics?${stringifiedParams}`
+    : `/api/admin/questionnaires/${questionnaireId}/public-analytics`;
+};
+
+export const getQuestionnairePublicAnalytics = async (
+  questionnaireId: number,
+  params?: GetQuestionnairePublicAnalyticsParams,
+  options?: RequestInit,
+): Promise<getQuestionnairePublicAnalyticsResponse> => {
+  const res = await fetch(
+    getGetQuestionnairePublicAnalyticsUrl(questionnaireId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getQuestionnairePublicAnalyticsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getQuestionnairePublicAnalyticsResponse;
+};
+
+/**
+ * @summary Carry a public survey slug into the same-origin SPA without token parameters
+ */
+export type getPublicSurveyPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getPublicSurveyPageResponse400 = {
+  data: PublicSurveyInvalidInputResponse;
+  status: 400;
+};
+
+export type getPublicSurveyPageResponse405 = {
+  data: PublicSurveyGetOnlyResponse;
+  status: 405;
+};
+
+export type getPublicSurveyPageResponseError = (
+  | getPublicSurveyPageResponse302
+  | getPublicSurveyPageResponse400
+  | getPublicSurveyPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getPublicSurveyPageResponse = getPublicSurveyPageResponseError;
+
+export const getGetPublicSurveyPageUrl = (slug: string) => {
+  return `/q/${slug}`;
+};
+
+export const getPublicSurveyPage = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<getPublicSurveyPageResponse> => {
+  const res = await fetch(getGetPublicSurveyPageUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPublicSurveyPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getPublicSurveyPageResponse;
+};
+
+/**
+ * @summary Carry the frozen questionnaire list into the existing admin shell
+ */
+export type getLegacyQuestionnaireListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyQuestionnaireListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnaireListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnaireListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyQuestionnaireListPageResponseError = (
+  | getLegacyQuestionnaireListPageResponse302
+  | getLegacyQuestionnaireListPageResponse401
+  | getLegacyQuestionnaireListPageResponse403
+  | getLegacyQuestionnaireListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnaireListPageResponse =
+  getLegacyQuestionnaireListPageResponseError;
+
+export const getGetLegacyQuestionnaireListPageUrl = () => {
+  return `/admin/questionnaires`;
+};
+
+export const getLegacyQuestionnaireListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyQuestionnaireListPageResponse> => {
+  const res = await fetch(getGetLegacyQuestionnaireListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnaireListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnaireListPageResponse;
+};
+
+/**
+ * @summary Redirect the same-origin questionnaire UI alias to its frozen page path
+ */
+export type getLegacyQuestionnaireListUIAliasResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponseError = (
+  | getLegacyQuestionnaireListUIAliasResponse302
+  | getLegacyQuestionnaireListUIAliasResponse401
+  | getLegacyQuestionnaireListUIAliasResponse403
+  | getLegacyQuestionnaireListUIAliasResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnaireListUIAliasResponse =
+  getLegacyQuestionnaireListUIAliasResponseError;
+
+export const getGetLegacyQuestionnaireListUIAliasUrl = () => {
+  return `/admin/questionnaires/ui`;
+};
+
+export const getLegacyQuestionnaireListUIAlias = async (
+  options?: RequestInit,
+): Promise<getLegacyQuestionnaireListUIAliasResponse> => {
+  const res = await fetch(getGetLegacyQuestionnaireListUIAliasUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnaireListUIAliasResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnaireListUIAliasResponse;
+};
+
+/**
+ * @summary Read the local declaration-only questionnaire preflight snapshot
+ */
+export type getLegacyQuestionnairePreflightResponse200 = {
+  data: LegacyQuestionnairePreflightResponse;
+  status: 200;
+};
+
+export type getLegacyQuestionnairePreflightResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyQuestionnairePreflightResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyQuestionnairePreflightResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyQuestionnairePreflightResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type getLegacyQuestionnairePreflightResponseSuccess =
+  getLegacyQuestionnairePreflightResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyQuestionnairePreflightResponseError = (
+  | getLegacyQuestionnairePreflightResponse401
+  | getLegacyQuestionnairePreflightResponse403
+  | getLegacyQuestionnairePreflightResponse405
+  | getLegacyQuestionnairePreflightResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyQuestionnairePreflightResponse =
+  | getLegacyQuestionnairePreflightResponseSuccess
+  | getLegacyQuestionnairePreflightResponseError;
+
+export const getGetLegacyQuestionnairePreflightUrl = () => {
+  return `/api/admin/questionnaires/preflight`;
+};
+
+export const getLegacyQuestionnairePreflight = async (
+  options?: RequestInit,
+): Promise<getLegacyQuestionnairePreflightResponse> => {
+  const res = await fetch(getGetLegacyQuestionnairePreflightUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyQuestionnairePreflightResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyQuestionnairePreflightResponse;
+};
+
+/**
+ * @summary List persisted questionnaire definitions for the frozen old admin UI
+ */
+export type listLegacyQuestionnairesResponse200 = {
+  data: LegacyQuestionnaireListResponse;
+  status: 200;
+};
+
+export type listLegacyQuestionnairesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyQuestionnairesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyQuestionnairesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyQuestionnairesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyQuestionnairesResponseSuccess =
+  listLegacyQuestionnairesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyQuestionnairesResponseError = (
+  | listLegacyQuestionnairesResponse400
+  | listLegacyQuestionnairesResponse401
+  | listLegacyQuestionnairesResponse403
+  | listLegacyQuestionnairesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyQuestionnairesResponse =
+  | listLegacyQuestionnairesResponseSuccess
+  | listLegacyQuestionnairesResponseError;
+
+export const getListLegacyQuestionnairesUrl = (
+  params?: ListLegacyQuestionnairesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/questionnaires?${stringifiedParams}`
+    : `/api/admin/questionnaires`;
+};
+
+export const listLegacyQuestionnaires = async (
+  params?: ListLegacyQuestionnairesParams,
+  options?: RequestInit,
+): Promise<listLegacyQuestionnairesResponse> => {
+  const res = await fetch(getListLegacyQuestionnairesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyQuestionnairesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyQuestionnairesResponse;
+};
+
+/**
+ * @summary Create one F01 questionnaire definition without assessment or submission effects
+ */
+export type createLegacyQuestionnaireResponse200 = {
+  data: LegacyQuestionnaireCreateResponse;
+  status: 200;
+};
+
+export type createLegacyQuestionnaireResponse400 = {
+  data: LegacyQuestionnaireError;
+  status: 400;
+};
+
+export type createLegacyQuestionnaireResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyQuestionnaireResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyQuestionnaireResponse409 = {
+  data: LegacyQuestionnaireError;
+  status: 409;
+};
+
+export type createLegacyQuestionnaireResponse503 = {
+  data: LegacyQuestionnaireError;
+  status: 503;
+};
+
+export type createLegacyQuestionnaireResponseSuccess =
+  createLegacyQuestionnaireResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyQuestionnaireResponseError = (
+  | createLegacyQuestionnaireResponse400
+  | createLegacyQuestionnaireResponse401
+  | createLegacyQuestionnaireResponse403
+  | createLegacyQuestionnaireResponse409
+  | createLegacyQuestionnaireResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyQuestionnaireResponse =
+  | createLegacyQuestionnaireResponseSuccess
+  | createLegacyQuestionnaireResponseError;
+
+export const getCreateLegacyQuestionnaireUrl = () => {
+  return `/api/admin/questionnaires`;
+};
+
+export const createLegacyQuestionnaire = async (
+  legacyQuestionnaireCreateRequest: LegacyQuestionnaireCreateRequest,
+  options?: RequestInit,
+): Promise<createLegacyQuestionnaireResponse> => {
+  const res = await fetch(getCreateLegacyQuestionnaireUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyQuestionnaireCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyQuestionnaireResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+ 

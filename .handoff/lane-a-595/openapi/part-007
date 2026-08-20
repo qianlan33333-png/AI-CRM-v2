@@ -1,0 +1,921 @@
+  type: object
+      additionalProperties: false
+      required: [ok, agent]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        agent: { $ref: "#/components/schemas/LegacyAutomationAgentArchiveResult" }
+    LegacyAutomationAgentError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [invalid_agent_payload, agent_not_found, automation_agent_conflict, authentication_required, permission_denied, automation_agent_unavailable, webhook_configuration_retired] }
+    LegacyExecutionTimelineUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, error, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [execution_timeline_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionNotFound:
+      type: object
+      additionalProperties: false
+      required: [ok, error, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [execution_not_found] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyWriteMetadata:
+      type: object
+      properties:
+        actor: {}
+        idempotency_key: { type: string, maxLength: 200 }
+        trace_id: { type: string, maxLength: 200 }
+        dry_run: { type: boolean, default: false }
+    LegacyTagGroupCreateRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyWriteMetadata"
+        - { type: object, additionalProperties: false, required: [group_name, first_tag_name], properties: { group_name: { type: string, minLength: 1, maxLength: 200 }, first_tag_name: { type: string, minLength: 1, maxLength: 200 }, actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
+    LegacyTagGroupUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyWriteMetadata"
+        - { type: object, additionalProperties: false, required: [group_name], properties: { group_name: { type: string, minLength: 1, maxLength: 200 }, actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
+    LegacyTagArchiveRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyWriteMetadata"
+        - { type: object, additionalProperties: false, properties: { actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
+    LegacyTagCreateRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyWriteMetadata"
+        - { type: object, additionalProperties: false, required: [group_id, group_name, tag_name], properties: { group_id: { type: integer, format: int64, minimum: 1 }, group_name: { type: string, minLength: 1, maxLength: 200 }, tag_name: { type: string, minLength: 1, maxLength: 200 }, actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
+    LegacyTagUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/LegacyWriteMetadata"
+        - { type: object, additionalProperties: false, required: [tag_name], properties: { tag_name: { type: string, minLength: 1, maxLength: 200 }, actor: {}, idempotency_key: { type: string, maxLength: 200 }, trace_id: { type: string, maxLength: 200 }, dry_run: { type: boolean } } }
+    LegacyTagCatalogResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, items, tags, groups, count, total_tags, tag_limit, synced_at, source_status, read_model_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { type: object, additionalProperties: true } }
+        tags: { type: array, items: { type: object, additionalProperties: true } }
+        groups: { type: array, items: { type: object, additionalProperties: true } }
+        count: { type: integer, minimum: 0 }
+        total_tags: { type: integer, minimum: 0 }
+        tag_limit: { type: integer, enum: [1000] }
+        synced_at: {}
+        source_status: { type: string }
+        read_model_status: { type: string }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+    LegacyTagGroup:
+      type: object
+      required: [group_id, group_name, sort_order]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupCreateSuccessGroup:
+      type: object
+      additionalProperties: false
+      required: [group_id, group_name, sort_order]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTag:
+      type: object
+      required: [tag_id, group_id, group_name, tag_name, sort_order]
+      properties:
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        tag_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupCreateSuccessTag:
+      type: object
+      additionalProperties: false
+      required: [tag_id, group_id, group_name, tag_name, sort_order]
+      properties:
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        tag_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagCreateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_created] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        tag: { $ref: "#/components/schemas/LegacyTagGroupCreateSuccessTag" }
+    LegacyTagCreateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_create_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupCreateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, group, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_created] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        group: { $ref: "#/components/schemas/LegacyTagGroupCreateSuccessGroup" }
+        tag: { $ref: "#/components/schemas/LegacyTagGroupCreateSuccessTag" }
+    LegacyTagGroupCreateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_create_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupUpdateSuccessGroup:
+      type: object
+      additionalProperties: false
+      required: [group_id, group_name, sort_order]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagGroupUpdateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, group]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_updated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        group: { $ref: "#/components/schemas/LegacyTagGroupUpdateSuccessGroup" }
+    LegacyTagGroupUpdateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_update_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupUpdateResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagGroupUpdateSuccess"
+        - $ref: "#/components/schemas/LegacyTagGroupUpdateValidatedSuccess"
+    LegacyTagGroupArchiveSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, group]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_archived] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        group: { $ref: "#/components/schemas/LegacyTagGroupUpdateSuccessGroup" }
+    LegacyTagGroupArchiveValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [group_archive_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagGroupArchiveResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagGroupArchiveSuccess"
+        - $ref: "#/components/schemas/LegacyTagGroupArchiveValidatedSuccess"
+    LegacyTagArchiveSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_archived] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        tag: { $ref: "#/components/schemas/LegacyTagUpdateSuccessTag" }
+    LegacyTagArchiveValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_archive_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagArchiveResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagArchiveSuccess"
+        - $ref: "#/components/schemas/LegacyTagArchiveValidatedSuccess"
+    LegacyTagUpdateSuccessTag:
+      type: object
+      additionalProperties: false
+      required: [tag_id, group_id, group_name, tag_name, sort_order]
+      properties:
+        tag_id: { type: integer, format: int64, minimum: 1 }
+        group_id: { type: integer, format: int64, minimum: 1 }
+        group_name: { type: string, minLength: 1, maxLength: 200 }
+        tag_name: { type: string, minLength: 1, maxLength: 200 }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagUpdateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_updated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        tag: { $ref: "#/components/schemas/LegacyTagUpdateSuccessTag" }
+    LegacyTagUpdateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_update_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
+    LegacyTagUpdateResponse:
+      oneOf:
+        - $ref: "#/components/schemas/LegacyTagUpdateSuccess"
+        - $ref: "#/components/schemas/LegacyTagUpdateValidatedSuccess"
+    LegacyTagGroupsResponse:
+      type: object
+      required: [ok, groups, items, count, source_status, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        groups: { type: array, items: { $ref: "#/components/schemas/LegacyTagGroup" } }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyTagGroup" } }
+        count: { type: integer, minimum: 0 }
+        source_status: { type: string, enum: [local_catalog] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagGroupResponse:
+      type: object
+      required: [ok, group, source_status, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        group: { $ref: "#/components/schemas/LegacyTagGroup" }
+        source_status: { type: string, enum: [local_catalog] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagResponse:
+      type: object
+      required: [ok, tag, source_status, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        tag: { $ref: "#/components/schemas/LegacyTag" }
+        source_status: { type: string, enum: [local_catalog] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagExecutionGate:
+      type: object
+      additionalProperties: false
+      required: [provider_execution_eligible, local_command_acceptance_available, local_queue_available, sync_executed, observed_at, real_external_call_executed]
+      properties:
+        provider_execution_eligible: { type: boolean, enum: [false], description: "The local gate is fail-closed; provider execution is not eligible." }
+        local_command_acceptance_available: { type: boolean, enum: [true], description: "The local command-acceptance boundary is available; this is not a provider receipt." }
+        local_queue_available: { type: boolean, enum: [true], description: "The local queue boundary is available; no worker or provider call was made." }
+        observed_at: { type: string, format: date-time, description: "Timestamp of the persisted local gate observation." }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyTagSyncRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        idempotency_key: { type: string, minLength: 1, maxLength: 200 }
+        trace_id: { type: string, maxLength: 200 }
+    LegacyTagOpaqueLiveMutationRequest:
+      type: object
+      additionalProperties: true
+      description: Opaque legacy body retained for a later public WeCom port; this endpoint only queues it locally.
+      properties:
+        idempotency_key: { type: string, minLength: 1, maxLength: 200 }
+        trace_id: { type: string, maxLength: 200 }
+    LegacyTagQueuedAcceptance:
+      type: object
+      required: [ok, accepted, receipt_id, event_id, river_job_id, state, real_external_call_executed, sync_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        accepted: { type: boolean, enum: [true] }
+        receipt_id: { type: integer, format: int64, minimum: 1 }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        state: { type: string, enum: [queued] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+    LegacyChannelWriteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        channel_type: { type: string, enum: [qrcode, wecom_customer_acquisition] }
+        carrier_type: { type: string, enum: [qrcode, link] }
+        channel_name: { type: string, maxLength: 200 }
+        channel_code: { type: string, maxLength: 200 }
+        scene_value: { type: string, maxLength: 10000 }
+        qr_url: { type: string, maxLength: 10000 }
+        status: { type: string, enum: [active, inactive, archived] }
+        owner_staff_id: { type: string, maxLength: 10000 }
+        customer_channel: { type: string, maxLength: 10000 }
+        link_url: { type: string, maxLength: 10000 }
+        final_url: { type: string, maxLength: 10000 }
+        welcome_message: { type: string, maxLength: 10000 }
+        welcome_image_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        welcome_miniprogram_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        welcome_attachment_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        welcome_group_invite_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
+        auto_accept_friend: { type: boolean }
+        entry_tag_id: { type: string, maxLength: 10000 }
+        entry_tag_name: { type: string, maxLength: 10000 }
+        entry_tag_group_name: { type: string, maxLength: 10000 }
+        assignment_mode: { type: string, enum: [single_owner, multi_staff] }
+        assignment_strategy: { type: string, enum: [ratio, cap_switch] }
+        overflow_policy: { type: string, maxLength: 10000 }
+        assignment_config_json: { type: object }
+    LegacyChannel:
+      allOf:
+        - $ref: "#/components/schemas/LegacyChannelWriteRequest"
+        - type: object
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+            assignees: { type: array, maxItems: 0, items: {} }
+            assignment_stats_24h: { type: array, maxItems: 0, items: {} }
+            assignee_count: { type: integer, minimum: 0, maximum: 0 }
+            channel_contact_count: { type: integer, minimum: 0, maximum: 0 }
+            latest_channel_entered_at: { type: string, enum: [""] }
+            qrcode_asset_id: { type: integer, minimum: 0, maximum: 0 }
+            qrcode_status: { type: string, enum: [not_generated] }
+            qr_download_url: { type: string, enum: [""] }
+            share_url: { type: string, enum: [""] }
+            copy_text: { type: string, enum: [""] }
+    LegacyChannelListItem:
+      type: object
+      additionalProperties: false
+      required: [id, channel_name, channel_code, status, assignee_count, channel_contact_count, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        channel_name: { type: string, maxLength: 200 }
+        channel_code: { type: string, maxLength: 200 }
+        status: { type: string, enum: [active, inactive, archived] }
+        assignee_count: { type: integer, minimum: 0, maximum: 0 }
+        channel_contact_count: { type: integer, minimum: 0, maximum: 0 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LegacyChannelListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, channels, reason, source]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        channels: { type: array, items: { $ref: "#/components/schemas/LegacyChannelListItem" } }
+        reason: { type: string, enum: [channels_listed] }
+        source: { type: string, enum: [ai_crm_next] }
+    LegacyChannelDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, channel, reason, source]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        channel: { $ref: "#/components/schemas/LegacyChannel" }
+        reason: { type: string, enum: [channel_loaded] }
+        source: { type: string, enum: [ai_crm_next] }
+    LegacyChannelMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, channel, reason, source, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        channel: { $ref: "#/components/schemas/LegacyChannel" }
+        reason: { type: string, enum: [channel_created, channel_updated] }
+        source: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyCustomer:
+      type: object
+      additionalProperties: false
+      required: [customer_id, customer_name, is_deleted, created_at, updated_at]
+      properties:
+        external_userid: { type: string, minLength: 1, maxLength: 1024 }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        customer_name: { type: string }
+        avatar_url: { type: string, format: uri, nullable: true }
+        gender:
+          type: integer
+          format: int32
+          minimum: -32768
+          maximum: 32767
+          nullable: true
+        stage_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        channel_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        added_at: { type: string, format: date-time, nullable: true }
+        last_interact_at: { type: string, format: date-time, nullable: true }
+        is_deleted: { type: boolean }
+        tags: { type: array, items: { type: string, minLength: 1, maxLength: 200 } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LegacyCustomerListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, customers, items, count, total, total_is_estimate, has_more, limit, offset, filters, projection_watermark, source_status, fallback_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        customers: { type: array, items: { $ref: "#/components/schemas/LegacyCustomer" } }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyCustomer" } }
+        count: { type: integer, minimum: 0 }
+        total: { type: integer, format: int64, minimum: 0 }
+        total_is_estimate: { type: boolean }
+        has_more: { type: boolean }
+        limit: { type: integer, minimum: 1, maximum: 200 }
+        offset: { type: integer, minimum: 0, maximum: 0 }
+        filters: { type: object, additionalProperties: true }
+        projection_watermark: { type: string, format: date-time }
+        source_status: { type: string, enum: [v2_contact_service] }
+        fallback_used: { type: boolean, enum: [false] }
+    LegacyCustomerDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, customer, source_status, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        customer: { $ref: "#/components/schemas/LegacyCustomer" }
+        source_status: { type: string, enum: [v2_identity_contact_read] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    CouponUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [name, discount_amount_total, total_issue_limit, claim_starts_at, claim_ends_at, validity_mode, target_refs]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 45 }
+        discount_amount_total: { type: integer, format: int64, minimum: 1 }
+        total_issue_limit: { type: integer, format: int64, minimum: 1 }
+        per_user_issue_limit: { type: integer, format: int64, minimum: 1, default: 1 }
+        claim_starts_at: { type: string, format: date-time }
+        claim_ends_at: { type: string, format: date-time }
+        validity_mode: { type: string, enum: [fixed_range, relative_days] }
+        use_starts_at: { type: string, format: date-time, nullable: true }
+        use_ends_at: { type: string, format: date-time, nullable: true }
+        relative_validity_days: { type: integer, format: int32, minimum: 1, nullable: true }
+        instructions: { type: string, maxLength: 200, default: "" }
+        target_refs:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items: { type: string, pattern: '^standard_product:[1-9][0-9]*$' }
+    Coupon:
+      allOf:
+        - $ref: "#/components/schemas/CouponUpsertRequest"
+        - type: object
+          additionalProperties: false
+          required: [id, currency, status, availability_status, issued_count, created_by, updated_by, version, created_at, updated_at]
+          properties:
+            id: { type: integer, format: int64, minimum: 1 }
+            currency: { type: string, enum: [CNY] }
+            status: { type: string, enum: [draft, published, stopped, archived, deleted] }
+            availability_status: { type: string, enum: [draft, stopped, archived, deleted, scheduled, active, sold_out, ended] }
+            issued_count: { type: integer, format: int64, minimum: 0 }
+            created_by: { type: integer, format: int64, minimum: 1 }
+            updated_by: { type: integer, format: int64, minimum: 1 }
+            version: { type: integer, format: int64, minimum: 1 }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    LegacyOrderListItem:
+      type: object
+      additionalProperties: false
+      required: [created_at, merchant_order_no, out_trade_no, order_no, platform_transaction_no, transaction_id, payer_name, mobile, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url]
+      properties:
+        created_at: { type: string, format: date-time }
+        merchant_order_no: { type: string, maxLength: 200 }
+        out_trade_no: { type: string, maxLength: 200 }
+        order_no: { type: string, maxLength: 200 }
+        platform_transaction_no: { type: string, maxLength: 200 }
+        transaction_id: { type: string, maxLength: 200 }
+        payer_name: { type: string, maxLength: 200 }
+        mobile: { type: string, maxLength: 80 }
+        userid: { type: string, maxLength: 200 }
+        external_userid: { type: string, maxLength: 200 }
+        unionid: { type: string, maxLength: 200 }
+        product_code: { type: string, maxLength: 200 }
+        product_name: { type: string, maxLength: 200 }
+        amount_yuan: { type: string, pattern: '^[0-9]+\.[0-9]{2}$' }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string, minLength: 1, maxLength: 80 }
+        status_label: { type: string, minLength: 1, maxLength: 80 }
+        provider: { type: string, enum: [wechat, alipay, wechat_shop] }
+        provider_label: { type: string, minLength: 1, maxLength: 80 }
+        detail_url: { type: string, minLength: 1, maxLength: 2048 }
+    LegacyOrderListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, has_more]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyOrderListItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        has_more: { type: boolean }
+    LegacyOrderDetail:
+      type: object
+      additionalProperties: false
+      required: [id, created_at, merchant_order_no, out_trade_no, order_no, platform_transaction_no, transaction_id, payer_name, mobile, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url, refundable_amount_total]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        merchant_order_no: { type: string, maxLength: 200 }
+        out_trade_no: { type: string, maxLength: 200 }
+        order_no: { type: string, maxLength: 200 }
+        platform_transaction_no: { type: string, maxLength: 200 }
+        transaction_id: { type: string, maxLength: 200 }
+        payer_name: { type: string, maxLength: 200 }
+        mobile: { type: string, maxLength: 80 }
+        userid: { type: string, maxLength: 200 }
+        external_userid: { type: string, maxLength: 200 }
+        unionid: { type: string, maxLength: 200 }
+        product_code: { type: string, maxLength: 200 }
+        product_name: { type: string, maxLength: 200 }
+        amount_yuan: { type: string, pattern: '^[0-9]+\.[0-9]{2}$' }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string, minLength: 1, maxLength: 80 }
+        status_label: { type: string, minLength: 1, maxLength: 80 }
+        provider: { type: string, enum: [wechat, alipay, wechat_shop] }
+        provider_label: { type: string, minLength: 1, maxLength: 80 }
+        detail_url: { type: string, minLength: 1, maxLength: 2048 }
+        refundable_amount_total: { type: integer, format: int64, minimum: 0 }
+    LegacyOrderItemsResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, minItems: 1, maxItems: 1, items: { $ref: "#/components/schemas/LegacyOrderListItem" } }
+    LegacyOrderRefundRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, order_no, refund_amount_total, reason, transaction_id_confirmation, checked]
+      properties:
+        provider: { type: string, enum: [wechat, alipay, wechat_shop] }
+        order_no: { type: string, minLength: 1, maxLength: 200 }
+        refund_amount_total: { type: integer, format: int64, minimum: 1 }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        transaction_id_confirmation: { type: string, minLength: 1, maxLength: 200 }
+        checked: { type: boolean, enum: [true] }
+        operator: { type: string, maxLength: 200, description: Legacy display field; authenticated admin identity remains authoritative. }
+    LegacyWechatOrderRefundRequest:
+      type: object
+      additionalProperties: false
+      required: [refund_amount_total, reason, transaction_id_confirmation, checked]
+      properties:
+        provider: { type: string, enum: [wechat] }
+        order_no: { type: string, minLength: 1, maxLength: 200 }
+        refund_amount_total: { type: integer, format: int64, minimum: 1 }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        transaction_id_confirmation: { type: string, minLength: 1, maxLength: 200 }
+        checked: { type: boolean, enum: [true] }
+        operator: { type: string, maxLength: 200, description: Legacy display field; authenticated admin identity remains authoritative. }
+    LegacyOrderRefund:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, provider, order_no, transaction_id, refund_id, out_refund_no, refund_amount_total, currency, reason, status, external_effect_id, external_effect_state, auto_retry_allowed, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        order_id: { type: integer, format: int64, minimum: 1 }
+        provider: { type: string, enum: [wechat, alipay, wechat_shop] }
+        order_no: { type: string, minLength: 1, maxLength: 200 }
+        transaction_id: { type: string, minLength: 1, maxLength: 200 }
+        refund_id: { type: string, minLength: 1, maxLength: 200 }
+        out_refund_no: { type: string, minLength: 1, maxLength: 200 }
+        refund_amount_total: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, enum: [CNY] }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        status: { type: string, enum: [pending_external_gate, outcome_unknown, completed, final_failed] }
+        external_effect_id: { type: integer, format: int64, minimum: 1 }
+        external_effect_state: { type: string, enum: [pending_external_gate, outcome_unknown, completed, final_failed] }
+        auto_retry_allowed: { type: boolean, enum: [false] }
+        created_at: { type: string, format: date-time }
+    LegacyOrderRefundPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, has_more]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyOrderRefund" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        has_more: { type: boolean }
+    LegacyOrderExportRequest:
+      type: object
+      additionalProperties: false
+      required: [resource, format]
+      properties:
+        resource: { type: string, enum: [orders, payments, refunds] }
+        format: { type: string, enum: [csv] }
+    LegacyOrderExport:
+      type: object
+      additionalProperties: false
+      required: [job_id, resource, format, status, created_at, operator, download_url, content_type, file_name, content_text]
+      properties:
+        job_id: { type: string, pattern: '^exp_[A-Za-z0-9_-]{8,64}$' }
+        resource: { type: string, enum: [orders, payments, refunds] }
+        format: { type: string, enum: [csv] }
+        status: { type: string, enum: [completed] }
+        created_at: { type: string, format: date-time }
+        operator: { type: integer, format: int64, minimum: 1 }
+        download_url: { type: string, minLength: 1, maxLength: 2048 }
+        content_type: { type: string, enum: [text/csv] }
+        file_name: { type: string, minLength: 1, maxLength: 100 }
+        content_text: { type: string, minLength: 1 }
+    LegacyOrderExternalEffect:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, provider, effect_kind, state, auto_retry_allowed, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        order_id: { type: integer, format: int64, minimum: 1 }
+        provider: { type: string, enum: [wechat, alipay, wechat_shop] }
+        effect_kind: { type: string, enum: [refund, external_push] }
+        state: { type: string, enum: [pending_external_gate, outcome_unknown, completed, final_failed] }
+        auto_retry_allowed: { type: boolean, enum: [false] }
+        provider_receipt: { type: string, format: byte, nullable: true }
+        manual_review_requested_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LegacyOrderExternalEffectPage:
+      type: object
+      additionalProperties: false
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyOrderExternalEffect" } }
+        total: { type: integer, format: int64, minimum: 0 }
+    LegacyDeprecatedResponse:
+      type: object
+      additionalProperties: false
+      required: [error_code, message]
+      properties:
+        error_code: { type: string, enum: [deprecated] }
+        message: { type: string, minLength: 1 }
+    EmptyObject:
+      type: object
+      additionalProperties: false
+      maxProperties: 0
+    LegacyCouponListResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, coupons, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupons: { type: array, items: { $ref: "#/components/schemas/Coupon" } }
+        items: { type: array, items: { $ref: "#/components/schemas/Coupon" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    LegacyCouponDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        data:
+          type: object
+          additionalProperties: false
+          required: [coupon]
+          properties:
+            coupon: { $ref: "#/components/schemas/Coupon" }
+    LegacyCouponMutationResponse:
+      type: object
+      additionalProperties: true
+      required: [ok, coupon, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        create_replay_safe: { type: boolean, enum: [false] }
+        idempotent_same_state: { type: boolean, enum: [true] }
+    LegacyCouponCreateResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon, coupon_id, fallback_used, create_replay_safe, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        coupon_id: { type: integer, format: int64, minimum: 1 }
+        fallback_used: { type: boolean, enum: [false] }
+        create_replay_safe: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyCouponUpdateResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon, fallback_used, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyCouponBoardMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+    LegacyCouponProductOption:
+      type: object
+      additionalProperties: false
+      required: [id, target_ref, name, price_minor, currency]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        target_ref: { type: string, pattern: '^standard_product:[1-9][0-9]*$' }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        price_minor: { type: integer, format: int64, minimum: 0 }
+        currency: { type: string, enum: [CNY] }
+    LegacyCouponProductOptionsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyCouponProductOption" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    LegacyCouponClaim:
+      type: object
+      additionalProperties: false
+      required: [id, claim_ref, status, claimed_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        claim_ref: { type: string, pattern: '^cp_[A-Za-z0-9_-]{16,64}$' }
+        status: { type: string, enum: [claimed] }
+        claimed_at: { type: string, format: date-time }
+    LegacyCouponClaimListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyCouponClaim" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    LegacyCouponShareResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, public_slug, url]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        public_slug: { type: string, pattern: '^c-[1-9][0-9]*$' }
+        url: { type: string, pattern: '^/c/c-[1-9][0-9]*$' }
+    H5CouponAvailableResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/Coupon" } }
+    H5CouponDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, coupon]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        coupon: { $ref: "#/components/schemas/Coupon" }
+    H5CouponClaimResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, claim_ref, status, claimed_at]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        claim_ref: { type: string, pattern: '^cp_[A-Za-z0-9_-]{16,64}$' }
+        status: { type: string, enum: [claimed] }
+        claimed_at: { type: string, format: date-time }
+    SidebarCoupon:
+      type: object
+      additionalProperties: false
+      required: [coupon_id, coupon_name, coupon_status, claim_ref, claimed_at]
+      properties:
+        coupon_id: { type: integer, format: int64, minimum: 1 }
+        coupon_name: { type: string, minLength: 1, maxLength: 45 }
+        coupon_status: { type: string, enum: [draft, published, stopped, archived] }
+        claim_ref: { type: string, pattern: '^cp_[A-Za-z0-9_-]{16,64}$' }
+        claimed_at: { type: string, format: date-time }
+    SidebarCouponListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/SidebarCoupon" } }
+    LegacyQuestionnaireValidation:
+      type: object
+      additionalProperties: false
+      properties:
+        min_selections: { type: integer, minimum: 0, maximum: 100 }
+        max_selections: { type: integer, minimum: 1, maximum: 100 }
+        min_length: { type: integer, minimum: 0, maximum: 10000 }
+        max_length: { type: integer, minimum: 1, maximum: 10000 }
+    LegacyQuestionnaireOption:
+      type: object
+      additionalProperties: false
+      required: [option_text, score, assessment_type_key, tag_codes, is_other, other_placeholder, other_max_length, sort_order]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        option_text: { type: string, minLength: 1, maxLength: 500 }
+        score: { type: number, format: double }
+        assessment_type_key: { type: string, maxLength: 200 }
+        tag_codes: { type: array, maxItems: 100, items: { type: string, minLength: 1, maxLength: 200 } }
+        is_other: { type: boolean }
+        other_placeholder: { type: string, maxLength: 500 }
+        other_max_length: { type: integer, minimum: 0, maximum: 2000 }
+        sort_order: { type: integer, minimum: 0 }
+    LegacyQuestionnaireQuestion:
+      type: object
+      additionalProperties: false
+      required: [type, title, assessment_dimension_key, sidebar_profile_field, required, sort_order, placeholder_text, options]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        type: { type: string, enum: [single_choice, multi_choice, textarea, mobile] }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        assessment_dimension_key: { type: string, maxLength: 200 }
+        sidebar_profile_field: { type: string, maxLength: 200 }
+        required: { type: boolean }
+        sort_order: { type: integer, minimum: 0 

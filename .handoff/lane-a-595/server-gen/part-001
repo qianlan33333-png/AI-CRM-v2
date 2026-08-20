@@ -1,0 +1,1298 @@
+ed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted enum.
+func (e LegacyPushCenterStatsDegradedResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseRouteOwner.
+const (
+	LegacyPushCenterStatsDegradedResponseRouteOwnerAiCrmNext LegacyPushCenterStatsDegradedResponseRouteOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseRouteOwner enum.
+func (e LegacyPushCenterStatsDegradedResponseRouteOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseRouteOwnerAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseSourceStatus.
+const (
+	LegacyPushCenterStatsDegradedResponseSourceStatusProductionUnavailable LegacyPushCenterStatsDegradedResponseSourceStatus = "production_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseSourceStatus enum.
+func (e LegacyPushCenterStatsDegradedResponseSourceStatus) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseSourceStatusProductionUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseStatusCode.
+const (
+	LegacyPushCenterStatsDegradedResponseStatusCodeN200 LegacyPushCenterStatsDegradedResponseStatusCode = 200
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseStatusCode enum.
+func (e LegacyPushCenterStatsDegradedResponseStatusCode) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsDegradedResponseStatusCodeN200:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsDegradedResponseTotal.
+const (
+	N0 LegacyPushCenterStatsDegradedResponseTotal = 0
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseTotal enum.
+func (e LegacyPushCenterStatsDegradedResponseTotal) Valid() bool {
+	switch e {
+	case N0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseCapabilityOwner.
+const (
+	AiCrmNextplatformFoundationpushCenter LegacyPushCenterStatsResponseCapabilityOwner = "ai_crm_next/platform_foundation/push_center"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseCapabilityOwner enum.
+func (e LegacyPushCenterStatsResponseCapabilityOwner) Valid() bool {
+	switch e {
+	case AiCrmNextplatformFoundationpushCenter:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseOk.
+const (
+	LegacyPushCenterStatsResponseOkTrue LegacyPushCenterStatsResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseOk enum.
+func (e LegacyPushCenterStatsResponseOk) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseRealExternalCallExecuted.
+const (
+	LegacyPushCenterStatsResponseRealExternalCallExecutedFalse LegacyPushCenterStatsResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseRealExternalCallExecuted enum.
+func (e LegacyPushCenterStatsResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatsResponseRouteOwner.
+const (
+	LegacyPushCenterStatsResponseRouteOwnerAiCrmNext LegacyPushCenterStatsResponseRouteOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatsResponseRouteOwner enum.
+func (e LegacyPushCenterStatsResponseRouteOwner) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatsResponseRouteOwnerAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyPushCenterStatusDefinitionKey.
+const (
+	LegacyPushCenterStatusDefinitionKeyFailed                        LegacyPushCenterStatusDefinitionKey = "failed"
+	LegacyPushCenterStatusDefinitionKeyPending                       LegacyPushCenterStatusDefinitionKey = "pending"
+	LegacyPushCenterStatusDefinitionKeyRunning                       LegacyPushCenterStatusDefinitionKey = "running"
+	LegacyPushCenterStatusDefinitionKeySent                          LegacyPushCenterStatusDefinitionKey = "sent"
+	LegacyPushCenterStatusDefinitionKeySentWithShadowWarning         LegacyPushCenterStatusDefinitionKey = "sent_with_shadow_warning"
+	LegacyPushCenterStatusDefinitionKeyShadowFailedNotBusinessFailed LegacyPushCenterStatusDefinitionKey = "shadow_failed_not_business_failed"
+	LegacyPushCenterStatusDefinitionKeySimulated                     LegacyPushCenterStatusDefinitionKey = "simulated"
+	LegacyPushCenterStatusDefinitionKeySucceeded                     LegacyPushCenterStatusDefinitionKey = "succeeded"
+	LegacyPushCenterStatusDefinitionKeyUnknownAfterDispatch          LegacyPushCenterStatusDefinitionKey = "unknown_after_dispatch"
+)
+
+// Valid indicates whether the value is a known member of the LegacyPushCenterStatusDefinitionKey enum.
+func (e LegacyPushCenterStatusDefinitionKey) Valid() bool {
+	switch e {
+	case LegacyPushCenterStatusDefinitionKeyFailed:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyPending:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyRunning:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySent:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySentWithShadowWarning:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyShadowFailedNotBusinessFailed:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySimulated:
+		return true
+	case LegacyPushCenterStatusDefinitionKeySucceeded:
+		return true
+	case LegacyPushCenterStatusDefinitionKeyUnknownAfterDispatch:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotDatabase.
+const (
+	LegacyRuntimeHealthSnapshotDatabaseFixture  LegacyRuntimeHealthSnapshotDatabase = "fixture"
+	LegacyRuntimeHealthSnapshotDatabasePostgres LegacyRuntimeHealthSnapshotDatabase = "postgres"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotDatabase enum.
+func (e LegacyRuntimeHealthSnapshotDatabase) Valid() bool {
+	switch e {
+	case LegacyRuntimeHealthSnapshotDatabaseFixture:
+		return true
+	case LegacyRuntimeHealthSnapshotDatabasePostgres:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotDatabaseMode.
+const (
+	LegacyRuntimeHealthSnapshotDatabaseModeFixture  LegacyRuntimeHealthSnapshotDatabaseMode = "fixture"
+	LegacyRuntimeHealthSnapshotDatabaseModePostgres LegacyRuntimeHealthSnapshotDatabaseMode = "postgres"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotDatabaseMode enum.
+func (e LegacyRuntimeHealthSnapshotDatabaseMode) Valid() bool {
+	switch e {
+	case LegacyRuntimeHealthSnapshotDatabaseModeFixture:
+		return true
+	case LegacyRuntimeHealthSnapshotDatabaseModePostgres:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled.
+const (
+	LegacyRuntimeHealthSnapshotLegacyRuntimeEnabledFalse LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled enum.
+func (e LegacyRuntimeHealthSnapshotLegacyRuntimeEnabled) Valid() bool {
+	switch e {
+	case LegacyRuntimeHealthSnapshotLegacyRuntimeEnabledFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotRepositoryPolicy.
+const (
+	FixtureRepositoriesAllowed     LegacyRuntimeHealthSnapshotRepositoryPolicy = "fixture_repositories_allowed"
+	ProductionRepositoriesRequired LegacyRuntimeHealthSnapshotRepositoryPolicy = "production_repositories_required"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotRepositoryPolicy enum.
+func (e LegacyRuntimeHealthSnapshotRepositoryPolicy) Valid() bool {
+	switch e {
+	case FixtureRepositoriesAllowed:
+		return true
+	case ProductionRepositoriesRequired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotRuntimeOwner.
+const (
+	AiCrmNext LegacyRuntimeHealthSnapshotRuntimeOwner = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotRuntimeOwner enum.
+func (e LegacyRuntimeHealthSnapshotRuntimeOwner) Valid() bool {
+	switch e {
+	case AiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotService.
+const (
+	AicrmNext LegacyRuntimeHealthSnapshotService = "aicrm-next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotService enum.
+func (e LegacyRuntimeHealthSnapshotService) Valid() bool {
+	switch e {
+	case AicrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotStatus.
+const (
+	Degraded LegacyRuntimeHealthSnapshotStatus = "degraded"
+	Ok       LegacyRuntimeHealthSnapshotStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotStatus enum.
+func (e LegacyRuntimeHealthSnapshotStatus) Valid() bool {
+	switch e {
+	case Degraded:
+		return true
+	case Ok:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyRuntimeHealthSnapshotWarning.
+const (
+	Empty                                                       LegacyRuntimeHealthSnapshotWarning = ""
+	FixtureDataMode                                             LegacyRuntimeHealthSnapshotWarning = "fixture data mode"
+	ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady LegacyRuntimeHealthSnapshotWarning = "production runtime is using fixture data; production data is not ready"
+)
+
+// Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotWarning enum.
+func (e LegacyRuntimeHealthSnapshotWarning) Valid() bool {
+	switch e {
+	case Empty:
+		return true
+	case FixtureDataMode:
+		return true
+	case ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LocalCatalogArchiveResponseArchived.
+const (
+	LocalCatalogArchiveResponseArchivedTrue LocalCatalogArchiveResponseArchived = true
+)
+
+// Valid indicates whether the value is a known member of the LocalCatalogArchiveResponseArchived enum.
+func (e LocalCatalogArchiveResponseArchived) Valid() bool {
+	switch e {
+	case LocalCatalogArchiveResponseArchivedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LocalProductEntitlementState.
+const (
+	LocalProductEntitlementStateActive  LocalProductEntitlementState = "active"
+	LocalProductEntitlementStateRevoked LocalProductEntitlementState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the LocalProductEntitlementState enum.
+func (e LocalProductEntitlementState) Valid() bool {
+	switch e {
+	case LocalProductEntitlementStateActive:
+		return true
+	case LocalProductEntitlementStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyAnalyticsState.
+const (
+	PublicSurveyAnalyticsStateDisabled PublicSurveyAnalyticsState = "disabled"
+	PublicSurveyAnalyticsStatePublic   PublicSurveyAnalyticsState = "public"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyAnalyticsState enum.
+func (e PublicSurveyAnalyticsState) Valid() bool {
+	switch e {
+	case PublicSurveyAnalyticsStateDisabled:
+		return true
+	case PublicSurveyAnalyticsStatePublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyAnalyticsQuestionType.
+const (
+	PublicSurveyAnalyticsQuestionTypeMultiChoice  PublicSurveyAnalyticsQuestionType = "multi_choice"
+	PublicSurveyAnalyticsQuestionTypeSingleChoice PublicSurveyAnalyticsQuestionType = "single_choice"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyAnalyticsQuestionType enum.
+func (e PublicSurveyAnalyticsQuestionType) Valid() bool {
+	switch e {
+	case PublicSurveyAnalyticsQuestionTypeMultiChoice:
+		return true
+	case PublicSurveyAnalyticsQuestionTypeSingleChoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyDefinitionAnswerDisplayMode.
+const (
+	AllInOne PublicSurveyDefinitionAnswerDisplayMode = "all_in_one"
+	OneByOne PublicSurveyDefinitionAnswerDisplayMode = "one_by_one"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyDefinitionAnswerDisplayMode enum.
+func (e PublicSurveyDefinitionAnswerDisplayMode) Valid() bool {
+	switch e {
+	case AllInOne:
+		return true
+	case OneByOne:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyErrorCode.
+const (
+	PublicSurveyErrorCodeIdempotencyConflict PublicSurveyErrorCode = "idempotency_conflict"
+	PublicSurveyErrorCodeInvalidPublicInput  PublicSurveyErrorCode = "invalid_public_input"
+	PublicSurveyErrorCodeMethodNotAllowed    PublicSurveyErrorCode = "method_not_allowed"
+	PublicSurveyErrorCodeNotFound            PublicSurveyErrorCode = "not_found"
+	PublicSurveyErrorCodeRateLimited         PublicSurveyErrorCode = "rate_limited"
+	PublicSurveyErrorCodeUnavailable         PublicSurveyErrorCode = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyErrorCode enum.
+func (e PublicSurveyErrorCode) Valid() bool {
+	switch e {
+	case PublicSurveyErrorCodeIdempotencyConflict:
+		return true
+	case PublicSurveyErrorCodeInvalidPublicInput:
+		return true
+	case PublicSurveyErrorCodeMethodNotAllowed:
+		return true
+	case PublicSurveyErrorCodeNotFound:
+		return true
+	case PublicSurveyErrorCodeRateLimited:
+		return true
+	case PublicSurveyErrorCodeUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyManagementResponseState.
+const (
+	PublicSurveyManagementResponseStateDisabled PublicSurveyManagementResponseState = "disabled"
+	PublicSurveyManagementResponseStatePublic   PublicSurveyManagementResponseState = "public"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyManagementResponseState enum.
+func (e PublicSurveyManagementResponseState) Valid() bool {
+	switch e {
+	case PublicSurveyManagementResponseStateDisabled:
+		return true
+	case PublicSurveyManagementResponseStatePublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyQuestionType.
+const (
+	PublicSurveyQuestionTypeMultiChoice  PublicSurveyQuestionType = "multi_choice"
+	PublicSurveyQuestionTypeSingleChoice PublicSurveyQuestionType = "single_choice"
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyQuestionType enum.
+func (e PublicSurveyQuestionType) Valid() bool {
+	switch e {
+	case PublicSurveyQuestionTypeMultiChoice:
+		return true
+	case PublicSurveyQuestionTypeSingleChoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyResultExternalExecuted.
+const (
+	False PublicSurveyResultExternalExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyResultExternalExecuted enum.
+func (e PublicSurveyResultExternalExecuted) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicSurveyResultLocalOnly.
+const (
+	PublicSurveyResultLocalOnlyTrue PublicSurveyResultLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the PublicSurveyResultLocalOnly enum.
+func (e PublicSurveyResultLocalOnly) Valid() bool {
+	switch e {
+	case PublicSurveyResultLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveIdentityConflictStatus.
+const (
+	ResolveIdentityConflictStatusConflict ResolveIdentityConflictStatus = "conflict"
+)
+
+// Valid indicates whether the value is a known member of the ResolveIdentityConflictStatus enum.
+func (e ResolveIdentityConflictStatus) Valid() bool {
+	switch e {
+	case ResolveIdentityConflictStatusConflict:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveIdentityFoundStatus.
+const (
+	Found ResolveIdentityFoundStatus = "found"
+)
+
+// Valid indicates whether the value is a known member of the ResolveIdentityFoundStatus enum.
+func (e ResolveIdentityFoundStatus) Valid() bool {
+	switch e {
+	case Found:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveIdentityNotFoundStatus.
+const (
+	ResolveIdentityNotFoundStatusNotFound ResolveIdentityNotFoundStatus = "not_found"
+)
+
+// Valid indicates whether the value is a known member of the ResolveIdentityNotFoundStatus enum.
+func (e ResolveIdentityNotFoundStatus) Valid() bool {
+	switch e {
+	case ResolveIdentityNotFoundStatusNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentLifecycleStatus.
+const (
+	SegmentLifecycleStatusActive   SegmentLifecycleStatus = "active"
+	SegmentLifecycleStatusArchived SegmentLifecycleStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the SegmentLifecycleStatus enum.
+func (e SegmentLifecycleStatus) Valid() bool {
+	switch e {
+	case SegmentLifecycleStatusActive:
+		return true
+	case SegmentLifecycleStatusArchived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentRefreshMode.
+const (
+	SegmentRefreshModeManual    SegmentRefreshMode = "manual"
+	SegmentRefreshModeScheduled SegmentRefreshMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the SegmentRefreshMode enum.
+func (e SegmentRefreshMode) Valid() bool {
+	switch e {
+	case SegmentRefreshModeManual:
+		return true
+	case SegmentRefreshModeScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentRefreshStatus.
+const (
+	Failed  SegmentRefreshStatus = "failed"
+	Idle    SegmentRefreshStatus = "idle"
+	Running SegmentRefreshStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the SegmentRefreshStatus enum.
+func (e SegmentRefreshStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Idle:
+		return true
+	case Running:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentDefinitionPredicateField.
+const (
+	AddedAt        SegmentDefinitionPredicateField = "added_at"
+	ChannelId      SegmentDefinitionPredicateField = "channel_id"
+	IsDeleted      SegmentDefinitionPredicateField = "is_deleted"
+	LastInteractAt SegmentDefinitionPredicateField = "last_interact_at"
+	OwnerStaffId   SegmentDefinitionPredicateField = "owner_staff_id"
+	StageId        SegmentDefinitionPredicateField = "stage_id"
+	TagId          SegmentDefinitionPredicateField = "tag_id"
+)
+
+// Valid indicates whether the value is a known member of the SegmentDefinitionPredicateField enum.
+func (e SegmentDefinitionPredicateField) Valid() bool {
+	switch e {
+	case AddedAt:
+		return true
+	case ChannelId:
+		return true
+	case IsDeleted:
+		return true
+	case LastInteractAt:
+		return true
+	case OwnerStaffId:
+		return true
+	case StageId:
+		return true
+	case TagId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentDefinitionPredicateOp.
+const (
+	After  SegmentDefinitionPredicateOp = "after"
+	Before SegmentDefinitionPredicateOp = "before"
+	Eq     SegmentDefinitionPredicateOp = "eq"
+	HasAny SegmentDefinitionPredicateOp = "has_any"
+	In     SegmentDefinitionPredicateOp = "in"
+)
+
+// Valid indicates whether the value is a known member of the SegmentDefinitionPredicateOp enum.
+func (e SegmentDefinitionPredicateOp) Valid() bool {
+	switch e {
+	case After:
+		return true
+	case Before:
+		return true
+	case Eq:
+		return true
+	case HasAny:
+		return true
+	case In:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SegmentRefreshAcceptedStatus.
+const (
+	Accepted SegmentRefreshAcceptedStatus = "accepted"
+)
+
+// Valid indicates whether the value is a known member of the SegmentRefreshAcceptedStatus enum.
+func (e SegmentRefreshAcceptedStatus) Valid() bool {
+	switch e {
+	case Accepted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateSegmentRequestRefreshMode.
+const (
+	UpdateSegmentRequestRefreshModeManual    UpdateSegmentRequestRefreshMode = "manual"
+	UpdateSegmentRequestRefreshModeScheduled UpdateSegmentRequestRefreshMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the UpdateSegmentRequestRefreshMode enum.
+func (e UpdateSegmentRequestRefreshMode) Valid() bool {
+	switch e {
+	case UpdateSegmentRequestRefreshModeManual:
+		return true
+	case UpdateSegmentRequestRefreshModeScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAutomationTriggerRunsParamsVisibility.
+const (
+	ListAutomationTriggerRunsParamsVisibilityMasked ListAutomationTriggerRunsParamsVisibility = "masked"
+)
+
+// Valid indicates whether the value is a known member of the ListAutomationTriggerRunsParamsVisibility enum.
+func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
+	switch e {
+	case ListAutomationTriggerRunsParamsVisibilityMasked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetCustomerActivityAnalyticsParamsWindowDays.
+const (
+	GetCustomerActivityAnalyticsParamsWindowDaysN30 GetCustomerActivityAnalyticsParamsWindowDays = 30
+	GetCustomerActivityAnalyticsParamsWindowDaysN7  GetCustomerActivityAnalyticsParamsWindowDays = 7
+	GetCustomerActivityAnalyticsParamsWindowDaysN90 GetCustomerActivityAnalyticsParamsWindowDays = 90
+)
+
+// Valid indicates whether the value is a known member of the GetCustomerActivityAnalyticsParamsWindowDays enum.
+func (e GetCustomerActivityAnalyticsParamsWindowDays) Valid() bool {
+	switch e {
+	case GetCustomerActivityAnalyticsParamsWindowDaysN30:
+		return true
+	case GetCustomerActivityAnalyticsParamsWindowDaysN7:
+		return true
+	case GetCustomerActivityAnalyticsParamsWindowDaysN90:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListCustomerChatActivityParamsChatType.
+const (
+	ListCustomerChatActivityParamsChatTypeGroup   ListCustomerChatActivityParamsChatType = "group"
+	ListCustomerChatActivityParamsChatTypePrivate ListCustomerChatActivityParamsChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the ListCustomerChatActivityParamsChatType enum.
+func (e ListCustomerChatActivityParamsChatType) Valid() bool {
+	switch e {
+	case ListCustomerChatActivityParamsChatTypeGroup:
+		return true
+	case ListCustomerChatActivityParamsChatTypePrivate:
+		return true
+	default:
+		return false
+	}
+}
+
+// AdminConfigEntry defines model for AdminConfigEntry.
+type AdminConfigEntry struct {
+	Configured   bool                         `json:"configured"`
+	Key          string                       `json:"key"`
+	SourceStatus AdminConfigEntrySourceStatus `json:"source_status"`
+}
+
+// AdminConfigEntrySourceStatus defines model for AdminConfigEntry.SourceStatus.
+type AdminConfigEntrySourceStatus string
+
+// AdminConfigOverviewResponse defines model for AdminConfigOverviewResponse.
+type AdminConfigOverviewResponse struct {
+	Items []AdminConfigEntry `json:"items"`
+}
+
+// ApproveIdentityMergeReviewRequest defines model for ApproveIdentityMergeReviewRequest.
+type ApproveIdentityMergeReviewRequest struct {
+	ExpectedVersion   int64  `json:"expected_version"`
+	PrimaryCustomerId int64  `json:"primary_customer_id"`
+	Reason            string `json:"reason"`
+}
+
+// AuthSessionResponse defines model for AuthSessionResponse.
+type AuthSessionResponse struct {
+	AdminUserId int64                   `json:"admin_user_id"`
+	Role        AuthSessionResponseRole `json:"role"`
+	StaffId     *int64                  `json:"staff_id,omitempty"`
+}
+
+// AuthSessionResponseRole defines model for AuthSessionResponse.Role.
+type AuthSessionResponseRole string
+
+// AutomationTriggerRun defines model for AutomationTriggerRun.
+type AutomationTriggerRun struct {
+	AgentCode        AutomationTriggerRunAgentCode     `json:"agent_code"`
+	CompletedAt      time.Time                         `json:"completed_at"`
+	CustomerId       int64                             `json:"customer_id"`
+	HasError         AutomationTriggerRunHasError      `json:"has_error"`
+	RequestId        string                            `json:"request_id"`
+	RunId            string                            `json:"run_id"`
+	RunStatus        AutomationTriggerRunRunStatus     `json:"run_status"`
+	SourceEventId    int64                             `json:"source_event_id"`
+	StartedAt        time.Time                         `json:"started_at"`
+	TagId            int64                             `json:"tag_id"`
+	TriggerSource    AutomationTriggerRunTriggerSource `json:"trigger_source"`
+	TriggeredEventId int64                             `json:"triggered_event_id"`
+}
+
+// AutomationTriggerRunAgentCode defines model for AutomationTriggerRun.AgentCode.
+type AutomationTriggerRunAgentCode string
+
+// AutomationTriggerRunHasError defines model for AutomationTriggerRun.HasError.
+type AutomationTriggerRunHasError bool
+
+// AutomationTriggerRunRunStatus defines model for AutomationTriggerRun.RunStatus.
+type AutomationTriggerRunRunStatus string
+
+// AutomationTriggerRunTriggerSource defines model for AutomationTriggerRun.TriggerSource.
+type AutomationTriggerRunTriggerSource string
+
+// AutomationTriggerRunListResponse defines model for AutomationTriggerRunListResponse.
+type AutomationTriggerRunListResponse struct {
+	Items      []AutomationTriggerRun                     `json:"items"`
+	Page       int32                                      `json:"page"`
+	PageSize   int32                                      `json:"page_size"`
+	Total      int64                                      `json:"total"`
+	Visibility AutomationTriggerRunListResponseVisibility `json:"visibility"`
+}
+
+// AutomationTriggerRunListResponseVisibility defines model for AutomationTriggerRunListResponse.Visibility.
+type AutomationTriggerRunListResponseVisibility string
+
+// BindIdentityAlreadyBound defines model for BindIdentityAlreadyBound.
+type BindIdentityAlreadyBound struct {
+	CustomerId int64                          `json:"customer_id"`
+	Status     BindIdentityAlreadyBoundStatus `json:"status"`
+}
+
+// BindIdentityAlreadyBoundStatus defines model for BindIdentityAlreadyBound.Status.
+type BindIdentityAlreadyBoundStatus string
+
+// BindIdentityBound defines model for BindIdentityBound.
+type BindIdentityBound struct {
+	CustomerId int64                   `json:"customer_id"`
+	Status     BindIdentityBoundStatus `json:"status"`
+}
+
+// BindIdentityBoundStatus defines model for BindIdentityBound.Status.
+type BindIdentityBoundStatus string
+
+// BindIdentityManualReview defines model for BindIdentityManualReview.
+type BindIdentityManualReview struct {
+	ReviewId int64                          `json:"review_id"`
+	Status   BindIdentityManualReviewStatus `json:"status"`
+}
+
+// BindIdentityManualReviewStatus defines model for BindIdentityManualReview.Status.
+type BindIdentityManualReviewStatus string
+
+// BindIdentityMerged defines model for BindIdentityMerged.
+type BindIdentityMerged struct {
+	CustomerId        int64                    `json:"customer_id"`
+	MergeAuditId      int64                    `json:"merge_audit_id"`
+	PrimaryCustomerId int64                    `json:"primary_customer_id"`
+	Status            BindIdentityMergedStatus `json:"status"`
+}
+
+// BindIdentityMergedStatus defines model for BindIdentityMerged.Status.
+type BindIdentityMergedStatus string
+
+// BindIdentityRejected defines model for BindIdentityRejected.
+type BindIdentityRejected struct {
+	Status BindIdentityRejectedStatus `json:"status"`
+}
+
+// BindIdentityRejectedStatus defines model for BindIdentityRejected.Status.
+type BindIdentityRejectedStatus string
+
+// BindIdentityRequest defines model for BindIdentityRequest.
+type BindIdentityRequest struct {
+	CustomerId int64 `json:"customer_id"`
+
+	// Ref Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+	Ref IdentityRef `json:"ref"`
+}
+
+// BindIdentityResponse defines model for BindIdentityResponse.
+type BindIdentityResponse struct {
+	union json.RawMessage
+}
+
+// CreateLocalTagGroupRequest defines model for CreateLocalTagGroupRequest.
+type CreateLocalTagGroupRequest struct {
+	FirstTagName string `json:"first_tag_name"`
+	Name         string `json:"name"`
+}
+
+// CreateLocalTagRequest defines model for CreateLocalTagRequest.
+type CreateLocalTagRequest struct {
+	GroupId int64  `json:"group_id"`
+	Name    string `json:"name"`
+}
+
+// CreateProductRequest defines model for CreateProductRequest.
+type CreateProductRequest struct {
+	Currency      string   `json:"currency"`
+	Description   string   `json:"description"`
+	Images        []string `json:"images"`
+	Name          string   `json:"name"`
+	PriceMinor    int64    `json:"price_minor"`
+	ProductCode   string   `json:"product_code"`
+	StockQuantity int32    `json:"stock_quantity"`
+}
+
+// CreateSegmentRequest defines model for CreateSegmentRequest.
+type CreateSegmentRequest struct {
+	Definition  SegmentDefinition               `json:"definition"`
+	Name        string                          `json:"name"`
+	RefreshCron *string                         `json:"refresh_cron,omitempty"`
+	RefreshMode CreateSegmentRequestRefreshMode `json:"refresh_mode"`
+}
+
+// CreateSegmentRequestRefreshMode defines model for CreateSegmentRequest.RefreshMode.
+type CreateSegmentRequestRefreshMode string
+
+// CreateStageRequest defines model for CreateStageRequest.
+type CreateStageRequest struct {
+	Config    interface{} `json:"config,omitempty"`
+	Name      string      `json:"name"`
+	SortOrder *int32      `json:"sort_order,omitempty"`
+}
+
+// Customer defines model for Customer.
+type Customer struct {
+	AddedAt        *time.Time             `json:"added_at,omitempty"`
+	AvatarUrl      *string                `json:"avatar_url,omitempty"`
+	ChannelId      *int64                 `json:"channel_id,omitempty"`
+	CreatedAt      time.Time              `json:"created_at"`
+	Extra          map[string]interface{} `json:"extra"`
+	Gender         *int32                 `json:"gender,omitempty"`
+	Id             int64                  `json:"id"`
+	IsDeleted      bool                   `json:"is_deleted"`
+	LastInteractAt *time.Time             `json:"last_interact_at,omitempty"`
+	Name           string                 `json:"name"`
+	OwnerStaffId   *int64                 `json:"owner_staff_id,omitempty"`
+	StageId        *int64                 `json:"stage_id,omitempty"`
+	UpdatedAt      time.Time              `json:"updated_at"`
+}
+
+// CustomerActivityAnalyticsResponse defines model for CustomerActivityAnalyticsResponse.
+type CustomerActivityAnalyticsResponse struct {
+	ActiveDays               int32                                                     `json:"active_days"`
+	ActorIncluded            CustomerActivityAnalyticsResponseActorIncluded            `json:"actor_included"`
+	CustomerId               int64                                                     `json:"customer_id"`
+	DailyCounts              []CustomerActivityDayCount                                `json:"daily_counts"`
+	From                     time.Time                                                 `json:"from"`
+	IdentityIncluded         CustomerActivityAnalyticsResponseIdentityIncluded         `json:"identity_included"`
+	LastOccurredAt           *time.Time                                                `json:"last_occurred_at"`
+	PayloadIncluded          CustomerActivityAnalyticsResponsePayloadIncluded          `json:"payload_included"`
+	RealExternalCallExecuted CustomerActivityAnalyticsResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Through                  time.Time                                                 `json:"through"`
+	TotalEvents              int64                                                     `json:"total_events"`
+	TypeFacets               []CustomerActivityTypeFacet                               `json:"type_facets"`
+	TypeFacetsTruncated      bool                                                      `json:"type_facets_truncated"`
+	UniqueEventTypes         int32                                                     `json:"unique_event_types"`
+	WindowDays               CustomerActivityAnalyticsResponseWindowDays               `json:"window_days"`
+}
+
+// CustomerActivityAnalyticsResponseActorIncluded defines model for CustomerActivityAnalyticsResponse.ActorIncluded.
+type CustomerActivityAnalyticsResponseActorIncluded bool
+
+// CustomerActivityAnalyticsResponseIdentityIncluded defines model for CustomerActivityAnalyticsResponse.IdentityIncluded.
+type CustomerActivityAnalyticsResponseIdentityIncluded bool
+
+// CustomerActivityAnalyticsResponsePayloadIncluded defines model for CustomerActivityAnalyticsResponse.PayloadIncluded.
+type CustomerActivityAnalyticsResponsePayloadIncluded bool
+
+// CustomerActivityAnalyticsResponseRealExternalCallExecuted defines model for CustomerActivityAnalyticsResponse.RealExternalCallExecuted.
+type CustomerActivityAnalyticsResponseRealExternalCallExecuted bool
+
+// CustomerActivityAnalyticsResponseWindowDays defines model for CustomerActivityAnalyticsResponse.WindowDays.
+type CustomerActivityAnalyticsResponseWindowDays int32
+
+// CustomerActivityDayCount defines model for CustomerActivityDayCount.
+type CustomerActivityDayCount struct {
+	Count int64              `json:"count"`
+	Day   openapi_types.Date `json:"day"`
+}
+
+// CustomerActivityTypeFacet defines model for CustomerActivityTypeFacet.
+type CustomerActivityTypeFacet struct {
+	Count          int64     `json:"count"`
+	EventType      string    `json:"event_type"`
+	LastOccurredAt time.Time `json:"last_occurred_at"`
+}
+
+// CustomerChatActivityItem defines model for CustomerChatActivityItem.
+type CustomerChatActivityItem struct {
+	ChatType    CustomerChatActivityItemChatType `json:"chat_type"`
+	MessageType string                           `json:"message_type"`
+	SentAt      time.Time                        `json:"sent_at"`
+}
+
+// CustomerChatActivityItemChatType defines model for CustomerChatActivityItem.ChatType.
+type CustomerChatActivityItemChatType string
+
+// CustomerChatActivityResponse defines model for CustomerChatActivityResponse.
+type CustomerChatActivityResponse struct {
+	ChatType                 CustomerChatActivityResponseChatType                 `json:"chat_type"`
+	CustomerId               int64                                                `json:"customer_id"`
+	IdentityValuesIncluded   CustomerChatActivityResponseIdentityValuesIncluded   `json:"identity_values_included"`
+	Items                    []CustomerChatActivityItem                           `json:"items"`
+	MessageContentIncluded   CustomerChatActivityResponseMessageContentIncluded   `json:"message_content_included"`
+	NextCursor               *string                                              `json:"next_cursor"`
+	NonAtomicSnapshot        CustomerChatActivityResponseNonAtomicSnapshot        `json:"non_atomic_snapshot"`
+	PreviousCursor           *string                                              `json:"previous_cursor"`
+	ProviderReceiptsIncluded CustomerChatActivityResponseProviderReceiptsIncluded `json:"provider_receipts_included"`
+	RealExternalCallExecuted CustomerChatActivityResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Total                    int64                                                `json:"total"`
+}
+
+// CustomerChatActivityResponseChatType defines model for CustomerChatActivityResponse.ChatType.
+type CustomerChatActivityResponseChatType string
+
+// CustomerChatActivityResponseIdentityValuesIncluded defines model for CustomerChatActivityResponse.IdentityValuesIncluded.
+type CustomerChatActivityResponseIdentityValuesIncluded bool
+
+// CustomerChatActivityResponseMessageContentIncluded defines model for CustomerChatActivityResponse.MessageContentIncluded.
+type CustomerChatActivityResponseMessageContentIncluded bool
+
+// CustomerChatActivityResponseNonAtomicSnapshot defines model for CustomerChatActivityResponse.NonAtomicSnapshot.
+type CustomerChatActivityResponseNonAtomicSnapshot bool
+
+// CustomerChatActivityResponseProviderReceiptsIncluded defines model for CustomerChatActivityResponse.ProviderReceiptsIncluded.
+type CustomerChatActivityResponseProviderReceiptsIncluded bool
+
+// CustomerChatActivityResponseRealExternalCallExecuted defines model for CustomerChatActivityResponse.RealExternalCallExecuted.
+type CustomerChatActivityResponseRealExternalCallExecuted bool
+
+// CustomerContextChatEntry defines model for CustomerContextChatEntry.
+type CustomerContextChatEntry struct {
+	ChatType    CustomerContextChatEntryChatType `json:"chat_type"`
+	MessageType string                           `json:"message_type"`
+	SentAt      time.Time                        `json:"sent_at"`
+}
+
+// CustomerContextChatEntryChatType defines model for CustomerContextChatEntry.ChatType.
+type CustomerContextChatEntryChatType string
+
+// CustomerContextChatSummary defines model for CustomerContextChatSummary.
+type CustomerContextChatSummary struct {
+	Items                 []CustomerContextChatEntry `json:"items"`
+	LocalArchiveAvailable bool                       `json:"local_archive_available"`
+	Total                 int64                      `json:"total"`
+}
+
+// CustomerContextCustomer defines model for CustomerContextCustomer.
+type CustomerContextCustomer struct {
+	AddedAt        *time.Time `json:"added_at,omitempty"`
+	ChannelId      *int64     `json:"channel_id,omitempty"`
+	Id             int64      `json:"id"`
+	LastInteractAt *time.Time `json:"last_interact_at,omitempty"`
+	Name           string     `json:"name"`
+	OwnerStaffId   *int64     `json:"owner_staff_id,omitempty"`
+	StageId        *int64     `json:"stage_id,omitempty"`
+}
+
+// CustomerContextResponse defines model for CustomerContextResponse.
+type CustomerContextResponse struct {
+	Chat                     CustomerContextChatSummary                      `json:"chat"`
+	Customer                 CustomerContextCustomer                         `json:"customer"`
+	NonAtomicSnapshot        CustomerContextResponseNonAtomicSnapshot        `json:"non_atomic_snapshot"`
+	RealExternalCallExecuted CustomerContextResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Tags                     []CustomerContextTag                            `json:"tags"`
+	Timeline                 []CustomerContextTimelineEntry                  `json:"timeline"`
+	TimelineNextCursor       *string                                         `json:"timeline_next_cursor"`
+}
+
+// CustomerContextResponseNonAtomicSnapshot defines model for CustomerContextResponse.NonAtomicSnapshot.
+type CustomerContextResponseNonAtomicSnapshot bool
+
+// CustomerContextResponseRealExternalCallExecuted defines model for CustomerContextResponse.RealExternalCallExecuted.
+type CustomerContextResponseRealExternalCallExecuted bool
+
+// CustomerContextTag defines model for CustomerContextTag.
+type CustomerContextTag struct {
+	GroupId        *int64  `json:"group_id,omitempty"`
+	GroupName      *string `json:"group_name,omitempty"`
+	GroupSortOrder int32   `json:"group_sort_order"`
+	Id             int64   `json:"id"`
+	Name           string  `json:"name"`
+	SortOrder      int32   `json:"sort_order"`
+}
+
+// CustomerContextTimelineEntry defines model for CustomerContextTimelineEntry.
+type CustomerContextTimelineEntry struct {
+	EventType  string    `json:"event_type"`
+	Id         int64     `json:"id"`
+	OccurredAt time.Time `json:"occurred_at"`
+}
+
+// CustomerDetailResponse defines model for CustomerDetailResponse.
+type CustomerDetailResponse struct {
+	Customer Customer `json:"customer"`
+	Tags     []Tag    `json:"tags"`
+}
+
+// CustomerEvent defines model for CustomerEvent.
+type CustomerEvent struct {
+	Actor      string                 `json:"actor"`
+	CustomerId int64                  `json:"customer_id"`
+	EventType  string                 `json:"event_type"`
+	Id         int64                  `json:"id"`
+	OccurredAt time.Time              `json:"occurred_at"`
+	Payload    map[string]interface{} `json:"payload"`
+}
+
+// CustomerEventListResponse defines model for CustomerEventListResponse.
+type CustomerEventListResponse struct {
+	Items      []CustomerEvent `json:"items"`
+	NextCursor *string         `json:"next_cursor"`
+}
+
+// CustomerListResponse defines model for CustomerListResponse.
+type CustomerListResponse struct {
+	Items           []Customer `json:"items"`
+	NextCursor      *string    `json:"next_cursor"`
+	Total           int64      `json:"total"`
+	TotalIsEstimate bool       `json:"total_is_estimate"`
+	Watermark       time.Time  `json:"watermark"`
+}
+
+// CustomerMergeHistoryItem defines model for CustomerMergeHistoryItem.
+type CustomerMergeHistoryItem struct {
+	MergeAuditId      int64                        `json:"merge_audit_id"`
+	MergedAt          time.Time                    `json:"merged_at"`
+	MergedCustomerId  int64                        `json:"merged_customer_id"`
+	Mode              CustomerMergeHistoryItemMode `json:"mode"`
+	PolicyVersion     string                       `json:"policy_version"`
+	PrimaryCustomerId int64                        `json:"primary_customer_id"`
+}
+
+// CustomerMergeHistoryItemMode defines model for CustomerMergeHistoryItem.Mode.
+type CustomerMergeHistoryItemMode string
+
+// CustomerMergeHistoryResponse defines model for CustomerMergeHistoryResponse.
+type CustomerMergeHistoryResponse struct {
+	ChatContentIncluded         CustomerMergeHistoryResponseChatContentIncluded         `json:"chat_content_included"`
+	CustomerId                  int64                                                   `json:"customer_id"`
+	IdentityValuesIncluded      CustomerMergeHistoryResponseIdentityValuesIncluded      `json:"identity_values_included"`
+	Items                       []CustomerMergeHistoryItem                              `json:"items"`
+	NextCursor                  *string                                                 `json:"next_cursor"`
+	OperatorIdentifiersIncluded CustomerMergeHistoryResponseOperatorIdentifiersIncluded `json:"operator_identifiers_included"`
+	RealExternalCallExecuted    CustomerMergeHistoryResponseRealExternalCallExecuted    `json:"real_external_call_executed"`
+	Scope                       CustomerMergeHistoryResponseScope                       `json:"scope"`
+}
+
+// CustomerMergeHistoryResponseChatContentIncluded defines model for CustomerMergeHistoryResponse.ChatContentIncluded.
+type CustomerMergeHistoryResponseChatContentIncluded bool
+
+// CustomerMergeHistoryResponseIdentityValuesIncluded defines model for CustomerMergeHistoryResponse.IdentityValuesIncluded.
+type CustomerMergeHistoryResponseIdentityValuesIncluded bool
+
+// CustomerMergeHistoryResponseOperatorIdentifiersIncluded defines model for CustomerMergeHistoryResponse.OperatorIdentifiersIncluded.
+type CustomerMergeHistoryResponseOperatorIdentifiersIncluded bool
+
+// CustomerMergeHistoryResponseRealExternalCallExecuted defines model for CustomerMergeHistoryResponse.RealExternalCallExecuted.
+type CustomerMergeHistoryResponseRealExternalCallExecuted bool
+
+// CustomerMergeHistoryResponseScope defines model for CustomerMergeHistoryResponse.Scope.
+type CustomerMergeHistoryResponseScope string
+
+// CustomerUpdateRequest defines model for CustomerUpdateRequest.
+type CustomerUpdateRequest struct {
+	AvatarUrl    *string                 `json:"avatar_url,omitempty"`
+	ChannelId    *int64                  `json:"channel_id,omitempty"`
+	Extra        *map[string]interface{} `json:"extra,omitempty"`
+	Gender       *int32                  `json:"gender,omitempty"`
+	Name         *string                 `json:"name,omitempty"`
+	OwnerStaffId *int64                  `json:"owner_staff_id,omitempty"`
+}
+
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	Code      string        `json:"code"`
+	Details   *[]FieldError `json:"details,omitempty"`
+	Message   string        `json:"message"`
+	RequestId string        `json:"request_id"`
+}
+
+// FieldError defines model for FieldError.
+type FieldError struct {
+	Field  string `json:"field"`
+	Reason string `json:"reason"`
+}
+
+// GrantProductLocalEntitlementRequest defines model for GrantProductLocalEntitlementRequest.
+type GrantProductLocalEntitlementRequest struct {
+	OrderId int64 `json:"order_id"`
+}
+
+// IdentityMergeReview defines model for IdentityMergeReview.
+type IdentityMergeReview struct {
+	CreatedAt   time.Time `json:"created_at"`
+	CustomerIds []int64   `json:"customer_ids"`
+
+	// IdentityFingerprint Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
+	IdentityFingerprint string `json:"identity_fingerprint"`
+
+	// ResolvedAt Explicitly null while pending; non-null after approval or rejection.
+	ResolvedAt *time.Time                `json:"resolved_at"`
+	ReviewId   int64                     `json:"review_id"`
+	Scope      string                    `json:"scope"`
+	Status     IdentityMergeReviewStatus `json:"status"`
+	Type       IdentityMergeReviewType   `json:"type"`
+	Version    int64                     `json:"version"`
+}
+
+// IdentityMergeReviewStatus defines model for IdentityMergeReview.Status.
+type IdentityMergeReviewStatus string
+
+// IdentityMergeReviewType defines model for IdentityMergeReview.Type.
+type IdentityMergeReviewType string
+
+// IdentityMergeReviewPage defines model for IdentityMergeReviewPage.
+type IdentityMergeReviewPage struct {
+	Items      []IdentityMergeReview `json:"items"`
+	NextCursor *string               `json:"next_cursor"`
+}
+
+// IdentityRef Admin HTTP supplies declared evidence only; verified evidence is internal-adapter-only.
+type IdentityRef struct {
+	Scope string          `json:"scope"`
+	Type  IdentityRefType `json:"type"`
+	Value string          `json:"value"`
+}
+
+// IdentityRefType defines model for IdentityRef.Type.
+type IdentityRefType string
+
+// IngestIdentityEventAttributed defines model for IngestIdentityEventAttributed.
+type IngestIdentityEventAttributed struct {
+	CustomerId int64                               `json:"customer_id"`
+	EventId    int64                               `json:"event_id"`
+	Status     IngestIdentityEventAttributedStatus `json:"status"`
+}
+
+// IngestIdentityEventAttributedStatus defines model for IngestIdentityEventAttributed.Status.
+type IngestIdentityEventAttributedStatus string
+
+// IngestIdentityEventConflict defines model for IngestIdentityEventConflict.
+type IngestIdentityEventConflict struct {
+	PendingEventId int64                             `json:"pending_event_id"`
+	Status         IngestIdentityEventConflictStatus `json:"status"`
+}
+
+// IngestIdentityEventConflictStatus defines model for IngestIdentityEventConflict.Status.
+type IngestIdentityEventConflictStatus string
+
+// IngestIdentityEventPending defines model for IngestIdentityEventPending.
+type IngestIdentityEventPending struct {
+	PendingEventId int64                            `json:"pending_event_id"`
+	Status         IngestIdentityEventPendingStatus `json:"status"`
+}
+
+// IngestIdentityEventPendingStatus defines model for IngestIdentityEventPending.Status.
+type IngestIdentityEventPendingStatus string
+
+// IngestIdentityEventRequest defines model for IngestIdentityEventRequest.
+type IngestIdentityEventRequest struct {
+	EventType  string                 `json:"event_type"`
+	OccurredAt time.Time              `json:"occurred_at"`
+	Payload    map[string]interface{} `json:"payload"`
+	Refs       []IdentityRef          `json:"refs"`
+}
+
+// IngestIdentityEventResponse defines model for IngestIdentityEventResponse.
+type IngestIdentityEventResponse struct {
+	union json.RawMessage
+}
+
+// LegacyExecutionGraph defines model for LegacyExecutionGraph.
+type LegacyExecutionGraph struct {
+	Items []LegacyExecutionRuntimeObservation `json:"items"`
+	Roots []LegacyExecutionGraphNode          `json:"roots"`
+
+	// Truncated True when the 12-depth, 256-node, 1024-item, or 1024-string bound truncated an observation.
+	Truncated bool `json:"truncated"`
+}
+
+// LegacyExecutionGraphNode defines model for LegacyExecutionGraphNode.
+type LegacyExecutionGraphNode struct {
+	Children []LegacyExecutionGraphNode `json:"children"`
+	Details  map[string]string          `json:"details"`
+	Id       string                     `json:"id"`
+	Kind     string                     `json:"kind"`
+
+	// Message Fixed-redacted diagnostic text.
+	Message string `json:"message"`
+
+	// ObservedAt UTC Z timestamp.
+	ObservedAt time.Time `json:"observed_at"`
+
+	// Status Observed status, not a provider receipt or executed-success assertion.
+	Status string `json:"status"`
+}
+
+// LegacyExecutionNotFound defines model for LegacyExecutionNotFound.
+type LegacyExecutionNotFound struct {
+	Error                    LegacyExecutionNotFoundError                    `json:"error"`
+	Ok                       LegacyExecutionNotFoundOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyExecutionNotFoundRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// LegacyExecutionNotFoundError defines model for LegacyExecutionNotFound.Error.
+type LegacyExecutionNotFoundErro

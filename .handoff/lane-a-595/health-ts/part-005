@@ -1,0 +1,2045 @@
+erEffectTypeFilterParameter = string;
+
+export type PushCenterStatusFilterParameter = string;
+
+export type PushCenterBusinessTypeFilterParameter = string;
+
+export type PushCenterBusinessIDFilterParameter = string;
+
+export type PushCenterTargetTypeFilterParameter = string;
+
+export type PushCenterTargetIDFilterParameter = string;
+
+export type PushCenterExternalUserIDFilterParameter = string;
+
+export type PushCenterOwnerUserIDFilterParameter = string;
+
+export type PushCenterTraceIDFilterParameter = string;
+
+export type PushCenterIdempotencyKeyFilterParameter = string;
+
+export type PushCenterSourceModuleFilterParameter = string;
+
+export type PushCenterSourceRouteFilterParameter = string;
+
+export type PushCenterCreatedFromFilterParameter = string;
+
+export type PushCenterCreatedToFilterParameter = string;
+
+export type ListProductsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type ListProductLocalEntitlementsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: EntitlementLimitParameter;
+};
+
+export type ListLegacyCustomersParams = {
+  owner_userid?: string;
+  tag?: string;
+  status?: string;
+  is_bound?: string;
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  keyword?: string;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  offset?: number;
+};
+
+export type ListCustomersParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  keyword?: CustomerKeywordParameter;
+  /**
+   * @minimum 1
+   */
+  owner_staff_id?: OwnerStaffIDFilterParameter;
+  /**
+   * @minimum 1
+   */
+  stage_id?: StageIDFilterParameter;
+  /**
+   * @minimum 1
+   */
+  channel_id?: ChannelIDFilterParameter;
+  /**
+   * @minimum 1
+   */
+  tag_id?: TagIDFilterParameter;
+  is_deleted?: IsDeletedFilterParameter;
+  added_after?: AddedAfterFilterParameter;
+  added_before?: AddedBeforeFilterParameter;
+  last_interact_after?: LastInteractAfterFilterParameter;
+  last_interact_before?: LastInteractBeforeFilterParameter;
+};
+
+export type ListCustomerEventsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type GetCustomerContextParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type ListCustomerMergeHistoryParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListCustomerChatActivityParams = {
+  chat_type?: ListCustomerChatActivityChatType;
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListCustomerChatActivityChatType =
+  (typeof ListCustomerChatActivityChatType)[keyof typeof ListCustomerChatActivityChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCustomerChatActivityChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export type GetCustomerActivityAnalyticsParams = {
+  window_days?: GetCustomerActivityAnalyticsWindowDays;
+};
+
+export type GetCustomerActivityAnalyticsWindowDays =
+  (typeof GetCustomerActivityAnalyticsWindowDays)[keyof typeof GetCustomerActivityAnalyticsWindowDays];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetCustomerActivityAnalyticsWindowDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+  NUMBER_90: 90,
+} as const;
+
+export type ListSegmentsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type ListSegmentMembersParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type ListIdentityMergeReviewsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: LimitParameter;
+};
+
+export type GetLegacyAppSettingsPageParams = {
+  /**
+   * @maxLength 200
+   */
+  q?: string;
+  scope?: GetLegacyAppSettingsPageScope;
+};
+
+export type GetLegacyAppSettingsPageScope =
+  (typeof GetLegacyAppSettingsPageScope)[keyof typeof GetLegacyAppSettingsPageScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyAppSettingsPageScope = {
+  "": "",
+  editable: "editable",
+  masked: "masked",
+} as const;
+
+export type GetLegacyAppSettingsResourceParams = {
+  /**
+   * @maxLength 200
+   */
+  q?: string;
+  scope?: GetLegacyAppSettingsResourceScope;
+};
+
+export type GetLegacyAppSettingsResourceScope =
+  (typeof GetLegacyAppSettingsResourceScope)[keyof typeof GetLegacyAppSettingsResourceScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyAppSettingsResourceScope = {
+  "": "",
+  editable: "editable",
+  masked: "masked",
+} as const;
+
+export type ListAutomationTriggerRunsParams = {
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size?: number;
+  /**
+   * @maxLength 80
+   */
+  request_id?: string;
+  /**
+   * @maxLength 80
+   */
+  run_id?: string;
+  /**
+   * @maxLength 80
+   */
+  agent_code?: string;
+  /**
+   * @maxLength 40
+   */
+  run_status?: string;
+  /**
+   * @maxLength 80
+   */
+  trigger_source?: string;
+  /**
+   * @maxLength 200
+   */
+  unionid?: string;
+  /**
+   * @maxLength 200
+   */
+  userid?: string;
+  started_after?: string;
+  started_before?: string;
+  has_error?: boolean;
+  visibility?: ListAutomationTriggerRunsVisibility;
+};
+
+export type ListAutomationTriggerRunsVisibility =
+  (typeof ListAutomationTriggerRunsVisibility)[keyof typeof ListAutomationTriggerRunsVisibility];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListAutomationTriggerRunsVisibility = {
+  masked: "masked",
+} as const;
+
+export type CreateLegacyWecomTag200 =
+  LegacyTagCreateSuccess | LegacyTagCreateValidatedSuccess;
+
+export type CreateLegacyWecomTagGroup200 =
+  LegacyTagGroupCreateSuccess | LegacyTagGroupCreateValidatedSuccess;
+
+export type ListLegacyChannelsParams = {
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+  status?: ListLegacyChannelsStatus;
+  include_archived?: boolean;
+};
+
+export type ListLegacyChannelsStatus =
+  (typeof ListLegacyChannelsStatus)[keyof typeof ListLegacyChannelsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyChannelsStatus = {
+  active: "active",
+  inactive: "inactive",
+  archived: "archived",
+} as const;
+
+export type ListLegacyOrdersParams = {
+  provider?: ListLegacyOrdersProvider;
+  /**
+   * @maxLength 80
+   */
+  payment_status?: string;
+  /**
+   * @maxLength 200
+   */
+  order_no?: string;
+  /**
+   * @maxLength 200
+   */
+  out_trade_no?: string;
+  /**
+   * @maxLength 80
+   */
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  product_code?: string;
+  /**
+   * @maxLength 200
+   */
+  external_userid?: string;
+  /**
+   * @maxLength 200
+   */
+  identity?: string;
+  /**
+   * @maxLength 200
+   */
+  transaction_id?: string;
+  /**
+   * @maxLength 200
+   */
+  platform_transaction_no?: string;
+  created_from?: string;
+  created_to?: string;
+  date_from?: string;
+  date_to?: string;
+  /**
+   * @maxLength 80
+   */
+  status?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  /**
+   * Legacy opaque cursor; nonempty values fail closed until an evidence-backed codec is separately frozen.
+   */
+  cursor?: string;
+};
+
+export type ListLegacyOrdersProvider =
+  (typeof ListLegacyOrdersProvider)[keyof typeof ListLegacyOrdersProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyOrdersProvider = {
+  all: "all",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type GetLegacyOrderParams = {
+  provider?: GetLegacyOrderProvider;
+};
+
+export type GetLegacyOrderProvider =
+  (typeof GetLegacyOrderProvider)[keyof typeof GetLegacyOrderProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyOrderProvider = {
+  auto: "auto",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type GetLegacyOrderItemsParams = {
+  provider?: GetLegacyOrderItemsProvider;
+};
+
+export type GetLegacyOrderItemsProvider =
+  (typeof GetLegacyOrderItemsProvider)[keyof typeof GetLegacyOrderItemsProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyOrderItemsProvider = {
+  auto: "auto",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type ListLegacyAlipayTransactionsParams = {
+  /**
+   * @maxLength 80
+   */
+  payment_status?: string;
+  /**
+   * @maxLength 200
+   */
+  product_code?: string;
+  /**
+   * @maxLength 80
+   */
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  external_userid?: string;
+  date_from?: string;
+  date_to?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyRefundsParams = {
+  provider?: ListLegacyRefundsProvider;
+  /**
+   * @maxLength 200
+   */
+  order_no?: string;
+  /**
+   * @maxLength 200
+   */
+  out_trade_no?: string;
+  /**
+   * @maxLength 200
+   */
+  transaction_id?: string;
+  /**
+   * @maxLength 200
+   */
+  refund_id?: string;
+  /**
+   * @maxLength 200
+   */
+  out_refund_no?: string;
+  /**
+   * @maxLength 80
+   */
+  status?: string;
+  created_from?: string;
+  created_to?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyRefundsProvider =
+  (typeof ListLegacyRefundsProvider)[keyof typeof ListLegacyRefundsProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyRefundsProvider = {
+  all: "all",
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export type ListLegacyWechatTransactionsParams = {
+  /**
+   * @maxLength 80
+   */
+  mobile?: string;
+  /**
+   * @maxLength 200
+   */
+  identity?: string;
+  /**
+   * @maxLength 200
+   */
+  transaction_id?: string;
+  /**
+   * @maxLength 200
+   */
+  product_code?: string;
+  created_from?: string;
+  created_to?: string;
+  /**
+   * @maxLength 80
+   */
+  status?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyCouponsParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  /**
+   * @maxLength 80
+   */
+  q?: string;
+  status?: ListLegacyCouponsStatus;
+};
+
+export type ListLegacyCouponsStatus =
+  (typeof ListLegacyCouponsStatus)[keyof typeof ListLegacyCouponsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyCouponsStatus = {
+  draft: "draft",
+  published: "published",
+  stopped: "stopped",
+} as const;
+
+export type ListLegacyCouponProductOptionsParams = {
+  /**
+   * @maxLength 80
+   */
+  q?: string;
+  product_type?: ListLegacyCouponProductOptionsProductType;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyCouponProductOptionsProductType =
+  (typeof ListLegacyCouponProductOptionsProductType)[keyof typeof ListLegacyCouponProductOptionsProductType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyCouponProductOptionsProductType = {
+  all: "all",
+  standard_product: "standard_product",
+  service_period: "service_period",
+} as const;
+
+export type ListLegacyCouponClaimsParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListH5AvailableCouponsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  target_ref: string;
+};
+
+export type GetQuestionnairePublicAnalyticsParams = {
+  /**
+   * Omit to read the current public snapshot; provide a positive version to read one immutable historical snapshot.
+   * @minimum 1
+   */
+  definition_version?: number;
+};
+
+export type ListLegacyQuestionnairesParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyQuestionnaireSubmissionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type GetLegacyImageListParams = {
+  /**
+   * One decimal scalar matching ^-?[0-9]+$; 0 becomes 100, negatives become 1, and values above 500 become 500.
+   * @pattern ^-?[0-9]+$
+   */
+  limit?: string;
+  /**
+   * One decimal scalar matching ^-?[0-9]+$; zero and negatives become 0.
+   * @pattern ^-?[0-9]+$
+   */
+  offset?: string;
+  /**
+   * One lowercase boolean scalar. True (the default) returns enabled rows only; false includes disabled rows and reports their stored enabled value.
+   */
+  enabled_only?: GetLegacyImageListEnabledOnly;
+  /**
+   * One scalar; TrimSpace is applied before PostgreSQL ILIKE matching over name, file_name, description, category, and normalized tags. Percent and underscore retain LIKE wildcard meaning.
+   */
+  q?: string;
+  /**
+   * One scalar; TrimSpace is applied to the query value before case-sensitive exact matching.
+   */
+  category?: string;
+  /**
+   * One ASCII-comma-separated scalar normalized with the frozen 64-code-point, 50-item, pre-truncation-dedupe rule; members are ORed.
+   */
+  tags?: string;
+  /**
+   * Repeatable ASCII-comma-separated groups; members within a group are ORed and nonempty groups are ANDed.
+   */
+  tag_group?: string[];
+  /**
+   * One lowercase boolean scalar; true requires empty description, category, or normalized tags.
+   */
+  only_unlabeled?: GetLegacyImageListOnlyUnlabeled;
+};
+
+export type GetLegacyImageListEnabledOnly =
+  (typeof GetLegacyImageListEnabledOnly)[keyof typeof GetLegacyImageListEnabledOnly];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageListEnabledOnly = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type GetLegacyImageListOnlyUnlabeled =
+  (typeof GetLegacyImageListOnlyUnlabeled)[keyof typeof GetLegacyImageListOnlyUnlabeled];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageListOnlyUnlabeled = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type GetLegacyImageParams = {
+  /**
+   * One lowercase boolean scalar. True returns a fully validated original blob as a bounded data URL.
+   */
+  include_data?: GetLegacyImageIncludeData;
+  /**
+   * One optional scalar that only constructs a relative variant URL; it never reads or generates a variant.
+   */
+  variant?: GetLegacyImageVariant;
+};
+
+export type GetLegacyImageIncludeData =
+  (typeof GetLegacyImageIncludeData)[keyof typeof GetLegacyImageIncludeData];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageIncludeData = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type GetLegacyImageVariant =
+  (typeof GetLegacyImageVariant)[keyof typeof GetLegacyImageVariant];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyImageVariant = {
+  "": "",
+  thumb_160: "thumb_160",
+  thumb_320: "thumb_320",
+  mobile_1080: "mobile_1080",
+  large_1440: "large_1440",
+  original: "original",
+} as const;
+
+export type DeleteLegacyImageParams = {
+  /**
+   * Legacy-compatible flag. It never clears or mutates references and does not bypass a reference conflict.
+   */
+  force?: DeleteLegacyImageForce;
+};
+
+export type DeleteLegacyImageForce =
+  (typeof DeleteLegacyImageForce)[keyof typeof DeleteLegacyImageForce];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeleteLegacyImageForce = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type DeleteLegacyImage409 = LegacyImageDeleteConflict | ErrorResponse;
+
+export type UploadLegacyImageBody = {
+  image: Blob;
+  /** @maxLength 200 */
+  name?: string;
+  /** @maxLength 10000 */
+  description?: string;
+  /** @maxLength 10000 */
+  tags?: string;
+  /** @maxLength 200 */
+  category?: string;
+};
+
+export type ListLegacyGroupInvitesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  enabled_only?: boolean;
+  /**
+   * @maxLength 128
+   */
+  q?: string;
+};
+
+export type GetLegacyDeliveryLineageParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type GetLegacyCustomerProfileTagsParams = {
+  /**
+   * Frozen legacy identity hint. When both legal hints are supplied they must resolve to one customer.
+   * @minLength 1
+   * @maxLength 1024
+   */
+  unionid?: string;
+  /**
+   * Frozen WeCom external-user identity hint scoped by the configured corporate ID. When both legal hints are supplied they must resolve to one customer.
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid?: string;
+  /**
+   * Legacy ambiguous hint. It is rejected with unsupported_identity_hint and is never resolved.
+   * @maxLength 1024
+   */
+  user_id?: string;
+};
+
+export type ListLegacyMiniProgramsParams = {
+  /**
+   * @minimum 1
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+  enabled_only?: boolean;
+  q?: string;
+};
+
+export type GetLegacyPushCenterSectionsParams = {
+  section?: PushCenterSectionFilterParameter;
+  effect_type?: PushCenterEffectTypeFilterParameter;
+  status?: PushCenterStatusFilterParameter;
+  business_type?: PushCenterBusinessTypeFilterParameter;
+  business_id?: PushCenterBusinessIDFilterParameter;
+  target_type?: PushCenterTargetTypeFilterParameter;
+  target_id?: PushCenterTargetIDFilterParameter;
+  external_userid?: PushCenterExternalUserIDFilterParameter;
+  owner_userid?: PushCenterOwnerUserIDFilterParameter;
+  trace_id?: PushCenterTraceIDFilterParameter;
+  idempotency_key?: PushCenterIdempotencyKeyFilterParameter;
+  source_module?: PushCenterSourceModuleFilterParameter;
+  source_route?: PushCenterSourceRouteFilterParameter;
+  created_from?: PushCenterCreatedFromFilterParameter;
+  created_to?: PushCenterCreatedToFilterParameter;
+};
+
+export type GetLegacyPushCenterSections200 =
+  LegacyPushCenterSectionsResponse | LegacyPushCenterSectionsDegradedResponse;
+
+export type GetLegacyPushCenterStatsParams = {
+  section?: PushCenterSectionFilterParameter;
+  effect_type?: PushCenterEffectTypeFilterParameter;
+  status?: PushCenterStatusFilterParameter;
+  business_type?: PushCenterBusinessTypeFilterParameter;
+  business_id?: PushCenterBusinessIDFilterParameter;
+  target_type?: PushCenterTargetTypeFilterParameter;
+  target_id?: PushCenterTargetIDFilterParameter;
+  external_userid?: PushCenterExternalUserIDFilterParameter;
+  owner_userid?: PushCenterOwnerUserIDFilterParameter;
+  trace_id?: PushCenterTraceIDFilterParameter;
+  idempotency_key?: PushCenterIdempotencyKeyFilterParameter;
+  source_module?: PushCenterSourceModuleFilterParameter;
+  source_route?: PushCenterSourceRouteFilterParameter;
+  created_from?: PushCenterCreatedFromFilterParameter;
+  created_to?: PushCenterCreatedToFilterParameter;
+};
+
+export type GetLegacyPushCenterStats200 =
+  LegacyPushCenterStatsResponse | LegacyPushCenterStatsDegradedResponse;
+
+export type ListLegacyOutboundJobsParams = {
+  status?: ListLegacyOutboundJobsStatus;
+  /**
+   * @minimum 1
+   */
+  business_id?: number;
+  /**
+   * @minimum 1
+   */
+  owner_userid?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListLegacyOutboundJobsStatus =
+  (typeof ListLegacyOutboundJobsStatus)[keyof typeof ListLegacyOutboundJobsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyOutboundJobsStatus = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+} as const;
+
+export type ListLegacyInternalEventsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type?: string;
+  consumer?: ListLegacyInternalEventsConsumer;
+  status?: ListLegacyInternalEventsStatus;
+  /**
+   * @minLength 1
+   * @maxLength 3
+   * @pattern ^[1-9][0-9]*$
+   */
+  limit?: string;
+  /**
+   * @minLength 1
+   * @maxLength 6
+   * @pattern ^(0|[1-9][0-9]*)$
+   */
+  offset?: string;
+};
+
+export type ListLegacyInternalEventsConsumer =
+  (typeof ListLegacyInternalEventsConsumer)[keyof typeof ListLegacyInternalEventsConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyInternalEventsConsumer = {
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type ListLegacyInternalEventsStatus =
+  (typeof ListLegacyInternalEventsStatus)[keyof typeof ListLegacyInternalEventsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyInternalEventsStatus = {
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export type GetLegacyInternalEventDiagnosticsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type?: string;
+  consumer?: GetLegacyInternalEventDiagnosticsConsumer;
+  status?: GetLegacyInternalEventDiagnosticsStatus;
+};
+
+export type GetLegacyInternalEventDiagnosticsConsumer =
+  (typeof GetLegacyInternalEventDiagnosticsConsumer)[keyof typeof GetLegacyInternalEventDiagnosticsConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyInternalEventDiagnosticsConsumer = {
+  "automationtag-triggerv1": "automation.tag-trigger.v1",
+  "statstag-appliedv1": "stats.tag-applied.v1",
+  "operation-cyclefactv1": "operation-cycle.fact.v1",
+} as const;
+
+export type GetLegacyInternalEventDiagnosticsStatus =
+  (typeof GetLegacyInternalEventDiagnosticsStatus)[keyof typeof GetLegacyInternalEventDiagnosticsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetLegacyInternalEventDiagnosticsStatus = {
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+/**
+ * @summary List ordinary products using a keyset cursor
+ */
+export type listProductsResponse200 = {
+  data: ProductPage;
+  status: 200;
+};
+
+export type listProductsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProductsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProductsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProductsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listProductsResponseSuccess = listProductsResponse200 & {
+  headers: Headers;
+};
+export type listProductsResponseError = (
+  | listProductsResponse400
+  | listProductsResponse401
+  | listProductsResponse403
+  | listProductsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listProductsResponse =
+  listProductsResponseSuccess | listProductsResponseError;
+
+export const getListProductsUrl = (params?: ListProductsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/products?${stringifiedParams}`
+    : `/api/v1/products`;
+};
+
+export const listProducts = async (
+  params?: ListProductsParams,
+  options?: RequestInit,
+): Promise<listProductsResponse> => {
+  const res = await fetch(getListProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProductsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProductsResponse;
+};
+
+/**
+ * @summary Create one ordinary product
+ */
+export type createProductResponse201 = {
+  data: Product;
+  status: 201;
+};
+
+export type createProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createProductResponseSuccess = createProductResponse201 & {
+  headers: Headers;
+};
+export type createProductResponseError = (
+  | createProductResponse400
+  | createProductResponse401
+  | createProductResponse403
+  | createProductResponse409
+  | createProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type createProductResponse =
+  createProductResponseSuccess | createProductResponseError;
+
+export const getCreateProductUrl = () => {
+  return `/api/v1/products`;
+};
+
+export const createProduct = async (
+  createProductRequest: CreateProductRequest,
+  options?: RequestInit,
+): Promise<createProductResponse> => {
+  const res = await fetch(getCreateProductUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createProductRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createProductResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createProductResponse;
+};
+
+/**
+ * @summary Get one ordinary product
+ */
+export type getProductResponse200 = {
+  data: Product;
+  status: 200;
+};
+
+export type getProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getProductResponseSuccess = getProductResponse200 & {
+  headers: Headers;
+};
+export type getProductResponseError = (
+  | getProductResponse400
+  | getProductResponse401
+  | getProductResponse403
+  | getProductResponse404
+  | getProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type getProductResponse =
+  getProductResponseSuccess | getProductResponseError;
+
+export const getGetProductUrl = (productId: number) => {
+  return `/api/v1/products/${productId}`;
+};
+
+export const getProduct = async (
+  productId: number,
+  options?: RequestInit,
+): Promise<getProductResponse> => {
+  const res = await fetch(getGetProductUrl(productId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getProductResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getProductResponse;
+};
+
+/**
+ * @summary Update one local ordinary product using optimistic concurrency
+ */
+export type updateProductResponse200 = {
+  data: Product;
+  status: 200;
+};
+
+export type updateProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateProductResponseSuccess = updateProductResponse200 & {
+  headers: Headers;
+};
+export type updateProductResponseError = (
+  | updateProductResponse400
+  | updateProductResponse401
+  | updateProductResponse403
+  | updateProductResponse404
+  | updateProductResponse409
+  | updateProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateProductResponse =
+  updateProductResponseSuccess | updateProductResponseError;
+
+export const getUpdateProductUrl = (productId: number) => {
+  return `/api/v1/products/${productId}`;
+};
+
+export const updateProduct = async (
+  productId: number,
+  updateProductRequest: UpdateProductRequest,
+  options?: RequestInit,
+): Promise<updateProductResponse> => {
+  const res = await fetch(getUpdateProductUrl(productId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateProductRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateProductResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateProductResponse;
+};
+
+/**
+ * @summary List local product entitlements without invoking payment or providers
+ */
+export type listProductLocalEntitlementsResponse200 = {
+  data: LocalProductEntitlementPage;
+  status: 200;
+};
+
+export type listProductLocalEntitlementsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProductLocalEntitlementsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProductLocalEntitlementsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProductLocalEntitlementsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listProductLocalEntitlementsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listProductLocalEntitlementsResponseSuccess =
+  listProductLocalEntitlementsResponse200 & {
+    headers: Headers;
+  };
+export type listProductLocalEntitlementsResponseError = (
+  | listProductLocalEntitlementsResponse400
+  | listProductLocalEntitlementsResponse401
+  | listProductLocalEntitlementsResponse403
+  | listProductLocalEntitlementsResponse404
+  | listProductLocalEntitlementsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listProductLocalEntitlementsResponse =
+  | listProductLocalEntitlementsResponseSuccess
+  | listProductLocalEntitlementsResponseError;
+
+export const getListProductLocalEntitlementsUrl = (
+  productId: number,
+  params?: ListProductLocalEntitlementsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/products/${productId}/local-entitlements?${stringifiedParams}`
+    : `/api/v1/products/${productId}/local-entitlements`;
+};
+
+export const listProductLocalEntitlements = async (
+  productId: number,
+  params?: ListProductLocalEntitlementsParams,
+  options?: RequestInit,
+): Promise<listProductLocalEntitlementsResponse> => {
+  const res = await fetch(
+    getListProductLocalEntitlementsUrl(productId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProductLocalEntitlementsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProductLocalEntitlementsResponse;
+};
+
+/**
+ * @summary Grant a local entitlement from one existing paid local order projection
+ */
+export type grantProductLocalEntitlementResponse201 = {
+  data: LocalProductEntitlement;
+  status: 201;
+};
+
+export type grantProductLocalEntitlementResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type grantProductLocalEntitlementResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type grantProductLocalEntitlementResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type grantProductLocalEntitlementResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type grantProductLocalEntitlementResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type grantProductLocalEntitlementResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type grantProductLocalEntitlementResponseSuccess =
+  grantProductLocalEntitlementResponse201 & {
+    headers: Headers;
+  };
+export type grantProductLocalEntitlementResponseError = (
+  | grantProductLocalEntitlementResponse400
+  | grantProductLocalEntitlementResponse401
+  | grantProductLocalEntitlementResponse403
+  | grantProductLocalEntitlementResponse404
+  | grantProductLocalEntitlementResponse409
+  | grantProductLocalEntitlementResponse503
+) & {
+  headers: Headers;
+};
+
+export type grantProductLocalEntitlementResponse =
+  | grantProductLocalEntitlementResponseSuccess
+  | grantProductLocalEntitlementResponseError;
+
+export const getGrantProductLocalEntitlementUrl = (productId: number) => {
+  return `/api/v1/products/${productId}/local-entitlements`;
+};
+
+export const grantProductLocalEntitlement = async (
+  productId: number,
+  grantProductLocalEntitlementRequest: GrantProductLocalEntitlementRequest,
+  options?: RequestInit,
+): Promise<grantProductLocalEntitlementResponse> => {
+  const res = await fetch(getGrantProductLocalEntitlementUrl(productId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(grantProductLocalEntitlementRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: grantProductLocalEntitlementResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as grantProductLocalEntitlementResponse;
+};
+
+/**
+ * @summary Get one local product entitlement
+ */
+export type getProductLocalEntitlementResponse200 = {
+  data: LocalProductEntitlement;
+  status: 200;
+};
+
+export type getProductLocalEntitlementResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getProductLocalEntitlementResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getProductLocalEntitlementResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getProductLocalEntitlementResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getProductLocalEntitlementResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getProductLocalEntitlementResponseSuccess =
+  getProductLocalEntitlementResponse200 & {
+    headers: Headers;
+  };
+export type getProductLocalEntitlementResponseError = (
+  | getProductLocalEntitlementResponse400
+  | getProductLocalEntitlementResponse401
+  | getProductLocalEntitlementResponse403
+  | getProductLocalEntitlementResponse404
+  | getProductLocalEntitlementResponse503
+) & {
+  headers: Headers;
+};
+
+export type getProductLocalEntitlementResponse =
+  | getProductLocalEntitlementResponseSuccess
+  | getProductLocalEntitlementResponseError;
+
+export const getGetProductLocalEntitlementUrl = (entitlementId: number) => {
+  return `/api/v1/product-entitlements/${entitlementId}`;
+};
+
+export const getProductLocalEntitlement = async (
+  entitlementId: number,
+  options?: RequestInit,
+): Promise<getProductLocalEntitlementResponse> => {
+  const res = await fetch(getGetProductLocalEntitlementUrl(entitlementId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getProductLocalEntitlementResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getProductLocalEntitlementResponse;
+};
+
+/**
+ * @summary Revoke one local entitlement using optimistic concurrency
+ */
+export type revokeProductLocalEntitlementResponse200 = {
+  data: LocalProductEntitlement;
+  status: 200;
+};
+
+export type revokeProductLocalEntitlementResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type revokeProductLocalEntitlementResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type revokeProductLocalEntitlementResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type revokeProductLocalEntitlementResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type revokeProductLocalEntitlementResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type revokeProductLocalEntitlementResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type revokeProductLocalEntitlementResponseSuccess =
+  revokeProductLocalEntitlementResponse200 & {
+    headers: Headers;
+  };
+export type revokeProductLocalEntitlementResponseError = (
+  | revokeProductLocalEntitlementResponse400
+  | revokeProductLocalEntitlementResponse401
+  | revokeProductLocalEntitlementResponse403
+  | revokeProductLocalEntitlementResponse404
+  | revokeProductLocalEntitlementResponse409
+  | revokeProductLocalEntitlementResponse503
+) & {
+  headers: Headers;
+};
+
+export type revokeProductLocalEntitlementResponse =
+  | revokeProductLocalEntitlementResponseSuccess
+  | revokeProductLocalEntitlementResponseError;
+
+export const getRevokeProductLocalEntitlementUrl = (entitlementId: number) => {
+  return `/api/v1/product-entitlements/${entitlementId}/revoke`;
+};
+
+export const revokeProductLocalEntitlement = async (
+  entitlementId: number,
+  revokeProductLocalEntitlementRequest: RevokeProductLocalEntitlementRequest,
+  options?: RequestInit,
+): Promise<revokeProductLocalEntitlementResponse> => {
+  const res = await fetch(getRevokeProductLocalEntitlementUrl(entitlementId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(revokeProductLocalEntitlementRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: revokeProductLocalEntitlementResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as revokeProductLocalEntitlementResponse;
+};
+
+/**
+ * @summary Redirect the frozen product list entrypoint to the exact local SPA carrier
+ */
+export type getLegacyProductListPageResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyProductListPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyProductListPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyProductListPageResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyProductListPageResponseError = (
+  | getLegacyProductListPageResponse302
+  | getLegacyProductListPageResponse401
+  | getLegacyProductListPageResponse403
+  | getLegacyProductListPageResponse405
+) & {
+  headers: Headers;
+};
+
+export type getLegacyProductListPageResponse =
+  getLegacyProductListPageResponseError;
+
+export const getGetLegacyProductListPageUrl = () => {
+  return `/admin/wechat-pay/products`;
+};
+
+export const getLegacyProductListPage = async (
+  options?: RequestInit,
+): Promise<getLegacyProductListPageResponse> => {
+  const res = await fetch(getGetLegacyProductListPageUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyProductListPageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyProductListPageResponse;
+};
+
+/**
+ * @summary Process liveness
+ */
+export type getHealthzResponse200 = {
+  data: HealthResponse;
+  status: 200;
+};
+
+export type getHealthzResponseSuccess = getHealthzResponse200 & {
+  headers: Headers;
+};
+export type getHealthzResponse = getHealthzResponseSuccess;
+
+export const getGetHealthzUrl = () => {
+  return `/healthz`;
+};
+
+export const getHealthz = async (
+  options?: RequestInit,
+): Promise<getHealthzResponse> => {
+  const res = await fetch(getGetHealthzUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHealthzResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHealthzResponse;
+};
+
+/**
+ * @summary Read the public legacy configuration-derived runtime-mode snapshot
+ */
+export type getLegacyHealthResponse200 = {
+  data: LegacyRuntimeHealthSnapshot;
+  status: 200;
+};
+
+export type getLegacyHealthResponse405 = {
+  data: LegacyHealthMethodNotAllowed;
+  status: 405;
+};
+
+export type getLegacyHealthResponseSuccess = getLegacyHealthResponse200 & {
+  headers: Headers;
+};
+export type getLegacyHealthResponseError = getLegacyHealthResponse405 & {
+  headers: Headers;
+};
+
+export type getLegacyHealthResponse =
+  getLegacyHealthResponseSuccess | getLegacyHealthResponseError;
+
+export const getGetLegacyHealthUrl = () => {
+  return `/health`;
+};
+
+export const getLegacyHealth = async (
+  options?: RequestInit,
+): Promise<getLegacyHealthResponse> => {
+  const res = await fetch(getGetLegacyHealthUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyHealthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyHealthResponse;
+};
+
+/**
+ * @summary Read bounded public system readiness without dependency details
+ */
+export type getSystemHealthResponse200 = {
+  data: SystemHealthResponse;
+  status: 200;
+};
+
+export type getSystemHealthResponse503 = {
+  data: SystemHealthResponse;
+  status: 503;
+};
+
+export type getSystemHealthResponseSuccess = getSystemHealthResponse200 & {
+  headers: Headers;
+};
+export type getSystemHealthResponseError = getSystemHealthResponse503 & {
+  headers: Headers;
+};
+
+export type getSystemHealthResponse =
+  getSystemHealthResponseSuccess | getSystemHealthResponseError;
+
+export const getGetSystemHealthUrl = () => {
+  return `/api/system/health`;
+};
+
+export const getSystemHealth = async (
+  options?: RequestInit,
+): Promise<getSystemHealthResponse> => {
+  const res = await fetch(getGetSystemHealthUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSystemHealthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSystemHealthResponse;
+};
+
+/**
+ * @summary Read one WeChat or WeCom domain verification file
+ */
+export type getDomainVerificationFileResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getDomainVerificationFileResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getDomainVerificationFileResponseSuccess =
+  getDomainVerificationFileResponse200 & {
+    headers: Headers;
+  };
+export type getDomainVerificationFileResponseError =
+  getDomainVerificationFileResponse404 & {
+    headers: Headers;
+  };
+
+export type getDomainVerificationFileResponse =
+  | getDomainVerificationFileResponseSuccess
+  | getDomainVerificationFileResponseError;
+
+export const getGetDomainVerificationFileUrl = (filename: string) => {
+  return `/${filename}`;
+};
+
+export const getDomainVerificationFile = async (
+  filename: string,
+  options?: RequestInit,
+): Promise<getDomainVerificationFileResponse> => {
+  const res = await fetch(getGetDomainVerificationFileUrl(filename), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDomainVerificationFileResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getDomainVerificationFileResponse;
+};
+
+/**
+ * @summary Render the frozen server-side Admin Shell shortcut page
+ */
+export type getLegacyAdminShellResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyAdminShellResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyAdminShellResponse403 = {
+  data: AdminShellAccessDenied;
+  status: 403;
+};
+
+export type getLegacyAdminShellResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAdminShellResponseSuccess =
+  getLegacyAdminShellResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAdminShellResponseError = (
+  | getLegacyAdminShellResponse302
+  | getLegacyAdminShellResponse403
+  | getLegacyAdminShellResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAdminShellResponse =
+  getLegacyAdminShellResponseSuccess | getLegacyAdminShellResponseError;
+
+export const getGetLegacyAdminShellUrl = () => {
+  return `/admin`;
+};
+
+export const getLegacyAdminShell = async (
+  options?: RequestInit,
+): Promise<getLegacyAdminShellResponse> => {
+  const res = await fetch(getGetLegacyAdminShellUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAdminShellResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAdminShellResponse;
+};
+
+/**
+ * @summary Redirect an authenticated Admin Shell browser to the existing logout owner
+ */
+export type getLegacyAdminLogoutCompatResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getLegacyAdminLogoutCompatResponse403 = {
+  data: AdminShellAccessDenied;
+  status: 403;
+};
+
+export type getLegacyAdminLogoutCompatResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyAdminLogoutCompatResponseError = (
+  | getLegacyAdminLogoutCompatResponse302
+  | getLegacyAdminLogoutCompatResponse403
+  | getLegacyAdminLogoutCompatResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAdminLogoutCompatResponse =
+  getLegacyAdminLogoutCompatResponseError;
+
+export const getGetLegacyAdminLogoutCompatUrl = () => {
+  return `/admin/logout`;
+};
+
+export const getLegacyAdminLogoutCompat = async (
+  options?: RequestInit,
+): Promise<getLegacyAdminLogoutCompatResponse> => {
+  const res = await fetch(getGetLegacyAdminLogoutCompatUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAdminLogoutCompatResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAdminLogoutCompatResponse;
+};
+
+/**
+ * @summary Render the frozen server-side API documentation page from the embedded canonical OpenAPI contract
+ */
+export type getLegacyApiDocsPageResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type getLegacyApiDocsPageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyApiDocsPageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyApiDocsPageResponse500 = {
+  data: ErrorResponse;
+  status: 500;
+};
+
+export type getLegacyApiDocsPageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyApiDocsPageResponseSuccess =
+  getLegacyApiDocsPageResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyApiDocsPageResponseErro

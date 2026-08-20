@@ -1,0 +1,902 @@
+-evidence: P4-INTERNAL-EVENTS-0367-0368-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: consumer
+          in: query
+          required: false
+          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 3, default: "50", pattern: '^[1-9][0-9]*$' }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 6, default: "0", pattern: '^(0|[1-9][0-9]*)$' }
+      responses:
+        "200": { description: Complete local event and delivery projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventListResponse" } } } }
+        "400": { description: Query grammar rejected, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "401": { description: Human session required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "403": { description: Admin global read grant required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
+        "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+  /api/admin/internal-events/diagnostics:
+    get:
+      tags: [p4-internal-events]
+      operationId: getLegacyInternalEventDiagnostics
+      summary: Read local internal-event and delivery diagnostic counts
+      x-legacy-mapping-ids: [LEGACY-API-0368]
+      x-p4-decision-evidence: P4-INTERNAL-EVENTS-0367-0368-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: consumer
+          in: query
+          required: false
+          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
+      responses:
+        "200": { description: Complete local diagnostic projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventDiagnosticsResponse" } } } }
+        "400": { description: Query grammar rejected, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "401": { description: Human session required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "403": { description: Admin global read grant required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
+        "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+  /api/admin/internal-events/{event_id}:
+    get:
+      tags: [p4-internal-events]
+      operationId: getLegacyInternalEvent
+      summary: Read one bounded local internal-event and delivery projection
+      x-legacy-mapping-ids: [LEGACY-API-0371]
+      x-p4-decision-evidence: P4-INTERNAL-EVENT-DETAIL-0371-2026-08-19
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 19, pattern: '^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$' }
+      responses:
+        "200": { description: One complete local event and delivery projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventDetailResponse" } } } }
+        "400": { description: Canonical event ID or query grammar rejected, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "401": { description: Human session required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "403": { description: Admin global read grant required, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "404": { description: Local event was not found, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
+        "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+        "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+components:
+  securitySchemes:
+    AdminSession:
+      type: apiKey
+      in: cookie
+      name: aicrm_session
+    PaymentIdentitySession:
+      type: apiKey
+      in: cookie
+      name: aicrm_payment_identity
+      description: Opaque trusted payment-identity session; the server resolves its digest to a customer and never accepts caller-supplied customer identity.
+    SidebarGrant:
+      type: apiKey
+      in: cookie
+      name: aicrm_sidebar_grant
+      description: Opaque owner-scoped sidebar grant; it is not interchangeable with a payment-identity session.
+  parameters:
+    AutomationAgentID:
+      name: agent_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    ProductID:
+      name: product_id
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    EntitlementID:
+      name: entitlement_id
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    EntitlementLimit:
+      name: limit
+      in: query
+      required: false
+      schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+    CSRFToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: CSRF token bound to the server-side browser session.
+      schema:
+        type: string
+        minLength: 43
+        maxLength: 43
+        pattern: '^[A-Za-z0-9_-]{43}$'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable caller key; reusing it with a different normalized command is a conflict.
+      schema: { type: string, minLength: 16, maxLength: 128 }
+    QuestionnaireID:
+      name: questionnaire_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    PublicSurveySlug:
+      name: slug
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+    MergeReviewID:
+      name: review_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    SegmentID:
+      name: segment_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    CustomerID:
+      name: customer_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    StageID:
+      name: stage_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    TagID:
+      name: tag_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    TagGroupID:
+      name: group_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque keyset cursor; clients must not parse or synthesize it.
+      schema: { type: string, minLength: 1, maxLength: 512 }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    CustomerKeyword:
+      name: keyword
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 200 }
+    OwnerStaffIDFilter:
+      name: owner_staff_id
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 1 }
+    StageIDFilter:
+      name: stage_id
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 1 }
+    ChannelIDFilter:
+      name: channel_id
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 1 }
+    TagIDFilter:
+      name: tag_id
+      in: query
+      required: false
+      schema: { type: integer, format: int64, minimum: 1 }
+    IsDeletedFilter:
+      name: is_deleted
+      in: query
+      required: false
+      schema: { type: boolean, default: false }
+    AddedAfterFilter:
+      name: added_after
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+    AddedBeforeFilter:
+      name: added_before
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+    LastInteractAfterFilter:
+      name: last_interact_after
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+    LastInteractBeforeFilter:
+      name: last_interact_before
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+    PushCenterSectionFilter: { name: section, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterEffectTypeFilter: { name: effect_type, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterStatusFilter: { name: status, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterBusinessTypeFilter: { name: business_type, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterBusinessIDFilter: { name: business_id, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterTargetTypeFilter: { name: target_type, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterTargetIDFilter: { name: target_id, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterExternalUserIDFilter: { name: external_userid, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterOwnerUserIDFilter: { name: owner_userid, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterTraceIDFilter: { name: trace_id, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterIdempotencyKeyFilter: { name: idempotency_key, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterSourceModuleFilter: { name: source_module, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterSourceRouteFilter: { name: source_route, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterCreatedFromFilter: { name: created_from, in: query, required: false, schema: { type: string, default: "" } }
+    PushCenterCreatedToFilter: { name: created_to, in: query, required: false, schema: { type: string, default: "" } }
+  responses:
+    BadRequest:
+      description: Request validation failed.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Unauthorized:
+      description: Authentication required.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Forbidden:
+      description: Principal lacks the capability.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    NotFound:
+      description: Resource not found.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    Conflict:
+      description: Current state conflicts with the command.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    UnprocessableEntity:
+      description: The command violates a field-level validation rule.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    ServiceUnavailable:
+      description: A required dependency is unavailable.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    PublicSurveyInvalidInput:
+      description: Public survey input is malformed, unsupported, or unsafe.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyNotFound:
+      description: The public survey definition or result does not exist.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyConflict:
+      description: The anonymous submission or management idempotency command conflicts with stored local state.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyRateLimited:
+      description: The local anonymous browser/source rate budget is exhausted.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyUnavailable:
+      description: The local Survey dependency is unavailable.
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyGetOnly:
+      description: This public survey route accepts only GET.
+      headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+    PublicSurveyPostOnly:
+      description: This public survey route accepts only POST.
+      headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
+  schemas:
+    PublicSurveyError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, enum: [invalid_public_input, not_found, idempotency_conflict, rate_limited, unavailable, method_not_allowed] }
+    PublicSurveyDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, slug, title, description, answer_display_mode, version, questions]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        title: { type: string, minLength: 1, maxLength: 300 }
+        description: { type: string, maxLength: 10000 }
+        answer_display_mode: { type: string, enum: [all_in_one, one_by_one] }
+        version: { type: integer, format: int64, minimum: 1 }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyQuestion" } }
+    PublicSurveyQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, type, title, required, sort_order, minimum_selections, maximum_selections, options]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        type: { type: string, enum: [single_choice, multi_choice] }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        required: { type: boolean }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+        minimum_selections: { type: integer, minimum: 0, maximum: 100 }
+        maximum_selections: { type: integer, minimum: 1, maximum: 100 }
+        options: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyOption" } }
+    PublicSurveyOption:
+      type: object
+      additionalProperties: false
+      required: [id, option_text, sort_order]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        option_text: { type: string, minLength: 1, maxLength: 500 }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+    PublicSurveySubmissionRequest:
+      type: object
+      additionalProperties: false
+      required: [version, submission_key, answers]
+      properties:
+        version: { type: integer, format: int64, minimum: 1 }
+        submission_key: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+        answers: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveySubmissionAnswer" } }
+    PublicSurveySubmissionAnswer:
+      type: object
+      additionalProperties: false
+      required: [question_id, option_ids]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        option_ids: { type: array, maxItems: 100, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+    PublicSurveySubmissionReceipt:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, questionnaire_slug, definition_version, submission_id]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        submission_id: { type: integer, format: int64, minimum: 1 }
+    PublicSurveySubmissionResponse:
+      type: object
+      additionalProperties: false
+      required: [receipt, result_token]
+      properties:
+        receipt: { $ref: "#/components/schemas/PublicSurveySubmissionReceipt" }
+        result_token:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          description: POST-body-only opaque result credential; it is never accepted in a query parameter or returned by lookup responses.
+    PublicSurveyResultQueryRequest:
+      type: object
+      additionalProperties: false
+      required: [result_token]
+      properties:
+        result_token: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+    PublicSurveyResult:
+      type: object
+      additionalProperties: false
+      required: [submission_id, definition_version, submitted_at, local_only, external_executed]
+      properties:
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        local_only: { type: boolean, enum: [true] }
+        external_executed: { type: boolean, enum: [false] }
+    PublicSurveyPublishRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_questionnaire_version]
+      properties:
+        expected_questionnaire_version: { type: integer, format: int64, minimum: 1 }
+    PublicSurveyDisableRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_definition_version]
+      properties:
+        expected_definition_version: { type: integer, format: int64, minimum: 1 }
+    PublicSurveyManagementResponse:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, slug, definition_version, state]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        state: { type: string, enum: [public, disabled] }
+    PublicSurveyAnalytics:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, definition_version, slug, state, submission_count, questions]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        definition_version: { type: integer, format: int64, minimum: 1 }
+        slug: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9][a-z0-9-]{0,119}$' }
+        state: { type: string, enum: [public, disabled] }
+        submission_count: { type: integer, format: int64, minimum: 0 }
+        questions: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyAnalyticsQuestion" } }
+    PublicSurveyAnalyticsQuestion:
+      type: object
+      additionalProperties: false
+      required: [question_id, type, sort_order, answered_count, options]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        type: { type: string, enum: [single_choice, multi_choice] }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+        answered_count: { type: integer, format: int64, minimum: 0 }
+        options: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PublicSurveyAnalyticsOption" } }
+    PublicSurveyAnalyticsOption:
+      type: object
+      additionalProperties: false
+      required: [option_id, sort_order, selection_count]
+      properties:
+        option_id: { type: integer, format: int64, minimum: 1 }
+        sort_order: { type: integer, minimum: 0, maximum: 99 }
+        selection_count: { type: integer, format: int64, minimum: 0 }
+    LegacyInternalEventDelivery:
+      type: object
+      additionalProperties: false
+      required: [consumer, status, attempt_count, completed_at]
+      properties:
+        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        status: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
+        attempt_count: { type: integer, format: int32, minimum: 0 }
+        completed_at: { type: string, format: date-time, nullable: true }
+    LegacyInternalEventItem:
+      type: object
+      additionalProperties: false
+      required: [event_id, event_type, occurred_at, dispatched, deliveries]
+      properties:
+        event_id: { type: integer, format: int64, minimum: 1 }
+        event_type: { type: string, minLength: 1, maxLength: 200 }
+        occurred_at: { type: string, format: date-time }
+        dispatched: { type: boolean }
+        deliveries: { type: array, items: { $ref: "#/components/schemas/LegacyInternalEventDelivery" } }
+    LegacyOutboundFailure:
+      type: object
+      additionalProperties: false
+      required: [kind, code]
+      properties:
+        kind: { type: string, minLength: 1, maxLength: 64 }
+        code: { type: string, maxLength: 256 }
+    LegacyOutboundProviderReceipt:
+      type: object
+      additionalProperties: false
+      required: [message_id, confirmed_at]
+      properties:
+        message_id: { type: string, minLength: 1, maxLength: 512 }
+        confirmed_at: { type: string, format: date-time }
+    LegacyOutboundQueueJob:
+      type: object
+      additionalProperties: false
+      required: [river_job_id, generation, kind]
+      properties:
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        generation: { type: integer, format: int32, minimum: 1 }
+        kind: { type: string, enum: [outbound_enqueue_one, outbound_enqueue_batch_task] }
+    LegacyOutboundJob:
+      type: object
+      additionalProperties: false
+      required: [job_id, task_id, customer_id, status, attempt_count, delivery_proven, queue_job, created_at, status_updated_at]
+      properties:
+        job_id: { type: integer, format: int64, minimum: 1 }
+        task_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        owner_staff_id: { type: integer, format: int64, minimum: 1 }
+        business_id: { type: integer, format: int64, minimum: 1 }
+        batch_chunk_index: { type: integer, format: int32, minimum: 0 }
+        status: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled] }
+        attempt_count: { type: integer, format: int32, minimum: 0 }
+        failure: { $ref: "#/components/schemas/LegacyOutboundFailure" }
+        provider_receipt: { $ref: "#/components/schemas/LegacyOutboundProviderReceipt" }
+        delivery_proven: { type: boolean }
+        queue_job: { $ref: "#/components/schemas/LegacyOutboundQueueJob" }
+        created_at: { type: string, format: date-time }
+        status_updated_at: { type: string, format: date-time }
+    LegacyOutboundAttempt:
+      type: object
+      additionalProperties: false
+      required: [attempt_id, history_id, generation, river_job_id, attempt, max_attempts, state]
+      properties:
+        attempt_id: { type: integer, format: int64, minimum: 1 }
+        history_id: { type: integer, format: int64, minimum: 1 }
+        generation: { type: integer, format: int32, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        attempt: { type: integer, format: int32, minimum: 1 }
+        max_attempts: { type: integer, format: int32, minimum: 1 }
+        state: { type: string, enum: [reserved, dispatching, succeeded, retryable_failed, final_failed, outcome_unknown] }
+        failure: { $ref: "#/components/schemas/LegacyOutboundFailure" }
+        provider_receipt: { $ref: "#/components/schemas/LegacyOutboundProviderReceipt" }
+        dispatch_started_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+    LegacyOutboundControlReceipt:
+      type: object
+      additionalProperties: false
+      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at]
+      properties:
+        receipt_id: { type: integer, format: int64, minimum: 1 }
+        task_id: { type: integer, format: int64, minimum: 1 }
+        operation: { type: string, enum: [cancel, manual_retry] }
+        state: { type: string, enum: [completed] }
+        generation: { type: integer, format: int32, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        job_kind: { type: string, enum: [outbound_enqueue_one, outbound_enqueue_batch_task] }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        task_status: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled] }
+        completed_at: { type: string, format: date-time }
+    LegacyOutboundJobListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, jobs, items, count, has_more, limit, offset, source_status, fallback_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        jobs: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundJob" } }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundJob" } }
+        count: { type: integer, minimum: 0 }
+        has_more: { type: boolean }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        source_status: { type: string, enum: [v2_outbound_service] }
+        fallback_used: { type: boolean, enum: [false] }
+    LegacyOutboundJobReconciliationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, job, attempts, control_receipts, source_status, fallback_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        job: { $ref: "#/components/schemas/LegacyOutboundJob" }
+        attempts: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundAttempt" } }
+        control_receipts: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundControlReceipt" } }
+        source_status: { type: string, enum: [v2_outbound_service] }
+        fallback_used: { type: boolean, enum: [false] }
+    LegacyOutboundCancelReceipt:
+      type: object
+      additionalProperties: false
+      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at]
+      properties:
+        receipt_id: { type: integer, format: int64, minimum: 1 }
+        task_id: { type: integer, format: int64, minimum: 1 }
+        operation: { type: string, enum: [cancel] }
+        state: { type: string, enum: [completed] }
+        generation: { type: integer, format: int32, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        job_kind: { type: string, enum: [outbound_enqueue_one, outbound_enqueue_batch_task] }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        task_status: { type: string, enum: [cancelled] }
+        completed_at: { type: string, format: date-time }
+    LegacyOutboundCancelResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, control_receipt, source_status, fallback_used]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        control_receipt: { $ref: "#/components/schemas/LegacyOutboundCancelReceipt" }
+        source_status: { type: string, enum: [v2_outbound_cancel_service] }
+        fallback_used: { type: boolean, enum: [false] }
+    LegacyInternalEventListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset, observed_at, registry_id, source_status, delivery_observation_available, external_delivery, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyInternalEventItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int64, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int64, minimum: 0, maximum: 100000 }
+        observed_at: { type: string, format: date-time }
+        registry_id: { type: string, enum: [v2-internal-events.v1] }
+        source_status: { type: string, enum: [local_read_model] }
+        delivery_observation_available: { type: boolean, enum: [true] }
+        external_delivery: { type: string, enum: [unknown] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyInternalEventDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, item, observed_at, registry_id, source_status, delivery_observation_available, external_delivery, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        item: { $ref: "#/components/schemas/LegacyInternalEventItem" }
+        observed_at: { type: string, format: date-time }
+        registry_id: { type: string, enum: [v2-internal-events.v1] }
+        source_status: { type: string, enum: [local_read_model] }
+        delivery_observation_available: { type: boolean, enum: [true] }
+        external_delivery: { type: string, enum: [unknown] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyInternalEventFilters:
+      type: object
+      additionalProperties: false
+      required: [event_type, consumer, status]
+      properties:
+        event_type: { type: string, maxLength: 200 }
+        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        status: { type: string, enum: ["", pending, processing, completed, final_failed, outcome_unknown] }
+    LegacyInternalEventDeliveryCounts:
+      type: object
+      additionalProperties: false
+      required: [pending, processing, completed, final_failed, outcome_unknown]
+      properties:
+        pending: { type: integer, format: int64, minimum: 0 }
+        processing: { type: integer, format: int64, minimum: 0 }
+        completed: { type: integer, format: int64, minimum: 0 }
+        final_failed: { type: integer, format: int64, minimum: 0 }
+        outcome_unknown: { type: integer, format: int64, minimum: 0 }
+    LegacyInternalEventConsumerBinding:
+      type: object
+      additionalProperties: false
+      required: [consumer, event_types]
+      properties:
+        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        event_types: { type: array, minItems: 1, items: { type: string, enum: [customer.tag_applied, operation_cycle.fact_recorded] } }
+    LegacyInternalEventDiagnosticsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, filters, event_count, undispatched_event_count, delivery_counts, consumer_registry, observed_at, registry_id, source_status, observed_domains, unobserved_domains, external_delivery, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        filters: { $ref: "#/components/schemas/LegacyInternalEventFilters" }
+        event_count: { type: integer, format: int64, minimum: 0 }
+        undispatched_event_count: { type: integer, format: int64, minimum: 0 }
+        delivery_counts: { $ref: "#/components/schemas/LegacyInternalEventDeliveryCounts" }
+        consumer_registry: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/LegacyInternalEventConsumerBinding" } }
+        observed_at: { type: string, format: date-time }
+        registry_id: { type: string, enum: [v2-internal-events.v1] }
+        source_status: { type: string, enum: [local_read_model] }
+        observed_domains: { type: array, minItems: 2, maxItems: 2, items: { type: string, enum: [event_log, event_deliveries] } }
+        unobserved_domains: { type: array, minItems: 3, maxItems: 3, items: { type: string, enum: [river_queue, outbound_provider, external_delivery] } }
+        external_delivery: { type: string, enum: [unknown] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyInternalEventError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, message, request_id, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [400, 401, 403, 404, 405, 500, 503] }
+        error_code: { type: string, enum: [internal_event_query_invalid, internal_event_detail_invalid, authentication_required, forbidden, internal_event_not_found, route_not_found, method_not_allowed, internal_event_observation_unavailable, internal_event_observation_failed] }
+        message: { type: string, minLength: 1 }
+        request_id: { type: string, minLength: 1 }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionRuntimeControl:
+      type: object
+      additionalProperties: false
+      required: [name, state, details, observed_at]
+      properties:
+        name: { type: string, maxLength: 1024 }
+        state: { type: string, maxLength: 1024, description: "Observed local state; never a provider success claim." }
+        details: { type: object, additionalProperties: { type: string, maxLength: 1024 } }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+    LegacyExecutionRuntimeObservation:
+      type: object
+      additionalProperties: false
+      required: [source, queue, status, attempt, status_url, details, observed_at]
+      properties:
+        source: { type: string, maxLength: 1024 }
+        queue: { type: string, maxLength: 1024, description: "Observed queue name, not an execution or receipt result." }
+        status: { type: string, maxLength: 1024, description: "Observed status, not a provider receipt or executed-success assertion." }
+        attempt: { type: integer, minimum: 0, description: "Observed attempt count, not a delivery result." }
+        status_url: { type: string, maxLength: 1024 }
+        details: { type: object, additionalProperties: { type: string, maxLength: 1024 } }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+    LegacyExecutionGraphNode:
+      type: object
+      additionalProperties: false
+      required: [id, kind, status, message, details, observed_at, children]
+      properties:
+        id: { type: string, maxLength: 1024 }
+        kind: { type: string, maxLength: 1024 }
+        status: { type: string, maxLength: 1024, description: "Observed status, not a provider receipt or executed-success assertion." }
+        message: { type: string, maxLength: 1024, description: "Fixed-redacted diagnostic text." }
+        details: { type: object, additionalProperties: { type: string, maxLength: 1024 } }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+        children: { type: array, maxItems: 256, items: { $ref: "#/components/schemas/LegacyExecutionGraphNode" } }
+    LegacyExecutionGraph:
+      type: object
+      additionalProperties: false
+      required: [roots, items, truncated]
+      properties:
+        roots: { type: array, maxItems: 256, items: { $ref: "#/components/schemas/LegacyExecutionGraphNode" } }
+        items: { type: array, maxItems: 1024, items: { $ref: "#/components/schemas/LegacyExecutionRuntimeObservation" } }
+        truncated: { type: boolean, description: "True when the 12-depth, 256-node, 1024-item, or 1024-string bound truncated an observation." }
+    LegacyExecutionRuntimeResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, control, observations, truncated, observed_at, observed_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, description: "False with HTTP 200 when the local control plane is absent." }
+        control: { allOf: [{ $ref: "#/components/schemas/LegacyExecutionRuntimeControl" }], nullable: true }
+        observations: { type: array, maxItems: 1024, items: { $ref: "#/components/schemas/LegacyExecutionRuntimeObservation" } }
+        truncated: { type: boolean }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+        observed_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionTimelineResponse:
+      type: object
+      additionalProperties: false
+      required: [execution_id, graph, observed_at, observed_only, real_external_call_executed]
+      properties:
+        execution_id: { type: string, minLength: 5, maxLength: 100, pattern: '^exe_.+' }
+        graph: { $ref: "#/components/schemas/LegacyExecutionGraph" }
+        observed_at: { type: string, format: date-time, description: "UTC Z timestamp." }
+        observed_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyExecutionRuntimeUnavailable:
+      type: object
+      additionalProperties: false
+      required: [ok, error, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [execution_runtime_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyAutomationAgentMaterialSummary:
+      type: object
+      additionalProperties: false
+      required: [image_count, miniprogram_count, attachment_count, group_invite_count]
+      properties:
+        image_count: { type: integer, minimum: 0 }
+        miniprogram_count: { type: integer, minimum: 0 }
+        attachment_count: { type: integer, minimum: 0 }
+        group_invite_count: { type: integer, minimum: 0 }
+    LegacyAutomationAgentListItem:
+      type: object
+      additionalProperties: false
+      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        automation_type: { type: string, enum: [agent, fixed_script] }
+        agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        bound_package_key: { type: string, enum: [""] }
+        bound_package_id: { type: integer, format: int64, nullable: true, enum: [null] }
+        bound_package_name: { type: string, enum: [""] }
+        fixed_material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
+        status: { type: string, enum: [active, paused] }
+        updated_at: { type: string, format: date-time }
+    LegacyAutomationAgentListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/LegacyAutomationAgentListItem" } }
+        total: { type: integer, minimum: 0, maximum: 200 }
+    LegacyAutomationAgentListError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [invalid_agent_payload, automation_agent_unavailable] }
+    LegacyAutomationAgentDynamicCard:
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version: {}
+        appid: {}
+        title: {}
+        pagepath: {}
+        card_id: {}
+        cid: {}
+        cover_image_id: {}
+    LegacyAutomationAgentFixedContent:
+      type: object
+      additionalProperties: false
+      required: [content_text, image_library_ids, miniprogram_library_ids, attachment_library_ids, group_invite_library_ids]
+      properties:
+        content_text: { type: string, maxLength: 4000 }
+        image_library_ids: { type: array, maxItems: 3, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        miniprogram_library_ids: { type: array, maxItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        attachment_library_ids: { type: array, maxItems: 9, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        group_invite_library_ids: { type: array, maxItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        dynamic_miniprogram_card: { $ref: "#/components/schemas/LegacyAutomationAgentDynamicCard" }
+    LegacyAutomationAgentFixedContentPreview:
+      type: object
+      additionalProperties: false
+      required: [content_text, material_summary, materials]
+      properties:
+        content_text: { type: string, maxLength: 4000 }
+        material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
+        materials: { type: array, maxItems: 0, items: {} }
+    LegacyAutomationAgentDetail:
+      type: object
+      additionalProperties: false
+      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, updated_at, automation_type_label, draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt, draft_version, published_version, has_unpublished_changes, fixed_content_package, fixed_content_package_preview]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        automation_type: { type: string, enum: [agent, fixed_script] }
+        agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        bound_package_key: { type: string, enum: [""] }
+        bound_package_id: { type: integer, format: int64, nullable: true, enum: [null] }
+        bound_package_name: { type: string, enum: [""] }
+        fixed_material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
+        status: { type: string, enum: [active, paused] }
+        updated_at: { type: string, format: date-time }
+        automation_type_label: { type: string, enum: [Agent 机器人, 固定话术] }
+        draft_role_prompt: { type: string, maxLength: 20000 }
+        draft_task_prompt: { type: string, maxLength: 20000 }
+        published_role_prompt: { type: string, maxLength: 20000 }
+        published_task_prompt: { type: string, maxLength: 20000 }
+        draft_version: { type: integer, format: int64, minimum: 1 }
+        published_version: { type: integer, format: int64, minimum: 1 }
+        has_unpublished_changes: { type: boolean }
+        fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+        fixed_content_package_preview: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContentPreview" }
+    LegacyAutomationAgentDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, agent]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        agent: { $ref: "#/components/schemas/LegacyAutomationAgentDetail" }
+    LegacyAutomationAgentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [agent_name, agent_code]
+      properties:
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
+        automation_type: { type: string, enum: [agent, fixed_script], default: agent }
+        status: { type: string, enum: [active, paused], default: active }
+        role_prompt: { type: string, maxLength: 20000, default: "" }
+        task_prompt: { type: string, maxLength: 20000, default: "" }
+        fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+    LegacyAutomationAgentUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        agent_name: { type: string, minLength: 1, maxLength: 120 }
+        automation_type: { type: string, enum: [agent, fixed_script] }
+        status: { type: string, enum: [active, paused] }
+        role_prompt: { type: string, maxLength: 20000 }
+        task_prompt: { type: string, maxLength: 20000 }
+        fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+    LegacyAutomationAgentFixedContentRequest:
+      type: object
+      additionalProperties: false
+      required: [content_package]
+      properties:
+        content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+    LegacyAutomationAgentArchiveResult:
+      type: object
+      additionalProperties: false
+      required: [id, status]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [archived] }
+    LegacyAutomationAgentArchiveResponse:
+    

@@ -1,0 +1,976 @@
+ x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSegmentRequest" }
+      responses:
+        "201":
+          description: Created segment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Segment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments/{segment_id}:
+    parameters:
+      - $ref: "#/components/parameters/SegmentID"
+    get:
+      tags: [p3-segment]
+      operationId: getSegment
+      summary: Get one declarative audience definition
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200":
+          description: Segment definition and refresh projection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Segment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p3-segment]
+      operationId: updateSegment
+      summary: Update one declarative audience definition
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateSegmentRequest" }
+      responses:
+        "200":
+          description: Updated segment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Segment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-classification]
+      operationId: archiveSegment
+      summary: Archive one local audience definition without executing it
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Archived local audience definition, content: { application/json: { schema: { $ref: "#/components/schemas/Segment" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments/{segment_id}/members:
+    parameters:
+      - $ref: "#/components/parameters/SegmentID"
+    get:
+      tags: [p3-segment]
+      operationId: listSegmentMembers
+      summary: Preview the current materialized members using a keyset cursor
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Current materialized member page.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SegmentMemberPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/segments/{segment_id}/refresh:
+    parameters:
+      - $ref: "#/components/parameters/SegmentID"
+    post:
+      tags: [p3-segment]
+      operationId: requestSegmentRefresh
+      summary: Durably request one materialized audience refresh
+      x-p3-decision-evidence: P3-S00-2026-08-12
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Refresh command accepted; it does not prove members changed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SegmentRefreshAccepted" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/stages:
+    get:
+      tags: [p2-stages]
+      operationId: listStages
+      summary: List global customer stages in deterministic order
+      x-p2-decision-evidence: P2-16-2026-08-11
+      x-aicrm-capability: stages.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      responses:
+        "200":
+          description: Ordered stage definitions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageListResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p2-stages]
+      operationId: createStage
+      summary: Create one global customer stage
+      x-p2-decision-evidence: P2-16-2026-08-11
+      x-aicrm-capability: stages.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStageRequest"
+      responses:
+        "201":
+          description: Created stage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stage"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/stages/reorder:
+    put:
+      tags: [p4-classification]
+      operationId: reorderStages
+      summary: Replace the exact active customer stage order
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: stages.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ReorderStagesRequest" } } } }
+      responses:
+        "200": { description: Reordered active stages, content: { application/json: { schema: { $ref: "#/components/schemas/StageListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/stages/{stage_id}:
+    parameters:
+      - $ref: "#/components/parameters/StageID"
+    patch:
+      tags: [p2-stages]
+      operationId: renameStage
+      summary: Rename one global customer stage
+      x-p2-decision-evidence: P2-16-2026-08-11
+      x-aicrm-capability: stages.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameStageRequest"
+      responses:
+        "200":
+          description: Renamed stage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stage"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-classification]
+      operationId: archiveStage
+      summary: Archive one unreferenced local customer stage
+      x-p4-decision-evidence: P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20
+      x-aicrm-capability: stages.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses:
+        "200": { description: Archived local customer stage, content: { application/json: { schema: { $ref: "#/components/schemas/Stage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/resolve:
+    post:
+      tags: [p1-core-candidate]
+      operationId: resolveIdentity
+      summary: Resolve one scoped identity without implicit creation
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0355, LEGACY-API-0680]
+      x-aicrm-capability: identity.resolve
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveIdentityRequest"
+      responses:
+        "200":
+          description: Found, not-found, or conflict result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveIdentityResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/bind:
+    post:
+      tags: [p1-core-candidate]
+      operationId: bindIdentity
+      summary: Bind a scoped identity to a channel-neutral customer
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0709]
+      x-aicrm-capability: identity.bind
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BindIdentityRequest"
+      responses:
+        "200":
+          description: Bind or merge-policy result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BindIdentityResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/ingest:
+    post:
+      tags: [p1-core-candidate]
+      operationId: ingestIdentityEvent
+      summary: Attribute or persist an external event without guessing identity
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0780]
+      x-aicrm-capability: identity.ingest
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestIdentityEventRequest"
+      responses:
+        "200":
+          description: Attributed, pending, or conflict result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestIdentityEventResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/merge-reviews:
+    get:
+      tags: [p3-identity]
+      operationId: listIdentityMergeReviews
+      summary: List pending identity merge reviews without exposing raw identities
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-capability: identity.review.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Pending merge review page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityMergeReviewPage"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/merge-reviews/{review_id}/approve:
+    post:
+      tags: [p3-identity]
+      operationId: approveIdentityMergeReview
+      summary: Approve one versioned merge review with an explicit primary customer
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-capability: identity.review.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/MergeReviewID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveIdentityMergeReviewRequest"
+      responses:
+        "200":
+          description: Approved review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityMergeReview"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/identity/merge-reviews/{review_id}/reject:
+    post:
+      tags: [p3-identity]
+      operationId: rejectIdentityMergeReview
+      summary: Reject one versioned merge review without changing bindings
+      x-p3-decision-evidence: P3-I00-2026-08-12
+      x-aicrm-capability: identity.review.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/MergeReviewID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectIdentityMergeReviewRequest"
+      responses:
+        "200":
+          description: Rejected review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityMergeReview"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/auth/session:
+    get:
+      tags: [p1-core-candidate]
+      operationId: getAuthSession
+      summary: Return the authenticated admin principal
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0758]
+      x-aicrm-capability: auth.session.read
+      x-aicrm-rbac-scopes: { admin: self, ops: self, sales: self }
+      responses:
+        "200":
+          description: Authenticated session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/logout:
+    post:
+      tags: [p1-core-candidate]
+      operationId: logoutAdmin
+      summary: Invalidate the current admin session
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0760]
+      x-aicrm-capability: auth.session.logout
+      x-aicrm-rbac-scopes: { admin: self, ops: self, sales: self }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      responses:
+        "204": { description: Session invalidated. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/config/overview:
+    get:
+      tags: [p1-core-candidate]
+      operationId: getAdminConfigOverview
+      summary: List non-secret configuration readiness
+      x-p1-signoff-status: APPROVED
+      x-p1-decision-evidence: G1-D01-2026-08-10
+      x-legacy-mapping-ids: [LEGACY-API-0269]
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      responses:
+        "200":
+          description: Non-secret configuration readiness only.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminConfigOverviewResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/config/app-settings:
+    get:
+      tags: [p4-config-settings-compat]
+      operationId: getLegacyAppSettingsPage
+      summary: Render the frozen server-side app-settings page
+      x-legacy-mapping-ids: [LEGACY-API-0026]
+      x-p4-decision-evidence: P4-A02-2026-08-15
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200, default: "" } }
+        - { name: scope, in: query, required: false, schema: { type: string, enum: ["", editable, masked], default: "" } }
+      responses:
+        "200": { description: Server-rendered legacy app-settings page, content: { text/html: { schema: { type: string } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/app-settings/save:
+    post:
+      tags: [p4-config-settings-compat]
+      operationId: saveLegacyAppSettingsPage
+      summary: Validate and save non-secret app settings before redirecting to the page
+      x-legacy-mapping-ids: [LEGACY-API-0027]
+      x-p4-decision-evidence: P4-A02-2026-08-15
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { $ref: "#/components/schemas/LegacyAppSettingsSaveForm" }
+      responses:
+        "302": { description: Success redirects to saved=1; every accepted form failure redirects with a finite error code, headers: { Location: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/config/app-settings:
+    get:
+      tags: [p4-config-settings-compat]
+      operationId: getLegacyAppSettingsResource
+      summary: Read the frozen twelve-key compatibility projection
+      x-legacy-mapping-ids: [LEGACY-API-0253]
+      x-p4-decision-evidence: P4-A02-2026-08-15
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200, default: "" } }
+        - { name: scope, in: query, required: false, schema: { type: string, enum: ["", editable, masked], default: "" } }
+      responses:
+        "200": { description: Frozen resource compatibility envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-config-settings-compat]
+      operationId: saveLegacyAppSettingsResource
+      summary: Save non-secret app settings through the frozen JSON compatibility transport
+      x-legacy-mapping-ids: [LEGACY-API-0254]
+      x-p4-decision-evidence: P4-ADMINOPS-JOBS-AB-2026-08-16
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-external-effect: none
+      parameters:
+        - name: X-Admin-Action-Token
+          in: header
+          required: false
+          description: Exact PUT-bound action token; it may instead be supplied in the JSON body.
+          schema: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveRequest" }
+      responses:
+        "200": { description: Local Config service write completed without any provider or worker execution., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveResponse" } } } }
+        "400": { description: "A finite malformed, confirmation, token, setting, or raw-secret error.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Reused request identifier conflicts with a different settings command., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
+        "503": { description: Config projection or command dependency is unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
+  /api/admin/automation-conversion/agent-runs:
+    get:
+      tags: [p4-automation-compat]
+      operationId: listAutomationTriggerRuns
+      summary: List real D01 Automation trigger receipts through the frozen legacy path
+      x-legacy-mapping-ids: [LEGACY-API-0141]
+      x-p4-decision-evidence: P4-W0-D01-2026-08-14
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      parameters:
+        - { name: page, in: query, schema: { type: integer, format: int32, minimum: 1, maximum: 10000, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: request_id, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: run_id, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: agent_code, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: run_status, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: trigger_source, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: unionid, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: userid, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: started_after, in: query, schema: { type: string, format: date-time } }
+        - { name: started_before, in: query, schema: { type: string, format: date-time } }
+        - { name: has_error, in: query, schema: { type: boolean } }
+        - { name: visibility, in: query, schema: { type: string, enum: [masked], default: masked } }
+      responses:
+        "200":
+          description: Real, masked Automation trigger receipts; no historical execution trace projection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AutomationTriggerRunListResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/cloud-orchestrator:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorWorkspace
+      summary: Carry an authorized administrator to the local AI assistant plans workspace
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin redirect to the plans carrier; no workflow is read or executed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/admin/cloud-orchestrator/plans"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/plans:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorPlansWorkspace
+      summary: Carry an authorized administrator to the local plans review workspace
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; it does not read plan, audience, approval, or execution data.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/plans/{plan_id}:
+    parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/\\\\]+$" }
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorPlanDetailWorkspace
+      summary: Carry an authorized administrator to one safe local plan-detail shell
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Same-origin SPA carrier containing only the validated plan identifier.
+          headers:
+            Location: { required: true, schema: { type: string, minLength: 1 } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/campaigns:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorCampaignsWorkspace
+      summary: Carry an authorized administrator to the local campaign review shell
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; it does not execute or deliver a campaign.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/cloud-orchestrator/observability:
+    get:
+      tags: [p4-cloud-orchestrator]
+      operationId: getCloudOrchestratorObservabilityWorkspace
+      summary: Carry an authorized administrator to the local observability shell
+      x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; it does not infer execution or delivery success.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fobservability"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/automation-conversion/group-ops/ui:
+    get:
+      tags: [p4-group-ops-workspaces]
+      operationId: getGroupOpsPlansWorkspace
+      summary: Carry an authorized administrator to the safe local group-operations plan workspace
+      x-p4-decision-evidence: P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; no plan, member, runtime, provider, or outbound fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fautomation-conversion%2Fgroup-ops%2Fui"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/automation-conversion/group-ops/plans/{plan_id}:
+    parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+    get:
+      tags: [p4-group-ops-workspaces]
+      operationId: getGroupOpsPlanDetailWorkspace
+      summary: Carry an authorized administrator to one safe local group-operations plan-detail workspace
+      x-p4-decision-evidence: P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Same-origin SPA carrier containing only the canonical positive plan identifier; no plan or execution fact is inferred.
+          headers:
+            Location: { required: true, schema: { type: string, minLength: 1 } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/automation-conversion:
+    get:
+      tags: [p4-audience-package-workspaces]
+      operationId: getAudiencePackagesWorkspace
+      summary: Carry an authorized administrator to the safe local audience-package workspace
+      x-p4-decision-evidence: P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; no package, member, sender, provider, or outbound fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fautomation-conversion"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/automation-conversion/packages/{package_id}:
+    parameters:
+      - name: package_id
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+    get:
+      tags: [p4-audience-package-workspaces]
+      operationId: getAudiencePackageDetailWorkspace
+      summary: Carry an authorized administrator to one safe local audience-package detail workspace
+      x-p4-decision-evidence: P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Same-origin SPA carrier containing only the canonical positive package identifier; no package, member, or send fact is inferred.
+          headers:
+            Location: { required: true, schema: { type: string, minLength: 1 } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/user-ops:
+    get:
+      tags: [p4-user-ops-review-workspaces]
+      operationId: getUserOpsReviewWorkspace
+      summary: Carry an authorized administrator to the safe local user-operations review workspace
+      x-p4-decision-evidence: P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; no customer, DND, export, task, provider, outbound, or delivery fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fuser-ops"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/user-ops/ui:
+    get:
+      tags: [p4-user-ops-review-workspaces]
+      operationId: getUserOpsReviewWorkspaceAlias
+      summary: Carry an authorized administrator through the approved alias to the safe local user-operations review workspace
+      x-p4-decision-evidence: P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA alias; no customer, DND, export, task, provider, outbound, or delivery fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fuser-ops%2Fui"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/alipay/transactions:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getAlipayTransactionsWorkspace
+      summary: Carry an authorized administrator to the local Alipay transaction workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no payment fact is read or executed., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Falipay%2Ftransactions"] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Only GET is accepted before authentication., headers: { Allow: { required: true, schema: { type: string, enum: [GET] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } } }
+  /admin/service-period-products:
+    get:
+      tags: [p4-commerce-workspaces]
+      operationId: getServiceProductsWorkspace
+      summary: Carry an authorized administrator to the local service-product list workspace
+      x-p4-decision-evidence: P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302": { description: Same-origin SPA carrier only; no entitlement or product fact is inferred., headers: { Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fservice-period-products"] } }, Cache-Con

@@ -1,0 +1,811 @@
+ponents/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/sync:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagSync
+      summary: Accept a manual tag catalog sync for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0560]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: false, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagSyncRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no WeCom sync was executed, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/admin/wecom/tags/sync-due:
+    post:
+      tags: [p4-tag-compat]
+      operationId: queueLegacyWecomTagSyncDue
+      summary: Accept a due tag catalog sync for local queueing only
+      x-legacy-mapping-ids: [LEGACY-API-0561]
+      x-p4-decision-evidence: P4-B02AB-2026-08-15
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: false, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagSyncRequest" } } } }
+      responses: { "202": { description: Queued local acceptance; no WeCom sync was executed, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagQueuedAcceptance" } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "409": { $ref: "#/components/responses/Conflict" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /admin/channels:
+    get:
+      tags: [p4-channel-compat]
+      operationId: getLegacyChannelListPage
+      summary: Carry the local read-only channel list into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0013]
+      x-p4-decision-evidence: P4-S06-001-LOCAL-READ-2026-08-19
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable channel carrier path.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fchannels$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/channels:
+    get:
+      tags: [p4-channel-compat]
+      operationId: listLegacyChannels
+      summary: List persisted local channel resources without querying WeCom
+      x-legacy-mapping-ids: [LEGACY-API-0190]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+        - { name: status, in: query, schema: { type: string, enum: [active, inactive, archived] } }
+        - { name: include_archived, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Frozen legacy channel-list envelope backed only by local PostgreSQL.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-channel-compat]
+      operationId: createLegacyChannel
+      summary: Create one complete local channel configuration without provider execution
+      x-legacy-mapping-ids: [LEGACY-API-0191]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelWriteRequest" } } }
+      responses:
+        "201":
+          description: Local channel persisted with receipt and Event in one UoW.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelMutationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}:
+    parameters:
+      - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-channel-compat]
+      operationId: getLegacyChannel
+      summary: Get one persisted local channel resource
+      x-legacy-mapping-ids: [LEGACY-API-0195]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200":
+          description: Frozen legacy channel-detail envelope.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelDetailResponse" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p4-channel-compat]
+      operationId: updateLegacyChannel
+      summary: Update local channel fields without executing future channel capabilities
+      x-legacy-mapping-ids: [LEGACY-API-0196]
+      x-p4-decision-evidence: P4-C01-2026-08-15
+      x-aicrm-capability: channels.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelWriteRequest" } } }
+      responses:
+        "200":
+          description: Local channel updated with receipt and Event in one UoW.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelMutationResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/orders:
+    get:
+      tags: [p4-order-compat]
+      operationId: getLegacyOrderListPage
+      summary: Redirect the frozen legacy orders entrypoint to the exact local SPA carrier
+      x-legacy-mapping-ids: [LEGACY-API-0058]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier redirect; it does not read orders or invoke payment providers.
+          headers:
+            Location:
+              required: true
+              schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Forders"] }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow:
+              required: true
+              schema: { type: string, enum: [GET] }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /api/admin/orders:
+    get:
+      tags: [p4-order-compat]
+      operationId: listLegacyOrders
+      summary: List persisted unified order projections without provider execution
+      x-legacy-mapping-ids: [LEGACY-API-0405]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: provider, in: query, schema: { type: string, enum: [all, wechat, alipay, wechat_shop], default: all } }
+        - { name: payment_status, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: order_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: out_trade_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: mobile, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: product_code, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: external_userid, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: identity, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: transaction_id, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: platform_transaction_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: created_from, in: query, schema: { type: string, format: date-time } }
+        - { name: created_to, in: query, schema: { type: string, format: date-time } }
+        - { name: date_from, in: query, schema: { type: string, format: date-time } }
+        - { name: date_to, in: query, schema: { type: string, format: date-time } }
+        - { name: status, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+        - { name: cursor, in: query, schema: { type: string }, description: Legacy opaque cursor; nonempty values fail closed until an evidence-backed codec is separately frozen. }
+      responses:
+        "200": { description: Frozen legacy order-list envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/orders/{order_no}:
+    get:
+      tags: [p4-order-compat]
+      operationId: getLegacyOrder
+      summary: Read one persisted unified order projection
+      x-legacy-mapping-ids: [LEGACY-API-0406]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: order_no, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: provider, in: query, schema: { type: string, enum: [auto, wechat, alipay, wechat_shop], default: auto } }
+      responses:
+        "200": { description: Persisted order detail, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/orders/{order_no}/items:
+    get:
+      tags: [p4-order-compat]
+      operationId: getLegacyOrderItems
+      summary: Read the persisted purchased-product snapshot for one order
+      x-legacy-mapping-ids: [LEGACY-API-0407]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: order_no, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: provider, in: query, schema: { type: string, enum: [auto, wechat, alipay, wechat_shop], default: auto } }
+      responses:
+        "200": { description: Persisted order item snapshot, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderItemsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/alipay/transactions:
+    get:
+      tags: [p4-order-compat]
+      operationId: listLegacyAlipayTransactions
+      summary: List persisted Alipay transaction projections
+      x-legacy-mapping-ids: [LEGACY-API-0119]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: payment_status, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: product_code, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: mobile, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: external_userid, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: date_from, in: query, schema: { type: string, format: date-time } }
+        - { name: date_to, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Persisted Alipay transaction page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/alipay/transactions/{order_no}:
+    get:
+      tags: [p4-order-compat]
+      operationId: getLegacyAlipayTransaction
+      summary: Read one persisted Alipay transaction projection
+      x-legacy-mapping-ids: [LEGACY-API-0120]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: order_no, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }]
+      responses:
+        "200": { description: Persisted Alipay transaction, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/refunds:
+    get:
+      tags: [p4-order-compat]
+      operationId: listLegacyRefunds
+      summary: List local refund intents and their external-effect state
+      x-legacy-mapping-ids: [LEGACY-API-0463]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: provider, in: query, schema: { type: string, enum: [all, wechat, alipay, wechat_shop], default: all } }
+        - { name: order_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: out_trade_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: transaction_id, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: refund_id, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: out_refund_no, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: status, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: created_from, in: query, schema: { type: string, format: date-time } }
+        - { name: created_to, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Local refund page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefundPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-order-compat]
+      operationId: createLegacyRefundIntent
+      summary: Record one idempotent refund intent without calling a provider
+      x-legacy-mapping-ids: [LEGACY-API-0464]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefundRequest" } } } }
+      responses:
+        "200": { description: Local refund intent and pending external gate, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefund" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/exports:
+    post:
+      tags: [p4-order-compat]
+      operationId: createLegacyOrderExport
+      summary: Create one local idempotent CSV export
+      x-legacy-mapping-ids: [LEGACY-API-0316]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExportRequest" } } } }
+      responses:
+        "200": { description: Completed local CSV export, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExport" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/exports/{job_id}:
+    get:
+      tags: [p4-order-compat]
+      operationId: getLegacyOrderExport
+      summary: Read one local CSV export result
+      x-legacy-mapping-ids: [LEGACY-API-0317]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: job_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 68 } }]
+      responses:
+        "200": { description: Completed local CSV export, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExport" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/order-exports:
+    post:
+      tags: [p4-order-compat]
+      operationId: createLegacyWechatOrderExport
+      summary: Create the local WeChat order CSV export
+      x-legacy-mapping-ids: [LEGACY-API-0518]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmptyObject" } } } }
+      responses:
+        "200": { description: Completed local WeChat order CSV export, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExport" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/order-exports/{job_id}:
+    get:
+      tags: [p4-order-compat]
+      operationId: getDeprecatedLegacyWechatOrderExport
+      summary: Preserve the deprecated WeChat export result route as a fail-closed response
+      x-legacy-mapping-ids: [LEGACY-API-0519]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: job_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 68 } }]
+      responses:
+        "410": { description: Deprecated route is intentionally blocked, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDeprecatedResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/wechat-pay/order-exports/{job_id}/download:
+    get:
+      tags: [p4-order-compat]
+      operationId: downloadDeprecatedLegacyWechatOrderExport
+      summary: Preserve the deprecated WeChat export download route as a fail-closed response
+      x-legacy-mapping-ids: [LEGACY-API-0520]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: job_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 68 } }]
+      responses:
+        "410": { description: Deprecated route is intentionally blocked, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyDeprecatedResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/wechat-pay/orders:
+    get:
+      tags: [p4-order-compat]
+      operationId: listLegacyWechatTransactions
+      summary: List persisted WeChat transaction projections
+      x-legacy-mapping-ids: [LEGACY-API-0521]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: mobile, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: identity, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: transaction_id, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: product_code, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: created_from, in: query, schema: { type: string, format: date-time } }
+        - { name: created_to, in: query, schema: { type: string, format: date-time } }
+        - { name: status, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Persisted WeChat transaction page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/orders/{order_id}/external-push-deliveries:
+    get:
+      tags: [p4-order-compat]
+      operationId: listLegacyWechatOrderExternalEffects
+      summary: Read persisted external-effect state without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0522]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }]
+      responses:
+        "200": { description: Local external-effect page, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExternalEffectPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry:
+    post:
+      tags: [p4-order-compat]
+      operationId: reviewLegacyWechatOrderExternalEffect
+      summary: Record manual review for an external effect; never retry outcome_unknown automatically
+      x-legacy-mapping-ids: [LEGACY-API-0523]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: delivery_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmptyObject" } } } }
+      responses:
+        "200": { description: "Manual review recorded; no provider call executed", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExternalEffect" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/orders/{order_id}/refunds:
+    post:
+      tags: [p4-order-compat]
+      operationId: createLegacyWechatRefundIntent
+      summary: Record one local WeChat refund intent without calling WeChat
+      x-legacy-mapping-ids: [LEGACY-API-0524]
+      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyWechatOrderRefundRequest" } } } }
+      responses:
+        "200": { description: Local WeChat refund intent and pending external gate, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefund" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listLegacyCoupons
+      summary: List persisted coupon rules without claims, redemption, or public-grid execution
+      x-legacy-mapping-ids: [LEGACY-API-0285]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+        - { name: q, in: query, schema: { type: string, maxLength: 80, default: "" } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, published, stopped] } }
+      responses:
+        "200": { description: Coupon rule list, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-coupon-compat]
+      operationId: createLegacyCoupon
+      summary: Create a draft coupon rule; this legacy route is not replay-safe
+      x-legacy-mapping-ids: [LEGACY-API-0286]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CouponUpsertRequest" } } } }
+      responses:
+        "200": { description: Draft persisted with Event and technical receipt in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponCreateResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}:
+    parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0289]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Coupon rule detail, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponDetailResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-coupon-compat]
+      operationId: updateLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0290]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CouponUpsertRequest" } } } }
+      responses:
+        "200": { description: Draft rule updated in one UoW, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponUpdateResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-coupon-compat]
+      operationId: deleteLegacyCoupon
+      summary: Delete an unclaimed local draft coupon
+      x-legacy-mapping-ids: [LEGACY-API-0288]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Deleted draft receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponBoardMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/publish:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: publishLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0294]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      responses:
+        "200": { description: "Draft becomes published, or published is a no-op", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/stop:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: stopLegacyCoupon
+      x-legacy-mapping-ids: [LEGACY-API-0296]
+      x-p4-decision-evidence: P4-J01-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      responses:
+        "200": { description: "Published becomes stopped, or stopped is a no-op", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponListPage
+      summary: Render the frozen legacy coupon list page
+      x-legacy-mapping-ids: [LEGACY-API-0043]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Legacy compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons/new:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponNewPage
+      summary: Render the frozen legacy new-coupon form
+      x-legacy-mapping-ids: [LEGACY-API-0044]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      responses:
+        "200": { description: Legacy compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons/{coupon_id}/data:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponDataPage
+      summary: Render the frozen legacy coupon claim-data page
+      x-legacy-mapping-ids: [LEGACY-API-0045]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Legacy compatibility HTML with opaque claim references, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/coupons/{coupon_id}/edit:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponEditPage
+      summary: Render the frozen legacy coupon edit form
+      x-legacy-mapping-ids: [LEGACY-API-0046]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Legacy compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/product-options:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listLegacyCouponProductOptions
+      summary: List allowlisted ordinary-product options for a coupon rule
+      x-legacy-mapping-ids: [LEGACY-API-0287]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 80, default: "" } }
+        - { name: product_type, in: query, schema: { type: string, enum: [all, standard_product, service_period], default: all } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Ordinary product option page; service-period options are deliberately empty, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponProductOptionsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/archive:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: archiveLegacyCoupon
+      summary: Archive a coupon without modifying its claims
+      x-legacy-mapping-ids: [LEGACY-API-0291]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Archived local coupon and receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponBoardMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/claims:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listLegacyCouponClaims
+      summary: List opaque local coupon claim facts for an administrator
+      x-legacy-mapping-ids: [LEGACY-API-0292]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Claim page without customer identifiers, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponClaimListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/copy:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: copyLegacyCoupon
+      summary: Copy a coupon rule into a fresh local draft
+      x-legacy-mapping-ids: [LEGACY-API-0293]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Copied local draft and receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponBoardMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupons/{coupon_id}/share:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getLegacyCouponShare
+      summary: Return the deterministic local public coupon URL for a published rule
+      x-legacy-mapping-ids: [LEGACY-API-0295]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters: [{ name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local public share location, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCouponShareResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/coupons/available:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listH5AvailableCoupons
+      summary: List coupons the payment-identity session may claim for one target
+      security: [{ PaymentIdentitySession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0642]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: payment_identity_session
+      x-aicrm-access-scope: self
+      parameters: [{ name: target_ref, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }]
+      responses:
+        "200": { description: Customer-scoped available coupon list, content: { application/json: { schema: { $ref: "#/components/schemas/H5CouponAvailableResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/coupons/{public_slug}:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getH5CouponState
+      summary: Read one published local coupon through its public slug
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0643]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: public
+      parameters: [{ name: public_slug, in: path, required: true, schema: { type: string, pattern: '^c-[1-9][0-9]*$' } }]
+      responses:
+        "200": { description: Published local coupon state, content: { application/json: { schema: { $ref: "#/components/schemas/H5CouponDetailResponse" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/coupons/{public_slug}/claim:
+    post:
+      tags: [p4-coupon-compat]
+      operationId: claimH5Coupon
+      summary: Claim one published coupon using a resolved payment-identity session
+      security: [{ PaymentIdentitySession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0644]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: pay

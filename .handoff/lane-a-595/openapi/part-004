@@ -1,0 +1,889 @@
+ment_identity_session
+      x-aicrm-access-scope: self
+      x-aicrm-csrf: same_origin_empty_body
+      parameters:
+        - { name: public_slug, in: path, required: true, schema: { type: string, pattern: '^c-[1-9][0-9]*$' } }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      responses:
+        "200": { description: Durable local claim and transactional event, content: { application/json: { schema: { $ref: "#/components/schemas/H5CouponClaimResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/sidebar/v2/coupons:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: listSidebarCoupons
+      summary: Read owner-scoped coupon claim projection through a sidebar grant
+      security: [{ SidebarGrant: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0727]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: sidebar_grant
+      x-aicrm-access-scope: owner
+      responses:
+        "200": { description: Owner-scoped sidebar coupons without customer identifiers, content: { application/json: { schema: { $ref: "#/components/schemas/SidebarCouponListResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /c/{public_slug}:
+    get:
+      tags: [p4-coupon-compat]
+      operationId: getPublicCouponPage
+      summary: Render the public compatibility coupon page
+      security: []
+      x-legacy-mapping-ids: [LEGACY-API-0756]
+      x-p4-decision-evidence: P4-COUPON-AB-2026-08-15
+      x-aicrm-auth-scheme: public
+      parameters: [{ name: public_slug, in: path, required: true, schema: { type: string, pattern: '^c-[1-9][0-9]*$' } }]
+      responses:
+        "200": { description: Public compatibility HTML, content: { text/html: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/public/questionnaires/{slug}:
+    get:
+      tags: [p4-survey]
+      operationId: getPublicSurveyDefinition
+      summary: Read one immutable anonymous public survey definition
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.read
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
+      responses:
+        "200": { description: "Immutable public survey definition without identity, free-text, redirect, provider, or assessment fields.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyDefinition" } } } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "404": { $ref: "#/components/responses/PublicSurveyNotFound" }
+        "503": { $ref: "#/components/responses/PublicSurveyUnavailable" }
+        "405": { $ref: "#/components/responses/PublicSurveyGetOnly" }
+  /api/public/questionnaires/{slug}/submissions:
+    post:
+      tags: [p4-survey]
+      operationId: submitPublicSurvey
+      summary: Submit one anonymous selection-only public survey response
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.submit
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveySubmissionRequest" } } } }
+      responses:
+        "202": { description: "Local anonymous submission receipt. The opaque result token is returned only in this POST body and is never a URL parameter.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveySubmissionResponse" } } } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "404": { $ref: "#/components/responses/PublicSurveyNotFound" }
+        "409": { $ref: "#/components/responses/PublicSurveyConflict" }
+        "429": { $ref: "#/components/responses/PublicSurveyRateLimited" }
+        "503": { $ref: "#/components/responses/PublicSurveyUnavailable" }
+        "405": { $ref: "#/components/responses/PublicSurveyPostOnly" }
+  /api/public/survey-submission-results/query:
+    post:
+      tags: [p4-survey]
+      operationId: queryPublicSurveySubmissionResult
+      summary: Query one anonymous local-only public survey result by POST body token
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.result
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyResultQueryRequest" } } } }
+      responses:
+        "200": { description: "Local-only result status with no answer, identity, token, or provider receipt fields.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyResult" } } } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "404": { $ref: "#/components/responses/PublicSurveyNotFound" }
+        "503": { $ref: "#/components/responses/PublicSurveyUnavailable" }
+        "405": { $ref: "#/components/responses/PublicSurveyPostOnly" }
+  /api/admin/questionnaires/{questionnaire_id}/public-publish:
+    post:
+      tags: [p4-survey]
+      operationId: publishQuestionnairePublicDefinition
+      summary: Publish an immutable local anonymous public survey snapshot
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/QuestionnaireID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyPublishRequest" } } } }
+      responses:
+        "200": { description: "Local immutable public definition lifecycle state, not a provider publication receipt.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyManagementResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/public-disable:
+    post:
+      tags: [p4-survey]
+      operationId: disableQuestionnairePublicDefinition
+      summary: Disable one immutable local anonymous public survey snapshot
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/QuestionnaireID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyDisableRequest" } } } }
+      responses:
+        "200": { description: "Local immutable public definition lifecycle state, not a provider disable receipt.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyManagementResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/public-analytics:
+    get:
+      tags: [p4-survey]
+      operationId: getQuestionnairePublicAnalytics
+      summary: Read aggregate anonymous local public survey analytics
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+        - name: definition_version
+          in: query
+          required: false
+          description: Omit to read the current public snapshot; provide a positive version to read one immutable historical snapshot.
+          schema: { type: integer, format: int64, minimum: 1 }
+      responses:
+        "200": { description: "Aggregate selection counts only; no submissions, browser data, identity, answer values, or provider receipts.", content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyAnalytics" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /q/{slug}:
+    get:
+      tags: [p4-survey]
+      operationId: getPublicSurveyPage
+      summary: Carry a public survey slug into the same-origin SPA without token parameters
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
+      x-aicrm-capability: survey.public.page
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
+      responses:
+        "302":
+          description: Same-origin SPA carrier; the Location contains only the encoded survey slug and never a result token or external target.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/\\?public_survey_slug=[a-z0-9][a-z0-9-]{0,119}$' } }
+        "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
+        "405": { $ref: "#/components/responses/PublicSurveyGetOnly" }
+  /admin/questionnaires:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaireListPage
+      summary: Carry the frozen questionnaire list into the existing admin shell
+      x-legacy-mapping-ids: [LEGACY-API-0061]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect to the existing admin shell with the immutable questionnaire carrier path.
+          headers:
+            Location: { required: true, schema: { type: string, pattern: '^/[?]legacy_admin_path=%2Fadmin%2Fquestionnaires$' } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /admin/questionnaires/ui:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaireListUIAlias
+      summary: Redirect the same-origin questionnaire UI alias to its frozen page path
+      x-legacy-mapping-ids: [LEGACY-API-0064]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Redirect exactly to the frozen questionnaire page path.
+          headers:
+            Location: { required: true, schema: { type: string, enum: [/admin/questionnaires] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The legacy route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/questionnaires/preflight:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnairePreflight
+      summary: Read the local declaration-only questionnaire preflight snapshot
+      x-legacy-mapping-ids: [LEGACY-API-0425]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Local declaration-only preflight snapshot; no provider reachability is asserted.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnairePreflightResponse" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: The preflight route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+        "503":
+          description: Reserved for an explicitly approved local snapshot dependency failure; the current static snapshot does not use one.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires:
+    get:
+      tags: [p4-survey-compat]
+      operationId: listLegacyQuestionnaires
+      summary: List persisted questionnaire definitions for the frozen old admin UI
+      x-legacy-mapping-ids: [LEGACY-API-0423]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Frozen legacy questionnaire list envelope.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-survey-compat]
+      operationId: createLegacyQuestionnaire
+      summary: Create one F01 questionnaire definition without assessment or submission effects
+      x-legacy-mapping-ids: [LEGACY-API-0424]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional actor-scoped business key; omission mints a one-request key.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest" } } }
+      responses:
+        "200":
+          description: Frozen old UI success envelope with data.questionnaire.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateResponse" } } }
+        "400":
+          description: Invalid schema or explicit F02 assessment unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Actor-scoped idempotency payload conflict.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Questionnaire storage or Event UoW unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaire
+      summary: Get one persisted questionnaire definition with ordered questions and options
+      x-legacy-mapping-ids: [LEGACY-API-0427]
+      x-p4-decision-evidence: P4-F01A-2026-08-15
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: Frozen old UI questionnaire detail envelope.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDetailResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Questionnaire storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+    put:
+      tags: [p4-survey-compat]
+      operationId: replaceLegacyQuestionnaire
+      summary: Replace one legacy questionnaire definition with the editor's complete schema
+      x-legacy-mapping-ids: [LEGACY-API-0429]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest" } } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p4-survey-compat]
+      operationId: updateLegacyQuestionnaire
+      summary: Compatibility alias for complete legacy questionnaire editor writes
+      x-legacy-mapping-ids: [LEGACY-API-0428]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireCreateRequest" } } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-survey-compat]
+      operationId: deleteLegacyQuestionnaire
+      summary: Delete a disabled legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0426]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Frozen old UI delete envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDeleteResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/duplicate:
+    post:
+      tags: [p4-survey-compat]
+      operationId: duplicateLegacyQuestionnaire
+      summary: Create a disabled copy of one legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0431]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: false
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDuplicateRequest" } } }
+      responses:
+        "200": { description: Frozen old UI copy envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/disable:
+    post:
+      tags: [p4-survey-compat]
+      operationId: disableLegacyQuestionnaire
+      summary: Disable one legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0430]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: false
+        content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireDisableRequest" } } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/enable:
+    post:
+      tags: [p4-survey-compat]
+      operationId: enableLegacyQuestionnaire
+      summary: Enable one legacy questionnaire definition
+      x-legacy-mapping-ids: [LEGACY-API-0432]
+      x-p4-decision-evidence: P4-F01AB-2026-08-15
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Frozen old UI mutation envelope, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/results:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getLegacyQuestionnaireResults
+      summary: Read the Survey-owned submission aggregate for one questionnaire
+      x-legacy-mapping-ids: [LEGACY-API-0442]
+      x-p4-decision-evidence: P4-F03-2026-08-18
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: Frozen submission results envelope with stable empty-data shape.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireSubmissionResultsResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Submission snapshot storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}/submissions:
+    get:
+      tags: [p4-survey-compat]
+      operationId: listLegacyQuestionnaireSubmissions
+      summary: Page Survey-owned submission snapshots in submitted_at DESC, id DESC order
+      x-legacy-mapping-ids: [LEGACY-API-0444]
+      x-p4-decision-evidence: P4-F03-2026-08-18
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Frozen submission page envelope with identical items and submissions arrays.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireSubmissionListResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Submission snapshot storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}/export:
+    get:
+      tags: [p4-survey-compat]
+      operationId: exportLegacyQuestionnaireSubmissions
+      summary: Download the PII submission CSV encoded fully in memory with formula-injection escaping
+      x-legacy-mapping-ids: [LEGACY-API-0433]
+      x-p4-decision-evidence: P4-F03-2026-08-18
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: UTF-8 BOM CRLF CSV attachment, at most 10000 rows, no file or storage side effect.
+          headers:
+            Content-Disposition: { schema: { type: string, pattern: '^attachment; filename="questionnaire-[A-Za-z0-9._-]+-submissions\.csv"$' } }
+          content: { text/csv: { schema: { type: string, format: binary } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Questionnaire not found; errors are always JSON, never a partial CSV.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+        "503":
+          description: Submission snapshot storage unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/image-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImageList
+      summary: List local Media-owned image metadata with strict legacy-compatible filters and pagination
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0356]
+      x-p4-decision-evidence: P4-IMAGE-LIST-0356-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.read_projection
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      x-aicrm-enabled-only-compatibility: enabled rows by default; false includes disabled rows
+      x-aicrm-route-dependency: LEGACY-API-0366
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: One decimal scalar matching ^-?[0-9]+$; 0 becomes 100, negatives become 1, and values above 500 become 500.
+          schema: { type: string, pattern: '^-?[0-9]+$', default: '100' }
+        - name: offset
+          in: query
+          required: false
+          description: One decimal scalar matching ^-?[0-9]+$; zero and negatives become 0.
+          schema: { type: string, pattern: '^-?[0-9]+$', default: '0' }
+        - name: enabled_only
+          in: query
+          required: false
+          description: One lowercase boolean scalar. True (the default) returns enabled rows only; false includes disabled rows and reports their stored enabled value.
+          schema: { type: string, enum: ['true', 'false'], default: 'true' }
+        - name: q
+          in: query
+          required: false
+          description: One scalar; TrimSpace is applied before PostgreSQL ILIKE matching over name, file_name, description, category, and normalized tags. Percent and underscore retain LIKE wildcard meaning.
+          schema: { type: string, default: '' }
+        - name: category
+          in: query
+          required: false
+          description: One scalar; TrimSpace is applied to the query value before case-sensitive exact matching.
+          schema: { type: string, default: '' }
+        - name: tags
+          in: query
+          required: false
+          description: One ASCII-comma-separated scalar normalized with the frozen 64-code-point, 50-item, pre-truncation-dedupe rule; members are ORed.
+          schema: { type: string, default: '' }
+        - name: tag_group
+          in: query
+          required: false
+          description: Repeatable ASCII-comma-separated groups; members within a group are ORed and nonempty groups are ANDed.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string }
+            default: []
+        - name: only_unlabeled
+          in: query
+          required: false
+          description: One lowercase boolean scalar; true requires empty description, category, or normalized tags.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+      responses:
+        "200":
+          description: Exact fourteen-field local PostgreSQL page envelope with strict twenty-field image items.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageListSuccess" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Chi rejects methods not independently registered on the shared collection path before authentication. }
+        "422":
+          description: Canonical validation error for lexical, cardinality, unknown-key, percent-decoding, or UTF-8 violations.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Canonical safe internal error without SQL, actor, storage, or legacy error details.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+    post:
+      tags: [p4-media-compat]
+      operationId: createLegacyImage
+      summary: Import one fully decoded local image from a canonical JSON data URL
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0357]
+      x-p4-decision-evidence: P4-IMAGE-CREATE-0357-2026-08-19
+      x-aicrm-capability: media.images.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images_and_blobs.local_uow
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: One trimmed 16..128 byte actor-scoped key; replay returns the first local result and a changed canonical payload conflicts.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyImageCreateRequest" }
+      responses:
+        "200":
+          description: Exact safe local metadata projection. No provider call, receipt, raw bytes, or data URL is returned.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageCreateSuccess" }
+        "400":
+          description: Closed JSON/data URL/image-admission validation failure.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyImageCreateError" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only the independently registered GET and POST methods exist on this collection path.
+          headers: { Allow: { required: true, schema: { type: string, enum: ['GET, POST'] } } }
+        "409":
+          description: The actor-scoped idempotency key was completed with a different canonical payload.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyImageCreateError" } } }
+        "503":
+          description: The local UoW dependency is unavailable; no partial write is committed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyImageCreateError" } } }
+  /api/admin/image-library/facets:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImageFacets
+      summary: List canonical image-library category and tag facets from local Media metadata
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0358]
+      x-p4-decision-evidence: P4-IMAGE-FACETS-0358-2026-08-17
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.category_and_tags
+      x-aicrm-external-effect: none
+      responses:
+        "200":
+          description: Exact nine-field canonical facets envelope from local PostgreSQL metadata.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageFacetsSuccess" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: Chi rejects non-GET methods at the shared routing boundary. }
+        "500":
+          description: A canonical safe internal error without repository details.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /api/admin/image-library/{image_id}:
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyImage
+      summary: Read one fully validated local Media image with optional legacy data URL compatibility
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0363]
+      x-p4-decision-evidence: P4-IMAGE-DETAIL-0363-2026-08-19
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images_and_media_image_blobs.read_only
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+        - name: include_data
+          in: query
+          required: false
+          description: One lowercase boolean scalar. True returns a fully validated original blob as a bounded data URL.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+        - name: variant
+          in: query
+          required: false
+          description: One optional scalar that only constructs a relative variant URL; it never reads or generates a variant.
+          schema: { type: string, enum: ['', thumb_160, thumb_320, mobile_1080, large_1440, original], default: '' }
+      responses:
+        "200":
+          description: Exact eight-field local PostgreSQL image-detail envelope; the complete JSON is bounded to 30 MiB before headers are written.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [application/json] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageDetailSuccess" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Image metadata or blob was not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "405":
+          description: "Chi rejects methods other than the independently registered GET, PUT, and DELETE before authentication."
+        "422":
+          description: The path image id or strict query is invalid.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "503":
+          description: Local PostgreSQL data, blob integrity, image decoding, or bounded response encoding is unavailable or unsafe.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    put:
+      tags: [p4-media-compat]
+      operationId: updateLegacyImage
+      summary: Update local Media image metadata and enabled state
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0364]
+      x-p4-decision-evidence: P4-IMAGE-UPDATE-0364-2026-08-19
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.metadata_enabled.local_write
+      x-aicrm-external-effect: none
+      x-aicrm-request-max-bytes: 65536
+      x-aicrm-reject-unknown-json-fields: true
+      x-aicrm-reject-duplicate-json-keys: true
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyImageMetadataUpdateRequest" }
+      responses:
+        "200":
+          description: Exact local PostgreSQL update envelope. The event is persisted in the same transaction only for a business change.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [application/json] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageMetadataUpdateSuccess" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Image row was not found.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "405":
+          description: "Chi rejects methods other than GET, PUT, and DELETE before authentication."
+        "503":
+          description: Local PostgreSQL transaction, projection, or event persistence is unavailable; no partial mutation is exposed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    delete:
+      tags: [p4-media-compat]
+      operationId: deleteLegacyImage
+      summary: Hard delete one unreferenced local Media image
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0362]
+      x-p4-decision-evidence: P4-IMAGE-DELETE-0362-2026-08-19
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_images.hard_delete_when_unreferenced
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: Canonical positive decimal image id; leading zeroes, signs, whitespace, and overflow are rejected.
+          schema: { type: string, pattern: '^[1-9][0-9]*$' }
+        - name: force
+          in: query
+          required: false
+          description: Legacy-compatible flag. It never clears or mutates references and does not bypass a reference conflict.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+        - $ref: "#/components/parameters/CSRFToken"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional actor-scoped key. When omitted, the server mints a one-request key; a reused key with a different canonical command conflicts.
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      responses:
+        "200":
+          description: The image was hard-deleted locally; blob and thumbnail-cache removal is limited to existing foreign-key cascades.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [application/json] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyImageDeleteSuccess" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No image exists and no completed actor-scoped delete receipt can replay the request.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "409":
+          description: A reference blocks deletion, or the actor-scoped idempotency key is bound 
