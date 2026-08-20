@@ -57,6 +57,7 @@ import {
   WECHAT_PAY_TRANSACTIONS_PATH,
   WECHAT_SHOP_TRANSACTIONS_PATH,
 } from "./commerce-workspaces";
+import { GROUP_OPS_PLANS_PATH } from "./group-ops";
 
 const adminSession = {
   status: "authenticated",
@@ -669,6 +670,38 @@ describe("Web shell routes", () => {
     }
   });
 
+  it("connects the admin-only group-operations carriers to the safe local workspace", () => {
+    vi.stubGlobal("window", {
+      location: {
+        pathname: "/admin/automation-conversion/group-ops/plans/42",
+        search: "",
+      },
+    });
+    const admin = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(admin).toContain("群运营计划明细");
+    expect(admin).toContain("<dd>42</dd>");
+    expect(admin).toContain("不表示 Provider 已调用");
+    expect(admin).not.toContain("创建群运营计划");
+    expect(admin).not.toContain("同步运营人员");
+    expect(admin).not.toContain("启动到期执行");
+
+    for (const role of ["ops", "sales"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          initialSession={{
+            status: "authenticated",
+            principal:
+              role === "sales"
+                ? { adminUserID: 9, role, staffID: 11 }
+                : { adminUserID: 8, role },
+          }}
+        />,
+      );
+      expect(html).toContain("当前账号没有群运营本地工作区权限");
+      expect(html).not.toContain("<dd>42</dd>");
+    }
+  });
+
   it("mounts commerce workspaces and keeps payment and refund effects closed", () => {
     vi.stubGlobal("window", {
       location: {
@@ -700,7 +733,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(33);
+    expect(routes).toHaveLength(34);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -840,6 +873,7 @@ describe("Web shell routes", () => {
       "/admin/automation-runs",
       AUTOMATION_AGENTS_PATH,
       "/admin/cloud-orchestrator/plans",
+      GROUP_OPS_PLANS_PATH,
       SERVICE_PRODUCTS_PATH,
       WECHAT_PAY_TRANSACTIONS_PATH,
       WECHAT_SHOP_TRANSACTIONS_PATH,
@@ -893,6 +927,7 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/automation-runs"');
     expect(html).toContain(`href="${AUTOMATION_AGENTS_PATH}"`);
     expect(html).toContain('href="/admin/cloud-orchestrator/plans"');
+    expect(html).toContain(`href="${GROUP_OPS_PLANS_PATH}"`);
     expect(html).toContain(`href="${SERVICE_PRODUCTS_PATH}"`);
     expect(html).toContain(`href="${WECHAT_PAY_TRANSACTIONS_PATH}"`);
     expect(html).toContain(`href="${WECHAT_SHOP_TRANSACTIONS_PATH}"`);
@@ -972,6 +1007,18 @@ describe("legacy admin path carrier", () => {
       ),
     ).toBe("/admin/cloud-orchestrator/plans/plan_A-42");
     expect(
+      carrierPathname(
+        "/",
+        "?legacy_admin_path=%2Fadmin%2Fautomation-conversion%2Fgroup-ops%2Fui",
+      ),
+    ).toBe(GROUP_OPS_PLANS_PATH);
+    expect(
+      carrierPathname(
+        "/",
+        "?legacy_admin_path=%2Fadmin%2Fautomation-conversion%2Fgroup-ops%2Fplans%2F42",
+      ),
+    ).toBe("/admin/automation-conversion/group-ops/plans/42");
+    expect(
       carrierPathname("/", `?legacy_admin_path=${EXECUTION_RUNTIME_PATH}`),
     ).toBe(EXECUTION_RUNTIME_PATH);
     expect(carrierPathname("/", `?legacy_admin_path=${ORDERS_PATH}`)).toBe(
@@ -996,6 +1043,9 @@ describe("legacy admin path carrier", () => {
       "?legacy_admin_path=/admin/channels/extra",
       "?legacy_admin_path=/admin/coupons/extra",
       "?legacy_admin_path=/admin/automation-agents/extra",
+      "?legacy_admin_path=/admin/automation-conversion/group-ops/groups/ui",
+      "?legacy_admin_path=/admin/automation-conversion/group-ops/plans/01",
+      "?legacy_admin_path=/admin/automation-conversion/group-ops/plans/42/nodes",
       "?legacy_admin_path=/admin/orders/extra",
       "?legacy_admin_path=/admin/wechat-pay/products/extra",
       "?legacy_admin_path=/admin/service-period-products/service/nested/edit",
@@ -1047,6 +1097,20 @@ describe("legacy admin path carrier", () => {
     });
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(html).toContain('<h1 id="app-title">企微标签目录</h1>');
+    expect(html).not.toContain("AI-CRM 运营指挥台");
+  });
+
+  it("lands on the group-operations plan workspace after a carrier refresh", () => {
+    vi.stubGlobal("window", {
+      location: {
+        pathname: "/",
+        search:
+          "?legacy_admin_path=%2Fadmin%2Fautomation-conversion%2Fgroup-ops%2Fui",
+      },
+    });
+    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(html).toContain('<h1 id="group-ops-title">群运营计划</h1>');
+    expect(html).toContain("计划列表与筛选");
     expect(html).not.toContain("AI-CRM 运营指挥台");
   });
 });

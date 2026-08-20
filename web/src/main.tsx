@@ -62,6 +62,13 @@ import {
   cloudOrchestratorRoute,
   type CloudOrchestratorRoute,
 } from "./cloud-orchestrator";
+import { GroupOpsWorkspace } from "./group-ops-ui";
+import {
+  GROUP_OPS_PLANS_PATH,
+  groupOpsCarrierRoute,
+  groupOpsRoute,
+  type GroupOpsRoute,
+} from "./group-ops";
 import { CommerceWorkspaces } from "./commerce-workspaces-ui";
 import {
   ALIPAY_TRANSACTIONS_PATH,
@@ -229,6 +236,12 @@ export const routes = [
     navigationLabel: "AI 可观察性",
     title: "AI 助手可观察性",
     description: "本地可观察性入口载体。",
+  },
+  {
+    path: GROUP_OPS_PLANS_PATH,
+    navigationLabel: "群运营计划",
+    title: "群运营计划",
+    description: "群运营计划的本地安全工作区载体。",
   },
   {
     path: SERVICE_PRODUCTS_PATH,
@@ -429,6 +442,8 @@ export function carrierPathname(pathname: string, search: string): string {
   if (pathname !== "/" || search === "") return pathname;
   const cloudOrchestratorCarrier = cloudOrchestratorCarrierRoute(search);
   if (cloudOrchestratorCarrier) return cloudOrchestratorCarrier.pathname;
+  const groupOpsCarrier = groupOpsCarrierRoute(search);
+  if (groupOpsCarrier) return groupOpsCarrier.pathname;
   const commerceCarrier = commerceWorkspaceCarrierRoute(search);
   if (commerceCarrier) return commerceCarrier.pathname;
   let params: URLSearchParams;
@@ -539,6 +554,7 @@ export function handleNavigationClick(
 function PageContent({
   route,
   cloudOrchestrator,
+  groupOps,
   commerceWorkspace,
   principal,
   customerTransport,
@@ -572,6 +588,7 @@ function PageContent({
 }: {
   route: AppRoute | undefined;
   cloudOrchestrator?: CloudOrchestratorRoute;
+  groupOps?: GroupOpsRoute;
   commerceWorkspace?: CommerceWorkspaceRoute;
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
@@ -603,6 +620,9 @@ function PageContent({
   cookieHeader: () => string;
   onUnauthenticated: () => void;
 }) {
+  if (groupOps) {
+    return <GroupOpsWorkspace role={principal.role} route={groupOps} />;
+  }
   if (commerceWorkspace) {
     return (
       <CommerceWorkspaces role={principal.role} route={commerceWorkspace} />
@@ -949,6 +969,7 @@ export function navigationLinks(
     permitted.add(EXECUTION_RUNTIME_PATH);
     permitted.add(OUTBOUND_PATH);
     permitted.add(CLOUD_ORCHESTRATOR_PLANS_PATH);
+    permitted.add(GROUP_OPS_PLANS_PATH);
     permitted.add(SERVICE_PRODUCTS_PATH);
     permitted.add(WECHAT_PAY_TRANSACTIONS_PATH);
     permitted.add(WECHAT_SHOP_TRANSACTIONS_PATH);
@@ -1014,6 +1035,7 @@ export function App({
   const effectivePathname = carrierPathname(pathname, search);
   const route = routeForPathname(effectivePathname);
   const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
+  const groupOps = groupOpsRoute(effectivePathname);
   const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);
   const customerID = customerIDForPathname(effectivePathname);
   const publicSurvey = pathname === "/" ? publicSurveySlug(search) : undefined;
@@ -1157,6 +1179,7 @@ export function App({
           <PageContent
             route={route}
             cloudOrchestrator={cloudOrchestrator}
+            groupOps={groupOps}
             commerceWorkspace={commerceWorkspace}
             principal={session.principal}
             customerTransport={customerTransport}

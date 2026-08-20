@@ -14291,6 +14291,131 @@ export const getCloudOrchestratorObservabilityWorkspace = async (
 };
 
 /**
+ * @summary Carry an authorized administrator to the safe local group-operations plan workspace
+ */
+export type getGroupOpsPlansWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getGroupOpsPlansWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getGroupOpsPlansWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getGroupOpsPlansWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getGroupOpsPlansWorkspaceResponseError = (
+  | getGroupOpsPlansWorkspaceResponse302
+  | getGroupOpsPlansWorkspaceResponse401
+  | getGroupOpsPlansWorkspaceResponse403
+  | getGroupOpsPlansWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getGroupOpsPlansWorkspaceResponse =
+  getGroupOpsPlansWorkspaceResponseError;
+
+export const getGetGroupOpsPlansWorkspaceUrl = () => {
+  return `/admin/automation-conversion/group-ops/ui`;
+};
+
+export const getGroupOpsPlansWorkspace = async (
+  options?: RequestInit,
+): Promise<getGroupOpsPlansWorkspaceResponse> => {
+  const res = await fetch(getGetGroupOpsPlansWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGroupOpsPlansWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getGroupOpsPlansWorkspaceResponse;
+};
+
+/**
+ * @summary Carry an authorized administrator to one safe local group-operations plan-detail workspace
+ */
+export type getGroupOpsPlanDetailWorkspaceResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponseError = (
+  | getGroupOpsPlanDetailWorkspaceResponse302
+  | getGroupOpsPlanDetailWorkspaceResponse401
+  | getGroupOpsPlanDetailWorkspaceResponse403
+  | getGroupOpsPlanDetailWorkspaceResponse404
+  | getGroupOpsPlanDetailWorkspaceResponse405
+) & {
+  headers: Headers;
+};
+
+export type getGroupOpsPlanDetailWorkspaceResponse =
+  getGroupOpsPlanDetailWorkspaceResponseError;
+
+export const getGetGroupOpsPlanDetailWorkspaceUrl = (planId: string) => {
+  return `/admin/automation-conversion/group-ops/plans/${planId}`;
+};
+
+export const getGroupOpsPlanDetailWorkspace = async (
+  planId: string,
+  options?: RequestInit,
+): Promise<getGroupOpsPlanDetailWorkspaceResponse> => {
+  const res = await fetch(getGetGroupOpsPlanDetailWorkspaceUrl(planId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGroupOpsPlanDetailWorkspaceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getGroupOpsPlanDetailWorkspaceResponse;
+};
+
+/**
  * @summary Carry an authorized administrator to the local Alipay transaction workspace
  */
 export type getAlipayTransactionsWorkspaceResponse302 = {
