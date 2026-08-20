@@ -1795,7 +1795,7 @@ paths:
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyTagCreateRequest" } } } }
-      responses: { "200": { description: Local tag mutation envelope }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+      responses: { "200": { description: Closed local tag-created or legacy dry-run validation envelope; no WeCom sync or provider call was executed., content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/LegacyTagCreateSuccess" }, { $ref: "#/components/schemas/LegacyTagCreateValidatedSuccess" }] } } } }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "403": { $ref: "#/components/responses/Forbidden" }, "404": { $ref: "#/components/responses/NotFound" }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /admin/wecom-tags:
     get:
       tags: [p4-tag-compat]
@@ -5391,6 +5391,35 @@ components:
         group_name: { type: string, minLength: 1, maxLength: 200 }
         tag_name: { type: string, minLength: 1, maxLength: 200 }
         sort_order: { type: integer, format: int32, minimum: 0 }
+    LegacyTagCreateSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run, tag]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_created] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [false] }
+        tag: { $ref: "#/components/schemas/LegacyTagGroupCreateSuccessTag" }
+    LegacyTagCreateValidatedSuccess:
+      type: object
+      additionalProperties: false
+      required: [ok, reason, source_status, route_owner, fallback_used, real_external_call_executed, sync_executed, fixture_used, dry_run]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        reason: { type: string, enum: [tag_create_validated] }
+        source_status: { type: string, enum: [local_catalog] }
+        route_owner: { type: string, enum: [ai_crm_next] }
+        fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        sync_executed: { type: boolean, enum: [false] }
+        fixture_used: { type: boolean, enum: [false] }
+        dry_run: { type: boolean, enum: [true] }
     LegacyTagGroupCreateSuccess:
       type: object
       additionalProperties: false
