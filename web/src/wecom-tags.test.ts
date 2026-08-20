@@ -4,7 +4,9 @@ import {
   archiveWecomTagGroup,
   confirmsArchivedWecomTag,
   confirmsArchivedWecomTagGroup,
+  confirmsCreatedWecomTag,
   confirmsCreatedWecomTagGroup,
+  createWecomTag,
   confirmsRenamedWecomTag,
   confirmsRenamedWecomTagGroup,
   createWecomTagGroup,
@@ -130,6 +132,25 @@ const renamed = {
     group_name: "意向",
     tag_name: "重点跟进",
     sort_order: 0,
+  },
+} as const;
+
+const tagCreated = {
+  ok: true,
+  reason: "tag_created",
+  source_status: "local_catalog",
+  route_owner: "ai_crm_next",
+  fallback_used: false,
+  real_external_call_executed: false,
+  sync_executed: false,
+  fixture_used: false,
+  dry_run: false,
+  tag: {
+    tag_id: 12,
+    group_id: 1,
+    group_name: "意向",
+    tag_name: "待跟进",
+    sort_order: 2,
   },
 } as const;
 
@@ -517,6 +538,100 @@ describe("WeCom local tag-group creation boundary", () => {
           tags: [{ ...result.tag, name: "已漂移" }],
         },
         result,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("WeCom local additional-tag creation boundary", () => {
+  const group = { id: 1, name: "意向", sortOrder: 0 } as const;
+
+  it("sends only the selected local group and normalized tag name", async () => {
+    const client = {
+      ...transport(200, catalog),
+      createTag: vi.fn(async () => ({
+        status: 200,
+        data: tagCreated,
+        headers: new Headers(),
+      })),
+    } as unknown as WecomTagsTransport;
+
+    await expect(
+      createWecomTag(client, group, " 待跟进 ", CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({
+      status: "created",
+      tag: {
+        id: 12,
+        groupID: 1,
+        groupName: "意向",
+        name: "待跟进",
+        sortOrder: 2,
+      },
+    });
+    expect(client.createTag).toHaveBeenCalledWith(
+      { group_id: 1, group_name: "意向", tag_name: "待跟进" },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": CSRF_TOKEN,
+          "Idempotency-Key": IDEMPOTENCY_KEY,
+        },
+      },
+    );
+  });
+
+  it("fails closed without transport for malformed local input", async () => {
+    const client = {
+      ...transport(200, catalog),
+      createTag: vi.fn(),
+    } as unknown as WecomTagsTransport;
+    await expect(
+      createWecomTag(client, group, " ", CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "invalid" });
+    await expect(
+      createWecomTag(client, { ...group, id: 0 }, "待跟进", CSRF_TOKEN, IDEMPOTENCY_KEY),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(client.createTag).not.toHaveBeenCalled();
+  });
+
+  it("rejects receipt drift, dry-run, and unexpected keys as unknown", async () => {
+    for (const data of [
+      { ...tagCreated, tag: { ...tagCreated.tag, group_id: 2 } },
+      { ...tagCreated, tag: { ...tagCreated.tag, tag_name: "已漂移" } },
+      { ...tagCreated, dry_run: true },
+      { ...tagCreated, unexpected: true },
+    ]) {
+      const client = {
+        ...transport(200, catalog),
+        createTag: vi.fn(async () => ({ status: 200, data, headers: new Headers() })),
+      } as unknown as WecomTagsTransport;
+      await expect(
+        createWecomTag(client, group, "待跟进", CSRF_TOKEN, IDEMPOTENCY_KEY),
+      ).resolves.toEqual({ status: "unknown" });
+    }
+  });
+
+  it("requires the refreshed catalog to mirror the created tag", () => {
+    const createdTag = {
+      id: 12,
+      groupID: 1,
+      groupName: "意向",
+      name: "待跟进",
+      sortOrder: 2,
+    } as const;
+    const confirmed = {
+      totalTags: 1,
+      tagLimit: 1000,
+      snapshotAt: "2026-08-19T00:00:00Z",
+      groups: [{ ...group, tags: [createdTag] }],
+      tags: [createdTag],
+    };
+    expect(confirmsCreatedWecomTag(confirmed, createdTag)).toBe(true);
+    expect(confirmsCreatedWecomTag({ ...confirmed, groups: [] }, createdTag)).toBe(false);
+    expect(
+      confirmsCreatedWecomTag(
+        { ...confirmed, tags: [{ ...createdTag, name: "已漂移" }] },
+        createdTag,
       ),
     ).toBe(false);
   });

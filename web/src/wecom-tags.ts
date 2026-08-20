@@ -1,11 +1,13 @@
 import {
   archiveLegacyWecomTag,
   archiveLegacyWecomTagGroup,
+  createLegacyWecomTag,
   createLegacyWecomTagGroup,
   listLegacyWecomTags,
   updateLegacyWecomTagGroupPatch,
   updateLegacyWecomTagPatch,
   type LegacyTagArchiveRequest,
+  type LegacyTagCreateRequest,
   type LegacyTagGroupCreateRequest,
 } from "./api/generated/health";
 
@@ -53,6 +55,11 @@ export type WecomTagGroupCreateResult =
   | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
   | { readonly status: "unknown" };
 
+export type WecomTagCreateResult =
+  | { readonly status: "created"; readonly tag: WecomTag }
+  | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
+  | { readonly status: "unknown" };
+
 export type WecomTagRenameResult =
   | { readonly status: "confirmed"; readonly tag: WecomTag }
   | { readonly status: "unauthenticated" | "forbidden" | "invalid" }
@@ -88,6 +95,16 @@ async function generatedCreate(
   options?: RequestInit,
 ) {
   return createLegacyWecomTagGroup(request, {
+    credentials: "same-origin",
+    ...options,
+  });
+}
+
+async function generatedTagCreate(
+  request: LegacyTagCreateRequest,
+  options?: RequestInit,
+) {
+  return createLegacyWecomTag(request, {
     credentials: "same-origin",
     ...options,
   });
@@ -144,6 +161,7 @@ async function generatedTagArchive(
 export interface WecomTagsTransport {
   readonly read: typeof generatedRead;
   readonly create: typeof generatedCreate;
+  readonly createTag: typeof generatedTagCreate;
   readonly rename: typeof generatedRename;
   readonly renameGroup: typeof generatedGroupRename;
   readonly archiveGroup: typeof generatedGroupArchive;
@@ -153,6 +171,7 @@ export interface WecomTagsTransport {
 export const generatedWecomTagsTransport: WecomTagsTransport = {
   read: generatedRead,
   create: generatedCreate,
+  createTag: generatedTagCreate,
   rename: generatedRename,
   renameGroup: generatedGroupRename,
   archiveGroup: generatedGroupArchive,
@@ -348,6 +367,36 @@ export function parseWecomTagGroupCreateSuccess(
     return undefined;
   }
   return { status: "created", group, tag };
+}
+
+export function parseWecomTagCreateSuccess(value: unknown): WecomTag | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "ok",
+      "reason",
+      "source_status",
+      "route_owner",
+      "fallback_used",
+      "real_external_call_executed",
+      "sync_executed",
+      "fixture_used",
+      "dry_run",
+      "tag",
+    ]) ||
+    value.ok !== true ||
+    value.reason !== "tag_created" ||
+    value.source_status !== "local_catalog" ||
+    value.route_owner !== "ai_crm_next" ||
+    value.fallback_used !== false ||
+    value.real_external_call_executed !== false ||
+    value.sync_executed !== false ||
+    value.fixture_used !== false ||
+    value.dry_run !== false
+  ) {
+    return undefined;
+  }
+  return parseCreatedTag(value.tag);
 }
 
 export function parseWecomTagRenameSuccess(
@@ -729,6 +778,51 @@ export async function createWecomTagGroup(
     : { status: "unknown" };
 }
 
+export async function createWecomTag(
+  transport: WecomTagsTransport,
+  group: Omit<WecomTagGroup, "tags">,
+  rawName: string,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<WecomTagCreateResult> {
+  const tag_name = normalizedCreateText(rawName);
+  if (
+    !validRenameGroupTarget(group) ||
+    !tag_name ||
+    !validCSRFToken(csrfToken) ||
+    !validIdempotencyKey(idempotencyKey)
+  ) {
+    return { status: "invalid" };
+  }
+  let response: Awaited<ReturnType<WecomTagsTransport["createTag"]>>;
+  try {
+    response = await transport.createTag(
+      { group_id: group.id, group_name: group.name, tag_name },
+      {
+        credentials: "same-origin",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
+    );
+  } catch {
+    return { status: "unknown" };
+  }
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status === 400 || response.status === 404)
+    return { status: "invalid" };
+  if (response.status !== 200) return { status: "unknown" };
+  const tag = parseWecomTagCreateSuccess(response.data);
+  return tag &&
+    tag.groupID === group.id &&
+    tag.groupName === group.name &&
+    tag.name === tag_name
+    ? { status: "created", tag }
+    : { status: "unknown" };
+}
+
 function validRenameTarget(tag: WecomTag): boolean {
   return (
     positiveInteger(tag.id) &&
@@ -987,6 +1081,29 @@ export function confirmsCreatedWecomTagGroup(
         item.groupName === created.tag.groupName &&
         item.name === created.tag.name &&
         item.sortOrder === created.tag.sortOrder,
+    )
+  );
+}
+
+export function confirmsCreatedWecomTag(
+  catalog: WecomTagCatalog,
+  created: WecomTag,
+): boolean {
+  const group = catalog.groups.find((item) => item.id === created.groupID);
+  const tag = catalog.tags.find((item) => item.id === created.id);
+  return (
+    group?.name === created.groupName &&
+    tag?.groupID === created.groupID &&
+    tag.groupName === created.groupName &&
+    tag.name === created.name &&
+    tag.sortOrder === created.sortOrder &&
+    group.tags.some(
+      (item) =>
+        item.id === created.id &&
+        item.groupID === created.groupID &&
+        item.groupName === created.groupName &&
+        item.name === created.name &&
+        item.sortOrder === created.sortOrder,
     )
   );
 }
