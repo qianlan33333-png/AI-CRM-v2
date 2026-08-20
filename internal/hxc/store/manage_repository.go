@@ -42,6 +42,37 @@ func (r *SenderConfigRepository) ReorderSenderConfigs(ctx context.Context, ids [
 	if e != nil {
 		return nil, e
 	}
+	// Serialize the complete-set check with save/archive so a concurrent writer
+	// cannot introduce an unranked row between validation and priority updates.
+	if _, e = tx.Exec(ctx, `LOCK TABLE hxc_sender_configs IN SHARE ROW EXCLUSIVE MODE`); e != nil {
+		return nil, e
+	}
+	rows, e := tx.Query(ctx, `SELECT id FROM hxc_sender_configs ORDER BY id FOR UPDATE`)
+	if e != nil {
+		return nil, e
+	}
+	current := make(map[string]struct{}, len(ids))
+	for rows.Next() {
+		var id string
+		if e = rows.Scan(&id); e != nil {
+			rows.Close()
+			return nil, e
+		}
+		current[id] = struct{}{}
+	}
+	e = rows.Err()
+	rows.Close()
+	if e != nil {
+		return nil, e
+	}
+	if len(current) != len(ids) {
+		return nil, hxcapp.ErrConfigConflict
+	}
+	for _, id := range ids {
+		if _, ok := current[id]; !ok {
+			return nil, hxcapp.ErrConfigConflict
+		}
+	}
 	for priority, id := range ids {
 		tag, e := tx.Exec(ctx, `UPDATE hxc_sender_configs SET priority=$1,updated_at=now() WHERE id=$2`, priority, id)
 		if e != nil {

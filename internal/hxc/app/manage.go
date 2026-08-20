@@ -107,6 +107,13 @@ func (m *Manager) Reorder(ctx context.Context, actor, key string, ids []string) 
 	}
 	var out []hxc.SenderConfig
 	err := m.mutate(ctx, "reorder", c, func(tx context.Context) (any, error) {
+		current, e := m.store.ListSenderConfigs(tx)
+		if e != nil {
+			return nil, e
+		}
+		if !sameConfigIDs(current, ids) {
+			return nil, ErrConfigConflict
+		}
 		x, e := m.store.ReorderSenderConfigs(tx, ids)
 		out = x
 		return x, e
@@ -196,6 +203,27 @@ func (m *Manager) eligible(ctx context.Context, id string) error {
 	return ErrConfigConflict
 }
 func (m *Manager) ready() bool { return m != nil && m.uow != nil && m.store != nil && m.staff != nil }
+func sameConfigIDs(current []hxc.SenderConfig, ids []string) bool {
+	if len(current) != len(ids) {
+		return false
+	}
+	want := make(map[string]struct{}, len(current))
+	for _, item := range current {
+		if text(item.ID, 200) == "" {
+			return false
+		}
+		want[item.ID] = struct{}{}
+	}
+	if len(want) != len(current) {
+		return false
+	}
+	for _, id := range ids {
+		if _, ok := want[id]; !ok {
+			return false
+		}
+	}
+	return true
+}
 func valid(c ManageCommand) bool {
 	return text(c.ID, 200) != "" && text(c.SenderUserID, 200) != "" && len(c.DisplayName) <= 200 && c.DisplayName == strings.TrimSpace(c.DisplayName) && c.Priority >= 0 && c.Priority <= 100000 && validKey(c.Actor, c.IdempotencyKey)
 }

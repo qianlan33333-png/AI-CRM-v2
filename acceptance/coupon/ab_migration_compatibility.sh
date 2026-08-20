@@ -46,10 +46,6 @@ read -r waterline claims payment_sessions sidebar_grants target_index customer_f
 [[ "$waterline" = "36" && "$claims" = "1" && "$payment_sessions" = "1" && "$sidebar_grants" = "1" && "$target_index" = "1" && "$customer_fks" = "0" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
-/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=360s -run '^TestP4CouponAB' ./acceptance/coupon -args -database-url "$database_url"
-
-post_acceptance="$(history_snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 35
 read -r waterline claims payment_sessions sidebar_grants target_index <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT
   (SELECT max(version_id) FROM goose_db_version WHERE is_applied),
@@ -58,10 +54,20 @@ read -r waterline claims payment_sessions sidebar_grants target_index <<<"$(psql
   (to_regclass('public.coupon_sidebar_grants') IS NOT NULL)::int,
   (to_regclass('public.coupon_targets_target_ref_coupon_id') IS NOT NULL)::int")"
 [[ "$waterline" = "35" && "$claims" = "0" && "$payment_sessions" = "0" && "$sidebar_grants" = "0" && "$target_index" = "0" ]]
-[[ "$(history_snapshot)" = "$post_acceptance" ]]
+[[ "$(history_snapshot)" = "$baseline" ]]
 
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 36
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "36" ]]
-[[ "$(history_snapshot)" = "$post_acceptance" ]]
+[[ "$(history_snapshot)" = "$baseline" ]]
 
-printf 'P4 Coupon A+B migration compatibility: PASS (35/36/35/36, Event/Auth/session/Product/Coupon history preserved, customer identity has no cross-domain FK)\n'
+# The application acceptance uses the current Product repository, whose closed
+# projection includes columns added after the historical Coupon A+B migration.
+# Restore the database to the repository's latest waterline before exercising
+# current application code; the 35/36 rollback contract has already been
+# verified above without mutating its preserved history.
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+
+/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" test -race -count=1 -timeout=360s -run '^TestP4CouponAB' ./acceptance/coupon -args -database-url "$database_url"
+
+printf 'P4 Coupon A+B migration compatibility: PASS (35/36/35/36 history preserved; current-waterline application acceptance passed; customer identity has no cross-domain FK)\n'

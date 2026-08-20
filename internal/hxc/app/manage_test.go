@@ -69,6 +69,32 @@ func TestManagerRejectsReorderReceiptPayloadDriftWithoutSecondMutation(t *testin
 	}
 }
 
+func TestManagerRejectsIncompleteOrUnknownReorderSetsWithoutMutation(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		ids  []string
+	}{
+		{name: "missing current config", ids: []string{"cfg-2"}},
+		{name: "unknown extra config", ids: []string{"cfg-2", "cfg-1", "cfg-3"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			store := &manageStoreStub{items: map[string]hxc.SenderConfig{
+				"cfg-1": {ID: "cfg-1", SenderUserID: "alice", Priority: 0},
+				"cfg-2": {ID: "cfg-2", SenderUserID: "bob", Priority: 1},
+			}}
+			manager := NewManager(manageUOWStub{}, store, manageStaffStub{}, nil)
+			got, err := manager.Reorder(context.Background(), "admin:7", "hxc-reorder-set-0001", test.ids)
+			if err != ErrConfigConflict || got != nil || store.reorderCalls != 0 {
+				t.Fatalf("reorder = %#v, %v calls=%d", got, err, store.reorderCalls)
+			}
+			current, listErr := manager.List(context.Background())
+			if listErr != nil || current[0].ID != "cfg-1" || current[0].Priority != 0 || current[1].ID != "cfg-2" || current[1].Priority != 1 {
+				t.Fatalf("current = %#v, %v", current, listErr)
+			}
+		})
+	}
+}
+
 func TestManagerRejectsIneligibleAndInvalidCommandsBeforeMutation(t *testing.T) {
 	store := &manageStoreStub{items: map[string]hxc.SenderConfig{}}
 	manager := NewManager(manageUOWStub{}, store, manageStaffStub{}, nil)
@@ -100,9 +126,10 @@ type manageReceipt struct {
 }
 
 type manageStoreStub struct {
-	items     map[string]hxc.SenderConfig
-	receipts  map[string]manageReceipt
-	saveCalls int
+	items        map[string]hxc.SenderConfig
+	receipts     map[string]manageReceipt
+	saveCalls    int
+	reorderCalls int
 }
 
 func (store *manageStoreStub) ListSenderConfigs(context.Context) ([]hxc.SenderConfig, error) {
@@ -133,6 +160,7 @@ func (store *manageStoreStub) DeleteSenderConfig(_ context.Context, senderUserID
 }
 
 func (store *manageStoreStub) ReorderSenderConfigs(_ context.Context, ids []string) ([]hxc.SenderConfig, error) {
+	store.reorderCalls++
 	for priority, id := range ids {
 		item, ok := store.items[id]
 		if !ok {

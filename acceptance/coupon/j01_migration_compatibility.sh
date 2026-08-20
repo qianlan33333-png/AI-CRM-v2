@@ -15,10 +15,13 @@ baseline="$(snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 33
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "33" ]]
 [[ "$(snapshot)" = "$baseline" ]]
-/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" test -race -count=1 -timeout=360s -run '^TestJ01' ./acceptance/coupon -args -database-url "$database_url"
-post_acceptance="$(snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 32
-[[ "$(snapshot)" = "$post_acceptance" ]]
+[[ "$(snapshot)" = "$baseline" ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 33
-[[ "$(snapshot)" = "$post_acceptance" ]]
-printf 'P4-J01 migration compatibility: PASS (32/33/32/33, pre-existing Event/Auth/session/Product history preserved)\n'
+[[ "$(snapshot)" = "$baseline" ]]
+# Current Product code requires the version column introduced after migration
+# 33. Keep the historical 32/33 compatibility proof isolated above, then run
+# the current Coupon acceptance against the latest schema.
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up
+/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" test -race -count=1 -timeout=360s -run '^TestJ01' ./acceptance/coupon -args -database-url "$database_url"
+printf 'P4-J01 migration compatibility: PASS (32/33/32/33, current acceptance on latest schema, pre-existing Event/Auth/session/Product history preserved)\n'
