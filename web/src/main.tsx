@@ -29,6 +29,8 @@ import { SegmentsPage } from "./segments-ui";
 import type { SegmentTransport } from "./segments";
 import { IdentityMergeReviewsPage } from "./identity-reviews-ui";
 import type { IdentityReviewTransport } from "./identity-reviews";
+import { IdentityConsolePage } from "./identity-console-ui";
+import type { IdentityConsoleTransport } from "./identity-console";
 import { MiniProgramLibraryPage } from "./miniprogram-library-ui";
 import type { MiniProgramLibraryTransport } from "./miniprogram-library";
 import { ImageLibraryPage } from "./image-library-ui";
@@ -89,6 +91,7 @@ export const ORDERS_PATH = "/admin/orders";
 export const OUTBOUND_PATH = "/outbound";
 export const PRODUCTS_PATH = "/admin/wechat-pay/products";
 export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
+export const IDENTITY_CONSOLE_PATH = "/identity/console";
 
 export const routes = [
   {
@@ -114,6 +117,12 @@ export const routes = [
     navigationLabel: "人群包",
     title: "人群包",
     description: "人群包模块边界已预留，尚未接入筛选或物化任务。",
+  },
+  {
+    path: IDENTITY_CONSOLE_PATH,
+    navigationLabel: "身份绑定",
+    title: "本地身份控制台",
+    description: "查询本地身份归属并执行显式本地绑定。",
   },
   {
     path: "/identity/merge-reviews",
@@ -258,6 +267,7 @@ export interface AppProps {
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
+  identityConsoleTransport?: IdentityConsoleTransport;
   miniProgramTransport?: MiniProgramLibraryTransport;
   imageLibraryTransport?: ImageLibraryTransport;
   hxcSenderTransport?: HXCSenderTransport;
@@ -449,6 +459,7 @@ function PageContent({
   stageTransport,
   segmentTransport,
   identityReviewTransport,
+  identityConsoleTransport,
   miniProgramTransport,
   imageLibraryTransport,
   hxcSenderTransport,
@@ -479,6 +490,7 @@ function PageContent({
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
+  identityConsoleTransport?: IdentityConsoleTransport;
   miniProgramTransport?: MiniProgramLibraryTransport;
   imageLibraryTransport?: ImageLibraryTransport;
   hxcSenderTransport?: HXCSenderTransport;
@@ -572,6 +584,17 @@ function PageContent({
       <IdentityMergeReviewsPage
         role={principal.role}
         transport={identityReviewTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
+  if (route.path === IDENTITY_CONSOLE_PATH) {
+    return (
+      <IdentityConsolePage
+        role={principal.role}
+        transport={identityConsoleTransport}
         readCookie={cookieHeader}
         onUnauthenticated={onUnauthenticated}
       />
@@ -837,6 +860,7 @@ export function App({
   stageTransport,
   segmentTransport,
   identityReviewTransport,
+  identityConsoleTransport,
   miniProgramTransport,
   imageLibraryTransport,
   hxcSenderTransport,
@@ -1020,6 +1044,7 @@ export function App({
             stageTransport={stageTransport}
             segmentTransport={segmentTransport}
             identityReviewTransport={identityReviewTransport}
+            identityConsoleTransport={identityConsoleTransport}
             miniProgramTransport={miniProgramTransport}
             imageLibraryTransport={imageLibraryTransport}
             hxcSenderTransport={hxcSenderTransport}
