@@ -396,6 +396,28 @@ function parseOrderDetail(
   value: unknown,
   expected: OrderListItem,
 ): OrderDetail | undefined {
+  const parsed = parseOrderDetailReference(value);
+  if (!parsed) return undefined;
+  const { detail, item } = parsed;
+  if (
+    item.orderNo !== expected.orderNo ||
+    item.provider !== expected.provider ||
+    item.status !== expected.status ||
+    item.productCode !== expected.productCode ||
+    item.productName !== expected.productName ||
+    item.amountYuan !== expected.amountYuan ||
+    item.currency !== expected.currency ||
+    item.statusLabel !== expected.statusLabel ||
+    item.providerLabel !== expected.providerLabel ||
+    item.createdAt !== expected.createdAt
+  )
+    return undefined;
+  return detail;
+}
+
+function parseOrderDetailReference(
+  value: unknown,
+): { readonly detail: OrderDetail; readonly item: OrderListItem } | undefined {
   if (
     !record(value) ||
     !Object.keys(value).every((key) => DETAIL_KEYS.includes(key)) ||
@@ -419,31 +441,24 @@ function parseOrderDetail(
     !nonnegative(value.refundable_amount_total) ||
     total === undefined ||
     BigInt(value.refundable_amount_total) > total ||
-    value.order_no !== expected.orderNo ||
-    item.orderNo !== expected.orderNo ||
-    item.provider !== expected.provider ||
-    item.status !== expected.status ||
-    item.productCode !== expected.productCode ||
-    item.productName !== expected.productName ||
-    item.amountYuan !== expected.amountYuan ||
-    item.currency !== expected.currency ||
-    item.statusLabel !== expected.statusLabel ||
-    item.providerLabel !== expected.providerLabel ||
-    item.createdAt !== expected.createdAt
+    value.order_no !== item.orderNo
   )
     return undefined;
   return {
-    id: value.id,
-    orderNo: item.orderNo,
-    provider: item.provider,
-    productCode: item.productCode,
-    productName: item.productName,
-    amountYuan: item.amountYuan,
-    currency: item.currency,
-    statusLabel: item.statusLabel,
-    providerLabel: item.providerLabel,
-    createdAt: item.createdAt,
-    refundableAmountTotal: value.refundable_amount_total,
+    item,
+    detail: {
+      id: value.id,
+      orderNo: item.orderNo,
+      provider: item.provider,
+      productCode: item.productCode,
+      productName: item.productName,
+      amountYuan: item.amountYuan,
+      currency: item.currency,
+      statusLabel: item.statusLabel,
+      providerLabel: item.providerLabel,
+      createdAt: item.createdAt,
+      refundableAmountTotal: value.refundable_amount_total,
+    },
   };
 }
 
@@ -865,6 +880,33 @@ export async function loadOrderDetail(
     if (response.status !== 200) return { status: failure(response.status) };
     const detail = parseOrderDetail(response.data, item);
     return detail ? { status: "loaded", detail } : { status: "invalid" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+// Legacy transaction-detail page identifiers are opaque references: the closed
+// repository accepts a local row ID, merchant order number, or platform
+// transaction number. Keep that reference out of the UI model and bind the
+// returned projection to the requested provider before exposing safe fields.
+export async function loadOrderDetailReference(
+  transport: OrdersTransport,
+  reference: string,
+  expectedProvider: OrderProvider,
+): Promise<OrderDetailResult> {
+  if (!text(reference, 200, true) || !provider(expectedProvider))
+    return { status: "invalid" };
+  try {
+    const response = await transport.detail(
+      reference,
+      { provider: expectedProvider },
+      { credentials: "same-origin" },
+    );
+    if (response.status !== 200) return { status: failure(response.status) };
+    const parsed = parseOrderDetailReference(response.data);
+    return parsed && parsed.item.provider === expectedProvider
+      ? { status: "loaded", detail: parsed.detail }
+      : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
   }

@@ -670,7 +670,12 @@ function PageContent({
   }
   if (commerceWorkspace) {
     return (
-      <CommerceWorkspaces role={principal.role} route={commerceWorkspace} />
+      <CommerceWorkspaces
+        role={principal.role}
+        route={commerceWorkspace}
+        ordersTransport={ordersTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
     );
   }
   if (cloudOrchestrator) {
