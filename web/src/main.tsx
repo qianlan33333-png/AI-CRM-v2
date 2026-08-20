@@ -69,6 +69,13 @@ import {
   groupOpsRoute,
   type GroupOpsRoute,
 } from "./group-ops";
+import { AudiencePackageWorkspace } from "./audience-packages-ui";
+import {
+  AUDIENCE_PACKAGES_PATH,
+  audiencePackageCarrierRoute,
+  audiencePackageRoute,
+  type AudiencePackageRoute,
+} from "./audience-packages";
 import { CommerceWorkspaces } from "./commerce-workspaces-ui";
 import {
   ALIPAY_TRANSACTIONS_PATH,
@@ -242,6 +249,12 @@ export const routes = [
     navigationLabel: "群运营计划",
     title: "群运营计划",
     description: "群运营计划的本地安全工作区载体。",
+  },
+  {
+    path: AUDIENCE_PACKAGES_PATH,
+    navigationLabel: "AI 人群包",
+    title: "AI Audience 人群包",
+    description: "人群包管理的本地安全工作区载体。",
   },
   {
     path: SERVICE_PRODUCTS_PATH,
@@ -444,6 +457,8 @@ export function carrierPathname(pathname: string, search: string): string {
   if (cloudOrchestratorCarrier) return cloudOrchestratorCarrier.pathname;
   const groupOpsCarrier = groupOpsCarrierRoute(search);
   if (groupOpsCarrier) return groupOpsCarrier.pathname;
+  const audiencePackageCarrier = audiencePackageCarrierRoute(search);
+  if (audiencePackageCarrier) return audiencePackageCarrier.pathname;
   const commerceCarrier = commerceWorkspaceCarrierRoute(search);
   if (commerceCarrier) return commerceCarrier.pathname;
   let params: URLSearchParams;
@@ -555,6 +570,7 @@ function PageContent({
   route,
   cloudOrchestrator,
   groupOps,
+  audiencePackage,
   commerceWorkspace,
   principal,
   customerTransport,
@@ -589,6 +605,7 @@ function PageContent({
   route: AppRoute | undefined;
   cloudOrchestrator?: CloudOrchestratorRoute;
   groupOps?: GroupOpsRoute;
+  audiencePackage?: AudiencePackageRoute;
   commerceWorkspace?: CommerceWorkspaceRoute;
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
@@ -622,6 +639,14 @@ function PageContent({
 }) {
   if (groupOps) {
     return <GroupOpsWorkspace role={principal.role} route={groupOps} />;
+  }
+  if (audiencePackage) {
+    return (
+      <AudiencePackageWorkspace
+        role={principal.role}
+        route={audiencePackage}
+      />
+    );
   }
   if (commerceWorkspace) {
     return (
@@ -970,6 +995,7 @@ export function navigationLinks(
     permitted.add(OUTBOUND_PATH);
     permitted.add(CLOUD_ORCHESTRATOR_PLANS_PATH);
     permitted.add(GROUP_OPS_PLANS_PATH);
+    permitted.add(AUDIENCE_PACKAGES_PATH);
     permitted.add(SERVICE_PRODUCTS_PATH);
     permitted.add(WECHAT_PAY_TRANSACTIONS_PATH);
     permitted.add(WECHAT_SHOP_TRANSACTIONS_PATH);
@@ -1036,6 +1062,7 @@ export function App({
   const route = routeForPathname(effectivePathname);
   const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
   const groupOps = groupOpsRoute(effectivePathname);
+  const audiencePackage = audiencePackageRoute(effectivePathname);
   const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);
   const customerID = customerIDForPathname(effectivePathname);
   const publicSurvey = pathname === "/" ? publicSurveySlug(search) : undefined;
@@ -1180,6 +1207,7 @@ export function App({
             route={route}
             cloudOrchestrator={cloudOrchestrator}
             groupOps={groupOps}
+            audiencePackage={audiencePackage}
             commerceWorkspace={commerceWorkspace}
             principal={session.principal}
             customerTransport={customerTransport}

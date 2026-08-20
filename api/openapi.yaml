@@ -1705,6 +1705,68 @@ paths:
             Allow: { required: true, schema: { type: string, enum: [GET] } }
             Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/automation-conversion:
+    get:
+      tags: [p4-audience-package-workspaces]
+      operationId: getAudiencePackagesWorkspace
+      summary: Carry an authorized administrator to the safe local audience-package workspace
+      x-p4-decision-evidence: P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Exact same-origin SPA carrier; no package, member, sender, provider, or outbound fact is read or changed.
+          headers:
+            Location: { required: true, schema: { type: string, enum: ["/?legacy_admin_path=%2Fadmin%2Fautomation-conversion"] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /admin/automation-conversion/packages/{package_id}:
+    parameters:
+      - name: package_id
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+    get:
+      tags: [p4-audience-package-workspaces]
+      operationId: getAudiencePackageDetailWorkspace
+      summary: Carry an authorized administrator to one safe local audience-package detail workspace
+      x-p4-decision-evidence: P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: static
+      x-aicrm-external-effect: none
+      responses:
+        "302":
+          description: Same-origin SPA carrier containing only the canonical positive package identifier; no package, member, or send fact is inferred.
+          headers:
+            Location: { required: true, schema: { type: string, minLength: 1 } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
   /admin/alipay/transactions:
     get:
       tags: [p4-commerce-workspaces]

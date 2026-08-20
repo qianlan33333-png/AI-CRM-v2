@@ -56,6 +56,7 @@ const (
 	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
 	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
 	p4GroupOpsWorkspaceEvidence     = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
+	p4AudienceWorkspaceEvidence     = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
 	p4OutboundOperationsEvidence    = "P4-OUTBOUND-OPERATIONS-2026-08-20"
 	p4CommerceWorkspaceEvidence     = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
 	p4HXCSenderManagementEvidence   = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
@@ -96,6 +97,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCloudOrchestratorObservabilityWorkspace": {"/admin/cloud-orchestrator/observability", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getGroupOpsPlansWorkspace":                  {"/admin/automation-conversion/group-ops/ui", "GET", p4GroupOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getGroupOpsPlanDetailWorkspace":             {"/admin/automation-conversion/group-ops/plans/{plan_id}", "GET", p4GroupOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getAudiencePackagesWorkspace":               {"/admin/automation-conversion", "GET", p4AudienceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getAudiencePackageDetailWorkspace":          {"/admin/automation-conversion/packages/{package_id}", "GET", p4AudienceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getAlipayTransactionsWorkspace":             {"/admin/alipay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getServiceProductsWorkspace":                {"/admin/service-period-products", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
@@ -117,6 +120,12 @@ var nativePackageOperations = map[string]nativePackageOperation{
 var nativePackagePathParameters = map[string]nativePackagePathParameter{
 	"getGroupOpsPlanDetailWorkspace": {
 		name:      "plan_id",
+		typeName:  "string",
+		pattern:   "^[1-9][0-9]{0,18}$",
+		maxLength: 19,
+	},
+	"getAudiencePackageDetailWorkspace": {
+		name:      "package_id",
 		typeName:  "string",
 		pattern:   "^[1-9][0-9]{0,18}$",
 		maxLength: 19,
