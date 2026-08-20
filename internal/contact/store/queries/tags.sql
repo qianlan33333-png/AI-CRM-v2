@@ -90,4 +90,4 @@ WHERE id = sqlc.arg(id) AND state = 'reserved'
 RETURNING id, actor_id, idempotency_key, operation, payload, trace_id, state, event_id, river_job_id;
 
 -- name: GetLegacyTagExecutionStatus :one
-SELECT payload FROM legacy_tag_execution_status WHERE singleton = true;
+SELECT payload, updated_at FROM legacy_tag_execution_status WHERE singleton = true;

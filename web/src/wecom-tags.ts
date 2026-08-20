@@ -3,6 +3,7 @@ import {
   archiveLegacyWecomTagGroup,
   createLegacyWecomTag,
   createLegacyWecomTagGroup,
+  getLegacyWecomTagExecutionGate,
   listLegacyWecomTags,
   updateLegacyWecomTagGroupPatch,
   updateLegacyWecomTagPatch,
@@ -44,6 +45,19 @@ export type WecomTagsFailure =
 
 export type WecomTagCatalogResult =
   | { readonly status: "loaded"; readonly catalog: WecomTagCatalog }
+  | { readonly status: WecomTagsFailure };
+
+export interface WecomTagExecutionGate {
+  readonly providerExecutionEligible: false;
+  readonly localCommandAcceptanceAvailable: true;
+  readonly localQueueAvailable: true;
+  readonly syncExecuted: false;
+  readonly observedAt: string;
+  readonly realExternalCallExecuted: false;
+}
+
+export type WecomTagExecutionGateResult =
+  | { readonly status: "loaded"; readonly gate: WecomTagExecutionGate }
   | { readonly status: WecomTagsFailure };
 
 export type WecomTagGroupCreateResult =
@@ -88,6 +102,13 @@ export type WecomTagArchiveResult =
 
 async function generatedRead(options?: RequestInit) {
   return listLegacyWecomTags({ credentials: "same-origin", ...options });
+}
+
+async function generatedExecutionGate(options?: RequestInit) {
+  return getLegacyWecomTagExecutionGate({
+    credentials: "same-origin",
+    ...options,
+  });
 }
 
 async function generatedCreate(
@@ -160,6 +181,7 @@ async function generatedTagArchive(
 
 export interface WecomTagsTransport {
   readonly read: typeof generatedRead;
+  readonly executionGate: typeof generatedExecutionGate;
   readonly create: typeof generatedCreate;
   readonly createTag: typeof generatedTagCreate;
   readonly rename: typeof generatedRename;
@@ -170,6 +192,7 @@ export interface WecomTagsTransport {
 
 export const generatedWecomTagsTransport: WecomTagsTransport = {
   read: generatedRead,
+  executionGate: generatedExecutionGate,
   create: generatedCreate,
   createTag: generatedTagCreate,
   rename: generatedRename,
@@ -712,6 +735,54 @@ export async function loadWecomTagCatalog(
   if (response.status !== 200) return { status: "unavailable" };
   const catalog = parseWecomTagCatalog(response.data);
   return catalog ? { status: "loaded", catalog } : { status: "invalid" };
+}
+
+export function parseWecomTagExecutionGate(
+  value: unknown,
+): WecomTagExecutionGate | undefined {
+  if (
+    !record(value) ||
+    !exact(value, [
+      "provider_execution_eligible",
+      "local_command_acceptance_available",
+      "local_queue_available",
+      "sync_executed",
+      "observed_at",
+      "real_external_call_executed",
+    ]) ||
+    value.provider_execution_eligible !== false ||
+    value.local_command_acceptance_available !== true ||
+    value.local_queue_available !== true ||
+    value.sync_executed !== false ||
+    !frozenTimestamp(value.observed_at) ||
+    value.real_external_call_executed !== false
+  ) {
+    return undefined;
+  }
+  return {
+    providerExecutionEligible: false,
+    localCommandAcceptanceAvailable: true,
+    localQueueAvailable: true,
+    syncExecuted: false,
+    observedAt: value.observed_at,
+    realExternalCallExecuted: false,
+  };
+}
+
+export async function loadWecomTagExecutionGate(
+  transport: WecomTagsTransport = generatedWecomTagsTransport,
+): Promise<WecomTagExecutionGateResult> {
+  let response: Awaited<ReturnType<WecomTagsTransport["executionGate"]>>;
+  try {
+    response = await transport.executionGate();
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (response.status === 401) return { status: "unauthenticated" };
+  if (response.status === 403) return { status: "forbidden" };
+  if (response.status !== 200) return { status: "unavailable" };
+  const gate = parseWecomTagExecutionGate(response.data);
+  return gate ? { status: "loaded", gate } : { status: "invalid" };
 }
 
 function normalizedCreateText(value: string): string | undefined {

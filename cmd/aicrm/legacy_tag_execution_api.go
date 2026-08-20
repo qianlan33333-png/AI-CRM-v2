@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -78,6 +79,10 @@ func (handler *Handler) GetLegacyTag(writer http.ResponseWriter, request *http.R
 }
 
 func (handler *Handler) GetLegacyTagExecutionStatus(writer http.ResponseWriter, request *http.Request) {
+	if !legacyWecomTagsGlobalReadAuthorized(request) {
+		writeLegacyTagExecutionError(writer, authport.ErrUnauthorized)
+		return
+	}
 	if handler == nil || nilLegacyDependency(handler.legacyTagStatus) || request == nil {
 		writeLegacyTagExecutionError(writer, contactapp.ErrLegacyTagExecutionUnavailable)
 		return
@@ -87,9 +92,23 @@ func (handler *Handler) GetLegacyTagExecutionStatus(writer http.ResponseWriter, 
 		writeLegacyTagExecutionError(writer, err)
 		return
 	}
-	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	_, _ = writer.Write(status.Payload)
+	writeJSON(writer, http.StatusOK, legacyTagExecutionGateResponse{
+		ProviderExecutionEligible:       status.ProviderExecutionEligible,
+		LocalCommandAcceptanceAvailable: status.LocalCommandAcceptanceAvailable,
+		LocalQueueAvailable:             status.LocalQueueAvailable,
+		SyncExecuted:                    status.SyncExecuted,
+		ObservedAt:                      status.ObservedAt.UTC().Format(time.RFC3339Nano),
+		RealExternalCallExecuted:        status.RealExternalCallExecuted,
+	})
+}
+
+type legacyTagExecutionGateResponse struct {
+	ProviderExecutionEligible       bool   `json:"provider_execution_eligible"`
+	LocalCommandAcceptanceAvailable bool   `json:"local_command_acceptance_available"`
+	LocalQueueAvailable             bool   `json:"local_queue_available"`
+	SyncExecuted                    bool   `json:"sync_executed"`
+	ObservedAt                      string `json:"observed_at"`
+	RealExternalCallExecuted        bool   `json:"real_external_call_executed"`
 }
 
 func (handler *Handler) SyncLegacyTags(writer http.ResponseWriter, request *http.Request) {

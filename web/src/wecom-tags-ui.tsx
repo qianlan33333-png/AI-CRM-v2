@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import { WeComCallbackInboxPage } from "./wecom-callback-inbox-ui";
 import type { CallbackInboxTransport } from "./wecom-callback-inbox";
@@ -16,6 +16,7 @@ import {
   filterWecomTagGroups,
   generatedWecomTagsTransport,
   loadWecomTagCatalog,
+  loadWecomTagExecutionGate,
   newWecomTagIdempotencyKey,
   nextWecomTagPage,
   previousWecomTagPage,
@@ -25,6 +26,8 @@ import {
   wecomTagPageCount,
   wecomTagSearchState,
   type WecomTagCatalog,
+  type WecomTagExecutionGate,
+  type WecomTagExecutionGateResult,
   type WecomTagCreateResult,
   type WecomTagGroupCreateResult,
   type WecomTagGroupArchiveResult,
@@ -49,6 +52,15 @@ export type WecomTagsViewState =
   | { readonly kind: "loading" }
   | { readonly kind: "ready"; readonly catalog: WecomTagCatalog }
   | { readonly kind: "error" };
+
+type WecomTagExecutionGateViewState =
+  | { readonly kind: "loading"; readonly previous?: WecomTagExecutionGate }
+  | { readonly kind: "ready"; readonly gate: WecomTagExecutionGate }
+  | {
+      readonly kind: "error";
+      readonly failure: Exclude<WecomTagExecutionGateResult["status"], "loaded">;
+      readonly previous?: WecomTagExecutionGate;
+    };
 
 export type WecomTagCopyStatus = "idle" | "copied" | "unavailable" | "failed";
 
@@ -374,6 +386,8 @@ export function WecomTagsPage({
 }: WecomTagsPageProps): React.ReactElement {
   const canAccess = role === "admin" || role === "ops";
   const [state, setState] = useState<WecomTagsViewState>({ kind: "loading" });
+  const [executionGate, setExecutionGate] =
+    useState<WecomTagExecutionGateViewState>({ kind: "loading" });
   const [groupName, setGroupName] = useState("");
   const [firstTagName, setFirstTagName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -384,6 +398,15 @@ export function WecomTagsPage({
   const [createNotice, setCreateNotice] = useState<string>();
   const mutationInFlight = useRef(false);
   const mutationLocked = useRef(false);
+  const executionGateGeneration = useRef(0);
+  const executionGateFlight = useRef<number>();
+  const executionGateVerified = useRef<WecomTagExecutionGate>();
+  const unauthenticatedNotified = useRef(false);
+  const reportUnauthenticated = useCallback(() => {
+    if (unauthenticatedNotified.current) return;
+    unauthenticatedNotified.current = true;
+    onUnauthenticated?.();
+  }, [onUnauthenticated]);
   const lockMutations = () => {
     mutationLocked.current = true;
     setMutationUncertain(true);
@@ -394,7 +417,7 @@ export function WecomTagsPage({
     let active = true;
     void loadWecomTagCatalog(transport).then((result) => {
       if (!active) return;
-      if (result.status === "unauthenticated") onUnauthenticated?.();
+      if (result.status === "unauthenticated") reportUnauthenticated();
       setState(
         result.status === "loaded"
           ? { kind: "ready", catalog: result.catalog }
@@ -404,7 +427,46 @@ export function WecomTagsPage({
     return () => {
       active = false;
     };
-  }, [canAccess, onUnauthenticated, transport]);
+  }, [canAccess, reportUnauthenticated, transport]);
+
+  const refreshExecutionGate = useCallback(() => {
+    if (!canAccess || executionGateFlight.current !== undefined) return;
+    const token = ++executionGateGeneration.current;
+    executionGateFlight.current = token;
+    setExecutionGate({
+      kind: "loading",
+      previous: executionGateVerified.current,
+    });
+    void loadWecomTagExecutionGate(transport)
+      .then((result) => {
+        if (token !== executionGateGeneration.current) return;
+        if (result.status === "loaded") {
+          executionGateVerified.current = result.gate;
+          setExecutionGate({ kind: "ready", gate: result.gate });
+          return;
+        }
+        if (result.status === "unauthenticated") reportUnauthenticated();
+        setExecutionGate({
+          kind: "error",
+          failure: result.status,
+          previous: executionGateVerified.current,
+        });
+      })
+      .finally(() => {
+        if (executionGateFlight.current === token) {
+          executionGateFlight.current = undefined;
+        }
+      });
+  }, [canAccess, reportUnauthenticated, transport]);
+
+  useEffect(() => {
+    if (!canAccess) return undefined;
+    refreshExecutionGate();
+    return () => {
+      executionGateGeneration.current += 1;
+      executionGateFlight.current = undefined;
+    };
+  }, [canAccess, refreshExecutionGate]);
 
   const submitCreate = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -635,6 +697,11 @@ export function WecomTagsPage({
         role={role}
         state={state}
       />
+      <WecomTagExecutionGatePanel
+        role={role}
+        state={executionGate}
+        onRefresh={refreshExecutionGate}
+      />
       {role === "admin" ? (
         <WeComCallbackInboxPage
           role="admin"
@@ -643,6 +710,50 @@ export function WecomTagsPage({
         />
       ) : null}
     </>
+  );
+}
+
+export function WecomTagExecutionGatePanel({
+  role,
+  state,
+  onRefresh,
+}: {
+  readonly role: WecomTagsRole;
+  readonly state: WecomTagExecutionGateViewState;
+  readonly onRefresh: () => void;
+}): React.ReactElement | null {
+  if (role !== "admin" && role !== "ops") return null;
+  const gate = state.kind === "ready" ? state.gate : state.previous;
+  return (
+    <section aria-labelledby="wecom-tag-execution-gate-title">
+      <h2 id="wecom-tag-execution-gate-title">本地标签执行前置状态</h2>
+      <p>
+        仅显示本地门禁与队列观测；不会发起同步、标记或取消标记，也不代表企微执行、送达或成功。
+      </p>
+      {gate ? (
+        <dl>
+          <dt>提供方执行资格</dt>
+          <dd>不可用</dd>
+          <dt>本地命令受理</dt>
+          <dd>可用</dd>
+          <dt>本地队列</dt>
+          <dd>可用</dd>
+          <dt>同步已执行</dt>
+          <dd>否</dd>
+          <dt>观测时间</dt>
+          <dd>{gate.observedAt}</dd>
+        </dl>
+      ) : null}
+      {state.kind === "loading" ? <p>正在读取本地门禁观测…</p> : null}
+      {state.kind === "error" ? (
+        <p role="alert">
+          本地门禁观测不可用；不会据此推断企微执行或成功。
+        </p>
+      ) : null}
+      <button type="button" onClick={onRefresh} disabled={state.kind === "loading"}>
+        刷新本地观测
+      </button>
+    </section>
   );
 }
 

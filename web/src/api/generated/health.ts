@@ -2125,15 +2125,16 @@ export interface LegacyTagResponse {
 }
 
 export interface LegacyTagExecutionGate {
-  accepted: boolean;
-  queued: boolean;
-  attempted: boolean;
-  executed: boolean;
-  outcome_unknown: boolean;
-  reconciled: boolean;
+  /** The local gate is fail-closed; provider execution is not eligible. */
+  provider_execution_eligible: boolean;
+  /** The local command-acceptance boundary is available; this is not a provider receipt. */
+  local_command_acceptance_available: boolean;
+  /** The local queue boundary is available; no worker or provider call was made. */
+  local_queue_available: boolean;
+  /** Timestamp of the persisted local gate observation. */
+  observed_at: string;
   real_external_call_executed: boolean;
   sync_executed: boolean;
-  [key: string]: unknown;
 }
 
 export interface LegacyTagSyncRequest {

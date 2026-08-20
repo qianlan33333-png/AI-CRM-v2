@@ -12,6 +12,7 @@ import {
   createWecomTagGroup,
   filterWecomTagGroups,
   loadWecomTagCatalog,
+  loadWecomTagExecutionGate,
   nextWecomTagPage,
   previousWecomTagPage,
   renameWecomTag,
@@ -21,6 +22,7 @@ import {
   wecomTagSearchState,
   parseWecomTagGroupArchiveSuccess,
   parseWecomTagArchiveSuccess,
+  parseWecomTagExecutionGate,
   type WecomTagsTransport,
 } from "./wecom-tags";
 
@@ -93,6 +95,21 @@ const catalog = {
 function transport(status: number, data: unknown): WecomTagsTransport {
   return {
     read: vi.fn(async () => ({ status, data, headers: new Headers() })),
+  } as unknown as WecomTagsTransport;
+}
+
+const executionGate = {
+  provider_execution_eligible: false,
+  local_command_acceptance_available: true,
+  local_queue_available: true,
+  sync_executed: false,
+  observed_at: "2026-08-20T09:00:00Z",
+  real_external_call_executed: false,
+} as const;
+
+function executionGateTransport(status: number, data: unknown): WecomTagsTransport {
+  return {
+    executionGate: vi.fn(async () => ({ status, data, headers: new Headers() })),
   } as unknown as WecomTagsTransport;
 }
 
@@ -373,6 +390,47 @@ describe("WeCom tag catalog read boundary", () => {
     expect(previousWecomTagPage(2)).toBe(1);
     expect(nextWecomTagPage(1, many)).toBe(2);
     expect(nextWecomTagPage(2, many)).toBeUndefined();
+  });
+});
+
+describe("WeCom tag execution gate read boundary", () => {
+  it("accepts only the closed safe local projection", async () => {
+    const client = executionGateTransport(200, executionGate);
+    await expect(loadWecomTagExecutionGate(client)).resolves.toEqual({
+      status: "loaded",
+      gate: {
+        providerExecutionEligible: false,
+        localCommandAcceptanceAvailable: true,
+        localQueueAvailable: true,
+        syncExecuted: false,
+        observedAt: "2026-08-20T09:00:00Z",
+        realExternalCallExecuted: false,
+      },
+    });
+    expect(client.executionGate).toHaveBeenCalledOnce();
+  });
+
+  it("rejects payload, provider success claims, and malformed local observations", async () => {
+    for (const value of [
+      { ...executionGate, mode: "provider_execution_unavailable" },
+      { ...executionGate, provider_execution_eligible: true },
+      { ...executionGate, local_queue_available: false },
+      { ...executionGate, observed_at: "2026-02-30T09:00:00Z" },
+    ]) {
+      await expect(
+        loadWecomTagExecutionGate(executionGateTransport(200, value)),
+      ).resolves.toEqual({ status: "invalid" });
+    }
+    expect(parseWecomTagExecutionGate({ ...executionGate, payload: {} })).toBeUndefined();
+    await expect(
+      loadWecomTagExecutionGate(executionGateTransport(401, {})),
+    ).resolves.toEqual({ status: "unauthenticated" });
+    await expect(
+      loadWecomTagExecutionGate(executionGateTransport(403, {})),
+    ).resolves.toEqual({ status: "forbidden" });
+    await expect(
+      loadWecomTagExecutionGate(executionGateTransport(503, {})),
+    ).resolves.toEqual({ status: "unavailable" });
   });
 });
 

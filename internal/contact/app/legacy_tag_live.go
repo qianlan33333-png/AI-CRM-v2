@@ -36,7 +36,20 @@ var (
 // Keeping the validated JSON payload opaque avoids inventing user-visible gate
 // fields before the shared legacy handler can replay the exact envelope.
 type LegacyTagExecutionStatus struct {
-	Payload json.RawMessage
+	Payload    json.RawMessage
+	ObservedAt time.Time
+}
+
+// LegacyTagExecutionGate is the only stable, user-visible projection of the
+// legacy singleton. The raw payload remains an internal compatibility input:
+// callers never receive its mode, revision, or future fields.
+type LegacyTagExecutionGate struct {
+	ProviderExecutionEligible       bool
+	LocalCommandAcceptanceAvailable bool
+	LocalQueueAvailable             bool
+	SyncExecuted                    bool
+	ObservedAt                      time.Time
+	RealExternalCallExecuted        bool
 }
 
 type LegacyTagExecutionStatusReader interface {
@@ -54,29 +67,58 @@ func NewLegacyTagExecutionStatusService(uow platformport.UnitOfWork, reader Lega
 	return &LegacyTagExecutionStatusService{uow: uow, reader: reader}
 }
 
-func (service *LegacyTagExecutionStatusService) Get(ctx context.Context) (LegacyTagExecutionStatus, error) {
+func (service *LegacyTagExecutionStatusService) Get(ctx context.Context) (LegacyTagExecutionGate, error) {
 	if ctx == nil || service == nil || nilLegacyTagLiveDependency(service.uow) || nilLegacyTagLiveDependency(service.reader) {
-		return LegacyTagExecutionStatus{}, ErrLegacyTagExecutionUnavailable
+		return LegacyTagExecutionGate{}, ErrLegacyTagExecutionUnavailable
 	}
-	var status LegacyTagExecutionStatus
+	var gate LegacyTagExecutionGate
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
 		loaded, err := service.reader.ReadLegacyTagExecutionStatus(txCtx)
 		if err != nil {
 			return err
 		}
-		if !validLegacyTagJSONObject(loaded.Payload) {
+		projected, ok := projectLegacyTagExecutionGate(loaded)
+		if !ok {
 			return ErrInvalidLegacyTagExecutionStatus
 		}
-		status = LegacyTagExecutionStatus{Payload: append(json.RawMessage(nil), loaded.Payload...)}
+		gate = projected
 		return nil
 	})
 	if err != nil {
 		if errors.Is(err, ErrInvalidLegacyTagExecutionStatus) {
-			return LegacyTagExecutionStatus{}, err
+			return LegacyTagExecutionGate{}, err
 		}
-		return LegacyTagExecutionStatus{}, errors.Join(ErrLegacyTagExecutionUnavailable, err)
+		return LegacyTagExecutionGate{}, errors.Join(ErrLegacyTagExecutionUnavailable, err)
 	}
-	return status, nil
+	return gate, nil
+}
+
+func projectLegacyTagExecutionGate(status LegacyTagExecutionStatus) (LegacyTagExecutionGate, bool) {
+	if status.ObservedAt.IsZero() {
+		return LegacyTagExecutionGate{}, false
+	}
+	var source map[string]json.RawMessage
+	if json.Unmarshal(status.Payload, &source) != nil || source == nil {
+		return LegacyTagExecutionGate{}, false
+	}
+	var mode string
+	var accepted, queued, attempted, executed, unknown, reconciled, external, synced bool
+	if json.Unmarshal(source["mode"], &mode) != nil || mode != "provider_execution_unavailable" ||
+		json.Unmarshal(source["accepted"], &accepted) != nil || !accepted ||
+		json.Unmarshal(source["queued"], &queued) != nil || !queued ||
+		json.Unmarshal(source["attempted"], &attempted) != nil || attempted ||
+		json.Unmarshal(source["executed"], &executed) != nil || executed ||
+		json.Unmarshal(source["outcome_unknown"], &unknown) != nil || unknown ||
+		json.Unmarshal(source["reconciled"], &reconciled) != nil || reconciled ||
+		json.Unmarshal(source["real_external_call_executed"], &external) != nil || external ||
+		json.Unmarshal(source["sync_executed"], &synced) != nil || synced {
+		return LegacyTagExecutionGate{}, false
+	}
+	return LegacyTagExecutionGate{
+		ProviderExecutionEligible: false, LocalCommandAcceptanceAvailable: true,
+		LocalQueueAvailable: true, SyncExecuted: false, ObservedAt: status.ObservedAt.UTC(),
+		RealExternalCallExecuted: false,
+	}, true
 }
 
 type LegacyTagLiveMutationOperation string

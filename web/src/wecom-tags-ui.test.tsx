@@ -1,4 +1,6 @@
-import React from "react";
+/* eslint-disable no-unused-vars -- the minimal DOM shim exposes React DOM structural fields. */
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -11,6 +13,7 @@ import {
   submitWecomTagGroupRename,
   WecomTagDetails,
   WecomTagGroupDetails,
+  WecomTagExecutionGatePanel,
   WecomTagsPage,
   WecomTagsView,
 } from "./wecom-tags-ui";
@@ -40,8 +43,44 @@ const catalog = {
 function transport(): WecomTagsTransport {
   return {
     read: vi.fn(async () => ({ status: 503, data: {} })),
+    executionGate: vi.fn(async () => ({ status: 503, data: {} })),
   } as unknown as WecomTagsTransport;
 }
+
+class TestNode {
+  parentNode: TestNode | null = null;
+  childNodes: TestNode[] = [];
+  ownerDocument!: TestDocument;
+  constructor(readonly nodeType: number, readonly nodeName: string) {}
+  appendChild(node: TestNode): TestNode { node.parentNode = this; this.childNodes.push(node); return node; }
+  insertBefore(node: TestNode, before: TestNode | null): TestNode { if (before === null) return this.appendChild(node); node.parentNode = this; this.childNodes.splice(this.childNodes.indexOf(before), 0, node); return node; }
+  removeChild(node: TestNode): TestNode { this.childNodes.splice(this.childNodes.indexOf(node), 1); node.parentNode = null; return node; }
+  get firstChild(): TestNode | null { return this.childNodes[0] ?? null; }
+  get nextSibling(): TestNode | null { if (!this.parentNode) return null; return this.parentNode.childNodes[this.parentNode.childNodes.indexOf(this) + 1] ?? null; }
+  get textContent(): string { return this.childNodes.map((node) => node.textContent).join(""); }
+  set textContent(value: string) { this.childNodes = value === "" ? [] : [new TestText(value, this.ownerDocument)]; }
+  addEventListener(): void {}
+  removeEventListener(): void {}
+  contains(node: TestNode | null): boolean { return node === this || this.childNodes.some((child) => child.contains(node)); }
+}
+class TestText extends TestNode { constructor(private data: string, owner: TestDocument) { super(3, "#text"); this.ownerDocument = owner; } override get textContent(): string { return this.data; } override set textContent(value: string) { this.data = value; } }
+class TestElement extends TestNode {
+  readonly tagName: string; readonly namespaceURI = "http://www.w3.org/1999/xhtml"; readonly style: Record<string, string> = {}; private readonly attributes = new Map<string, string>();
+  constructor(tag: string, owner: TestDocument) { super(1, tag.toUpperCase()); this.tagName = tag.toUpperCase(); this.ownerDocument = owner; }
+  setAttribute(name: string, value: string): void { this.attributes.set(name, value); } removeAttribute(name: string): void { this.attributes.delete(name); } getAttribute(name: string): string | null { return this.attributes.get(name) ?? null; } hasAttribute(name: string): boolean { return this.attributes.has(name); }
+}
+class TestDocument extends TestNode {
+  readonly nodeType = 9; readonly documentElement: TestElement; readonly body: TestElement; readonly defaultView: Record<string, unknown>; activeElement: TestElement | null;
+  constructor() { super(9, "#document"); this.ownerDocument = this; this.documentElement = this.createElement("html"); this.body = this.createElement("body"); this.documentElement.appendChild(this.body); this.appendChild(this.documentElement); this.activeElement = this.body; this.defaultView = { document: this, navigator: { userAgent: "node" } }; }
+  createElement(tag: string): TestElement { return new TestElement(tag, this); } createElementNS(_namespace: string, tag: string): TestElement { return this.createElement(tag); } createTextNode(value: string): TestText { return new TestText(value, this); } createComment(value: string): TestText { return new TestText(value, this); }
+}
+function mountedRoot(): { readonly root: Root; readonly container: TestElement } {
+  const document = new TestDocument(); const window = document.defaultView as Record<string, unknown>;
+  Object.assign(window, { Node: TestNode, Element: TestElement, HTMLElement: TestElement, HTMLIFrameElement: TestElement, getSelection: () => null });
+  Object.assign(globalThis, { document, window, Node: TestNode, Element: TestElement, HTMLElement: TestElement, HTMLIFrameElement: TestElement, IS_REACT_ACT_ENVIRONMENT: true });
+  const container = document.createElement("div"); document.body.appendChild(container); return { root: createRoot(container as unknown as Element), container };
+}
+function deferred<T>(): { readonly promise: Promise<T>; resolve(value: T): void } { let resolve!: (value: T) => void; return { promise: new Promise<T>((done) => { resolve = done; }), resolve }; }
 
 function rawTag(
   id: number,
@@ -372,6 +411,82 @@ describe("WecomTagsView", () => {
     expect(html).not.toContain("搜索标签组");
     expect(html).not.toContain("标签总数");
     expect(client.read).not.toHaveBeenCalled();
+    expect(client.executionGate).not.toHaveBeenCalled();
+  });
+
+  it("renders the execution gate as a local observation without raw payload or provider success", () => {
+    const html = renderToStaticMarkup(
+      <WecomTagExecutionGatePanel
+        role="admin"
+        state={{
+          kind: "ready",
+          gate: {
+            providerExecutionEligible: false,
+            localCommandAcceptanceAvailable: true,
+            localQueueAvailable: true,
+            syncExecuted: false,
+            observedAt: "2026-08-20T09:00:00Z",
+            realExternalCallExecuted: false,
+          },
+        }}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(html).toContain("本地标签执行前置状态");
+    expect(html).toContain("不代表企微执行、送达或成功");
+    expect(html).toContain("2026-08-20T09:00:00Z");
+    expect(html).not.toMatch(/payload|mode|external_userid|unionid/i);
+  });
+
+  it("uses the mounted page's gate single-flight and drops an unmounted stale response", async () => {
+    const pending = deferred<{ status: number; data: unknown }>();
+    const executionGate = vi.fn(() => pending.promise);
+    const client = {
+      read: vi.fn(async () => ({ status: 503, data: {} })),
+      executionGate,
+    } as unknown as WecomTagsTransport;
+    const onUnauthenticated = vi.fn();
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(
+        <WecomTagsPage role="ops" transport={client} onUnauthenticated={onUnauthenticated} />,
+      );
+      await Promise.resolve();
+    });
+    expect(executionGate).toHaveBeenCalledOnce();
+    await act(async () => {
+      mounted.root.render(
+        <WecomTagsPage role="ops" transport={client} onUnauthenticated={onUnauthenticated} />,
+      );
+      await Promise.resolve();
+    });
+    expect(executionGate).toHaveBeenCalledOnce();
+    await act(async () => {
+      mounted.root.unmount();
+      pending.resolve({ status: 401, data: {} });
+      await Promise.resolve();
+    });
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+  });
+
+  it("reports active catalog and gate authentication expiry only once", async () => {
+    const client = {
+      read: vi.fn(async () => ({ status: 401, data: {} })),
+      executionGate: vi.fn(async () => ({ status: 401, data: {} })),
+    } as unknown as WecomTagsTransport;
+    const onUnauthenticated = vi.fn();
+    const mounted = mountedRoot();
+    await act(async () => {
+      mounted.root.render(
+        <WecomTagsPage role="ops" transport={client} onUnauthenticated={onUnauthenticated} />,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(client.read).toHaveBeenCalledOnce();
+    expect(client.executionGate).toHaveBeenCalledOnce();
+    expect(onUnauthenticated).toHaveBeenCalledOnce();
+    await act(async () => { mounted.root.unmount(); });
   });
 
   it("renders only the frozen tag detail fields and keeps text escaped", () => {

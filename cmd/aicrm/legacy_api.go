@@ -141,7 +141,7 @@ type legacyTagLiveMutationApplication interface {
 }
 
 type legacyTagExecutionStatusApplication interface {
-	Get(context.Context) (contactapp.LegacyTagExecutionStatus, error)
+	Get(context.Context) (contactapp.LegacyTagExecutionGate, error)
 }
 
 type legacyOrderApplication interface {
