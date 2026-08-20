@@ -422,7 +422,7 @@ func TestI01AStorageCatalogAndSingleInstanceShape(t *testing.T) {
 	  (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('products'::regclass,'product_images'::regclass,'product_catalog_counters'::regclass,'product_operation_receipts'::regclass) AND confrelid='event_log'::regclass)`).Scan(
 		&waterline, &constraints, &invalidConstraints, &indexes, &invalidIndexes, &eventForeignKeys,
 	)
-	if err != nil || waterline != 29 || constraints < 18 || invalidConstraints != 0 || indexes < 6 || invalidIndexes != 0 || eventForeignKeys != 0 {
+	if err != nil || waterline != 50 || constraints < 19 || invalidConstraints != 0 || indexes < 6 || invalidIndexes != 0 || eventForeignKeys != 0 {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/event-fk/error=%d/%d/%d/%d/%d/%d/%v",
 			waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventForeignKeys, err)
 	}
