@@ -31,6 +31,8 @@ export interface HXCSenderReadModel {
   readonly emptyState: boolean;
 }
 
+export type HXCSenderStatusFilter = "all" | "active" | "inactive" | "directory";
+
 export type HXCSenderResult =
   | { readonly status: "loaded"; readonly model: HXCSenderReadModel }
   | {
@@ -67,6 +69,34 @@ function integer(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+function timestamp(value: unknown): value is string {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+      value,
+    ) ||
+    !Number.isFinite(Date.parse(value))
+  ) {
+    return false;
+  }
+  const match = value.match(
+    /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})/,
+  );
+  if (!match) return false;
+  const [year, month, day, hour, minute, second] = match.slice(1).map(Number);
+  const calendar = new Date(0);
+  calendar.setUTCFullYear(year, month - 1, day);
+  calendar.setUTCHours(hour, minute, second, 0);
+  return (
+    calendar.getUTCFullYear() === year &&
+    calendar.getUTCMonth() === month - 1 &&
+    calendar.getUTCDate() === day &&
+    calendar.getUTCHours() === hour &&
+    calendar.getUTCMinutes() === minute &&
+    calendar.getUTCSeconds() === second
+  );
+}
+
 function exact(
   value: Record<string, unknown>,
   keys: readonly string[],
@@ -95,8 +125,8 @@ function config(value: unknown): HXCSenderConfig | undefined {
     !integer(value.priority) ||
     value.priority > 100000 ||
     typeof value.is_active !== "boolean" ||
-    !text(value.created_at) ||
-    !text(value.updated_at)
+    !timestamp(value.created_at) ||
+    !timestamp(value.updated_at)
   ) {
     return undefined;
   }
@@ -191,7 +221,7 @@ export async function loadHXCSenders(
     !integer(body.directory_count) ||
     !integer(body.sender_count) ||
     !integer(body.active_sender_count) ||
-    !text(body.last_synced_at, true) ||
+    !(body.last_synced_at === "" || timestamp(body.last_synced_at)) ||
     !Array.isArray(body.warnings) ||
     body.warnings.length !== 1 ||
     body.warnings[0] !==
@@ -211,6 +241,17 @@ export async function loadHXCSenders(
     body.directory_count !== directory.length ||
     body.sender_count !== configs.length ||
     body.empty_state !== (members.length === 0) ||
+    (body.empty_state && body.last_synced_at !== "") ||
+    (!body.empty_state && body.last_synced_at === "") ||
+    body.active_sender_count !==
+      (members as HXCDirectoryCandidate[]).filter(
+        (member) => member.isSender && member.isActive,
+      ).length ||
+    new Set((configs as HXCSenderConfig[]).map((item) => item.id)).size !==
+      configs.length ||
+    new Set(
+      (members as HXCDirectoryCandidate[]).map((item) => item.wecomUserID),
+    ).size !== members.length ||
     JSON.stringify(directory) !== JSON.stringify(members)
   ) {
     return { status: "invalid" };
@@ -229,4 +270,24 @@ export async function loadHXCSenders(
       emptyState: body.empty_state,
     },
   };
+}
+
+/** Local-only filtering. It never changes the generated request or sends a
+ * directory query to WeCom. */
+export function filterHXCSenders(
+  model: HXCSenderReadModel,
+  keyword: string,
+  status: HXCSenderStatusFilter,
+): readonly HXCDirectoryCandidate[] {
+  const normalized = keyword.trim().toLocaleLowerCase();
+  return model.members.filter(
+    (member) =>
+      (status === "all" ||
+        (status === "active" && member.isSender && member.isActive) ||
+        (status === "inactive" && member.isSender && !member.isActive) ||
+        (status === "directory" && !member.isSender)) &&
+      (normalized === "" ||
+        member.wecomUserID.toLocaleLowerCase().includes(normalized) ||
+        member.displayName.toLocaleLowerCase().includes(normalized)),
+  );
 }

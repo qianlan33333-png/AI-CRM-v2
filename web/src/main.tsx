@@ -732,6 +732,7 @@ function PageContent({
       <HXCSenderPage
         role={principal.role}
         transport={hxcSenderTransport}
+        readCookie={cookieHeader}
         onUnauthenticated={onUnauthenticated}
       />
     );

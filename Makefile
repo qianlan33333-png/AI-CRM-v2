@@ -10,7 +10,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
-.PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance p4-delivery-lineage-0308-acceptance p4-customer-profile-tags-0301-acceptance
+.PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance p4-delivery-lineage-0308-acceptance p4-customer-profile-tags-0301-acceptance p4-i01b-product-entitlement-acceptance
 .PHONY: p4-f01a-survey-acceptance p4-f01ab-survey-acceptance
 .PHONY: p4-c01-channel-acceptance
 .PHONY: p4-f01a-survey-acceptance
@@ -516,6 +516,13 @@ p4-i01a-product-acceptance:
 	@test -n "$${P4I01A_PRODUCT_TEST_DATABASE_URL:-}" || { echo "P4I01A_PRODUCT_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/product/i01a_migration_compatibility.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/product/...
+
+p4-i01b-product-entitlement-acceptance:
+	@test -n "$${P4I01B_PRODUCT_TEST_DATABASE_URL:-}" || { echo "P4I01B_PRODUCT_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$${P4I01B_PRODUCT_TEST_DATABASE_URL}" up
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=300s \
+		-run '^TestI01BProductCASAndLocalEntitlementLifecycleUseOneUoW$$' ./acceptance/product \
+		-args -database-url "$${P4I01B_PRODUCT_TEST_DATABASE_URL}"
 
 p4-h01a1-media-acceptance:
 	@test -n "$${P4H01A1_MEDIA_TEST_DATABASE_URL:-}" || { echo "P4H01A1_MEDIA_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -50,6 +50,7 @@ const (
 	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
 	p4OutboundOperationsEvidence    = "P4-OUTBOUND-OPERATIONS-2026-08-20"
 	p4CommerceWorkspaceEvidence     = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
+	p4HXCSenderManagementEvidence   = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -86,18 +87,18 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCloudOrchestratorCampaignsWorkspace":     {"/admin/cloud-orchestrator/campaigns", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorObservabilityWorkspace": {"/admin/cloud-orchestrator/observability", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-
-	"getAlipayTransactionsWorkspace":     {"/admin/alipay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getServiceProductsWorkspace":        {"/admin/service-period-products", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getServiceProductCreateWorkspace":   {"/admin/service-period-products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getServiceProductEditWorkspace":     {"/admin/service-period-products/{service_product_id}/edit", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getServiceProductDataWorkspace":     {"/admin/service-period-products/{service_product_id}/data", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getWeChatPayProductCreateWorkspace": {"/admin/wechat-pay/products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getWeChatPayProductEditWorkspace":   {"/admin/wechat-pay/products/{product_id}/edit", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getWeChatPayTransactionsWorkspace":  {"/admin/wechat-pay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getWeChatPayTransactionWorkspace":   {"/admin/wechat-pay/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getWeChatShopTransactionsWorkspace": {"/admin/wechat-shop/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getWeChatShopTransactionWorkspace":  {"/admin/wechat-shop/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getAlipayTransactionsWorkspace":             {"/admin/alipay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductsWorkspace":                {"/admin/service-period-products", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductCreateWorkspace":           {"/admin/service-period-products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductEditWorkspace":             {"/admin/service-period-products/{service_product_id}/edit", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getServiceProductDataWorkspace":             {"/admin/service-period-products/{service_product_id}/data", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayProductCreateWorkspace":         {"/admin/wechat-pay/products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayProductEditWorkspace":           {"/admin/wechat-pay/products/{product_id}/edit", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayTransactionsWorkspace":          {"/admin/wechat-pay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatPayTransactionWorkspace":           {"/admin/wechat-pay/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatShopTransactionsWorkspace":         {"/admin/wechat-shop/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getWeChatShopTransactionWorkspace":          {"/admin/wechat-shop/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"reorderLegacyHXCSendConfigs":                {"/api/admin/hxc-dashboard/send-config/reorder", "PUT", p4HXCSenderManagementEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global"}},
 }
 
 var p1CandidateOperations = map[string]bool{
@@ -128,6 +129,16 @@ var p3SegmentOperations = map[string]bool{
 
 var p4AutomationOperations = map[string]bool{
 	"listAutomationTriggerRuns": true,
+}
+
+var p4HXCSenderManagementOperations = map[string]bool{
+	"upsertLegacyHXCSendConfig":  true,
+	"archiveLegacyHXCSendConfig": true,
+}
+
+var p4HXCSenderManagementLegacyMappings = map[string][]string{
+	"upsertLegacyHXCSendConfig":  {"LEGACY-API-0350"},
+	"archiveLegacyHXCSendConfig": {"LEGACY-API-0351"},
 }
 
 var p4AutomationAgentOperations = map[string]bool{
@@ -557,6 +568,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"saveLegacyAppSettingsResource":              {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAdminShell":                        {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyAdminLogoutCompat":                 {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
+	"upsertLegacyHXCSendConfig":                  {"operations.manage", map[string]string{"admin": "global"}},
+	"archiveLegacyHXCSendConfig":                 {"operations.manage", map[string]string{"admin": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -658,7 +671,7 @@ func load(spec, mapping string) (*openapi3.T, mappingInventory, error) {
 func isRunnerDeclaredOperation(operationID string) bool {
 	return p1CandidateOperations[operationID] || p2StageOperations[operationID] ||
 		p3ContactOperations[operationID] || p3IdentityOperations[operationID] || p3SegmentOperations[operationID] ||
-		p4AutomationOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4MediaOperations[operationID] ||
+		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
@@ -818,7 +831,7 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -888,6 +901,19 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, []string{"LEGACY-API-0141"}) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+			} else if p4HXCSenderManagementOperations[op.OperationID] {
+				seenP4HXCSenderManagement[op.OperationID] = true
+				if op.Extensions["x-p4-decision-evidence"] != p4HXCSenderManagementEvidence ||
+					op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+					op.Extensions["x-aicrm-session-bound-csrf"] != "required" ||
+					op.Extensions["x-aicrm-data-source"] != "local_command" ||
+					op.Extensions["x-aicrm-external-effect"] != "none" {
+					return fmt.Errorf("%s HXC local management boundary drifted", op.OperationID)
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4HXCSenderManagementLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
 			} else if p4AutomationAgentOperations[op.OperationID] {
@@ -1236,7 +1262,7 @@ func validate(doc *openapi3.T, inventory mappingInventory) error {
 	}
 	if len(seenP1) != len(p1CandidateOperations) || len(seenP2) != len(p2StageOperations) ||
 		len(seenP3Contact) != len(p3ContactOperations) || len(seenP3Identity) != len(p3IdentityOperations) || len(seenP3Segment) != len(p3SegmentOperations) ||
-		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4Media) != len(p4MediaOperations) ||
+		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4Media) != len(p4MediaOperations) ||
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||

@@ -4307,8 +4307,81 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { description: Local projection is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderUnavailableResponse" } } } }
         "405":
-          description: The legacy route only accepts GET.
-          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+          description: The legacy route only accepts GET and POST.
+          headers: { Allow: { required: true, schema: { type: string, enum: ["GET, POST"] } } }
+    post:
+      tags: [p4-hxc-compat]
+      operationId: upsertLegacyHXCSendConfig
+      summary: Create or edit one local HXC sender configuration without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0350]
+      x-p4-decision-evidence: P4-HXC-SENDER-MANAGEMENT-2026-08-20
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderSaveRequest" } } } }
+      responses:
+        "200": { description: Local save committed and read back, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationResponse" } } } }
+        "400": { description: Invalid closed local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Receipt or local configuration conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "503": { description: Local commit or readback is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+  /api/admin/hxc-dashboard/send-config/reorder:
+    put:
+      tags: [p4-hxc-compat]
+      operationId: reorderLegacyHXCSendConfigs
+      summary: Reorder the complete local HXC sender configuration set
+      x-p4-decision-evidence: P4-HXC-SENDER-MANAGEMENT-2026-08-20
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderReorderRequest" } } } }
+      responses:
+        "200": { description: Local order committed and read back, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationResponse" } } } }
+        "400": { description: Invalid closed local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Receipt or local configuration conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "503": { description: Local commit or readback is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+  /api/admin/hxc-dashboard/send-config/{sender_userid}:
+    delete:
+      tags: [p4-hxc-compat]
+      operationId: archiveLegacyHXCSendConfig
+      summary: Archive one local HXC sender configuration without a provider call
+      x-legacy-mapping-ids: [LEGACY-API-0351]
+      x-p4-decision-evidence: P4-HXC-SENDER-MANAGEMENT-2026-08-20
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: sensitive
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: sender_userid, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200, pattern: "^[^/\\\\]+$" } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      responses:
+        "200": { description: Local archive committed and read back, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationResponse" } } } }
+        "400": { description: Invalid closed local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Receipt or local configuration conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
+        "503": { description: Local commit or readback is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyHXCSenderMutationError" } } } }
   /api/admin/delivery-lineage:
     get:
       tags: [p4-delivery-lineage-compat]
@@ -7239,6 +7312,44 @@ components:
         warnings: { type: array, minItems: 1, maxItems: 1, items: { type: string, enum: ["HXC senders use the local staff projection; no WeCom directory call was executed."] } }
         degraded: { type: boolean, enum: [false] }
         empty_state: { type: boolean }
+    LegacyHXCSenderSaveRequest:
+      type: object
+      additionalProperties: false
+      required: [id, sender_userid, display_name, priority, is_active]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 200 }
+        sender_userid: { type: string, minLength: 1, maxLength: 200 }
+        display_name: { type: string, maxLength: 200 }
+        priority: { type: integer, minimum: 0, maximum: 100000 }
+        is_active: { type: boolean }
+    LegacyHXCSenderReorderRequest:
+      type: object
+      additionalProperties: false
+      required: [ids]
+      properties:
+        ids: { type: array, minItems: 1, maxItems: 1000, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 200 } }
+    LegacyHXCSenderMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, operation, items, local_only, provider_call_executed, real_external_call_executed, readback_confirmed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        operation: { type: string, enum: [saved, reordered, archived] }
+        item: { $ref: "#/components/schemas/LegacyHXCSenderConfig" }
+        items: { type: array, items: { $ref: "#/components/schemas/LegacyHXCSenderConfig" } }
+        local_only: { type: boolean, enum: [true] }
+        provider_call_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        readback_confirmed: { type: boolean, enum: [true] }
+    LegacyHXCSenderMutationError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [400, 409, 503] }
+        error_code: { type: string, enum: [invalid_hxc_send_config, hxc_send_config_conflict, hxc_send_config_unavailable] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyHXCSenderUnavailableResponse:
       type: object
       additionalProperties: false

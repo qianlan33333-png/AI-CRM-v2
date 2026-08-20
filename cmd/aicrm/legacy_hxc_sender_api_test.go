@@ -67,7 +67,7 @@ func TestLegacyHXCSenderReadEmptyProjectionIsAvailableAndClosed(t *testing.T) {
 }
 
 func TestLegacyHXCSenderReadFailsClosedAndStrictMethod(t *testing.T) {
-	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
+	for _, method := range []string{http.MethodPut, http.MethodDelete} {
 		source := &hxcReadStub{}
 		response := httptest.NewRecorder()
 		hxcSenderRouter(t, authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}, source).ServeHTTP(response, legacyRequest(method, legacyHXCSenderReadPath, legacyToken(3)))

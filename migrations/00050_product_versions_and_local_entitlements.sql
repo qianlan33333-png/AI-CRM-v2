@@ -99,6 +99,35 @@ ALTER TABLE public.product_operation_receipts
   );
 
 -- +goose Down
+-- The pre-00050 schema cannot represent update receipts. Never erase completed
+-- idempotency/audit facts to make a rollback fit the older constraint: require
+-- an explicit operator decision instead.
+-- Serialize the check with every Product/Entitlement writer. These locks are
+-- held by the migration transaction through the subsequent DDL, so a writer
+-- cannot commit a new fact after validation but before its table is dropped.
+LOCK TABLE public.product_operation_receipts,
+  public.product_local_entitlements,
+  public.entitlement_operation_receipts,
+  public.products
+IN SHARE ROW EXCLUSIVE MODE;
+-- +goose StatementBegin
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.product_operation_receipts WHERE operation = 'update'
+  ) OR EXISTS (
+    SELECT 1 FROM public.product_local_entitlements
+  ) OR EXISTS (
+    SELECT 1 FROM public.entitlement_operation_receipts
+  ) OR EXISTS (
+    SELECT 1 FROM public.products WHERE version <> 1
+  ) THEN
+    RAISE EXCEPTION 'cannot roll back product versions while versioned product or entitlement facts exist'
+      USING ERRCODE = '55000';
+  END IF;
+END;
+$$;
+-- +goose StatementEnd
 ALTER TABLE public.product_operation_receipts
   DROP CONSTRAINT product_operation_receipts_operation,
   ADD CONSTRAINT product_operation_receipts_operation CHECK (operation = 'create');

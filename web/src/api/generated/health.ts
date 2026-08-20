@@ -4807,6 +4807,83 @@ export interface LegacyHXCSenderReadResponse {
   empty_state: boolean;
 }
 
+export interface LegacyHXCSenderSaveRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  sender_userid: string;
+  /** @maxLength 200 */
+  display_name: string;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  priority: number;
+  is_active: boolean;
+}
+
+export interface LegacyHXCSenderReorderRequest {
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  ids: string[];
+}
+
+export type LegacyHXCSenderMutationResponseOperation =
+  (typeof LegacyHXCSenderMutationResponseOperation)[keyof typeof LegacyHXCSenderMutationResponseOperation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderMutationResponseOperation = {
+  saved: "saved",
+  reordered: "reordered",
+  archived: "archived",
+} as const;
+
+export interface LegacyHXCSenderMutationResponse {
+  ok: boolean;
+  operation: LegacyHXCSenderMutationResponseOperation;
+  item?: LegacyHXCSenderConfig;
+  items: LegacyHXCSenderConfig[];
+  local_only: boolean;
+  provider_call_executed: boolean;
+  real_external_call_executed: boolean;
+  readback_confirmed: boolean;
+}
+
+export type LegacyHXCSenderMutationErrorStatusCode =
+  (typeof LegacyHXCSenderMutationErrorStatusCode)[keyof typeof LegacyHXCSenderMutationErrorStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderMutationErrorStatusCode = {
+  NUMBER_400: 400,
+  NUMBER_409: 409,
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyHXCSenderMutationErrorErrorCode =
+  (typeof LegacyHXCSenderMutationErrorErrorCode)[keyof typeof LegacyHXCSenderMutationErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHXCSenderMutationErrorErrorCode = {
+  invalid_hxc_send_config: "invalid_hxc_send_config",
+  hxc_send_config_conflict: "hxc_send_config_conflict",
+  hxc_send_config_unavailable: "hxc_send_config_unavailable",
+} as const;
+
+export interface LegacyHXCSenderMutationError {
+  ok: boolean;
+  status_code: LegacyHXCSenderMutationErrorStatusCode;
+  error_code: LegacyHXCSenderMutationErrorErrorCode;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyHXCSenderUnavailableResponseStatusCode =
   (typeof LegacyHXCSenderUnavailableResponseStatusCode)[keyof typeof LegacyHXCSenderUnavailableResponseStatusCode];
 
@@ -23215,6 +23292,238 @@ export const getLegacyHXCSendConfig = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyHXCSendConfigResponse;
+};
+
+/**
+ * @summary Create or edit one local HXC sender configuration without a provider call
+ */
+export type upsertLegacyHXCSendConfigResponse200 = {
+  data: LegacyHXCSenderMutationResponse;
+  status: 200;
+};
+
+export type upsertLegacyHXCSendConfigResponse400 = {
+  data: LegacyHXCSenderMutationError;
+  status: 400;
+};
+
+export type upsertLegacyHXCSendConfigResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type upsertLegacyHXCSendConfigResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type upsertLegacyHXCSendConfigResponse409 = {
+  data: LegacyHXCSenderMutationError;
+  status: 409;
+};
+
+export type upsertLegacyHXCSendConfigResponse503 = {
+  data: LegacyHXCSenderMutationError;
+  status: 503;
+};
+
+export type upsertLegacyHXCSendConfigResponseSuccess =
+  upsertLegacyHXCSendConfigResponse200 & {
+    headers: Headers;
+  };
+export type upsertLegacyHXCSendConfigResponseError = (
+  | upsertLegacyHXCSendConfigResponse400
+  | upsertLegacyHXCSendConfigResponse401
+  | upsertLegacyHXCSendConfigResponse403
+  | upsertLegacyHXCSendConfigResponse409
+  | upsertLegacyHXCSendConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type upsertLegacyHXCSendConfigResponse =
+  | upsertLegacyHXCSendConfigResponseSuccess
+  | upsertLegacyHXCSendConfigResponseError;
+
+export const getUpsertLegacyHXCSendConfigUrl = () => {
+  return `/api/admin/hxc-dashboard/send-config`;
+};
+
+export const upsertLegacyHXCSendConfig = async (
+  legacyHXCSenderSaveRequest: LegacyHXCSenderSaveRequest,
+  options?: RequestInit,
+): Promise<upsertLegacyHXCSendConfigResponse> => {
+  const res = await fetch(getUpsertLegacyHXCSendConfigUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyHXCSenderSaveRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: upsertLegacyHXCSendConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as upsertLegacyHXCSendConfigResponse;
+};
+
+/**
+ * @summary Reorder the complete local HXC sender configuration set
+ */
+export type reorderLegacyHXCSendConfigsResponse200 = {
+  data: LegacyHXCSenderMutationResponse;
+  status: 200;
+};
+
+export type reorderLegacyHXCSendConfigsResponse400 = {
+  data: LegacyHXCSenderMutationError;
+  status: 400;
+};
+
+export type reorderLegacyHXCSendConfigsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reorderLegacyHXCSendConfigsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reorderLegacyHXCSendConfigsResponse409 = {
+  data: LegacyHXCSenderMutationError;
+  status: 409;
+};
+
+export type reorderLegacyHXCSendConfigsResponse503 = {
+  data: LegacyHXCSenderMutationError;
+  status: 503;
+};
+
+export type reorderLegacyHXCSendConfigsResponseSuccess =
+  reorderLegacyHXCSendConfigsResponse200 & {
+    headers: Headers;
+  };
+export type reorderLegacyHXCSendConfigsResponseError = (
+  | reorderLegacyHXCSendConfigsResponse400
+  | reorderLegacyHXCSendConfigsResponse401
+  | reorderLegacyHXCSendConfigsResponse403
+  | reorderLegacyHXCSendConfigsResponse409
+  | reorderLegacyHXCSendConfigsResponse503
+) & {
+  headers: Headers;
+};
+
+export type reorderLegacyHXCSendConfigsResponse =
+  | reorderLegacyHXCSendConfigsResponseSuccess
+  | reorderLegacyHXCSendConfigsResponseError;
+
+export const getReorderLegacyHXCSendConfigsUrl = () => {
+  return `/api/admin/hxc-dashboard/send-config/reorder`;
+};
+
+export const reorderLegacyHXCSendConfigs = async (
+  legacyHXCSenderReorderRequest: LegacyHXCSenderReorderRequest,
+  options?: RequestInit,
+): Promise<reorderLegacyHXCSendConfigsResponse> => {
+  const res = await fetch(getReorderLegacyHXCSendConfigsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyHXCSenderReorderRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reorderLegacyHXCSendConfigsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reorderLegacyHXCSendConfigsResponse;
+};
+
+/**
+ * @summary Archive one local HXC sender configuration without a provider call
+ */
+export type archiveLegacyHXCSendConfigResponse200 = {
+  data: LegacyHXCSenderMutationResponse;
+  status: 200;
+};
+
+export type archiveLegacyHXCSendConfigResponse400 = {
+  data: LegacyHXCSenderMutationError;
+  status: 400;
+};
+
+export type archiveLegacyHXCSendConfigResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveLegacyHXCSendConfigResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveLegacyHXCSendConfigResponse409 = {
+  data: LegacyHXCSenderMutationError;
+  status: 409;
+};
+
+export type archiveLegacyHXCSendConfigResponse503 = {
+  data: LegacyHXCSenderMutationError;
+  status: 503;
+};
+
+export type archiveLegacyHXCSendConfigResponseSuccess =
+  archiveLegacyHXCSendConfigResponse200 & {
+    headers: Headers;
+  };
+export type archiveLegacyHXCSendConfigResponseError = (
+  | archiveLegacyHXCSendConfigResponse400
+  | archiveLegacyHXCSendConfigResponse401
+  | archiveLegacyHXCSendConfigResponse403
+  | archiveLegacyHXCSendConfigResponse409
+  | archiveLegacyHXCSendConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveLegacyHXCSendConfigResponse =
+  | archiveLegacyHXCSendConfigResponseSuccess
+  | archiveLegacyHXCSendConfigResponseError;
+
+export const getArchiveLegacyHXCSendConfigUrl = (senderUserid: string) => {
+  return `/api/admin/hxc-dashboard/send-config/${senderUserid}`;
+};
+
+export const archiveLegacyHXCSendConfig = async (
+  senderUserid: string,
+  options?: RequestInit,
+): Promise<archiveLegacyHXCSendConfigResponse> => {
+  const res = await fetch(getArchiveLegacyHXCSendConfigUrl(senderUserid), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveLegacyHXCSendConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveLegacyHXCSendConfigResponse;
 };
 
 /**

@@ -127,7 +127,35 @@ read -r admin_count admin_hash session_count session_hash <<<"$(auth_snapshot)"
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=300s \
-  -run '^(TestI01A(Create|Event|S200K|Storage).*|TestI01BProductCASAndLocalEntitlementLifecycleUseOneUoW)$' \
+  -run '^TestI01A(Create|Event|S200K|Storage).*' \
   ./acceptance/product -args -database-url "$database_url"
 
-printf 'P4-I01A/I01B migration compatibility: PASS (28/29/28/29/50/49/50, Event/Auth/session history preserved)\n'
+protected_product_id="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c \
+  "SELECT id FROM products ORDER BY id LIMIT 1")"
+[[ "$protected_product_id" =~ ^[1-9][0-9]*$ ]]
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "UPDATE products SET version=2 WHERE id=${protected_product_id} AND version=1" >/dev/null
+if "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 49; then
+  printf 'migration 00050 unexpectedly accepted a versioned product fact\n' >&2
+  exit 1
+fi
+read -r protected_waterline version_column protected_product_version <<<"$(
+  psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c \
+    "SELECT max(version_id),
+            (SELECT count(*) FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='products' AND column_name='version'),
+            (SELECT version FROM products WHERE id=${protected_product_id})
+       FROM goose_db_version WHERE is_applied"
+)"
+[[ "$protected_waterline" = "50" && "$version_column" = "1" && "$protected_product_version" = "2" ]]
+
+# Restore only this reversible compatibility marker. The real I01B lifecycle
+# facts run as the final database acceptance entry, after every historical
+# down-migration check, and are never deleted to make an old schema fit.
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "UPDATE products SET version=1 WHERE id=${protected_product_id} AND version=2" >/dev/null
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 49
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 50
+[[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "50" ]]
+
+printf 'P4-I01A migration compatibility: PASS (28/29/28/29/50/49/50, versioned facts make rollback fail closed, Event/Auth/session history preserved)\n'
