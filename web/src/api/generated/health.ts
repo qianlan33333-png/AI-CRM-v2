@@ -5133,6 +5133,8 @@ export interface Product {
   created_by: number;
   created_at: string;
   updated_at: string;
+  /** @minimum 1 */
+  version: number;
 }
 
 export interface ProductPage {
@@ -5146,14 +5148,78 @@ export interface CreateProductRequest {
    * @maxLength 200
    */
   product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
   name: string;
+  /** @maxLength 10000 */
   description: string;
   /** @minimum 0 */
   price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
   currency: string;
   /** @minimum 0 */
   stock_quantity: number;
+  /** @maxItems 20 */
   images: string[];
+}
+
+export interface UpdateProductRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+}
+
+export interface GrantProductLocalEntitlementRequest {
+  /** @minimum 1 */
+  order_id: number;
+}
+
+export interface RevokeProductLocalEntitlementRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export type LocalProductEntitlementState =
+  (typeof LocalProductEntitlementState)[keyof typeof LocalProductEntitlementState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LocalProductEntitlementState = {
+  active: "active",
+  revoked: "revoked",
+} as const;
+
+export interface LocalProductEntitlement {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  product_id: number;
+  /** @minimum 1 */
+  order_id: number;
+  state: LocalProductEntitlementState;
+  /** @minimum 1 */
+  version: number;
+  granted_at: string;
+  /** @nullable */
+  revoked_at: string | null;
+}
+
+export interface LocalProductEntitlementPage {
+  /** @maxItems 100 */
+  items: LocalProductEntitlement[];
 }
 
 export type HealthResponseStatus =
@@ -7549,6 +7615,8 @@ export type UnprocessableEntityResponse = ErrorResponse;
  */
 export type ServiceUnavailableResponse = ErrorResponse;
 
+export type EntitlementLimitParameter = number;
+
 /**
  * CSRF token bound to the server-side browser session.
  */
@@ -7628,6 +7696,14 @@ export type ListProductsParams = {
    * @maximum 200
    */
   limit?: LimitParameter;
+};
+
+export type ListProductLocalEntitlementsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: EntitlementLimitParameter;
 };
 
 export type ListLegacyCustomersParams = {
@@ -8639,6 +8715,11 @@ export type createProductResponse409 = {
   status: 409;
 };
 
+export type createProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
 export type createProductResponseSuccess = createProductResponse201 & {
   headers: Headers;
 };
@@ -8647,6 +8728,7 @@ export type createProductResponseError = (
   | createProductResponse401
   | createProductResponse403
   | createProductResponse409
+  | createProductResponse503
 ) & {
   headers: Headers;
 };
@@ -8749,6 +8831,428 @@ export const getProduct = async (
     status: res.status,
     headers: res.headers,
   } as getProductResponse;
+};
+
+/**
+ * @summary Update one local ordinary product using optimistic concurrency
+ */
+export type updateProductResponse200 = {
+  data: Product;
+  status: 200;
+};
+
+export type updateProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateProductResponseSuccess = updateProductResponse200 & {
+  headers: Headers;
+};
+export type updateProductResponseError = (
+  | updateProductResponse400
+  | updateProductResponse401
+  | updateProductResponse403
+  | updateProductResponse404
+  | updateProductResponse409
+  | updateProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateProductResponse =
+  updateProductResponseSuccess | updateProductResponseError;
+
+export const getUpdateProductUrl = (productId: number) => {
+  return `/api/v1/products/${productId}`;
+};
+
+export const updateProduct = async (
+  productId: number,
+  updateProductRequest: UpdateProductRequest,
+  options?: RequestInit,
+): Promise<updateProductResponse> => {
+  const res = await fetch(getUpdateProductUrl(productId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateProductRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateProductResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateProductResponse;
+};
+
+/**
+ * @summary List local product entitlements without invoking payment or providers
+ */
+export type listProductLocalEntitlementsResponse200 = {
+  data: LocalProductEntitlementPage;
+  status: 200;
+};
+
+export type listProductLocalEntitlementsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProductLocalEntitlementsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProductLocalEntitlementsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProductLocalEntitlementsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listProductLocalEntitlementsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listProductLocalEntitlementsResponseSuccess =
+  listProductLocalEntitlementsResponse200 & {
+    headers: Headers;
+  };
+export type listProductLocalEntitlementsResponseError = (
+  | listProductLocalEntitlementsResponse400
+  | listProductLocalEntitlementsResponse401
+  | listProductLocalEntitlementsResponse403
+  | listProductLocalEntitlementsResponse404
+  | listProductLocalEntitlementsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listProductLocalEntitlementsResponse =
+  | listProductLocalEntitlementsResponseSuccess
+  | listProductLocalEntitlementsResponseError;
+
+export const getListProductLocalEntitlementsUrl = (
+  productId: number,
+  params?: ListProductLocalEntitlementsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/products/${productId}/local-entitlements?${stringifiedParams}`
+    : `/api/v1/products/${productId}/local-entitlements`;
+};
+
+export const listProductLocalEntitlements = async (
+  productId: number,
+  params?: ListProductLocalEntitlementsParams,
+  options?: RequestInit,
+): Promise<listProductLocalEntitlementsResponse> => {
+  const res = await fetch(
+    getListProductLocalEntitlementsUrl(productId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProductLocalEntitlementsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProductLocalEntitlementsResponse;
+};
+
+/**
+ * @summary Grant a local entitlement from one existing paid local order projection
+ */
+export type grantProductLocalEntitlementResponse201 = {
+  data: LocalProductEntitlement;
+  status: 201;
+};
+
+export type grantProductLocalEntitlementResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type grantProductLocalEntitlementResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type grantProductLocalEntitlementResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type grantProductLocalEntitlementResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type grantProductLocalEntitlementResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type grantProductLocalEntitlementResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type grantProductLocalEntitlementResponseSuccess =
+  grantProductLocalEntitlementResponse201 & {
+    headers: Headers;
+  };
+export type grantProductLocalEntitlementResponseError = (
+  | grantProductLocalEntitlementResponse400
+  | grantProductLocalEntitlementResponse401
+  | grantProductLocalEntitlementResponse403
+  | grantProductLocalEntitlementResponse404
+  | grantProductLocalEntitlementResponse409
+  | grantProductLocalEntitlementResponse503
+) & {
+  headers: Headers;
+};
+
+export type grantProductLocalEntitlementResponse =
+  | grantProductLocalEntitlementResponseSuccess
+  | grantProductLocalEntitlementResponseError;
+
+export const getGrantProductLocalEntitlementUrl = (productId: number) => {
+  return `/api/v1/products/${productId}/local-entitlements`;
+};
+
+export const grantProductLocalEntitlement = async (
+  productId: number,
+  grantProductLocalEntitlementRequest: GrantProductLocalEntitlementRequest,
+  options?: RequestInit,
+): Promise<grantProductLocalEntitlementResponse> => {
+  const res = await fetch(getGrantProductLocalEntitlementUrl(productId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(grantProductLocalEntitlementRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: grantProductLocalEntitlementResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as grantProductLocalEntitlementResponse;
+};
+
+/**
+ * @summary Get one local product entitlement
+ */
+export type getProductLocalEntitlementResponse200 = {
+  data: LocalProductEntitlement;
+  status: 200;
+};
+
+export type getProductLocalEntitlementResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getProductLocalEntitlementResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getProductLocalEntitlementResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getProductLocalEntitlementResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getProductLocalEntitlementResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getProductLocalEntitlementResponseSuccess =
+  getProductLocalEntitlementResponse200 & {
+    headers: Headers;
+  };
+export type getProductLocalEntitlementResponseError = (
+  | getProductLocalEntitlementResponse400
+  | getProductLocalEntitlementResponse401
+  | getProductLocalEntitlementResponse403
+  | getProductLocalEntitlementResponse404
+  | getProductLocalEntitlementResponse503
+) & {
+  headers: Headers;
+};
+
+export type getProductLocalEntitlementResponse =
+  | getProductLocalEntitlementResponseSuccess
+  | getProductLocalEntitlementResponseError;
+
+export const getGetProductLocalEntitlementUrl = (entitlementId: number) => {
+  return `/api/v1/product-entitlements/${entitlementId}`;
+};
+
+export const getProductLocalEntitlement = async (
+  entitlementId: number,
+  options?: RequestInit,
+): Promise<getProductLocalEntitlementResponse> => {
+  const res = await fetch(getGetProductLocalEntitlementUrl(entitlementId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getProductLocalEntitlementResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getProductLocalEntitlementResponse;
+};
+
+/**
+ * @summary Revoke one local entitlement using optimistic concurrency
+ */
+export type revokeProductLocalEntitlementResponse200 = {
+  data: LocalProductEntitlement;
+  status: 200;
+};
+
+export type revokeProductLocalEntitlementResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type revokeProductLocalEntitlementResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type revokeProductLocalEntitlementResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type revokeProductLocalEntitlementResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type revokeProductLocalEntitlementResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type revokeProductLocalEntitlementResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type revokeProductLocalEntitlementResponseSuccess =
+  revokeProductLocalEntitlementResponse200 & {
+    headers: Headers;
+  };
+export type revokeProductLocalEntitlementResponseError = (
+  | revokeProductLocalEntitlementResponse400
+  | revokeProductLocalEntitlementResponse401
+  | revokeProductLocalEntitlementResponse403
+  | revokeProductLocalEntitlementResponse404
+  | revokeProductLocalEntitlementResponse409
+  | revokeProductLocalEntitlementResponse503
+) & {
+  headers: Headers;
+};
+
+export type revokeProductLocalEntitlementResponse =
+  | revokeProductLocalEntitlementResponseSuccess
+  | revokeProductLocalEntitlementResponseError;
+
+export const getRevokeProductLocalEntitlementUrl = (entitlementId: number) => {
+  return `/api/v1/product-entitlements/${entitlementId}/revoke`;
+};
+
+export const revokeProductLocalEntitlement = async (
+  entitlementId: number,
+  revokeProductLocalEntitlementRequest: RevokeProductLocalEntitlementRequest,
+  options?: RequestInit,
+): Promise<revokeProductLocalEntitlementResponse> => {
+  const res = await fetch(getRevokeProductLocalEntitlementUrl(entitlementId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(revokeProductLocalEntitlementRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: revokeProductLocalEntitlementResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as revokeProductLocalEntitlementResponse;
 };
 
 /**

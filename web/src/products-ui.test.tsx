@@ -3,6 +3,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { ProductLocalControls } from "./products-local-controls";
 import { ProductsPage } from "./products-ui";
 
 class TestNode {
@@ -87,7 +88,7 @@ function deferred<T>(): { readonly promise: Promise<T>; resolve(value: T): void 
   let resolve!: (value: T) => void;
   return { promise: new Promise<T>((done) => { resolve = done; }), resolve };
 }
-const product = { id: 1, product_code: "SKU-1", name: "商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: ["opaque-image-value"], created_by: 7, created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T00:00:00Z" };
+const product = { id: 1, product_code: "SKU-1", name: "商品", description: "本地描述", price_minor: 1990, currency: "CNY", stock_quantity: 3, images: ["opaque-image-value"], created_by: 7, created_at: "2026-08-19T00:00:00Z", updated_at: "2026-08-19T00:00:00Z", version: 1 };
 
 describe("ProductsPage", () => {
   it("does not render a products reader for sales", () => {
@@ -157,13 +158,13 @@ describe("ProductsPage", () => {
   });
   it("mounts the injected local entitlement controls without rendering hidden customer facts", async () => {
     const versioned = { ...product, version: 1 };
-    const entitlement = { id: 19, product_id: 1, order_id: 44, customer_id: 9, state: "active", version: 1, granted_at: "2026-08-20T09:00:00Z", revoked_at: null };
+    const entitlement = { id: 19, product_id: 1, order_id: 44, state: "active", version: 1, granted_at: "2026-08-20T09:00:00Z", revoked_at: null };
     const mounted = mountedRoot();
     await act(async () => { mounted.root.render(<ProductsPage role="admin" readCookie={() => `aicrm_csrf=${"c".repeat(43)}`} transport={{ list: async () => ({ status: 200, data: { items: [versioned] } }), get: async () => ({ status: 200, data: versioned }), update: async () => ({ status: 200, data: { ...versioned, version: 2 } }), listEntitlements: async () => ({ status: 200, data: { items: [entitlement] } }), getEntitlement: async () => ({ status: 200, data: entitlement }), grantEntitlement: async () => ({ status: 201, data: entitlement }), revokeEntitlement: async () => ({ status: 200, data: { ...entitlement, state: "revoked", version: 2, revoked_at: "2026-08-20T10:00:00Z" } }) }} />); await Promise.resolve(); });
     await act(async () => { click(buttons(mounted.container).find((button) => button.textContent === "查看详情")!); await Promise.resolve(); await Promise.resolve(); });
     expect(mounted.container.textContent).toContain("按版本更新");
     expect(mounted.container.textContent).toContain("授予本地权益");
-    expect(mounted.container.textContent).not.toContain("客户 #9");
+		expect(mounted.container.textContent).not.toContain("customer_id");
     await act(async () => { mounted.root.unmount(); });
   });
   it("uses the mounted product controls' synchronous writer locks and turns a drifted readback into outcome-unknown", async () => {
@@ -196,6 +197,23 @@ describe("ProductsPage", () => {
     await act(async () => { mounted.root.unmount(); response.resolve({ status: 401, data: {} }); await Promise.resolve(); });
     expect(onUnauthenticated).not.toHaveBeenCalled();
   });
+	it("locks an in-flight local update as unknown across a transport lifetime replacement", async () => {
+		const pending = deferred<{ status: number; data: unknown }>();
+		const updateA = vi.fn(() => pending.promise); const updateB = vi.fn(async () => ({ status: 200, data: { ...product, version: 2 } })); const onUnauthenticated = vi.fn();
+		const mounted = mountedRoot(); const common = { product: { id: 1, productCode: "SKU-1", name: "商品", description: "本地描述", priceMinor: 1990, currency: "CNY", stockQuantity: 3, images: ["opaque-image-value"], createdBy: 7, createdAt: "2026-08-19T00:00:00Z", updatedAt: "2026-08-19T00:00:00Z", version: 1 }, readCookie: () => `aicrm_csrf=${"c".repeat(43)}`, onUnauthenticated, onProductUpdated: vi.fn() };
+		const transportA = { list: async () => ({ status: 200, data: { items: [product] } }), get: async () => ({ status: 200, data: product }), update: updateA, listEntitlements: async () => ({ status: 200, data: { items: [] } }) };
+		const transportB = { ...transportA, update: updateB };
+		await act(async () => { mounted.root.render(<ProductLocalControls {...common} transport={transportA} />); await Promise.resolve(); });
+		const updateForm = elements(mounted.container, "FORM")[0];
+		await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(updateForm).onSubmit?.({ preventDefault() {} }); });
+		expect(updateA).toHaveBeenCalledTimes(1);
+		await act(async () => { mounted.root.render(<ProductLocalControls {...common} transport={transportB} />); await Promise.resolve(); });
+		expect(mounted.container.textContent).toContain("结果未知");
+		await act(async () => { reactProps<{ onSubmit?: (event: { preventDefault(): void }) => void }>(elements(mounted.container, "FORM")[0]).onSubmit?.({ preventDefault() {} }); pending.resolve({ status: 401, data: {} }); await Promise.resolve(); });
+		expect(updateB).not.toHaveBeenCalled();
+		expect(onUnauthenticated).not.toHaveBeenCalled();
+		await act(async () => { mounted.root.unmount(); });
+	});
   it("mounts the detail state machine with exact IDs, singleflight, stale-response, failure-retention, and one 401 callback", async () => {
     const initial = deferred<{ status: number; data: unknown }>();
     const first = deferred<{ status: number; data: unknown }>();

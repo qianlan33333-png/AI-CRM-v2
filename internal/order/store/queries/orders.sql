@@ -23,7 +23,8 @@ FROM order_list_projections
 WHERE id = sqlc.arg(order_id)::bigint
   AND status = 'paid'
   AND product_id IS NOT NULL
-  AND customer_id IS NOT NULL;
+  AND customer_id IS NOT NULL
+FOR UPDATE;
 
 -- name: CountFilteredOrderProjections :one
 SELECT count(*)

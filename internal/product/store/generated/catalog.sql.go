@@ -305,7 +305,7 @@ LEFT JOIN LATERAL (
   FROM product_images pi WHERE pi.product_id = p.id
 ) images ON true
 WHERE p.id = $1::bigint
-FOR UPDATE
+FOR UPDATE OF p
 `
 
 type GetProductForUpdateRow struct {

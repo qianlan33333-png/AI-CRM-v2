@@ -80,14 +80,13 @@ type RevokeProductLocalEntitlementRequest struct {
 // LocalEntitlementResponse is intentionally exact: actor receipt fields never
 // cross the browser boundary.
 type LocalEntitlementResponse struct {
-	ID         int64   `json:"id"`
-	ProductID  int64   `json:"product_id"`
-	OrderID    int64   `json:"order_id"`
-	CustomerID int64   `json:"customer_id"`
-	State      string  `json:"state"`
-	Version    int64   `json:"version"`
-	GrantedAt  string  `json:"granted_at"`
-	RevokedAt  *string `json:"revoked_at"`
+	ID        int64   `json:"id"`
+	ProductID int64   `json:"product_id"`
+	OrderID   int64   `json:"order_id"`
+	State     string  `json:"state"`
+	Version   int64   `json:"version"`
+	GrantedAt string  `json:"granted_at"`
+	RevokedAt *string `json:"revoked_at"`
 }
 
 type ListProductLocalEntitlementsResponse struct {
@@ -290,7 +289,7 @@ func localEntitlementResponse(item productport.LocalEntitlement) (LocalEntitleme
 	if item.State == "revoked" && (item.RevokedAt == nil || item.RevokedAt.IsZero() || item.RevokedAt.Before(item.GrantedAt)) {
 		return LocalEntitlementResponse{}, productapp.ErrUnavailable
 	}
-	response := LocalEntitlementResponse{ID: int64(item.ID), ProductID: int64(item.ProductID), OrderID: item.OrderID, CustomerID: item.CustomerID, State: item.State, Version: item.Version, GrantedAt: item.GrantedAt.UTC().Format(timeRFC3339Nano)}
+	response := LocalEntitlementResponse{ID: int64(item.ID), ProductID: int64(item.ProductID), OrderID: item.OrderID, State: item.State, Version: item.Version, GrantedAt: item.GrantedAt.UTC().Format(timeRFC3339Nano)}
 	if item.RevokedAt != nil {
 		value := item.RevokedAt.UTC().Format(timeRFC3339Nano)
 		response.RevokedAt = &value

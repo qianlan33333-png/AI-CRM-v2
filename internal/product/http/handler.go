@@ -91,7 +91,7 @@ func authorized(r *http.Request, c authport.Capability) bool {
 	return ok && a.Capability == c && a.Scope == authport.ScopeGlobal
 }
 func mapProduct(p productport.Product) generated.Product {
-	return generated.Product{Id: int64(p.ID), ProductCode: p.ProductCode, Name: p.Name, Description: p.Description, PriceMinor: p.PriceMinor, Currency: p.Currency, StockQuantity: p.StockQuantity, Images: append([]string(nil), p.Images...), CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt}
+	return generated.Product{Id: int64(p.ID), ProductCode: p.ProductCode, Name: p.Name, Description: p.Description, PriceMinor: p.PriceMinor, Currency: p.Currency, StockQuantity: p.StockQuantity, Images: append([]string(nil), p.Images...), CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Version: p.Version}
 }
 func write(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

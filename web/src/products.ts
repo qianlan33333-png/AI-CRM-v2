@@ -1,7 +1,12 @@
 import {
   createProduct,
+  getProductLocalEntitlement,
   getProduct,
+  grantProductLocalEntitlement as generatedGrantProductLocalEntitlement,
+  listProductLocalEntitlements,
   listProducts,
+  revokeProductLocalEntitlement as generatedRevokeProductLocalEntitlement,
+  updateProduct,
   type CreateProductRequest,
   type ListProductsParams,
 } from "./api/generated/health";
@@ -62,7 +67,6 @@ export interface LocalEntitlement {
 	readonly id: number;
 	readonly productId: number;
 	readonly orderId: number;
-	readonly customerId: number;
 	readonly state: "active" | "revoked";
 	readonly version: number;
 	readonly grantedAt: string;
@@ -97,6 +101,11 @@ export const generatedProductsTransport: ProductsTransport = {
   list: listProducts,
   get: getProduct,
   create: createProduct,
+  update: updateProduct,
+  listEntitlements: listProductLocalEntitlements,
+  getEntitlement: getProductLocalEntitlement,
+  grantEntitlement: generatedGrantProductLocalEntitlement,
+  revokeEntitlement: generatedRevokeProductLocalEntitlement,
 };
 export type ProductsFailure = "unauthenticated" | "forbidden" | "invalid" | "unavailable";
 export type ProductsResult = { readonly status: "loaded"; readonly page: ProductPage } | { readonly status: ProductsFailure };
@@ -145,19 +154,17 @@ function timestamp(value: unknown): value is string {
 function images(value: unknown): boolean {
   return Array.isArray(value) && value.length <= 20 && value.every((item) => text(item, 2048, true));
 }
-const PRODUCT_KEYS = ["id", "product_code", "name", "description", "price_minor", "currency", "stock_quantity", "images", "created_by", "created_at", "updated_at"] as const;
-const PRODUCT_WITH_VERSION_KEYS = [...PRODUCT_KEYS, "version"] as const;
+const PRODUCT_KEYS = ["id", "product_code", "name", "description", "price_minor", "currency", "stock_quantity", "images", "created_by", "created_at", "updated_at", "version"] as const;
 
 function parseProduct(value: unknown): ProductListItem | undefined {
-	if (!record(value) || (!exact(value, PRODUCT_KEYS) && !exact(value, PRODUCT_WITH_VERSION_KEYS)) || !positive(value.id) || !text(value.product_code, 200, true) ||
-    !text(value.name, 200, true) || !text(value.description, 10000) || !nonnegative(value.price_minor) ||
-    typeof value.currency !== "string" || !/^[A-Z]{3}$/.test(value.currency) || !nonnegative(value.stock_quantity) || value.stock_quantity > 2_147_483_647 ||
-    !images(value.images) || !positive(value.created_by) || !timestamp(value.created_at) || !timestamp(value.updated_at)) return undefined;
-	if ("version" in value && !positive(value.version)) return undefined;
+	if (!record(value) || !exact(value, PRODUCT_KEYS) || !positive(value.id) || !text(value.product_code, 200, true) ||
+		!text(value.name, 200, true) || !text(value.description, 10000) || !nonnegative(value.price_minor) ||
+		typeof value.currency !== "string" || !/^[A-Z]{3}$/.test(value.currency) || !nonnegative(value.stock_quantity) || value.stock_quantity > 2_147_483_647 ||
+		!images(value.images) || !positive(value.created_by) || !timestamp(value.created_at) || !timestamp(value.updated_at) || !positive(value.version)) return undefined;
 	if (Date.parse(value.updated_at) < Date.parse(value.created_at)) return undefined;
 	return { id: value.id, productCode: value.product_code, name: value.name, description: value.description,
 		priceMinor: value.price_minor, currency: value.currency, stockQuantity: value.stock_quantity, images: value.images as string[], createdBy: value.created_by,
-		createdAt: value.created_at, updatedAt: value.updated_at, version: "version" in value ? value.version as number : undefined };
+		createdAt: value.created_at, updatedAt: value.updated_at, version: value.version };
 }
 
 export function parseProductDetail(value: unknown, requestedID: number): ProductListItem | undefined {
@@ -366,12 +373,12 @@ export async function updateLocalProduct(transport: ProductsTransport, product: 
 	} catch { return { status: "unknown" }; }
 }
 
-const ENTITLEMENT_KEYS = ["id", "product_id", "order_id", "customer_id", "state", "version", "granted_at", "revoked_at"] as const;
+const ENTITLEMENT_KEYS = ["id", "product_id", "order_id", "state", "version", "granted_at", "revoked_at"] as const;
 function parseLocalEntitlement(value: unknown): LocalEntitlement | undefined {
-	if (!record(value) || !exact(value, ENTITLEMENT_KEYS) || !positive(value.id) || !positive(value.product_id) || !positive(value.order_id) || !positive(value.customer_id) || !positive(value.version) || !timestamp(value.granted_at) || (value.state !== "active" && value.state !== "revoked")) return undefined;
+	if (!record(value) || !exact(value, ENTITLEMENT_KEYS) || !positive(value.id) || !positive(value.product_id) || !positive(value.order_id) || !positive(value.version) || !timestamp(value.granted_at) || (value.state !== "active" && value.state !== "revoked")) return undefined;
 	if (value.state === "active" && value.revoked_at !== null) return undefined;
 	if (value.state === "revoked" && !timestamp(value.revoked_at)) return undefined;
-	return { id: value.id, productId: value.product_id, orderId: value.order_id, customerId: value.customer_id, state: value.state, version: value.version, grantedAt: value.granted_at, revokedAt: value.revoked_at === null ? undefined : value.revoked_at as string };
+	return { id: value.id, productId: value.product_id, orderId: value.order_id, state: value.state, version: value.version, grantedAt: value.granted_at, revokedAt: value.revoked_at === null ? undefined : value.revoked_at as string };
 }
 function parseLocalEntitlementList(value: unknown, productID: number): readonly LocalEntitlement[] | undefined {
 	if (!record(value) || !exact(value, ["items"]) || !Array.isArray(value.items) || value.items.length > PRODUCT_PAGE_SIZE) return undefined;
@@ -412,7 +419,7 @@ export async function revokeProductLocalEntitlement(transport: ProductsTransport
 	try {
 		const response = await transport.revokeEntitlement(entitlement.id, { expected_version: entitlement.version }, options);
 		if (response.status !== 200) return mutationFailure(response.status);
-		const result = parseLocalEntitlement(response.data); return result !== undefined && result.id === entitlement.id && result.productId === entitlement.productId && result.orderId === entitlement.orderId && result.customerId === entitlement.customerId && result.grantedAt === entitlement.grantedAt && result.state === "revoked" && result.revokedAt !== undefined && Date.parse(result.revokedAt) >= Date.parse(result.grantedAt) && result.version === entitlement.version + 1 ? { status: "revoked", entitlement: result } : { status: "unknown" };
+		const result = parseLocalEntitlement(response.data); return result !== undefined && result.id === entitlement.id && result.productId === entitlement.productId && result.orderId === entitlement.orderId && result.grantedAt === entitlement.grantedAt && result.state === "revoked" && result.revokedAt !== undefined && Date.parse(result.revokedAt) >= Date.parse(result.grantedAt) && result.version === entitlement.version + 1 ? { status: "revoked", entitlement: result } : { status: "unknown" };
 	} catch { return { status: "unknown" }; }
 }
 

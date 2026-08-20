@@ -52,6 +52,11 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead},
 		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite},
 		{http.MethodGet, "/api/v1/products/1", authport.CapabilityProductsRead},
+		{http.MethodPut, "/api/v1/products/1", authport.CapabilityProductsWrite},
+		{http.MethodGet, "/api/v1/products/1/local-entitlements", authport.CapabilityEntitlementsRead},
+		{http.MethodPost, "/api/v1/products/1/local-entitlements", authport.CapabilityEntitlementsWrite},
+		{http.MethodGet, "/api/v1/product-entitlements/1", authport.CapabilityEntitlementsRead},
+		{http.MethodPost, "/api/v1/product-entitlements/1/revoke", authport.CapabilityEntitlementsWrite},
 		{http.MethodPost, "/api/v1/stages", authport.CapabilityStagesWrite},
 		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 	}
@@ -70,7 +75,7 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 				test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 			}
-			if test.capability == authport.CapabilityProductsWrite {
+			if test.capability == authport.CapabilityProductsWrite || test.capability == authport.CapabilityEntitlementsWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 				request.Header.Set("Idempotency-Key", "router-product-key")
 			}
@@ -109,6 +114,9 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", `{"expected_version":1,"primary_customer_id":1,"reason":"confirm"}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", `{"expected_version":1,"reason":"reject"}`},
 		{http.MethodPost, "/api/v1/products", `{"product_code":"sku","name":"商品","description":"","price_minor":1,"currency":"CNY","stock_quantity":0,"images":[]}`},
+		{http.MethodPut, "/api/v1/products/1", `{"expected_version":1,"name":"商品","description":"","price_minor":1,"currency":"CNY","stock_quantity":0}`},
+		{http.MethodPost, "/api/v1/products/1/local-entitlements", `{"order_id":1}`},
+		{http.MethodPost, "/api/v1/product-entitlements/1/revoke", `{"expected_version":1}`},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

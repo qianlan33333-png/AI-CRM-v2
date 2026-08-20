@@ -34,7 +34,7 @@ function sameProduct(left: ProductListItem, right: ProductListItem): boolean {
 	return left.id === right.id && left.version === right.version && left.productCode === right.productCode && left.name === right.name && left.description === right.description && left.priceMinor === right.priceMinor && left.currency === right.currency && left.stockQuantity === right.stockQuantity && left.createdBy === right.createdBy && left.createdAt === right.createdAt && left.updatedAt === right.updatedAt && left.images.length === right.images.length && left.images.every((image, index) => image === right.images[index]);
 }
 function sameEntitlement(left: LocalEntitlement, right: LocalEntitlement): boolean {
-	return left.id === right.id && left.productId === right.productId && left.orderId === right.orderId && left.customerId === right.customerId && left.state === right.state && left.version === right.version && left.grantedAt === right.grantedAt && left.revokedAt === right.revokedAt;
+	return left.id === right.id && left.productId === right.productId && left.orderId === right.orderId && left.state === right.state && left.version === right.version && left.grantedAt === right.grantedAt && left.revokedAt === right.revokedAt;
 }
 function mutationNotice(state: MutationState): React.ReactElement | null {
 	if (state.kind === "idle") return null;
@@ -54,8 +54,8 @@ export function ProductLocalControls({ product, transport, readCookie = runtimeC
 	const [updateState, setUpdateState] = useState<MutationState>({ kind: "idle" });
 	const [grantOrderID, setGrantOrderID] = useState(""); const [grantState, setGrantState] = useState<MutationState>({ kind: "idle" });
 	const [entitlements, setEntitlements] = useState<EntitlementState>({ kind: "loading" }); const [selected, setSelected] = useState<LocalEntitlement>(); const [revokeCandidate, setRevokeCandidate] = useState<LocalEntitlement>(); const [revokeState, setRevokeState] = useState<MutationState>({ kind: "idle" });
-	const updateUnknown = useRef(false); const grantUnknown = useRef(false); const revokeUnknown = useRef(new Set<number>()); const generation = useRef(0); const detailGeneration = useRef(0);
-	const updateInFlight = useRef<symbol>(); const grantInFlight = useRef<symbol>(); const revokeInFlight = useRef(new Map<number, symbol>());
+	const updateUnknown = useRef(false); const grantUnknown = useRef(false); const revokeUnknown = useRef(new Set<number>()); const generation = useRef(0); const detailGeneration = useRef(0); const lifetime = useRef(0);
+	const updateInFlight = useRef<{ readonly token: symbol; readonly lifetime: number }>(); const grantInFlight = useRef<{ readonly token: symbol; readonly lifetime: number }>(); const revokeInFlight = useRef(new Map<number, { readonly token: symbol; readonly lifetime: number }>());
 	const csrf = (): string | undefined => { try { return readCSRFCookie(readCookie()); } catch { return undefined; } };
 	const load = () => {
 		if (transport.listEntitlements === undefined) { setEntitlements({ kind: "error", message: "本地权益传输尚未接入。" }); return; }
@@ -68,44 +68,57 @@ export function ProductLocalControls({ product, transport, readCookie = runtimeC
 			setEntitlements({ kind: "error", message: mutationMessage(result.status), previous });
 		});
 	};
-	useEffect(() => { setUpdateDraft(defaultProductUpdateDraft(product)); updateUnknown.current = false; setUpdateState({ kind: "idle" }); load(); return () => { generation.current++; detailGeneration.current++; updateInFlight.current = undefined; grantInFlight.current = undefined; revokeInFlight.current.clear(); }; }, [product.id, product.version, transport]);
+	useEffect(() => {
+		const currentLifetime = ++lifetime.current;
+		setUpdateDraft(defaultProductUpdateDraft(product));
+		setUpdateState(updateUnknown.current ? { kind: "unknown", message: mutationMessage("unknown") } : { kind: "idle" });
+		setGrantState(grantUnknown.current ? { kind: "unknown", message: mutationMessage("unknown") } : { kind: "idle" });
+		setRevokeState(revokeUnknown.current.size > 0 ? { kind: "unknown", message: mutationMessage("unknown") } : { kind: "idle" });
+		load();
+		return () => {
+			generation.current++; detailGeneration.current++; lifetime.current++;
+			if (updateInFlight.current?.lifetime === currentLifetime) { updateUnknown.current = true; updateInFlight.current = undefined; }
+			if (grantInFlight.current?.lifetime === currentLifetime) { grantUnknown.current = true; grantInFlight.current = undefined; }
+			for (const [id, request] of revokeInFlight.current) if (request.lifetime === currentLifetime) { revokeUnknown.current.add(id); revokeInFlight.current.delete(id); }
+		};
+	}, [product.id, product.version, transport]);
 	const submitUpdate = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault(); if (updateDraft === undefined || updateInFlight.current !== undefined || updateUnknown.current) return;
 		if (productUpdateRequest(updateDraft) === undefined) { setUpdateState({ kind: "error", message: "请填写合法的版本、名称、描述、金额、货币与库存。" }); return; }
 		const token = csrf(); const key = newLocalProductIdempotencyKey("update"); if (!token || !key) { setUpdateState({ kind: "error", message: mutationMessage("forbidden") }); return; }
-		const requestToken = Symbol(); updateInFlight.current = requestToken; setUpdateState({ kind: "saving" });
+		const requestToken = Symbol(); const requestLifetime = lifetime.current; updateInFlight.current = { token: requestToken, lifetime: requestLifetime }; setUpdateState({ kind: "saving" });
 		void updateLocalProduct(transport, product, updateDraft, token, key).then(async (result) => {
-			if (updateInFlight.current !== requestToken) return;
-			if (result.status === "updated") { const readback = await loadProductDetail(transport, product.id); if (updateInFlight.current !== requestToken) return; if (readback.status === "loaded" && sameProduct(readback.product, result.product)) { onProductUpdated(readback.product); setUpdateState({ kind: "done", message: "本地产品已按版本条件更新。" }); return; } updateUnknown.current = true; setUpdateState({ kind: "unknown", message: mutationMessage("unknown") }); return; }
+			if (updateInFlight.current?.token !== requestToken || updateInFlight.current.lifetime !== requestLifetime || lifetime.current !== requestLifetime) return;
+			if (result.status === "updated") { const readback = await loadProductDetail(transport, product.id); if (updateInFlight.current?.token !== requestToken || updateInFlight.current.lifetime !== requestLifetime || lifetime.current !== requestLifetime) return; if (readback.status === "loaded" && sameProduct(readback.product, result.product)) { updateInFlight.current = undefined; onProductUpdated(readback.product); setUpdateState({ kind: "done", message: "本地产品已按版本条件更新。" }); return; } updateUnknown.current = true; setUpdateState({ kind: "unknown", message: mutationMessage("unknown") }); return; }
 			if (result.status === "unauthenticated") onUnauthenticated?.();
 			if (result.status === "unknown") { updateUnknown.current = true; setUpdateState({ kind: "unknown", message: mutationMessage(result.status) }); return; }
 			setUpdateState({ kind: "error", message: mutationMessage(result.status) });
-		}).finally(() => { if (updateInFlight.current === requestToken) updateInFlight.current = undefined; });
+		}).finally(() => { if (updateInFlight.current?.token === requestToken && updateInFlight.current.lifetime === requestLifetime && lifetime.current === requestLifetime) updateInFlight.current = undefined; });
 	};
 	const submitGrant = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault(); if (grantInFlight.current !== undefined || grantUnknown.current) return;
 		const orderID = positiveID(grantOrderID); const token = csrf(); const key = newLocalProductIdempotencyKey("grant"); if (!orderID || !token || !key) { setGrantState({ kind: "error", message: "请填写合法订单 ID 并保持登录状态。" }); return; }
-		const requestToken = Symbol(); grantInFlight.current = requestToken; setGrantState({ kind: "saving" });
+		const requestToken = Symbol(); const requestLifetime = lifetime.current; grantInFlight.current = { token: requestToken, lifetime: requestLifetime }; setGrantState({ kind: "saving" });
 		void grantProductLocalEntitlement(transport, product.id, orderID, token, key).then(async (result) => {
-			if (grantInFlight.current !== requestToken) return;
-			if (result.status === "granted") { const readback = await loadProductLocalEntitlements(transport, product.id); if (grantInFlight.current !== requestToken) return; if (readback.status === "loaded" && readback.items.some((item) => sameEntitlement(item, result.entitlement))) { setGrantOrderID(""); setGrantState({ kind: "done", message: "本地权益已授予。" }); load(); return; } grantUnknown.current = true; setGrantState({ kind: "unknown", message: mutationMessage("unknown") }); return; }
+			if (grantInFlight.current?.token !== requestToken || grantInFlight.current.lifetime !== requestLifetime || lifetime.current !== requestLifetime) return;
+			if (result.status === "granted") { const readback = await loadProductLocalEntitlements(transport, product.id); if (grantInFlight.current?.token !== requestToken || grantInFlight.current.lifetime !== requestLifetime || lifetime.current !== requestLifetime) return; if (readback.status === "loaded" && readback.items.some((item) => sameEntitlement(item, result.entitlement))) { setGrantOrderID(""); setGrantState({ kind: "done", message: "本地权益已授予。" }); load(); return; } grantUnknown.current = true; setGrantState({ kind: "unknown", message: mutationMessage("unknown") }); return; }
 			if (result.status === "unauthenticated") onUnauthenticated?.();
 			if (result.status === "unknown") { grantUnknown.current = true; setGrantState({ kind: "unknown", message: mutationMessage(result.status) }); return; }
 			setGrantState({ kind: "error", message: mutationMessage(result.status) });
-		}).finally(() => { if (grantInFlight.current === requestToken) grantInFlight.current = undefined; });
+		}).finally(() => { if (grantInFlight.current?.token === requestToken && grantInFlight.current.lifetime === requestLifetime && lifetime.current === requestLifetime) grantInFlight.current = undefined; });
 	};
 	const showDetail = (id: number) => { const token = ++detailGeneration.current; void loadProductLocalEntitlement(transport, id).then((result) => { if (token !== detailGeneration.current) return; if (result.status === "loaded") setSelected(result.entitlement); else { if (result.status === "unauthenticated") onUnauthenticated?.(); setSelected(undefined); } }); };
 	const revoke = (entitlement: LocalEntitlement) => {
 		if (revokeInFlight.current.has(entitlement.id) || revokeUnknown.current.has(entitlement.id)) return;
 		const token = csrf(); const key = newLocalProductIdempotencyKey("revoke"); if (!token || !key) { setRevokeState({ kind: "error", message: mutationMessage("forbidden") }); return; }
-		const requestToken = Symbol(); revokeInFlight.current.set(entitlement.id, requestToken); setRevokeState({ kind: "saving" });
+		const requestToken = Symbol(); const requestLifetime = lifetime.current; revokeInFlight.current.set(entitlement.id, { token: requestToken, lifetime: requestLifetime }); setRevokeState({ kind: "saving" });
 		void revokeProductLocalEntitlement(transport, entitlement, token, key).then(async (result) => {
-			if (revokeInFlight.current.get(entitlement.id) !== requestToken) return;
-			if (result.status === "revoked") { const readback = await loadProductLocalEntitlement(transport, entitlement.id); if (revokeInFlight.current.get(entitlement.id) !== requestToken) return; if (readback.status === "loaded" && sameEntitlement(readback.entitlement, result.entitlement)) { setRevokeCandidate(undefined); setRevokeState({ kind: "done", message: "本地权益已撤销。" }); setSelected(readback.entitlement); load(); return; } revokeUnknown.current.add(entitlement.id); setRevokeState({ kind: "unknown", message: mutationMessage("unknown") }); return; }
+			if (revokeInFlight.current.get(entitlement.id)?.token !== requestToken || revokeInFlight.current.get(entitlement.id)?.lifetime !== requestLifetime || lifetime.current !== requestLifetime) return;
+			if (result.status === "revoked") { const readback = await loadProductLocalEntitlement(transport, entitlement.id); if (revokeInFlight.current.get(entitlement.id)?.token !== requestToken || revokeInFlight.current.get(entitlement.id)?.lifetime !== requestLifetime || lifetime.current !== requestLifetime) return; if (readback.status === "loaded" && sameEntitlement(readback.entitlement, result.entitlement)) { setRevokeCandidate(undefined); setRevokeState({ kind: "done", message: "本地权益已撤销。" }); setSelected(readback.entitlement); load(); return; } revokeUnknown.current.add(entitlement.id); setRevokeState({ kind: "unknown", message: mutationMessage("unknown") }); return; }
 			if (result.status === "unauthenticated") onUnauthenticated?.();
 			if (result.status === "unknown") { revokeUnknown.current.add(entitlement.id); setRevokeState({ kind: "unknown", message: mutationMessage(result.status) }); return; }
 			setRevokeState({ kind: "error", message: mutationMessage(result.status) });
-		}).finally(() => { if (revokeInFlight.current.get(entitlement.id) === requestToken) revokeInFlight.current.delete(entitlement.id); });
+		}).finally(() => { const active = revokeInFlight.current.get(entitlement.id); if (active?.token === requestToken && active.lifetime === requestLifetime && lifetime.current === requestLifetime) revokeInFlight.current.delete(entitlement.id); });
 	};
 	const entitlementItems = entitlements.kind === "ready" ? entitlements.items : entitlements.kind === "loading" || entitlements.kind === "error" ? entitlements.previous : undefined;
 	return <section aria-label="本地产品更新与权益"><h3>本地产品更新</h3>{updateDraft === undefined ? <p role="status">产品版本传输尚未接入，不能执行条件更新。</p> : <form onSubmit={submitUpdate}><fieldset disabled={updateState.kind === "saving" || updateUnknown.current}><label>名称<input aria-label="更新名称" value={updateDraft.name} onChange={(event) => setUpdateDraft({ ...updateDraft, name: event.currentTarget.value })} /></label><label>描述<textarea aria-label="更新描述" value={updateDraft.description} onChange={(event) => setUpdateDraft({ ...updateDraft, description: event.currentTarget.value })} /></label><label>金额<input aria-label="更新金额" value={updateDraft.priceMinor} onChange={(event) => setUpdateDraft({ ...updateDraft, priceMinor: event.currentTarget.value })} /></label><label>货币<input aria-label="更新货币" value={updateDraft.currency} onChange={(event) => setUpdateDraft({ ...updateDraft, currency: event.currentTarget.value })} /></label><label>库存<input aria-label="更新库存" value={updateDraft.stockQuantity} onChange={(event) => setUpdateDraft({ ...updateDraft, stockQuantity: event.currentTarget.value })} /></label><button type="submit">按版本更新</button></fieldset></form>}{mutationNotice(updateState)}

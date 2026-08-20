@@ -76,7 +76,7 @@ func TestLocalMutationHandlerMapsFrozenCommandsAndClosedDTOs(t *testing.T) {
 		t.Fatalf("grant status=%d command=%+v body=%s", grant.Code, entitlements.grant, grant.Body.String())
 	}
 	var entitlement map[string]any
-	if err = json.Unmarshal(grant.Body.Bytes(), &entitlement); err != nil || len(entitlement) != 8 || entitlement["granted_by"] != nil || entitlement["revoked_by"] != nil {
+	if err = json.Unmarshal(grant.Body.Bytes(), &entitlement); err != nil || len(entitlement) != 7 || entitlement["customer_id"] != nil || entitlement["granted_by"] != nil || entitlement["revoked_by"] != nil {
 		t.Fatalf("entitlement response=%v err=%v", entitlement, err)
 	}
 

@@ -114,6 +114,7 @@ type candidateHandler struct {
 	stages          *contacthttp.Handler
 	segments        *segmenthttp.CRUDHandler
 	products        *producthttp.Handler
+	productLocal    *producthttp.LocalMutationHandler
 	segmentRefresh  *segmenthttp.RefreshHandler
 	identityReviews *identityhttp.ReviewHandler
 	automationRuns  interface {
@@ -193,6 +194,30 @@ func (handler *candidateHandler) CreateProduct(writer http.ResponseWriter, reque
 
 func (handler *candidateHandler) GetProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID) {
 	handler.products.GetProduct(writer, request, productID)
+}
+
+func (handler *candidateHandler) UpdateProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.UpdateProductParams) {
+	handler.productLocal.UpdateProduct(writer, request, int64(productID))
+}
+
+func (handler *candidateHandler) ListProductLocalEntitlements(writer http.ResponseWriter, request *http.Request, productID api.ProductID, params api.ListProductLocalEntitlementsParams) {
+	var limit int32
+	if params.Limit != nil {
+		limit = int32(*params.Limit)
+	}
+	handler.productLocal.ListProductLocalEntitlements(writer, request, int64(productID), limit)
+}
+
+func (handler *candidateHandler) GrantProductLocalEntitlement(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.GrantProductLocalEntitlementParams) {
+	handler.productLocal.GrantProductLocalEntitlement(writer, request, int64(productID))
+}
+
+func (handler *candidateHandler) GetProductLocalEntitlement(writer http.ResponseWriter, request *http.Request, entitlementID api.EntitlementID) {
+	handler.productLocal.GetProductLocalEntitlement(writer, request, int64(entitlementID))
+}
+
+func (handler *candidateHandler) RevokeProductLocalEntitlement(writer http.ResponseWriter, request *http.Request, entitlementID api.EntitlementID, _ api.RevokeProductLocalEntitlementParams) {
+	handler.productLocal.RevokeProductLocalEntitlement(writer, request, int64(entitlementID))
 }
 
 func (handler *candidateHandler) CreateSegment(writer http.ResponseWriter, request *http.Request, params api.CreateSegmentParams) {
@@ -483,6 +508,19 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	productLocalHandler, err := producthttp.NewLocalMutationHandler(
+		productService,
+		productapp.NewEntitlementService(
+			uow,
+			productstore.NewCatalogRepository(),
+			orderstore.NewRepository(),
+			eventstore.NewAppender(),
+		),
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	identityRepository := identitystore.NewRepository()
 	identityReviewHandler, err := identityhttp.NewReviewHandler(identityapp.NewMergeReviewService(
 		uow, identityRepository, contactstore.NewMergePortRepository(), eventstore.NewAppender(), config.Identity.HMACKey.Value(),
@@ -502,6 +540,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		mutations: mutationHandler, tags: tagCatalogHandler, stages: stageHandler,
 		segments:           segmentCRUDHandler,
 		products:           productHandler,
+		productLocal:       productLocalHandler,
 		segmentRefresh:     segmentRefreshHandler,
 		identityReviews:    identityReviewHandler,
 		automationRuns:     automationstore.NewRepository(pool),
@@ -834,6 +873,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.ListProducts)},
 		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CreateProduct)},
 		{http.MethodGet, "/api/v1/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetProduct)},
+		{http.MethodPut, "/api/v1/products/{product_id}", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.UpdateProduct)},
+		{http.MethodGet, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.ListProductLocalEntitlements)},
+		{http.MethodPost, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.GrantProductLocalEntitlement)},
+		{http.MethodGet, "/api/v1/product-entitlements/{entitlement_id}", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.GetProductLocalEntitlement)},
+		{http.MethodPost, "/api/v1/product-entitlements/{entitlement_id}/revoke", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.RevokeProductLocalEntitlement)},
 		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
 		{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.UpdateSegment)},
 		{http.MethodGet, "/api/v1/segments/{segment_id}/members", authport.CapabilitySegmentsRead, false, http.HandlerFunc(wrapper.ListSegmentMembers)},

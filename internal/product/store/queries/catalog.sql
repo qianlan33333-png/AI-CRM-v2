@@ -44,7 +44,7 @@ LEFT JOIN LATERAL (
   FROM product_images pi WHERE pi.product_id = p.id
 ) images ON true
 WHERE p.id = sqlc.arg(product_id)::bigint
-FOR UPDATE;
+FOR UPDATE OF p;
 
 -- name: CreateProduct :one
 INSERT INTO products (product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, legacy_admin_projection)
