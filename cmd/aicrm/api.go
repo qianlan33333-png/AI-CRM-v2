@@ -61,6 +61,7 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	producthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http"
+	serviceperiodhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http/serviceperiod"
 	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	pushcenterapp "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/app"
 	pushcenterstore "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/store"
@@ -655,6 +656,15 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	servicePeriodHandler, err := serviceperiodhttp.NewHandler(productapp.NewServicePeriodService(
+		uow,
+		productstore.NewCatalogRepository(),
+		eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	productLocalHandler, err := producthttp.NewLocalMutationHandler(
 		productService,
 		productapp.NewEntitlementService(
@@ -771,6 +781,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	legacyHandler.legacyTagSync = legacyTagSyncService
+	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
@@ -1361,6 +1372,26 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			}
 			router.Method(method, pattern, tail)
 			return nil
+		}
+		if legacy.servicePeriod != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, serviceperiodhttp.BasePath, authport.CapabilityProductsRead, false},
+				{http.MethodPost, serviceperiodhttp.BasePath, authport.CapabilityProductsWrite, true},
+				{http.MethodGet, serviceperiodhttp.BasePath + "/{service_product_id}", authport.CapabilityProductsRead, false},
+				{http.MethodPut, serviceperiodhttp.BasePath + "/{service_product_id}", authport.CapabilityProductsWrite, true},
+				{http.MethodPost, serviceperiodhttp.BasePath + "/{service_product_id}/enable", authport.CapabilityProductsWrite, true},
+				{http.MethodPost, serviceperiodhttp.BasePath + "/{service_product_id}/disable", authport.CapabilityProductsWrite, true},
+				{http.MethodPost, serviceperiodhttp.BasePath + "/{service_product_id}/copy", authport.CapabilityProductsWrite, true},
+				{http.MethodDelete, serviceperiodhttp.BasePath + "/{service_product_id}", authport.CapabilityProductsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.servicePeriod); err != nil {
+					return nil, err
+				}
+			}
 		}
 		for _, route := range []struct {
 			method, pattern string
