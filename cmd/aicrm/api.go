@@ -62,6 +62,7 @@ import (
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	producthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http"
 	serviceperiodhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http/serviceperiod"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/product/membergrid"
 	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	pushcenterapp "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/app"
 	pushcenterstore "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/store"
@@ -665,6 +666,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	memberGridCursor, err := membergrid.NewCursorCodec(config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridService, err := membergrid.NewService(uow, membergrid.NewRepository(), memberGridCursor)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridHandler, err := membergrid.NewHandler(memberGridService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridFragment, err := membergrid.NewRouteFragment(memberGridHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	productLocalHandler, err := producthttp.NewLocalMutationHandler(
 		productService,
 		productapp.NewEntitlementService(
@@ -782,6 +803,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	legacyHandler.legacyTagSync = legacyTagSyncService
 	legacyHandler.servicePeriod = servicePeriodHandler
+	legacyHandler.memberGrid = memberGridFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
@@ -1389,6 +1411,21 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodDelete, serviceperiodhttp.BasePath + "/{service_product_id}", authport.CapabilityProductsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.servicePeriod); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.memberGrid != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+			}{
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/access", authport.CapabilityProductsRead},
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/schema", authport.CapabilityProductsRead},
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-views", authport.CapabilityProductsRead},
+				{http.MethodPost, membergrid.RoutePrefix + "/{service_product_id}/member-grid/query", authport.CapabilityEntitlementsRead},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, false, legacy.memberGrid); err != nil {
 					return nil, err
 				}
 			}
