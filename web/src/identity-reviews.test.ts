@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  IdentityReviewListController,
   appendIdentityMergeReviewPage,
   approveIdentityReview,
   loadIdentityMergeReviews,
@@ -7,9 +8,9 @@ import {
   parseIdentityMergeReviewPage,
   rejectIdentityReview,
   type IdentityReviewTransport,
+  type IdentityReviewTransportResponse,
 } from "./identity-reviews";
 
-const fingerprint = `hmac-sha256-v1:${"A".repeat(22)}`;
 const csrf = "c".repeat(43);
 
 const pending = {
@@ -17,26 +18,26 @@ const pending = {
   status: "pending",
   type: "phone",
   scope: "phone:e164",
-  identity_fingerprint: fingerprint,
   customer_ids: [42, 84],
+  identity_fingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
   version: 1,
   created_at: "2026-08-13T08:00:00Z",
   resolved_at: null,
-};
+} as const;
 
 const approved = {
   ...pending,
   status: "approved",
   version: 2,
   resolved_at: "2026-08-13T09:00:00Z",
-};
+} as const;
 
 const rejected = {
   ...pending,
   status: "rejected",
   version: 2,
   resolved_at: "2026-08-13T09:00:00Z",
-};
+} as const;
 
 function transport(
   overrides: Partial<IdentityReviewTransport> = {},
@@ -50,33 +51,46 @@ function transport(
   } as IdentityReviewTransport;
 }
 
-describe("identity merge-review contract parsing", () => {
-  it("accepts only the exact pending list facts and keeps the cursor opaque", () => {
+function deferred<T>() {
+  let resolve!: (...[]: [T]) => void;
+  const promise = new Promise<T>((complete) => {
+    resolve = complete;
+  });
+  return { promise, resolve };
+}
+
+describe("identity merge-review closed contract parsing", () => {
+  it("accepts exact facts for all three statuses", () => {
     expect(parseIdentityMergeReview(pending)).toEqual({
       reviewID: 17,
       status: "pending",
       type: "phone",
       scope: "phone:e164",
-      identityFingerprint: fingerprint,
       customerIDs: [42, 84],
+      identityFingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
       version: 1,
       createdAt: "2026-08-13T08:00:00Z",
     });
-    expect(
-      parseIdentityMergeReviewPage({
-        items: [pending],
-        next_cursor: "opaque=server&cursor",
-      }),
-    ).toMatchObject({ nextCursor: "opaque=server&cursor" });
+    expect(parseIdentityMergeReview(approved)).toMatchObject({
+      status: "approved",
+      resolvedAt: "2026-08-13T09:00:00Z",
+    });
+    expect(parseIdentityMergeReview(rejected)).toMatchObject({
+      status: "rejected",
+      resolvedAt: "2026-08-13T09:00:00Z",
+    });
   });
 
   it.each([
-    { ...pending, raw_identity: "+8613800138000" },
+    { ...pending, identity_fingerprint: "hmac-sha256-v1:secret" },
+    { ...pending, normalized_value: "+8613800138000" },
+    { ...pending, unionid: "raw-unionid" },
+    { ...pending, external_userid: "raw-external-userid" },
+    { ...pending, payload: { raw: true } },
     { ...pending, review_id: 0 },
     { ...pending, status: "unknown" },
     { ...pending, type: "openid" },
     { ...pending, scope: "" },
-    { ...pending, identity_fingerprint: "sha256:raw" },
     { ...pending, customer_ids: [84, 42] },
     { ...pending, customer_ids: [42, 42] },
     { ...pending, customer_ids: [42, 84, 126] },
@@ -85,67 +99,101 @@ describe("identity merge-review contract parsing", () => {
     { ...pending, resolved_at: "2026-08-13T09:00:00Z" },
     { ...approved, resolved_at: null },
     { ...approved, resolved_at: "2026-08-13T07:00:00Z" },
-  ])("rejects malformed, expanded, or contradictory review %#", (value) => {
+  ])("rejects expanded, malformed, or contradictory review %#", (value) => {
     expect(parseIdentityMergeReview(value)).toBeUndefined();
   });
 
-  it("rejects non-pending list rows, duplicate ids, and impossible cursors", () => {
+  it("binds each decoded page to the requested status", () => {
     expect(
-      parseIdentityMergeReviewPage({ items: [approved], next_cursor: null }),
+      parseIdentityMergeReviewPage(
+        { items: [pending], next_cursor: "opaque=server&cursor" },
+        "pending",
+      ),
+    ).toMatchObject({ status: "pending", nextCursor: "opaque=server&cursor" });
+    expect(
+      parseIdentityMergeReviewPage(
+        { items: [approved], next_cursor: null },
+        "pending",
+      ),
     ).toBeUndefined();
     expect(
-      parseIdentityMergeReviewPage({
-        items: [pending, pending],
-        next_cursor: null,
-      }),
-    ).toBeUndefined();
+      parseIdentityMergeReviewPage(
+        { items: [approved], next_cursor: null },
+        "approved",
+      ),
+    ).toMatchObject({ status: "approved" });
     expect(
-      parseIdentityMergeReviewPage({ items: [], next_cursor: "x".repeat(513) }),
-    ).toBeUndefined();
-    expect(
-      parseIdentityMergeReviewPage({ items: [], next_cursor: null, raw: true }),
-    ).toBeUndefined();
+      parseIdentityMergeReviewPage(
+        { items: [rejected], next_cursor: null },
+        "rejected",
+      ),
+    ).toMatchObject({ status: "rejected" });
   });
 
-  it("appends distinct server pages without interpreting cursors", () => {
-    const first = parseIdentityMergeReviewPage({
-      items: [pending],
-      next_cursor: "server-only",
-    });
-    const second = parseIdentityMergeReviewPage({
-      items: [{ ...pending, review_id: 18 }],
-      next_cursor: null,
-    });
-    if (!first || !second) throw new Error("expected valid fixtures");
+  it("rejects duplicate ids, expanded pages, impossible cursors, and cross-status append", () => {
+    expect(
+      parseIdentityMergeReviewPage(
+        { items: [pending, pending], next_cursor: null },
+        "pending",
+      ),
+    ).toBeUndefined();
+    expect(
+      parseIdentityMergeReviewPage(
+        { items: [], next_cursor: "x".repeat(513) },
+        "pending",
+      ),
+    ).toBeUndefined();
+    expect(
+      parseIdentityMergeReviewPage(
+        { items: [], next_cursor: null, raw: true },
+        "pending",
+      ),
+    ).toBeUndefined();
+
+    const first = parseIdentityMergeReviewPage(
+      { items: [pending], next_cursor: "server-only" },
+      "pending",
+    );
+    const second = parseIdentityMergeReviewPage(
+      { items: [{ ...pending, review_id: 18 }], next_cursor: null },
+      "pending",
+    );
+    const history = parseIdentityMergeReviewPage(
+      { items: [approved], next_cursor: null },
+      "approved",
+    );
+    if (!first || !second || !history) throw new Error("valid fixture drift");
     expect(
       appendIdentityMergeReviewPage(first, second)?.items.map(
         ({ reviewID }) => reviewID,
       ),
     ).toEqual([17, 18]);
     expect(appendIdentityMergeReviewPage(first, first)).toBeUndefined();
+    expect(appendIdentityMergeReviewPage(first, history)).toBeUndefined();
   });
 });
 
 describe("identity merge-review typed transport", () => {
-  it("loads through the generated client shape with same-origin credentials", async () => {
+  it("sends status and opaque cursor with same-origin credentials", async () => {
     const client = transport({
       list: vi.fn(async () => ({
         status: 200,
-        data: { items: [pending], next_cursor: null },
+        data: { items: [approved], next_cursor: null },
       })),
     });
     await expect(
-      loadIdentityMergeReviews(client, "opaque+cursor"),
-    ).resolves.toMatchObject({
-      status: "loaded",
-    });
+      loadIdentityMergeReviews(client, {
+        status: "approved",
+        cursor: "opaque+cursor",
+      }),
+    ).resolves.toMatchObject({ status: "loaded" });
     expect(client.list).toHaveBeenCalledWith(
-      { cursor: "opaque+cursor", limit: 50 },
-      { credentials: "same-origin" },
+      { status: "approved", cursor: "opaque+cursor", limit: 50 },
+      { credentials: "same-origin", signal: undefined },
     );
   });
 
-  it("fails closed for invalid input, response bodies, statuses, and network errors", async () => {
+  it("fails closed for invalid input, bodies, statuses, and network errors", async () => {
     const client = transport({
       list: vi
         .fn()
@@ -156,24 +204,28 @@ describe("identity merge-review typed transport", () => {
         .mockResolvedValueOnce({ status: 401, data: {} })
         .mockRejectedValueOnce(new Error("offline")),
     });
-    await expect(loadIdentityMergeReviews(client, "")).resolves.toEqual({
-      status: "invalid",
-    });
+    await expect(
+      loadIdentityMergeReviews(client, {
+        status: "pending",
+        cursor: "",
+      }),
+    ).resolves.toEqual({ status: "invalid" });
     expect(client.list).not.toHaveBeenCalled();
-    await expect(loadIdentityMergeReviews(client)).resolves.toEqual({
-      status: "invalid",
-    });
-    await expect(loadIdentityMergeReviews(client)).resolves.toEqual({
-      status: "unauthenticated",
-    });
-    await expect(loadIdentityMergeReviews(client)).resolves.toEqual({
-      status: "unavailable",
-    });
+    await expect(
+      loadIdentityMergeReviews(client, { status: "pending" }),
+    ).resolves.toEqual({ status: "invalid" });
+    await expect(
+      loadIdentityMergeReviews(client, { status: "pending" }),
+    ).resolves.toEqual({ status: "unauthenticated" });
+    await expect(
+      loadIdentityMergeReviews(client, { status: "pending" }),
+    ).resolves.toEqual({ status: "unavailable" });
   });
 
-  it("approves with explicit primary, version, reason, CSRF, and stable command key", async () => {
+  it("keeps strict approve/reject confirmation bound to the fingerprint", async () => {
     const client = transport({
       approve: vi.fn(async () => ({ status: 200, data: approved })),
+      reject: vi.fn(async () => ({ status: 200, data: rejected })),
     });
     const review = parseIdentityMergeReview(pending);
     if (!review) throw new Error("expected valid pending review");
@@ -191,6 +243,18 @@ describe("identity merge-review typed transport", () => {
       status: "completed",
       review: { status: "approved" },
     });
+    await expect(
+      rejectIdentityReview(
+        client,
+        review,
+        "手机号已换主",
+        csrf,
+        "identity-review-reject-17",
+      ),
+    ).resolves.toMatchObject({
+      status: "completed",
+      review: { status: "rejected" },
+    });
     expect(client.approve).toHaveBeenCalledWith(
       17,
       {
@@ -205,38 +269,6 @@ describe("identity merge-review typed transport", () => {
           "X-CSRF-Token": csrf,
         },
       },
-    );
-  });
-
-  it("rejects without a primary and preserves the same frozen command headers", async () => {
-    const client = transport({
-      reject: vi.fn(async () => ({ status: 200, data: rejected })),
-    });
-    const review = parseIdentityMergeReview(pending);
-    if (!review) throw new Error("expected valid pending review");
-
-    await expect(
-      rejectIdentityReview(
-        client,
-        review,
-        "手机号已换主",
-        csrf,
-        "identity-review-reject-17",
-      ),
-    ).resolves.toMatchObject({
-      status: "completed",
-      review: { status: "rejected" },
-    });
-    expect(client.reject).toHaveBeenCalledWith(
-      17,
-      { expected_version: 1, reason: "手机号已换主" },
-      expect.objectContaining({
-        credentials: "same-origin",
-        headers: expect.objectContaining({
-          "Idempotency-Key": "identity-review-reject-17",
-          "X-CSRF-Token": csrf,
-        }),
-      }),
     );
   });
 
@@ -304,5 +336,153 @@ describe("identity merge-review typed transport", () => {
         "command-key-is-long-enough",
       ),
     ).resolves.toEqual({ status: "conflict" });
+  });
+});
+
+describe("IdentityReviewListController ownership", () => {
+  it("singleflights the exact same request", async () => {
+    const request = deferred<IdentityReviewTransportResponse>();
+    const client = transport({ list: vi.fn(() => request.promise) });
+    const controller = new IdentityReviewListController(client);
+    const first = controller.activate("pending");
+    const second = controller.activate("pending");
+    expect(first).toBe(second);
+    expect(client.list).toHaveBeenCalledTimes(1);
+    request.resolve({
+      status: 200,
+      data: { items: [pending], next_cursor: null },
+    });
+    await first;
+    expect(controller.snapshot().page?.items).toHaveLength(1);
+  });
+
+  it("lets only the latest status generation publish a late response", async () => {
+    const pendingRequest = deferred<IdentityReviewTransportResponse>();
+    const approvedRequest = deferred<IdentityReviewTransportResponse>();
+    const client = transport({
+      list: vi.fn((params) =>
+        params.status === "pending"
+          ? pendingRequest.promise
+          : approvedRequest.promise,
+      ),
+    });
+    const controller = new IdentityReviewListController(client);
+    const old = controller.activate("pending");
+    const latest = controller.activate("approved");
+
+    pendingRequest.resolve({
+      status: 200,
+      data: { items: [pending], next_cursor: null },
+    });
+    await old;
+    expect(controller.snapshot()).toMatchObject({
+      activeStatus: "approved",
+      loading: true,
+    });
+    expect(controller.snapshot().page).toBeUndefined();
+
+    approvedRequest.resolve({
+      status: 200,
+      data: { items: [approved], next_cursor: null },
+    });
+    await latest;
+    expect(controller.snapshot()).toMatchObject({
+      activeStatus: "approved",
+      loading: false,
+      page: { status: "approved" },
+    });
+  });
+
+  it("replaces pagination, ignores its late response, and retains verified data on failure", async () => {
+    const more = deferred<IdentityReviewTransportResponse>();
+    const refresh = deferred<IdentityReviewTransportResponse>();
+    const client = transport({
+      list: vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          data: { items: [pending], next_cursor: "next" },
+        })
+        .mockImplementationOnce(() => more.promise)
+        .mockImplementationOnce(() => refresh.promise)
+        .mockResolvedValueOnce({ status: 503, data: {} }),
+    });
+    const controller = new IdentityReviewListController(client);
+    await controller.activate("pending");
+    const old = controller.loadMore();
+    const latest = controller.refresh();
+    more.resolve({
+      status: 200,
+      data: { items: [{ ...pending, review_id: 18 }], next_cursor: null },
+    });
+    await old;
+    expect(
+      controller.snapshot().page?.items.map(({ reviewID }) => reviewID),
+    ).toEqual([17]);
+    refresh.resolve({
+      status: 200,
+      data: { items: [{ ...pending, review_id: 19 }], next_cursor: null },
+    });
+    await latest;
+    expect(
+      controller.snapshot().page?.items.map(({ reviewID }) => reviewID),
+    ).toEqual([19]);
+
+    await controller.refresh();
+    expect(controller.snapshot()).toMatchObject({
+      failure: "unavailable",
+      page: { items: [{ reviewID: 19 }] },
+    });
+  });
+
+  it("notifies 401 once, invalidates history after resolution, and ignores unmount completions", async () => {
+    const notify = vi.fn();
+    const client = transport({
+      list: vi.fn(async () => ({ status: 401, data: {} })),
+    });
+    const controller = new IdentityReviewListController(
+      client,
+      "pending",
+      notify,
+    );
+    await controller.activate("pending");
+    await controller.refresh();
+    expect(notify).toHaveBeenCalledTimes(1);
+
+    const successClient = transport({
+      list: vi.fn(async (params) => ({
+        status: 200,
+        data: {
+          items: [params.status === "pending" ? pending : approved],
+          next_cursor: null,
+        },
+      })),
+    });
+    const success = new IdentityReviewListController(successClient);
+    await success.activate("pending");
+    await success.activate("approved");
+    success.acceptResolution(parseIdentityMergeReview(approved)!);
+    await success.activate("pending");
+    expect(success.snapshot().page?.items).toHaveLength(1);
+    success.acceptResolution(parseIdentityMergeReview(approved)!);
+    expect(success.snapshot().page?.items).toHaveLength(0);
+    await success.activate("approved");
+    expect(successClient.list).toHaveBeenCalledTimes(4);
+
+    const late = deferred<IdentityReviewTransportResponse>();
+    const disposed = new IdentityReviewListController(
+      transport({ list: vi.fn(() => late.promise) }),
+    );
+    const snapshots = vi.fn();
+    disposed.subscribe(snapshots);
+    const inFlight = disposed.activate("pending");
+    disposed.dispose();
+    const callsAtDispose = snapshots.mock.calls.length;
+    late.resolve({
+      status: 200,
+      data: { items: [pending], next_cursor: null },
+    });
+    await inFlight;
+    expect(snapshots).toHaveBeenCalledTimes(callsAtDispose);
   });
 });

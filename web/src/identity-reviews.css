@@ -39,3 +39,6 @@
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 @media (max-width: 900px) { .identity-reviews__grid { grid-template-columns: 1fr; } }
 @media (max-width: 620px) { .identity-reviews__heading { display: grid; } .identity-reviews__heading > button { justify-self: start; } .identity-review-facts div { grid-template-columns: 1fr; } .identity-review-candidates label { grid-template-columns: auto 1fr; } .identity-review-candidates a { grid-column: 2; } }
+.identity-reviews__tabs { display: flex; flex-wrap: wrap; gap: 0.6rem; border-bottom: 1px solid #c9bca8; padding-bottom: 0.75rem; }
+.identity-reviews__tabs button { border-color: #8f806c; background: #fff; color: #423a32; }
+.identity-reviews__tabs button[aria-current="page"] { border-color: #8e2d24; background: #8e2d24; color: #fff; }

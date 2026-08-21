@@ -22,14 +22,15 @@ type reviewApplicationStub struct {
 	page           identityport.MergeReviewPage
 	result         identityport.MergeReview
 	err            error
+	listStatus     identityport.MergeReviewStatus
 	listCursor     string
 	listLimit      int32
 	approveCommand identityport.ApproveMergeReviewCommand
 	rejectCommand  identityport.RejectMergeReviewCommand
 }
 
-func (stub *reviewApplicationStub) ListMergeReviews(_ context.Context, cursor string, limit int32) (identityport.MergeReviewPage, error) {
-	stub.listCursor, stub.listLimit = cursor, limit
+func (stub *reviewApplicationStub) ListMergeReviewsByStatus(_ context.Context, status identityport.MergeReviewStatus, cursor string, limit int32) (identityport.MergeReviewPage, error) {
+	stub.listStatus, stub.listCursor, stub.listLimit = status, cursor, limit
 	return stub.page, stub.err
 }
 
@@ -43,30 +44,79 @@ func (stub *reviewApplicationStub) RejectMergeReview(_ context.Context, command 
 	return stub.result, stub.err
 }
 
-func TestReviewHandlerListsRedactedPendingFacts(t *testing.T) {
+func TestReviewHandlerListsClosedFactsForAllStatusesAndDefaultsPending(t *testing.T) {
 	cursor := generated.Cursor("opaque-cursor")
 	limit := generated.Limit(25)
-	stub := &reviewApplicationStub{page: identityport.MergeReviewPage{
-		Items: []identityport.MergeReview{reviewHTTPFact(identityport.MergeReviewPending)}, NextCursor: "next-cursor",
-	}}
-	handler, err := NewReviewHandler(stub)
-	if err != nil {
-		t.Fatal(err)
+	for _, test := range []struct {
+		name   string
+		status identityport.MergeReviewStatus
+		param  *generated.ListIdentityMergeReviewsParamsStatus
+	}{
+		{name: "default pending", status: identityport.MergeReviewPending},
+		{name: "approved", status: identityport.MergeReviewApproved, param: reviewStatusParam(generated.ListIdentityMergeReviewsParamsStatus("approved"))},
+		{name: "rejected", status: identityport.MergeReviewRejected, param: reviewStatusParam(generated.ListIdentityMergeReviewsParamsStatus("rejected"))},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fact := reviewHTTPFact(test.status)
+			if test.status != identityport.MergeReviewPending {
+				resolved := fact.CreatedAt.Add(time.Hour)
+				fact.ResolvedAt = &resolved
+				fact.Version = 2
+			}
+			stub := &reviewApplicationStub{page: identityport.MergeReviewPage{
+				Items: []identityport.MergeReview{fact}, NextCursor: "next-cursor",
+			}}
+			handler, err := NewReviewHandler(stub)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request := reviewRequest(t, http.MethodGet, "", authport.CapabilityIdentityReviewRead)
+			response := httptest.NewRecorder()
+			handler.ListIdentityMergeReviews(response, request, generated.ListIdentityMergeReviewsParams{
+				Status: test.param, Cursor: &cursor, Limit: &limit,
+			})
+
+			if response.Code != http.StatusOK || stub.listStatus != test.status || stub.listCursor != "opaque-cursor" || stub.listLimit != 25 {
+				t.Fatalf("status=%d list_status=%q cursor=%q limit=%d body=%s", response.Code, stub.listStatus, stub.listCursor, stub.listLimit, response.Body.String())
+			}
+			var payload generated.IdentityMergeReviewPage
+			if err = json.Unmarshal(response.Body.Bytes(), &payload); err != nil || len(payload.Items) != 1 || payload.NextCursor == nil ||
+				identityport.MergeReviewStatus(payload.Items[0].Status) != test.status {
+				t.Fatalf("payload=%+v err=%v", payload, err)
+			}
+			body := response.Body.String()
+			if payload.Items[0].IdentityFingerprint != fact.IdentityFingerprint {
+				t.Fatalf("fingerprint=%q want=%q", payload.Items[0].IdentityFingerprint, fact.IdentityFingerprint)
+			}
+			for _, forbidden := range []string{"normalized", "unionid", "external_userid", "raw_identity", "payload"} {
+				if strings.Contains(body, forbidden) {
+					t.Fatalf("forbidden field %q escaped response: %s", forbidden, body)
+				}
+			}
+		})
 	}
+}
+
+func TestReviewHandlerRejectsInvalidStatusAndContradictoryResolvedTime(t *testing.T) {
+	invalid := generated.ListIdentityMergeReviewsParamsStatus("other")
+	stub := &reviewApplicationStub{}
+	handler, _ := NewReviewHandler(stub)
 	request := reviewRequest(t, http.MethodGet, "", authport.CapabilityIdentityReviewRead)
 	response := httptest.NewRecorder()
-	handler.ListIdentityMergeReviews(response, request, generated.ListIdentityMergeReviewsParams{Cursor: &cursor, Limit: &limit})
+	handler.ListIdentityMergeReviews(response, request, generated.ListIdentityMergeReviewsParams{Status: &invalid})
+	if response.Code != http.StatusUnprocessableEntity || stub.listStatus != "" {
+		t.Fatalf("invalid status response=%d body=%s called=%q", response.Code, response.Body.String(), stub.listStatus)
+	}
 
-	if response.Code != http.StatusOK || stub.listCursor != "opaque-cursor" || stub.listLimit != 25 {
-		t.Fatalf("status=%d cursor=%q limit=%d body=%s", response.Code, stub.listCursor, stub.listLimit, response.Body.String())
-	}
-	var payload generated.IdentityMergeReviewPage
-	if err = json.Unmarshal(response.Body.Bytes(), &payload); err != nil || len(payload.Items) != 1 || payload.NextCursor == nil ||
-		payload.Items[0].IdentityFingerprint != "hmac-sha256-v1:AAAAAAAAAAAAAAAAAAAAAA" {
-		t.Fatalf("payload=%+v err=%v", payload, err)
-	}
-	if strings.Contains(response.Body.String(), "+8613800138000") {
-		t.Fatal("raw identity escaped response")
+	approved := reviewHTTPFact(identityport.MergeReviewApproved)
+	before := approved.CreatedAt.Add(-time.Second)
+	approved.ResolvedAt = &before
+	stub.page = identityport.MergeReviewPage{Items: []identityport.MergeReview{approved}}
+	approvedParam := reviewStatusParam(generated.ListIdentityMergeReviewsParamsStatus("approved"))
+	response = httptest.NewRecorder()
+	handler.ListIdentityMergeReviews(response, request, generated.ListIdentityMergeReviewsParams{Status: approvedParam})
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("contradictory time response=%d body=%s", response.Code, response.Body.String())
 	}
 }
 
@@ -176,11 +226,15 @@ func reviewRequest(t *testing.T, method, body string, capability authport.Capabi
 	return request.WithContext(ctx)
 }
 
+func reviewStatusParam(status generated.ListIdentityMergeReviewsParamsStatus) *generated.ListIdentityMergeReviewsParamsStatus {
+	return &status
+}
+
 func reviewHTTPFact(status identityport.MergeReviewStatus) identityport.MergeReview {
 	return identityport.MergeReview{
 		ReviewID: 23, Status: status, Kind: identityport.KindPhone, Scope: "phone:e164",
-		IdentityFingerprint: "hmac-sha256-v1:AAAAAAAAAAAAAAAAAAAAAA",
-		CustomerIDs:         []contactport.CustomerID{42, 84}, Version: 1,
-		CreatedAt: time.Date(2026, 8, 13, 8, 0, 0, 0, time.UTC),
+		CustomerIDs: []contactport.CustomerID{42, 84}, Version: 1,
+		IdentityFingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
+		CreatedAt:           time.Date(2026, 8, 13, 8, 0, 0, 0, time.UTC),
 	}
 }

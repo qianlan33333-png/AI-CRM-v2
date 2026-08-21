@@ -24,6 +24,7 @@ type Querier interface {
 	InsertPendingIngest(ctx context.Context, arg InsertPendingIngestParams) (int64, error)
 	InsertVerifiedPhoneMergeReview(ctx context.Context, arg InsertVerifiedPhoneMergeReviewParams) (int64, error)
 	ListCustomerMergeHistory(ctx context.Context, arg ListCustomerMergeHistoryParams) ([]ListCustomerMergeHistoryRow, error)
+	ListMergeReviewsByStatus(ctx context.Context, arg ListMergeReviewsByStatusParams) ([]ListMergeReviewsByStatusRow, error)
 	ListPendingMergeReviews(ctx context.Context, arg ListPendingMergeReviewsParams) ([]ListPendingMergeReviewsRow, error)
 	LoadBindMergeReview(ctx context.Context, reviewID int64) (int64, error)
 	LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error)

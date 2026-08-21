@@ -2289,6 +2289,27 @@ func (e ListCustomerChatActivityParamsChatType) Valid() bool {
 	}
 }
 
+// Defines values for ListIdentityMergeReviewsParamsStatus.
+const (
+	Approved ListIdentityMergeReviewsParamsStatus = "approved"
+	Pending  ListIdentityMergeReviewsParamsStatus = "pending"
+	Rejected ListIdentityMergeReviewsParamsStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the ListIdentityMergeReviewsParamsStatus enum.
+func (e ListIdentityMergeReviewsParamsStatus) Valid() bool {
+	switch e {
+	case Approved:
+		return true
+	case Pending:
+		return true
+	case Rejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // AdminConfigEntry defines model for AdminConfigEntry.
 type AdminConfigEntry struct {
 	Configured   bool                         `json:"configured"`
@@ -2730,12 +2751,12 @@ type GrantProductLocalEntitlementRequest struct {
 	OrderId int64 `json:"order_id"`
 }
 
-// IdentityMergeReview defines model for IdentityMergeReview.
+// IdentityMergeReview Closed administrator fact. It never contains normalized identities, provider identifiers, or raw payloads; identity_fingerprint is a versioned secret-backed HMAC only.
 type IdentityMergeReview struct {
 	CreatedAt   time.Time `json:"created_at"`
 	CustomerIds []int64   `json:"customer_ids"`
 
-	// IdentityFingerprint Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
+	// IdentityFingerprint Versioned secret-backed HMAC; never a raw or normalized identity value.
 	IdentityFingerprint string `json:"identity_fingerprint"`
 
 	// ResolvedAt Explicitly null while pending; non-null after approval or rejection.
@@ -4161,10 +4182,16 @@ type IngestIdentityEventParams struct {
 
 // ListIdentityMergeReviewsParams defines parameters for ListIdentityMergeReviews.
 type ListIdentityMergeReviewsParams struct {
+	// Status Review partition. Omitted requests default to pending; cursors are bound to this value.
+	Status *ListIdentityMergeReviewsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ListIdentityMergeReviewsParamsStatus defines parameters for ListIdentityMergeReviews.
+type ListIdentityMergeReviewsParamsStatus string
 
 // ApproveIdentityMergeReviewParams defines parameters for ApproveIdentityMergeReview.
 type ApproveIdentityMergeReviewParams struct {
@@ -5183,7 +5210,7 @@ type ServerInterface interface {
 	// Attribute or persist an external event without guessing identity
 	// (POST /api/v1/identity/ingest)
 	IngestIdentityEvent(w http.ResponseWriter, r *http.Request, params IngestIdentityEventParams)
-	// List pending identity merge reviews without exposing raw identities
+	// List one status partition of closed identity merge reviews
 	// (GET /api/v1/identity/merge-reviews)
 	ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams)
 	// Approve one versioned merge review with an explicit primary customer
@@ -5468,7 +5495,7 @@ func (_ Unimplemented) IngestIdentityEvent(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List pending identity merge reviews without exposing raw identities
+// List one status partition of closed identity merge reviews
 // (GET /api/v1/identity/merge-reviews)
 func (_ Unimplemented) ListIdentityMergeReviews(w http.ResponseWriter, r *http.Request, params ListIdentityMergeReviewsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -7364,6 +7391,14 @@ func (siw *ServerInterfaceWrapper) ListIdentityMergeReviews(w http.ResponseWrite
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListIdentityMergeReviewsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
 
 	// ------------- Optional query parameter "cursor" -------------
 
@@ -11537,6 +11572,35 @@ func (response ListIdentityMergeReviews403JSONResponse) VisitListIdentityMergeRe
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListIdentityMergeReviews405ResponseHeaders struct {
+	Allow               string
+	CacheControl        string
+	XContentTypeOptions string
+}
+
+type ListIdentityMergeReviews405Response struct {
+	Headers ListIdentityMergeReviews405ResponseHeaders
+}
+
+func (response ListIdentityMergeReviews405Response) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("X-Content-Type-Options", fmt.Sprint(response.Headers.XContentTypeOptions))
+	w.WriteHeader(405)
+	return nil
+}
+
+type ListIdentityMergeReviews422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ListIdentityMergeReviews422JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListIdentityMergeReviews503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListIdentityMergeReviews503JSONResponse) VisitListIdentityMergeReviewsResponse(w http.ResponseWriter) error {
@@ -14020,7 +14084,7 @@ type StrictServerInterface interface {
 	// Attribute or persist an external event without guessing identity
 	// (POST /api/v1/identity/ingest)
 	IngestIdentityEvent(ctx context.Context, request IngestIdentityEventRequestObject) (IngestIdentityEventResponseObject, error)
-	// List pending identity merge reviews without exposing raw identities
+	// List one status partition of closed identity merge reviews
 	// (GET /api/v1/identity/merge-reviews)
 	ListIdentityMergeReviews(ctx context.Context, request ListIdentityMergeReviewsRequestObject) (ListIdentityMergeReviewsResponseObject, error)
 	// Approve one versioned merge review with an explicit primary customer

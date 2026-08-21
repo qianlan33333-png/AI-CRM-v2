@@ -46,6 +46,9 @@ func TestFrozenIdentityKindsAssurancesAndStatuses(t *testing.T) {
 	if MergeReviewPending != "pending" || MergeReviewApproved != "approved" || MergeReviewRejected != "rejected" {
 		t.Fatal("merge review status values drifted")
 	}
+	if !MergeReviewPending.Valid() || !MergeReviewApproved.Valid() || !MergeReviewRejected.Valid() || MergeReviewStatus("unknown").Valid() {
+		t.Fatal("merge review status validation drifted")
+	}
 }
 
 func TestFrozenMergeReviewPortSurface(t *testing.T) {
@@ -65,8 +68,8 @@ func TestFrozenMergeReviewPortSurface(t *testing.T) {
 		Status:              MergeReviewPending,
 		Kind:                KindPhone,
 		Scope:               ref.Scope,
-		IdentityFingerprint: "fingerprint-only",
 		CustomerIDs:         []contactport.CustomerID{7, 9},
+		IdentityFingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
 		Version:             3,
 		CreatedAt:           createdAt,
 	}
@@ -88,12 +91,12 @@ func TestFrozenMergeReviewPortSurface(t *testing.T) {
 		IdempotencyKey:  "review-reject-key",
 	}
 
-	if len(page.Items) != 1 || page.Items[0].IdentityFingerprint == "" || page.Items[0].CreatedAt != createdAt ||
+	if len(page.Items) != 1 || page.Items[0].CreatedAt != createdAt ||
 		page.Items[0].ResolvedAt != nil || bind.ReviewID == 0 ||
 		approve.IdempotencyKey == "" || reject.IdempotencyKey == "" {
 		t.Fatal("merge review port surface drifted")
 	}
-	for _, field := range []string{"Value", "NormalizedValue"} {
+	for _, field := range []string{"Value", "NormalizedValue", "Payload"} {
 		if _, found := reflect.TypeOf(MergeReview{}).FieldByName(field); found {
 			t.Fatalf("merge review exposes raw identity field %q", field)
 		}
@@ -103,6 +106,10 @@ func TestFrozenMergeReviewPortSurface(t *testing.T) {
 type reviewServiceContractStub struct{}
 
 func (reviewServiceContractStub) ListMergeReviews(context.Context, string, int32) (MergeReviewPage, error) {
+	return MergeReviewPage{}, nil
+}
+
+func (reviewServiceContractStub) ListMergeReviewsByStatus(context.Context, MergeReviewStatus, string, int32) (MergeReviewPage, error) {
 	return MergeReviewPage{}, nil
 }
 

@@ -8,20 +8,34 @@ import {
 } from "./api/generated/health";
 
 export type IdentityReviewRole = "admin" | "ops" | "sales";
+export type IdentityMergeReviewStatus = "pending" | "approved" | "rejected";
+
+export const identityMergeReviewStatuses = [
+  "pending",
+  "approved",
+  "rejected",
+] as const satisfies readonly IdentityMergeReviewStatus[];
+
+export function validIdentityMergeReviewStatus(
+  value: unknown,
+): value is IdentityMergeReviewStatus {
+  return value === "pending" || value === "approved" || value === "rejected";
+}
 
 export interface IdentityMergeReviewRecord {
   readonly reviewID: number;
-  readonly status: "pending" | "approved" | "rejected";
+  readonly status: IdentityMergeReviewStatus;
   readonly type: "unionid" | "phone";
   readonly scope: string;
-  readonly identityFingerprint: string;
   readonly customerIDs: readonly [number, number];
+  readonly identityFingerprint: string;
   readonly version: number;
   readonly createdAt: string;
   readonly resolvedAt?: string;
 }
 
 export interface IdentityMergeReviewPage {
+  readonly status: IdentityMergeReviewStatus;
   readonly items: readonly IdentityMergeReviewRecord[];
   /** Opaque server-issued keyset cursor. The UI never decodes or synthesizes it. */
   readonly nextCursor?: string;
@@ -116,8 +130,6 @@ function validDateTime(value: unknown): value is string {
   );
 }
 
-const fingerprintPattern = /^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$/;
-
 export function parseIdentityMergeReview(
   value: unknown,
 ): IdentityMergeReviewRecord | undefined {
@@ -128,8 +140,8 @@ export function parseIdentityMergeReview(
       "status",
       "type",
       "scope",
-      "identity_fingerprint",
       "customer_ids",
+      "identity_fingerprint",
       "version",
       "created_at",
       "resolved_at",
@@ -139,19 +151,19 @@ export function parseIdentityMergeReview(
   }
   if (
     !positiveSafeInteger(value.review_id) ||
-    (value.status !== "pending" &&
-      value.status !== "approved" &&
-      value.status !== "rejected") ||
+    !validIdentityMergeReviewStatus(value.status) ||
     (value.type !== "unionid" && value.type !== "phone") ||
     typeof value.scope !== "string" ||
     value.scope.length === 0 ||
-    typeof value.identity_fingerprint !== "string" ||
-    !fingerprintPattern.test(value.identity_fingerprint) ||
     !Array.isArray(value.customer_ids) ||
     value.customer_ids.length !== 2 ||
     !positiveSafeInteger(value.customer_ids[0]) ||
     !positiveSafeInteger(value.customer_ids[1]) ||
     value.customer_ids[0] >= value.customer_ids[1] ||
+    typeof value.identity_fingerprint !== "string" ||
+    !/^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$/.test(
+      value.identity_fingerprint,
+    ) ||
     !positiveSafeInteger(value.version) ||
     !validDateTime(value.created_at)
   ) {
@@ -175,8 +187,8 @@ export function parseIdentityMergeReview(
     status: value.status,
     type: value.type,
     scope: value.scope,
-    identityFingerprint: value.identity_fingerprint,
     customerIDs: [value.customer_ids[0], value.customer_ids[1]],
+    identityFingerprint: value.identity_fingerprint,
     version: value.version,
     createdAt: value.created_at,
     ...(typeof value.resolved_at === "string"
@@ -187,8 +199,13 @@ export function parseIdentityMergeReview(
 
 export function parseIdentityMergeReviewPage(
   value: unknown,
+  expectedStatus: IdentityMergeReviewStatus,
 ): IdentityMergeReviewPage | undefined {
-  if (!plainRecord(value) || !exactKeys(value, ["items", "next_cursor"])) {
+  if (
+    !validIdentityMergeReviewStatus(expectedStatus) ||
+    !plainRecord(value) ||
+    !exactKeys(value, ["items", "next_cursor"])
+  ) {
     return undefined;
   }
   if (
@@ -202,13 +219,16 @@ export function parseIdentityMergeReviewPage(
   }
   const items = value.items.map(parseIdentityMergeReview);
   if (
-    items.some((item) => item === undefined || item.status !== "pending") ||
+    items.some(
+      (item) => item === undefined || item.status !== expectedStatus,
+    ) ||
     new Set(items.map((item) => item?.reviewID)).size !== items.length
   ) {
     return undefined;
   }
 
   return {
+    status: expectedStatus,
     items: items as IdentityMergeReviewRecord[],
     ...(typeof value.next_cursor === "string"
       ? { nextCursor: value.next_cursor }
@@ -220,11 +240,13 @@ export function appendIdentityMergeReviewPage(
   current: IdentityMergeReviewPage,
   next: IdentityMergeReviewPage,
 ): IdentityMergeReviewPage | undefined {
+  if (current.status !== next.status) return undefined;
   const items = [...current.items, ...next.items];
   if (new Set(items.map(({ reviewID }) => reviewID)).size !== items.length) {
     return undefined;
   }
   return {
+    status: current.status,
     items,
     ...(next.nextCursor ? { nextCursor: next.nextCursor } : {}),
   };
@@ -239,22 +261,32 @@ function failureForStatus(status: number): IdentityReviewFailure {
   return "unavailable";
 }
 
+export interface LoadIdentityMergeReviewsOptions {
+  readonly status: IdentityMergeReviewStatus;
+  readonly cursor?: string;
+  readonly signal?: AbortSignal;
+}
+
 export async function loadIdentityMergeReviews(
   transport: IdentityReviewTransport,
-  cursor?: string,
+  options: LoadIdentityMergeReviewsOptions,
 ): Promise<IdentityReviewListResult> {
-  if (cursor !== undefined && (cursor.length === 0 || cursor.length > 512)) {
+  const { status, cursor, signal } = options;
+  if (
+    !validIdentityMergeReviewStatus(status) ||
+    (cursor !== undefined && (cursor.length === 0 || cursor.length > 512))
+  ) {
     return { status: "invalid" };
   }
   try {
     const response = await transport.list(
-      { limit: 50, ...(cursor === undefined ? {} : { cursor }) },
-      { credentials: "same-origin" },
+      { status, limit: 50, ...(cursor === undefined ? {} : { cursor }) },
+      { credentials: "same-origin", signal },
     );
     if (response.status !== 200) {
       return { status: failureForStatus(response.status) };
     }
-    const page = parseIdentityMergeReviewPage(response.data);
+    const page = parseIdentityMergeReviewPage(response.data, status);
     return page ? { status: "loaded", page } : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
@@ -284,9 +316,9 @@ function matchesResolvedReview(
     resolved.status === status &&
     resolved.type === pending.type &&
     resolved.scope === pending.scope &&
-    resolved.identityFingerprint === pending.identityFingerprint &&
     resolved.customerIDs[0] === pending.customerIDs[0] &&
     resolved.customerIDs[1] === pending.customerIDs[1] &&
+    resolved.identityFingerprint === pending.identityFingerprint &&
     resolved.version === pending.version + 1 &&
     resolved.createdAt === pending.createdAt &&
     resolved.resolvedAt,
@@ -372,5 +404,219 @@ export async function rejectIdentityReview(
       : { status: "invalid" };
   } catch {
     return { status: "unavailable" };
+  }
+}
+
+export interface IdentityReviewListSnapshot {
+  readonly activeStatus: IdentityMergeReviewStatus;
+  readonly page?: IdentityMergeReviewPage;
+  readonly loading: boolean;
+  readonly loadingMore: boolean;
+  readonly failure?: IdentityReviewFailure;
+}
+
+type IdentityReviewListListener = (...[]: [IdentityReviewListSnapshot]) => void;
+
+type ListRequestMode = "replace" | "append";
+
+type InFlightListRequest = {
+  readonly key: string;
+  readonly token: number;
+  readonly controller: AbortController;
+  readonly promise: Promise<IdentityReviewListResult>;
+};
+
+/**
+ * Owns the review-list request lifecycle independently of React rendering.
+ * Exactly one request generation may publish state. A different status,
+ * cursor, refresh, or pagination request replaces the previous owner; an
+ * identical request shares the same promise.
+ */
+export class IdentityReviewListController {
+  private readonly pages = new Map<
+    IdentityMergeReviewStatus,
+    IdentityMergeReviewPage
+  >();
+  private readonly listeners = new Set<IdentityReviewListListener>();
+  private activeStatus: IdentityMergeReviewStatus;
+  private generation = 0;
+  private current?: InFlightListRequest;
+  private failure?: IdentityReviewFailure;
+  private loading = false;
+  private loadingMore = false;
+  private disposed = false;
+  private unauthenticatedNotified = false;
+  private readonly transport: IdentityReviewTransport;
+  private readonly onUnauthenticated?: () => void;
+
+  public constructor(
+    transport: IdentityReviewTransport,
+    initialStatus: IdentityMergeReviewStatus = "pending",
+    onUnauthenticated?: () => void,
+  ) {
+    this.transport = transport;
+    this.onUnauthenticated = onUnauthenticated;
+    this.activeStatus = validIdentityMergeReviewStatus(initialStatus)
+      ? initialStatus
+      : "pending";
+  }
+
+  public snapshot(): IdentityReviewListSnapshot {
+    return {
+      activeStatus: this.activeStatus,
+      ...(this.pages.has(this.activeStatus)
+        ? { page: this.pages.get(this.activeStatus) }
+        : {}),
+      loading: this.loading,
+      loadingMore: this.loadingMore,
+      ...(this.failure ? { failure: this.failure } : {}),
+    };
+  }
+
+  public subscribe(listener: IdentityReviewListListener): () => void {
+    if (this.disposed) return () => undefined;
+    this.listeners.add(listener);
+    listener(this.snapshot());
+    return () => this.listeners.delete(listener);
+  }
+
+  public activate(
+    status: IdentityMergeReviewStatus,
+  ): Promise<IdentityReviewListResult> {
+    if (!validIdentityMergeReviewStatus(status)) {
+      return Promise.resolve({ status: "invalid" });
+    }
+    if (this.activeStatus !== status) {
+      this.replaceOwner();
+      this.activeStatus = status;
+      this.failure = undefined;
+      this.loading = false;
+      this.loadingMore = false;
+      this.publish();
+    }
+    return this.request(status, undefined, "replace");
+  }
+
+  public refresh(): Promise<IdentityReviewListResult> {
+    return this.request(this.activeStatus, undefined, "replace");
+  }
+
+  public loadMore(): Promise<IdentityReviewListResult> {
+    const page = this.pages.get(this.activeStatus);
+    if (!page?.nextCursor) {
+      return Promise.resolve({ status: "invalid" });
+    }
+    return this.request(this.activeStatus, page.nextCursor, "append");
+  }
+
+  public acceptResolution(review: IdentityMergeReviewRecord): void {
+    if (
+      this.disposed ||
+      (review.status !== "approved" && review.status !== "rejected")
+    ) {
+      return;
+    }
+    const pending = this.pages.get("pending");
+    if (pending) {
+      this.pages.set("pending", {
+        ...pending,
+        items: pending.items.filter(
+          ({ reviewID }) => reviewID !== review.reviewID,
+        ),
+      });
+    }
+    // A future visit must re-read the server-owned history partition.
+    this.pages.delete(review.status);
+    this.failure = undefined;
+    this.publish();
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.replaceOwner();
+    this.listeners.clear();
+  }
+
+  private request(
+    status: IdentityMergeReviewStatus,
+    cursor: string | undefined,
+    mode: ListRequestMode,
+  ): Promise<IdentityReviewListResult> {
+    if (this.disposed) return Promise.resolve({ status: "unavailable" });
+    const key = `${status}\u0000${mode}\u0000${cursor ?? ""}`;
+    if (this.current?.key === key) return this.current.promise;
+
+    this.replaceOwner();
+    const token = ++this.generation;
+    const controller = new AbortController();
+    this.failure = undefined;
+    this.loading = mode === "replace";
+    this.loadingMore = mode === "append";
+    this.publish();
+
+    const promise = loadIdentityMergeReviews(this.transport, {
+      status,
+      ...(cursor === undefined ? {} : { cursor }),
+      signal: controller.signal,
+    }).then((result) => {
+      if (!this.owns(token)) return result;
+      this.loading = false;
+      this.loadingMore = false;
+      if (result.status === "loaded") {
+        const nextPage =
+          mode === "append"
+            ? appendIdentityMergeReviewPage(
+                this.pages.get(status) ?? {
+                  status,
+                  items: [],
+                  ...(cursor ? { nextCursor: cursor } : {}),
+                },
+                result.page,
+              )
+            : result.page;
+        if (!nextPage) {
+          this.failure = "invalid";
+        } else {
+          this.pages.set(status, nextPage);
+          this.failure = undefined;
+        }
+      } else {
+        this.failure = result.status;
+        if (
+          result.status === "unauthenticated" &&
+          !this.unauthenticatedNotified
+        ) {
+          this.unauthenticatedNotified = true;
+          this.onUnauthenticated?.();
+        }
+      }
+      if (this.current?.token === token) this.current = undefined;
+      this.publish();
+      return result;
+    });
+
+    this.current = { key, token, controller, promise };
+    return promise;
+  }
+
+  private owns(token: number): boolean {
+    return (
+      !this.disposed &&
+      this.current?.token === token &&
+      this.generation === token
+    );
+  }
+
+  private replaceOwner(): void {
+    this.generation++;
+    this.current?.controller.abort();
+    this.current = undefined;
+  }
+
+  private publish(): void {
+    if (this.disposed) return;
+    const snapshot = this.snapshot();
+    for (const listener of this.listeners) listener(snapshot);
   }
 }

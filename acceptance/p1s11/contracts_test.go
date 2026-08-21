@@ -161,7 +161,7 @@ func TestPublicPortSurfaceIsFrozen(t *testing.T) {
 		"events.Appender":   {(*eventport.Appender)(nil), []string{"Append"}},
 		"identity.Service":  {(*identityport.Service)(nil), []string{"Bind", "Ingest", "Resolve"}},
 		"identity.ReviewService": {(*identityport.ReviewService)(nil), []string{
-			"ApproveMergeReview", "ListMergeReviews", "RejectMergeReview",
+			"ApproveMergeReview", "ListMergeReviews", "ListMergeReviewsByStatus", "RejectMergeReview",
 		}},
 		"segment.Service": {(*segmentport.Service)(nil), []string{
 			"Archive", "Create", "Get", "List", "ListMembers", "RequestRefresh", "Update",

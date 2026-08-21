@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
-  appendIdentityMergeReviewPage,
+  IdentityReviewListController,
   approveIdentityReview,
   generatedIdentityReviewTransport,
-  loadIdentityMergeReviews,
+  identityMergeReviewStatuses,
   rejectIdentityReview,
-  type IdentityMergeReviewPage,
+  validIdentityMergeReviewStatus,
   type IdentityMergeReviewRecord,
+  type IdentityMergeReviewStatus,
   type IdentityReviewFailure,
+  type IdentityReviewListSnapshot,
   type IdentityReviewRole,
   type IdentityReviewTransport,
 } from "./identity-reviews";
@@ -19,22 +21,25 @@ export interface IdentityMergeReviewsPageProps {
   readonly transport?: IdentityReviewTransport;
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
+  readonly initialStatus?: IdentityMergeReviewStatus;
 }
 
-type ListState =
-  | { readonly kind: "loading" }
-  | { readonly kind: "ready"; readonly page: IdentityMergeReviewPage }
-  | { readonly kind: "error"; readonly failure: IdentityReviewFailure };
-
 type CommandKeys = { readonly approve: string; readonly reject: string };
+type MutationKind = "approve" | "reject";
 
 const failureMessages: Record<IdentityReviewFailure, string> = {
   unauthenticated: "登录状态已失效，请重新登录。",
-  forbidden: "当前账号没有人工待合并的操作权限。",
-  not_found: "这条待办已不存在，请刷新列表后重试。",
-  conflict: "待办版本或客户归属已变化，本次操作未执行。请刷新后重新审阅。",
-  invalid: "服务端事实或提交内容不符合冻结契约，请刷新后重试。",
-  unavailable: "人工待合并服务暂时不可用，请稍后重试。",
+  forbidden: "当前账号没有人工审核的访问权限。",
+  not_found: "这条审核记录已不存在，请刷新后重试。",
+  conflict: "审核版本或客户归属已变化，本次操作未确认。请刷新后重新审阅。",
+  invalid: "服务端事实或提交内容不符合封闭契约，请刷新后重试。",
+  unavailable: "人工审核服务暂时不可用，已保留最近一次验证通过的数据。",
+};
+
+const statusLabels: Record<IdentityMergeReviewStatus, string> = {
+  pending: "待审核",
+  approved: "已批准",
+  rejected: "已拒绝",
 };
 
 function browserCookie(): string {
@@ -50,7 +55,7 @@ export function newIdentityReviewCommandKeys(): CommandKeys {
 }
 
 function reviewTypeLabel(type: IdentityMergeReviewRecord["type"]): string {
-  return type === "phone" ? "已验证手机号" : "UnionID";
+  return type === "phone" ? "已验证手机号冲突" : "跨平台标识冲突";
 }
 
 function displayDate(value: string): string {
@@ -60,72 +65,108 @@ function displayDate(value: string): string {
   }).format(new Date(value));
 }
 
+function initialSnapshot(
+  status: IdentityMergeReviewStatus,
+  loading: boolean,
+): IdentityReviewListSnapshot {
+  return { activeStatus: status, loading, loadingMore: false };
+}
+
 export function IdentityMergeReviewsPage({
   role,
   transport = generatedIdentityReviewTransport,
   readCookie = browserCookie,
   onUnauthenticated,
+  initialStatus = "pending",
 }: IdentityMergeReviewsPageProps): React.ReactElement {
   const canReview = role === "admin" || role === "ops";
-  const [list, setList] = useState<ListState>({ kind: "loading" });
+  const safeInitialStatus = validIdentityMergeReviewStatus(initialStatus)
+    ? initialStatus
+    : "pending";
+  const controllerRef = useRef<IdentityReviewListController>();
+  const mutationGenerationRef = useRef(0);
+  const mutationLockRef = useRef(false);
+  const unauthenticatedNotifiedRef = useRef(false);
+  const mountedRef = useRef(false);
+
+  const [snapshot, setSnapshot] = useState<IdentityReviewListSnapshot>(() =>
+    initialSnapshot(safeInitialStatus, canReview),
+  );
   const [selected, setSelected] = useState<IdentityMergeReviewRecord>();
   const [primaryCustomerID, setPrimaryCustomerID] = useState<number>();
   const [reason, setReason] = useState("");
   const [keys, setKeys] = useState(newIdentityReviewCommandKeys);
-  const [busy, setBusy] = useState<"approve" | "reject">();
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [busy, setBusy] = useState<MutationKind>();
   const [notice, setNotice] = useState<string>();
 
-  const notifyFailure = useCallback(
-    (failure: IdentityReviewFailure) => {
-      setNotice(failureMessages[failure]);
-      if (failure === "unauthenticated") onUnauthenticated?.();
-    },
-    [onUnauthenticated],
-  );
+  const notifyUnauthenticatedOnce = useCallback(() => {
+    if (unauthenticatedNotifiedRef.current) return;
+    unauthenticatedNotifiedRef.current = true;
+    onUnauthenticated?.();
+  }, [onUnauthenticated]);
 
-  const loadFirst = useCallback(async () => {
-    setList({ kind: "loading" });
+  const invalidateMutationOwner = useCallback(() => {
+    mutationGenerationRef.current += 1;
+    mutationLockRef.current = false;
+    setBusy(undefined);
+  }, []);
+
+  const resetSelection = useCallback(() => {
     setSelected(undefined);
     setPrimaryCustomerID(undefined);
     setReason("");
     setKeys(newIdentityReviewCommandKeys());
-    setNotice(undefined);
-    const result = await loadIdentityMergeReviews(transport);
-    if (result.status === "loaded") {
-      setList({ kind: "ready", page: result.page });
-      return;
-    }
-    if (result.status === "unauthenticated") onUnauthenticated?.();
-    setList({ kind: "error", failure: result.status });
-  }, [onUnauthenticated, transport]);
+  }, []);
 
   useEffect(() => {
-    if (canReview) void loadFirst();
-  }, [canReview, loadFirst]);
+    mountedRef.current = true;
+    if (!canReview) {
+      setSnapshot(initialSnapshot(safeInitialStatus, false));
+      return () => {
+        mountedRef.current = false;
+        invalidateMutationOwner();
+      };
+    }
 
-  const loadMore = async () => {
-    if (list.kind !== "ready" || !list.page.nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    setNotice(undefined);
-    const result = await loadIdentityMergeReviews(
+    const controller = new IdentityReviewListController(
       transport,
-      list.page.nextCursor,
+      safeInitialStatus,
+      notifyUnauthenticatedOnce,
     );
-    setLoadingMore(false);
-    if (result.status !== "loaded") {
-      notifyFailure(result.status);
-      return;
-    }
-    const page = appendIdentityMergeReviewPage(list.page, result.page);
-    if (!page) {
-      notifyFailure("invalid");
-      return;
-    }
-    setList({ kind: "ready", page });
-  };
+    controllerRef.current = controller;
+    const unsubscribe = controller.subscribe((next) => {
+      if (controllerRef.current === controller) setSnapshot(next);
+    });
+    void controller.activate(safeInitialStatus);
+
+    return () => {
+      mountedRef.current = false;
+      invalidateMutationOwner();
+      unsubscribe();
+      controller.dispose();
+      if (controllerRef.current === controller) controllerRef.current = undefined;
+    };
+  }, [
+    canReview,
+    invalidateMutationOwner,
+    notifyUnauthenticatedOnce,
+    safeInitialStatus,
+    transport,
+  ]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const remainsVisible =
+      selected.status === snapshot.activeStatus &&
+      snapshot.page?.items.some(
+        ({ reviewID, version }) =>
+          reviewID === selected.reviewID && version === selected.version,
+      );
+    if (!remainsVisible) resetSelection();
+  }, [resetSelection, selected, snapshot.activeStatus, snapshot.page]);
 
   const choose = (review: IdentityMergeReviewRecord) => {
+    invalidateMutationOwner();
     setSelected(review);
     setPrimaryCustomerID(undefined);
     setReason("");
@@ -133,16 +174,24 @@ export function IdentityMergeReviewsPage({
     setNotice(undefined);
   };
 
-  const updateReason = (value: string) => {
-    setReason(value);
-    setKeys(newIdentityReviewCommandKeys());
+  const switchStatus = (status: IdentityMergeReviewStatus) => {
+    if (status === snapshot.activeStatus) return;
+    invalidateMutationOwner();
+    resetSelection();
     setNotice(undefined);
+    void controllerRef.current?.activate(status);
   };
 
-  const updatePrimary = (customerID: number) => {
-    setPrimaryCustomerID(customerID);
-    setKeys(newIdentityReviewCommandKeys());
+  const refresh = () => {
+    invalidateMutationOwner();
+    resetSelection();
     setNotice(undefined);
+    void controllerRef.current?.refresh();
+  };
+
+  const loadMore = () => {
+    setNotice(undefined);
+    void controllerRef.current?.loadMore();
   };
 
   const csrfToken = (): string | undefined => {
@@ -153,83 +202,67 @@ export function IdentityMergeReviewsPage({
     }
   };
 
-  const completeLocally = (
-    resolved: IdentityMergeReviewRecord,
-    message: string,
-  ) => {
-    setList((current) =>
-      current.kind === "ready"
-        ? {
-            kind: "ready",
-            page: {
-              ...current.page,
-              items: current.page.items.filter(
-                ({ reviewID }) => reviewID !== resolved.reviewID,
-              ),
-            },
-          }
-        : current,
-    );
-    setSelected(undefined);
-    setPrimaryCustomerID(undefined);
-    setReason("");
-    setNotice(message);
+  const notifyFailure = (failure: IdentityReviewFailure) => {
+    setNotice(failureMessages[failure]);
+    if (failure === "unauthenticated") notifyUnauthenticatedOnce();
   };
 
-  const approve = async () => {
-    if (!selected || primaryCustomerID === undefined || busy) return;
-    const token = csrfToken();
-    if (!token) {
-      setNotice("安全令牌缺失，未发送批准请求。");
+  const runMutation = async (kind: MutationKind) => {
+    if (
+      mutationLockRef.current ||
+      !selected ||
+      selected.status !== "pending" ||
+      snapshot.activeStatus !== "pending"
+    ) {
       return;
     }
-    const normalizedReason = reason.trim();
-    setBusy("approve");
+    if (kind === "approve" && primaryCustomerID === undefined) return;
+    const token = csrfToken();
+    if (!token) {
+      notifyFailure("invalid");
+      return;
+    }
+
+    mutationLockRef.current = true;
+    const owner = ++mutationGenerationRef.current;
+    setBusy(kind);
     setNotice(undefined);
-    const result = await approveIdentityReview(
-      transport,
-      selected,
-      primaryCustomerID,
-      normalizedReason,
-      token,
-      keys.approve,
-    );
+    const result =
+      kind === "approve"
+        ? await approveIdentityReview(
+            transport,
+            selected,
+            primaryCustomerID as number,
+            reason,
+            token,
+            keys.approve,
+          )
+        : await rejectIdentityReview(
+            transport,
+            selected,
+            reason,
+            token,
+            keys.reject,
+          );
+
+    if (
+      !mountedRef.current ||
+      owner !== mutationGenerationRef.current ||
+      controllerRef.current === undefined
+    ) {
+      return;
+    }
+    mutationLockRef.current = false;
     setBusy(undefined);
     if (result.status !== "completed") {
       notifyFailure(result.status);
       return;
     }
-    completeLocally(
-      result.review,
-      `待办 #${result.review.reviewID} 已批准；主客户为 OneID ${primaryCustomerID}。`,
-    );
-  };
 
-  const reject = async () => {
-    if (!selected || busy) return;
-    const token = csrfToken();
-    if (!token) {
-      setNotice("安全令牌缺失，未发送拒绝请求。");
-      return;
-    }
-    const normalizedReason = reason.trim();
-    setBusy("reject");
-    setNotice(undefined);
-    const result = await rejectIdentityReview(
-      transport,
-      selected,
-      normalizedReason,
-      token,
-      keys.reject,
-    );
-    setBusy(undefined);
-    if (result.status !== "completed") {
-      notifyFailure(result.status);
-      return;
-    }
-    completeLocally(
-      result.review,
-      `待办 #${result.review.reviewID} 已拒绝；客户绑定保持不变。`,
+    controllerRef.current.acceptResolution(result.review);
+    resetSelection();
+    setNotice(
+      `服务端已确认审核 #${result.review.reviewID} 为${statusLabels[result.review.status]}；已从待审核列表移除。`,
     );
   };
 
@@ -237,40 +270,57 @@ export function IdentityMergeReviewsPage({
     return (
       <section className="identity-reviews" aria-labelledby="app-title">
         <p className="route-card__eyebrow">Identity</p>
-        <h1 id="app-title">人工待合并</h1>
+        <h1 id="app-title">OneID 人工审核</h1>
         <p className="identity-reviews__state" role="alert">
-          当前账号没有人工待合并的访问权限。
+          当前账号没有人工审核的访问权限。
         </p>
       </section>
     );
   }
 
+  const page = snapshot.page;
   const reasonIsValid =
-    reason.trim().length >= 1 && reason.trim().length <= 500;
+    reason.trim() === reason && reason.length >= 1 && reason.length <= 500;
+  const isPendingSelection =
+    snapshot.activeStatus === "pending" && selected?.status === "pending";
 
   return (
     <section className="identity-reviews" aria-labelledby="app-title">
       <header className="identity-reviews__heading">
         <div>
           <p className="route-card__eyebrow">Identity · Manual Review</p>
-          <h1 id="app-title">人工待合并</h1>
+          <h1 id="app-title">OneID 人工审核</h1>
           <p>
-            审阅已验证手机号等跨客户冲突。页面只展示去标识指纹与候选
-            OneID，不展示原始标识值。
+            仅展示封闭审核事实与候选 OneID；不展示任何原始标识值、手机号值、
+            跨平台标识值、审核指纹或原始 Provider 载荷。
           </p>
         </div>
         <button
           type="button"
-          disabled={busy !== undefined}
-          onClick={() => void loadFirst()}
+          disabled={snapshot.loading || snapshot.loadingMore || busy !== undefined}
+          onClick={refresh}
         >
-          刷新待办
+          刷新当前状态
         </button>
       </header>
 
-      {notice && (
+      <nav className="identity-reviews__tabs" aria-label="审核状态">
+        {identityMergeReviewStatuses.map((status) => (
+          <button
+            key={status}
+            type="button"
+            aria-current={snapshot.activeStatus === status ? "page" : undefined}
+            disabled={busy !== undefined}
+            onClick={() => switchStatus(status)}
+          >
+            {statusLabels[status]}
+          </button>
+        ))}
+      </nav>
+
+      {(notice || snapshot.failure) && (
         <p className="identity-reviews__notice" role="alert">
-          {notice}
+          {notice ?? failureMessages[snapshot.failure as IdentityReviewFailure]}
         </p>
       )}
 
@@ -280,56 +330,56 @@ export function IdentityMergeReviewsPage({
           aria-labelledby="review-list-title"
         >
           <div className="identity-reviews__panel-heading">
-            <h2 id="review-list-title">待合并列表</h2>
-            {list.kind === "ready" && (
-              <span>{list.page.items.length} 条待审</span>
-            )}
+            <h2 id="review-list-title">{statusLabels[snapshot.activeStatus]}列表</h2>
+            {page && <span>{page.items.length} 条已验证记录</span>}
           </div>
-          {list.kind === "loading" && <p role="status">正在读取待合并事项…</p>}
-          {list.kind === "error" && (
+
+          {snapshot.loading && !page && <p role="status">正在读取审核记录…</p>}
+          {!snapshot.loading && !page && snapshot.failure && (
             <div role="alert">
-              <p>{failureMessages[list.failure]}</p>
-              <button type="button" onClick={() => void loadFirst()}>
+              <p>{failureMessages[snapshot.failure]}</p>
+              <button type="button" onClick={refresh}>
                 重试
               </button>
             </div>
           )}
-          {list.kind === "ready" && (
+          {page && (
             <>
-              <ol className="identity-review-list">
-                {list.page.items.map((review) => (
-                  <li key={review.reviewID}>
-                    <button
-                      aria-pressed={selected?.reviewID === review.reviewID}
-                      type="button"
-                      onClick={() => choose(review)}
-                    >
-                      <span className="identity-review-list__type">
-                        {reviewTypeLabel(review.type)}
-                      </span>
-                      <strong>待办 #{review.reviewID}</strong>
-                      <span>
-                        OneID {review.customerIDs[0]} ↔ {review.customerIDs[1]}
-                      </span>
-                      <time dateTime={review.createdAt}>
-                        {displayDate(review.createdAt)}
-                      </time>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-              {list.page.items.length === 0 && (
-                <p className="identity-reviews__empty" role="status">
-                  当前没有待审的合并事项。
+              {page.items.length === 0 ? (
+                <p className="identity-reviews__empty">
+                  当前没有{statusLabels[snapshot.activeStatus]}记录。
                 </p>
+              ) : (
+                <ol className="identity-review-list">
+                  {page.items.map((review) => (
+                    <li key={review.reviewID}>
+                      <button
+                        aria-pressed={selected?.reviewID === review.reviewID}
+                        type="button"
+                        onClick={() => choose(review)}
+                      >
+                        <span className="identity-review-list__type">
+                          {reviewTypeLabel(review.type)}
+                        </span>
+                        <strong>审核 #{review.reviewID}</strong>
+                        <span>
+                          OneID {review.customerIDs[0]} ↔ {review.customerIDs[1]}
+                        </span>
+                        <time dateTime={review.createdAt}>
+                          {displayDate(review.createdAt)}
+                        </time>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
               )}
-              {list.page.nextCursor && (
+              {page.nextCursor && (
                 <button
                   type="button"
-                  disabled={loadingMore}
-                  onClick={() => void loadMore()}
+                  disabled={snapshot.loadingMore || snapshot.loading || busy !== undefined}
+                  onClick={loadMore}
                 >
-                  {loadingMore ? "正在读取…" : "读取更多待办"}
+                  {snapshot.loadingMore ? "正在加载…" : "加载下一页"}
                 </button>
               )}
             </>
@@ -340,90 +390,119 @@ export function IdentityMergeReviewsPage({
           className="identity-reviews__panel identity-review-detail"
           aria-labelledby="review-detail-title"
         >
-          <h2 id="review-detail-title">审阅与决策</h2>
-          {!selected && (
-            <p>请从左侧选择一条待办，核对两个候选客户后作出决定。</p>
-          )}
-          <fieldset disabled={!selected || busy !== undefined}>
-            <legend className="sr-only">人工待合并决策</legend>
-            {selected && (
-              <>
-                <dl className="identity-review-facts">
+          <h2 id="review-detail-title">
+            {snapshot.activeStatus === "pending" ? "审阅与决策" : "只读审核历史"}
+          </h2>
+          {!selected ? (
+            <p className="identity-reviews__empty">
+              选择一条{statusLabels[snapshot.activeStatus]}记录查看封闭事实。
+            </p>
+          ) : (
+            <>
+              <dl className="identity-review-facts">
+                <div>
+                  <dt>审核编号</dt>
+                  <dd>#{selected.reviewID}</dd>
+                </div>
+                <div>
+                  <dt>状态</dt>
+                  <dd>{statusLabels[selected.status]}</dd>
+                </div>
+                <div>
+                  <dt>冲突类型</dt>
+                  <dd>{reviewTypeLabel(selected.type)}</dd>
+                </div>
+                <div>
+                  <dt>Scope</dt>
+                  <dd>{selected.scope}</dd>
+                </div>
+                <div>
+                  <dt>候选 OneID</dt>
+                  <dd>
+                    {selected.customerIDs[0]}、{selected.customerIDs[1]}
+                  </dd>
+                </div>
+                <div>
+                  <dt>版本</dt>
+                  <dd>{selected.version}</dd>
+                </div>
+                <div>
+                  <dt>审核指纹</dt>
+                  <dd><code>{selected.identityFingerprint}</code></dd>
+                </div>
+                <div>
+                  <dt>创建时间</dt>
+                  <dd>{displayDate(selected.createdAt)}</dd>
+                </div>
+                {selected.resolvedAt && (
                   <div>
-                    <dt>待办</dt>
-                    <dd>
-                      #{selected.reviewID} · 版本 {selected.version}
-                    </dd>
+                    <dt>决议时间</dt>
+                    <dd>{displayDate(selected.resolvedAt)}</dd>
                   </div>
-                  <div>
-                    <dt>标识类型</dt>
-                    <dd>{reviewTypeLabel(selected.type)}</dd>
+                )}
+              </dl>
+
+              {isPendingSelection && (
+                <fieldset disabled={busy !== undefined}>
+                  <fieldset className="identity-review-candidates">
+                    <legend>批准时选择主 OneID</legend>
+                    <p>仅批准操作需要选择；拒绝不会提交主 OneID。</p>
+                    {selected.customerIDs.map((customerID) => (
+                      <label key={customerID}>
+                        <input
+                          type="radio"
+                          name="primary-customer"
+                          checked={primaryCustomerID === customerID}
+                          onChange={() => {
+                            setPrimaryCustomerID(customerID);
+                            setKeys(newIdentityReviewCommandKeys());
+                            setNotice(undefined);
+                          }}
+                        />
+                        <span>OneID {customerID}</span>
+                        <a href={`/customers/${customerID}`}>查看客户事实</a>
+                      </label>
+                    ))}
+                  </fieldset>
+
+                  <label className="identity-review-reason">
+                    <span>审核理由（1–500 字）</span>
+                    <textarea
+                      rows={5}
+                      maxLength={500}
+                      value={reason}
+                      onChange={(event) => {
+                        setReason(event.target.value);
+                        setKeys(newIdentityReviewCommandKeys());
+                        setNotice(undefined);
+                      }}
+                    />
+                    <span>{reason.length}/500</span>
+                  </label>
+
+                  <div className="identity-review-actions">
+                    <button
+                      type="button"
+                      disabled={
+                        !reasonIsValid || primaryCustomerID === undefined || busy !== undefined
+                      }
+                      onClick={() => void runMutation("approve")}
+                    >
+                      {busy === "approve" ? "正在确认…" : "批准并合并"}
+                    </button>
+                    <button
+                      className="identity-review-actions__reject"
+                      type="button"
+                      disabled={!reasonIsValid || busy !== undefined}
+                      onClick={() => void runMutation("reject")}
+                    >
+                      {busy === "reject" ? "正在确认…" : "拒绝合并"}
+                    </button>
                   </div>
-                  <div>
-                    <dt>作用域</dt>
-                    <dd>{selected.scope}</dd>
-                  </div>
-                  <div>
-                    <dt>去标识指纹</dt>
-                    <dd>
-                      <code>{selected.identityFingerprint}</code>
-                    </dd>
-                  </div>
-                </dl>
-                <fieldset className="identity-review-candidates">
-                  <legend>批准时选择主客户</legend>
-                  <p>
-                    必须主动选择一个主客户；另一个客户将按服务端冻结事务规则归并。
-                  </p>
-                  {selected.customerIDs.map((customerID) => (
-                    <label key={customerID}>
-                      <input
-                        type="radio"
-                        name="primary-customer"
-                        checked={primaryCustomerID === customerID}
-                        onChange={() => updatePrimary(customerID)}
-                      />
-                      <span>OneID {customerID}</span>
-                      <a href={`/customers/${customerID}`}>查看客户</a>
-                    </label>
-                  ))}
                 </fieldset>
-              </>
-            )}
-            <label className="identity-review-reason">
-              决策理由
-              <textarea
-                maxLength={500}
-                rows={5}
-                value={reason}
-                placeholder="填写人工核验依据（1–500 字）"
-                onChange={(event) => updateReason(event.currentTarget.value)}
-              />
-              <span>{reason.length}/500</span>
-            </label>
-            <div className="identity-review-actions">
-              <button
-                className="identity-review-actions__approve"
-                type="button"
-                disabled={
-                  !reasonIsValid ||
-                  primaryCustomerID === undefined ||
-                  busy !== undefined
-                }
-                onClick={() => void approve()}
-              >
-                {busy === "approve" ? "正在批准…" : "批准并合并"}
-              </button>
-              <button
-                className="identity-review-actions__reject"
-                type="button"
-                disabled={!reasonIsValid || busy !== undefined}
-                onClick={() => void reject()}
-              >
-                {busy === "reject" ? "正在拒绝…" : "拒绝合并"}
-              </button>
-            </div>
-          </fieldset>
+              )}
+            </>
+          )}
         </section>
       </div>
     </section>

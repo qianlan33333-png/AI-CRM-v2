@@ -496,6 +496,79 @@ func (q *Queries) ListCustomerMergeHistory(ctx context.Context, arg ListCustomer
 	return items, nil
 }
 
+const listMergeReviewsByStatus = `-- name: ListMergeReviewsByStatus :many
+SELECT
+  pending.id,
+  pending.state,
+  identity_row.kind,
+  identity_row.scope,
+  pending.candidate_customer_ids,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
+  pending.version,
+  pending.created_at,
+  pending.resolved_at
+FROM pending_events AS pending
+JOIN identities AS identity_row
+  ON identity_row.id = pending.identity_ids[1]
+WHERE pending.kind = 'merge_review'
+  AND pending.state = $1::text
+  AND cardinality(pending.identity_ids) = 1
+  AND pending.id > $2::bigint
+ORDER BY pending.id
+LIMIT $3::int
+`
+
+type ListMergeReviewsByStatusParams struct {
+	ReviewStatus string `json:"review_status"`
+	AfterID      int64  `json:"after_id"`
+	PageLimit    int32  `json:"page_limit"`
+}
+
+type ListMergeReviewsByStatusRow struct {
+	ID                    int64              `json:"id"`
+	State                 string             `json:"state"`
+	Kind                  string             `json:"kind"`
+	Scope                 string             `json:"scope"`
+	CandidateCustomerIds  []int64            `json:"candidate_customer_ids"`
+	ReviewFingerprint     []byte             `json:"review_fingerprint"`
+	FingerprintKeyVersion pgtype.Int2        `json:"fingerprint_key_version"`
+	Version               int64              `json:"version"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	ResolvedAt            pgtype.Timestamptz `json:"resolved_at"`
+}
+
+func (q *Queries) ListMergeReviewsByStatus(ctx context.Context, arg ListMergeReviewsByStatusParams) ([]ListMergeReviewsByStatusRow, error) {
+	rows, err := q.db.Query(ctx, listMergeReviewsByStatus, arg.ReviewStatus, arg.AfterID, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMergeReviewsByStatusRow{}
+	for rows.Next() {
+		var i ListMergeReviewsByStatusRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.State,
+			&i.Kind,
+			&i.Scope,
+			&i.CandidateCustomerIds,
+			&i.ReviewFingerprint,
+			&i.FingerprintKeyVersion,
+			&i.Version,
+			&i.CreatedAt,
+			&i.ResolvedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPendingMergeReviews = `-- name: ListPendingMergeReviews :many
 SELECT
   pending.id,
