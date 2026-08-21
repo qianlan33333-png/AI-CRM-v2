@@ -175,6 +175,7 @@ type Handler struct {
 	cancel                legacyCancelApplication
 	manualRetry           legacyRetryApplication
 	products              legacyProductApplication
+	servicePeriod         http.Handler
 	media                 legacyMediaApplication
 	imageDeletes          legacyImageDeleteApplication
 	groupInvites          groupInviteApplication

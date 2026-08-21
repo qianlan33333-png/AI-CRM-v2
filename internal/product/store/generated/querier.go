@@ -29,6 +29,7 @@ type Querier interface {
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
 	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (UpdateProductRow, error)
+	UpdateServicePeriodProductProjection(ctx context.Context, command []byte) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)
