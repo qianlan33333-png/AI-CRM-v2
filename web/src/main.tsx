@@ -24,6 +24,18 @@ import type { CustomerTransport } from "./customers";
 import { CustomerDetailPage } from "./customer-detail-ui";
 import type { CustomerDetailTransport } from "./customer-detail";
 import {
+  CustomerAdminContextPage,
+  CustomerAdminDetailPage,
+} from "./customer-admin-pages";
+import {
+  ADMIN_CUSTOMER_LIST_PATH,
+  LEGACY_ADMIN_PATH_PARAM as CUSTOMER_LEGACY_ADMIN_PATH_PARAM,
+  customerAdminCarrierPathname,
+  customerPageRoute,
+  isAdminCustomerNamespace,
+  type CustomerPageRoute,
+} from "./customer-admin-routes";
+import {
   generatedCustomerMergeHistoryTransport,
   type CustomerMergeHistoryTransport,
 } from "./customer-merge-history";
@@ -145,7 +157,7 @@ export const EXECUTION_RUNTIME_PATH = "/admin/execution-runtime";
 export const ORDERS_PATH = "/admin/orders";
 export const OUTBOUND_PATH = "/outbound";
 export const PRODUCTS_PATH = "/admin/wechat-pay/products";
-export const LEGACY_ADMIN_PATH_PARAM = "legacy_admin_path";
+export const LEGACY_ADMIN_PATH_PARAM = CUSTOMER_LEGACY_ADMIN_PATH_PARAM;
 export const IDENTITY_CONSOLE_PATH = "/identity/console";
 
 export const routes = [
@@ -429,21 +441,28 @@ export interface AppProps {
 }
 
 export function routeForPathname(pathname: string): AppRoute | undefined {
-  return routes.find((route) => route.path === pathname);
+  const canonicalPathname =
+    pathname === ADMIN_CUSTOMER_LIST_PATH ? "/customers" : pathname;
+  return routes.find((route) => route.path === canonicalPathname);
 }
 
 export function customerIDForPathname(pathname: string): number | undefined {
-  const match = /^\/customers\/([1-9]\d*)$/.exec(pathname);
-  if (!match) return undefined;
-  const customerID = Number(match[1]);
-  return Number.isSafeInteger(customerID) ? customerID : undefined;
+  const customerRoute = customerPageRoute(pathname);
+  return customerRoute?.kind === "detail"
+    ? customerRoute.customerID
+    : undefined;
 }
 
 export function routeForURL(
   href: string,
   base = "https://aicrm.invalid",
 ): AppRoute | undefined {
-  return routeForPathname(new URL(href, base).pathname);
+  if (href.includes("\\")) return undefined;
+  try {
+    return routeForPathname(new URL(href, base).pathname);
+  } catch {
+    return undefined;
+  }
 }
 
 export function readPathname(): string {
@@ -481,6 +500,8 @@ export function publicSurveySlug(search: string): string | undefined {
 // shell route; any other value is ignored and never navigated to.
 export function carrierPathname(pathname: string, search: string): string {
   if (pathname !== "/" || search === "") return pathname;
+  const customerCarrier = customerAdminCarrierPathname(search);
+  if (customerCarrier) return customerCarrier;
   const cloudOrchestratorCarrier = cloudOrchestratorCarrierRoute(search);
   if (cloudOrchestratorCarrier) return cloudOrchestratorCarrier.pathname;
   const groupOpsCarrier = groupOpsCarrierRoute(search);
@@ -609,7 +630,8 @@ function PageContent({
   customerMergeHistoryTransport,
   customerChatActivityTransport,
   customerActivityAnalyticsTransport,
-  customerID,
+  customerPage,
+  missingReturnPath,
   stageTransport,
   segmentTransport,
   identityReviewTransport,
@@ -648,7 +670,8 @@ function PageContent({
   customerMergeHistoryTransport?: CustomerMergeHistoryTransport;
   customerChatActivityTransport?: CustomerChatActivityTransport;
   customerActivityAnalyticsTransport?: CustomerActivityAnalyticsTransport;
-  customerID?: number;
+  customerPage?: CustomerPageRoute;
+  missingReturnPath: string;
   stageTransport?: StageTransport;
   segmentTransport?: SegmentTransport;
   identityReviewTransport?: IdentityReviewTransport;
@@ -705,17 +728,38 @@ function PageContent({
     );
   }
 
-  if (customerID !== undefined) {
+  if (customerPage?.kind === "detail") {
+    const detailProps = {
+      customerID: customerPage.customerID,
+      transport: customerDetailTransport,
+      mergeHistoryRole: principal.role,
+      mergeHistoryTransport: customerMergeHistoryTransport,
+      chatActivityRole: principal.role,
+      chatActivityTransport: customerChatActivityTransport,
+      activityAnalyticsTransport: customerActivityAnalyticsTransport,
+      readCookie: cookieHeader,
+      onUnauthenticated,
+    } as const;
+    return customerPage.adminAlias ? (
+      <CustomerAdminDetailPage
+        {...detailProps}
+        onNavigate={(event) =>
+          handleNavigationClick(event, event.currentTarget.href)
+        }
+      />
+    ) : (
+      <CustomerDetailPage {...detailProps} />
+    );
+  }
+
+  if (customerPage?.kind === "context") {
     return (
-      <CustomerDetailPage
-        customerID={customerID}
-        transport={customerDetailTransport}
-        mergeHistoryRole={principal.role}
-        mergeHistoryTransport={customerMergeHistoryTransport}
-        chatActivityRole={principal.role}
-        chatActivityTransport={customerChatActivityTransport}
+      <CustomerAdminContextPage
+        customerID={customerPage.customerID}
         activityAnalyticsTransport={customerActivityAnalyticsTransport}
-        readCookie={cookieHeader}
+        onNavigate={(event) =>
+          handleNavigationClick(event, event.currentTarget.href)
+        }
         onUnauthenticated={onUnauthenticated}
       />
     );
@@ -732,10 +776,14 @@ function PageContent({
         <p>此地址不属于当前 Web shell 的已冻结路由。</p>
         <a
           className="route-card__return"
-          href="/"
-          onClick={(event) => handleNavigationClick(event, "/")}
+          href={missingReturnPath}
+          onClick={(event) =>
+            handleNavigationClick(event, missingReturnPath)
+          }
         >
-          返回运营指挥台
+          {missingReturnPath === ADMIN_CUSTOMER_LIST_PATH
+            ? "返回客户列表"
+            : "返回运营指挥台"}
         </a>
       </section>
     );
@@ -1112,13 +1160,16 @@ export function App({
   const [logoutState, setLogoutState] = useState<LogoutState>("ready");
   const effectivePathname = carrierPathname(pathname, search);
   const route = routeForPathname(effectivePathname);
+  const customerPage = customerPageRoute(effectivePathname);
   const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
   const groupOps = groupOpsRoute(effectivePathname);
   const audiencePackage = audiencePackageRoute(effectivePathname);
   const userOps = userOpsRoute(effectivePathname);
   const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);
-  const customerID = customerIDForPathname(effectivePathname);
   const publicSurvey = pathname === "/" ? publicSurveySlug(search) : undefined;
+  const missingReturnPath = isAdminCustomerNamespace(effectivePathname)
+    ? ADMIN_CUSTOMER_LIST_PATH
+    : "/";
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -1245,9 +1296,7 @@ export function App({
         <nav className="shell-nav" aria-label="主导航">
           {navigation ?? (
             <PermissionNavigation
-              activeHref={
-                customerID === undefined ? effectivePathname : "/customers"
-              }
+              activeHref={customerPage ? "/customers" : effectivePathname}
               links={links}
               onNavigate={(event) =>
                 handleNavigationClick(event, event.currentTarget.href)
@@ -1271,7 +1320,8 @@ export function App({
             customerActivityAnalyticsTransport={
               customerActivityAnalyticsTransport
             }
-            customerID={customerID}
+            customerPage={customerPage}
+            missingReturnPath={missingReturnPath}
             stageTransport={stageTransport}
             segmentTransport={segmentTransport}
             identityReviewTransport={identityReviewTransport}
