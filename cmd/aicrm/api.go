@@ -68,6 +68,7 @@ import (
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
+	safeadminhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/safeadmin"
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
@@ -622,7 +623,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	miniProgramRepository := mediastore.NewMiniProgramRepository()
 	miniProgramService := mediaapp.NewMiniProgramService(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository)
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
-	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveystore.NewSubmissionRepository())
+	surveySubmissionRepository := surveystore.NewSubmissionRepository()
+	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveySubmissionRepository)
+	surveySafeAdminHandler := safeadminhttp.New(surveyapp.NewSafeAdminService(uow, surveySubmissionRepository))
 	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
 	surveyPublicHandler := surveyhttp.NewPublicHandler(
 		surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey),
@@ -764,6 +767,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.surveySubmissions = surveySubmissionService
+	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	hxcStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
 	hxcSenderRepository := hxcstore.NewSenderConfigRepository(pool)
@@ -1547,6 +1551,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/enable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SetQuestionnaireDisabled)},
 			{http.MethodDelete, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.DeleteQuestionnaire)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/results", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaireResults)},
+			{http.MethodGet, safeadminhttp.ResultsPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaireSafeAnalysis)},
+			{http.MethodPost, safeadminhttp.ExportPreviewPath, authport.CapabilityQuestionnairesRead, true, http.HandlerFunc(legacy.PreviewQuestionnaireSafeExport)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/submissions", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaireSubmissions)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/export", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ExportQuestionnaireSubmissions)},
 			{http.MethodGet, legacyChannelPagePath, authport.CapabilityChannelsRead, false, http.HandlerFunc(legacy.ChannelListPage)},

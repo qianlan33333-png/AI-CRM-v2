@@ -54,6 +54,7 @@ const (
 	p4ClassificationPackageEvidence = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
 	p4ProductEntitlementEvidence    = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
 	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
+	p4SurveySafeAdminEvidence       = "P4-SURVEY-SAFE-ADMIN-2026-08-21"
 	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
 	p4GroupOpsWorkspaceEvidence     = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
 	p4AudienceWorkspaceEvidence     = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
@@ -90,6 +91,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"disableQuestionnairePublicDefinition": {"/api/admin/questionnaires/{questionnaire_id}/public-disable", "POST", p4SurveyPublicEvidence, "questionnaires.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getQuestionnairePublicAnalytics":      {"/api/admin/questionnaires/{questionnaire_id}/public-analytics", "GET", p4SurveyPublicEvidence, "questionnaires.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getPublicSurveyPage":                  {"/q/{slug}", "GET", p4SurveyPublicEvidence, "survey.public.page", "public", "public_non_pii", "static", "none", nil},
+	"getSurveySafeSubmissionAnalysis":      {"/api/admin/questionnaires/{questionnaire_id}/analysis", "GET", p4SurveySafeAdminEvidence, "questionnaires.read", "human_session", "internal_deidentified", "survey_submission_snapshots.local_read", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"previewSurveySafeSubmissionExport":    {"/api/admin/questionnaires/{questionnaire_id}/export/preview", "POST", p4SurveySafeAdminEvidence, "questionnaires.read", "human_session", "internal_deidentified", "survey_submission_snapshots.local_read", "required", map[string]string{"admin": "global", "ops": "global"}},
 
 	"getCloudOrchestratorWorkspace":              {"/admin/cloud-orchestrator", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorPlansWorkspace":         {"/admin/cloud-orchestrator/plans", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},

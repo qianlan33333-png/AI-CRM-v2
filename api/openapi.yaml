@@ -3951,6 +3951,64 @@ paths:
         "503":
           description: Submission snapshot storage unavailable.
           content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/questionnaires/{questionnaire_id}/analysis:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getSurveySafeSubmissionAnalysis
+      summary: Read a de-identified local submission aggregate and safe choice counts
+      security:
+        - AdminSession: []
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_deidentified
+      x-aicrm-data-source: survey_submission_snapshots.local_read
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-SAFE-ADMIN-2026-08-21
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Closed local-only aggregate without identity, labels, free text, provider receipts, or delivery claims.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeSubmissionAnalysis" } } }
+        "400": { description: Malformed path or pagination query., content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeAdminError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeAdminError" } } } }
+        "503": { description: Survey local snapshot dependency unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeAdminError" } } } }
+  /api/admin/questionnaires/{questionnaire_id}/export/preview:
+    post:
+      tags: [p4-survey-compat]
+      operationId: previewSurveySafeSubmissionExport
+      summary: Preview at most three de-identified local submission rows without creating a file
+      security:
+        - AdminSession: []
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_deidentified
+      x-aicrm-data-source: survey_submission_snapshots.local_read
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-SAFE-ADMIN-2026-08-21
+      parameters:
+        - { name: questionnaire_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeExportPreviewRequest" } } }
+      responses:
+        "200":
+          description: Closed local-only preview; no file, queue item, provider call, or external effect is created.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeExportPreview" } } }
+        "400": { description: Malformed path or closed preview request., content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeAdminError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeAdminError" } } } }
+        "503": { description: Survey local snapshot dependency unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SurveySafeAdminError" } } } }
   /api/admin/questionnaires/{questionnaire_id}/submissions:
     get:
       tags: [p4-survey-compat]
@@ -7098,6 +7156,110 @@ components:
             rules: { type: array, maxItems: 0, items: { type: object } }
         data: { type: object }
         side_effect_executed: { type: boolean, enum: [false] }
+    SurveySafeAdminError:
+      type: object
+      additionalProperties: false
+      required: [ok, error, local_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error:
+          type: object
+          additionalProperties: false
+          required: [code]
+          properties:
+            code: { type: string, enum: [authentication_required, permission_denied, invalid_questionnaire_id, invalid_page, invalid_export_preview, invalid_request, questionnaire_not_found, survey_read_unavailable, method_not_allowed] }
+        local_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    SurveySafeSubmissionStats:
+      type: object
+      additionalProperties: false
+      required: [submission_count, average_score]
+      properties:
+        submission_count: { type: integer, format: int64, minimum: 0 }
+        latest_submitted_at: { type: string, format: date-time }
+        average_score: { type: number, format: double }
+    SurveySafeEnumOptionAggregate:
+      type: object
+      additionalProperties: false
+      required: [option_id, selection_count]
+      properties:
+        option_id: { type: integer, format: int64, minimum: 1 }
+        selection_count: { type: integer, format: int64, minimum: 0 }
+    SurveySafeEnumQuestionAggregate:
+      type: object
+      additionalProperties: false
+      required: [question_id, question_type, sort_order, answered_count, options]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        question_type: { type: string, enum: [single_choice, multi_choice] }
+        sort_order: { type: integer, minimum: 0 }
+        answered_count: { type: integer, format: int64, minimum: 0 }
+        options: { type: array, items: { $ref: "#/components/schemas/SurveySafeEnumOptionAggregate" } }
+    SurveySafeSubmissionAnalysis:
+      type: object
+      additionalProperties: false
+      required: [ok, questionnaire_id, stats, questions, total_questions, limit, offset, scanned_submission_count, aggregation_complete, deidentified, contains_raw_identity, contains_free_text, local_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        stats: { $ref: "#/components/schemas/SurveySafeSubmissionStats" }
+        questions: { type: array, items: { $ref: "#/components/schemas/SurveySafeEnumQuestionAggregate" } }
+        total_questions: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        scanned_submission_count: { type: integer, format: int64, minimum: 0, maximum: 10000 }
+        aggregation_complete: { type: boolean }
+        deidentified: { type: boolean, enum: [true] }
+        contains_raw_identity: { type: boolean, enum: [false] }
+        contains_free_text: { type: boolean, enum: [false] }
+        local_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    SurveySafeExportPreviewField:
+      type: string
+      enum: [row_number, submitted_at, score, choice_option_ids]
+    SurveySafeExportPreviewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        fields: { type: array, maxItems: 4, uniqueItems: true, items: { $ref: "#/components/schemas/SurveySafeExportPreviewField" } }
+        limit: { type: integer, minimum: 1, maximum: 3, default: 3 }
+        offset: { type: integer, minimum: 0, maximum: 1000000, default: 0 }
+    SurveySafeChoiceAnswerPreview:
+      type: object
+      additionalProperties: false
+      required: [question_id, question_type, sort_order, option_ids]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        question_type: { type: string, enum: [single_choice, multi_choice] }
+        sort_order: { type: integer, minimum: 0 }
+        option_ids: { type: array, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+    SurveySafeExportPreviewRow:
+      type: object
+      additionalProperties: false
+      properties:
+        row_number: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        score: { type: number, format: double }
+        choice_option_ids: { type: array, items: { $ref: "#/components/schemas/SurveySafeChoiceAnswerPreview" } }
+    SurveySafeExportPreview:
+      type: object
+      additionalProperties: false
+      required: [ok, questionnaire_id, fields, rows, total, limit, offset, has_more, file_created, deidentified, contains_raw_identity, contains_free_text, local_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        fields: { type: array, maxItems: 4, uniqueItems: true, items: { $ref: "#/components/schemas/SurveySafeExportPreviewField" } }
+        rows: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/SurveySafeExportPreviewRow" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 3 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        file_created: { type: boolean, enum: [false] }
+        deidentified: { type: boolean, enum: [true] }
+        contains_raw_identity: { type: boolean, enum: [false] }
+        contains_free_text: { type: boolean, enum: [false] }
+        local_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyQuestionnaireSubmissionAnswer:
       type: object
       required: [question_id, question_type, question_title, sort_order, selected_options, text_value]

@@ -3615,6 +3615,179 @@ export interface LegacyQuestionnaireSubmissionResultsResponse {
   side_effect_executed?: boolean;
 }
 
+export type SurveySafeAdminErrorErrorCode =
+  (typeof SurveySafeAdminErrorErrorCode)[keyof typeof SurveySafeAdminErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveySafeAdminErrorErrorCode = {
+  authentication_required: "authentication_required",
+  permission_denied: "permission_denied",
+  invalid_questionnaire_id: "invalid_questionnaire_id",
+  invalid_page: "invalid_page",
+  invalid_export_preview: "invalid_export_preview",
+  invalid_request: "invalid_request",
+  questionnaire_not_found: "questionnaire_not_found",
+  survey_read_unavailable: "survey_read_unavailable",
+  method_not_allowed: "method_not_allowed",
+} as const;
+
+export type SurveySafeAdminErrorError = {
+  code: SurveySafeAdminErrorErrorCode;
+};
+
+export interface SurveySafeAdminError {
+  ok: boolean;
+  error: SurveySafeAdminErrorError;
+  local_only: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface SurveySafeSubmissionStats {
+  /** @minimum 0 */
+  submission_count: number;
+  latest_submitted_at?: string;
+  average_score: number;
+}
+
+export interface SurveySafeEnumOptionAggregate {
+  /** @minimum 1 */
+  option_id: number;
+  /** @minimum 0 */
+  selection_count: number;
+}
+
+export type SurveySafeEnumQuestionAggregateQuestionType =
+  (typeof SurveySafeEnumQuestionAggregateQuestionType)[keyof typeof SurveySafeEnumQuestionAggregateQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveySafeEnumQuestionAggregateQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface SurveySafeEnumQuestionAggregate {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: SurveySafeEnumQuestionAggregateQuestionType;
+  /** @minimum 0 */
+  sort_order: number;
+  /** @minimum 0 */
+  answered_count: number;
+  options: SurveySafeEnumOptionAggregate[];
+}
+
+export interface SurveySafeSubmissionAnalysis {
+  ok: boolean;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  stats: SurveySafeSubmissionStats;
+  questions: SurveySafeEnumQuestionAggregate[];
+  /** @minimum 0 */
+  total_questions: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  scanned_submission_count: number;
+  aggregation_complete: boolean;
+  deidentified: boolean;
+  contains_raw_identity: boolean;
+  contains_free_text: boolean;
+  local_only: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type SurveySafeExportPreviewField =
+  (typeof SurveySafeExportPreviewField)[keyof typeof SurveySafeExportPreviewField];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveySafeExportPreviewField = {
+  row_number: "row_number",
+  submitted_at: "submitted_at",
+  score: "score",
+  choice_option_ids: "choice_option_ids",
+} as const;
+
+export interface SurveySafeExportPreviewRequest {
+  /** @maxItems 4 */
+  fields?: SurveySafeExportPreviewField[];
+  /**
+   * @minimum 1
+   * @maximum 3
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+}
+
+export type SurveySafeChoiceAnswerPreviewQuestionType =
+  (typeof SurveySafeChoiceAnswerPreviewQuestionType)[keyof typeof SurveySafeChoiceAnswerPreviewQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveySafeChoiceAnswerPreviewQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface SurveySafeChoiceAnswerPreview {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: SurveySafeChoiceAnswerPreviewQuestionType;
+  /** @minimum 0 */
+  sort_order: number;
+  option_ids: number[];
+}
+
+export interface SurveySafeExportPreviewRow {
+  /** @minimum 1 */
+  row_number?: number;
+  submitted_at?: string;
+  score?: number;
+  choice_option_ids?: SurveySafeChoiceAnswerPreview[];
+}
+
+export interface SurveySafeExportPreview {
+  ok: boolean;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  /** @maxItems 4 */
+  fields: SurveySafeExportPreviewField[];
+  /** @maxItems 3 */
+  rows: SurveySafeExportPreviewRow[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 3
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  file_created: boolean;
+  deidentified: boolean;
+  contains_raw_identity: boolean;
+  contains_free_text: boolean;
+  local_only: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyQuestionnaireSubmissionAnswerQuestionType =
   (typeof LegacyQuestionnaireSubmissionAnswerQuestionType)[keyof typeof LegacyQuestionnaireSubmissionAnswerQuestionType];
 
@@ -9130,6 +9303,19 @@ export type ListLegacyQuestionnairesParams = {
   /**
    * @minimum 1
    * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type GetSurveySafeSubmissionAnalysisParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
    */
   limit?: number;
   /**
@@ -22805,6 +22991,185 @@ export const getLegacyQuestionnaireResults = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyQuestionnaireResultsResponse;
+};
+
+/**
+ * @summary Read a de-identified local submission aggregate and safe choice counts
+ */
+export type getSurveySafeSubmissionAnalysisResponse200 = {
+  data: SurveySafeSubmissionAnalysis;
+  status: 200;
+};
+
+export type getSurveySafeSubmissionAnalysisResponse400 = {
+  data: SurveySafeAdminError;
+  status: 400;
+};
+
+export type getSurveySafeSubmissionAnalysisResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSurveySafeSubmissionAnalysisResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSurveySafeSubmissionAnalysisResponse404 = {
+  data: SurveySafeAdminError;
+  status: 404;
+};
+
+export type getSurveySafeSubmissionAnalysisResponse503 = {
+  data: SurveySafeAdminError;
+  status: 503;
+};
+
+export type getSurveySafeSubmissionAnalysisResponseSuccess =
+  getSurveySafeSubmissionAnalysisResponse200 & {
+    headers: Headers;
+  };
+export type getSurveySafeSubmissionAnalysisResponseError = (
+  | getSurveySafeSubmissionAnalysisResponse400
+  | getSurveySafeSubmissionAnalysisResponse401
+  | getSurveySafeSubmissionAnalysisResponse403
+  | getSurveySafeSubmissionAnalysisResponse404
+  | getSurveySafeSubmissionAnalysisResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSurveySafeSubmissionAnalysisResponse =
+  | getSurveySafeSubmissionAnalysisResponseSuccess
+  | getSurveySafeSubmissionAnalysisResponseError;
+
+export const getGetSurveySafeSubmissionAnalysisUrl = (
+  questionnaireId: number,
+  params?: GetSurveySafeSubmissionAnalysisParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/questionnaires/${questionnaireId}/analysis?${stringifiedParams}`
+    : `/api/admin/questionnaires/${questionnaireId}/analysis`;
+};
+
+export const getSurveySafeSubmissionAnalysis = async (
+  questionnaireId: number,
+  params?: GetSurveySafeSubmissionAnalysisParams,
+  options?: RequestInit,
+): Promise<getSurveySafeSubmissionAnalysisResponse> => {
+  const res = await fetch(
+    getGetSurveySafeSubmissionAnalysisUrl(questionnaireId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSurveySafeSubmissionAnalysisResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSurveySafeSubmissionAnalysisResponse;
+};
+
+/**
+ * @summary Preview at most three de-identified local submission rows without creating a file
+ */
+export type previewSurveySafeSubmissionExportResponse200 = {
+  data: SurveySafeExportPreview;
+  status: 200;
+};
+
+export type previewSurveySafeSubmissionExportResponse400 = {
+  data: SurveySafeAdminError;
+  status: 400;
+};
+
+export type previewSurveySafeSubmissionExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewSurveySafeSubmissionExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewSurveySafeSubmissionExportResponse404 = {
+  data: SurveySafeAdminError;
+  status: 404;
+};
+
+export type previewSurveySafeSubmissionExportResponse503 = {
+  data: SurveySafeAdminError;
+  status: 503;
+};
+
+export type previewSurveySafeSubmissionExportResponseSuccess =
+  previewSurveySafeSubmissionExportResponse200 & {
+    headers: Headers;
+  };
+export type previewSurveySafeSubmissionExportResponseError = (
+  | previewSurveySafeSubmissionExportResponse400
+  | previewSurveySafeSubmissionExportResponse401
+  | previewSurveySafeSubmissionExportResponse403
+  | previewSurveySafeSubmissionExportResponse404
+  | previewSurveySafeSubmissionExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewSurveySafeSubmissionExportResponse =
+  | previewSurveySafeSubmissionExportResponseSuccess
+  | previewSurveySafeSubmissionExportResponseError;
+
+export const getPreviewSurveySafeSubmissionExportUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/export/preview`;
+};
+
+export const previewSurveySafeSubmissionExport = async (
+  questionnaireId: number,
+  surveySafeExportPreviewRequest: SurveySafeExportPreviewRequest,
+  options?: RequestInit,
+): Promise<previewSurveySafeSubmissionExportResponse> => {
+  const res = await fetch(
+    getPreviewSurveySafeSubmissionExportUrl(questionnaireId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(surveySafeExportPreviewRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewSurveySafeSubmissionExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewSurveySafeSubmissionExportResponse;
 };
 
 /**
