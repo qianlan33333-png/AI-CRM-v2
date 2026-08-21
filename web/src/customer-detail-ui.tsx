@@ -143,6 +143,33 @@ function tagLabel(tag: CustomerTag): string {
   return tag.groupName ? `${tag.groupName} / ${tag.name}` : tag.name;
 }
 
+export function CustomerDetailReadNavigation({
+  includeCustomer360 = false,
+}: {
+  readonly includeCustomer360?: boolean;
+}): React.ReactElement {
+  return (
+    <nav aria-label="客户读取导航">
+      <a href="/customers">返回客户列表</a>
+      {includeCustomer360 && (
+        <a href="#customer-360-summary">查看 Customer 360 摘要</a>
+      )}
+    </nav>
+  );
+}
+
+export function CustomerDetailMissingState(): React.ReactElement {
+  return (
+    <section className="customer-detail-page" aria-labelledby="app-title">
+      <h1 id="app-title">客户详情</h1>
+      <div className="customer-detail-page__state" role="alert">
+        <p>客户不存在，可能已被删除或当前账号没有可见范围。</p>
+        <CustomerDetailReadNavigation />
+      </div>
+    </section>
+  );
+}
+
 function applyLoadResult(
   result: CustomerDetailLoadResult,
   setPage: React.Dispatch<React.SetStateAction<PageState>>,
@@ -441,14 +468,7 @@ export function CustomerDetailPage({
   }
 
   if (page.kind === "not_found") {
-    return (
-      <section className="customer-detail-page" aria-labelledby="app-title">
-        <h1 id="app-title">客户详情</h1>
-        <div className="customer-detail-page__state" role="alert">
-          客户不存在，可能已被删除或当前账号没有可见范围。
-        </div>
-      </section>
-    );
+    return <CustomerDetailMissingState />;
   }
 
   if (page.kind === "unauthenticated") {
@@ -508,14 +528,17 @@ export function CustomerDetailPage({
             {customer.name} · OneID #{customer.id}
           </p>
         </div>
-        <button
-          className="button-secondary"
-          disabled={mutationPending}
-          type="button"
-          onClick={() => void refresh()}
-        >
-          刷新资料
-        </button>
+        <div>
+          <CustomerDetailReadNavigation includeCustomer360 />
+          <button
+            className="button-secondary"
+            disabled={mutationPending}
+            type="button"
+            onClick={() => void refresh()}
+          >
+            刷新资料
+          </button>
+        </div>
       </header>
 
       {notice && (
@@ -524,13 +547,15 @@ export function CustomerDetailPage({
         </p>
       )}
 
-      <CustomerContextPanel
-        customerID={customerID}
-        transport={contextTransport}
-        onUnauthenticated={onUnauthenticated}
-        showChatSummary={!(chatActivityRole && chatActivityTransport)}
-        activityAnalyticsTransport={activityAnalyticsTransport}
-      />
+      <div id="customer-360-summary">
+        <CustomerContextPanel
+          customerID={customerID}
+          transport={contextTransport}
+          onUnauthenticated={onUnauthenticated}
+          showChatSummary={!(chatActivityRole && chatActivityTransport)}
+          activityAnalyticsTransport={activityAnalyticsTransport}
+        />
+      </div>
 
       {mergeHistoryTransport && mergeHistoryRole && (
         <CustomerMergeHistoryPanel

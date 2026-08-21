@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+  CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+  canLoadNextCustomerChatActivityPage,
   loadCustomerChatActivity,
   type CustomerChatActivityFilter,
   type CustomerChatActivityPage,
@@ -58,7 +61,11 @@ export function CustomerChatActivityPanel({
   latestCustomerID.current = customerID;
 
   const load = useCallback(
-    async (cursor?: string) => {
+    async (
+      cursor?: string,
+      limit = CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+      offset = 0,
+    ) => {
       if (
         (role !== "admin" && role !== "ops" && role !== "sales") ||
         token.current
@@ -78,6 +85,8 @@ export function CustomerChatActivityPanel({
           customerID,
           filter,
           cursor,
+          limit,
+          offset,
         );
         if (
           generation.current !== currentGeneration ||
@@ -137,7 +146,25 @@ export function CustomerChatActivityPanel({
   if (role !== "admin" && role !== "ops" && role !== "sales") return null;
 
   const page =
-    state.kind === "ready" || state.kind === "loading" ? state.page : undefined;
+    state.kind === "ready" || state.kind === "loading"
+      ? state.page
+      : undefined;
+  const offset = page?.offset ?? 0;
+  const visibleItems = page
+    ? page.items.slice(
+        0,
+        Math.max(0, CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT - offset),
+      )
+    : [];
+  const visibleEnd = offset + visibleItems.length;
+  const canLoadPrevious = page?.previousCursor !== undefined && offset > 0;
+  const canLoadNext =
+    page !== undefined && canLoadNextCustomerChatActivityPage(page);
+  const canExpand =
+    page !== undefined &&
+    page.limit < CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT &&
+    page.total > visibleItems.length;
+
   return (
     <section
       className="customer-detail-page__card"
@@ -145,8 +172,8 @@ export function CustomerChatActivityPanel({
     >
       <h2 id="customer-chat-activity-title">本地聊天活动</h2>
       <p className="customer-detail-page__meta">
-        仅显示单聊/群聊类型、消息类型和时间；不读取正文、身份值、媒体、Provider
-        回执或外部状态。
+        仅显示单聊/群聊类型、消息类型和时间；不读取正文、身份值、媒体、手机号、Provider
+        回执或外部状态。默认读取最近 30 条摘要，最多展示前 100 条安全元数据。
       </p>
       <fieldset disabled={state.kind === "loading"}>
         <legend>活动类型</legend>
@@ -176,14 +203,17 @@ export function CustomerChatActivityPanel({
         <>
           <p className="customer-detail-page__meta">
             本地匹配记录 {page.total} 条 · 当前筛选 {label(page.chatType)}
+            {visibleItems.length > 0
+              ? ` · 当前显示第 ${offset + 1}–${visibleEnd} 条`
+              : ""}
           </p>
-          {page.items.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <p role="status">当前筛选暂无本地聊天活动。</p>
           ) : (
             <ol className="customer-detail-page__timeline">
-              {page.items.map((item, index) => (
+              {visibleItems.map((item, index) => (
                 <li
-                  key={`${item.sentAt}-${item.chatType}-${item.messageType}-${index}`}
+                  key={`${item.sentAt}-${item.chatType}-${item.messageType}-${offset + index}`}
                 >
                   <strong>
                     {label(item.chatType)} / {item.messageType}
@@ -200,18 +230,41 @@ export function CustomerChatActivityPanel({
           <p className="customer-detail-page__meta">
             <button
               type="button"
-              disabled={state.kind === "loading" || !page.previousCursor}
-              onClick={() => void load(page.previousCursor)}
+              disabled={state.kind === "loading" || !canLoadPrevious}
+              onClick={() =>
+                void load(
+                  page.previousCursor,
+                  page.limit,
+                  Math.max(0, offset - page.limit),
+                )
+              }
             >
               上一页
             </button>
             <button
               type="button"
-              disabled={state.kind === "loading" || !page.nextCursor}
-              onClick={() => void load(page.nextCursor)}
+              disabled={state.kind === "loading" || !canLoadNext}
+              onClick={() =>
+                void load(page.nextCursor, page.limit, offset + page.limit)
+              }
             >
               下一页
             </button>
+            {canExpand && (
+              <button
+                type="button"
+                disabled={state.kind === "loading"}
+                onClick={() =>
+                  void load(
+                    undefined,
+                    CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+                    0,
+                  )
+                }
+              >
+                展开至最多 100 条
+              </button>
+            )}
           </p>
         </>
       )}

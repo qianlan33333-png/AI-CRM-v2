@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
   CUSTOMER_CHAT_ACTIVITY_PAGE_SIZE,
+  CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+  canLoadNextCustomerChatActivityPage,
   generatedCustomerChatActivityTransport,
   loadCustomerChatActivity,
   parseCustomerChatActivityPage,
@@ -11,7 +14,9 @@ function item(index = 0, chatType: "private" | "group" = "private") {
   return {
     chat_type: chatType,
     message_type: index % 2 === 0 ? "text" : "image",
-    sent_at: `2026-08-20T${String(12 - Math.floor(index / 60)).padStart(2, "0")}:${String(59 - (index % 60)).padStart(2, "0")}:00Z`,
+    sent_at: new Date(
+      Date.UTC(2026, 7, 20, 12, 59, 0) - index * 60_000,
+    ).toISOString(),
   };
 }
 
@@ -35,15 +40,17 @@ function page(
 }
 
 describe("parseCustomerChatActivityPage", () => {
-  it("accepts a strict zero-body local page and drops no hidden fields", () => {
+  it("accepts a strict zero-body local summary and carries only the request-bound limit", () => {
     expect(parseCustomerChatActivityPage(page(), 41, "all")).toEqual({
       customerID: 41,
       chatType: "all",
+      limit: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+      offset: 0,
       items: [
         {
           chatType: "private",
           messageType: "text",
-          sentAt: "2026-08-20T12:59:00Z",
+          sentAt: "2026-08-20T12:59:00.000Z",
         },
       ],
       total: 1,
@@ -93,17 +100,161 @@ describe("parseCustomerChatActivityPage", () => {
     ).toBeUndefined();
   });
 
-  it("requires a full page before accepting a next cursor", () => {
+  it("binds next-cursor validation to the exact requested summary or expanded limit", () => {
     const short = { ...page(), next_cursor: "next" };
     expect(parseCustomerChatActivityPage(short, 41, "all")).toBeUndefined();
-    const items = Array.from(
-      { length: CUSTOMER_CHAT_ACTIVITY_PAGE_SIZE },
+
+    const summaryItems = Array.from(
+      { length: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT },
       (_, index) => item(index),
     );
-    const full = { ...page("all", items), total: 51, next_cursor: "next" };
-    expect(parseCustomerChatActivityPage(full, 41, "all")?.nextCursor).toBe(
-      "next",
+    const summary = {
+      ...page("all", summaryItems),
+      total: 101,
+      next_cursor: "summary-next",
+    };
+    expect(
+      parseCustomerChatActivityPage(summary, 41, "all")?.nextCursor,
+    ).toBe("summary-next");
+    expect(
+      parseCustomerChatActivityPage(
+        summary,
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+      ),
+    ).toBeUndefined();
+
+    const expandedItems = Array.from(
+      { length: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT },
+      (_, index) => item(index),
     );
+    const expanded = {
+      ...page("all", expandedItems),
+      total: 101,
+      next_cursor: "ignored-after-cap",
+    };
+    expect(
+      parseCustomerChatActivityPage(
+        expanded,
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+      ),
+    ).toMatchObject({
+      limit: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+      nextCursor: "ignored-after-cap",
+      items: { length: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT },
+    });
+  });
+
+  it("binds cursor shape and totals to the caller-owned offset", () => {
+    const items = Array.from(
+      { length: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT },
+      (_, index) => item(index),
+    );
+    const secondPage = {
+      ...page("all", items),
+      total: 91,
+      next_cursor: "next-60",
+      previous_cursor: "previous-0",
+    };
+
+    expect(
+      parseCustomerChatActivityPage(
+        secondPage,
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+        30,
+      ),
+    ).toMatchObject({
+      limit: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+      offset: 30,
+      nextCursor: "next-60",
+      previousCursor: "previous-0",
+    });
+    expect(
+      parseCustomerChatActivityPage(
+        secondPage,
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+        0,
+      ),
+    ).toBeUndefined();
+    expect(
+      parseCustomerChatActivityPage(
+        { ...secondPage, previous_cursor: null },
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+        30,
+      ),
+    ).toBeUndefined();
+    expect(
+      parseCustomerChatActivityPage(
+        { ...secondPage, total: 59 },
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+        30,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("rejects more than 100 rows and invalid request limits", () => {
+    const oversized = Array.from(
+      { length: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT + 1 },
+      (_, index) => item(index),
+    );
+    expect(
+      parseCustomerChatActivityPage(
+        page("all", oversized),
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+      ),
+    ).toBeUndefined();
+    expect(parseCustomerChatActivityPage(page(), 41, "all", 0)).toBeUndefined();
+    expect(
+      parseCustomerChatActivityPage(
+        page(),
+        41,
+        "all",
+        CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT + 1,
+      ),
+    ).toBeUndefined();
+  });
+});
+
+describe("customer chat activity read boundary", () => {
+  const boundedPage = (offset: number) => ({
+    customerID: 41,
+    chatType: "all" as const,
+    limit: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+    offset,
+    items: [],
+    total: 130,
+    nextCursor: `cursor-${offset + CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT}`,
+  });
+
+  it("allows only complete 30-row pages that remain inside the first 100 rows", () => {
+    expect(canLoadNextCustomerChatActivityPage(boundedPage(0))).toBe(true);
+    expect(canLoadNextCustomerChatActivityPage(boundedPage(30))).toBe(true);
+    expect(canLoadNextCustomerChatActivityPage(boundedPage(60))).toBe(false);
+    expect(
+      canLoadNextCustomerChatActivityPage({
+        ...boundedPage(0),
+        limit: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+      }),
+    ).toBe(false);
+    expect(
+      canLoadNextCustomerChatActivityPage({
+        ...boundedPage(0),
+        nextCursor: undefined,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -128,11 +279,15 @@ describe("loadCustomerChatActivity", () => {
       vi.unstubAllGlobals();
     }
   });
-  it("uses one same-origin GET with a fixed limit and explicit safe filter", async () => {
+
+  it("uses one same-origin GET with the 30-row safe summary by default", async () => {
     const get = vi.fn(async () => ({ status: 200, data: page("private") }));
     await expect(
       loadCustomerChatActivity({ get }, 41, "private", "cursor"),
-    ).resolves.toMatchObject({ status: "loaded" });
+    ).resolves.toMatchObject({
+      status: "loaded",
+      page: { limit: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT },
+    });
     expect(get).toHaveBeenCalledTimes(1);
     expect(get).toHaveBeenCalledWith(
       41,
@@ -143,6 +298,101 @@ describe("loadCustomerChatActivity", () => {
       },
       { credentials: "same-origin" },
     );
+  });
+
+  it("allows one explicit 100-row local metadata expansion", async () => {
+    const items = Array.from(
+      { length: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT },
+      (_, index) => item(index),
+    );
+    const get = vi.fn(async () => ({
+      status: 200,
+      data: page("all", items),
+    }));
+    await expect(
+      loadCustomerChatActivity(
+        { get },
+        41,
+        "all",
+        undefined,
+        CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+      ),
+    ).resolves.toMatchObject({
+      status: "loaded",
+      page: {
+        limit: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT,
+        items: { length: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT },
+      },
+    });
+    expect(get).toHaveBeenCalledWith(
+      41,
+      { limit: CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT },
+      { credentials: "same-origin" },
+    );
+  });
+
+  it("carries a validated offset alongside an opaque cursor without adding it to the wire query", async () => {
+    const items = Array.from(
+      { length: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT },
+      (_, index) => item(index),
+    );
+    const get = vi.fn(async () => ({
+      status: 200,
+      data: {
+        ...page("all", items),
+        total: 91,
+        next_cursor: "next-60",
+        previous_cursor: "previous-0",
+      },
+    }));
+
+    await expect(
+      loadCustomerChatActivity(
+        { get },
+        41,
+        "all",
+        "cursor-30",
+        CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+        30,
+      ),
+    ).resolves.toMatchObject({
+      status: "loaded",
+      page: { offset: 30, limit: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT },
+    });
+    expect(get).toHaveBeenCalledWith(
+      41,
+      { cursor: "cursor-30", limit: CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT },
+      { credentials: "same-origin" },
+    );
+  });
+
+  it("rejects a positive offset without its server-issued cursor", async () => {
+    const get = vi.fn();
+    await expect(
+      loadCustomerChatActivity(
+        { get },
+        41,
+        "all",
+        undefined,
+        CUSTOMER_CHAT_ACTIVITY_SUMMARY_LIMIT,
+        30,
+      ),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid limit before transport", async () => {
+    const get = vi.fn();
+    await expect(
+      loadCustomerChatActivity(
+        { get },
+        41,
+        "all",
+        undefined,
+        CUSTOMER_CHAT_ACTIVITY_MAXIMUM_LIMIT + 1,
+      ),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(get).not.toHaveBeenCalled();
   });
 
   it.each([
