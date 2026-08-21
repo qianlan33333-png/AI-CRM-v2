@@ -20,7 +20,7 @@ var domains = map[string]bool{
 	"outbound": true, "wecom": true, "ai": true, "survey": true,
 	"gateway": true, "config": true, "events": true, "auth": true,
 	"stats": true, "product": true, "media": true, "coupon": true, "order": true, "ops": true, "adminops": true,
-	"operationcycle": true, "pushcenter": true,
+	"operationcycle": true, "pushcenter": true, "customer360": true,
 	"hxc": true,
 }
 
@@ -165,7 +165,7 @@ func checkRiverBoundary(file *ast.File, source string) error {
 }
 
 func checkEnvironmentReads(file *ast.File, source string) error {
-	if source == "internal/config/load.go" {
+	if source == "internal/config/load.go" || strings.HasSuffix(source, "_test.go") {
 		return nil
 	}
 	environmentPackages := make(map[string]bool)

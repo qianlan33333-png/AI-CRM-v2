@@ -56,6 +56,9 @@ seed() {
   printf '%s\n' 'package config' 'import "os"' \
     'func load() { _, _ = os.LookupEnv("AICRM_DATABASE_URL") }' \
     >"$root/internal/config/load.go"
+  printf '%s\n' 'package app' 'import "os"' \
+    'func testEnvironment() { _, _ = os.LookupEnv("AICRM_TEST_DATABASE_URL") }' \
+    >"$root/internal/survey/app/environment_test.go"
 }
 
 run_checker() {

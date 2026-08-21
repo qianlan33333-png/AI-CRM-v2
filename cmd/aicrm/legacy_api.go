@@ -181,6 +181,7 @@ type Handler struct {
 	miniPrograms          miniProgramApplication
 	surveys               legacySurveyApplication
 	surveySubmissions     legacySurveySubmissionApplication
+	surveySafeAdmin       surveySafeAdminHTTP
 	channels              legacyChannelApplication
 	legacyTags            legacyTagApplication
 	automationAgents      automationport.AgentService
