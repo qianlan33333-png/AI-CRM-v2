@@ -33,7 +33,10 @@ func TestMergeReviewApproveIsAtomicRedactedAndIdempotent(t *testing.T) {
 	if err != nil || len(page.Items) != 1 || page.Items[0].ReviewID != reviewID || page.Items[0].ResolvedAt != nil {
 		t.Fatalf("review page=%+v err=%v", page, err)
 	}
-	for _, forbidden := range []string{"NormalizedValue", "IdentityFingerprint", "Payload"} {
+	if !strings.HasPrefix(page.Items[0].IdentityFingerprint, "hmac-sha256-v1:") {
+		t.Fatalf("public review fingerprint=%q", page.Items[0].IdentityFingerprint)
+	}
+	for _, forbidden := range []string{"NormalizedValue", "Payload"} {
 		if _, found := reflect.TypeOf(page.Items[0]).FieldByName(forbidden); found {
 			t.Fatalf("public review exposes forbidden field %q", forbidden)
 		}

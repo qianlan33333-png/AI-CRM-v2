@@ -117,16 +117,18 @@ func (status MergeReviewStatus) Valid() bool {
 }
 
 // MergeReview is the closed administrative review fact. It intentionally omits
-// normalized identities, raw provider identifiers, payloads and review fingerprints.
+// normalized identities, raw provider identifiers and payloads. The fingerprint
+// is a versioned secret-backed HMAC, never the underlying identity value.
 type MergeReview struct {
-	ReviewID    int64
-	Status      MergeReviewStatus
-	Kind        IDKind
-	Scope       string
-	CustomerIDs []contactport.CustomerID
-	Version     int64
-	CreatedAt   time.Time
-	ResolvedAt  *time.Time
+	ReviewID            int64
+	Status              MergeReviewStatus
+	Kind                IDKind
+	Scope               string
+	CustomerIDs         []contactport.CustomerID
+	IdentityFingerprint string
+	Version             int64
+	CreatedAt           time.Time
+	ResolvedAt          *time.Time
 }
 
 type MergeReviewPage struct {

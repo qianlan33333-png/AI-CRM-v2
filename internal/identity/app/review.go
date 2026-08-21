@@ -54,16 +54,19 @@ type MergeReviewRecord struct {
 
 // MergeReviewHistoryRecord contains only fields required by the closed read DTO.
 // It deliberately excludes normalized identity values, provider identifiers,
-// raw payloads, policy details and review fingerprints.
+// raw payloads and policy details. It retains only the versioned secret-backed
+// HMAC required by the frozen administrator contract.
 type MergeReviewHistoryRecord struct {
-	ReviewID    int64
-	Status      identityport.MergeReviewStatus
-	Kind        identityport.IDKind
-	Scope       string
-	CustomerIDs []contactport.CustomerID
-	Version     int64
-	CreatedAt   time.Time
-	ResolvedAt  *time.Time
+	ReviewID            int64
+	Status              identityport.MergeReviewStatus
+	Kind                identityport.IDKind
+	Scope               string
+	CustomerIDs         []contactport.CustomerID
+	IdentityFingerprint []byte
+	FingerprintVersion  int16
+	Version             int64
+	CreatedAt           time.Time
+	ResolvedAt          *time.Time
 }
 
 type MergeReviewReceipt struct {
@@ -385,7 +388,8 @@ func publicMergeReview(record MergeReviewRecord) (identityport.MergeReview, erro
 	}
 	return publicMergeReviewHistory(MergeReviewHistoryRecord{
 		ReviewID: record.ReviewID, Status: record.Status, Kind: record.Kind, Scope: record.Scope,
-		CustomerIDs: record.CustomerIDs, Version: record.Version, CreatedAt: record.CreatedAt,
+		CustomerIDs: record.CustomerIDs, IdentityFingerprint: record.IdentityFingerprint,
+		FingerprintVersion: record.FingerprintVersion, Version: record.Version, CreatedAt: record.CreatedAt,
 		ResolvedAt: record.ResolvedAt,
 	})
 }
@@ -394,10 +398,15 @@ func publicMergeReviewHistory(record MergeReviewHistoryRecord) (identityport.Mer
 	if !validMergeReviewHistoryRecord(record) {
 		return identityport.MergeReview{}, ErrMergeReviewUnavailable
 	}
+	fingerprint, err := formatMergeReviewFingerprint(record.IdentityFingerprint, record.FingerprintVersion)
+	if err != nil {
+		return identityport.MergeReview{}, err
+	}
 	return identityport.MergeReview{
 		ReviewID: record.ReviewID, Status: record.Status, Kind: record.Kind, Scope: record.Scope,
-		CustomerIDs: append([]contactport.CustomerID(nil), record.CustomerIDs...),
-		Version:     record.Version, CreatedAt: record.CreatedAt.UTC(), ResolvedAt: cloneTime(record.ResolvedAt),
+		CustomerIDs:         append([]contactport.CustomerID(nil), record.CustomerIDs...),
+		IdentityFingerprint: fingerprint,
+		Version:             record.Version, CreatedAt: record.CreatedAt.UTC(), ResolvedAt: cloneTime(record.ResolvedAt),
 	}, nil
 }
 
@@ -418,7 +427,8 @@ func validMergeReviewRecord(record MergeReviewRecord) bool {
 	}
 	return validMergeReviewHistoryRecord(MergeReviewHistoryRecord{
 		ReviewID: record.ReviewID, Status: record.Status, Kind: record.Kind, Scope: record.Scope,
-		CustomerIDs: record.CustomerIDs, Version: record.Version, CreatedAt: record.CreatedAt,
+		CustomerIDs: record.CustomerIDs, IdentityFingerprint: record.IdentityFingerprint,
+		FingerprintVersion: record.FingerprintVersion, Version: record.Version, CreatedAt: record.CreatedAt,
 		ResolvedAt: record.ResolvedAt,
 	})
 }
@@ -426,7 +436,8 @@ func validMergeReviewRecord(record MergeReviewRecord) bool {
 func validMergeReviewHistoryRecord(record MergeReviewHistoryRecord) bool {
 	if record.ReviewID <= 0 || record.Version <= 0 || record.CreatedAt.IsZero() ||
 		(record.Kind != identityport.KindPhone && record.Kind != identityport.KindUnionID) ||
-		strings.TrimSpace(record.Scope) == "" || len(record.CustomerIDs) != 2 ||
+		strings.TrimSpace(record.Scope) == "" || len(record.IdentityFingerprint) != 16 ||
+		record.FingerprintVersion <= 0 || len(record.CustomerIDs) != 2 ||
 		record.CustomerIDs[0] <= 0 || record.CustomerIDs[0] >= record.CustomerIDs[1] {
 		return false
 	}
@@ -441,10 +452,14 @@ func validMergeReviewHistoryRecord(record MergeReviewHistoryRecord) bool {
 }
 
 func mergeReviewFingerprint(record MergeReviewRecord) (string, error) {
-	if len(record.IdentityFingerprint) != 16 || record.FingerprintVersion <= 0 {
+	return formatMergeReviewFingerprint(record.IdentityFingerprint, record.FingerprintVersion)
+}
+
+func formatMergeReviewFingerprint(fingerprint []byte, version int16) (string, error) {
+	if len(fingerprint) != 16 || version <= 0 {
 		return "", ErrMergeReviewUnavailable
 	}
-	return fmt.Sprintf("hmac-sha256-v%d:%s", record.FingerprintVersion, base64.RawURLEncoding.EncodeToString(record.IdentityFingerprint)), nil
+	return fmt.Sprintf("hmac-sha256-v%d:%s", version, base64.RawURLEncoding.EncodeToString(fingerprint)), nil
 }
 
 func validApproveMergeReview(command identityport.ApproveMergeReviewCommand) bool {

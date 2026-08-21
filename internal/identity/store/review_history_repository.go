@@ -41,6 +41,7 @@ func (repository *Repository) ListMergeReviewsByStatus(
 	for _, row := range rows {
 		record, convertErr := mergeReviewHistoryRecord(
 			row.ID, row.State, row.Kind, row.Scope, row.CandidateCustomerIds,
+			row.ReviewFingerprint, row.FingerprintKeyVersion,
 			row.Version, row.CreatedAt, row.ResolvedAt,
 		)
 		if convertErr != nil || record.Status != status {
@@ -58,10 +59,13 @@ func mergeReviewHistoryRecord(
 	id int64,
 	state, kind, scope string,
 	customerIDs []int64,
+	fingerprint []byte,
+	fingerprintVersion pgtype.Int2,
 	version int64,
 	createdAt, resolvedAt pgtype.Timestamptz,
 ) (identityapp.MergeReviewHistoryRecord, error) {
-	if id <= 0 || version <= 0 || !createdAt.Valid || len(customerIDs) != 2 ||
+	if id <= 0 || version <= 0 || !createdAt.Valid || len(fingerprint) != 16 ||
+		!fingerprintVersion.Valid || fingerprintVersion.Int16 <= 0 || len(customerIDs) != 2 ||
 		customerIDs[0] <= 0 || customerIDs[0] >= customerIDs[1] {
 		return identityapp.MergeReviewHistoryRecord{}, identityapp.ErrMergeReviewUnavailable
 	}
@@ -74,8 +78,10 @@ func mergeReviewHistoryRecord(
 			contactport.CustomerID(customerIDs[0]),
 			contactport.CustomerID(customerIDs[1]),
 		},
-		Version:   version,
-		CreatedAt: createdAt.Time.UTC(),
+		IdentityFingerprint: append([]byte(nil), fingerprint...),
+		FingerprintVersion:  fingerprintVersion.Int16,
+		Version:             version,
+		CreatedAt:           createdAt.Time.UTC(),
 	}
 	if resolvedAt.Valid {
 		resolved := resolvedAt.Time.UTC()

@@ -85,7 +85,10 @@ func TestReviewHandlerListsClosedFactsForAllStatusesAndDefaultsPending(t *testin
 				t.Fatalf("payload=%+v err=%v", payload, err)
 			}
 			body := response.Body.String()
-			for _, forbidden := range []string{"identity_fingerprint", "normalized", "unionid", "external_userid", "raw_identity", "payload"} {
+			if payload.Items[0].IdentityFingerprint != fact.IdentityFingerprint {
+				t.Fatalf("fingerprint=%q want=%q", payload.Items[0].IdentityFingerprint, fact.IdentityFingerprint)
+			}
+			for _, forbidden := range []string{"normalized", "unionid", "external_userid", "raw_identity", "payload"} {
 				if strings.Contains(body, forbidden) {
 					t.Fatalf("forbidden field %q escaped response: %s", forbidden, body)
 				}
@@ -231,6 +234,7 @@ func reviewHTTPFact(status identityport.MergeReviewStatus) identityport.MergeRev
 	return identityport.MergeReview{
 		ReviewID: 23, Status: status, Kind: identityport.KindPhone, Scope: "phone:e164",
 		CustomerIDs: []contactport.CustomerID{42, 84}, Version: 1,
-		CreatedAt: time.Date(2026, 8, 13, 8, 0, 0, 0, time.UTC),
+		IdentityFingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
+		CreatedAt:           time.Date(2026, 8, 13, 8, 0, 0, 0, time.UTC),
 	}
 }

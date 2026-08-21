@@ -8708,8 +8708,8 @@ components:
     IdentityMergeReview:
       type: object
       additionalProperties: false
-      description: Closed administrator fact. It never contains normalized identities, provider identifiers, raw payloads, or review fingerprints.
-      required: [review_id, status, type, scope, customer_ids, version, created_at, resolved_at]
+      description: Closed administrator fact. It never contains normalized identities, provider identifiers, or raw payloads; identity_fingerprint is a versioned secret-backed HMAC only.
+      required: [review_id, status, type, scope, customer_ids, identity_fingerprint, version, created_at, resolved_at]
       properties:
         review_id: { type: integer, format: int64, minimum: 1 }
         status: { type: string, enum: [pending, approved, rejected] }
@@ -8721,6 +8721,10 @@ components:
           maxItems: 2
           uniqueItems: true
           items: { type: integer, format: int64, minimum: 1 }
+        identity_fingerprint:
+          type: string
+          pattern: '^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$'
+          description: Versioned secret-backed HMAC; never a raw or normalized identity value.
         version: { type: integer, format: int64, minimum: 1 }
         created_at: { type: string, format: date-time }
         resolved_at:

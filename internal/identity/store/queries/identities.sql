@@ -373,6 +373,8 @@ SELECT
   identity_row.kind,
   identity_row.scope,
   pending.candidate_customer_ids,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
   pending.version,
   pending.created_at,
   pending.resolved_at

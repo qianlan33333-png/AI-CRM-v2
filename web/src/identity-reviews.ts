@@ -28,6 +28,7 @@ export interface IdentityMergeReviewRecord {
   readonly type: "unionid" | "phone";
   readonly scope: string;
   readonly customerIDs: readonly [number, number];
+  readonly identityFingerprint: string;
   readonly version: number;
   readonly createdAt: string;
   readonly resolvedAt?: string;
@@ -140,6 +141,7 @@ export function parseIdentityMergeReview(
       "type",
       "scope",
       "customer_ids",
+      "identity_fingerprint",
       "version",
       "created_at",
       "resolved_at",
@@ -158,6 +160,10 @@ export function parseIdentityMergeReview(
     !positiveSafeInteger(value.customer_ids[0]) ||
     !positiveSafeInteger(value.customer_ids[1]) ||
     value.customer_ids[0] >= value.customer_ids[1] ||
+    typeof value.identity_fingerprint !== "string" ||
+    !/^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$/.test(
+      value.identity_fingerprint,
+    ) ||
     !positiveSafeInteger(value.version) ||
     !validDateTime(value.created_at)
   ) {
@@ -182,6 +188,7 @@ export function parseIdentityMergeReview(
     type: value.type,
     scope: value.scope,
     customerIDs: [value.customer_ids[0], value.customer_ids[1]],
+    identityFingerprint: value.identity_fingerprint,
     version: value.version,
     createdAt: value.created_at,
     ...(typeof value.resolved_at === "string"
@@ -311,6 +318,7 @@ function matchesResolvedReview(
     resolved.scope === pending.scope &&
     resolved.customerIDs[0] === pending.customerIDs[0] &&
     resolved.customerIDs[1] === pending.customerIDs[1] &&
+    resolved.identityFingerprint === pending.identityFingerprint &&
     resolved.version === pending.version + 1 &&
     resolved.createdAt === pending.createdAt &&
     resolved.resolvedAt,

@@ -427,6 +427,10 @@ export function IdentityMergeReviewsPage({
                   <dd>{selected.version}</dd>
                 </div>
                 <div>
+                  <dt>审核指纹</dt>
+                  <dd><code>{selected.identityFingerprint}</code></dd>
+                </div>
+                <div>
                   <dt>创建时间</dt>
                   <dd>{displayDate(selected.createdAt)}</dd>
                 </div>

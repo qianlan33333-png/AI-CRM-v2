@@ -64,13 +64,14 @@ func TestFrozenMergeReviewPortSurface(t *testing.T) {
 	actor := contactport.Actor("admin:17")
 	createdAt := time.Date(2026, time.August, 12, 1, 2, 3, 0, time.UTC)
 	review := MergeReview{
-		ReviewID:    41,
-		Status:      MergeReviewPending,
-		Kind:        KindPhone,
-		Scope:       ref.Scope,
-		CustomerIDs: []contactport.CustomerID{7, 9},
-		Version:     3,
-		CreatedAt:   createdAt,
+		ReviewID:            41,
+		Status:              MergeReviewPending,
+		Kind:                KindPhone,
+		Scope:               ref.Scope,
+		CustomerIDs:         []contactport.CustomerID{7, 9},
+		IdentityFingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
+		Version:             3,
+		CreatedAt:           createdAt,
 	}
 	page := MergeReviewPage{Items: []MergeReview{review}, NextCursor: "next"}
 	bind := BindResult{Status: BindManualReview, ReviewID: review.ReviewID}
@@ -95,7 +96,7 @@ func TestFrozenMergeReviewPortSurface(t *testing.T) {
 		approve.IdempotencyKey == "" || reject.IdempotencyKey == "" {
 		t.Fatal("merge review port surface drifted")
 	}
-	for _, field := range []string{"Value", "NormalizedValue", "IdentityFingerprint", "Payload"} {
+	for _, field := range []string{"Value", "NormalizedValue", "Payload"} {
 		if _, found := reflect.TypeOf(MergeReview{}).FieldByName(field); found {
 			t.Fatalf("merge review exposes raw identity field %q", field)
 		}

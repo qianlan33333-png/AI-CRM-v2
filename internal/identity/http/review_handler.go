@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -185,7 +186,7 @@ func decodeReviewBody(writer http.ResponseWriter, request *http.Request, target 
 func mergeReviewResponse(review identityport.MergeReview) (generated.IdentityMergeReview, error) {
 	if review.ReviewID <= 0 || review.Version <= 0 || review.CreatedAt.IsZero() ||
 		len(review.CustomerIDs) != 2 || review.CustomerIDs[0] <= 0 || review.CustomerIDs[0] >= review.CustomerIDs[1] ||
-		strings.TrimSpace(review.Scope) == "" {
+		strings.TrimSpace(review.Scope) == "" || !validReviewFingerprint(review.IdentityFingerprint) {
 		return generated.IdentityMergeReview{}, identityapp.ErrMergeReviewUnavailable
 	}
 	status := generated.IdentityMergeReviewStatus(review.Status)
@@ -199,9 +200,31 @@ func mergeReviewResponse(review identityport.MergeReview) (generated.IdentityMer
 	}
 	return generated.IdentityMergeReview{
 		ReviewId: review.ReviewID, Status: status, Type: kind, Scope: review.Scope,
-		CustomerIds: []int64{int64(review.CustomerIDs[0]), int64(review.CustomerIDs[1])},
-		Version:     review.Version, CreatedAt: review.CreatedAt.UTC(), ResolvedAt: cloneReviewTime(review.ResolvedAt),
+		CustomerIds:         []int64{int64(review.CustomerIDs[0]), int64(review.CustomerIDs[1])},
+		IdentityFingerprint: review.IdentityFingerprint,
+		Version:             review.Version, CreatedAt: review.CreatedAt.UTC(), ResolvedAt: cloneReviewTime(review.ResolvedAt),
 	}, nil
+}
+
+func validReviewFingerprint(value string) bool {
+	if !strings.HasPrefix(value, "hmac-sha256-v") {
+		return false
+	}
+	parts := strings.Split(value, ":")
+	if len(parts) != 2 || len(parts[1]) != 22 {
+		return false
+	}
+	version := strings.TrimPrefix(parts[0], "hmac-sha256-v")
+	if version == "" || version[0] == '0' {
+		return false
+	}
+	for _, char := range version {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(parts[1])
+	return err == nil && len(decoded) == 16
 }
 
 func reviewActor(principal authport.Principal) contactport.Actor {

@@ -503,6 +503,8 @@ SELECT
   identity_row.kind,
   identity_row.scope,
   pending.candidate_customer_ids,
+  pending.review_fingerprint,
+  pending.fingerprint_key_version,
   pending.version,
   pending.created_at,
   pending.resolved_at
@@ -524,14 +526,16 @@ type ListMergeReviewsByStatusParams struct {
 }
 
 type ListMergeReviewsByStatusRow struct {
-	ID                   int64              `json:"id"`
-	State                string             `json:"state"`
-	Kind                 string             `json:"kind"`
-	Scope                string             `json:"scope"`
-	CandidateCustomerIds []int64            `json:"candidate_customer_ids"`
-	Version              int64              `json:"version"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	ResolvedAt           pgtype.Timestamptz `json:"resolved_at"`
+	ID                    int64              `json:"id"`
+	State                 string             `json:"state"`
+	Kind                  string             `json:"kind"`
+	Scope                 string             `json:"scope"`
+	CandidateCustomerIds  []int64            `json:"candidate_customer_ids"`
+	ReviewFingerprint     []byte             `json:"review_fingerprint"`
+	FingerprintKeyVersion pgtype.Int2        `json:"fingerprint_key_version"`
+	Version               int64              `json:"version"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	ResolvedAt            pgtype.Timestamptz `json:"resolved_at"`
 }
 
 func (q *Queries) ListMergeReviewsByStatus(ctx context.Context, arg ListMergeReviewsByStatusParams) ([]ListMergeReviewsByStatusRow, error) {
@@ -549,6 +553,8 @@ func (q *Queries) ListMergeReviewsByStatus(ctx context.Context, arg ListMergeRev
 			&i.Kind,
 			&i.Scope,
 			&i.CandidateCustomerIds,
+			&i.ReviewFingerprint,
+			&i.FingerprintKeyVersion,
 			&i.Version,
 			&i.CreatedAt,
 			&i.ResolvedAt,

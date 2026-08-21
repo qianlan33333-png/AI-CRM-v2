@@ -2751,10 +2751,13 @@ type GrantProductLocalEntitlementRequest struct {
 	OrderId int64 `json:"order_id"`
 }
 
-// IdentityMergeReview Closed administrator fact. It never contains normalized identities, provider identifiers, raw payloads, or review fingerprints.
+// IdentityMergeReview Closed administrator fact. It never contains normalized identities, provider identifiers, or raw payloads; identity_fingerprint is a versioned secret-backed HMAC only.
 type IdentityMergeReview struct {
 	CreatedAt   time.Time `json:"created_at"`
 	CustomerIds []int64   `json:"customer_ids"`
+
+	// IdentityFingerprint Versioned secret-backed HMAC; never a raw or normalized identity value.
+	IdentityFingerprint string `json:"identity_fingerprint"`
 
 	// ResolvedAt Explicitly null while pending; non-null after approval or rejection.
 	ResolvedAt *time.Time                `json:"resolved_at"`

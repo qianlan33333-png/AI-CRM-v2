@@ -96,7 +96,10 @@ func TestMergeReviewListUsesStatusBoundOpaqueCursorAndClosedFacts(t *testing.T) 
 			if page.Items[0].Status != status || page.Items[0].Scope != records[0].Scope {
 				t.Fatalf("public review leaked or drifted: %+v", page.Items[0])
 			}
-			for _, forbidden := range []string{"IdentityFingerprint", "NormalizedValue", "Payload"} {
+			if page.Items[0].IdentityFingerprint != "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ" {
+				t.Fatalf("review fingerprint=%q", page.Items[0].IdentityFingerprint)
+			}
+			for _, forbidden := range []string{"NormalizedValue", "Payload"} {
 				if _, found := reflect.TypeOf(page.Items[0]).FieldByName(forbidden); found {
 					t.Fatalf("public review exposes forbidden field %q", forbidden)
 				}
@@ -279,8 +282,12 @@ func validReviewRecord(key []byte, id int64) MergeReviewRecord {
 func historyReviewRecord(id int64, status identityport.MergeReviewStatus) MergeReviewHistoryRecord {
 	record := MergeReviewHistoryRecord{
 		ReviewID: id, Status: status, Kind: identityport.KindPhone, Scope: "phone:e164",
-		CustomerIDs: []contactport.CustomerID{42, 84}, Version: 1,
+		CustomerIDs: []contactport.CustomerID{42, 84}, IdentityFingerprint: make([]byte, 16),
+		FingerprintVersion: 1, Version: 1,
 		CreatedAt: time.Date(2026, 8, 13, 7, 0, 0, 0, time.UTC),
+	}
+	for index := range record.IdentityFingerprint {
+		record.IdentityFingerprint[index] = 1
 	}
 	if status != identityport.MergeReviewPending {
 		resolved := record.CreatedAt.Add(time.Hour)

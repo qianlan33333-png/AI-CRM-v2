@@ -19,6 +19,7 @@ const pending = {
   type: "phone",
   scope: "phone:e164",
   customer_ids: [42, 84],
+  identity_fingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
   version: 1,
   created_at: "2026-08-13T08:00:00Z",
   resolved_at: null,
@@ -66,6 +67,7 @@ describe("identity merge-review closed contract parsing", () => {
       type: "phone",
       scope: "phone:e164",
       customerIDs: [42, 84],
+      identityFingerprint: "hmac-sha256-v1:AQEBAQEBAQEBAQEBAQEBAQ",
       version: 1,
       createdAt: "2026-08-13T08:00:00Z",
     });
@@ -220,7 +222,7 @@ describe("identity merge-review typed transport", () => {
     ).resolves.toEqual({ status: "unavailable" });
   });
 
-  it("keeps strict approve/reject confirmation without a fingerprint field", async () => {
+  it("keeps strict approve/reject confirmation bound to the fingerprint", async () => {
     const client = transport({
       approve: vi.fn(async () => ({ status: 200, data: approved })),
       reject: vi.fn(async () => ({ status: 200, data: rejected })),

@@ -7130,7 +7130,7 @@ export const IdentityMergeReviewType = {
 } as const;
 
 /**
- * Closed administrator fact. It never contains normalized identities, provider identifiers, raw payloads, or review fingerprints.
+ * Closed administrator fact. It never contains normalized identities, provider identifiers, or raw payloads; identity_fingerprint is a versioned secret-backed HMAC only.
  */
 export interface IdentityMergeReview {
   /** @minimum 1 */
@@ -7144,6 +7144,11 @@ export interface IdentityMergeReview {
    * @maxItems 2
    */
   customer_ids: number[];
+  /**
+   * Versioned secret-backed HMAC; never a raw or normalized identity value.
+   * @pattern ^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$
+   */
+  identity_fingerprint: string;
   /** @minimum 1 */
   version: number;
   created_at: string;

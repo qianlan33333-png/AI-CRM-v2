@@ -22,6 +22,8 @@ func TestMergeReviewHistoryQueryIsClosedStatusPartitionedAndTransactionBound(t *
 		"limit sqlc.arg(page_limit)::int",
 		"cardinality(pending.identity_ids) = 1",
 		"pending.candidate_customer_ids",
+		"pending.review_fingerprint",
+		"pending.fingerprint_key_version",
 		"pending.resolved_at",
 	} {
 		if !strings.Contains(lower, required) {
@@ -33,8 +35,6 @@ func TestMergeReviewHistoryQueryIsClosedStatusPartitionedAndTransactionBound(t *
 		"payload",
 		"external_userid",
 		"external_user_id",
-		"review_fingerprint",
-		"fingerprint_key_version",
 		"policy_version",
 		"operated_by",
 	} {
