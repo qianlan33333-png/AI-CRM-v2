@@ -7129,6 +7129,9 @@ export const IdentityMergeReviewType = {
   phone: "phone",
 } as const;
 
+/**
+ * Closed administrator fact. It never contains normalized identities, provider identifiers, raw payloads, or review fingerprints.
+ */
 export interface IdentityMergeReview {
   /** @minimum 1 */
   review_id: number;
@@ -7136,11 +7139,6 @@ export interface IdentityMergeReview {
   type: IdentityMergeReviewType;
   /** @minLength 1 */
   scope: string;
-  /**
-   * Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
-   * @pattern ^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$
-   */
-  identity_fingerprint: string;
   /**
    * @minItems 2
    * @maxItems 2
@@ -8677,6 +8675,10 @@ export type ListSegmentMembersParams = {
 
 export type ListIdentityMergeReviewsParams = {
   /**
+   * Review partition. Omitted requests default to pending; cursors are bound to this value.
+   */
+  status?: ListIdentityMergeReviewsStatus;
+  /**
    * Opaque keyset cursor; clients must not parse or synthesize it.
    * @minLength 1
    * @maxLength 512
@@ -8688,6 +8690,16 @@ export type ListIdentityMergeReviewsParams = {
    */
   limit?: LimitParameter;
 };
+
+export type ListIdentityMergeReviewsStatus =
+  (typeof ListIdentityMergeReviewsStatus)[keyof typeof ListIdentityMergeReviewsStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListIdentityMergeReviewsStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
 
 export type GetLegacyAppSettingsPageParams = {
   /**
@@ -13568,7 +13580,7 @@ export const ingestIdentityEvent = async (
 };
 
 /**
- * @summary List pending identity merge reviews without exposing raw identities
+ * @summary List one status partition of closed identity merge reviews
  */
 export type listIdentityMergeReviewsResponse200 = {
   data: IdentityMergeReviewPage;
@@ -13590,6 +13602,16 @@ export type listIdentityMergeReviewsResponse403 = {
   status: 403;
 };
 
+export type listIdentityMergeReviewsResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type listIdentityMergeReviewsResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
 export type listIdentityMergeReviewsResponse503 = {
   data: ServiceUnavailableResponse;
   status: 503;
@@ -13603,6 +13625,8 @@ export type listIdentityMergeReviewsResponseError = (
   | listIdentityMergeReviewsResponse400
   | listIdentityMergeReviewsResponse401
   | listIdentityMergeReviewsResponse403
+  | listIdentityMergeReviewsResponse405
+  | listIdentityMergeReviewsResponse422
   | listIdentityMergeReviewsResponse503
 ) & {
   headers: Headers;

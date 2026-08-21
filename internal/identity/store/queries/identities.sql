@@ -366,6 +366,26 @@ WHERE pending.kind = 'merge_review'
 ORDER BY pending.id
 LIMIT sqlc.arg(page_limit)::int;
 
+-- name: ListMergeReviewsByStatus :many
+SELECT
+  pending.id,
+  pending.state,
+  identity_row.kind,
+  identity_row.scope,
+  pending.candidate_customer_ids,
+  pending.version,
+  pending.created_at,
+  pending.resolved_at
+FROM pending_events AS pending
+JOIN identities AS identity_row
+  ON identity_row.id = pending.identity_ids[1]
+WHERE pending.kind = 'merge_review'
+  AND pending.state = sqlc.arg(review_status)::text
+  AND cardinality(pending.identity_ids) = 1
+  AND pending.id > sqlc.arg(after_id)::bigint
+ORDER BY pending.id
+LIMIT sqlc.arg(page_limit)::int;
+
 -- name: LockMergeReview :one
 SELECT
   pending.id,

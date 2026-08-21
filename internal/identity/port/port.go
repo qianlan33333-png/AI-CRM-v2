@@ -107,16 +107,26 @@ const (
 	MergeReviewRejected MergeReviewStatus = "rejected"
 )
 
+func (status MergeReviewStatus) Valid() bool {
+	switch status {
+	case MergeReviewPending, MergeReviewApproved, MergeReviewRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// MergeReview is the closed administrative review fact. It intentionally omits
+// normalized identities, raw provider identifiers, payloads and review fingerprints.
 type MergeReview struct {
-	ReviewID            int64
-	Status              MergeReviewStatus
-	Kind                IDKind
-	Scope               string
-	IdentityFingerprint string
-	CustomerIDs         []contactport.CustomerID
-	Version             int64
-	CreatedAt           time.Time
-	ResolvedAt          *time.Time
+	ReviewID    int64
+	Status      MergeReviewStatus
+	Kind        IDKind
+	Scope       string
+	CustomerIDs []contactport.CustomerID
+	Version     int64
+	CreatedAt   time.Time
+	ResolvedAt  *time.Time
 }
 
 type MergeReviewPage struct {
@@ -163,7 +173,13 @@ type RejectMergeReviewCommand struct {
 	IdempotencyKey  string
 }
 
+type ReviewHistoryService interface {
+	ListMergeReviewsByStatus(context.Context, MergeReviewStatus, string, int32) (MergeReviewPage, error)
+}
+
 type ReviewService interface {
+	ReviewHistoryService
+	// ListMergeReviews preserves the original pending-only default for internal callers.
 	ListMergeReviews(context.Context, string, int32) (MergeReviewPage, error)
 	ApproveMergeReview(context.Context, ApproveMergeReviewCommand) (MergeReview, error)
 	RejectMergeReview(context.Context, RejectMergeReviewCommand) (MergeReview, error)

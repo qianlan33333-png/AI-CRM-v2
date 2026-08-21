@@ -26,7 +26,7 @@ const (
 	mergeReviewCursorLimit  = 512
 	mergeReviewCommandLimit = 512
 	mergeReviewReasonLimit  = 500
-	mergeReviewCursorV1     = 1
+	mergeReviewCursorV2     = 2
 )
 
 var (
@@ -52,6 +52,20 @@ type MergeReviewRecord struct {
 	ResolvedAt          *time.Time
 }
 
+// MergeReviewHistoryRecord contains only fields required by the closed read DTO.
+// It deliberately excludes normalized identity values, provider identifiers,
+// raw payloads, policy details and review fingerprints.
+type MergeReviewHistoryRecord struct {
+	ReviewID    int64
+	Status      identityport.MergeReviewStatus
+	Kind        identityport.IDKind
+	Scope       string
+	CustomerIDs []contactport.CustomerID
+	Version     int64
+	CreatedAt   time.Time
+	ResolvedAt  *time.Time
+}
+
 type MergeReviewReceipt struct {
 	ID          int64
 	Found       bool
@@ -71,7 +85,7 @@ type ManualMergeAudit struct {
 }
 
 type MergeReviewStore interface {
-	ListPendingMergeReviews(context.Context, int64, int32) ([]MergeReviewRecord, error)
+	ListMergeReviewsByStatus(context.Context, identityport.MergeReviewStatus, int64, int32) ([]MergeReviewHistoryRecord, error)
 	ReserveMergeReviewReceipt(context.Context, string, []byte, []byte) (MergeReviewReceipt, error)
 	LockMergeReview(context.Context, int64) (MergeReviewRecord, error)
 	LockActiveMergeReviewCustomers(context.Context, []contactport.CustomerID) ([]contactport.CustomerID, error)
@@ -107,8 +121,20 @@ func (service *MergeReviewService) ListMergeReviews(
 	cursor string,
 	limit int32,
 ) (identityport.MergeReviewPage, error) {
+	return service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewPending, cursor, limit)
+}
+
+func (service *MergeReviewService) ListMergeReviewsByStatus(
+	ctx context.Context,
+	status identityport.MergeReviewStatus,
+	cursor string,
+	limit int32,
+) (identityport.MergeReviewPage, error) {
 	if !service.ready(ctx) {
 		return identityport.MergeReviewPage{}, ErrMergeReviewUnavailable
+	}
+	if !status.Valid() {
+		return identityport.MergeReviewPage{}, ErrMergeReviewInvalid
 	}
 	if limit == 0 {
 		limit = MergeReviewDefaultLimit
@@ -116,14 +142,14 @@ func (service *MergeReviewService) ListMergeReviews(
 	if limit < 1 || limit > MergeReviewMaximumLimit || len(cursor) > mergeReviewCursorLimit {
 		return identityport.MergeReviewPage{}, ErrMergeReviewInvalid
 	}
-	afterID, err := decodeMergeReviewCursor(cursor)
+	afterID, err := decodeMergeReviewCursor(status, cursor)
 	if err != nil {
 		return identityport.MergeReviewPage{}, errors.Join(ErrMergeReviewInvalid, err)
 	}
-	var records []MergeReviewRecord
+	var records []MergeReviewHistoryRecord
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
 		var storeErr error
-		records, storeErr = service.store.ListPendingMergeReviews(txCtx, afterID, limit+1)
+		records, storeErr = service.store.ListMergeReviewsByStatus(txCtx, status, afterID, limit+1)
 		return storeErr
 	})
 	if err != nil {
@@ -141,14 +167,14 @@ func (service *MergeReviewService) ListMergeReviews(
 		if index > 0 && records[index-1].ReviewID >= record.ReviewID {
 			return identityport.MergeReviewPage{}, ErrMergeReviewUnavailable
 		}
-		converted, convertErr := publicMergeReview(record)
-		if convertErr != nil || converted.Status != identityport.MergeReviewPending {
+		converted, convertErr := publicMergeReviewHistory(record)
+		if convertErr != nil || converted.Status != status {
 			return identityport.MergeReviewPage{}, ErrMergeReviewUnavailable
 		}
 		page.Items = append(page.Items, converted)
 	}
 	if hasMore {
-		page.NextCursor, err = encodeMergeReviewCursor(records[len(records)-1].ReviewID)
+		page.NextCursor, err = encodeMergeReviewCursor(status, records[len(records)-1].ReviewID)
 		if err != nil {
 			return identityport.MergeReviewPage{}, errors.Join(ErrMergeReviewUnavailable, err)
 		}
@@ -357,14 +383,21 @@ func publicMergeReview(record MergeReviewRecord) (identityport.MergeReview, erro
 	if !validMergeReviewRecord(record) {
 		return identityport.MergeReview{}, ErrMergeReviewUnavailable
 	}
-	fingerprint, err := mergeReviewFingerprint(record)
-	if err != nil {
-		return identityport.MergeReview{}, err
+	return publicMergeReviewHistory(MergeReviewHistoryRecord{
+		ReviewID: record.ReviewID, Status: record.Status, Kind: record.Kind, Scope: record.Scope,
+		CustomerIDs: record.CustomerIDs, Version: record.Version, CreatedAt: record.CreatedAt,
+		ResolvedAt: record.ResolvedAt,
+	})
+}
+
+func publicMergeReviewHistory(record MergeReviewHistoryRecord) (identityport.MergeReview, error) {
+	if !validMergeReviewHistoryRecord(record) {
+		return identityport.MergeReview{}, ErrMergeReviewUnavailable
 	}
 	return identityport.MergeReview{
 		ReviewID: record.ReviewID, Status: record.Status, Kind: record.Kind, Scope: record.Scope,
-		IdentityFingerprint: fingerprint, CustomerIDs: append([]contactport.CustomerID(nil), record.CustomerIDs...),
-		Version: record.Version, CreatedAt: record.CreatedAt.UTC(), ResolvedAt: cloneTime(record.ResolvedAt),
+		CustomerIDs: append([]contactport.CustomerID(nil), record.CustomerIDs...),
+		Version:     record.Version, CreatedAt: record.CreatedAt.UTC(), ResolvedAt: cloneTime(record.ResolvedAt),
 	}, nil
 }
 
@@ -378,10 +411,22 @@ func validReviewEvidence(key []byte, record MergeReviewRecord) bool {
 }
 
 func validMergeReviewRecord(record MergeReviewRecord) bool {
-	if record.ReviewID <= 0 || record.IdentityID <= 0 || record.Version <= 0 || record.CreatedAt.IsZero() ||
+	if record.IdentityID <= 0 || strings.TrimSpace(record.NormalizedValue) == "" ||
+		strings.TrimSpace(record.PolicyVersion) == "" || len(record.IdentityFingerprint) != 16 ||
+		record.FingerprintVersion <= 0 {
+		return false
+	}
+	return validMergeReviewHistoryRecord(MergeReviewHistoryRecord{
+		ReviewID: record.ReviewID, Status: record.Status, Kind: record.Kind, Scope: record.Scope,
+		CustomerIDs: record.CustomerIDs, Version: record.Version, CreatedAt: record.CreatedAt,
+		ResolvedAt: record.ResolvedAt,
+	})
+}
+
+func validMergeReviewHistoryRecord(record MergeReviewHistoryRecord) bool {
+	if record.ReviewID <= 0 || record.Version <= 0 || record.CreatedAt.IsZero() ||
 		(record.Kind != identityport.KindPhone && record.Kind != identityport.KindUnionID) ||
-		strings.TrimSpace(record.Scope) == "" || strings.TrimSpace(record.PolicyVersion) == "" ||
-		len(record.IdentityFingerprint) != 16 || record.FingerprintVersion <= 0 || len(record.CustomerIDs) != 2 ||
+		strings.TrimSpace(record.Scope) == "" || len(record.CustomerIDs) != 2 ||
 		record.CustomerIDs[0] <= 0 || record.CustomerIDs[0] >= record.CustomerIDs[1] {
 		return false
 	}
@@ -389,7 +434,7 @@ func validMergeReviewRecord(record MergeReviewRecord) bool {
 	case identityport.MergeReviewPending:
 		return record.ResolvedAt == nil
 	case identityport.MergeReviewApproved, identityport.MergeReviewRejected:
-		return record.ResolvedAt != nil && !record.ResolvedAt.IsZero()
+		return record.ResolvedAt != nil && !record.ResolvedAt.IsZero() && !record.ResolvedAt.Before(record.CreatedAt)
 	default:
 		return false
 	}
@@ -427,24 +472,30 @@ func containsCustomerID(ids []contactport.CustomerID, id contactport.CustomerID)
 }
 
 type mergeReviewCursor struct {
-	Version   int    `json:"v"`
-	Operation string `json:"operation"`
-	Sort      string `json:"sort"`
-	AfterID   int64  `json:"after_id"`
+	Version   int                            `json:"v"`
+	Operation string                         `json:"operation"`
+	Status    identityport.MergeReviewStatus `json:"status"`
+	Sort      string                         `json:"sort"`
+	AfterID   int64                          `json:"after_id"`
 }
 
-func encodeMergeReviewCursor(afterID int64) (string, error) {
-	if afterID <= 0 {
+func encodeMergeReviewCursor(status identityport.MergeReviewStatus, afterID int64) (string, error) {
+	if !status.Valid() || afterID <= 0 {
 		return "", ErrMergeReviewInvalid
 	}
-	encoded, err := json.Marshal(mergeReviewCursor{mergeReviewCursorV1, "listIdentityMergeReviews", "id_asc", afterID})
+	encoded, err := json.Marshal(mergeReviewCursor{
+		Version: mergeReviewCursorV2, Operation: "listIdentityMergeReviews", Status: status, Sort: "id_asc", AfterID: afterID,
+	})
 	if err != nil {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(encoded), nil
 }
 
-func decodeMergeReviewCursor(raw string) (int64, error) {
+func decodeMergeReviewCursor(status identityport.MergeReviewStatus, raw string) (int64, error) {
+	if !status.Valid() {
+		return 0, ErrMergeReviewInvalid
+	}
 	if raw == "" {
 		return 0, nil
 	}
@@ -464,7 +515,8 @@ func decodeMergeReviewCursor(raw string) (int64, error) {
 	if err = decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return 0, ErrMergeReviewInvalid
 	}
-	if cursor.Version != mergeReviewCursorV1 || cursor.Operation != "listIdentityMergeReviews" || cursor.Sort != "id_asc" || cursor.AfterID <= 0 {
+	if cursor.Version != mergeReviewCursorV2 || cursor.Operation != "listIdentityMergeReviews" ||
+		cursor.Status != status || cursor.Sort != "id_asc" || cursor.AfterID <= 0 {
 		return 0, ErrMergeReviewInvalid
 	}
 	return cursor.AfterID, nil

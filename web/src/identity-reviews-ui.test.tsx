@@ -18,29 +18,45 @@ function transport(): IdentityReviewTransport {
 
 describe("IdentityMergeReviewsPage shell", () => {
   it.each(["admin", "ops"] as const)(
-    "renders the complete review flow shell for %s",
+    "renders all three review partitions for %s",
     (role) => {
       const html = renderToStaticMarkup(
         <IdentityMergeReviewsPage role={role} transport={transport()} />,
       );
-      expect(html).toContain('<h1 id="app-title">人工待合并</h1>');
-      expect(html).toContain("待合并列表");
+      expect(html).toContain('<h1 id="app-title">OneID 人工审核</h1>');
+      expect(html).toContain("待审核");
+      expect(html).toContain("已批准");
+      expect(html).toContain("已拒绝");
+      expect(html).toContain("待审核列表");
       expect(html).toContain("审阅与决策");
-      expect(html).toContain("批准并合并");
-      expect(html).toContain("拒绝合并");
-      expect(html).toContain("只展示去标识指纹与候选 OneID");
+      expect(html).toContain("仅展示封闭审核事实与候选 OneID");
       expect(html).toContain('role="status"');
       expect(html.match(/<h1\b/g)).toHaveLength(1);
       expect(html).not.toContain("aicrm_csrf");
     },
   );
 
+  it("renders approved history read-only without decision controls", () => {
+    const html = renderToStaticMarkup(
+      <IdentityMergeReviewsPage
+        role="admin"
+        initialStatus="approved"
+        transport={transport()}
+      />,
+    );
+    expect(html).toContain("已批准列表");
+    expect(html).toContain("只读审核历史");
+    expect(html).not.toContain("批准并合并");
+    expect(html).not.toContain("拒绝合并");
+    expect(html).not.toContain("primary-customer");
+  });
+
   it("keeps sales fail-closed without rendering review controls", () => {
     const client = transport();
     const html = renderToStaticMarkup(
       <IdentityMergeReviewsPage role="sales" transport={client} />,
     );
-    expect(html).toContain("当前账号没有人工待合并的访问权限。");
+    expect(html).toContain("当前账号没有人工审核的访问权限。");
     expect(html).not.toContain("批准并合并");
     expect(client.list).not.toHaveBeenCalled();
   });

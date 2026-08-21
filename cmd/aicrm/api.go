@@ -1737,7 +1737,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		return nil, err
 	}
 	router.NotFound(notFound.ServeHTTP)
-	router.MethodNotAllowed(methodNotAllowed.ServeHTTP)
+	router.MethodNotAllowed(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if writeIdentityReviewMethodNotAllowed(writer, request) {
+			return
+		}
+		methodNotAllowed.ServeHTTP(writer, request)
+	}))
 	return gateway.RequestIDMiddleware(router)
 }
 

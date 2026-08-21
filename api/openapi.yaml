@@ -1336,16 +1336,21 @@ paths:
     get:
       tags: [p3-identity]
       operationId: listIdentityMergeReviews
-      summary: List pending identity merge reviews without exposing raw identities
+      summary: List one status partition of closed identity merge reviews
       x-p3-decision-evidence: P3-I00-2026-08-12
       x-aicrm-capability: identity.review.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters:
+        - name: status
+          in: query
+          required: false
+          description: Review partition. Omitted requests default to pending; cursors are bound to this value.
+          schema: { type: string, enum: [pending, approved, rejected], default: pending }
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          description: Pending merge review page.
+          description: Closed merge review page for exactly the requested status.
           content:
             application/json:
               schema:
@@ -1353,6 +1358,13 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET is accepted on the exact review collection path, before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: [no-store] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/identity/merge-reviews/{review_id}/approve:
     post:
@@ -8696,16 +8708,13 @@ components:
     IdentityMergeReview:
       type: object
       additionalProperties: false
-      required: [review_id, status, type, scope, identity_fingerprint, customer_ids, version, created_at, resolved_at]
+      description: Closed administrator fact. It never contains normalized identities, provider identifiers, raw payloads, or review fingerprints.
+      required: [review_id, status, type, scope, customer_ids, version, created_at, resolved_at]
       properties:
         review_id: { type: integer, format: int64, minimum: 1 }
         status: { type: string, enum: [pending, approved, rejected] }
         type: { type: string, enum: [unionid, phone] }
         scope: { type: string, minLength: 1 }
-        identity_fingerprint:
-          type: string
-          description: Versioned secret-backed HMAC; never a raw identity or unkeyed digest.
-          pattern: '^hmac-sha256-v[1-9][0-9]*:[A-Za-z0-9_-]{21}[AQgw]$'
         customer_ids:
           type: array
           minItems: 2

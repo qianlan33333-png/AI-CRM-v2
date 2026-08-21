@@ -2,14 +2,12 @@ package http
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,7 +22,7 @@ import (
 const maximumMergeReviewBodyBytes = 1 << 20
 
 type reviewApplication interface {
-	ListMergeReviews(context.Context, string, int32) (identityport.MergeReviewPage, error)
+	ListMergeReviewsByStatus(context.Context, identityport.MergeReviewStatus, string, int32) (identityport.MergeReviewPage, error)
 	ApproveMergeReview(context.Context, identityport.ApproveMergeReviewCommand) (identityport.MergeReview, error)
 	RejectMergeReview(context.Context, identityport.RejectMergeReviewCommand) (identityport.MergeReview, error)
 }
@@ -49,6 +47,15 @@ func (handler *ReviewHandler) ListIdentityMergeReviews(
 		writeReviewError(writer, request, err, params.Cursor != nil)
 		return
 	}
+	status := identityport.MergeReviewPending
+	if params.Status != nil {
+		generatedStatus := *params.Status
+		if !generatedStatus.Valid() {
+			writeReviewError(writer, request, identityapp.ErrMergeReviewInvalid, false)
+			return
+		}
+		status = identityport.MergeReviewStatus(generatedStatus)
+	}
 	cursor := ""
 	if params.Cursor != nil {
 		cursor = string(*params.Cursor)
@@ -57,7 +64,7 @@ func (handler *ReviewHandler) ListIdentityMergeReviews(
 	if params.Limit != nil {
 		limit = int32(*params.Limit)
 	}
-	page, err := handler.application.ListMergeReviews(request.Context(), cursor, limit)
+	page, err := handler.application.ListMergeReviewsByStatus(request.Context(), status, cursor, limit)
 	if err != nil {
 		writeReviewError(writer, request, err, params.Cursor != nil)
 		return
@@ -65,7 +72,7 @@ func (handler *ReviewHandler) ListIdentityMergeReviews(
 	items := make([]generated.IdentityMergeReview, 0, len(page.Items))
 	for _, review := range page.Items {
 		converted, convertErr := mergeReviewResponse(review)
-		if convertErr != nil || converted.Status != generated.IdentityMergeReviewStatusPending {
+		if convertErr != nil || identityport.MergeReviewStatus(converted.Status) != status {
 			writeReviewError(writer, request, identityapp.ErrMergeReviewUnavailable, false)
 			return
 		}
@@ -178,7 +185,7 @@ func decodeReviewBody(writer http.ResponseWriter, request *http.Request, target 
 func mergeReviewResponse(review identityport.MergeReview) (generated.IdentityMergeReview, error) {
 	if review.ReviewID <= 0 || review.Version <= 0 || review.CreatedAt.IsZero() ||
 		len(review.CustomerIDs) != 2 || review.CustomerIDs[0] <= 0 || review.CustomerIDs[0] >= review.CustomerIDs[1] ||
-		strings.TrimSpace(review.Scope) == "" || !validFingerprint(review.IdentityFingerprint) {
+		strings.TrimSpace(review.Scope) == "" {
 		return generated.IdentityMergeReview{}, identityapp.ErrMergeReviewUnavailable
 	}
 	status := generated.IdentityMergeReviewStatus(review.Status)
@@ -187,31 +194,14 @@ func mergeReviewResponse(review identityport.MergeReview) (generated.IdentityMer
 		(status == generated.IdentityMergeReviewStatusPending) != (review.ResolvedAt == nil) {
 		return generated.IdentityMergeReview{}, identityapp.ErrMergeReviewUnavailable
 	}
-	if review.ResolvedAt != nil && review.ResolvedAt.IsZero() {
+	if review.ResolvedAt != nil && (review.ResolvedAt.IsZero() || review.ResolvedAt.Before(review.CreatedAt)) {
 		return generated.IdentityMergeReview{}, identityapp.ErrMergeReviewUnavailable
 	}
 	return generated.IdentityMergeReview{
 		ReviewId: review.ReviewID, Status: status, Type: kind, Scope: review.Scope,
-		IdentityFingerprint: review.IdentityFingerprint,
-		CustomerIds:         []int64{int64(review.CustomerIDs[0]), int64(review.CustomerIDs[1])},
-		Version:             review.Version, CreatedAt: review.CreatedAt.UTC(), ResolvedAt: cloneReviewTime(review.ResolvedAt),
+		CustomerIds: []int64{int64(review.CustomerIDs[0]), int64(review.CustomerIDs[1])},
+		Version:     review.Version, CreatedAt: review.CreatedAt.UTC(), ResolvedAt: cloneReviewTime(review.ResolvedAt),
 	}, nil
-}
-
-func validFingerprint(value string) bool {
-	const prefix = "hmac-sha256-v"
-	if !strings.HasPrefix(value, prefix) {
-		return false
-	}
-	parts := strings.Split(value[len(prefix):], ":")
-	if len(parts) != 2 || parts[0] == "" || parts[0][0] == '0' {
-		return false
-	}
-	if _, err := strconv.ParseInt(parts[0], 10, 16); err != nil {
-		return false
-	}
-	decoded, err := base64.RawURLEncoding.Strict().DecodeString(parts[1])
-	return err == nil && len(decoded) == 16
 }
 
 func reviewActor(principal authport.Principal) contactport.Actor {

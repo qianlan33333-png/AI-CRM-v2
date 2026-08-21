@@ -832,7 +832,7 @@ describe("Web shell routes", () => {
     const identityReviews = renderToStaticMarkup(
       <App initialSession={adminSession} />,
     );
-    expect(identityReviews).toContain("待合并列表");
+    expect(identityReviews).toContain("待审核列表");
     expect(identityReviews).toContain("审阅与决策");
     expect(identityReviews).not.toContain("模块边界");
 

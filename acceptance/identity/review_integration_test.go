@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -29,9 +30,13 @@ func TestMergeReviewApproveIsAtomicRedactedAndIdempotent(t *testing.T) {
 	mergeEventsBefore := countMergeEvents(t, pool)
 
 	page, err := service.ListMergeReviews(ctx, "", 1)
-	if err != nil || len(page.Items) != 1 || page.Items[0].ReviewID != reviewID ||
-		page.Items[0].IdentityFingerprint == phone || !strings.HasPrefix(page.Items[0].IdentityFingerprint, "hmac-sha256-v1:") {
+	if err != nil || len(page.Items) != 1 || page.Items[0].ReviewID != reviewID || page.Items[0].ResolvedAt != nil {
 		t.Fatalf("review page=%+v err=%v", page, err)
+	}
+	for _, forbidden := range []string{"NormalizedValue", "IdentityFingerprint", "Payload"} {
+		if _, found := reflect.TypeOf(page.Items[0]).FieldByName(forbidden); found {
+			t.Fatalf("public review exposes forbidden field %q", forbidden)
+		}
 	}
 	command := identityport.ApproveMergeReviewCommand{
 		ReviewID: reviewID, ExpectedVersion: 1, PrimaryCustomerID: contactport.CustomerID(requestedID),
@@ -44,6 +49,14 @@ func TestMergeReviewApproveIsAtomicRedactedAndIdempotent(t *testing.T) {
 	replay, err := service.ApproveMergeReview(ctx, command)
 	if err != nil || !sameReviewFact(replay, approved) {
 		t.Fatalf("replay=%+v err=%v want=%+v", replay, err, approved)
+	}
+	pendingPage, err := service.ListMergeReviews(ctx, "", 10)
+	if err != nil || len(pendingPage.Items) != 0 {
+		t.Fatalf("resolved review remained pending: page=%+v err=%v", pendingPage, err)
+	}
+	approvedPage, err := service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewApproved, "", 10)
+	if err != nil || len(approvedPage.Items) != 1 || approvedPage.Items[0].ReviewID != reviewID || approvedPage.Items[0].ResolvedAt == nil {
+		t.Fatalf("approved history=%+v err=%v", approvedPage, err)
 	}
 	changed := command
 	changed.Reason = "different decision payload"
@@ -92,6 +105,14 @@ func TestMergeReviewRejectNeverMergesCustomers(t *testing.T) {
 	if err != nil || !sameReviewFact(replay, rejected) {
 		t.Fatalf("reject replay=%+v err=%v", replay, err)
 	}
+	pendingPage, err := service.ListMergeReviews(ctx, "", 10)
+	if err != nil || len(pendingPage.Items) != 0 {
+		t.Fatalf("rejected review remained pending: page=%+v err=%v", pendingPage, err)
+	}
+	rejectedPage, err := service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewRejected, "", 10)
+	if err != nil || len(rejectedPage.Items) != 1 || rejectedPage.Items[0].ReviewID != reviewID || rejectedPage.Items[0].ResolvedAt == nil {
+		t.Fatalf("rejected history=%+v err=%v", rejectedPage, err)
+	}
 	var phoneCustomerID, audits, lineage, mergeEvents int64
 	if err = pool.QueryRow(ctx, `SELECT customer_id FROM identities WHERE kind='phone' AND normalized_value=$1::text`, phone).Scan(&phoneCustomerID); err != nil || phoneCustomerID != existingID {
 		t.Fatalf("rejected phone customer=%d err=%v want=%d", phoneCustomerID, err, existingID)
@@ -104,6 +125,65 @@ func TestMergeReviewRejectNeverMergesCustomers(t *testing.T) {
 	}
 	if err = pool.QueryRow(ctx, `SELECT count(*) FROM event_log WHERE event_type='customer.merged'`).Scan(&mergeEvents); err != nil || mergeEvents != mergeEventsBefore {
 		t.Fatalf("rejected merge events=%d err=%v", mergeEvents, err)
+	}
+}
+
+func TestMergeReviewHistoryPartitionsCursorByStatus(t *testing.T) {
+	pool := openIdentityPool(t)
+	resetIdentityUpsert(t, pool)
+	ctx := context.Background()
+	_, _, firstPending, _ := seedPendingPhoneReview(t, pool, "history-pending-1")
+	_, _, secondPending, _ := seedPendingPhoneReview(t, pool, "history-pending-2")
+	_, _, approvedID, _ := seedPendingPhoneReview(t, pool, "history-approved")
+	_, _, rejectedID, _ := seedPendingPhoneReview(t, pool, "history-rejected")
+	resolvedAt := time.Now().UTC().Add(time.Minute)
+	for id, status := range map[int64]identityport.MergeReviewStatus{
+		approvedID: identityport.MergeReviewApproved,
+		rejectedID: identityport.MergeReviewRejected,
+	} {
+		if _, err := pool.Exec(ctx, `UPDATE pending_events SET state=$2::text, version=2, resolved_at=$3::timestamptz WHERE id=$1::bigint`, id, string(status), resolvedAt); err != nil {
+			t.Fatal(err)
+		}
+	}
+	service := newMergeReviewService(pool, eventstore.NewAppender())
+
+	pendingPage, err := service.ListMergeReviews(ctx, "", 1)
+	if err != nil || len(pendingPage.Items) != 1 || pendingPage.NextCursor == "" || pendingPage.Items[0].ReviewID != firstPending {
+		t.Fatalf("pending first page=%+v err=%v ids=%d,%d", pendingPage, err, firstPending, secondPending)
+	}
+	nextPending, err := service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewPending, pendingPage.NextCursor, 1)
+	if err != nil || len(nextPending.Items) != 1 || nextPending.Items[0].ReviewID != secondPending || nextPending.NextCursor != "" {
+		t.Fatalf("pending second page=%+v err=%v", nextPending, err)
+	}
+	for _, status := range []identityport.MergeReviewStatus{identityport.MergeReviewApproved, identityport.MergeReviewRejected} {
+		if _, err = service.ListMergeReviewsByStatus(ctx, status, pendingPage.NextCursor, 1); !errors.Is(err, identityapp.ErrMergeReviewInvalid) {
+			t.Fatalf("pending cursor accepted for %q: %v", status, err)
+		}
+	}
+	approvedPage, err := service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewApproved, "", 10)
+	if err != nil || len(approvedPage.Items) != 1 || approvedPage.Items[0].ReviewID != approvedID || approvedPage.Items[0].ResolvedAt == nil {
+		t.Fatalf("approved page=%+v err=%v", approvedPage, err)
+	}
+	rejectedPage, err := service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewRejected, "", 10)
+	if err != nil || len(rejectedPage.Items) != 1 || rejectedPage.Items[0].ReviewID != rejectedID || rejectedPage.Items[0].ResolvedAt == nil {
+		t.Fatalf("rejected page=%+v err=%v", rejectedPage, err)
+	}
+}
+
+func TestMergeReviewHistoryFailsClosedForResolvedTimeBeforeCreation(t *testing.T) {
+	pool := openIdentityPool(t)
+	resetIdentityUpsert(t, pool)
+	ctx := context.Background()
+	_, _, reviewID, _ := seedPendingPhoneReview(t, pool, "history-contradiction")
+	service := newMergeReviewService(pool, eventstore.NewAppender())
+
+	createdAt := time.Date(2026, 8, 20, 10, 0, 0, 0, time.UTC)
+	before := createdAt.Add(-time.Second)
+	if _, err := pool.Exec(ctx, `UPDATE pending_events SET state='rejected', version=2, created_at=$2::timestamptz, resolved_at=$3::timestamptz WHERE id=$1::bigint`, reviewID, createdAt, before); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.ListMergeReviewsByStatus(ctx, identityport.MergeReviewRejected, "", 10); !errors.Is(err, identityapp.ErrMergeReviewUnavailable) {
+		t.Fatalf("contradictory resolved time err=%v", err)
 	}
 }
 
@@ -229,7 +309,7 @@ func newMergeReviewService(pool *pgxpool.Pool, events eventport.Appender) *ident
 
 func sameReviewFact(left, right identityport.MergeReview) bool {
 	return left.ReviewID == right.ReviewID && left.Status == right.Status && left.Kind == right.Kind && left.Scope == right.Scope &&
-		left.IdentityFingerprint == right.IdentityFingerprint && left.Version == right.Version &&
+		left.Version == right.Version &&
 		len(left.CustomerIDs) == 2 && len(right.CustomerIDs) == 2 && left.CustomerIDs[0] == right.CustomerIDs[0] && left.CustomerIDs[1] == right.CustomerIDs[1] &&
 		left.CreatedAt.Equal(right.CreatedAt) && left.ResolvedAt != nil && right.ResolvedAt != nil && left.ResolvedAt.Equal(*right.ResolvedAt)
 }

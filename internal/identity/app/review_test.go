@@ -13,11 +13,12 @@ import (
 )
 
 type reviewTestStore struct {
-	records       []MergeReviewRecord
+	records       []MergeReviewHistoryRecord
 	receipt       MergeReviewReceipt
 	locked        MergeReviewRecord
 	roots         []contactport.CustomerID
 	err           error
+	listStatus    identityport.MergeReviewStatus
 	listAfter     int64
 	listLimit     int32
 	reserveCalls  int
@@ -30,9 +31,9 @@ type reviewTestStore struct {
 	resolved      MergeReviewRecord
 }
 
-func (store *reviewTestStore) ListPendingMergeReviews(_ context.Context, after int64, limit int32) ([]MergeReviewRecord, error) {
-	store.listAfter, store.listLimit = after, limit
-	return append([]MergeReviewRecord(nil), store.records...), store.err
+func (store *reviewTestStore) ListMergeReviewsByStatus(_ context.Context, status identityport.MergeReviewStatus, after int64, limit int32) ([]MergeReviewHistoryRecord, error) {
+	store.listStatus, store.listAfter, store.listLimit = status, after, limit
+	return append([]MergeReviewHistoryRecord(nil), store.records...), store.err
 }
 
 func (store *reviewTestStore) ReserveMergeReviewReceipt(_ context.Context, _ string, _, _ []byte) (MergeReviewReceipt, error) {
@@ -72,24 +73,90 @@ func (store *reviewTestStore) CompleteMergeReviewReceipt(_ context.Context, _ Me
 	return store.err
 }
 
-func TestMergeReviewListUsesOpaqueCursorAndNeverExposesIdentityValue(t *testing.T) {
+func TestMergeReviewListUsesStatusBoundOpaqueCursorAndClosedFacts(t *testing.T) {
 	key := []byte("12345678901234567890123456789012")
-	records := []MergeReviewRecord{validReviewRecord(key, 11), validReviewRecord(key, 12), validReviewRecord(key, 13)}
-	store := &reviewTestStore{records: records}
+	for _, status := range []identityport.MergeReviewStatus{
+		identityport.MergeReviewPending,
+		identityport.MergeReviewApproved,
+		identityport.MergeReviewRejected,
+	} {
+		t.Run(string(status), func(t *testing.T) {
+			records := []MergeReviewHistoryRecord{
+				historyReviewRecord(11, status),
+				historyReviewRecord(12, status),
+				historyReviewRecord(13, status),
+			}
+			store := &reviewTestStore{records: records}
+			service := NewMergeReviewService(&resolveTestUoW{}, store, &bindTestContacts{}, &bindTestEvents{}, key)
+
+			page, err := service.ListMergeReviewsByStatus(context.Background(), status, "", 2)
+			if err != nil || len(page.Items) != 2 || page.NextCursor == "" || store.listStatus != status || store.listAfter != 0 || store.listLimit != 3 {
+				t.Fatalf("page=%+v err=%v status=%q after=%d limit=%d", page, err, store.listStatus, store.listAfter, store.listLimit)
+			}
+			if page.Items[0].Status != status || page.Items[0].Scope != records[0].Scope {
+				t.Fatalf("public review leaked or drifted: %+v", page.Items[0])
+			}
+			for _, forbidden := range []string{"IdentityFingerprint", "NormalizedValue", "Payload"} {
+				if _, found := reflect.TypeOf(page.Items[0]).FieldByName(forbidden); found {
+					t.Fatalf("public review exposes forbidden field %q", forbidden)
+				}
+			}
+
+			store.records = nil
+			page, err = service.ListMergeReviewsByStatus(context.Background(), status, page.NextCursor, 2)
+			if err != nil || store.listStatus != status || store.listAfter != 12 || len(page.Items) != 0 {
+				t.Fatalf("second page=%+v err=%v status=%q after=%d", page, err, store.listStatus, store.listAfter)
+			}
+		})
+	}
+}
+
+func TestMergeReviewCursorCannotCrossStatuses(t *testing.T) {
+	key := []byte("12345678901234567890123456789012")
+	store := &reviewTestStore{records: []MergeReviewHistoryRecord{historyReviewRecord(11, identityport.MergeReviewPending), historyReviewRecord(12, identityport.MergeReviewPending)}}
 	service := NewMergeReviewService(&resolveTestUoW{}, store, &bindTestContacts{}, &bindTestEvents{}, key)
-
-	page, err := service.ListMergeReviews(context.Background(), "", 2)
-	if err != nil || len(page.Items) != 2 || page.NextCursor == "" || store.listAfter != 0 || store.listLimit != 3 {
-		t.Fatalf("page=%+v err=%v after=%d limit=%d", page, err, store.listAfter, store.listLimit)
+	page, err := service.ListMergeReviews(context.Background(), "", 1)
+	if err != nil || page.NextCursor == "" {
+		t.Fatalf("pending page=%+v err=%v", page, err)
 	}
-	if page.Items[0].IdentityFingerprint == records[0].NormalizedValue || page.Items[0].IdentityFingerprint != "hmac-sha256-v1:"+base64Fingerprint(records[0].IdentityFingerprint) {
-		t.Fatalf("public fingerprint=%q", page.Items[0].IdentityFingerprint)
+	for _, status := range []identityport.MergeReviewStatus{identityport.MergeReviewApproved, identityport.MergeReviewRejected} {
+		if _, err = service.ListMergeReviewsByStatus(context.Background(), status, page.NextCursor, 1); !errors.Is(err, ErrMergeReviewInvalid) {
+			t.Fatalf("cross-status cursor status=%q err=%v", status, err)
+		}
+	}
+}
+
+func TestMergeReviewListFailsClosedForStatusAndResolvedTimeContradictions(t *testing.T) {
+	key := []byte("12345678901234567890123456789012")
+	service := NewMergeReviewService(&resolveTestUoW{}, &reviewTestStore{}, &bindTestContacts{}, &bindTestEvents{}, key)
+	if _, err := service.ListMergeReviewsByStatus(context.Background(), identityport.MergeReviewStatus("other"), "", 10); !errors.Is(err, ErrMergeReviewInvalid) {
+		t.Fatalf("invalid status err=%v", err)
 	}
 
-	store.records = nil
-	page, err = service.ListMergeReviews(context.Background(), page.NextCursor, 2)
-	if err != nil || store.listAfter != 12 || len(page.Items) != 0 {
-		t.Fatalf("second page=%+v err=%v after=%d", page, err, store.listAfter)
+	created := time.Date(2026, 8, 13, 8, 0, 0, 0, time.UTC)
+	for _, record := range []MergeReviewHistoryRecord{
+		func() MergeReviewHistoryRecord {
+			r := historyReviewRecord(21, identityport.MergeReviewPending)
+			r.ResolvedAt = &created
+			return r
+		}(),
+		func() MergeReviewHistoryRecord {
+			r := historyReviewRecord(22, identityport.MergeReviewApproved)
+			r.ResolvedAt = nil
+			return r
+		}(),
+		func() MergeReviewHistoryRecord {
+			r := historyReviewRecord(23, identityport.MergeReviewRejected)
+			before := r.CreatedAt.Add(-time.Second)
+			r.ResolvedAt = &before
+			return r
+		}(),
+	} {
+		store := &reviewTestStore{records: []MergeReviewHistoryRecord{record}}
+		service = NewMergeReviewService(&resolveTestUoW{}, store, &bindTestContacts{}, &bindTestEvents{}, key)
+		if _, err := service.ListMergeReviewsByStatus(context.Background(), record.Status, "", 10); !errors.Is(err, ErrMergeReviewUnavailable) {
+			t.Fatalf("contradictory record=%+v err=%v", record, err)
+		}
 	}
 }
 
@@ -189,7 +256,7 @@ func TestMergeReviewRejectsInvalidCommandsBeforeUoW(t *testing.T) {
 	if _, err = service.ListMergeReviews(context.Background(), "not+base64", 10); !errors.Is(err, ErrMergeReviewInvalid) {
 		t.Fatalf("invalid cursor error=%v", err)
 	}
-	valid, _ := encodeMergeReviewCursor(1)
+	valid, _ := encodeMergeReviewCursor(identityport.MergeReviewPending, 1)
 	decoded, _ := base64.RawURLEncoding.DecodeString(valid)
 	trailing := base64.RawURLEncoding.EncodeToString(append(decoded, []byte(" trailing")...))
 	if _, err = service.ListMergeReviews(context.Background(), trailing, 10); !errors.Is(err, ErrMergeReviewInvalid) {
@@ -209,12 +276,18 @@ func validReviewRecord(key []byte, id int64) MergeReviewRecord {
 	}
 }
 
-func base64Fingerprint(value []byte) string {
-	result, err := mergeReviewFingerprint(MergeReviewRecord{IdentityFingerprint: value, FingerprintVersion: 1})
-	if err != nil {
-		panic(err)
+func historyReviewRecord(id int64, status identityport.MergeReviewStatus) MergeReviewHistoryRecord {
+	record := MergeReviewHistoryRecord{
+		ReviewID: id, Status: status, Kind: identityport.KindPhone, Scope: "phone:e164",
+		CustomerIDs: []contactport.CustomerID{42, 84}, Version: 1,
+		CreatedAt: time.Date(2026, 8, 13, 7, 0, 0, 0, time.UTC),
 	}
-	return result[len("hmac-sha256-v1:"):]
+	if status != identityport.MergeReviewPending {
+		resolved := record.CreatedAt.Add(time.Hour)
+		record.ResolvedAt = &resolved
+		record.Version = 2
+	}
+	return record
 }
 
 func TestMergeReviewCustomerIDsStaySorted(t *testing.T) {
