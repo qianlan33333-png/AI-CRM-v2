@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
+  CustomerDetailMissingState,
   CustomerDetailPage,
   parseProfileDraft,
   startCustomerMutation,
@@ -73,8 +74,23 @@ describe("CustomerDetailPage", () => {
     expect(html).toContain("加载更多时间线");
     expect(html).toContain("<fieldset");
     expect(html).toContain("<label");
+    expect(html).toContain('href="/customers"');
+    expect(html).toContain('href="#customer-360-summary"');
+    expect(html).toContain('id="customer-360-summary"');
     expect(html).not.toContain("aicrm_csrf");
     expect(html).not.toContain("X-CSRF-Token");
+  });
+
+  it("renders the 404-safe missing state with an explicit return to the list", () => {
+    const html = renderToStaticMarkup(<CustomerDetailMissingState />);
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("客户不存在");
+    expect(html).toContain('aria-label="客户读取导航"');
+    expect(html).toContain('href="/customers"');
+    expect(html).toContain("返回客户列表");
+    expect(html).not.toContain("external_userid");
+    expect(html).not.toContain("unionid");
+    expect(html).not.toContain("手机号");
   });
 
   it("mounts the injected zero-body chat activity panel without transport during SSR", () => {

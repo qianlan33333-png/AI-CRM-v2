@@ -157,6 +157,8 @@ function response(
   messageType: string,
   nextCursor: string | null = null,
   count = 1,
+  total = nextCursor ? count + 1 : count,
+  previousCursor: string | null = null,
 ) {
   return {
     customer_id: 41,
@@ -164,11 +166,13 @@ function response(
     items: Array.from({ length: count }, (_, index) => ({
       chat_type: index % 2 === 0 ? "private" : "group",
       message_type: messageType,
-      sent_at: `2026-08-20T12:${String(59 - index).padStart(2, "0")}:00Z`,
+      sent_at: new Date(
+        Date.UTC(2026, 7, 20, 12, 59, 0) - index * 60_000,
+      ).toISOString(),
     })),
-    total: nextCursor ? count + 1 : count,
+    total,
     next_cursor: nextCursor,
-    previous_cursor: null,
+    previous_cursor: previousCursor,
     non_atomic_snapshot: true,
     message_content_included: false,
     identity_values_included: false,
@@ -194,7 +198,7 @@ function reactProps<T>(node: ElementStub): T {
 }
 
 describe("CustomerChatActivityPanel", () => {
-  it("renders only safe zero-body labels in static markup", () => {
+  it("renders only safe zero-body labels and the bounded summary contract", () => {
     const html = renderToStaticMarkup(
       <CustomerChatActivityPanel
         customerID={41}
@@ -203,9 +207,12 @@ describe("CustomerChatActivityPanel", () => {
       />,
     );
     expect(html).toContain("本地聊天活动");
-    expect(html).toContain("不读取正文、身份值、媒体");
+    expect(html).toContain("不读取正文、身份值、媒体、手机号");
+    expect(html).toContain("默认读取最近 30 条摘要");
+    expect(html).toContain("最多展示前 100 条安全元数据");
     expect(html).not.toContain("content_masked");
     expect(html).not.toContain("external_userid");
+    expect(html).not.toContain("unionid");
     expect(html).not.toContain("href=");
   });
 
@@ -225,6 +232,11 @@ describe("CustomerChatActivityPanel", () => {
       );
     });
     expect(getA).toHaveBeenCalledTimes(1);
+    expect(getA).toHaveBeenCalledWith(
+      41,
+      { limit: 30 },
+      { credentials: "same-origin" },
+    );
     await act(async () => {
       root.render(
         <CustomerChatActivityPanel
@@ -248,15 +260,60 @@ describe("CustomerChatActivityPanel", () => {
     await act(async () => root.unmount());
   });
 
-  it("locks same-tick pagination and preserves the verified page on failure", async () => {
-    const next = deferred<CustomerChatActivityTransportResponse>();
+  it("expands from 30 to 100 once and disables pagination beyond the cap", async () => {
     const get = vi
       .fn()
       .mockResolvedValueOnce({
         status: 200,
-        data: response("text", "next", 50),
+        data: response("summary-type", "summary-next", 30, 101),
       })
-      .mockImplementationOnce(() => next.promise);
+      .mockResolvedValueOnce({
+        status: 200,
+        data: response("expanded-type", "server-has-more", 100, 101),
+      });
+    const { root, container } = mount();
+    await act(async () => {
+      root.render(
+        <CustomerChatActivityPanel
+          customerID={41}
+          role="ops"
+          transport={{ get }}
+        />,
+      );
+    });
+    const expand = elements(container, "button").find(
+      (value) => value.textContent === "展开至最多 100 条",
+    );
+    if (!expand) throw new Error("expand button missing");
+    await act(async () => {
+      reactProps<{ onClick?: () => void }>(expand).onClick?.();
+    });
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get).toHaveBeenLastCalledWith(
+      41,
+      { limit: 100 },
+      { credentials: "same-origin" },
+    );
+    expect(container.textContent).toContain("expanded-type");
+    expect(elements(container, "li")).toHaveLength(100);
+    const next = elements(container, "button").find(
+      (value) => value.textContent === "下一页",
+    );
+    if (!next) throw new Error("next button missing");
+    expect(reactProps<{ disabled?: boolean }>(next).disabled).toBe(true);
+    expect(container.textContent).not.toContain("展开至最多 100 条");
+    await act(async () => root.unmount());
+  });
+
+  it("locks same-tick expansion and preserves the verified summary on failure", async () => {
+    const expanded = deferred<CustomerChatActivityTransportResponse>();
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        data: response("summary-type", "summary-next", 30, 101),
+      })
+      .mockImplementationOnce(() => expanded.promise);
     const { root, container } = mount();
     await act(async () => {
       root.render(
@@ -268,9 +325,9 @@ describe("CustomerChatActivityPanel", () => {
       );
     });
     const button = elements(container, "button").find(
-      (value) => value.textContent === "下一页",
+      (value) => value.textContent === "展开至最多 100 条",
     );
-    if (!button) throw new Error("next button missing");
+    if (!button) throw new Error("expand button missing");
     const props = reactProps<{ onClick?: () => void }>(button);
     await act(async () => {
       props.onClick?.();
@@ -278,11 +335,62 @@ describe("CustomerChatActivityPanel", () => {
     });
     expect(get).toHaveBeenCalledTimes(2);
     await act(async () => {
-      next.resolve({ status: 503, data: {} });
-      await next.promise;
+      expanded.resolve({ status: 503, data: {} });
+      await expanded.promise;
     });
-    expect(container.textContent).toContain("text");
+    expect(container.textContent).toContain("summary-type");
     expect(container.textContent).toContain("已验证页面保持不变");
+    await act(async () => root.unmount());
+  });
+
+  it("stops cursor pagination before a 30-row request could read beyond the 100-row boundary", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        data: response("page-1", "cursor-30", 30, 130),
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        data: response("page-2", "cursor-60", 30, 130, "cursor-0"),
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        data: response("page-3", "cursor-90", 30, 130, "cursor-30"),
+      });
+    const { root, container } = mount();
+    await act(async () => {
+      root.render(
+        <CustomerChatActivityPanel
+          customerID={41}
+          role="sales"
+          transport={{ get }}
+        />,
+      );
+    });
+    for (const expectedCursor of ["cursor-30", "cursor-60"]) {
+      const next = elements(container, "button").find(
+        (value) => value.textContent === "下一页",
+      );
+      if (!next) throw new Error("next button missing");
+      await act(async () => {
+        reactProps<{ onClick?: () => void }>(next).onClick?.();
+      });
+      expect(get).toHaveBeenLastCalledWith(
+        41,
+        { cursor: expectedCursor, limit: 30 },
+        { credentials: "same-origin" },
+      );
+    }
+    expect(container.textContent).toContain("page-3");
+    expect(elements(container, "li")).toHaveLength(30);
+    const cappedNext = elements(container, "button").find(
+      (value) => value.textContent === "下一页",
+    );
+    if (!cappedNext) throw new Error("next button missing");
+    expect(reactProps<{ disabled?: boolean }>(cappedNext).disabled).toBe(true);
+    expect(get).toHaveBeenCalledTimes(3);
+    expect(container.textContent).toContain("展开至最多 100 条");
     await act(async () => root.unmount());
   });
 
