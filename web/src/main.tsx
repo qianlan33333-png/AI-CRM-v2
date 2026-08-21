@@ -131,6 +131,11 @@ import { PushCenterPage } from "./push-center-ui";
 import type { PushCenterTransport } from "./push-center";
 import { OutboundOperationsPage } from "./outbound-operations-ui";
 import type { OutboundOperationsTransport } from "./outbound-operations";
+import { ExternalEffectsPage } from "./external-effects-ui";
+import {
+  generatedExternalEffectsTransport,
+  type ExternalEffectsTransport,
+} from "./external-effects";
 import { OrdersPage } from "./orders-ui";
 import type { OrdersTransport } from "./orders";
 import { ProductsPage } from "./products-ui";
@@ -156,6 +161,7 @@ export const DATA_HEALTH_PATH = "/admin/data-health";
 export const EXECUTION_RUNTIME_PATH = "/admin/execution-runtime";
 export const ORDERS_PATH = "/admin/orders";
 export const OUTBOUND_PATH = "/outbound";
+export const EXTERNAL_EFFECTS_PATH = "/admin/external-effects";
 export const PRODUCTS_PATH = "/admin/wechat-pay/products";
 export const LEGACY_ADMIN_PATH_PARAM = CUSTOMER_LEGACY_ADMIN_PATH_PARAM;
 export const IDENTITY_CONSOLE_PATH = "/identity/console";
@@ -372,6 +378,12 @@ export const routes = [
     description: "群发任务模块边界已预留，尚未接入发送、统计或外部渠道。",
   },
   {
+    path: EXTERNAL_EFFECTS_PATH,
+    navigationLabel: "外效诊断",
+    title: "External Effects 本地诊断",
+    description: "只读观察本地外效任务状态与人工复核风险，不构成送达证明。",
+  },
+  {
     path: "/settings",
     navigationLabel: "设置",
     title: "系统设置",
@@ -433,6 +445,7 @@ export interface AppProps {
   executionRuntimeTransport?: ExecutionRuntimeTransport;
   pushCenterTransport?: PushCenterTransport;
   outboundOperationsTransport?: OutboundOperationsTransport;
+  externalEffectsTransport?: ExternalEffectsTransport;
   ordersTransport?: OrdersTransport;
   productsTransport?: ProductsTransport;
   appSettingsTransport?: AppSettingsTransport;
@@ -652,6 +665,7 @@ function PageContent({
   executionRuntimeTransport,
   pushCenterTransport,
   outboundOperationsTransport,
+  externalEffectsTransport,
   ordersTransport,
   productsTransport,
   appSettingsTransport,
@@ -692,6 +706,7 @@ function PageContent({
   executionRuntimeTransport?: ExecutionRuntimeTransport;
   pushCenterTransport?: PushCenterTransport;
   outboundOperationsTransport?: OutboundOperationsTransport;
+  externalEffectsTransport: ExternalEffectsTransport;
   ordersTransport?: OrdersTransport;
   productsTransport?: ProductsTransport;
   appSettingsTransport?: AppSettingsTransport;
@@ -999,6 +1014,16 @@ function PageContent({
     );
   }
 
+  if (route.path === EXTERNAL_EFFECTS_PATH) {
+    return (
+      <ExternalEffectsPage
+        role={principal.role}
+        transport={externalEffectsTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
+    );
+  }
+
   if (route.path === ORDERS_PATH) {
     return (
       <OrdersPage
@@ -1102,6 +1127,12 @@ export function navigationLinks(
     base.length > 0 &&
     (principal.role === "admin" || principal.role === "ops")
   ) {
+    permitted.add(EXTERNAL_EFFECTS_PATH);
+  }
+  if (
+    base.length > 0 &&
+    (principal.role === "admin" || principal.role === "ops")
+  ) {
     permitted.add(WECOM_TAGS_PATH);
     permitted.add(CHANNELS_PATH);
     permitted.add(COUPONS_PATH);
@@ -1146,6 +1177,7 @@ export function App({
   executionRuntimeTransport,
   pushCenterTransport,
   outboundOperationsTransport,
+  externalEffectsTransport = generatedExternalEffectsTransport,
   ordersTransport,
   productsTransport,
   appSettingsTransport,
@@ -1342,6 +1374,7 @@ export function App({
             executionRuntimeTransport={executionRuntimeTransport}
             pushCenterTransport={pushCenterTransport}
             outboundOperationsTransport={outboundOperationsTransport}
+            externalEffectsTransport={externalEffectsTransport}
             ordersTransport={ordersTransport}
             productsTransport={productsTransport}
             appSettingsTransport={appSettingsTransport}

@@ -17,6 +17,7 @@ import {
   DELIVERY_LINEAGE_PATH,
   DATA_HEALTH_PATH,
   EXECUTION_RUNTIME_PATH,
+  EXTERNAL_EFFECTS_PATH,
   ORDERS_PATH,
   OUTBOUND_PATH,
   PRODUCTS_PATH,
@@ -50,6 +51,7 @@ import type { DataHealthTransport } from "./data-health";
 import type { OrdersTransport } from "./orders";
 import type { AppSettingsTransport } from "./app-settings";
 import type { PublicSurveyTransport } from "./public-survey";
+import type { ExternalEffectsTransport } from "./external-effects";
 import {
   ALIPAY_TRANSACTIONS_PATH,
   SERVICE_PRODUCT_NEW_PATH,
@@ -617,6 +619,40 @@ describe("Web shell routes", () => {
     expect(client.list).not.toHaveBeenCalled();
   });
 
+  it("renders External Effects local diagnostics for admin and ops while sales remains inert", () => {
+    vi.stubGlobal("window", { location: { pathname: EXTERNAL_EFFECTS_PATH } });
+    const client: ExternalEffectsTransport = {
+      readJobs: vi.fn(),
+      readDiagnostics: vi.fn(),
+    };
+    for (const role of ["admin", "ops"] as const) {
+      expect(
+        renderToStaticMarkup(
+          <App
+            externalEffectsTransport={client}
+            initialSession={{
+              status: "authenticated",
+              principal: { adminUserID: 8, role },
+            }}
+          />,
+        ),
+      ).toContain("正在读取 jobs 与 diagnostics");
+    }
+    const sales = renderToStaticMarkup(
+      <App
+        externalEffectsTransport={client}
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
+      />,
+    );
+    expect(sales).toContain("没有 External Effects 本地诊断读取权限");
+    expect(sales).not.toContain(`href="${EXTERNAL_EFFECTS_PATH}"`);
+    expect(client.readJobs).not.toHaveBeenCalled();
+    expect(client.readDiagnostics).not.toHaveBeenCalled();
+  });
+
   it("connects the admin-only settings route to the local settings page", () => {
     vi.stubGlobal("window", { location: { pathname: "/settings" } });
     const client = appSettingsTransport();
@@ -792,7 +828,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(36);
+    expect(routes).toHaveLength(37);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -946,6 +982,7 @@ describe("Web shell routes", () => {
       "/admin/orders",
       PRODUCTS_PATH,
       "/outbound",
+      EXTERNAL_EFFECTS_PATH,
       "/settings",
     ]);
     expect(
@@ -966,6 +1003,7 @@ describe("Web shell routes", () => {
       "/admin/group-invite-library",
       "/admin/orders",
       PRODUCTS_PATH,
+      EXTERNAL_EFFECTS_PATH,
     ]);
     expect(
       navigationLinks({ adminUserID: 9, role: "sales", staffID: 11 }).map(

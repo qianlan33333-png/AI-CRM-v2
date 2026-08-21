@@ -199,6 +199,7 @@ type Handler struct {
 	runtimeConfig         runtimeConfigDeclaration
 	operationCycles       legacyOperationCycleApplication
 	pushCenter            legacyPushCenterApplication
+	externalEffects       externalEffectsHTTP
 	executionRuntime      legacyExecutionRuntimeApplication
 	operationAuth         operationServiceAuthenticator
 	systemHealth          http.Handler

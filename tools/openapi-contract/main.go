@@ -51,17 +51,18 @@ type nativePackagePathParameter struct {
 }
 
 const (
-	p4ClassificationPackageEvidence = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
-	p4ProductEntitlementEvidence    = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
-	p4SurveyPublicEvidence          = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
-	p4SurveySafeAdminEvidence       = "P4-SURVEY-SAFE-ADMIN-2026-08-21"
-	p4CloudOrchestratorEvidence     = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
-	p4GroupOpsWorkspaceEvidence     = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
-	p4AudienceWorkspaceEvidence     = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
-	p4UserOpsWorkspaceEvidence      = "P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20"
-	p4OutboundOperationsEvidence    = "P4-OUTBOUND-OPERATIONS-2026-08-20"
-	p4CommerceWorkspaceEvidence     = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
-	p4HXCSenderManagementEvidence   = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
+	p4ClassificationPackageEvidence   = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
+	p4ProductEntitlementEvidence      = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
+	p4SurveyPublicEvidence            = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
+	p4SurveySafeAdminEvidence         = "P4-SURVEY-SAFE-ADMIN-2026-08-21"
+	p4CloudOrchestratorEvidence       = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
+	p4GroupOpsWorkspaceEvidence       = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
+	p4AudienceWorkspaceEvidence       = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
+	p4UserOpsWorkspaceEvidence        = "P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20"
+	p4OutboundOperationsEvidence      = "P4-OUTBOUND-OPERATIONS-2026-08-20"
+	p4CommerceWorkspaceEvidence       = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
+	p4HXCSenderManagementEvidence     = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
+	p4ExternalEffectsReadonlyEvidence = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -118,6 +119,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getWeChatShopTransactionsWorkspace":         {"/admin/wechat-shop/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getWeChatShopTransactionWorkspace":          {"/admin/wechat-shop/transactions/{order_id}", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"reorderLegacyHXCSendConfigs":                {"/api/admin/hxc-dashboard/send-config/reorder", "PUT", p4HXCSenderManagementEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global"}},
+	"listExternalEffectJobs":                     {"/api/admin/external-effects/jobs", "GET", p4ExternalEffectsReadonlyEvidence, "operations.read", "human_session", "internal", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"getExternalEffectsDiagnostics":              {"/api/admin/external-effects/diagnostics", "GET", p4ExternalEffectsReadonlyEvidence, "operations.read", "human_session", "internal", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 // nativePackagePathParameters freezes identifiers which must cross generated
@@ -882,9 +885,15 @@ func validateOutboundCancelOperation(op *openapi3.Operation) error {
 }
 
 func validate(doc *openapi3.T, inventory mappingInventory) error {
+	return validateContracts(doc, inventory, true)
+}
+
+func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpenAPI bool) error {
 	known := inventory.Known
-	if err := doc.Validate(context.Background()); err != nil {
-		return err
+	if validateOpenAPI {
+		if err := doc.Validate(context.Background()); err != nil {
+			return err
+		}
 	}
 	if len(doc.Security) == 0 {
 		return errors.New("business API lacks default security")

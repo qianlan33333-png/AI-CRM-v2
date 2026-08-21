@@ -52,6 +52,7 @@ import (
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
+	outboundhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/http"
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	domainverification "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/domainverification"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
@@ -729,7 +730,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundstore.NewTaskQueryRepository())
+	outboundTaskQueryRepository := outboundstore.NewTaskQueryRepository()
+	outboundQueryService := outboundapp.NewTaskQueryService(uow, outboundTaskQueryRepository)
+	externalEffectsRepository, err := outboundstore.NewExternalEffectsRepository(outboundTaskQueryRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	// ExternalEffectsService derives independent job-id and cursor keys with
+	// domain-separated labels. Reuse the existing deployment-local HMAC root;
+	// never pass a provider, webhook, recipient, or message secret here.
+	externalEffectsService, err := outboundapp.NewExternalEffectsService(uow, externalEffectsRepository, config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	externalEffectsHandler, err := outboundhttp.NewExternalEffectsHandler(externalEffectsService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	configRepository := configstore.NewRepository()
 	configManager := configapp.NewManager(uow, configRepository, eventstore.NewAppender())
 	settingsService := configapp.NewSettingsCompatibilityService(uow, configRepository, configManager, configapp.SecretConfiguredSnapshot{
@@ -766,6 +786,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
+	legacyHandler.externalEffects = externalEffectsHandler
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
@@ -1494,6 +1515,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/push-center/jobs/{job_id}/retry", authport.CapabilityOutboundControl, true, http.HandlerFunc(legacy.RetryOutboundJob)},
 			{http.MethodGet, "/api/admin/push-center/sections", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.PushCenterSections)},
 			{http.MethodGet, "/api/admin/push-center/stats", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.PushCenterStats)},
+			{http.MethodGet, outboundhttp.ExternalEffectsJobsPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ExternalEffectsJobs)},
+			{http.MethodGet, outboundhttp.ExternalEffectsDiagnosticsPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ExternalEffectsDiagnostics)},
 			{http.MethodGet, legacyExecutionRuntimePagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionRuntimePage)},
 			{http.MethodGet, "/api/admin/execution-runtime", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionRuntime)},
 			{http.MethodGet, "/api/admin/executions/{execution_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionTimeline)},

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -9,6 +11,13 @@ import (
 
 const specPath = "../../api/openapi.yaml"
 const mappingPath = "../../docs/api-mapping.jsonl"
+
+var (
+	freshOnce      sync.Once
+	freshDocument  []byte
+	freshInventory mappingInventory
+	freshErr       error
+)
 
 func TestFrozenOpenAPI(t *testing.T) {
 	doc, ids, err := load(specPath, mappingPath)
@@ -973,15 +982,47 @@ func TestRejectsP3IdentityStatusFieldMatrixMutations(t *testing.T) {
 
 func fresh(t *testing.T) (*openapi3.T, mappingInventory) {
 	t.Helper()
-	doc, ids, err := load(specPath, mappingPath)
+	freshOnce.Do(func() {
+		doc, inventory, err := load(specPath, mappingPath)
+		if err != nil {
+			freshErr = err
+			return
+		}
+		freshDocument, freshErr = json.Marshal(doc)
+		freshInventory = inventory
+	})
+	if freshErr != nil {
+		t.Fatal(freshErr)
+	}
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = false
+	doc, err := loader.LoadFromData(freshDocument)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return doc, ids
+	return doc, cloneMappingInventory(freshInventory)
+}
+
+func cloneMappingInventory(source mappingInventory) mappingInventory {
+	clone := mappingInventory{
+		Known:      make(map[string]bool, len(source.Known)),
+		Candidates: make(map[string]canonicalCandidateOperation, len(source.Candidates)),
+	}
+	for id, known := range source.Known {
+		clone.Known[id] = known
+	}
+	for operationID, candidate := range source.Candidates {
+		candidate.MappingIDs = append([]string(nil), candidate.MappingIDs...)
+		clone.Candidates[operationID] = candidate
+	}
+	return clone
 }
 func reject(t *testing.T, doc *openapi3.T, ids mappingInventory) {
 	t.Helper()
-	if err := validate(doc, ids); err == nil {
+	// TestFrozenOpenAPI performs the full structural OpenAPI validation once.
+	// Negative mutation cases exercise the repository's frozen business
+	// contracts without repeating that unchanged full traversal per subtest.
+	if err := validateContracts(doc, ids, false); err == nil {
 		t.Fatal("mutation was accepted")
 	}
 }

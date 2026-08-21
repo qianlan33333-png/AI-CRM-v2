@@ -5,6 +5,202 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type ExternalEffectStatus =
+  (typeof ExternalEffectStatus)[keyof typeof ExternalEffectStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectStatus = {
+  pending: "pending",
+  sending: "sending",
+  sent: "sent",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  cancelled: "cancelled",
+} as const;
+
+export type ExternalEffectClassification =
+  (typeof ExternalEffectClassification)[keyof typeof ExternalEffectClassification];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectClassification = {
+  safe_local_handling: "safe_local_handling",
+  frozen: "frozen",
+  manual_review: "manual_review",
+} as const;
+
+export interface ExternalEffectJob {
+  /** @pattern ^eej_v1_[A-Za-z0-9_-]{22}$ */
+  id: string;
+  status: ExternalEffectStatus;
+  classification: ExternalEffectClassification;
+  /** @minimum 0 */
+  attempt_count: number;
+  created_at: string;
+  status_updated_at: string;
+}
+
+/**
+ * @nullable
+ */
+export type ExternalEffectsAppliedFiltersStatus = ExternalEffectStatus | null;
+
+/**
+ * @nullable
+ */
+export type ExternalEffectsAppliedFiltersClassification =
+  ExternalEffectClassification | null;
+
+export interface ExternalEffectsAppliedFilters {
+  /** @nullable */
+  status: ExternalEffectsAppliedFiltersStatus;
+  /** @nullable */
+  classification: ExternalEffectsAppliedFiltersClassification;
+}
+
+export interface ExternalEffectStatusCounts {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  pending: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  sending: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  sent: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  retryable_failed: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  final_failed: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  outcome_unknown: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  cancelled: number;
+}
+
+export interface ExternalEffectClassificationCounts {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  safe_local_handling: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  frozen: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  manual_review: number;
+}
+
+export interface ExternalEffectCounts {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  total: number;
+  by_status: ExternalEffectStatusCounts;
+  by_classification: ExternalEffectClassificationCounts;
+}
+
+export type ExternalEffectRiskSummaryLevel =
+  (typeof ExternalEffectRiskSummaryLevel)[keyof typeof ExternalEffectRiskSummaryLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectRiskSummaryLevel = {
+  none: "none",
+  manual_review_required: "manual_review_required",
+  outcome_unknown_present: "outcome_unknown_present",
+} as const;
+
+export interface ExternalEffectRiskSummary {
+  level: ExternalEffectRiskSummaryLevel;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  outcome_unknown_count: number;
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  manual_review_count: number;
+  manual_review_required: boolean;
+}
+
+export type ExternalEffectsJobsResponseDeliverySemantics =
+  (typeof ExternalEffectsJobsResponseDeliverySemantics)[keyof typeof ExternalEffectsJobsResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectsJobsResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
+export interface ExternalEffectsJobsResponse {
+  ok: boolean;
+  /** @maxItems 100 */
+  items: ExternalEffectJob[];
+  /**
+   * @minLength 31
+   * @maxLength 1007
+   * @nullable
+   * @pattern ^eec_v1_[A-Za-z0-9_-]{24,}$
+   */
+  next_cursor: string | null;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size: number;
+  applied_filters: ExternalEffectsAppliedFilters;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  delivery_semantics: ExternalEffectsJobsResponseDeliverySemantics;
+}
+
+export type ExternalEffectsDiagnosticsResponseDeliverySemantics =
+  (typeof ExternalEffectsDiagnosticsResponseDeliverySemantics)[keyof typeof ExternalEffectsDiagnosticsResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectsDiagnosticsResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
+export interface ExternalEffectsDiagnosticsResponse {
+  ok: boolean;
+  counts: ExternalEffectCounts;
+  risk_summary: ExternalEffectRiskSummary;
+  generated_at: string;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  delivery_semantics: ExternalEffectsDiagnosticsResponseDeliverySemantics;
+}
+
 export type PublicSurveyErrorCode =
   (typeof PublicSurveyErrorCode)[keyof typeof PublicSurveyErrorCode];
 
@@ -9673,6 +9869,22 @@ export const GetLegacyInternalEventDiagnosticsStatus = {
   final_failed: "final_failed",
   outcome_unknown: "outcome_unknown",
 } as const;
+
+export type ListExternalEffectJobsParams = {
+  status?: ExternalEffectStatus;
+  classification?: ExternalEffectClassification;
+  /**
+   * @minLength 31
+   * @maxLength 1007
+   * @pattern ^eec_v1_[A-Za-z0-9_-]{24,}$
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
 
 /**
  * @summary List ordinary products using a keyset cursor
@@ -26539,4 +26751,156 @@ export const getLegacyInternalEvent = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyInternalEventResponse;
+};
+
+/**
+ * @summary Read a bounded local projection of external-effect job states without executing work
+ */
+export type listExternalEffectJobsResponse200 = {
+  data: ExternalEffectsJobsResponse;
+  status: 200;
+};
+
+export type listExternalEffectJobsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listExternalEffectJobsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listExternalEffectJobsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listExternalEffectJobsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listExternalEffectJobsResponseSuccess =
+  listExternalEffectJobsResponse200 & {
+    headers: Headers;
+  };
+export type listExternalEffectJobsResponseError = (
+  | listExternalEffectJobsResponse400
+  | listExternalEffectJobsResponse401
+  | listExternalEffectJobsResponse403
+  | listExternalEffectJobsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listExternalEffectJobsResponse =
+  listExternalEffectJobsResponseSuccess | listExternalEffectJobsResponseError;
+
+export const getListExternalEffectJobsUrl = (
+  params?: ListExternalEffectJobsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/external-effects/jobs?${stringifiedParams}`
+    : `/api/admin/external-effects/jobs`;
+};
+
+export const listExternalEffectJobs = async (
+  params?: ListExternalEffectJobsParams,
+  options?: RequestInit,
+): Promise<listExternalEffectJobsResponse> => {
+  const res = await fetch(getListExternalEffectJobsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listExternalEffectJobsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listExternalEffectJobsResponse;
+};
+
+/**
+ * @summary Read local external-effect status counts and manual-review risk without executing work
+ */
+export type getExternalEffectsDiagnosticsResponse200 = {
+  data: ExternalEffectsDiagnosticsResponse;
+  status: 200;
+};
+
+export type getExternalEffectsDiagnosticsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getExternalEffectsDiagnosticsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getExternalEffectsDiagnosticsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getExternalEffectsDiagnosticsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getExternalEffectsDiagnosticsResponseSuccess =
+  getExternalEffectsDiagnosticsResponse200 & {
+    headers: Headers;
+  };
+export type getExternalEffectsDiagnosticsResponseError = (
+  | getExternalEffectsDiagnosticsResponse400
+  | getExternalEffectsDiagnosticsResponse401
+  | getExternalEffectsDiagnosticsResponse403
+  | getExternalEffectsDiagnosticsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getExternalEffectsDiagnosticsResponse =
+  | getExternalEffectsDiagnosticsResponseSuccess
+  | getExternalEffectsDiagnosticsResponseError;
+
+export const getGetExternalEffectsDiagnosticsUrl = () => {
+  return `/api/admin/external-effects/diagnostics`;
+};
+
+export const getExternalEffectsDiagnostics = async (
+  options?: RequestInit,
+): Promise<getExternalEffectsDiagnosticsResponse> => {
+  const res = await fetch(getGetExternalEffectsDiagnosticsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getExternalEffectsDiagnosticsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getExternalEffectsDiagnosticsResponse;
 };
