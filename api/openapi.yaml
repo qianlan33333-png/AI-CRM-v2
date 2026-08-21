@@ -2707,7 +2707,7 @@ paths:
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters:
         - $ref: "#/components/parameters/CSRFToken"
-        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelWriteRequest" } } }
@@ -2749,7 +2749,7 @@ paths:
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       parameters:
         - $ref: "#/components/parameters/CSRFToken"
-        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 16, maxLength: 128 } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelWriteRequest" } } }

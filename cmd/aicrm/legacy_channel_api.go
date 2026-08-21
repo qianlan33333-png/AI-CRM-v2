@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -197,16 +195,22 @@ func stringField(values map[string]json.RawMessage, key string) string {
 	_ = json.Unmarshal(values[key], &value)
 	return value
 }
-func channelIdempotencyKey(request *http.Request, prefix string) (string, error) {
-	if key := strings.TrimSpace(request.Header.Get("Idempotency-Key")); key != "" {
-		return key, nil
+func channelIdempotencyKey(request *http.Request, _ string) (string, error) {
+	if request == nil {
+		return "", contactapp.ErrInvalidChannel
 	}
-	var value [16]byte
-	if _, err := rand.Read(value[:]); err != nil {
-		return "", contactapp.ErrChannelUnavailable
+	values := request.Header.Values("Idempotency-Key")
+	if len(values) != 1 {
+		return "", contactapp.ErrInvalidChannel
 	}
-	return prefix + ":" + hex.EncodeToString(value[:]), nil
+	raw := values[0]
+	key := strings.TrimSpace(raw)
+	if key == "" || raw != key || len(key) < 16 || len(key) > 128 {
+		return "", contactapp.ErrInvalidChannel
+	}
+	return key, nil
 }
+
 func legacyChannel(channel contactapp.Channel) (map[string]any, error) {
 	var result map[string]any
 	decoder := json.NewDecoder(strings.NewReader(string(channel.LegacyProjection)))

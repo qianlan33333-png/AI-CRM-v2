@@ -47,7 +47,7 @@ func TestC01LegacyChannelRoutesRBACCSRFRoundTrip(t *testing.T) {
 	stub := &legacyChannelStub{item: item, rows: []contactapp.Channel{item}}
 	router, auth := legacyChannelRouter(t, stub)
 	create := httptest.NewRecorder()
-	router.ServeHTTP(create, legacyChannelWriteRequest(http.MethodPost, "/api/admin/channels", `{"channel_name":"公开课","channel_code":"course","status":"active","welcome_message":"欢迎","assignment_config_json":{}}`))
+	router.ServeHTTP(create, legacyChannelConfigurationWriteRequest(http.MethodPost, "/api/admin/channels", `{"channel_name":"公开课","channel_code":"course","status":"active","welcome_message":"欢迎","assignment_config_json":{}}`))
 	if create.Code != http.StatusCreated || stub.writes != 1 || stub.create.Actor != 1 || stub.create.IdempotencyKey == "" || !strings.Contains(create.Body.String(), `"real_external_call_executed":false`) {
 		t.Fatalf("create=%d writes=%d command=%#v body=%s", create.Code, stub.writes, stub.create, create.Body.String())
 	}
@@ -66,9 +66,36 @@ func TestC01LegacyChannelRoutesRBACCSRFRoundTrip(t *testing.T) {
 		t.Fatalf("detail=%d %s", detail.Code, detail.Body.String())
 	}
 	patch := httptest.NewRecorder()
-	router.ServeHTTP(patch, legacyChannelWriteRequest(http.MethodPatch, "/api/admin/channels/1", `{"status":"archived"}`))
+	router.ServeHTTP(patch, legacyChannelConfigurationWriteRequest(http.MethodPatch, "/api/admin/channels/1", `{"status":"archived"}`))
 	if patch.Code != 200 || stub.update.ChannelID != 1 {
 		t.Fatalf("patch=%d update=%#v body=%s", patch.Code, stub.update, patch.Body.String())
+	}
+}
+
+func TestC01LegacyChannelRequiresExplicitIdempotencyKey(t *testing.T) {
+	tests := []struct {
+		name       string
+		mutate     func(*http.Request)
+		wantStatus int
+	}{
+		{name: "missing idempotency key", mutate: func(request *http.Request) { request.Header.Del("Idempotency-Key") }, wantStatus: http.StatusBadRequest},
+		{name: "duplicate idempotency key", mutate: func(request *http.Request) { request.Header.Add("Idempotency-Key", "channel-test:fedcba0987654321") }, wantStatus: http.StatusBadRequest},
+		{name: "short idempotency key", mutate: func(request *http.Request) { request.Header.Set("Idempotency-Key", "too-short") }, wantStatus: http.StatusBadRequest},
+		{name: "long idempotency key", mutate: func(request *http.Request) { request.Header.Set("Idempotency-Key", strings.Repeat("x", 129)) }, wantStatus: http.StatusBadRequest},
+		{name: "padded idempotency key", mutate: func(request *http.Request) { request.Header.Set("Idempotency-Key", " channel-test:1234567890abcdef ") }, wantStatus: http.StatusBadRequest},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stub := &legacyChannelStub{item: legacyChannelItem()}
+			router, _ := legacyChannelRouter(t, stub)
+			request := legacyChannelConfigurationWriteRequest(http.MethodPost, "/api/admin/channels", `{"channel_name":"本地渠道","channel_code":"local","status":"active"}`)
+			test.mutate(request)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+			if response.Code != test.wantStatus || stub.writes != 0 {
+				t.Fatalf("status=%d want=%d writes=%d body=%s", response.Code, test.wantStatus, stub.writes, response.Body.String())
+			}
+		})
 	}
 }
 
@@ -153,6 +180,12 @@ func legacyChannelWriteRequest(method, path, body string) *http.Request {
 	request.Header.Set("Origin", "http://example.com")
 	request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(93)})
 	request.AddCookie(&http.Cookie{Name: LegacyCSRFCookieName, Value: legacyToken(94)})
+	return request
+}
+
+func legacyChannelConfigurationWriteRequest(method, path, body string) *http.Request {
+	request := legacyChannelWriteRequest(method, path, body)
+	request.Header.Set("Idempotency-Key", "channel-test:1234567890abcdef")
 	return request
 }
 func legacyChannelItem() contactapp.Channel {

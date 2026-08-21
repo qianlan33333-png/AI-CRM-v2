@@ -690,3 +690,36 @@ export function filterChannels(
         item.code.toLocaleLowerCase().includes(query)),
   );
 }
+
+export const CHANNEL_PAGE_SIZE = 20;
+
+export interface ChannelPage {
+  readonly items: readonly ChannelListItem[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly pageCount: number;
+  readonly total: number;
+}
+
+export function paginateChannels(
+  items: readonly ChannelListItem[],
+  requestedPage: number,
+  requestedPageSize = CHANNEL_PAGE_SIZE,
+): ChannelPage {
+  const pageSize = Number.isSafeInteger(requestedPageSize) &&
+    requestedPageSize >= 1 && requestedPageSize <= 100
+    ? requestedPageSize
+    : CHANNEL_PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const page = Number.isSafeInteger(requestedPage)
+    ? Math.min(Math.max(requestedPage, 1), pageCount)
+    : 1;
+  const offset = (page - 1) * pageSize;
+  return {
+    items: items.slice(offset, offset + pageSize),
+    page,
+    pageSize,
+    pageCount,
+    total: items.length,
+  };
+}
