@@ -1,0 +1,126 @@
+.customer-360-workbench {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.customer-360-workbench__header,
+.customer-360-workbench__panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.customer-360-workbench__header nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.customer-360-workbench__boundary,
+.customer-360-workbench__notice,
+.customer-360-workbench__stale,
+.customer-360-workbench__lock,
+.customer-360-workbench__access-state {
+  border: 1px solid currentColor;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.customer-360-workbench__notice,
+.customer-360-workbench__stale {
+  margin: 0;
+}
+
+.customer-360-workbench__lock {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.customer-360-workbench__lock h2,
+.customer-360-workbench__lock p {
+  margin: 0;
+}
+
+.customer-360-workbench__technical-fact {
+  overflow-wrap: anywhere;
+}
+
+.customer-360-workbench__panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.customer-360-workbench__core-grid,
+.customer-360-workbench__auxiliary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.customer-360-workbench__auxiliary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.customer-360-workbench__card {
+  min-width: 0;
+  border: 1px solid currentColor;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.customer-360-workbench__card form,
+.customer-360-workbench__card fieldset,
+.customer-360-workbench__card label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.customer-360-workbench__card fieldset {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.customer-360-workbench__card input,
+.customer-360-workbench__card select,
+.customer-360-workbench__card button {
+  min-height: 2.5rem;
+}
+
+.customer-360-workbench__timeline {
+  grid-column: 1 / -1;
+}
+
+.customer-360-workbench__access-state {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 48rem;
+}
+
+.customer-360-workbench__access-state h2,
+.customer-360-workbench__access-state p {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .customer-360-workbench__header,
+  .customer-360-workbench__panel-heading {
+    flex-direction: column;
+  }
+
+  .customer-360-workbench__header nav {
+    justify-content: flex-start;
+  }
+
+  .customer-360-workbench__core-grid,
+  .customer-360-workbench__auxiliary-grid {
+    grid-template-columns: 1fr;
+  }
+}
