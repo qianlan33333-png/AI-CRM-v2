@@ -5317,6 +5317,53 @@ paths:
           content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
         "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
         "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+  /api/admin/external-effects/jobs:
+    get:
+      tags: [p4-external-effects]
+      operationId: listExternalEffectJobs
+      summary: Read a bounded local projection of external-effect job states without executing work
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-READONLY-2026-08-21
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_tasks.local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/ExternalEffectStatus" } }
+        - { name: classification, in: query, required: false, schema: { $ref: "#/components/schemas/ExternalEffectClassification" } }
+        - { name: cursor, in: query, required: false, schema: { type: string, minLength: 31, maxLength: 1007, pattern: '^eec_v1_[A-Za-z0-9_-]{24,}$' } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Closed local-only job page; delivery and Provider execution are explicitly unproven., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectsJobsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/external-effects/diagnostics:
+    get:
+      tags: [p4-external-effects]
+      operationId: getExternalEffectsDiagnostics
+      summary: Read local external-effect status counts and manual-review risk without executing work
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-READONLY-2026-08-21
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_tasks.local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Closed local-only diagnostic counts with explicit non-delivery semantics., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectsDiagnosticsResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -5532,6 +5579,96 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    ExternalEffectStatus:
+      type: string
+      enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled]
+    ExternalEffectClassification:
+      type: string
+      enum: [safe_local_handling, frozen, manual_review]
+    ExternalEffectJob:
+      type: object
+      additionalProperties: false
+      required: [id, status, classification, attempt_count, created_at, status_updated_at]
+      properties:
+        id: { type: string, pattern: '^eej_v1_[A-Za-z0-9_-]{22}$' }
+        status: { $ref: "#/components/schemas/ExternalEffectStatus" }
+        classification: { $ref: "#/components/schemas/ExternalEffectClassification" }
+        attempt_count: { type: integer, format: int32, minimum: 0 }
+        created_at: { type: string, format: date-time }
+        status_updated_at: { type: string, format: date-time }
+    ExternalEffectsAppliedFilters:
+      type: object
+      additionalProperties: false
+      required: [status, classification]
+      properties:
+        status: { allOf: [{ $ref: "#/components/schemas/ExternalEffectStatus" }], nullable: true }
+        classification: { allOf: [{ $ref: "#/components/schemas/ExternalEffectClassification" }], nullable: true }
+    ExternalEffectStatusCounts:
+      type: object
+      additionalProperties: false
+      required: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled]
+      properties:
+        pending: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        sending: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        sent: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        retryable_failed: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        final_failed: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        outcome_unknown: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        cancelled: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+    ExternalEffectClassificationCounts:
+      type: object
+      additionalProperties: false
+      required: [safe_local_handling, frozen, manual_review]
+      properties:
+        safe_local_handling: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        frozen: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        manual_review: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+    ExternalEffectCounts:
+      type: object
+      additionalProperties: false
+      required: [total, by_status, by_classification]
+      properties:
+        total: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        by_status: { $ref: "#/components/schemas/ExternalEffectStatusCounts" }
+        by_classification: { $ref: "#/components/schemas/ExternalEffectClassificationCounts" }
+    ExternalEffectRiskSummary:
+      type: object
+      additionalProperties: false
+      required: [level, outcome_unknown_count, manual_review_count, manual_review_required]
+      properties:
+        level: { type: string, enum: [none, manual_review_required, outcome_unknown_present] }
+        outcome_unknown_count: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        manual_review_count: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+        manual_review_required: { type: boolean }
+    ExternalEffectsJobsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, next_cursor, page_size, applied_filters, provider_execution_eligible, real_external_call_executed, delivery_proven, local_fact_only, delivery_semantics]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/ExternalEffectJob" } }
+        next_cursor: { type: string, minLength: 31, maxLength: 1007, pattern: '^eec_v1_[A-Za-z0-9_-]{24,}$', nullable: true }
+        page_size: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        applied_filters: { $ref: "#/components/schemas/ExternalEffectsAppliedFilters" }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
+    ExternalEffectsDiagnosticsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, counts, risk_summary, generated_at, provider_execution_eligible, real_external_call_executed, delivery_proven, local_fact_only, delivery_semantics]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        counts: { $ref: "#/components/schemas/ExternalEffectCounts" }
+        risk_summary: { $ref: "#/components/schemas/ExternalEffectRiskSummary" }
+        generated_at: { type: string, format: date-time }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     PublicSurveyError:
       type: object
       additionalProperties: false
