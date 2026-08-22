@@ -299,7 +299,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	}
 	if e := acceptancefixtures.ValidateDatabaseURL(*databaseURL); e != nil {
 		if j01Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.J01CouponDatabaseName); j01Err != nil {
-			t.Fatal(e)
+			if couponABErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.CouponABDatabaseName); couponABErr != nil {
+				t.Fatal(e)
+			}
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
