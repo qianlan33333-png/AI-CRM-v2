@@ -58,6 +58,9 @@ func newTestStore() *testStore {
 func (*testStore) ServiceProductExists(ctx context.Context, id int64) (bool, error) {
 	return ctx.Value(txKey{}) == true && id == 7, nil
 }
+func (*testStore) LockServiceProductForMemberAdd(ctx context.Context, id int64) (bool, error) {
+	return ctx.Value(txKey{}) == true && id == 7, nil
+}
 func (*testStore) CustomerExists(ctx context.Context, id int64) (bool, error) {
 	return ctx.Value(txKey{}) == true && id == 9, nil
 }
@@ -167,7 +170,7 @@ func TestAddIsOpaqueIdempotentAndAppendsEventInsideTransaction(t *testing.T) {
 	if first.MemberRef != "spm_AAAAAAAAAAAAAAAAAAAAAA" || !reflect.DeepEqual(first, second) {
 		t.Fatalf("opaque/replay mismatch: %#v %#v", first, second)
 	}
-	if store.createCalls != 1 || len(events.events) != 1 || uow.calls != 2 || events.events[0].Type != eventport.EvProductUpdated || events.events[0].CustomerID != 9 {
+	if store.createCalls != 1 || len(events.events) != 1 || uow.calls != 2 || events.events[0].Type != eventTypeMemberChanged || events.events[0].CustomerID != 9 {
 		t.Fatalf("create/events/uow=%d/%d/%d event=%#v", store.createCalls, len(events.events), uow.calls, events.events)
 	}
 	if strings.Contains(string(events.events[0].Payload), "unionid") || strings.Contains(string(events.events[0].Payload), "phone") {

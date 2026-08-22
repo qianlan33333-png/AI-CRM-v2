@@ -164,6 +164,7 @@ type Receipt struct {
 
 type Store interface {
 	ServiceProductExists(context.Context, int64) (bool, error)
+	LockServiceProductForMemberAdd(context.Context, int64) (bool, error)
 	CustomerExists(context.Context, int64) (bool, error)
 	Get(context.Context, int64, string) (domain.Member, error)
 	GetForUpdate(context.Context, int64, string) (domain.Member, error)

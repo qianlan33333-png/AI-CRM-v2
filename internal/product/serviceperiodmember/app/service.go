@@ -26,10 +26,11 @@ import (
 )
 
 const (
-	operationAdd          = "service_period_member.add"
-	operationExpire       = "service_period_member.expire"
-	operationRemove       = "service_period_member.remove"
-	operationUpdateFields = "service_period_member.update_fields"
+	operationAdd           = "service_period_member.add"
+	operationExpire        = "service_period_member.expire"
+	operationRemove        = "service_period_member.remove"
+	operationUpdateFields  = "service_period_member.update_fields"
+	eventTypeMemberChanged = "service_period_member.changed"
 )
 
 type Service struct {
@@ -317,7 +318,7 @@ func (service *Service) mutate(ctx context.Context, operation string, actorID in
 }
 
 func (service *Service) requireFacts(ctx context.Context, productID, customerID int64) error {
-	productExists, err := service.store.ServiceProductExists(ctx, productID)
+	productExists, err := service.store.LockServiceProductForMemberAdd(ctx, productID)
 	if err != nil {
 		return err
 	}
@@ -375,7 +376,7 @@ func (service *Service) appendEvent(ctx context.Context, operation string, actor
 		return memberport.ErrUnavailable
 	}
 	digest := sha256.Sum256([]byte(operation + "\x00" + hex.EncodeToString(keyDigest[:])))
-	_, err = service.events.Append(ctx, eventport.Event{Type: eventport.EvProductUpdated, CustomerID: eventport.CustomerID(member.CustomerID), Payload: payload, OccurredAt: now, IdempotencyKey: operation + ":" + hex.EncodeToString(digest[:])})
+	_, err = service.events.Append(ctx, eventport.Event{Type: eventTypeMemberChanged, CustomerID: eventport.CustomerID(member.CustomerID), Payload: payload, OccurredAt: now, IdempotencyKey: operation + ":" + hex.EncodeToString(digest[:])})
 	return err
 }
 
