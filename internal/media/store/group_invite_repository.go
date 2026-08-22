@@ -11,12 +11,14 @@ import (
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 type GroupInviteRepository struct{}
 
 var _ mediaapp.GroupInviteStore = (*GroupInviteRepository)(nil)
 var _ mediaport.ImageMetadataReader = (*GroupInviteRepository)(nil)
+var _ mediaport.ChannelGroupInviteReferenceReader = (*GroupInviteRepository)(nil)
 
 func NewGroupInviteRepository() *GroupInviteRepository { return &GroupInviteRepository{} }
 
@@ -74,6 +76,19 @@ func (repository *GroupInviteRepository) LockGroupInvite(ctx context.Context, id
 		return mediaport.GroupInvite{}, groupInviteUnavailable(err)
 	}
 	return repository.GetGroupInvite(ctx, id)
+}
+
+func (repository *GroupInviteRepository) ChannelGroupInviteEligible(ctx context.Context, id int64) (bool, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if repository == nil || id < 1 || err != nil {
+		return false, groupInviteUnavailable(err)
+	}
+	var lockedID int64
+	err = tx.QueryRow(ctx, `SELECT id FROM media_group_invites WHERE id = $1 AND enabled = TRUE AND archived_at IS NULL FOR KEY SHARE`, id).Scan(&lockedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil && lockedID == id, groupInviteUnavailable(err)
 }
 
 func (repository *GroupInviteRepository) CreateGroupInvite(ctx context.Context, item mediaport.GroupInvite) (mediaport.GroupInvite, error) {

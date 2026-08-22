@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
@@ -109,7 +110,7 @@ func TestH03FourFailurePointsRollbackBusinessReceiptAndEvent(t *testing.T) {
 				case "event":
 					events = failingAppender{}
 				}
-				service := mediaapp.NewGroupInviteService(platformstore.NewUnitOfWork(pool), store, images, events)
+				service := mediaapp.NewGroupInviteServiceWithChannelReferences(platformstore.NewUnitOfWork(pool), store, images, events, contactstore.NewChannelRepository())
 				key := unique("rollback-" + operation + "-" + fault)
 				var err error
 				switch operation {
@@ -259,7 +260,7 @@ func (failingAppender) Append(context.Context, eventport.Event) (eventport.Event
 
 func realGroupInviteService(pool *pgxpool.Pool) *mediaapp.GroupInviteService {
 	repository := mediastore.NewGroupInviteRepository()
-	return mediaapp.NewGroupInviteService(platformstore.NewUnitOfWork(pool), repository, repository, eventstore.NewAppender())
+	return mediaapp.NewGroupInviteServiceWithChannelReferences(platformstore.NewUnitOfWork(pool), repository, repository, eventstore.NewAppender(), contactstore.NewChannelRepository())
 }
 
 func createCover(t *testing.T, pool *pgxpool.Pool, ctx context.Context, actor int64) int64 {

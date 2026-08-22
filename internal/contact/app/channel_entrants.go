@@ -42,13 +42,14 @@ type ChannelEntrantsInput struct {
 // ChannelEntrantsResponse states exactly what this read proves: a local Contact
 // projection was read and no real external call was executed.
 type ChannelEntrantsResponse struct {
-	ChannelID                int64                `json:"channel_id"`
-	Items                    []ChannelEntrantItem `json:"items"`
-	Limit                    int                  `json:"limit"`
-	HasMore                  bool                 `json:"has_more"`
-	NextCursor               string               `json:"next_cursor"`
-	LocalProjection          bool                 `json:"local_projection"`
-	RealExternalCallExecuted bool                 `json:"real_external_call_executed"`
+	ChannelID                 int64                `json:"channel_id"`
+	Items                     []ChannelEntrantItem `json:"items"`
+	Limit                     int                  `json:"limit"`
+	HasMore                   bool                 `json:"has_more"`
+	NextCursor                string               `json:"next_cursor"`
+	LocalProjection           bool                 `json:"local_projection"`
+	ProviderExecutionEligible bool                 `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  bool                 `json:"real_external_call_executed"`
 }
 
 type ChannelEntrantsChannelState string
@@ -164,12 +165,13 @@ func (service *ChannelEntrantsService) List(
 		visible = records[:query.Limit]
 	}
 	response := ChannelEntrantsResponse{
-		ChannelID:                query.ChannelID,
-		Items:                    make([]ChannelEntrantItem, len(visible)),
-		Limit:                    query.Limit,
-		HasMore:                  hasMore,
-		LocalProjection:          true,
-		RealExternalCallExecuted: false,
+		ChannelID:                 query.ChannelID,
+		Items:                     make([]ChannelEntrantItem, len(visible)),
+		Limit:                     query.Limit,
+		HasMore:                   hasMore,
+		LocalProjection:           true,
+		ProviderExecutionEligible: false,
+		RealExternalCallExecuted:  false,
 	}
 	for index, record := range visible {
 		response.Items[index] = ChannelEntrantItem{

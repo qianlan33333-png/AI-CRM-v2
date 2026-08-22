@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+// ChannelMiniProgramReferenceReader returns whether a Mini Program card is
+// present and locally enabled while holding its row lock in the caller's
+// UnitOfWork. It deliberately exposes no card metadata.
+type ChannelMiniProgramReferenceReader interface {
+	ChannelMiniProgramEligible(context.Context, int64) (bool, error)
+}
+
 // MiniProgram is the local material-card fact. The fields mirror the immutable
 // legacy material record; neither the card nor its thumbnail cache is proof
 // that a WeCom provider accepted a send.

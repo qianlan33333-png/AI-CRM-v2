@@ -2204,7 +2204,8 @@ func validateGroupInviteContract(doc *openapi3.T) error {
 func validateChannelContract(doc *openapi3.T) error {
 	collection := doc.Paths.Value("/api/admin/channels")
 	detail := doc.Paths.Value("/api/admin/channels/{channel_id}")
-	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil || detail.Patch == nil {
+	entrants := doc.Paths.Value("/api/admin/channels/{channel_id}/contacts")
+	if collection == nil || collection.Get == nil || collection.Post == nil || detail == nil || detail.Get == nil || detail.Patch == nil || entrants == nil || entrants.Get == nil {
 		return errors.New("P4-C01 Channel compatibility operations are incomplete")
 	}
 	if !operationResponseUsesLocalSchema(collection.Get, "LegacyChannelListResponse") ||
@@ -2212,7 +2213,8 @@ func validateChannelContract(doc *openapi3.T) error {
 		!operationResponseUsesStatusLocalSchema(collection.Post, "201", "LegacyChannelMutationResponse") ||
 		!operationResponseUsesLocalSchema(detail.Get, "LegacyChannelDetailResponse") ||
 		!operationRequestUsesLocalSchema(detail.Patch, "LegacyChannelWriteRequest") ||
-		!operationResponseUsesLocalSchema(detail.Patch, "LegacyChannelMutationResponse") {
+		!operationResponseUsesLocalSchema(detail.Patch, "LegacyChannelMutationResponse") ||
+		!operationResponseUsesLocalSchema(entrants.Get, "LegacyChannelEntrantsResponse") {
 		return errors.New("P4-C01 Channel request or response schema drifted")
 	}
 	for name, operation := range map[string]*openapi3.Operation{"createLegacyChannel": collection.Post, "updateLegacyChannel": detail.Patch} {
@@ -2226,6 +2228,15 @@ func validateChannelContract(doc *openapi3.T) error {
 	request := doc.Components.Schemas["LegacyChannelWriteRequest"]
 	if request == nil || request.Value == nil || request.Value.AdditionalProperties.Has == nil || *request.Value.AdditionalProperties.Has {
 		return errors.New("LegacyChannelWriteRequest must remain closed")
+	}
+	for name, required := range map[string][]string{
+		"LegacyChannelMutationResponse": {"ok", "channel", "reason", "source", "fallback_used", "provider_execution_eligible", "real_external_call_executed"},
+		"LegacyChannelEntrantsResponse": {"channel_id", "items", "limit", "has_more", "next_cursor", "local_projection", "provider_execution_eligible", "real_external_call_executed"},
+	} {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil || !reflect.DeepEqual(schema.Value.Required, required) || !legacyTagBooleanEnum(schema.Value, "provider_execution_eligible", false) || !legacyTagBooleanEnum(schema.Value, "real_external_call_executed", false) {
+			return fmt.Errorf("%s provider gate drifted", name)
+		}
 	}
 	return nil
 }

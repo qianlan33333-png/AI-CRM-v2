@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
@@ -578,7 +579,7 @@ func (resolver *countingMiniProgramResolver) ResolveThumbnailFromCache(ctx conte
 
 func realMiniProgramService(pool *pgxpool.Pool) *mediaapp.MiniProgramService {
 	repository := mediastore.NewMiniProgramRepository()
-	return mediaapp.NewMiniProgramService(platformstore.NewUnitOfWork(pool), repository, repository, eventstore.NewAppender(), repository)
+	return mediaapp.NewMiniProgramServiceWithChannelReferences(platformstore.NewUnitOfWork(pool), repository, repository, eventstore.NewAppender(), repository, contactstore.NewChannelRepository())
 }
 
 func miniProgramCreateCommand(actor int64, key, name, title string) mediaport.MiniProgramCreateCommand {

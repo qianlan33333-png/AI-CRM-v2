@@ -399,6 +399,47 @@ func (q *Queries) ListTags(ctx context.Context) ([]ListTagsRow, error) {
 	return items, nil
 }
 
+const lockActiveTagGroupReference = `-- name: LockActiveTagGroupReference :one
+SELECT id, name
+FROM tag_groups
+WHERE id = $1::bigint
+  AND name NOT LIKE 'archived:%'
+FOR SHARE
+`
+
+type LockActiveTagGroupReferenceRow struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+func (q *Queries) LockActiveTagGroupReference(ctx context.Context, groupID int64) (LockActiveTagGroupReferenceRow, error) {
+	row := q.db.QueryRow(ctx, lockActiveTagGroupReference, groupID)
+	var i LockActiveTagGroupReferenceRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
+const lockActiveTagReference = `-- name: LockActiveTagReference :one
+SELECT t.id, t.name, t.group_id
+FROM tags AS t
+WHERE t.id = $1::bigint
+  AND t.name NOT LIKE 'archived:%'
+FOR SHARE OF t
+`
+
+type LockActiveTagReferenceRow struct {
+	ID      int64       `json:"id"`
+	Name    string      `json:"name"`
+	GroupID pgtype.Int8 `json:"group_id"`
+}
+
+func (q *Queries) LockActiveTagReference(ctx context.Context, tagID int64) (LockActiveTagReferenceRow, error) {
+	row := q.db.QueryRow(ctx, lockActiveTagReference, tagID)
+	var i LockActiveTagReferenceRow
+	err := row.Scan(&i.ID, &i.Name, &i.GroupID)
+	return i, err
+}
+
 const reserveLegacyTagLiveMutationReceipt = `-- name: ReserveLegacyTagLiveMutationReceipt :one
 INSERT INTO legacy_tag_live_mutation_receipts(actor_id, idempotency_key, key_digest, operation, payload, trace_id)
 VALUES ($1, $2, $3, $4, $5, $6)

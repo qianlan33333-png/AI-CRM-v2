@@ -12,6 +12,7 @@ import (
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 // AttachmentRepository keeps attachment metadata, its private bytea blob, and
@@ -21,6 +22,7 @@ type AttachmentRepository struct{}
 
 var _ mediaapp.AttachmentStore = (*AttachmentRepository)(nil)
 var _ mediaport.AttachmentMetadataReader = (*AttachmentRepository)(nil)
+var _ mediaport.ChannelAttachmentReferenceReader = (*AttachmentRepository)(nil)
 
 func NewAttachmentRepository() *AttachmentRepository { return &AttachmentRepository{} }
 
@@ -228,6 +230,19 @@ func (repository *AttachmentRepository) AttachmentExists(ctx context.Context, at
 		return false, nil
 	}
 	return err == nil, err
+}
+
+func (repository *AttachmentRepository) ChannelAttachmentEligible(ctx context.Context, attachmentID int64) (bool, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if repository == nil || attachmentID < 1 || err != nil {
+		return false, mediaapp.ErrAttachmentUnavailable
+	}
+	var id int64
+	err = tx.QueryRow(ctx, `SELECT id FROM media_attachments WHERE id = $1 AND enabled = TRUE FOR KEY SHARE`, attachmentID).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil && id == attachmentID, err
 }
 
 func attachmentFromFields(id int64, name, fileName, mediaType string, fileSize int32, description string, rawTags []byte, enabled bool, version, createdBy, updatedBy int64, createdAt, updatedAt pgtype.Timestamptz) (mediaport.Attachment, error) {

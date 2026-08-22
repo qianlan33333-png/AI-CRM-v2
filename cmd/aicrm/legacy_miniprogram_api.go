@@ -284,7 +284,7 @@ func writeMiniProgramError(writer http.ResponseWriter, err error) {
 		status, code = http.StatusBadRequest, platformhttp.CodeMalformedRequest
 	case errors.Is(err, mediaapp.ErrMiniProgramNotFound):
 		status, code = http.StatusNotFound, platformhttp.CodeNotFound
-	case errors.Is(err, mediaapp.ErrMiniProgramConflict):
+	case errors.Is(err, mediaapp.ErrMiniProgramConflict), errors.Is(err, mediaapp.ErrMiniProgramHasReferences):
 		status, code = http.StatusConflict, platformhttp.CodeConflict
 	case errors.Is(err, authport.ErrUnauthorized):
 		status, code = http.StatusForbidden, platformhttp.CodeUnauthorized

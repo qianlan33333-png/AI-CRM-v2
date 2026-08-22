@@ -61,7 +61,7 @@ func legacyChannelListItem(channel contactapp.Channel) map[string]any {
 		"channel_name":          channel.ChannelName,
 		"channel_code":          channel.ChannelCode,
 		"status":                channel.Status,
-		"assignee_count":        0,
+		"assignee_count":        len(channel.Assignees),
 		"channel_contact_count": 0,
 		"created_at":            channel.CreatedAt.UTC(),
 		"updated_at":            channel.UpdatedAt.UTC(),
@@ -121,7 +121,7 @@ func (handler *Handler) CreateChannel(writer http.ResponseWriter, request *http.
 		writeLegacyChannelError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusCreated, map[string]any{"ok": true, "channel": mapped, "reason": "channel_created", "source": "ai_crm_next", "fallback_used": false, "real_external_call_executed": false})
+	writeJSON(writer, http.StatusCreated, map[string]any{"ok": true, "channel": mapped, "reason": "channel_created", "source": "ai_crm_next", "fallback_used": false, "provider_execution_eligible": false, "real_external_call_executed": false})
 }
 
 func (handler *Handler) UpdateChannel(writer http.ResponseWriter, request *http.Request) {
@@ -168,7 +168,7 @@ func (handler *Handler) UpdateChannel(writer http.ResponseWriter, request *http.
 		writeLegacyChannelError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "channel": mapped, "reason": "channel_updated", "source": "ai_crm_next", "fallback_used": false, "real_external_call_executed": false})
+	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "channel": mapped, "reason": "channel_updated", "source": "ai_crm_next", "fallback_used": false, "provider_execution_eligible": false, "real_external_call_executed": false})
 }
 
 func legacyChannelBody(writer http.ResponseWriter, request *http.Request) (json.RawMessage, map[string]json.RawMessage, error) {
@@ -224,9 +224,13 @@ func legacyChannel(channel contactapp.Channel) (map[string]any, error) {
 	result["status"] = channel.Status
 	result["created_at"] = channel.CreatedAt.UTC()
 	result["updated_at"] = channel.UpdatedAt.UTC()
-	result["assignees"] = []any{}
+	assignees := make([]map[string]string, len(channel.Assignees))
+	for index, assignee := range channel.Assignees {
+		assignees[index] = map[string]string{"wecom_userid": assignee.WeComUserID, "display_name": assignee.DisplayName}
+	}
+	result["assignees"] = assignees
 	result["assignment_stats_24h"] = []any{}
-	result["assignee_count"] = 0
+	result["assignee_count"] = len(assignees)
 	result["channel_contact_count"] = 0
 	result["latest_channel_entered_at"] = ""
 	result["qrcode_asset_id"] = 0

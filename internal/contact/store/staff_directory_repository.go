@@ -3,38 +3,71 @@ package store
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contact "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
-	"strings"
 )
 
 type StaffDirectoryRepository struct{ pool *pgxpool.Pool }
 
 var _ contact.ActiveStaffReader = (*StaffDirectoryRepository)(nil)
+var _ contact.EligibleStaffReferenceReader = (*StaffDirectoryRepository)(nil)
+var _ contact.StaffDirectoryReader = (*StaffDirectoryRepository)(nil)
 
 func NewStaffDirectoryRepository(pool *pgxpool.Pool) *StaffDirectoryRepository {
 	return &StaffDirectoryRepository{pool: pool}
 }
+
 func (r *StaffDirectoryRepository) ListEligibleStaff(ctx context.Context) ([]contact.StaffDirectoryEntry, error) {
-	rows, err := r.pool.Query(ctx, `SELECT wecom_userid,name,updated_at FROM staff WHERE is_active AND btrim(wecom_userid) <> '' ORDER BY btrim(wecom_userid),wecom_userid`)
+	if r == nil || r.pool == nil || ctx == nil {
+		return nil, contact.ErrStaffReferenceUnavailable
+	}
+	rows, err := r.pool.Query(ctx, `SELECT wecom_userid, name, updated_at FROM staff WHERE is_active AND btrim(wecom_userid) <> '' ORDER BY btrim(wecom_userid), wecom_userid`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []contact.StaffDirectoryEntry
+	result := []contact.StaffDirectoryEntry{}
 	for rows.Next() {
-		var x contact.StaffDirectoryEntry
-		if err := rows.Scan(&x.WeComUserID, &x.DisplayName, &x.UpdatedAt); err != nil {
+		var entry contact.StaffDirectoryEntry
+		if err := rows.Scan(&entry.WeComUserID, &entry.DisplayName, &entry.UpdatedAt); err != nil {
 			return nil, err
 		}
-		x.WeComUserID = strings.TrimSpace(x.WeComUserID)
-		x.DisplayName = strings.TrimSpace(x.DisplayName)
-		out = append(out, x)
+		entry.WeComUserID = strings.TrimSpace(entry.WeComUserID)
+		entry.DisplayName = strings.TrimSpace(entry.DisplayName)
+		result = append(result, entry)
 	}
-	return out, rows.Err()
+	return result, rows.Err()
+}
+func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Context, weComUserID string) (contact.StaffDirectoryEntry, error) {
+	if ctx == nil || strings.TrimSpace(weComUserID) != weComUserID || weComUserID == "" {
+		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
+	}
+	rows, err := tx.Query(ctx, `SELECT wecom_userid, name, updated_at FROM staff WHERE wecom_userid = $1 AND is_active FOR SHARE`, weComUserID)
+	if err != nil {
+		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
+	}
+	defer rows.Close()
+	var result contact.StaffDirectoryEntry
+	for rows.Next() {
+		if result.WeComUserID != "" || rows.Scan(&result.WeComUserID, &result.DisplayName, &result.UpdatedAt) != nil {
+			return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
+		}
+	}
+	if rows.Err() != nil {
+		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
+	}
+	if result.WeComUserID == "" {
+		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceNotFound
+	}
+	return result, nil
 }
 
 // IsActiveStaff holds a shared lock on the Contact-owned active row in the

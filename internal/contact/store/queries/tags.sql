@@ -16,6 +16,20 @@ ORDER BY
   t.sort_order,
   t.id;
 
+-- name: LockActiveTagReference :one
+SELECT t.id, t.name, t.group_id
+FROM tags AS t
+WHERE t.id = sqlc.arg(tag_id)::bigint
+  AND t.name NOT LIKE 'archived:%'
+FOR SHARE OF t;
+
+-- name: LockActiveTagGroupReference :one
+SELECT id, name
+FROM tag_groups
+WHERE id = sqlc.arg(group_id)::bigint
+  AND name NOT LIKE 'archived:%'
+FOR SHARE;
+
 -- name: ListLegacyTagGroups :many
 SELECT id, name, sort_order FROM tag_groups WHERE name NOT LIKE 'archived:%' ORDER BY sort_order, id;
 -- name: ListLegacyTags :many

@@ -246,7 +246,7 @@ func writeGroupInviteError(writer http.ResponseWriter, err error) {
 		status, code = http.StatusBadRequest, platformhttp.CodeMalformedRequest
 	case errors.Is(err, mediaapp.ErrGroupInviteNotFound):
 		status, code = http.StatusNotFound, platformhttp.CodeNotFound
-	case errors.Is(err, mediaapp.ErrGroupInviteConflict):
+	case errors.Is(err, mediaapp.ErrGroupInviteConflict), errors.Is(err, mediaapp.ErrGroupInviteHasReferences):
 		status, code = http.StatusConflict, platformhttp.CodeConflict
 	case errors.Is(err, authport.ErrUnauthorized):
 		status, code = http.StatusForbidden, platformhttp.CodeUnauthorized

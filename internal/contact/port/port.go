@@ -15,15 +15,19 @@ type Actor string
 type StageID int64
 
 var (
-	ErrInvalidStage          = errors.New("invalid stage")
-	ErrStageNotFound         = errors.New("stage not found")
-	ErrStageReferenced       = errors.New("stage is still referenced by customers")
-	ErrStageConflict         = errors.New("stage command conflict")
-	ErrInvalidMergeCommand   = errors.New("invalid contact merge command")
-	ErrMergeCustomerNotFound = errors.New("contact merge customer not found")
-	ErrMergeConflict         = errors.New("contact merge conflict")
-	ErrMergeStoreFailed      = errors.New("contact merge store failed")
-	ErrExternalEventConflict = errors.New("external customer event conflict")
+	ErrInvalidStage              = errors.New("invalid stage")
+	ErrStageNotFound             = errors.New("stage not found")
+	ErrStageReferenced           = errors.New("stage is still referenced by customers")
+	ErrStageConflict             = errors.New("stage command conflict")
+	ErrInvalidMergeCommand       = errors.New("invalid contact merge command")
+	ErrMergeCustomerNotFound     = errors.New("contact merge customer not found")
+	ErrMergeConflict             = errors.New("contact merge conflict")
+	ErrMergeStoreFailed          = errors.New("contact merge store failed")
+	ErrExternalEventConflict     = errors.New("external customer event conflict")
+	ErrTagReferenceNotFound      = errors.New("contact tag reference not found")
+	ErrTagReferenceUnavailable   = errors.New("contact tag reference unavailable")
+	ErrStaffReferenceNotFound    = errors.New("contact staff reference not found")
+	ErrStaffReferenceUnavailable = errors.New("contact staff reference unavailable")
 )
 
 var (
@@ -49,15 +53,43 @@ type ImageReferenceReader interface {
 	ListImageReferenceChannelIDs(context.Context, int64) ([]int64, error)
 }
 
-// AttachmentReferenceReader is the Contact-owned read-only answer to whether
-// a channel welcome projection references one private attachment.
+// AttachmentReferenceReader is the Contact-owned answer to whether a channel
+// welcome projection references one private attachment.
 type AttachmentReferenceReader interface {
 	ListAttachmentReferenceChannelIDs(context.Context, int64) ([]int64, error)
 }
 
-// StaffDirectoryReader exposes the narrowly-scoped local staff projection to
-// approved read-only consumers. It contains only the approved staff identity
-// fields and no provider payload or broader contact PII.
+// MiniProgramReferenceReader and GroupInviteReferenceReader keep Media's
+// destructive lifecycle from stranding Channel-owned welcome references.
+type MiniProgramReferenceReader interface {
+	ListMiniProgramReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
+type GroupInviteReferenceReader interface {
+	ListGroupInviteReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
+// TagReferenceReader locks one active Contact-owned tag in the caller's
+// UnitOfWork. It prevents a channel mutation from committing a stale tag
+// reference while that tag or its group is being archived.
+type TagReferenceReader interface {
+	LockActiveTag(context.Context, int64) (TagReference, error)
+}
+
+type TagReference struct {
+	ID        int64
+	Name      string
+	GroupName *string
+}
+
+// EligibleStaffReferenceReader locks exactly one active local staff row by its
+// WeCom user ID in the caller's UnitOfWork. It never exposes a full directory.
+type EligibleStaffReferenceReader interface {
+	LockEligibleStaffByWeComUserID(context.Context, string) (StaffDirectoryEntry, error)
+}
+
+// StaffDirectoryReader remains the broad safe projection for existing read
+// consumers. Channel mutation must use EligibleStaffReferenceReader instead.
 type StaffDirectoryReader interface {
 	ListEligibleStaff(context.Context) ([]StaffDirectoryEntry, error)
 }

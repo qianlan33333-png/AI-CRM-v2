@@ -15,19 +15,21 @@ import (
 )
 
 type groupInviteMemory struct {
-	mu       sync.Mutex
-	receipts map[string]GroupInviteReceipt
-	items    map[int64]mediaport.GroupInvite
-	images   map[int64]bool
-	events   []eventport.Event
-	nextID   int64
-	fault    string
+	mu                sync.Mutex
+	receipts          map[string]GroupInviteReceipt
+	items             map[int64]mediaport.GroupInvite
+	images            map[int64]bool
+	events            []eventport.Event
+	channelReferences []int64
+	nextID            int64
+	fault             string
 }
 
 type groupInviteUOW struct{ state *groupInviteMemory }
 type groupInviteStore struct{ state *groupInviteMemory }
 type groupInviteImages struct{ state *groupInviteMemory }
 type groupInviteEvents struct{ state *groupInviteMemory }
+type groupInviteContacts struct{ state *groupInviteMemory }
 
 func (u groupInviteUOW) Within(ctx context.Context, fn func(context.Context) error) error {
 	u.state.mu.Lock()
@@ -146,6 +148,13 @@ func (events groupInviteEvents) Append(_ context.Context, event eventport.Event)
 	return eventport.EventID(len(events.state.events)), nil
 }
 
+func (contacts groupInviteContacts) ListGroupInviteReferenceChannelIDs(_ context.Context, _ int64) ([]int64, error) {
+	if contacts.state.fault == "contact" {
+		return nil, errors.New("channel reference scan failed")
+	}
+	return append([]int64{}, contacts.state.channelReferences...), nil
+}
+
 func TestH03CreateReplayConflictActorIsolationAndConcurrentSingleFact(t *testing.T) {
 	service, state := newGroupInviteService()
 	command := validGroupInviteCommand()
@@ -247,6 +256,23 @@ func TestH03UpdateArchiveListGetAndBusinessKeyIsolation(t *testing.T) {
 	}
 }
 
+func TestGroupInviteArchiveFailsClosedWhenChannelReferencesExistOrCannotBeRead(t *testing.T) {
+	service, state := newGroupInviteService()
+	created, err := service.Create(context.Background(), validGroupInviteCommand())
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.channelReferences = []int64{9}
+	if _, err = service.Archive(context.Background(), mediaport.GroupInviteArchiveCommand{ID: created.ID, Actor: 7, IdempotencyKey: "group-invite-archive-key-0002"}); !errors.Is(err, ErrGroupInviteHasReferences) || state.items[created.ID].ArchivedAt != nil {
+		t.Fatalf("referenced archive err=%v item=%#v", err, state.items[created.ID])
+	}
+	state.channelReferences = nil
+	state.fault = "contact"
+	if _, err = service.Archive(context.Background(), mediaport.GroupInviteArchiveCommand{ID: created.ID, Actor: 7, IdempotencyKey: "group-invite-archive-key-0003"}); !errors.Is(err, ErrGroupInviteUnavailable) || state.items[created.ID].ArchivedAt != nil {
+		t.Fatalf("unavailable scan err=%v item=%#v", err, state.items[created.ID])
+	}
+}
+
 func TestH03SemanticReceiptNumbers(t *testing.T) {
 	if !jsonSemanticEqual([]byte(`{"id":1,"nested":[2.0]}`), []byte(`{"nested":[2],"id":1.0}`)) {
 		t.Fatal("numeric JSON equality rejected")
@@ -255,7 +281,7 @@ func TestH03SemanticReceiptNumbers(t *testing.T) {
 
 func newGroupInviteService() (*GroupInviteService, *groupInviteMemory) {
 	state := &groupInviteMemory{receipts: map[string]GroupInviteReceipt{}, items: map[int64]mediaport.GroupInvite{}, images: map[int64]bool{19: true, 20: true}}
-	service := NewGroupInviteService(groupInviteUOW{state}, groupInviteStore{state}, groupInviteImages{state}, groupInviteEvents{state})
+	service := NewGroupInviteServiceWithChannelReferences(groupInviteUOW{state}, groupInviteStore{state}, groupInviteImages{state}, groupInviteEvents{state}, groupInviteContacts{state})
 	service.now = func() time.Time { return time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC) }
 	return service, state
 }

@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
@@ -30,15 +32,21 @@ var (
 )
 
 type Channel struct {
-	ID               int64           `json:"id"`
-	ChannelCode      string          `json:"channel_code"`
-	ChannelName      string          `json:"channel_name"`
-	Status           string          `json:"status"`
-	LegacyProjection json.RawMessage `json:"legacy_projection"`
-	CreatedBy        int64           `json:"created_by"`
-	UpdatedBy        int64           `json:"updated_by"`
-	CreatedAt        time.Time       `json:"created_at"`
-	UpdatedAt        time.Time       `json:"updated_at"`
+	ID               int64             `json:"id"`
+	ChannelCode      string            `json:"channel_code"`
+	ChannelName      string            `json:"channel_name"`
+	Status           string            `json:"status"`
+	LegacyProjection json.RawMessage   `json:"legacy_projection"`
+	CreatedBy        int64             `json:"created_by"`
+	UpdatedBy        int64             `json:"updated_by"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	Assignees        []ChannelAssignee `json:"assignees,omitempty"`
+}
+
+type ChannelAssignee struct {
+	WeComUserID string `json:"wecom_userid"`
+	DisplayName string `json:"display_name"`
 }
 
 type CreateChannelCommand struct {
@@ -77,12 +85,16 @@ type ChannelStore interface {
 }
 
 type ChannelService struct {
-	uow         platformport.UnitOfWork
-	store       ChannelStore
-	images      mediaport.ImageMetadataReader
-	attachments mediaport.AttachmentMetadataReader
-	events      eventport.Appender
-	now         func() time.Time
+	uow          platformport.UnitOfWork
+	store        ChannelStore
+	images       mediaport.ImageMetadataReader
+	attachments  mediaport.ChannelAttachmentReferenceReader
+	miniprograms mediaport.ChannelMiniProgramReferenceReader
+	groupInvites mediaport.ChannelGroupInviteReferenceReader
+	tags         contactport.TagReferenceReader
+	staff        contactport.EligibleStaffReferenceReader
+	events       eventport.Appender
+	now          func() time.Time
 }
 
 func NewChannelService(uow platformport.UnitOfWork, store ChannelStore, events eventport.Appender) *ChannelService {
@@ -92,15 +104,27 @@ func NewChannelService(uow platformport.UnitOfWork, store ChannelStore, events e
 // NewChannelServiceWithImageReferences wires Media's transaction-bound image
 // reader for welcome_image_library_ids in the Contact-owned projection.
 func NewChannelServiceWithImageReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, events eventport.Appender) *ChannelService {
-	return NewChannelServiceWithMediaReferences(uow, store, images, nil, events)
+	return &ChannelService{uow: uow, store: store, images: images, events: events, now: time.Now}
 }
 
-// NewChannelServiceWithMediaReferences keeps the channel-owned JSON
-// projection while validating local Media IDs in the same UoW that persists
-// it. Attachment validation intentionally fails closed until its reader is
-// wired by the Attachment Library composition root.
-func NewChannelServiceWithMediaReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.AttachmentMetadataReader, events eventport.Appender) *ChannelService {
+// NewChannelServiceWithMediaReferences preserves the Attachment Library seam
+// while requiring its Channel-specific enabled-only reader.
+func NewChannelServiceWithMediaReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.ChannelAttachmentReferenceReader, events eventport.Appender) *ChannelService {
 	return &ChannelService{uow: uow, store: store, images: images, attachments: attachments, events: events, now: time.Now}
+}
+
+// NewChannelServiceWithLocalReferences validates Contact-owned tags and staff
+// in the same UnitOfWork as the channel mutation. It intentionally does not
+// accept Attachment, MiniProgram, or GroupInvite dependencies before their
+// authoritative shared reference contracts are available.
+func NewChannelServiceWithLocalReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, tags contactport.TagReferenceReader, staff contactport.EligibleStaffReferenceReader, events eventport.Appender) *ChannelService {
+	return &ChannelService{uow: uow, store: store, images: images, tags: tags, staff: staff, events: events, now: time.Now}
+}
+
+// NewChannelServiceWithReferences validates every local welcome reference in
+// the same transaction that persists the Channel projection.
+func NewChannelServiceWithReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.ChannelAttachmentReferenceReader, miniprograms mediaport.ChannelMiniProgramReferenceReader, groupInvites mediaport.ChannelGroupInviteReferenceReader, tags contactport.TagReferenceReader, staff contactport.EligibleStaffReferenceReader, events eventport.Appender) *ChannelService {
+	return &ChannelService{uow: uow, store: store, images: images, attachments: attachments, miniprograms: miniprograms, groupInvites: groupInvites, tags: tags, staff: staff, events: events, now: time.Now}
 }
 
 func (service *ChannelService) ListChannels(ctx context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
@@ -112,7 +136,10 @@ func (service *ChannelService) ListChannels(ctx context.Context, limit int32, st
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		var err error
 		rows, err = service.store.ListChannels(tx, limit, status, includeArchived)
-		return err
+		if err != nil {
+			return err
+		}
+		return service.hydrateAssignees(tx, rows)
 	})
 	if err != nil || !validChannels(rows) {
 		return nil, classifyChannel(err)
@@ -128,7 +155,10 @@ func (service *ChannelService) GetChannel(ctx context.Context, id int64) (Channe
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		var err error
 		result, err = service.store.GetChannel(tx, id)
-		return err
+		if err != nil {
+			return err
+		}
+		return service.hydrateChannelAssignees(tx, &result)
 	})
 	if err != nil || !validChannel(result) {
 		return Channel{}, classifyChannel(err)
@@ -145,7 +175,7 @@ func (service *ChannelService) CreateChannel(ctx context.Context, command Create
 		return Channel{}, err
 	}
 	return service.mutate(ctx, "create", normalized.Actor, normalized.IdempotencyKey, normalized, func(tx context.Context, now time.Time) (Channel, error) {
-		if err := service.validateMediaReferences(tx, normalized.LegacyProjection); err != nil {
+		if err := service.validateLocalReferences(tx, normalized.LegacyProjection); err != nil {
 			return Channel{}, err
 		}
 		return service.store.CreateChannel(tx, normalized, now)
@@ -165,7 +195,7 @@ func (service *ChannelService) UpdateChannel(ctx context.Context, command Update
 		if err != nil {
 			return Channel{}, err
 		}
-		if err := service.validateMediaReferences(tx, merged.LegacyProjection); err != nil {
+		if err := service.validateLocalReferences(tx, merged.LegacyProjection); err != nil {
 			return Channel{}, err
 		}
 		return service.store.UpdateChannel(tx, merged, command.Actor, now)
@@ -206,10 +236,16 @@ func (service *ChannelService) mutate(ctx context.Context, operation string, act
 			if snapErr != nil || !jsonEquivalent(snapshot, receipt.ResultSnapshot) {
 				return ErrChannelUnavailable
 			}
+			if reserveErr = service.hydrateChannelAssignees(tx, &result); reserveErr != nil {
+				return reserveErr
+			}
 			return nil
 		}
 		result, reserveErr = apply(tx, now)
 		if reserveErr != nil {
+			return reserveErr
+		}
+		if reserveErr = service.hydrateChannelAssignees(tx, &result); reserveErr != nil {
 			return reserveErr
 		}
 		if !validChannel(result) {
@@ -415,38 +451,166 @@ func (service *ChannelService) validateImageReferences(ctx context.Context, proj
 	return nil
 }
 
-func (service *ChannelService) validateAttachmentReferences(ctx context.Context, projection json.RawMessage) error {
+func (service *ChannelService) validateLocalReferences(ctx context.Context, projection json.RawMessage) error {
+	if err := service.validateImageReferences(ctx, projection); err != nil {
+		return err
+	}
+	if err := service.validateMaterialReferences(ctx, projection); err != nil {
+		return err
+	}
+	if err := service.validateEntryTag(ctx, projection); err != nil {
+		return err
+	}
+	_, err := service.assigneesForProjection(ctx, projection)
+	return err
+}
+
+func (service *ChannelService) validateMaterialReferences(ctx context.Context, projection json.RawMessage) error {
 	values, err := object(projection)
 	if err != nil {
 		return ErrChannelUnavailable
 	}
-	var attachmentIDs []int64
-	if err := json.Unmarshal(values["welcome_attachment_library_ids"], &attachmentIDs); err != nil {
-		return ErrChannelUnavailable
-	}
-	if len(attachmentIDs) == 0 {
-		return nil
-	}
-	if service == nil || service.attachments == nil {
-		return ErrChannelUnavailable
-	}
-	for _, attachmentID := range attachmentIDs {
-		exists, err := service.attachments.AttachmentExists(ctx, attachmentID)
-		if err != nil {
+	for _, reference := range []struct {
+		key      string
+		eligible func(context.Context, int64) (bool, error)
+	}{
+		{"welcome_attachment_library_ids", func(ctx context.Context, id int64) (bool, error) {
+			if service == nil || service.attachments == nil {
+				return false, ErrChannelUnavailable
+			}
+			return service.attachments.ChannelAttachmentEligible(ctx, id)
+		}},
+		{"welcome_miniprogram_library_ids", func(ctx context.Context, id int64) (bool, error) {
+			if service == nil || service.miniprograms == nil {
+				return false, ErrChannelUnavailable
+			}
+			return service.miniprograms.ChannelMiniProgramEligible(ctx, id)
+		}},
+		{"welcome_group_invite_library_ids", func(ctx context.Context, id int64) (bool, error) {
+			if service == nil || service.groupInvites == nil {
+				return false, ErrChannelUnavailable
+			}
+			return service.groupInvites.ChannelGroupInviteEligible(ctx, id)
+		}},
+	} {
+		var ids []int64
+		if json.Unmarshal(values[reference.key], &ids) != nil {
 			return ErrChannelUnavailable
 		}
-		if !exists {
-			return ErrInvalidChannel
+		for _, id := range ids {
+			eligible, lookupErr := reference.eligible(ctx, id)
+			if lookupErr != nil {
+				return ErrChannelUnavailable
+			}
+			if !eligible {
+				return ErrInvalidChannel
+			}
 		}
 	}
 	return nil
 }
 
-func (service *ChannelService) validateMediaReferences(ctx context.Context, projection json.RawMessage) error {
-	if err := service.validateImageReferences(ctx, projection); err != nil {
+func (service *ChannelService) validateEntryTag(ctx context.Context, projection json.RawMessage) error {
+	values, err := object(projection)
+	if err != nil {
+		return ErrChannelUnavailable
+	}
+	var id, name, groupName string
+	if json.Unmarshal(values["entry_tag_id"], &id) != nil || json.Unmarshal(values["entry_tag_name"], &name) != nil || json.Unmarshal(values["entry_tag_group_name"], &groupName) != nil {
+		return ErrChannelUnavailable
+	}
+	if id == "" && name == "" && groupName == "" {
+		return nil
+	}
+	if !canonicalPositiveID(id) || name == "" || service == nil || service.tags == nil {
+		return ErrInvalidChannel
+	}
+	tagID, _ := strconv.ParseInt(id, 10, 64)
+	tag, err := service.tags.LockActiveTag(ctx, tagID)
+	if err != nil {
+		if errors.Is(err, contactport.ErrTagReferenceNotFound) {
+			return ErrInvalidChannel
+		}
+		return ErrChannelUnavailable
+	}
+	if tag.ID != tagID || tag.Name != name {
+		return ErrInvalidChannel
+	}
+	if tag.GroupName == nil {
+		if groupName == "" {
+			return nil
+		}
+		return ErrInvalidChannel
+	}
+	if *tag.GroupName != groupName {
+		return ErrInvalidChannel
+	}
+	return nil
+}
+
+func (service *ChannelService) hydrateAssignees(ctx context.Context, channels []Channel) error {
+	for index := range channels {
+		if err := service.hydrateChannelAssignees(ctx, &channels[index]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (service *ChannelService) hydrateChannelAssignees(ctx context.Context, channel *Channel) error {
+	if channel == nil {
+		return ErrChannelUnavailable
+	}
+	assignees, err := service.assigneesForProjection(ctx, channel.LegacyProjection)
+	if errors.Is(err, ErrInvalidChannel) {
+		return ErrChannelUnavailable
+	}
+	if err != nil {
 		return err
 	}
-	return service.validateAttachmentReferences(ctx, projection)
+	channel.Assignees = assignees
+	return nil
+}
+
+func (service *ChannelService) assigneesForProjection(ctx context.Context, projection json.RawMessage) ([]ChannelAssignee, error) {
+	values, err := object(projection)
+	if err != nil {
+		return nil, ErrChannelUnavailable
+	}
+	var owner string
+	if json.Unmarshal(values["owner_staff_id"], &owner) != nil {
+		return nil, ErrChannelUnavailable
+	}
+	if owner == "" {
+		return []ChannelAssignee{}, nil
+	}
+	if !validText(owner, 200) {
+		return nil, ErrInvalidChannel
+	}
+	if service == nil || service.staff == nil {
+		return nil, ErrChannelUnavailable
+	}
+	entry, err := service.staff.LockEligibleStaffByWeComUserID(ctx, owner)
+	if errors.Is(err, contactport.ErrStaffReferenceNotFound) {
+		return nil, ErrInvalidChannel
+	}
+	if err != nil || entry.WeComUserID != owner || !validText(entry.DisplayName, 200) || entry.UpdatedAt.IsZero() {
+		return nil, ErrChannelUnavailable
+	}
+	return []ChannelAssignee{{WeComUserID: entry.WeComUserID, DisplayName: entry.DisplayName}}, nil
+}
+
+func canonicalPositiveID(value string) bool {
+	if value == "" || value[0] == '0' {
+		return false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	_, err := strconv.ParseInt(value, 10, 64)
+	return err == nil
 }
 
 func object(raw []byte) (map[string]json.RawMessage, error) {
@@ -478,7 +642,20 @@ func validChannelStatus(v string) bool { return v == "active" || v == "inactive"
 func validText(v string, max int) bool { return v != "" && strings.TrimSpace(v) == v && len(v) <= max }
 func validKey(v string) bool           { return len(v) >= 16 && len(v) <= 128 && strings.TrimSpace(v) == v }
 func validChannel(v Channel) bool {
-	return v.ID > 0 && validText(v.ChannelCode, 200) && validText(v.ChannelName, 200) && validChannelStatus(v.Status) && v.CreatedBy > 0 && v.UpdatedBy > 0 && !v.CreatedAt.IsZero() && !v.UpdatedAt.Before(v.CreatedAt) && json.Valid(v.LegacyProjection)
+	if !(v.ID > 0 && validText(v.ChannelCode, 200) && validText(v.ChannelName, 200) && validChannelStatus(v.Status) && v.CreatedBy > 0 && v.UpdatedBy > 0 && !v.CreatedAt.IsZero() && !v.UpdatedAt.Before(v.CreatedAt) && json.Valid(v.LegacyProjection)) {
+		return false
+	}
+	seen := map[string]struct{}{}
+	for _, assignee := range v.Assignees {
+		if !validText(assignee.WeComUserID, 200) || !validText(assignee.DisplayName, 200) {
+			return false
+		}
+		if _, duplicate := seen[assignee.WeComUserID]; duplicate {
+			return false
+		}
+		seen[assignee.WeComUserID] = struct{}{}
+	}
+	return true
 }
 func validChannels(v []Channel) bool {
 	for _, item := range v {
@@ -496,6 +673,7 @@ func channelReady(s *ChannelService) bool {
 }
 func cloneChannel(v Channel) Channel {
 	v.LegacyProjection = append([]byte(nil), v.LegacyProjection...)
+	v.Assignees = append([]ChannelAssignee(nil), v.Assignees...)
 	return v
 }
 func cloneChannels(v []Channel) []Channel {
