@@ -49,6 +49,7 @@ type Querier interface {
 	ListTags(ctx context.Context) ([]ListTagsRow, error)
 	LoadCustomerEventAnalyticsSummary(ctx context.Context, arg LoadCustomerEventAnalyticsSummaryParams) (LoadCustomerEventAnalyticsSummaryRow, error)
 	LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error)
+	LockActiveTagReference(ctx context.Context, tagID int64) (LockActiveTagReferenceRow, error)
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
 	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)

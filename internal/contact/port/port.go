@@ -15,15 +15,17 @@ type Actor string
 type StageID int64
 
 var (
-	ErrInvalidStage          = errors.New("invalid stage")
-	ErrStageNotFound         = errors.New("stage not found")
-	ErrStageReferenced       = errors.New("stage is still referenced by customers")
-	ErrStageConflict         = errors.New("stage command conflict")
-	ErrInvalidMergeCommand   = errors.New("invalid contact merge command")
-	ErrMergeCustomerNotFound = errors.New("contact merge customer not found")
-	ErrMergeConflict         = errors.New("contact merge conflict")
-	ErrMergeStoreFailed      = errors.New("contact merge store failed")
-	ErrExternalEventConflict = errors.New("external customer event conflict")
+	ErrInvalidStage            = errors.New("invalid stage")
+	ErrStageNotFound           = errors.New("stage not found")
+	ErrStageReferenced         = errors.New("stage is still referenced by customers")
+	ErrStageConflict           = errors.New("stage command conflict")
+	ErrInvalidMergeCommand     = errors.New("invalid contact merge command")
+	ErrMergeCustomerNotFound   = errors.New("contact merge customer not found")
+	ErrMergeConflict           = errors.New("contact merge conflict")
+	ErrMergeStoreFailed        = errors.New("contact merge store failed")
+	ErrExternalEventConflict   = errors.New("external customer event conflict")
+	ErrTagReferenceNotFound    = errors.New("contact tag reference not found")
+	ErrTagReferenceUnavailable = errors.New("contact tag reference unavailable")
 )
 
 var (
@@ -49,10 +51,17 @@ type ImageReferenceReader interface {
 	ListImageReferenceChannelIDs(context.Context, int64) ([]int64, error)
 }
 
-// AttachmentReferenceReader is the Contact-owned read-only answer to whether
-// a channel welcome projection references one private attachment.
-type AttachmentReferenceReader interface {
-	ListAttachmentReferenceChannelIDs(context.Context, int64) ([]int64, error)
+// TagReferenceReader locks one active Contact-owned tag in the caller's
+// UnitOfWork. It prevents a channel mutation from committing a stale tag
+// reference while that tag or its group is being archived.
+type TagReferenceReader interface {
+	LockActiveTag(context.Context, int64) (TagReference, error)
+}
+
+type TagReference struct {
+	ID        int64
+	Name      string
+	GroupName *string
 }
 
 // StaffDirectoryReader exposes the narrowly-scoped local staff projection to

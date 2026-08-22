@@ -5,7 +5,9 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/jackc/pgx/v5"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -18,6 +20,7 @@ var errInvalidTagCatalogRow = errors.New("tag catalog query returned an invalid 
 type TagCatalogRepository struct{}
 
 var _ contactapp.TagCatalogStore = (*TagCatalogRepository)(nil)
+var _ contactport.TagReferenceReader = (*TagCatalogRepository)(nil)
 
 func NewTagCatalogRepository() *TagCatalogRepository {
 	return &TagCatalogRepository{}
@@ -59,6 +62,32 @@ func (*TagCatalogRepository) ListTags(ctx context.Context) ([]contactapp.TagCata
 		items = append(items, record)
 	}
 	return items, nil
+}
+
+func (*TagCatalogRepository) LockActiveTag(ctx context.Context, id int64) (contactport.TagReference, error) {
+	if id < 1 || isNilTagCatalogStoreValue(ctx) {
+		return contactport.TagReference{}, contactport.ErrTagReferenceNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil || isNilTagCatalogStoreValue(tx) {
+		return contactport.TagReference{}, contactport.ErrTagReferenceUnavailable
+	}
+	row, err := contactdb.New(tx).LockActiveTagReference(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactport.TagReference{}, contactport.ErrTagReferenceNotFound
+	}
+	if err != nil || row.ID != id || row.Name == "" {
+		return contactport.TagReference{}, contactport.ErrTagReferenceUnavailable
+	}
+	result := contactport.TagReference{ID: row.ID, Name: row.Name}
+	if row.GroupName.Valid {
+		name := row.GroupName.String
+		if name == "" {
+			return contactport.TagReference{}, contactport.ErrTagReferenceUnavailable
+		}
+		result.GroupName = &name
+	}
+	return result, nil
 }
 
 func isNilTagCatalogStoreValue(value any) bool {

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 )
@@ -190,7 +191,56 @@ func (store *channelStore) CompleteChannel(_ context.Context, id int64, snapshot
 func channelTestService() (*ChannelService, *channelStore, *channelEvents) {
 	store := &channelStore{receipts: map[string]ChannelReceipt{}}
 	events := &channelEvents{}
-	service := NewChannelService(channelUOW{}, store, events)
+	service := NewChannelServiceWithLocalReferences(
+		channelUOW{}, store, nil, channelTagReader{},
+		channelStaffDirectory{entries: []contactport.StaffDirectoryEntry{{WeComUserID: "staff-7", DisplayName: "成员 7", UpdatedAt: time.Date(2026, 8, 15, 10, 0, 0, 0, time.UTC)}}},
+		events,
+	)
 	service.now = func() time.Time { return time.Date(2026, 8, 15, 11, 0, 0, 0, time.UTC) }
 	return service, store, events
+}
+
+type channelTagReader struct{ records []contactport.TagReference }
+
+func (reader channelTagReader) LockActiveTag(_ context.Context, id int64) (contactport.TagReference, error) {
+	for _, record := range reader.records {
+		if record.ID == id {
+			return record, nil
+		}
+	}
+	return contactport.TagReference{}, contactport.ErrTagReferenceNotFound
+}
+
+type channelStaffDirectory struct {
+	entries []contactport.StaffDirectoryEntry
+}
+
+func (directory channelStaffDirectory) ListEligibleStaff(context.Context) ([]contactport.StaffDirectoryEntry, error) {
+	return append([]contactport.StaffDirectoryEntry(nil), directory.entries...), nil
+}
+
+func TestC01ChannelValidatesEntryTagAndProjectsEligibleOwner(t *testing.T) {
+	groupName := "新客"
+	service, store, _ := channelTestService()
+	service.tags = channelTagReader{records: []contactport.TagReference{{ID: 8, Name: "已报名", GroupName: &groupName}}}
+	created, err := service.CreateChannel(context.Background(), CreateChannelCommand{
+		Actor: 7, IdempotencyKey: "channel-reference-key-0001", ChannelName: "公开课",
+		LegacyProjection: json.RawMessage(`{"owner_staff_id":"staff-7","entry_tag_id":"8","entry_tag_name":"已报名","entry_tag_group_name":"新客"}`),
+	})
+	if err != nil || len(created.Assignees) != 1 || created.Assignees[0].WeComUserID != "staff-7" || created.Assignees[0].DisplayName != "成员 7" {
+		t.Fatalf("created=%+v error=%v", created, err)
+	}
+	for index, projection := range []string{
+		`{"owner_staff_id":"archived","entry_tag_id":"8","entry_tag_name":"已报名","entry_tag_group_name":"新客"}`,
+		`{"owner_staff_id":"staff-7","entry_tag_id":"08","entry_tag_name":"已报名","entry_tag_group_name":"新客"}`,
+		`{"owner_staff_id":"staff-7","entry_tag_id":"8","entry_tag_name":"错误","entry_tag_group_name":"新客"}`,
+	} {
+		before := store.creates
+		if _, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: fmt.Sprintf("channel-reference-invalid-%04d", index), ChannelName: "公开课", LegacyProjection: json.RawMessage(projection)}); !errors.Is(err, ErrInvalidChannel) {
+			t.Fatalf("projection=%s error=%v", projection, err)
+		}
+		if store.creates != before {
+			t.Fatalf("invalid projection wrote channel: %s", projection)
+		}
+	}
 }

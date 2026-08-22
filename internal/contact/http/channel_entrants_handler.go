@@ -222,7 +222,7 @@ func channelEntrantsValidResponse(
 ) bool {
 	if response.ChannelID != input.ChannelID || response.Limit != input.Limit ||
 		response.Items == nil || len(response.Items) > response.Limit ||
-		!response.LocalProjection || response.RealExternalCallExecuted ||
+		!response.LocalProjection || response.ProviderExecutionEligible || response.RealExternalCallExecuted ||
 		len(response.NextCursor) > channelEntrantsMaximumCursorSize || !utf8.ValidString(response.NextCursor) ||
 		(response.HasMore && (len(response.Items) != response.Limit || response.NextCursor == "")) ||
 		(!response.HasMore && response.NextCursor != "") {

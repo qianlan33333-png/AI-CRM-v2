@@ -762,6 +762,516 @@ func (e IngestIdentityEventPendingStatus) Valid() bool {
 	}
 }
 
+// Defines values for LegacyChannelAssignmentMode.
+const (
+	LegacyChannelAssignmentModeMultiStaff  LegacyChannelAssignmentMode = "multi_staff"
+	LegacyChannelAssignmentModeSingleOwner LegacyChannelAssignmentMode = "single_owner"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelAssignmentMode enum.
+func (e LegacyChannelAssignmentMode) Valid() bool {
+	switch e {
+	case LegacyChannelAssignmentModeMultiStaff:
+		return true
+	case LegacyChannelAssignmentModeSingleOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelAssignmentStrategy.
+const (
+	LegacyChannelAssignmentStrategyCapSwitch LegacyChannelAssignmentStrategy = "cap_switch"
+	LegacyChannelAssignmentStrategyRatio     LegacyChannelAssignmentStrategy = "ratio"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelAssignmentStrategy enum.
+func (e LegacyChannelAssignmentStrategy) Valid() bool {
+	switch e {
+	case LegacyChannelAssignmentStrategyCapSwitch:
+		return true
+	case LegacyChannelAssignmentStrategyRatio:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelCarrierType.
+const (
+	LegacyChannelCarrierTypeLink   LegacyChannelCarrierType = "link"
+	LegacyChannelCarrierTypeQrcode LegacyChannelCarrierType = "qrcode"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelCarrierType enum.
+func (e LegacyChannelCarrierType) Valid() bool {
+	switch e {
+	case LegacyChannelCarrierTypeLink:
+		return true
+	case LegacyChannelCarrierTypeQrcode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelChannelType.
+const (
+	LegacyChannelChannelTypeQrcode                   LegacyChannelChannelType = "qrcode"
+	LegacyChannelChannelTypeWecomCustomerAcquisition LegacyChannelChannelType = "wecom_customer_acquisition"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelChannelType enum.
+func (e LegacyChannelChannelType) Valid() bool {
+	switch e {
+	case LegacyChannelChannelTypeQrcode:
+		return true
+	case LegacyChannelChannelTypeWecomCustomerAcquisition:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelCopyText.
+const (
+	LegacyChannelCopyTextEmpty LegacyChannelCopyText = ""
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelCopyText enum.
+func (e LegacyChannelCopyText) Valid() bool {
+	switch e {
+	case LegacyChannelCopyTextEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelLatestChannelEnteredAt.
+const (
+	LegacyChannelLatestChannelEnteredAtEmpty LegacyChannelLatestChannelEnteredAt = ""
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelLatestChannelEnteredAt enum.
+func (e LegacyChannelLatestChannelEnteredAt) Valid() bool {
+	switch e {
+	case LegacyChannelLatestChannelEnteredAtEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelQrDownloadUrl.
+const (
+	LegacyChannelQrDownloadUrlEmpty LegacyChannelQrDownloadUrl = ""
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelQrDownloadUrl enum.
+func (e LegacyChannelQrDownloadUrl) Valid() bool {
+	switch e {
+	case LegacyChannelQrDownloadUrlEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelQrcodeStatus.
+const (
+	NotGenerated LegacyChannelQrcodeStatus = "not_generated"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelQrcodeStatus enum.
+func (e LegacyChannelQrcodeStatus) Valid() bool {
+	switch e {
+	case NotGenerated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelShareUrl.
+const (
+	LegacyChannelShareUrlEmpty LegacyChannelShareUrl = ""
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelShareUrl enum.
+func (e LegacyChannelShareUrl) Valid() bool {
+	switch e {
+	case LegacyChannelShareUrlEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelStatus.
+const (
+	LegacyChannelStatusActive   LegacyChannelStatus = "active"
+	LegacyChannelStatusArchived LegacyChannelStatus = "archived"
+	LegacyChannelStatusInactive LegacyChannelStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelStatus enum.
+func (e LegacyChannelStatus) Valid() bool {
+	switch e {
+	case LegacyChannelStatusActive:
+		return true
+	case LegacyChannelStatusArchived:
+		return true
+	case LegacyChannelStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelDetailResponseOk.
+const (
+	LegacyChannelDetailResponseOkTrue LegacyChannelDetailResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelDetailResponseOk enum.
+func (e LegacyChannelDetailResponseOk) Valid() bool {
+	switch e {
+	case LegacyChannelDetailResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelDetailResponseReason.
+const (
+	ChannelLoaded LegacyChannelDetailResponseReason = "channel_loaded"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelDetailResponseReason enum.
+func (e LegacyChannelDetailResponseReason) Valid() bool {
+	switch e {
+	case ChannelLoaded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelDetailResponseSource.
+const (
+	LegacyChannelDetailResponseSourceAiCrmNext LegacyChannelDetailResponseSource = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelDetailResponseSource enum.
+func (e LegacyChannelDetailResponseSource) Valid() bool {
+	switch e {
+	case LegacyChannelDetailResponseSourceAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelEntrantsResponseLocalProjection.
+const (
+	LegacyChannelEntrantsResponseLocalProjectionTrue LegacyChannelEntrantsResponseLocalProjection = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelEntrantsResponseLocalProjection enum.
+func (e LegacyChannelEntrantsResponseLocalProjection) Valid() bool {
+	switch e {
+	case LegacyChannelEntrantsResponseLocalProjectionTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelEntrantsResponseProviderExecutionEligible.
+const (
+	LegacyChannelEntrantsResponseProviderExecutionEligibleFalse LegacyChannelEntrantsResponseProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelEntrantsResponseProviderExecutionEligible enum.
+func (e LegacyChannelEntrantsResponseProviderExecutionEligible) Valid() bool {
+	switch e {
+	case LegacyChannelEntrantsResponseProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelEntrantsResponseRealExternalCallExecuted.
+const (
+	LegacyChannelEntrantsResponseRealExternalCallExecutedFalse LegacyChannelEntrantsResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelEntrantsResponseRealExternalCallExecuted enum.
+func (e LegacyChannelEntrantsResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyChannelEntrantsResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelListItemStatus.
+const (
+	LegacyChannelListItemStatusActive   LegacyChannelListItemStatus = "active"
+	LegacyChannelListItemStatusArchived LegacyChannelListItemStatus = "archived"
+	LegacyChannelListItemStatusInactive LegacyChannelListItemStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelListItemStatus enum.
+func (e LegacyChannelListItemStatus) Valid() bool {
+	switch e {
+	case LegacyChannelListItemStatusActive:
+		return true
+	case LegacyChannelListItemStatusArchived:
+		return true
+	case LegacyChannelListItemStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelListResponseOk.
+const (
+	LegacyChannelListResponseOkTrue LegacyChannelListResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelListResponseOk enum.
+func (e LegacyChannelListResponseOk) Valid() bool {
+	switch e {
+	case LegacyChannelListResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelListResponseReason.
+const (
+	ChannelsListed LegacyChannelListResponseReason = "channels_listed"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelListResponseReason enum.
+func (e LegacyChannelListResponseReason) Valid() bool {
+	switch e {
+	case ChannelsListed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelListResponseSource.
+const (
+	LegacyChannelListResponseSourceAiCrmNext LegacyChannelListResponseSource = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelListResponseSource enum.
+func (e LegacyChannelListResponseSource) Valid() bool {
+	switch e {
+	case LegacyChannelListResponseSourceAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelMutationResponseFallbackUsed.
+const (
+	LegacyChannelMutationResponseFallbackUsedFalse LegacyChannelMutationResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelMutationResponseFallbackUsed enum.
+func (e LegacyChannelMutationResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyChannelMutationResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelMutationResponseOk.
+const (
+	LegacyChannelMutationResponseOkTrue LegacyChannelMutationResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelMutationResponseOk enum.
+func (e LegacyChannelMutationResponseOk) Valid() bool {
+	switch e {
+	case LegacyChannelMutationResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelMutationResponseProviderExecutionEligible.
+const (
+	LegacyChannelMutationResponseProviderExecutionEligibleFalse LegacyChannelMutationResponseProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelMutationResponseProviderExecutionEligible enum.
+func (e LegacyChannelMutationResponseProviderExecutionEligible) Valid() bool {
+	switch e {
+	case LegacyChannelMutationResponseProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelMutationResponseRealExternalCallExecuted.
+const (
+	LegacyChannelMutationResponseRealExternalCallExecutedFalse LegacyChannelMutationResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelMutationResponseRealExternalCallExecuted enum.
+func (e LegacyChannelMutationResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyChannelMutationResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelMutationResponseReason.
+const (
+	ChannelCreated LegacyChannelMutationResponseReason = "channel_created"
+	ChannelUpdated LegacyChannelMutationResponseReason = "channel_updated"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelMutationResponseReason enum.
+func (e LegacyChannelMutationResponseReason) Valid() bool {
+	switch e {
+	case ChannelCreated:
+		return true
+	case ChannelUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelMutationResponseSource.
+const (
+	LegacyChannelMutationResponseSourceAiCrmNext LegacyChannelMutationResponseSource = "ai_crm_next"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelMutationResponseSource enum.
+func (e LegacyChannelMutationResponseSource) Valid() bool {
+	switch e {
+	case LegacyChannelMutationResponseSourceAiCrmNext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelWriteRequestAssignmentMode.
+const (
+	LegacyChannelWriteRequestAssignmentModeMultiStaff  LegacyChannelWriteRequestAssignmentMode = "multi_staff"
+	LegacyChannelWriteRequestAssignmentModeSingleOwner LegacyChannelWriteRequestAssignmentMode = "single_owner"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelWriteRequestAssignmentMode enum.
+func (e LegacyChannelWriteRequestAssignmentMode) Valid() bool {
+	switch e {
+	case LegacyChannelWriteRequestAssignmentModeMultiStaff:
+		return true
+	case LegacyChannelWriteRequestAssignmentModeSingleOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelWriteRequestAssignmentStrategy.
+const (
+	LegacyChannelWriteRequestAssignmentStrategyCapSwitch LegacyChannelWriteRequestAssignmentStrategy = "cap_switch"
+	LegacyChannelWriteRequestAssignmentStrategyRatio     LegacyChannelWriteRequestAssignmentStrategy = "ratio"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelWriteRequestAssignmentStrategy enum.
+func (e LegacyChannelWriteRequestAssignmentStrategy) Valid() bool {
+	switch e {
+	case LegacyChannelWriteRequestAssignmentStrategyCapSwitch:
+		return true
+	case LegacyChannelWriteRequestAssignmentStrategyRatio:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelWriteRequestCarrierType.
+const (
+	LegacyChannelWriteRequestCarrierTypeLink   LegacyChannelWriteRequestCarrierType = "link"
+	LegacyChannelWriteRequestCarrierTypeQrcode LegacyChannelWriteRequestCarrierType = "qrcode"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelWriteRequestCarrierType enum.
+func (e LegacyChannelWriteRequestCarrierType) Valid() bool {
+	switch e {
+	case LegacyChannelWriteRequestCarrierTypeLink:
+		return true
+	case LegacyChannelWriteRequestCarrierTypeQrcode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelWriteRequestChannelType.
+const (
+	LegacyChannelWriteRequestChannelTypeQrcode                   LegacyChannelWriteRequestChannelType = "qrcode"
+	LegacyChannelWriteRequestChannelTypeWecomCustomerAcquisition LegacyChannelWriteRequestChannelType = "wecom_customer_acquisition"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelWriteRequestChannelType enum.
+func (e LegacyChannelWriteRequestChannelType) Valid() bool {
+	switch e {
+	case LegacyChannelWriteRequestChannelTypeQrcode:
+		return true
+	case LegacyChannelWriteRequestChannelTypeWecomCustomerAcquisition:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyChannelWriteRequestStatus.
+const (
+	LegacyChannelWriteRequestStatusActive   LegacyChannelWriteRequestStatus = "active"
+	LegacyChannelWriteRequestStatusArchived LegacyChannelWriteRequestStatus = "archived"
+	LegacyChannelWriteRequestStatusInactive LegacyChannelWriteRequestStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the LegacyChannelWriteRequestStatus enum.
+func (e LegacyChannelWriteRequestStatus) Valid() bool {
+	switch e {
+	case LegacyChannelWriteRequestStatusActive:
+		return true
+	case LegacyChannelWriteRequestStatusArchived:
+		return true
+	case LegacyChannelWriteRequestStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyExecutionNotFoundError.
 const (
 	ExecutionNotFound LegacyExecutionNotFoundError = "execution_not_found"
@@ -1868,13 +2378,13 @@ func (e LegacyRuntimeHealthSnapshotRepositoryPolicy) Valid() bool {
 
 // Defines values for LegacyRuntimeHealthSnapshotRuntimeOwner.
 const (
-	AiCrmNext LegacyRuntimeHealthSnapshotRuntimeOwner = "ai_crm_next"
+	LegacyRuntimeHealthSnapshotRuntimeOwnerAiCrmNext LegacyRuntimeHealthSnapshotRuntimeOwner = "ai_crm_next"
 )
 
 // Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotRuntimeOwner enum.
 func (e LegacyRuntimeHealthSnapshotRuntimeOwner) Valid() bool {
 	switch e {
-	case AiCrmNext:
+	case LegacyRuntimeHealthSnapshotRuntimeOwnerAiCrmNext:
 		return true
 	default:
 		return false
@@ -2747,13 +3257,13 @@ func (e ServicePeriodMemberGridShareSettingsExternalShareSupported) Valid() bool
 
 // Defines values for ServicePeriodMemberGridShareSettingsRealExternalCallExecuted.
 const (
-	ServicePeriodMemberGridShareSettingsRealExternalCallExecutedFalse ServicePeriodMemberGridShareSettingsRealExternalCallExecuted = false
+	False ServicePeriodMemberGridShareSettingsRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsRealExternalCallExecuted enum.
 func (e ServicePeriodMemberGridShareSettingsRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case ServicePeriodMemberGridShareSettingsRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -3062,19 +3572,19 @@ func (e ServicePeriodMemberViewUpdateRequestSort) Valid() bool {
 
 // Defines values for ServicePeriodMemberViewUpdateRequestState.
 const (
-	Active  ServicePeriodMemberViewUpdateRequestState = "active"
-	All     ServicePeriodMemberViewUpdateRequestState = "all"
-	Revoked ServicePeriodMemberViewUpdateRequestState = "revoked"
+	ServicePeriodMemberViewUpdateRequestStateActive  ServicePeriodMemberViewUpdateRequestState = "active"
+	ServicePeriodMemberViewUpdateRequestStateAll     ServicePeriodMemberViewUpdateRequestState = "all"
+	ServicePeriodMemberViewUpdateRequestStateRevoked ServicePeriodMemberViewUpdateRequestState = "revoked"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberViewUpdateRequestState enum.
 func (e ServicePeriodMemberViewUpdateRequestState) Valid() bool {
 	switch e {
-	case Active:
+	case ServicePeriodMemberViewUpdateRequestStateActive:
 		return true
-	case All:
+	case ServicePeriodMemberViewUpdateRequestStateAll:
 		return true
-	case Revoked:
+	case ServicePeriodMemberViewUpdateRequestStateRevoked:
 		return true
 	default:
 		return false
@@ -3083,22 +3593,22 @@ func (e ServicePeriodMemberViewUpdateRequestState) Valid() bool {
 
 // Defines values for ServicePeriodProductLifecycle.
 const (
-	Archived ServicePeriodProductLifecycle = "archived"
-	Disabled ServicePeriodProductLifecycle = "disabled"
-	Draft    ServicePeriodProductLifecycle = "draft"
-	Enabled  ServicePeriodProductLifecycle = "enabled"
+	ServicePeriodProductLifecycleArchived ServicePeriodProductLifecycle = "archived"
+	ServicePeriodProductLifecycleDisabled ServicePeriodProductLifecycle = "disabled"
+	ServicePeriodProductLifecycleDraft    ServicePeriodProductLifecycle = "draft"
+	ServicePeriodProductLifecycleEnabled  ServicePeriodProductLifecycle = "enabled"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodProductLifecycle enum.
 func (e ServicePeriodProductLifecycle) Valid() bool {
 	switch e {
-	case Archived:
+	case ServicePeriodProductLifecycleArchived:
 		return true
-	case Disabled:
+	case ServicePeriodProductLifecycleDisabled:
 		return true
-	case Draft:
+	case ServicePeriodProductLifecycleDraft:
 		return true
-	case Enabled:
+	case ServicePeriodProductLifecycleEnabled:
 		return true
 	default:
 		return false
@@ -3162,6 +3672,27 @@ const (
 func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
 	switch e {
 	case ListAutomationTriggerRunsParamsVisibilityMasked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListLegacyChannelsParamsStatus.
+const (
+	ListLegacyChannelsParamsStatusActive   ListLegacyChannelsParamsStatus = "active"
+	ListLegacyChannelsParamsStatusArchived ListLegacyChannelsParamsStatus = "archived"
+	ListLegacyChannelsParamsStatusInactive ListLegacyChannelsParamsStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the ListLegacyChannelsParamsStatus enum.
+func (e ListLegacyChannelsParamsStatus) Valid() bool {
+	switch e {
+	case ListLegacyChannelsParamsStatusActive:
+		return true
+	case ListLegacyChannelsParamsStatusArchived:
+		return true
+	case ListLegacyChannelsParamsStatusInactive:
 		return true
 	default:
 		return false
@@ -3796,6 +4327,233 @@ type IngestIdentityEventRequest struct {
 type IngestIdentityEventResponse struct {
 	union json.RawMessage
 }
+
+// LegacyChannel defines model for LegacyChannel.
+type LegacyChannel struct {
+	AssigneeCount                *int                                 `json:"assignee_count,omitempty"`
+	Assignees                    *[]LegacyChannelAssignee             `json:"assignees,omitempty"`
+	AssignmentConfigJson         *map[string]interface{}              `json:"assignment_config_json,omitempty"`
+	AssignmentMode               *LegacyChannelAssignmentMode         `json:"assignment_mode,omitempty"`
+	AssignmentStats24h           *[]interface{}                       `json:"assignment_stats_24h,omitempty"`
+	AssignmentStrategy           *LegacyChannelAssignmentStrategy     `json:"assignment_strategy,omitempty"`
+	AutoAcceptFriend             *bool                                `json:"auto_accept_friend,omitempty"`
+	CarrierType                  *LegacyChannelCarrierType            `json:"carrier_type,omitempty"`
+	ChannelCode                  *string                              `json:"channel_code,omitempty"`
+	ChannelContactCount          *int                                 `json:"channel_contact_count,omitempty"`
+	ChannelName                  *string                              `json:"channel_name,omitempty"`
+	ChannelType                  *LegacyChannelChannelType            `json:"channel_type,omitempty"`
+	CopyText                     *LegacyChannelCopyText               `json:"copy_text,omitempty"`
+	CreatedAt                    *time.Time                           `json:"created_at,omitempty"`
+	CustomerChannel              *string                              `json:"customer_channel,omitempty"`
+	EntryTagGroupName            *string                              `json:"entry_tag_group_name,omitempty"`
+	EntryTagId                   *string                              `json:"entry_tag_id,omitempty"`
+	EntryTagName                 *string                              `json:"entry_tag_name,omitempty"`
+	FinalUrl                     *string                              `json:"final_url,omitempty"`
+	Id                           *int64                               `json:"id,omitempty"`
+	LatestChannelEnteredAt       *LegacyChannelLatestChannelEnteredAt `json:"latest_channel_entered_at,omitempty"`
+	LinkUrl                      *string                              `json:"link_url,omitempty"`
+	OverflowPolicy               *string                              `json:"overflow_policy,omitempty"`
+	OwnerStaffId                 *string                              `json:"owner_staff_id,omitempty"`
+	QrDownloadUrl                *LegacyChannelQrDownloadUrl          `json:"qr_download_url,omitempty"`
+	QrUrl                        *string                              `json:"qr_url,omitempty"`
+	QrcodeAssetId                *int                                 `json:"qrcode_asset_id,omitempty"`
+	QrcodeStatus                 *LegacyChannelQrcodeStatus           `json:"qrcode_status,omitempty"`
+	SceneValue                   *string                              `json:"scene_value,omitempty"`
+	ShareUrl                     *LegacyChannelShareUrl               `json:"share_url,omitempty"`
+	Status                       *LegacyChannelStatus                 `json:"status,omitempty"`
+	UpdatedAt                    *time.Time                           `json:"updated_at,omitempty"`
+	WelcomeAttachmentLibraryIds  *[]int64                             `json:"welcome_attachment_library_ids,omitempty"`
+	WelcomeGroupInviteLibraryIds *[]int64                             `json:"welcome_group_invite_library_ids,omitempty"`
+	WelcomeImageLibraryIds       *[]int64                             `json:"welcome_image_library_ids,omitempty"`
+	WelcomeMessage               *string                              `json:"welcome_message,omitempty"`
+	WelcomeMiniprogramLibraryIds *[]int64                             `json:"welcome_miniprogram_library_ids,omitempty"`
+}
+
+// LegacyChannelAssignmentMode defines model for LegacyChannel.AssignmentMode.
+type LegacyChannelAssignmentMode string
+
+// LegacyChannelAssignmentStrategy defines model for LegacyChannel.AssignmentStrategy.
+type LegacyChannelAssignmentStrategy string
+
+// LegacyChannelCarrierType defines model for LegacyChannel.CarrierType.
+type LegacyChannelCarrierType string
+
+// LegacyChannelChannelType defines model for LegacyChannel.ChannelType.
+type LegacyChannelChannelType string
+
+// LegacyChannelCopyText defines model for LegacyChannel.CopyText.
+type LegacyChannelCopyText string
+
+// LegacyChannelLatestChannelEnteredAt defines model for LegacyChannel.LatestChannelEnteredAt.
+type LegacyChannelLatestChannelEnteredAt string
+
+// LegacyChannelQrDownloadUrl defines model for LegacyChannel.QrDownloadUrl.
+type LegacyChannelQrDownloadUrl string
+
+// LegacyChannelQrcodeStatus defines model for LegacyChannel.QrcodeStatus.
+type LegacyChannelQrcodeStatus string
+
+// LegacyChannelShareUrl defines model for LegacyChannel.ShareUrl.
+type LegacyChannelShareUrl string
+
+// LegacyChannelStatus defines model for LegacyChannel.Status.
+type LegacyChannelStatus string
+
+// LegacyChannelAssignee defines model for LegacyChannelAssignee.
+type LegacyChannelAssignee struct {
+	DisplayName string `json:"display_name"`
+	WecomUserid string `json:"wecom_userid"`
+}
+
+// LegacyChannelDetailResponse defines model for LegacyChannelDetailResponse.
+type LegacyChannelDetailResponse struct {
+	Channel LegacyChannel                     `json:"channel"`
+	Ok      LegacyChannelDetailResponseOk     `json:"ok"`
+	Reason  LegacyChannelDetailResponseReason `json:"reason"`
+	Source  LegacyChannelDetailResponseSource `json:"source"`
+}
+
+// LegacyChannelDetailResponseOk defines model for LegacyChannelDetailResponse.Ok.
+type LegacyChannelDetailResponseOk bool
+
+// LegacyChannelDetailResponseReason defines model for LegacyChannelDetailResponse.Reason.
+type LegacyChannelDetailResponseReason string
+
+// LegacyChannelDetailResponseSource defines model for LegacyChannelDetailResponse.Source.
+type LegacyChannelDetailResponseSource string
+
+// LegacyChannelEntrant defines model for LegacyChannelEntrant.
+type LegacyChannelEntrant struct {
+	AddedAt        time.Time  `json:"added_at"`
+	CustomerId     int64      `json:"customer_id"`
+	DisplayName    string     `json:"display_name"`
+	LastInteractAt *time.Time `json:"last_interact_at"`
+}
+
+// LegacyChannelEntrantsResponse defines model for LegacyChannelEntrantsResponse.
+type LegacyChannelEntrantsResponse struct {
+	ChannelId                 int64                                                  `json:"channel_id"`
+	HasMore                   bool                                                   `json:"has_more"`
+	Items                     []LegacyChannelEntrant                                 `json:"items"`
+	Limit                     int                                                    `json:"limit"`
+	LocalProjection           LegacyChannelEntrantsResponseLocalProjection           `json:"local_projection"`
+	NextCursor                string                                                 `json:"next_cursor"`
+	ProviderExecutionEligible LegacyChannelEntrantsResponseProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  LegacyChannelEntrantsResponseRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// LegacyChannelEntrantsResponseLocalProjection defines model for LegacyChannelEntrantsResponse.LocalProjection.
+type LegacyChannelEntrantsResponseLocalProjection bool
+
+// LegacyChannelEntrantsResponseProviderExecutionEligible defines model for LegacyChannelEntrantsResponse.ProviderExecutionEligible.
+type LegacyChannelEntrantsResponseProviderExecutionEligible bool
+
+// LegacyChannelEntrantsResponseRealExternalCallExecuted defines model for LegacyChannelEntrantsResponse.RealExternalCallExecuted.
+type LegacyChannelEntrantsResponseRealExternalCallExecuted bool
+
+// LegacyChannelListItem defines model for LegacyChannelListItem.
+type LegacyChannelListItem struct {
+	AssigneeCount       int                         `json:"assignee_count"`
+	ChannelCode         string                      `json:"channel_code"`
+	ChannelContactCount int                         `json:"channel_contact_count"`
+	ChannelName         string                      `json:"channel_name"`
+	CreatedAt           time.Time                   `json:"created_at"`
+	Id                  int64                       `json:"id"`
+	Status              LegacyChannelListItemStatus `json:"status"`
+	UpdatedAt           time.Time                   `json:"updated_at"`
+}
+
+// LegacyChannelListItemStatus defines model for LegacyChannelListItem.Status.
+type LegacyChannelListItemStatus string
+
+// LegacyChannelListResponse defines model for LegacyChannelListResponse.
+type LegacyChannelListResponse struct {
+	Channels []LegacyChannelListItem         `json:"channels"`
+	Ok       LegacyChannelListResponseOk     `json:"ok"`
+	Reason   LegacyChannelListResponseReason `json:"reason"`
+	Source   LegacyChannelListResponseSource `json:"source"`
+}
+
+// LegacyChannelListResponseOk defines model for LegacyChannelListResponse.Ok.
+type LegacyChannelListResponseOk bool
+
+// LegacyChannelListResponseReason defines model for LegacyChannelListResponse.Reason.
+type LegacyChannelListResponseReason string
+
+// LegacyChannelListResponseSource defines model for LegacyChannelListResponse.Source.
+type LegacyChannelListResponseSource string
+
+// LegacyChannelMutationResponse defines model for LegacyChannelMutationResponse.
+type LegacyChannelMutationResponse struct {
+	Channel                   LegacyChannel                                          `json:"channel"`
+	FallbackUsed              LegacyChannelMutationResponseFallbackUsed              `json:"fallback_used"`
+	Ok                        LegacyChannelMutationResponseOk                        `json:"ok"`
+	ProviderExecutionEligible LegacyChannelMutationResponseProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  LegacyChannelMutationResponseRealExternalCallExecuted  `json:"real_external_call_executed"`
+	Reason                    LegacyChannelMutationResponseReason                    `json:"reason"`
+	Source                    LegacyChannelMutationResponseSource                    `json:"source"`
+}
+
+// LegacyChannelMutationResponseFallbackUsed defines model for LegacyChannelMutationResponse.FallbackUsed.
+type LegacyChannelMutationResponseFallbackUsed bool
+
+// LegacyChannelMutationResponseOk defines model for LegacyChannelMutationResponse.Ok.
+type LegacyChannelMutationResponseOk bool
+
+// LegacyChannelMutationResponseProviderExecutionEligible defines model for LegacyChannelMutationResponse.ProviderExecutionEligible.
+type LegacyChannelMutationResponseProviderExecutionEligible bool
+
+// LegacyChannelMutationResponseRealExternalCallExecuted defines model for LegacyChannelMutationResponse.RealExternalCallExecuted.
+type LegacyChannelMutationResponseRealExternalCallExecuted bool
+
+// LegacyChannelMutationResponseReason defines model for LegacyChannelMutationResponse.Reason.
+type LegacyChannelMutationResponseReason string
+
+// LegacyChannelMutationResponseSource defines model for LegacyChannelMutationResponse.Source.
+type LegacyChannelMutationResponseSource string
+
+// LegacyChannelWriteRequest defines model for LegacyChannelWriteRequest.
+type LegacyChannelWriteRequest struct {
+	AssignmentConfigJson         *map[string]interface{}                      `json:"assignment_config_json,omitempty"`
+	AssignmentMode               *LegacyChannelWriteRequestAssignmentMode     `json:"assignment_mode,omitempty"`
+	AssignmentStrategy           *LegacyChannelWriteRequestAssignmentStrategy `json:"assignment_strategy,omitempty"`
+	AutoAcceptFriend             *bool                                        `json:"auto_accept_friend,omitempty"`
+	CarrierType                  *LegacyChannelWriteRequestCarrierType        `json:"carrier_type,omitempty"`
+	ChannelCode                  *string                                      `json:"channel_code,omitempty"`
+	ChannelName                  *string                                      `json:"channel_name,omitempty"`
+	ChannelType                  *LegacyChannelWriteRequestChannelType        `json:"channel_type,omitempty"`
+	CustomerChannel              *string                                      `json:"customer_channel,omitempty"`
+	EntryTagGroupName            *string                                      `json:"entry_tag_group_name,omitempty"`
+	EntryTagId                   *string                                      `json:"entry_tag_id,omitempty"`
+	EntryTagName                 *string                                      `json:"entry_tag_name,omitempty"`
+	FinalUrl                     *string                                      `json:"final_url,omitempty"`
+	LinkUrl                      *string                                      `json:"link_url,omitempty"`
+	OverflowPolicy               *string                                      `json:"overflow_policy,omitempty"`
+	OwnerStaffId                 *string                                      `json:"owner_staff_id,omitempty"`
+	QrUrl                        *string                                      `json:"qr_url,omitempty"`
+	SceneValue                   *string                                      `json:"scene_value,omitempty"`
+	Status                       *LegacyChannelWriteRequestStatus             `json:"status,omitempty"`
+	WelcomeAttachmentLibraryIds  *[]int64                                     `json:"welcome_attachment_library_ids,omitempty"`
+	WelcomeGroupInviteLibraryIds *[]int64                                     `json:"welcome_group_invite_library_ids,omitempty"`
+	WelcomeImageLibraryIds       *[]int64                                     `json:"welcome_image_library_ids,omitempty"`
+	WelcomeMessage               *string                                      `json:"welcome_message,omitempty"`
+	WelcomeMiniprogramLibraryIds *[]int64                                     `json:"welcome_miniprogram_library_ids,omitempty"`
+}
+
+// LegacyChannelWriteRequestAssignmentMode defines model for LegacyChannelWriteRequest.AssignmentMode.
+type LegacyChannelWriteRequestAssignmentMode string
+
+// LegacyChannelWriteRequestAssignmentStrategy defines model for LegacyChannelWriteRequest.AssignmentStrategy.
+type LegacyChannelWriteRequestAssignmentStrategy string
+
+// LegacyChannelWriteRequestCarrierType defines model for LegacyChannelWriteRequest.CarrierType.
+type LegacyChannelWriteRequestCarrierType string
+
+// LegacyChannelWriteRequestChannelType defines model for LegacyChannelWriteRequest.ChannelType.
+type LegacyChannelWriteRequestChannelType string
+
+// LegacyChannelWriteRequestStatus defines model for LegacyChannelWriteRequest.Status.
+type LegacyChannelWriteRequestStatus string
 
 // LegacyExecutionGraph defines model for LegacyExecutionGraph.
 type LegacyExecutionGraph struct {
@@ -5399,6 +6157,36 @@ type ListAutomationTriggerRunsParams struct {
 // ListAutomationTriggerRunsParamsVisibility defines parameters for ListAutomationTriggerRuns.
 type ListAutomationTriggerRunsParamsVisibility string
 
+// ListLegacyChannelsParams defines parameters for ListLegacyChannels.
+type ListLegacyChannelsParams struct {
+	Limit           *int                            `form:"limit,omitempty" json:"limit,omitempty"`
+	Status          *ListLegacyChannelsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	IncludeArchived *bool                           `form:"include_archived,omitempty" json:"include_archived,omitempty"`
+}
+
+// ListLegacyChannelsParamsStatus defines parameters for ListLegacyChannels.
+type ListLegacyChannelsParamsStatus string
+
+// CreateLegacyChannelParams defines parameters for CreateLegacyChannel.
+type CreateLegacyChannelParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken     CSRFToken `json:"X-CSRF-Token"`
+	IdempotencyKey string    `json:"Idempotency-Key"`
+}
+
+// UpdateLegacyChannelParams defines parameters for UpdateLegacyChannel.
+type UpdateLegacyChannelParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken     CSRFToken `json:"X-CSRF-Token"`
+	IdempotencyKey string    `json:"Idempotency-Key"`
+}
+
+// ListLegacyChannelEntrantsParams defines parameters for ListLegacyChannelEntrants.
+type ListLegacyChannelEntrantsParams struct {
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // GetLegacyPushCenterSectionsParams defines parameters for GetLegacyPushCenterSections.
 type GetLegacyPushCenterSectionsParams struct {
 	Section        *PushCenterSectionFilter        `form:"section,omitempty" json:"section,omitempty"`
@@ -5961,6 +6749,12 @@ type UpdateTagParams struct {
 	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
+
+// CreateLegacyChannelJSONRequestBody defines body for CreateLegacyChannel for application/json ContentType.
+type CreateLegacyChannelJSONRequestBody = LegacyChannelWriteRequest
+
+// UpdateLegacyChannelJSONRequestBody defines body for UpdateLegacyChannel for application/json ContentType.
+type UpdateLegacyChannelJSONRequestBody = LegacyChannelWriteRequest
 
 // DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
 type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest
@@ -6784,12 +7578,30 @@ func (t *ServicePeriodMemberViewCreateRequest) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Carry the local read-only channel list into the existing admin shell
+	// (GET /admin/channels)
+	GetLegacyChannelListPage(w http.ResponseWriter, r *http.Request)
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
+	// List persisted local channel resources without querying WeCom
+	// (GET /api/admin/channels)
+	ListLegacyChannels(w http.ResponseWriter, r *http.Request, params ListLegacyChannelsParams)
+	// Create one complete local channel configuration without provider execution
+	// (POST /api/admin/channels)
+	CreateLegacyChannel(w http.ResponseWriter, r *http.Request, params CreateLegacyChannelParams)
+	// Get one persisted local channel resource
+	// (GET /api/admin/channels/{channel_id})
+	GetLegacyChannel(w http.ResponseWriter, r *http.Request, channelId int64)
+	// Update local channel fields without executing future channel capabilities
+	// (PATCH /api/admin/channels/{channel_id})
+	UpdateLegacyChannel(w http.ResponseWriter, r *http.Request, channelId int64, params UpdateLegacyChannelParams)
+	// List a channel's recent entrants from the closed local Contact projection
+	// (GET /api/admin/channels/{channel_id}/contacts)
+	ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request, channelId int64, params ListLegacyChannelEntrantsParams)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
@@ -7060,6 +7872,12 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// Carry the local read-only channel list into the existing admin shell
+// (GET /admin/channels)
+func (_ Unimplemented) GetLegacyChannelListPage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Carry the safe local execution-runtime observation into the existing admin shell
 // (GET /admin/execution-runtime)
 func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
@@ -7069,6 +7887,36 @@ func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *h
 // List real D01 Automation trigger receipts through the frozen legacy path
 // (GET /api/admin/automation-conversion/agent-runs)
 func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List persisted local channel resources without querying WeCom
+// (GET /api/admin/channels)
+func (_ Unimplemented) ListLegacyChannels(w http.ResponseWriter, r *http.Request, params ListLegacyChannelsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one complete local channel configuration without provider execution
+// (POST /api/admin/channels)
+func (_ Unimplemented) CreateLegacyChannel(w http.ResponseWriter, r *http.Request, params CreateLegacyChannelParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one persisted local channel resource
+// (GET /api/admin/channels/{channel_id})
+func (_ Unimplemented) GetLegacyChannel(w http.ResponseWriter, r *http.Request, channelId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update local channel fields without executing future channel capabilities
+// (PATCH /api/admin/channels/{channel_id})
+func (_ Unimplemented) UpdateLegacyChannel(w http.ResponseWriter, r *http.Request, channelId int64, params UpdateLegacyChannelParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List a channel's recent entrants from the closed local Contact projection
+// (GET /api/admin/channels/{channel_id}/contacts)
+func (_ Unimplemented) ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request, channelId int64, params ListLegacyChannelEntrantsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -7609,6 +8457,26 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// GetLegacyChannelListPage operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyChannelListPage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyChannelListPage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLegacyExecutionRuntimePage operation middleware
 func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
 
@@ -7749,6 +8617,291 @@ func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyChannels operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyChannels(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyChannelsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "include_archived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_archived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_archived", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyChannels(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateLegacyChannel operation middleware
+func (siw *ServerInterfaceWrapper) CreateLegacyChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateLegacyChannelParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateLegacyChannel(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyChannel operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "channel_id" -------------
+	var channelId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channel_id", chi.URLParam(r, "channel_id"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateLegacyChannel operation middleware
+func (siw *ServerInterfaceWrapper) UpdateLegacyChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "channel_id" -------------
+	var channelId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channel_id", chi.URLParam(r, "channel_id"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateLegacyChannelParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateLegacyChannel(w, r, channelId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyChannelEntrants operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "channel_id" -------------
+	var channelId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channel_id", chi.URLParam(r, "channel_id"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyChannelEntrantsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyChannelEntrants(w, r, channelId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13214,10 +14367,28 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/channels", wrapper.GetLegacyChannelListPage)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/execution-runtime", wrapper.GetLegacyExecutionRuntimePage)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/channels", wrapper.ListLegacyChannels)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/channels", wrapper.CreateLegacyChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}", wrapper.GetLegacyChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/admin/channels/{channel_id}", wrapper.UpdateLegacyChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}/contacts", wrapper.ListLegacyChannelEntrants)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/execution-runtime", wrapper.GetLegacyExecutionRuntime)
@@ -13529,6 +14700,59 @@ type UnauthorizedJSONResponse ErrorResponse
 
 type UnprocessableEntityJSONResponse ErrorResponse
 
+type GetLegacyChannelListPageRequestObject struct {
+}
+
+type GetLegacyChannelListPageResponseObject interface {
+	VisitGetLegacyChannelListPageResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyChannelListPage302ResponseHeaders struct {
+	Location string
+}
+
+type GetLegacyChannelListPage302Response struct {
+	Headers GetLegacyChannelListPage302ResponseHeaders
+}
+
+func (response GetLegacyChannelListPage302Response) VisitGetLegacyChannelListPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(302)
+	return nil
+}
+
+type GetLegacyChannelListPage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyChannelListPage401JSONResponse) VisitGetLegacyChannelListPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannelListPage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyChannelListPage403JSONResponse) VisitGetLegacyChannelListPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannelListPage405ResponseHeaders struct {
+	Allow string
+}
+
+type GetLegacyChannelListPage405Response struct {
+	Headers GetLegacyChannelListPage405ResponseHeaders
+}
+
+func (response GetLegacyChannelListPage405Response) VisitGetLegacyChannelListPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+	return nil
+}
+
 type GetLegacyExecutionRuntimePageRequestObject struct {
 }
 
@@ -13637,6 +14861,313 @@ func (response ListAutomationTriggerRuns403JSONResponse) VisitListAutomationTrig
 type ListAutomationTriggerRuns503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAutomationTriggerRuns503JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelsRequestObject struct {
+	Params ListLegacyChannelsParams
+}
+
+type ListLegacyChannelsResponseObject interface {
+	VisitListLegacyChannelsResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyChannels200JSONResponse LegacyChannelListResponse
+
+func (response ListLegacyChannels200JSONResponse) VisitListLegacyChannelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannels400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListLegacyChannels400JSONResponse) VisitListLegacyChannelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannels401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyChannels401JSONResponse) VisitListLegacyChannelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannels403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyChannels403JSONResponse) VisitListLegacyChannelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannels503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyChannels503JSONResponse) VisitListLegacyChannelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateLegacyChannelRequestObject struct {
+	Params CreateLegacyChannelParams
+	Body   *CreateLegacyChannelJSONRequestBody
+}
+
+type CreateLegacyChannelResponseObject interface {
+	VisitCreateLegacyChannelResponse(w http.ResponseWriter) error
+}
+
+type CreateLegacyChannel201JSONResponse LegacyChannelMutationResponse
+
+func (response CreateLegacyChannel201JSONResponse) VisitCreateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateLegacyChannel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateLegacyChannel400JSONResponse) VisitCreateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateLegacyChannel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateLegacyChannel401JSONResponse) VisitCreateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateLegacyChannel403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateLegacyChannel403JSONResponse) VisitCreateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateLegacyChannel409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateLegacyChannel409JSONResponse) VisitCreateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateLegacyChannel503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateLegacyChannel503JSONResponse) VisitCreateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannelRequestObject struct {
+	ChannelId int64 `json:"channel_id"`
+}
+
+type GetLegacyChannelResponseObject interface {
+	VisitGetLegacyChannelResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyChannel200JSONResponse LegacyChannelDetailResponse
+
+func (response GetLegacyChannel200JSONResponse) VisitGetLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyChannel401JSONResponse) VisitGetLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannel403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyChannel403JSONResponse) VisitGetLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannel404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLegacyChannel404JSONResponse) VisitGetLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyChannel503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyChannel503JSONResponse) VisitGetLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannelRequestObject struct {
+	ChannelId int64 `json:"channel_id"`
+	Params    UpdateLegacyChannelParams
+	Body      *UpdateLegacyChannelJSONRequestBody
+}
+
+type UpdateLegacyChannelResponseObject interface {
+	VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error
+}
+
+type UpdateLegacyChannel200JSONResponse LegacyChannelMutationResponse
+
+func (response UpdateLegacyChannel200JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateLegacyChannel400JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateLegacyChannel401JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannel403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateLegacyChannel403JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannel404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateLegacyChannel404JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannel409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateLegacyChannel409JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateLegacyChannel503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateLegacyChannel503JSONResponse) VisitUpdateLegacyChannelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelEntrantsRequestObject struct {
+	ChannelId int64 `json:"channel_id"`
+	Params    ListLegacyChannelEntrantsParams
+}
+
+type ListLegacyChannelEntrantsResponseObject interface {
+	VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyChannelEntrants200JSONResponse LegacyChannelEntrantsResponse
+
+func (response ListLegacyChannelEntrants200JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelEntrants401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyChannelEntrants401JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelEntrants403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyChannelEntrants403JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelEntrants404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListLegacyChannelEntrants404JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelEntrants422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response ListLegacyChannelEntrants422JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyChannelEntrants503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyChannelEntrants503JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -19362,12 +20893,30 @@ func (response GetDomainVerificationFile404JSONResponse) VisitGetDomainVerificat
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Carry the local read-only channel list into the existing admin shell
+	// (GET /admin/channels)
+	GetLegacyChannelListPage(ctx context.Context, request GetLegacyChannelListPageRequestObject) (GetLegacyChannelListPageResponseObject, error)
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(ctx context.Context, request GetLegacyExecutionRuntimePageRequestObject) (GetLegacyExecutionRuntimePageResponseObject, error)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
+	// List persisted local channel resources without querying WeCom
+	// (GET /api/admin/channels)
+	ListLegacyChannels(ctx context.Context, request ListLegacyChannelsRequestObject) (ListLegacyChannelsResponseObject, error)
+	// Create one complete local channel configuration without provider execution
+	// (POST /api/admin/channels)
+	CreateLegacyChannel(ctx context.Context, request CreateLegacyChannelRequestObject) (CreateLegacyChannelResponseObject, error)
+	// Get one persisted local channel resource
+	// (GET /api/admin/channels/{channel_id})
+	GetLegacyChannel(ctx context.Context, request GetLegacyChannelRequestObject) (GetLegacyChannelResponseObject, error)
+	// Update local channel fields without executing future channel capabilities
+	// (PATCH /api/admin/channels/{channel_id})
+	UpdateLegacyChannel(ctx context.Context, request UpdateLegacyChannelRequestObject) (UpdateLegacyChannelResponseObject, error)
+	// List a channel's recent entrants from the closed local Contact projection
+	// (GET /api/admin/channels/{channel_id}/contacts)
+	ListLegacyChannelEntrants(ctx context.Context, request ListLegacyChannelEntrantsRequestObject) (ListLegacyChannelEntrantsResponseObject, error)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
@@ -19663,6 +21212,30 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// GetLegacyChannelListPage operation middleware
+func (sh *strictHandler) GetLegacyChannelListPage(w http.ResponseWriter, r *http.Request) {
+	var request GetLegacyChannelListPageRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyChannelListPage(ctx, request.(GetLegacyChannelListPageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyChannelListPage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyChannelListPageResponseObject); ok {
+		if err := validResponse.VisitGetLegacyChannelListPageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLegacyExecutionRuntimePage operation middleware
 func (sh *strictHandler) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
 	var request GetLegacyExecutionRuntimePageRequestObject
@@ -19706,6 +21279,152 @@ func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
 		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegacyChannels operation middleware
+func (sh *strictHandler) ListLegacyChannels(w http.ResponseWriter, r *http.Request, params ListLegacyChannelsParams) {
+	var request ListLegacyChannelsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyChannels(ctx, request.(ListLegacyChannelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyChannels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyChannelsResponseObject); ok {
+		if err := validResponse.VisitListLegacyChannelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateLegacyChannel operation middleware
+func (sh *strictHandler) CreateLegacyChannel(w http.ResponseWriter, r *http.Request, params CreateLegacyChannelParams) {
+	var request CreateLegacyChannelRequestObject
+
+	request.Params = params
+
+	var body CreateLegacyChannelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateLegacyChannel(ctx, request.(CreateLegacyChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateLegacyChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateLegacyChannelResponseObject); ok {
+		if err := validResponse.VisitCreateLegacyChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyChannel operation middleware
+func (sh *strictHandler) GetLegacyChannel(w http.ResponseWriter, r *http.Request, channelId int64) {
+	var request GetLegacyChannelRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyChannel(ctx, request.(GetLegacyChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyChannelResponseObject); ok {
+		if err := validResponse.VisitGetLegacyChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateLegacyChannel operation middleware
+func (sh *strictHandler) UpdateLegacyChannel(w http.ResponseWriter, r *http.Request, channelId int64, params UpdateLegacyChannelParams) {
+	var request UpdateLegacyChannelRequestObject
+
+	request.ChannelId = channelId
+	request.Params = params
+
+	var body UpdateLegacyChannelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateLegacyChannel(ctx, request.(UpdateLegacyChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateLegacyChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateLegacyChannelResponseObject); ok {
+		if err := validResponse.VisitUpdateLegacyChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegacyChannelEntrants operation middleware
+func (sh *strictHandler) ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request, channelId int64, params ListLegacyChannelEntrantsParams) {
+	var request ListLegacyChannelEntrantsRequestObject
+
+	request.ChannelId = channelId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyChannelEntrants(ctx, request.(ListLegacyChannelEntrantsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyChannelEntrants")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyChannelEntrantsResponseObject); ok {
+		if err := validResponse.VisitListLegacyChannelEntrantsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -56,7 +56,7 @@ func TestChannelEntrantsHandlerReturnsExactClosedProjectionAndSecurityHeaders(t 
 		t.Fatal(err)
 	}
 	assertChannelEntrantsJSONKeys(t, response, []string{
-		"channel_id", "has_more", "items", "limit", "local_projection", "next_cursor", "real_external_call_executed",
+		"channel_id", "has_more", "items", "limit", "local_projection", "next_cursor", "provider_execution_eligible", "real_external_call_executed",
 	})
 	var items []map[string]json.RawMessage
 	if err = json.Unmarshal(response["items"], &items); err != nil || len(items) != 1 {
@@ -67,13 +67,13 @@ func TestChannelEntrantsHandlerReturnsExactClosedProjectionAndSecurityHeaders(t 
 	body := strings.ToLower(recorder.Body.String())
 	for _, forbidden := range []string{
 		"mobile", "unionid", "external_userid", "owner_staff_id", "customers.extra",
-		"\"extra\"", "provider", "wecom_userid", "access_token", "refresh_token", "raw_identity",
+		"\"extra\"", "wecom_userid", "access_token", "refresh_token", "raw_identity",
 	} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("response leaked forbidden %q: %s", forbidden, recorder.Body.String())
 		}
 	}
-	if !strings.Contains(body, `"local_projection":true`) ||
+	if !strings.Contains(body, `"local_projection":true`) || !strings.Contains(body, `"provider_execution_eligible":false`) ||
 		!strings.Contains(body, `"real_external_call_executed":false`) {
 		t.Fatalf("local/external facts missing: %s", recorder.Body.String())
 	}

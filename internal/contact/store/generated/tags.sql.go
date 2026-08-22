@@ -399,6 +399,29 @@ func (q *Queries) ListTags(ctx context.Context) ([]ListTagsRow, error) {
 	return items, nil
 }
 
+const lockActiveTagReference = `-- name: LockActiveTagReference :one
+SELECT t.id, t.name, g.name AS group_name
+FROM tags AS t
+LEFT JOIN tag_groups AS g ON g.id = t.group_id
+WHERE t.id = $1::bigint
+  AND t.name NOT LIKE 'archived:%'
+  AND (g.id IS NULL OR g.name NOT LIKE 'archived:%')
+FOR SHARE OF t
+`
+
+type LockActiveTagReferenceRow struct {
+	ID        int64       `json:"id"`
+	Name      string      `json:"name"`
+	GroupName pgtype.Text `json:"group_name"`
+}
+
+func (q *Queries) LockActiveTagReference(ctx context.Context, tagID int64) (LockActiveTagReferenceRow, error) {
+	row := q.db.QueryRow(ctx, lockActiveTagReference, tagID)
+	var i LockActiveTagReferenceRow
+	err := row.Scan(&i.ID, &i.Name, &i.GroupName)
+	return i, err
+}
+
 const reserveLegacyTagLiveMutationReceipt = `-- name: ReserveLegacyTagLiveMutationReceipt :one
 INSERT INTO legacy_tag_live_mutation_receipts(actor_id, idempotency_key, key_digest, operation, payload, trace_id)
 VALUES ($1, $2, $3, $4, $5, $6)

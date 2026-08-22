@@ -4298,7 +4298,7 @@ export interface LegacyChannelWriteRequest {
   /** @maxLength 10000 */
   qr_url?: string;
   status?: LegacyChannelWriteRequestStatus;
-  /** @maxLength 10000 */
+  /** @maxLength 200 */
   owner_staff_id?: string;
   /** @maxLength 10000 */
   customer_channel?: string;
@@ -4317,11 +4317,14 @@ export interface LegacyChannelWriteRequest {
   /** @maxItems 12 */
   welcome_group_invite_library_ids?: number[];
   auto_accept_friend?: boolean;
-  /** @maxLength 10000 */
+  /**
+   * @maxLength 19
+   * @pattern ^(|[1-9][0-9]{0,18})$
+   */
   entry_tag_id?: string;
-  /** @maxLength 10000 */
+  /** @maxLength 200 */
   entry_tag_name?: string;
-  /** @maxLength 10000 */
+  /** @maxLength 200 */
   entry_tag_group_name?: string;
   assignment_mode?: LegacyChannelWriteRequestAssignmentMode;
   assignment_strategy?: LegacyChannelWriteRequestAssignmentStrategy;
@@ -4375,13 +4378,13 @@ export type LegacyChannelAllOf = {
   id?: number;
   created_at?: string;
   updated_at?: string;
-  /** @maxItems 0 */
-  assignees?: unknown[];
+  /** @maxItems 1 */
+  assignees?: LegacyChannelAssignee[];
   /** @maxItems 0 */
   assignment_stats_24h?: unknown[];
   /**
    * @minimum 0
-   * @maximum 0
+   * @maximum 1
    */
   assignee_count?: number;
   /**
@@ -4423,7 +4426,7 @@ export interface LegacyChannelListItem {
   status: LegacyChannelListItemStatus;
   /**
    * @minimum 0
-   * @maximum 0
+   * @maximum 1
    */
   assignee_count: number;
   /**
@@ -4504,7 +4507,21 @@ export interface LegacyChannelMutationResponse {
   reason: LegacyChannelMutationResponseReason;
   source: LegacyChannelMutationResponseSource;
   fallback_used: boolean;
+  provider_execution_eligible: boolean;
   real_external_call_executed: boolean;
+}
+
+export interface LegacyChannelAssignee {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  wecom_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  display_name: string;
 }
 
 export interface LegacyChannelEntrant {
@@ -4534,6 +4551,7 @@ export interface LegacyChannelEntrantsResponse {
   /** @maxLength 256 */
   next_cursor: string;
   local_projection: boolean;
+  provider_execution_eligible: boolean;
   real_external_call_executed: boolean;
 }
 

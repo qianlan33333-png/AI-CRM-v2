@@ -10057,7 +10057,7 @@ components:
         scene_value: { type: string, maxLength: 10000 }
         qr_url: { type: string, maxLength: 10000 }
         status: { type: string, enum: [active, inactive, archived] }
-        owner_staff_id: { type: string, maxLength: 10000 }
+        owner_staff_id: { type: string, maxLength: 200 }
         customer_channel: { type: string, maxLength: 10000 }
         link_url: { type: string, maxLength: 10000 }
         final_url: { type: string, maxLength: 10000 }
@@ -10067,9 +10067,9 @@ components:
         welcome_attachment_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
         welcome_group_invite_library_ids: { type: array, maxItems: 12, items: { type: integer, format: int64, minimum: 1 } }
         auto_accept_friend: { type: boolean }
-        entry_tag_id: { type: string, maxLength: 10000 }
-        entry_tag_name: { type: string, maxLength: 10000 }
-        entry_tag_group_name: { type: string, maxLength: 10000 }
+        entry_tag_id: { type: string, maxLength: 19, pattern: '^(|[1-9][0-9]{0,18})$' }
+        entry_tag_name: { type: string, maxLength: 200 }
+        entry_tag_group_name: { type: string, maxLength: 200 }
         assignment_mode: { type: string, enum: [single_owner, multi_staff] }
         assignment_strategy: { type: string, enum: [ratio, cap_switch] }
         overflow_policy: { type: string, maxLength: 10000 }
@@ -10082,9 +10082,9 @@ components:
             id: { type: integer, format: int64, minimum: 1 }
             created_at: { type: string, format: date-time }
             updated_at: { type: string, format: date-time }
-            assignees: { type: array, maxItems: 0, items: {} }
+            assignees: { type: array, maxItems: 1, items: { $ref: "#/components/schemas/LegacyChannelAssignee" } }
             assignment_stats_24h: { type: array, maxItems: 0, items: {} }
-            assignee_count: { type: integer, minimum: 0, maximum: 0 }
+            assignee_count: { type: integer, minimum: 0, maximum: 1 }
             channel_contact_count: { type: integer, minimum: 0, maximum: 0 }
             latest_channel_entered_at: { type: string, enum: [""] }
             qrcode_asset_id: { type: integer, minimum: 0, maximum: 0 }
@@ -10101,7 +10101,7 @@ components:
         channel_name: { type: string, maxLength: 200 }
         channel_code: { type: string, maxLength: 200 }
         status: { type: string, enum: [active, inactive, archived] }
-        assignee_count: { type: integer, minimum: 0, maximum: 0 }
+        assignee_count: { type: integer, minimum: 0, maximum: 1 }
         channel_contact_count: { type: integer, minimum: 0, maximum: 0 }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -10126,14 +10126,22 @@ components:
     LegacyChannelMutationResponse:
       type: object
       additionalProperties: false
-      required: [ok, channel, reason, source, fallback_used, real_external_call_executed]
+      required: [ok, channel, reason, source, fallback_used, provider_execution_eligible, real_external_call_executed]
       properties:
         ok: { type: boolean, enum: [true] }
         channel: { $ref: "#/components/schemas/LegacyChannel" }
         reason: { type: string, enum: [channel_created, channel_updated] }
         source: { type: string, enum: [ai_crm_next] }
         fallback_used: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyChannelAssignee:
+      type: object
+      additionalProperties: false
+      required: [wecom_userid, display_name]
+      properties:
+        wecom_userid: { type: string, minLength: 1, maxLength: 200 }
+        display_name: { type: string, minLength: 1, maxLength: 200 }
     LegacyChannelEntrant:
       type: object
       additionalProperties: false
@@ -10146,7 +10154,7 @@ components:
     LegacyChannelEntrantsResponse:
       type: object
       additionalProperties: false
-      required: [channel_id, items, limit, has_more, next_cursor, local_projection, real_external_call_executed]
+      required: [channel_id, items, limit, has_more, next_cursor, local_projection, provider_execution_eligible, real_external_call_executed]
       properties:
         channel_id: { type: integer, format: int64, minimum: 1 }
         items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/LegacyChannelEntrant" } }
@@ -10154,6 +10162,7 @@ components:
         has_more: { type: boolean }
         next_cursor: { type: string, maxLength: 256 }
         local_projection: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
     LegacyCustomer:
       type: object

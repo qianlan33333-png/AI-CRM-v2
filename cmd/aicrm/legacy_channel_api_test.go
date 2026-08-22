@@ -48,7 +48,7 @@ func TestC01LegacyChannelRoutesRBACCSRFRoundTrip(t *testing.T) {
 	router, auth := legacyChannelRouter(t, stub)
 	create := httptest.NewRecorder()
 	router.ServeHTTP(create, legacyChannelConfigurationWriteRequest(http.MethodPost, "/api/admin/channels", `{"channel_name":"公开课","channel_code":"course","status":"active","welcome_message":"欢迎","assignment_config_json":{}}`))
-	if create.Code != http.StatusCreated || stub.writes != 1 || stub.create.Actor != 1 || stub.create.IdempotencyKey == "" || !strings.Contains(create.Body.String(), `"real_external_call_executed":false`) {
+	if create.Code != http.StatusCreated || stub.writes != 1 || stub.create.Actor != 1 || stub.create.IdempotencyKey == "" || !strings.Contains(create.Body.String(), `"provider_execution_eligible":false`) || !strings.Contains(create.Body.String(), `"real_external_call_executed":false`) {
 		t.Fatalf("create=%d writes=%d command=%#v body=%s", create.Code, stub.writes, stub.create, create.Body.String())
 	}
 	if seen := auth.capabilities(); len(seen) != 1 || seen[0] != authport.CapabilityChannelsWrite {
@@ -153,6 +153,26 @@ func TestC01LegacyChannelListNeverExposesLegacyProjection(t *testing.T) {
 	router.ServeHTTP(detail, legacyRequest(http.MethodGet, "/api/admin/channels/1", legacyToken(96)))
 	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), `"welcome_message":"must_not_list"`) {
 		t.Fatalf("detail=%d body=%s", detail.Code, detail.Body.String())
+	}
+}
+
+func TestC01LegacyChannelProjectsValidatedAssignee(t *testing.T) {
+	item := legacyChannelItem()
+	item.Assignees = []contactapp.ChannelAssignee{{WeComUserID: "staff-7", DisplayName: "运营成员"}}
+	item.LegacyProjection = json.RawMessage(`{"schema_version":1,"channel_type":"qrcode","owner_staff_id":"staff-7"}`)
+	projected, err := legacyChannel(item)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if projected["assignee_count"] != 1 {
+		t.Fatalf("assignee_count=%#v", projected["assignee_count"])
+	}
+	assignees, ok := projected["assignees"].([]map[string]string)
+	if !ok || len(assignees) != 1 || assignees[0]["wecom_userid"] != "staff-7" || assignees[0]["display_name"] != "运营成员" {
+		t.Fatalf("assignees=%#v", projected["assignees"])
+	}
+	if row := legacyChannelListItem(item); row["assignee_count"] != 1 {
+		t.Fatalf("list assignee_count=%#v", row["assignee_count"])
 	}
 }
 

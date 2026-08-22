@@ -33,7 +33,7 @@ func TestChannelEntrantsServicePaginatesWithStableTimestampTieBreak(t *testing.T
 		t.Fatal(err)
 	}
 	if first.ChannelID != 7 || first.Limit != 2 || !first.HasMore || first.NextCursor == "" ||
-		!first.LocalProjection || first.RealExternalCallExecuted || len(first.Items) != 2 {
+		!first.LocalProjection || first.ProviderExecutionEligible || first.RealExternalCallExecuted || len(first.Items) != 2 {
 		t.Fatalf("first=%#v", first)
 	}
 	if first.Items[0].CustomerID != 33 || first.Items[1].CustomerID != 22 ||
@@ -81,7 +81,7 @@ func TestChannelEntrantsServiceDefaultsLimitAndReturnsNonNilEmptyItems(t *testin
 		t.Fatal(err)
 	}
 	if response.Limit != ChannelEntrantsDefaultLimit || response.Items == nil || len(response.Items) != 0 ||
-		response.HasMore || response.NextCursor != "" || !response.LocalProjection || response.RealExternalCallExecuted {
+		response.HasMore || response.NextCursor != "" || !response.LocalProjection || response.ProviderExecutionEligible || response.RealExternalCallExecuted {
 		t.Fatalf("response=%#v", response)
 	}
 	if store.lastQuery.Limit != ChannelEntrantsDefaultLimit+1 {
