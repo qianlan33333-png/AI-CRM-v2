@@ -23,4 +23,5 @@ output-options:
     - p4-execution-runtime-compat
     - p4-push-center-compat
     - p4-legacy-health
+    - p4-setup-wizard
     - p4-survey
