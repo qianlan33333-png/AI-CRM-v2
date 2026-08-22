@@ -14,15 +14,16 @@ import (
 )
 
 const (
-	Schema                = "acceptance_fixtures"
-	DefaultDatabaseURL    = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
-	H01A1DatabaseName     = "aicrm_test_h01a1"
-	H03DatabaseName       = "aicrm_test_h03"
-	I01BDatabaseName      = "aicrm_test_i01b"
-	F01ADatabaseName      = "aicrm_test_f01a"
-	F01ABDatabaseName     = "aicrm_test_f01ab"
-	F01PublicDatabaseName = "aicrm_test_f01public"
-	advisoryLockKey       = int64(0x414943524d503230)
+	Schema                         = "acceptance_fixtures"
+	DefaultDatabaseURL             = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
+	H01A1DatabaseName              = "aicrm_test_h01a1"
+	H03DatabaseName                = "aicrm_test_h03"
+	I01BDatabaseName               = "aicrm_test_i01b"
+	F01ADatabaseName               = "aicrm_test_f01a"
+	F01ABDatabaseName              = "aicrm_test_f01ab"
+	F01PublicDatabaseName          = "aicrm_test_f01public"
+	AutomationAgentsABDatabaseName = "aicrm_test_automation_agents_ab"
+	advisoryLockKey                = int64(0x414943524d503230)
 )
 
 var (
@@ -79,7 +80,7 @@ func ValidateDatabaseURL(databaseURL string) error {
 // ValidateDatabaseURLForDatabase accepts only named, locally-created
 // acceptance databases on the dedicated loopback PostgreSQL service.
 func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
-	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName {
+	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName {
 		return ErrUnsafeDatabaseURL
 	}
 	parsed, err := url.Parse(databaseURL)
