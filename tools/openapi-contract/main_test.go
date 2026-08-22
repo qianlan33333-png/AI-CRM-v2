@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -27,6 +28,54 @@ func TestFrozenOpenAPI(t *testing.T) {
 	if err := validate(doc, ids); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestAdminOpsSafeProjectionContractRemainsClosed(t *testing.T) {
+	doc, inventory := fresh(t)
+	job := doc.Components.Schemas["AdminOpsJob"].Value
+	for _, forbidden := range []string{"target_ref", "failure_code", "provider_receipt", "raw_response"} {
+		if _, present := job.Properties[forbidden]; present {
+			t.Fatalf("AdminOpsJob exposes forbidden property %q", forbidden)
+		}
+	}
+	for _, required := range []string{"target_kind", "target_present", "target_mask", "failure_present", "failure_class", "local_only", "real_external_call_executed"} {
+		if _, present := job.Properties[required]; !present || !containsString(job.Required, required) {
+			t.Fatalf("AdminOpsJob missing required closed property %q", required)
+		}
+	}
+	if got := job.Properties["failure_class"].Value.Enum; !reflect.DeepEqual(got, []any{"none", "local_failure", "outcome_unknown"}) {
+		t.Fatalf("failure_class enum=%v", got)
+	}
+	releaseChanges := doc.Components.Schemas["AdminOpsReleaseChangesRead"].Value
+	if releaseChanges.AdditionalProperties.Has == nil || *releaseChanges.AdditionalProperties.Has || !reflect.DeepEqual(releaseChanges.Properties["wecom.webhook_ref"].Value.Enum, []any{"masked"}) {
+		t.Fatal("AdminOps release changes must remain closed and mask webhook_ref")
+	}
+	categoryKey := doc.Components.Parameters["AdminOpsCategoryKey"].Value.Schema.Value
+	if categoryKey.Pattern != "^[a-z][a-z0-9_]{1,79}$" || categoryKey.MinLength != 2 {
+		t.Fatalf("AdminOps category key contract drifted: pattern=%q min=%d", categoryKey.Pattern, categoryKey.MinLength)
+	}
+	validationStatus := doc.Components.Schemas["AdminOpsLocalResponse"].Value.Properties["validationStatus"].Value
+	if !reflect.DeepEqual(validationStatus.Enum, []any{"unconfigured", "unverified", "queued", "valid", "invalid"}) {
+		t.Fatalf("notification validation enum=%v", validationStatus.Enum)
+	}
+	for _, operationID := range []string{"listAdminOpsCallbackJobs", "listAdminOpsDeferredJobs", "listAdminOpsWebhookDeliveryJobs", "listAdminOpsBroadcastJobs", "getAdminOpsBroadcastJob", "approveAdminOpsBroadcastJob", "cancelAdminOpsBroadcastJob", "getAdminOpsMessageBatch"} {
+		contract := p4AdminOpsSafeOperations[operationID]
+		operation := operationForMethod(doc.Paths.Value(contract.path), contract.method)
+		if operation == nil || operation.Responses.Value("409") == nil || operation.Responses.Value("200") != nil || operation.Responses.Value("202") != nil || operation.Extensions["x-p4-status"] != "BLOCKED_REDLINE" {
+			t.Fatalf("%s does not fail closed", operationID)
+		}
+	}
+	doc.Paths.Value("/api/admin/config/categories").Get.Extensions["x-aicrm-local-only"] = false
+	reject(t, doc, inventory)
+}
+
+func containsString(items []string, want string) bool {
+	for _, item := range items {
+		if item == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCanonicalCandidateDeclarationDoesNotRequireRunnerRegistryChanges(t *testing.T) {

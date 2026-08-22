@@ -159,6 +159,7 @@ type candidateHandler struct {
 		Read(string) (string, error)
 	}
 	legacyHealth *legacyhealth.Handler
+	adminOps     http.Handler
 }
 
 type identityConsoleApplication struct {
@@ -1103,6 +1104,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
+	candidate.adminOps = http.HandlerFunc(legacyHandler.AdminOps)
 	legacyHandler.runtimeConfig = runtimeConfigDeclarationFromConfig(config)
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),

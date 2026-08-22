@@ -212,13 +212,13 @@ func (service *Service) GetCredential(ctx context.Context, kind adminopsport.Cre
 	return result, classify(err)
 }
 
-func (service *Service) SetCategory(ctx context.Context, key string, enabled bool, settings map[string]any, actor, requestID string) (adminopsport.Category, error) {
+func (service *Service) SetCategory(ctx context.Context, key string, enabled bool, settings map[string]any, actor, requestID string) (CategoryView, error) {
 	if err := service.ready(actor, requestID); err != nil || !validCategory(key) {
-		return adminopsport.Category{}, ErrInvalidCommand
+		return CategoryView{}, ErrInvalidCommand
 	}
-	payload, err := safeJSON(settings)
+	payload, err := canonicalCategorySettings(settings)
 	if err != nil {
-		return adminopsport.Category{}, err
+		return CategoryView{}, err
 	}
 	result, _, err := service.mutate(ctx, "category.set", actor, requestID, struct {
 		Key      string
@@ -229,31 +229,34 @@ func (service *Service) SetCategory(ctx context.Context, key string, enabled boo
 		if itemErr != nil {
 			return nil, itemErr
 		}
-		return json.Marshal(item)
+		return json.Marshal(projectCategory(item))
 	})
-	var category adminopsport.Category
-	if err != nil {
-		return category, classify(err)
-	}
-	return category, classify(json.Unmarshal(result, &category))
+	return decodeCategoryResult(result, err)
 }
 
-func (service *Service) ListCategories(ctx context.Context) ([]adminopsport.Category, error) {
+func (service *Service) ListCategories(ctx context.Context) ([]CategoryView, error) {
 	if !service.readyRead() {
 		return nil, ErrUnavailable
 	}
-	var result []adminopsport.Category
+	var stored []adminopsport.Category
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		var itemErr error
-		result, itemErr = service.store.ListCategories(tx)
+		stored, itemErr = service.store.ListCategories(tx)
 		return itemErr
 	})
-	return result, classify(err)
+	if err != nil {
+		return nil, classify(err)
+	}
+	result := make([]CategoryView, len(stored))
+	for index, item := range stored {
+		result[index] = projectCategory(item)
+	}
+	return result, nil
 }
 
-func (service *Service) GetCategory(ctx context.Context, key string) (adminopsport.Category, error) {
+func (service *Service) GetCategory(ctx context.Context, key string) (CategoryView, error) {
 	if !service.readyRead() || !validCategory(key) {
-		return adminopsport.Category{}, ErrInvalidCommand
+		return CategoryView{}, ErrInvalidCommand
 	}
 	var result adminopsport.Category
 	err := service.uow.Within(ctx, func(tx context.Context) error {
@@ -261,7 +264,10 @@ func (service *Service) GetCategory(ctx context.Context, key string) (adminopspo
 		result, itemErr = service.store.GetCategory(tx, key)
 		return itemErr
 	})
-	return result, classify(err)
+	if err != nil {
+		return CategoryView{}, classify(err)
+	}
+	return projectCategory(result), nil
 }
 
 type ReleaseCommand struct {
@@ -270,13 +276,13 @@ type ReleaseCommand struct {
 	Actor, RequestID string
 }
 
-func (service *Service) CreateRelease(ctx context.Context, command ReleaseCommand) (adminopsport.Release, error) {
+func (service *Service) CreateRelease(ctx context.Context, command ReleaseCommand) (ReleaseView, error) {
 	if err := service.ready(command.Actor, command.RequestID); err != nil || len(command.Changes) == 0 {
-		return adminopsport.Release{}, ErrInvalidCommand
+		return ReleaseView{}, ErrInvalidCommand
 	}
-	changes, err := safeJSON(command.Changes)
+	changes, err := canonicalReleaseChanges(command.Changes)
 	if err != nil {
-		return adminopsport.Release{}, err
+		return ReleaseView{}, err
 	}
 	checksum := sha256.Sum256(changes)
 	result, _, err := service.mutate(ctx, "release.create", command.Actor, command.RequestID, command, func(tx context.Context, now time.Time) (json.RawMessage, error) {
@@ -284,59 +290,80 @@ func (service *Service) CreateRelease(ctx context.Context, command ReleaseComman
 		if itemErr != nil {
 			return nil, itemErr
 		}
-		return json.Marshal(item)
+		return json.Marshal(projectRelease(item))
 	})
-	return decodeRelease(result, err)
+	return decodeReleaseResult(result, err)
 }
 
-func (service *Service) ValidateRelease(ctx context.Context, id int64, actor, requestID string) (adminopsport.Release, error) {
+func (service *Service) ValidateRelease(ctx context.Context, id int64, actor, requestID string) (ReleaseView, error) {
 	if err := service.ready(actor, requestID); err != nil || id < 1 {
-		return adminopsport.Release{}, ErrInvalidCommand
+		return ReleaseView{}, ErrInvalidCommand
 	}
 	result, _, err := service.mutate(ctx, "release.validate", actor, requestID, struct{ ID int64 }{id}, func(tx context.Context, now time.Time) (json.RawMessage, error) {
+		current, itemErr := service.store.GetRelease(tx, id)
+		if itemErr != nil {
+			return nil, itemErr
+		}
+		if itemErr = validateStoredReleaseChanges(current.Changes); itemErr != nil {
+			return nil, itemErr
+		}
 		item, itemErr := service.store.ValidateRelease(tx, id, now)
 		if itemErr != nil {
 			return nil, itemErr
 		}
-		return json.Marshal(item)
+		return json.Marshal(projectRelease(item))
 	})
-	return decodeRelease(result, err)
+	return decodeReleaseResult(result, err)
 }
 
-func (service *Service) PublishRelease(ctx context.Context, id int64, checksum, actor, requestID string) (adminopsport.Release, error) {
+func (service *Service) PublishRelease(ctx context.Context, id int64, checksum, actor, requestID string) (ReleaseView, error) {
 	if err := service.ready(actor, requestID); err != nil || id < 1 || len(checksum) != 64 {
-		return adminopsport.Release{}, ErrInvalidCommand
+		return ReleaseView{}, ErrInvalidCommand
 	}
 	result, _, err := service.mutate(ctx, "release.publish", actor, requestID, struct {
 		ID       int64
 		Checksum string
 	}{id, checksum}, func(tx context.Context, now time.Time) (json.RawMessage, error) {
+		current, itemErr := service.store.GetRelease(tx, id)
+		if itemErr != nil {
+			return nil, itemErr
+		}
+		if itemErr = validateStoredReleaseChanges(current.Changes); itemErr != nil {
+			return nil, itemErr
+		}
 		item, itemErr := service.store.PublishRelease(tx, id, checksum, actor, now)
 		if itemErr != nil {
 			return nil, itemErr
 		}
-		return json.Marshal(item)
+		return json.Marshal(projectRelease(item))
 	})
-	return decodeRelease(result, err)
+	return decodeReleaseResult(result, err)
 }
 
-func (service *Service) RollbackRelease(ctx context.Context, id int64, actor, requestID string) (adminopsport.Release, error) {
+func (service *Service) RollbackRelease(ctx context.Context, id int64, actor, requestID string) (ReleaseView, error) {
 	if err := service.ready(actor, requestID); err != nil || id < 1 {
-		return adminopsport.Release{}, ErrInvalidCommand
+		return ReleaseView{}, ErrInvalidCommand
 	}
 	result, _, err := service.mutate(ctx, "release.rollback", actor, requestID, struct{ ID int64 }{id}, func(tx context.Context, now time.Time) (json.RawMessage, error) {
+		current, itemErr := service.store.GetRelease(tx, id)
+		if itemErr != nil {
+			return nil, itemErr
+		}
+		if itemErr = validateStoredReleaseChanges(current.Changes); itemErr != nil {
+			return nil, itemErr
+		}
 		item, itemErr := service.store.RollbackRelease(tx, id, actor, now)
 		if itemErr != nil {
 			return nil, itemErr
 		}
-		return json.Marshal(item)
+		return json.Marshal(projectRelease(item))
 	})
-	return decodeRelease(result, err)
+	return decodeReleaseResult(result, err)
 }
 
-func (service *Service) GetRelease(ctx context.Context, id int64) (adminopsport.Release, error) {
+func (service *Service) GetRelease(ctx context.Context, id int64) (ReleaseView, error) {
 	if !service.readyRead() || id < 1 {
-		return adminopsport.Release{}, ErrInvalidCommand
+		return ReleaseView{}, ErrInvalidCommand
 	}
 	var result adminopsport.Release
 	err := service.uow.Within(ctx, func(tx context.Context) error {
@@ -344,20 +371,30 @@ func (service *Service) GetRelease(ctx context.Context, id int64) (adminopsport.
 		result, itemErr = service.store.GetRelease(tx, id)
 		return itemErr
 	})
-	return result, classify(err)
+	if err != nil {
+		return ReleaseView{}, classify(err)
+	}
+	return projectRelease(result), nil
 }
 
-func (service *Service) ListReleases(ctx context.Context, limit int32) ([]adminopsport.Release, error) {
+func (service *Service) ListReleases(ctx context.Context, limit int32) ([]ReleaseView, error) {
 	if !service.readyRead() || limit < 1 || limit > 100 {
 		return nil, ErrInvalidCommand
 	}
-	var result []adminopsport.Release
+	var stored []adminopsport.Release
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		var itemErr error
-		result, itemErr = service.store.ListReleases(tx, limit)
+		stored, itemErr = service.store.ListReleases(tx, limit)
 		return itemErr
 	})
-	return result, classify(err)
+	if err != nil {
+		return nil, classify(err)
+	}
+	result := make([]ReleaseView, len(stored))
+	for index, item := range stored {
+		result[index] = projectRelease(item)
+	}
+	return result, nil
 }
 
 type JobCommand struct {
@@ -690,14 +727,6 @@ func containsSecretMaterial(value any) bool {
 
 func decodeCredential(raw json.RawMessage, err error) (adminopsport.Credential, error) {
 	var item adminopsport.Credential
-	if err != nil {
-		return item, classify(err)
-	}
-	return item, classify(json.Unmarshal(raw, &item))
-}
-
-func decodeRelease(raw json.RawMessage, err error) (adminopsport.Release, error) {
-	var item adminopsport.Release
 	if err != nil {
 		return item, classify(err)
 	}

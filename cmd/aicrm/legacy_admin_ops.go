@@ -35,15 +35,15 @@ type legacyAdminOps interface {
 	UpdateCredential(context.Context, adminopsapp.CredentialCommand) (adminopsport.Credential, error)
 	ListCredentials(context.Context) ([]adminopsport.Credential, error)
 	GetCredential(context.Context, adminopsport.CredentialKind, string) (adminopsport.Credential, error)
-	SetCategory(context.Context, string, bool, map[string]any, string, string) (adminopsport.Category, error)
-	ListCategories(context.Context) ([]adminopsport.Category, error)
-	GetCategory(context.Context, string) (adminopsport.Category, error)
-	CreateRelease(context.Context, adminopsapp.ReleaseCommand) (adminopsport.Release, error)
-	ValidateRelease(context.Context, int64, string, string) (adminopsport.Release, error)
-	PublishRelease(context.Context, int64, string, string, string) (adminopsport.Release, error)
-	RollbackRelease(context.Context, int64, string, string) (adminopsport.Release, error)
-	GetRelease(context.Context, int64) (adminopsport.Release, error)
-	ListReleases(context.Context, int32) ([]adminopsport.Release, error)
+	SetCategory(context.Context, string, bool, map[string]any, string, string) (adminopsapp.CategoryView, error)
+	ListCategories(context.Context) ([]adminopsapp.CategoryView, error)
+	GetCategory(context.Context, string) (adminopsapp.CategoryView, error)
+	CreateRelease(context.Context, adminopsapp.ReleaseCommand) (adminopsapp.ReleaseView, error)
+	ValidateRelease(context.Context, int64, string, string) (adminopsapp.ReleaseView, error)
+	PublishRelease(context.Context, int64, string, string, string) (adminopsapp.ReleaseView, error)
+	RollbackRelease(context.Context, int64, string, string) (adminopsapp.ReleaseView, error)
+	GetRelease(context.Context, int64) (adminopsapp.ReleaseView, error)
+	ListReleases(context.Context, int32) ([]adminopsapp.ReleaseView, error)
 	EnqueueJob(context.Context, adminopsapp.JobCommand) (adminopsport.Job, error)
 	GetJob(context.Context, string) (adminopsport.Job, error)
 	ListJobs(context.Context, string, string, int32) ([]adminopsport.Job, error)
@@ -121,7 +121,7 @@ func (handler *Handler) adminOpsPage(writer http.ResponseWriter, request *http.R
 		return
 	}
 	title, summary := "配置控制面", "本地读取模型；密钥只展示引用和掩码，任务不会在 HTTP 请求中执行。"
-	payload := map[string]any{"route_owner": "adminops", "provider_execution": false, "worker_isolated": true, "secret_boundary": "reference_and_mask_only"}
+	payload := map[string]any{"route_owner": "adminops", "provider_execution": false, "worker_isolated": true, "secret_boundary": "reference_and_mask_only", "local_only": true, "real_external_call_executed": false}
 	if strings.Contains(request.URL.Path, "release") {
 		title = "配置发布"
 		releases, err := handler.adminOps.ListReleases(request.Context(), 50)
@@ -618,21 +618,21 @@ func (handler *Handler) adminOpsCategories(writer http.ResponseWriter, request *
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "categories": items})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "categories": items})
 		return
 	}
 	key := chi.URLParam(request, "category_key")
 	if request.Method == http.MethodGet {
 		item, err := handler.adminOps.GetCategory(request.Context(), key)
 		if errors.Is(err, adminopsstore.ErrNotFound) {
-			writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "category": map[string]any{"key": key, "enabled": false, "settings": map[string]any{}}})
+			writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "category": map[string]any{"key": key, "enabled": false, "settings": map[string]any{}}})
 			return
 		}
 		if err != nil {
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "category": item})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "category": item})
 		return
 	}
 	pattern := "/api/admin/config/categories/{category_key}"
@@ -655,13 +655,13 @@ func (handler *Handler) adminOpsCategories(writer http.ResponseWriter, request *
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "summary": map[string]any{"category": key, "failed": 0, "external_calls": false}, "config": item, "real_external_call_executed": false})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "summary": map[string]any{"category": key, "failed": 0, "external_calls": false}, "config": item})
 		return
 	}
 	current, getErr := handler.adminOps.GetCategory(request.Context(), key)
 	enabled, settings := true, map[string]any{}
 	if getErr == nil {
-		enabled, settings = current.Enabled, decodeObject(current.Settings)
+		enabled, settings = current.Enabled, current.Settings
 	} else if !errors.Is(getErr, adminopsstore.ErrNotFound) {
 		writeAdminOpsServiceError(writer, getErr)
 		return
@@ -686,7 +686,7 @@ func (handler *Handler) adminOpsCategories(writer http.ResponseWriter, request *
 		writeAdminOpsServiceError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "changed": true, "config": item, "real_external_call_executed": false})
+	writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "changed": true, "config": item})
 }
 
 func (handler *Handler) adminOpsReleases(writer http.ResponseWriter, request *http.Request) {
@@ -697,7 +697,7 @@ func (handler *Handler) adminOpsReleases(writer http.ResponseWriter, request *ht
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "releases": items})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "releases": items})
 		return
 	}
 	if path == "/api/admin/config/releases" && request.Method == http.MethodPost {
@@ -714,7 +714,7 @@ func (handler *Handler) adminOpsReleases(writer http.ResponseWriter, request *ht
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "release": item, "real_external_call_executed": false})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "release": item})
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(request, "release_id"), 10, 64)
@@ -729,9 +729,9 @@ func (handler *Handler) adminOpsReleases(writer http.ResponseWriter, request *ht
 			return
 		}
 		if strings.HasSuffix(path, "/shadow-compare") {
-			writeJSON(writer, http.StatusOK, map[string]any{"ok": item.State == "validated" || item.State == "published", "comparison": map[string]any{"release_id": id, "external_calls": false}})
+			writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": item.State == "validated" || item.State == "published", "comparison": map[string]any{"release_id": id, "external_calls": false}})
 		} else {
-			writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "release": item})
+			writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "release": item})
 		}
 		return
 	}
@@ -749,7 +749,7 @@ func (handler *Handler) adminOpsReleases(writer http.ResponseWriter, request *ht
 	if !ok {
 		return
 	}
-	var item adminopsport.Release
+	var item adminopsapp.ReleaseView
 	switch {
 	case strings.HasSuffix(path, "/validate"):
 		item, err = handler.adminOps.ValidateRelease(request.Context(), id, actor, requestID)
@@ -773,21 +773,21 @@ func (handler *Handler) adminOpsReleases(writer http.ResponseWriter, request *ht
 		writeAdminOpsServiceError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "release": item, "real_external_call_executed": false})
+	writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "release": item})
 }
 
 func (handler *Handler) adminOpsPush(writer http.ResponseWriter, request *http.Request) {
 	if request.Method == http.MethodGet {
 		item, err := handler.adminOps.GetCategory(request.Context(), "push_capabilities")
 		if errors.Is(err, adminopsstore.ErrNotFound) {
-			writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "capabilities": []any{}, "scheduler": map[string]any{"enabled": false}})
+			writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "capabilities": []any{}, "scheduler": map[string]any{"enabled": false}})
 			return
 		}
 		if err != nil {
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "capabilities": decodeObject(item.Settings), "scheduler": map[string]any{"enabled": item.Enabled}})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "capabilities": item.Settings, "scheduler": map[string]any{"enabled": item.Enabled}})
 		return
 	}
 	pattern := "/api/admin/config/push-capabilities/{capability_key}"
@@ -814,7 +814,7 @@ func (handler *Handler) adminOpsPush(writer http.ResponseWriter, request *http.R
 		writeAdminOpsServiceError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "capability": item, "derived_gates": map[string]any{"api_worker_isolated": true}, "real_external_call_executed": false})
+	writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "capability": item, "derived_gates": map[string]any{"api_worker_isolated": true}})
 }
 
 func (handler *Handler) adminOpsJobs(writer http.ResponseWriter, request *http.Request) {
@@ -833,11 +833,23 @@ func (handler *Handler) adminOpsJobs(writer http.ResponseWriter, request *http.R
 		for _, item := range items {
 			counts[item.State]++
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "summary": map[string]any{"counts": counts, "worker": "separate_from_http", "outcome_unknown_auto_retry": false}})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "summary": map[string]any{"counts": counts, "worker": "separate_from_http", "outcome_unknown_auto_retry": false}})
 		return
 	}
 	if path == "/api/admin/broadcast-jobs/notification-settings/feishu" || path == "/api/admin/broadcast-jobs/notification-settings/feishu/validate" || path == "/api/admin/broadcast-jobs/feishu-hourly-report/run" {
 		handler.adminOpsNotification(writer, request)
+		return
+	}
+	if request.Method == http.MethodGet && (path == "/api/admin/jobs/callbacks" || path == "/api/admin/jobs/deferred-jobs" || path == "/api/admin/jobs/webhook-deliveries") {
+		writeAdminOpsLocalJSON(writer, http.StatusConflict, map[string]any{"ok": false, "error": "admin_ops_job_kind_unavailable"})
+		return
+	}
+	if request.Method == http.MethodGet && (path == "/api/admin/broadcast-jobs" || strings.HasPrefix(path, "/api/admin/broadcast-jobs/")) {
+		writeAdminOpsLocalJSON(writer, http.StatusConflict, map[string]any{"ok": false, "error": "broadcast_job_fact_unavailable"})
+		return
+	}
+	if request.Method == http.MethodGet && strings.HasPrefix(path, "/api/admin/jobs/message-batches/") {
+		writeAdminOpsLocalJSON(writer, http.StatusConflict, map[string]any{"ok": false, "error": "message_batch_job_mapping_unavailable"})
 		return
 	}
 	if request.Method == http.MethodGet {
@@ -848,15 +860,12 @@ func (handler *Handler) adminOpsJobs(writer http.ResponseWriter, request *http.R
 		if strings.Contains(path, "message-batches") {
 			kind = "message_batch_ack"
 		}
-		if path == "/api/admin/broadcast-jobs" {
-			kind = "feishu_hourly_report"
-		}
 		items, err := handler.adminOps.ListJobs(request.Context(), kind, "", 100)
 		if err != nil {
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "jobs": publicJobs(items), "real_external_call_executed": false})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "jobs": publicJobs(items)})
 		return
 	}
 	pattern := "/api/admin/jobs"
@@ -868,6 +877,9 @@ func (handler *Handler) adminOpsJobs(writer http.ResponseWriter, request *http.R
 	}
 	if strings.HasSuffix(path, "/cancel") {
 		pattern = "/api/admin/broadcast-jobs/{job_id}/cancel"
+	}
+	if strings.HasSuffix(path, "/approve") {
+		pattern = "/api/admin/broadcast-jobs/{job_id}/approve"
 	}
 	payload, actor, requestID, ok := handler.adminOpsCommand(writer, request, pattern)
 	if !ok {
@@ -889,18 +901,10 @@ func (handler *Handler) adminOpsJobs(writer http.ResponseWriter, request *http.R
 		}
 		kind, target = "message_batch_ack", "message_batch:"+batchID
 	case strings.HasSuffix(path, "/cancel"):
-		key := chi.URLParam(request, "job_id")
-		version, err := numberValue(payload, "version")
-		if err != nil {
-			writeAdminOpsError(writer, http.StatusBadRequest, "version_required")
-			return
-		}
-		item, err := handler.adminOps.CancelJob(request.Context(), key, version, actor, requestID)
-		if err != nil {
-			writeAdminOpsServiceError(writer, err)
-			return
-		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "job": publicJob(item)})
+		writeAdminOpsLocalJSON(writer, http.StatusConflict, map[string]any{"ok": false, "error": "broadcast_job_fact_unavailable"})
+		return
+	case strings.HasSuffix(path, "/approve"):
+		writeAdminOpsLocalJSON(writer, http.StatusConflict, map[string]any{"ok": false, "error": "broadcast_job_review_state_unavailable"})
 		return
 	default:
 		writeAdminOpsError(writer, http.StatusConflict, "outbound_owner_required")
@@ -911,7 +915,7 @@ func (handler *Handler) adminOpsJobs(writer http.ResponseWriter, request *http.R
 		writeAdminOpsServiceError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusAccepted, map[string]any{"ok": true, "accepted": true, "job": publicJob(item), "real_external_call_executed": false})
+	writeAdminOpsLocalJSON(writer, http.StatusAccepted, map[string]any{"ok": true, "accepted": true, "job": publicJob(item)})
 }
 
 func (handler *Handler) adminOpsNotification(writer http.ResponseWriter, request *http.Request) {
@@ -922,7 +926,7 @@ func (handler *Handler) adminOpsNotification(writer http.ResponseWriter, request
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "enabled": setting.Enabled, "channel": setting.Channel, "webhookMasked": setting.SecretMask, "validationStatus": setting.ValidationState})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "enabled": setting.Enabled, "channel": setting.Channel, "webhookMasked": setting.SecretMask, "validationStatus": setting.ValidationState})
 		return
 	}
 	payload, actor, requestID, ok := handler.adminOpsCommand(writer, request, path)
@@ -940,7 +944,7 @@ func (handler *Handler) adminOpsNotification(writer http.ResponseWriter, request
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusOK, map[string]any{"ok": true, "webhookMasked": setting.SecretMask, "validationStatus": setting.ValidationState, "real_external_call_executed": false})
+		writeAdminOpsLocalJSON(writer, http.StatusOK, map[string]any{"ok": true, "webhookMasked": setting.SecretMask, "validationStatus": setting.ValidationState})
 		return
 	}
 	if path == "/api/admin/broadcast-jobs/notification-settings/feishu/validate" {
@@ -954,7 +958,7 @@ func (handler *Handler) adminOpsNotification(writer http.ResponseWriter, request
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusAccepted, map[string]any{"ok": true, "accepted": true, "validationStatus": "queued", "webhookMasked": setting.SecretMask, "job": publicJob(item), "real_external_call_executed": false})
+		writeAdminOpsLocalJSON(writer, http.StatusAccepted, map[string]any{"ok": true, "accepted": true, "validationStatus": "queued", "webhookMasked": setting.SecretMask, "job": publicJob(item)})
 		return
 	}
 	if path == "/api/admin/broadcast-jobs/feishu-hourly-report/run" {
@@ -963,7 +967,7 @@ func (handler *Handler) adminOpsNotification(writer http.ResponseWriter, request
 			writeAdminOpsServiceError(writer, err)
 			return
 		}
-		writeJSON(writer, http.StatusAccepted, map[string]any{"ok": true, "status": "queued", "job": publicJob(item), "real_external_call_executed": false})
+		writeAdminOpsLocalJSON(writer, http.StatusAccepted, map[string]any{"ok": true, "status": "queued", "job": publicJob(item)})
 		return
 	}
 	writeAdminOpsError(writer, http.StatusNotFound, "admin_ops_route_not_found")
@@ -1024,20 +1028,51 @@ func publicCredential(item adminopsport.Credential) map[string]any {
 	return map[string]any{"id": item.ID, "kind": item.Kind, "client_id": item.ClientID, "display_name": item.DisplayName, "state": item.State, "secret_ref": item.SecretRef, "secret_mask": item.SecretMask, "version": item.Version, "created_at": item.CreatedAt, "updated_at": item.UpdatedAt}
 }
 func publicJob(item adminopsport.Job) map[string]any {
-	return map[string]any{"job_id": item.Key, "kind": item.Kind, "status": item.State, "target_ref": item.TargetRef, "version": item.Version, "failure_code": item.FailureCode, "created_at": item.CreatedAt, "completed_at": item.CompletedAt, "real_external_call_executed": false}
+	failurePresent := strings.TrimSpace(item.FailureCode) != ""
+	return map[string]any{"job_id": item.Key, "kind": item.Kind, "status": item.State, "target_kind": publicJobTargetKind(item.Kind), "target_present": strings.TrimSpace(item.TargetRef) != "", "target_mask": publicJobTargetMask(item.TargetRef), "version": item.Version, "failure_present": failurePresent, "failure_class": publicJobFailureClass(item.State, failurePresent), "created_at": item.CreatedAt, "completed_at": item.CompletedAt, "local_only": true, "real_external_call_executed": false}
+}
+
+func publicJobFailureClass(state string, failurePresent bool) string {
+	switch state {
+	case "outcome_unknown":
+		return "outcome_unknown"
+	case "failed":
+		return "local_failure"
+	default:
+		if failurePresent {
+			return "local_failure"
+		}
+		return "none"
+	}
+}
+
+func publicJobTargetKind(kind string) string {
+	switch kind {
+	case "archive_sync":
+		return "message_archive"
+	case "message_batch_ack":
+		return "message_batch"
+	case "feishu_webhook_validate":
+		return "notification_secret"
+	case "feishu_hourly_report":
+		return "notification"
+	case "order_identity_repair":
+		return "order_identity"
+	default:
+		return "unknown"
+	}
+}
+
+func publicJobTargetMask(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return ""
+	}
+	return "masked"
 }
 func publicJobs(items []adminopsport.Job) []map[string]any {
 	result := make([]map[string]any, len(items))
 	for i, item := range items {
 		result[i] = publicJob(item)
-	}
-	return result
-}
-func decodeObject(raw []byte) map[string]any {
-	var result map[string]any
-	_ = json.Unmarshal(raw, &result)
-	if result == nil {
-		result = map[string]any{}
 	}
 	return result
 }
@@ -1065,6 +1100,11 @@ func numberValue(item map[string]any, key string) (int64, error) {
 }
 func writeAdminOpsError(writer http.ResponseWriter, status int, code string) {
 	writeJSON(writer, status, map[string]any{"ok": false, "error": code})
+}
+func writeAdminOpsLocalJSON(writer http.ResponseWriter, status int, payload map[string]any) {
+	payload["local_only"] = true
+	payload["real_external_call_executed"] = false
+	writeJSON(writer, status, payload)
 }
 func writeAdminOpsServiceError(writer http.ResponseWriter, err error) {
 	switch {

@@ -43,6 +43,486 @@ func (e AdminConfigEntrySourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for AdminOpsBatchAckRequestConfirm.
+const (
+	AdminOpsBatchAckConfirmTrue AdminOpsBatchAckRequestConfirm = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsBatchAckRequestConfirm enum.
+func (e AdminOpsBatchAckRequestConfirm) Valid() bool {
+	switch e {
+	case AdminOpsBatchAckConfirmTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsCancelJobRequestConfirm.
+const (
+	AdminOpsCancelJobConfirmTrue AdminOpsCancelJobRequestConfirm = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsCancelJobRequestConfirm enum.
+func (e AdminOpsCancelJobRequestConfirm) Valid() bool {
+	switch e {
+	case AdminOpsCancelJobConfirmTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsCategoryCheckSummaryExternalCalls.
+const (
+	AdminOpsCategoryCheckExternalCallsFalse AdminOpsCategoryCheckSummaryExternalCalls = false
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsCategoryCheckSummaryExternalCalls enum.
+func (e AdminOpsCategoryCheckSummaryExternalCalls) Valid() bool {
+	switch e {
+	case AdminOpsCategoryCheckExternalCallsFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsCategoryCheckSummaryFailed.
+const (
+	AdminOpsCategoryCheckFailedZero AdminOpsCategoryCheckSummaryFailed = 0
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsCategoryCheckSummaryFailed enum.
+func (e AdminOpsCategoryCheckSummaryFailed) Valid() bool {
+	switch e {
+	case AdminOpsCategoryCheckFailedZero:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsCategoryFallbackEnabled.
+const (
+	AdminOpsCategoryFallbackEnabledFalse AdminOpsCategoryFallbackEnabled = false
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsCategoryFallbackEnabled enum.
+func (e AdminOpsCategoryFallbackEnabled) Valid() bool {
+	switch e {
+	case AdminOpsCategoryFallbackEnabledFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsConfirmedActionRequestConfirm.
+const (
+	AdminOpsConfirmedActionTrue AdminOpsConfirmedActionRequestConfirm = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsConfirmedActionRequestConfirm enum.
+func (e AdminOpsConfirmedActionRequestConfirm) Valid() bool {
+	switch e {
+	case AdminOpsConfirmedActionTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsCreateReleaseRequestConfirm.
+const (
+	AdminOpsCreateReleaseConfirmTrue AdminOpsCreateReleaseRequestConfirm = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsCreateReleaseRequestConfirm enum.
+func (e AdminOpsCreateReleaseRequestConfirm) Valid() bool {
+	switch e {
+	case AdminOpsCreateReleaseConfirmTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsDerivedGatesApiWorkerIsolated.
+const (
+	AdminOpsAPIWorkerIsolatedTrue AdminOpsDerivedGatesApiWorkerIsolated = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsDerivedGatesApiWorkerIsolated enum.
+func (e AdminOpsDerivedGatesApiWorkerIsolated) Valid() bool {
+	switch e {
+	case AdminOpsAPIWorkerIsolatedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobFailureClass.
+const (
+	AdminOpsFailureLocal          AdminOpsJobFailureClass = "local_failure"
+	AdminOpsFailureNone           AdminOpsJobFailureClass = "none"
+	AdminOpsFailureOutcomeUnknown AdminOpsJobFailureClass = "outcome_unknown"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobFailureClass enum.
+func (e AdminOpsJobFailureClass) Valid() bool {
+	switch e {
+	case AdminOpsFailureLocal:
+		return true
+	case AdminOpsFailureNone:
+		return true
+	case AdminOpsFailureOutcomeUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobKind.
+const (
+	AdminOpsJobArchiveSync           AdminOpsJobKind = "archive_sync"
+	AdminOpsJobFeishuHourlyReport    AdminOpsJobKind = "feishu_hourly_report"
+	AdminOpsJobFeishuWebhookValidate AdminOpsJobKind = "feishu_webhook_validate"
+	AdminOpsJobMessageBatchAck       AdminOpsJobKind = "message_batch_ack"
+	AdminOpsJobOrderIdentityRepair   AdminOpsJobKind = "order_identity_repair"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobKind enum.
+func (e AdminOpsJobKind) Valid() bool {
+	switch e {
+	case AdminOpsJobArchiveSync:
+		return true
+	case AdminOpsJobFeishuHourlyReport:
+		return true
+	case AdminOpsJobFeishuWebhookValidate:
+		return true
+	case AdminOpsJobMessageBatchAck:
+		return true
+	case AdminOpsJobOrderIdentityRepair:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobLocalOnly.
+const (
+	AdminOpsJobLocalOnlyTrue AdminOpsJobLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobLocalOnly enum.
+func (e AdminOpsJobLocalOnly) Valid() bool {
+	switch e {
+	case AdminOpsJobLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobRealExternalCallExecuted.
+const (
+	AdminOpsJobExternalCallFalse AdminOpsJobRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobRealExternalCallExecuted enum.
+func (e AdminOpsJobRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AdminOpsJobExternalCallFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobStatus.
+const (
+	AdminOpsJobCancelled      AdminOpsJobStatus = "cancelled"
+	AdminOpsJobCompleted      AdminOpsJobStatus = "completed"
+	AdminOpsJobFailed         AdminOpsJobStatus = "failed"
+	AdminOpsJobOutcomeUnknown AdminOpsJobStatus = "outcome_unknown"
+	AdminOpsJobQueued         AdminOpsJobStatus = "queued"
+	AdminOpsJobRetired        AdminOpsJobStatus = "retired"
+	AdminOpsJobRunning        AdminOpsJobStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobStatus enum.
+func (e AdminOpsJobStatus) Valid() bool {
+	switch e {
+	case AdminOpsJobCancelled:
+		return true
+	case AdminOpsJobCompleted:
+		return true
+	case AdminOpsJobFailed:
+		return true
+	case AdminOpsJobOutcomeUnknown:
+		return true
+	case AdminOpsJobQueued:
+		return true
+	case AdminOpsJobRetired:
+		return true
+	case AdminOpsJobRunning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobTargetKind.
+const (
+	AdminOpsTargetMessageArchive     AdminOpsJobTargetKind = "message_archive"
+	AdminOpsTargetMessageBatch       AdminOpsJobTargetKind = "message_batch"
+	AdminOpsTargetNotification       AdminOpsJobTargetKind = "notification"
+	AdminOpsTargetNotificationSecret AdminOpsJobTargetKind = "notification_secret"
+	AdminOpsTargetOrderIdentity      AdminOpsJobTargetKind = "order_identity"
+	AdminOpsTargetUnknown            AdminOpsJobTargetKind = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobTargetKind enum.
+func (e AdminOpsJobTargetKind) Valid() bool {
+	switch e {
+	case AdminOpsTargetMessageArchive:
+		return true
+	case AdminOpsTargetMessageBatch:
+		return true
+	case AdminOpsTargetNotification:
+		return true
+	case AdminOpsTargetNotificationSecret:
+		return true
+	case AdminOpsTargetOrderIdentity:
+		return true
+	case AdminOpsTargetUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobTargetMask.
+const (
+	AdminOpsTargetMaskEmpty  AdminOpsJobTargetMask = ""
+	AdminOpsTargetMaskMasked AdminOpsJobTargetMask = "masked"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobTargetMask enum.
+func (e AdminOpsJobTargetMask) Valid() bool {
+	switch e {
+	case AdminOpsTargetMaskEmpty:
+		return true
+	case AdminOpsTargetMaskMasked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobSummaryOutcomeUnknownAutoRetry.
+const (
+	AdminOpsOutcomeUnknownAutoRetryFalse AdminOpsJobSummaryOutcomeUnknownAutoRetry = false
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobSummaryOutcomeUnknownAutoRetry enum.
+func (e AdminOpsJobSummaryOutcomeUnknownAutoRetry) Valid() bool {
+	switch e {
+	case AdminOpsOutcomeUnknownAutoRetryFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsJobSummaryWorker.
+const (
+	AdminOpsWorkerSeparateFromHTTP AdminOpsJobSummaryWorker = "separate_from_http"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsJobSummaryWorker enum.
+func (e AdminOpsJobSummaryWorker) Valid() bool {
+	switch e {
+	case AdminOpsWorkerSeparateFromHTTP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsLocalResponseAccepted.
+const (
+	AdminOpsResponseAcceptedTrue AdminOpsLocalResponseAccepted = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsLocalResponseAccepted enum.
+func (e AdminOpsLocalResponseAccepted) Valid() bool {
+	switch e {
+	case AdminOpsResponseAcceptedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsLocalResponseChannel.
+const (
+	AdminOpsChannelFeishu AdminOpsLocalResponseChannel = "feishu"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsLocalResponseChannel enum.
+func (e AdminOpsLocalResponseChannel) Valid() bool {
+	switch e {
+	case AdminOpsChannelFeishu:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsLocalResponseLocalOnly.
+const (
+	AdminOpsResponseLocalOnlyTrue AdminOpsLocalResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsLocalResponseLocalOnly enum.
+func (e AdminOpsLocalResponseLocalOnly) Valid() bool {
+	switch e {
+	case AdminOpsResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsLocalResponseRealExternalCallExecuted.
+const (
+	AdminOpsResponseExternalCallFalse AdminOpsLocalResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsLocalResponseRealExternalCallExecuted enum.
+func (e AdminOpsLocalResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AdminOpsResponseExternalCallFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsLocalResponseStatus.
+const (
+	AdminOpsResponseQueued AdminOpsLocalResponseStatus = "queued"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsLocalResponseStatus enum.
+func (e AdminOpsLocalResponseStatus) Valid() bool {
+	switch e {
+	case AdminOpsResponseQueued:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsLocalResponseValidationStatus.
+const (
+	AdminOpsValidationInvalid      AdminOpsLocalResponseValidationStatus = "invalid"
+	AdminOpsValidationQueued       AdminOpsLocalResponseValidationStatus = "queued"
+	AdminOpsValidationUnconfigured AdminOpsLocalResponseValidationStatus = "unconfigured"
+	AdminOpsValidationUnverified   AdminOpsLocalResponseValidationStatus = "unverified"
+	AdminOpsValidationValid        AdminOpsLocalResponseValidationStatus = "valid"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsLocalResponseValidationStatus enum.
+func (e AdminOpsLocalResponseValidationStatus) Valid() bool {
+	switch e {
+	case AdminOpsValidationInvalid:
+		return true
+	case AdminOpsValidationQueued:
+		return true
+	case AdminOpsValidationUnconfigured:
+		return true
+	case AdminOpsValidationUnverified:
+		return true
+	case AdminOpsValidationValid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsPublishReleaseRequestConfirm.
+const (
+	AdminOpsPublishReleaseConfirmTrue AdminOpsPublishReleaseRequestConfirm = true
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsPublishReleaseRequestConfirm enum.
+func (e AdminOpsPublishReleaseRequestConfirm) Valid() bool {
+	switch e {
+	case AdminOpsPublishReleaseConfirmTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsReleaseState.
+const (
+	AdminOpsReleaseDraft      AdminOpsReleaseState = "draft"
+	AdminOpsReleasePublished  AdminOpsReleaseState = "published"
+	AdminOpsReleaseRolledBack AdminOpsReleaseState = "rolled_back"
+	AdminOpsReleaseValidated  AdminOpsReleaseState = "validated"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsReleaseState enum.
+func (e AdminOpsReleaseState) Valid() bool {
+	switch e {
+	case AdminOpsReleaseDraft:
+		return true
+	case AdminOpsReleasePublished:
+		return true
+	case AdminOpsReleaseRolledBack:
+		return true
+	case AdminOpsReleaseValidated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsReleaseChangesReadWecomWebhookRef.
+const (
+	AdminOpsWebhookRefMasked AdminOpsReleaseChangesReadWecomWebhookRef = "masked"
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsReleaseChangesReadWecomWebhookRef enum.
+func (e AdminOpsReleaseChangesReadWecomWebhookRef) Valid() bool {
+	switch e {
+	case AdminOpsWebhookRefMasked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminOpsReleaseComparisonExternalCalls.
+const (
+	AdminOpsReleaseComparisonExternalCallsFalse AdminOpsReleaseComparisonExternalCalls = false
+)
+
+// Valid indicates whether the value is a known member of the AdminOpsReleaseComparisonExternalCalls enum.
+func (e AdminOpsReleaseComparisonExternalCalls) Valid() bool {
+	switch e {
+	case AdminOpsReleaseComparisonExternalCallsFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuthSessionResponseRole.
 const (
 	Admin AuthSessionResponseRole = "admin"
@@ -4132,6 +4612,300 @@ type AdminConfigOverviewResponse struct {
 	Items []AdminConfigEntry `json:"items"`
 }
 
+// AdminOpsActionRequest defines model for AdminOpsActionRequest.
+type AdminOpsActionRequest struct {
+	AdminActionToken *string `json:"admin_action_token,omitempty"`
+	Confirm          *bool   `json:"confirm,omitempty"`
+}
+
+// AdminOpsBatchAckRequest defines model for AdminOpsBatchAckRequest.
+type AdminOpsBatchAckRequest struct {
+	AckNote          string                         `json:"ack_note"`
+	AdminActionToken *string                        `json:"admin_action_token,omitempty"`
+	Confirm          AdminOpsBatchAckRequestConfirm `json:"confirm"`
+}
+
+// AdminOpsBatchAckRequestConfirm defines model for AdminOpsBatchAckRequest.Confirm.
+type AdminOpsBatchAckRequestConfirm bool
+
+// AdminOpsCancelJobRequest defines model for AdminOpsCancelJobRequest.
+type AdminOpsCancelJobRequest struct {
+	AdminActionToken *string                         `json:"admin_action_token,omitempty"`
+	Confirm          AdminOpsCancelJobRequestConfirm `json:"confirm"`
+	Version          int64                           `json:"version"`
+}
+
+// AdminOpsCancelJobRequestConfirm defines model for AdminOpsCancelJobRequest.Confirm.
+type AdminOpsCancelJobRequestConfirm bool
+
+// AdminOpsCategoryCheckSummary defines model for AdminOpsCategoryCheckSummary.
+type AdminOpsCategoryCheckSummary struct {
+	Category      string                                    `json:"category"`
+	ExternalCalls AdminOpsCategoryCheckSummaryExternalCalls `json:"external_calls"`
+	Failed        AdminOpsCategoryCheckSummaryFailed        `json:"failed"`
+}
+
+// AdminOpsCategoryCheckSummaryExternalCalls defines model for AdminOpsCategoryCheckSummary.ExternalCalls.
+type AdminOpsCategoryCheckSummaryExternalCalls bool
+
+// AdminOpsCategoryCheckSummaryFailed defines model for AdminOpsCategoryCheckSummary.Failed.
+type AdminOpsCategoryCheckSummaryFailed int
+
+// AdminOpsCategoryFallback defines model for AdminOpsCategoryFallback.
+type AdminOpsCategoryFallback struct {
+	Enabled  AdminOpsCategoryFallbackEnabled `json:"enabled"`
+	Key      string                          `json:"key"`
+	Settings AdminOpsCategorySettings        `json:"settings"`
+}
+
+// AdminOpsCategoryFallbackEnabled defines model for AdminOpsCategoryFallback.Enabled.
+type AdminOpsCategoryFallbackEnabled bool
+
+// AdminOpsCategoryPersisted defines model for AdminOpsCategoryPersisted.
+type AdminOpsCategoryPersisted struct {
+	Enabled          bool                     `json:"enabled"`
+	Key              string                   `json:"key"`
+	Settings         AdminOpsCategorySettings `json:"settings"`
+	SettingsRedacted bool                     `json:"settings_redacted"`
+	UpdatedAt        time.Time                `json:"updated_at"`
+	UpdatedBy        string                   `json:"updated_by"`
+	Version          int64                    `json:"version"`
+}
+
+// AdminOpsCategoryRead defines model for AdminOpsCategoryRead.
+type AdminOpsCategoryRead struct {
+	union json.RawMessage
+}
+
+// AdminOpsCategorySettings defines model for AdminOpsCategorySettings.
+type AdminOpsCategorySettings struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// AdminOpsCategorySettingsRequest defines model for AdminOpsCategorySettingsRequest.
+type AdminOpsCategorySettingsRequest struct {
+	AdminActionToken *string                  `json:"admin_action_token,omitempty"`
+	Settings         AdminOpsCategorySettings `json:"settings"`
+}
+
+// AdminOpsConfirmedActionRequest defines model for AdminOpsConfirmedActionRequest.
+type AdminOpsConfirmedActionRequest struct {
+	AdminActionToken *string                               `json:"admin_action_token,omitempty"`
+	Confirm          AdminOpsConfirmedActionRequestConfirm `json:"confirm"`
+}
+
+// AdminOpsConfirmedActionRequestConfirm defines model for AdminOpsConfirmedActionRequest.Confirm.
+type AdminOpsConfirmedActionRequestConfirm bool
+
+// AdminOpsCreateReleaseRequest defines model for AdminOpsCreateReleaseRequest.
+type AdminOpsCreateReleaseRequest struct {
+	AdminActionToken *string                             `json:"admin_action_token,omitempty"`
+	Changes          AdminOpsReleaseChangesWrite         `json:"changes"`
+	Confirm          AdminOpsCreateReleaseRequestConfirm `json:"confirm"`
+}
+
+// AdminOpsCreateReleaseRequestConfirm defines model for AdminOpsCreateReleaseRequest.Confirm.
+type AdminOpsCreateReleaseRequestConfirm bool
+
+// AdminOpsDerivedGates defines model for AdminOpsDerivedGates.
+type AdminOpsDerivedGates struct {
+	ApiWorkerIsolated AdminOpsDerivedGatesApiWorkerIsolated `json:"api_worker_isolated"`
+}
+
+// AdminOpsDerivedGatesApiWorkerIsolated defines model for AdminOpsDerivedGates.ApiWorkerIsolated.
+type AdminOpsDerivedGatesApiWorkerIsolated bool
+
+// AdminOpsEnabledRequest defines model for AdminOpsEnabledRequest.
+type AdminOpsEnabledRequest struct {
+	AdminActionToken *string `json:"admin_action_token,omitempty"`
+	Enabled          bool    `json:"enabled"`
+}
+
+// AdminOpsEnabledState defines model for AdminOpsEnabledState.
+type AdminOpsEnabledState struct {
+	Enabled bool `json:"enabled"`
+}
+
+// AdminOpsJob defines model for AdminOpsJob.
+type AdminOpsJob struct {
+	CompletedAt *time.Time `json:"completed_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+
+	// FailureClass Closed state-derived class; never a provider or raw error string.
+	FailureClass             AdminOpsJobFailureClass             `json:"failure_class"`
+	FailurePresent           bool                                `json:"failure_present"`
+	JobId                    string                              `json:"job_id"`
+	Kind                     AdminOpsJobKind                     `json:"kind"`
+	LocalOnly                AdminOpsJobLocalOnly                `json:"local_only"`
+	RealExternalCallExecuted AdminOpsJobRealExternalCallExecuted `json:"real_external_call_executed"`
+	Status                   AdminOpsJobStatus                   `json:"status"`
+	TargetKind               AdminOpsJobTargetKind               `json:"target_kind"`
+	TargetMask               AdminOpsJobTargetMask               `json:"target_mask"`
+	TargetPresent            bool                                `json:"target_present"`
+	Version                  int64                               `json:"version"`
+}
+
+// AdminOpsJobFailureClass Closed state-derived class; never a provider or raw error string.
+type AdminOpsJobFailureClass string
+
+// AdminOpsJobKind defines model for AdminOpsJob.Kind.
+type AdminOpsJobKind string
+
+// AdminOpsJobLocalOnly defines model for AdminOpsJob.LocalOnly.
+type AdminOpsJobLocalOnly bool
+
+// AdminOpsJobRealExternalCallExecuted defines model for AdminOpsJob.RealExternalCallExecuted.
+type AdminOpsJobRealExternalCallExecuted bool
+
+// AdminOpsJobStatus defines model for AdminOpsJob.Status.
+type AdminOpsJobStatus string
+
+// AdminOpsJobTargetKind defines model for AdminOpsJob.TargetKind.
+type AdminOpsJobTargetKind string
+
+// AdminOpsJobTargetMask defines model for AdminOpsJob.TargetMask.
+type AdminOpsJobTargetMask string
+
+// AdminOpsJobSummary defines model for AdminOpsJobSummary.
+type AdminOpsJobSummary struct {
+	Counts                  map[string]int                            `json:"counts"`
+	OutcomeUnknownAutoRetry AdminOpsJobSummaryOutcomeUnknownAutoRetry `json:"outcome_unknown_auto_retry"`
+	Worker                  AdminOpsJobSummaryWorker                  `json:"worker"`
+}
+
+// AdminOpsJobSummaryOutcomeUnknownAutoRetry defines model for AdminOpsJobSummary.OutcomeUnknownAutoRetry.
+type AdminOpsJobSummaryOutcomeUnknownAutoRetry bool
+
+// AdminOpsJobSummaryWorker defines model for AdminOpsJobSummary.Worker.
+type AdminOpsJobSummaryWorker string
+
+// AdminOpsLocalResponse defines model for AdminOpsLocalResponse.
+type AdminOpsLocalResponse struct {
+	Accepted                 *AdminOpsLocalResponseAccepted                `json:"accepted,omitempty"`
+	Capabilities             *AdminOpsLocalResponse_Capabilities           `json:"capabilities,omitempty"`
+	Capability               *AdminOpsCategoryPersisted                    `json:"capability,omitempty"`
+	Categories               *[]AdminOpsCategoryPersisted                  `json:"categories,omitempty"`
+	Category                 *AdminOpsCategoryRead                         `json:"category,omitempty"`
+	Changed                  *bool                                         `json:"changed,omitempty"`
+	Channel                  *AdminOpsLocalResponseChannel                 `json:"channel,omitempty"`
+	Comparison               *AdminOpsReleaseComparison                    `json:"comparison,omitempty"`
+	Config                   *AdminOpsCategoryPersisted                    `json:"config,omitempty"`
+	DerivedGates             *AdminOpsDerivedGates                         `json:"derived_gates,omitempty"`
+	Enabled                  *bool                                         `json:"enabled,omitempty"`
+	Error                    *string                                       `json:"error,omitempty"`
+	Job                      *AdminOpsJob                                  `json:"job,omitempty"`
+	Jobs                     *[]AdminOpsJob                                `json:"jobs,omitempty"`
+	LocalOnly                AdminOpsLocalResponseLocalOnly                `json:"local_only"`
+	Ok                       bool                                          `json:"ok"`
+	RealExternalCallExecuted AdminOpsLocalResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Release                  *AdminOpsRelease                              `json:"release,omitempty"`
+	Releases                 *[]AdminOpsRelease                            `json:"releases,omitempty"`
+	Scheduler                *AdminOpsEnabledState                         `json:"scheduler,omitempty"`
+	Status                   *AdminOpsLocalResponseStatus                  `json:"status,omitempty"`
+	Summary                  *AdminOpsLocalResponse_Summary                `json:"summary,omitempty"`
+	ValidationStatus         *AdminOpsLocalResponseValidationStatus        `json:"validationStatus,omitempty"`
+	WebhookMasked            *string                                       `json:"webhookMasked,omitempty"`
+}
+
+// AdminOpsLocalResponseAccepted defines model for AdminOpsLocalResponse.Accepted.
+type AdminOpsLocalResponseAccepted bool
+
+// AdminOpsLocalResponseCapabilities0 defines model for .
+type AdminOpsLocalResponseCapabilities0 = []interface{}
+
+// AdminOpsLocalResponse_Capabilities defines model for AdminOpsLocalResponse.Capabilities.
+type AdminOpsLocalResponse_Capabilities struct {
+	union json.RawMessage
+}
+
+// AdminOpsLocalResponseChannel defines model for AdminOpsLocalResponse.Channel.
+type AdminOpsLocalResponseChannel string
+
+// AdminOpsLocalResponseLocalOnly defines model for AdminOpsLocalResponse.LocalOnly.
+type AdminOpsLocalResponseLocalOnly bool
+
+// AdminOpsLocalResponseRealExternalCallExecuted defines model for AdminOpsLocalResponse.RealExternalCallExecuted.
+type AdminOpsLocalResponseRealExternalCallExecuted bool
+
+// AdminOpsLocalResponseStatus defines model for AdminOpsLocalResponse.Status.
+type AdminOpsLocalResponseStatus string
+
+// AdminOpsLocalResponse_Summary defines model for AdminOpsLocalResponse.Summary.
+type AdminOpsLocalResponse_Summary struct {
+	union json.RawMessage
+}
+
+// AdminOpsLocalResponseValidationStatus defines model for AdminOpsLocalResponse.ValidationStatus.
+type AdminOpsLocalResponseValidationStatus string
+
+// AdminOpsNotificationSettingRequest defines model for AdminOpsNotificationSettingRequest.
+type AdminOpsNotificationSettingRequest struct {
+	AdminActionToken *string `json:"admin_action_token,omitempty"`
+	Enabled          bool    `json:"enabled"`
+	SecretRef        *string `json:"secret_ref,omitempty"`
+}
+
+// AdminOpsPublishReleaseRequest defines model for AdminOpsPublishReleaseRequest.
+type AdminOpsPublishReleaseRequest struct {
+	AdminActionToken *string                              `json:"admin_action_token,omitempty"`
+	Checksum         string                               `json:"checksum"`
+	Confirm          AdminOpsPublishReleaseRequestConfirm `json:"confirm"`
+}
+
+// AdminOpsPublishReleaseRequestConfirm defines model for AdminOpsPublishReleaseRequest.Confirm.
+type AdminOpsPublishReleaseRequestConfirm bool
+
+// AdminOpsRelease defines model for AdminOpsRelease.
+type AdminOpsRelease struct {
+	BasedOnReleaseId    *int64                     `json:"based_on_release_id,omitempty"`
+	Changes             AdminOpsReleaseChangesRead `json:"changes"`
+	ChangesRedacted     bool                       `json:"changes_redacted"`
+	Checksum            string                     `json:"checksum"`
+	CreatedAt           time.Time                  `json:"created_at"`
+	CreatedBy           string                     `json:"created_by"`
+	Id                  int64                      `json:"id"`
+	PublishedAt         *time.Time                 `json:"published_at,omitempty"`
+	PublishedBy         *string                    `json:"published_by,omitempty"`
+	RollbackOfReleaseId *int64                     `json:"rollback_of_release_id,omitempty"`
+	State               AdminOpsReleaseState       `json:"state"`
+	ValidatedAt         *time.Time                 `json:"validated_at,omitempty"`
+}
+
+// AdminOpsReleaseState defines model for AdminOpsRelease.State.
+type AdminOpsReleaseState string
+
+// AdminOpsReleaseChangesRead defines model for AdminOpsReleaseChangesRead.
+type AdminOpsReleaseChangesRead struct {
+	OutboundMaxAttempts   *int64  `json:"outbound.max_attempts,omitempty"`
+	OutboundRatePerSecond *int64  `json:"outbound.rate_per_second,omitempty"`
+	WecomAgentId          *int64  `json:"wecom.agent_id,omitempty"`
+	WecomCorpId           *string `json:"wecom.corp_id,omitempty"`
+
+	// WecomWebhookRef Never returns the stored reference or raw webhook locator.
+	WecomWebhookRef *AdminOpsReleaseChangesReadWecomWebhookRef `json:"wecom.webhook_ref,omitempty"`
+}
+
+// AdminOpsReleaseChangesReadWecomWebhookRef Never returns the stored reference or raw webhook locator.
+type AdminOpsReleaseChangesReadWecomWebhookRef string
+
+// AdminOpsReleaseChangesWrite defines model for AdminOpsReleaseChangesWrite.
+type AdminOpsReleaseChangesWrite struct {
+	OutboundMaxAttempts   *int64  `json:"outbound.max_attempts,omitempty"`
+	OutboundRatePerSecond *int64  `json:"outbound.rate_per_second,omitempty"`
+	WecomAgentId          *int64  `json:"wecom.agent_id,omitempty"`
+	WecomCorpId           *string `json:"wecom.corp_id,omitempty"`
+	WecomWebhookRef       *string `json:"wecom.webhook_ref,omitempty"`
+}
+
+// AdminOpsReleaseComparison defines model for AdminOpsReleaseComparison.
+type AdminOpsReleaseComparison struct {
+	ExternalCalls AdminOpsReleaseComparisonExternalCalls `json:"external_calls"`
+	ReleaseId     int64                                  `json:"release_id"`
+}
+
+// AdminOpsReleaseComparisonExternalCalls defines model for AdminOpsReleaseComparison.ExternalCalls.
+type AdminOpsReleaseComparisonExternalCalls bool
+
 // ApproveIdentityMergeReviewRequest defines model for ApproveIdentityMergeReviewRequest.
 type ApproveIdentityMergeReviewRequest struct {
 	ExpectedVersion   int64  `json:"expected_version"`
@@ -6563,6 +7337,24 @@ type AddedAfterFilter = time.Time
 // AddedBeforeFilter defines model for AddedBeforeFilter.
 type AddedBeforeFilter = time.Time
 
+// AdminOpsActionToken defines model for AdminOpsActionToken.
+type AdminOpsActionToken = string
+
+// AdminOpsBatchID defines model for AdminOpsBatchID.
+type AdminOpsBatchID = string
+
+// AdminOpsCapabilityKey defines model for AdminOpsCapabilityKey.
+type AdminOpsCapabilityKey = string
+
+// AdminOpsCategoryKey defines model for AdminOpsCategoryKey.
+type AdminOpsCategoryKey = string
+
+// AdminOpsJobID defines model for AdminOpsJobID.
+type AdminOpsJobID = string
+
+// AdminOpsReleaseID defines model for AdminOpsReleaseID.
+type AdminOpsReleaseID = int64
+
 // AutomationAgentID defines model for AutomationAgentID.
 type AutomationAgentID = int64
 
@@ -6689,6 +7481,15 @@ type TagID = int64
 // TagIDFilter defines model for TagIDFilter.
 type TagIDFilter = int64
 
+// AdminOpsBlockedRedline defines model for AdminOpsBlockedRedline.
+type AdminOpsBlockedRedline = AdminOpsLocalResponse
+
+// AdminOpsLocalAccepted defines model for AdminOpsLocalAccepted.
+type AdminOpsLocalAccepted = AdminOpsLocalResponse
+
+// AdminOpsLocalOK defines model for AdminOpsLocalOK.
+type AdminOpsLocalOK = AdminOpsLocalResponse
+
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
 
@@ -6751,6 +7552,51 @@ type ListAutomationTriggerRunsParams struct {
 // ListAutomationTriggerRunsParamsVisibility defines parameters for ListAutomationTriggerRuns.
 type ListAutomationTriggerRunsParamsVisibility string
 
+// RunAdminOpsFeishuHourlyReportPlanParams defines parameters for RunAdminOpsFeishuHourlyReportPlan.
+type RunAdminOpsFeishuHourlyReportPlanParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// SaveAdminOpsFeishuNotificationSettingParams defines parameters for SaveAdminOpsFeishuNotificationSetting.
+type SaveAdminOpsFeishuNotificationSettingParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ValidateAdminOpsFeishuNotificationPlanParams defines parameters for ValidateAdminOpsFeishuNotificationPlan.
+type ValidateAdminOpsFeishuNotificationPlanParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ApproveAdminOpsBroadcastJobParams defines parameters for ApproveAdminOpsBroadcastJob.
+type ApproveAdminOpsBroadcastJobParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// CancelAdminOpsBroadcastJobParams defines parameters for CancelAdminOpsBroadcastJob.
+type CancelAdminOpsBroadcastJobParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
 // ListLegacyChannelsParams defines parameters for ListLegacyChannels.
 type ListLegacyChannelsParams struct {
 	Limit           *int                            `form:"limit,omitempty" json:"limit,omitempty"`
@@ -6779,6 +7625,105 @@ type UpdateLegacyChannelParams struct {
 type ListLegacyChannelEntrantsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// CheckAdminOpsCategoryParams defines parameters for CheckAdminOpsCategory.
+type CheckAdminOpsCategoryParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// SetAdminOpsCategoryEnabledParams defines parameters for SetAdminOpsCategoryEnabled.
+type SetAdminOpsCategoryEnabledParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// SetAdminOpsCategorySettingsParams defines parameters for SetAdminOpsCategorySettings.
+type SetAdminOpsCategorySettingsParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// SetAdminOpsPushSchedulerParams defines parameters for SetAdminOpsPushScheduler.
+type SetAdminOpsPushSchedulerParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// SetAdminOpsPushCapabilityParams defines parameters for SetAdminOpsPushCapability.
+type SetAdminOpsPushCapabilityParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// CreateAdminOpsReleaseParams defines parameters for CreateAdminOpsRelease.
+type CreateAdminOpsReleaseParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// PublishAdminOpsReleaseParams defines parameters for PublishAdminOpsRelease.
+type PublishAdminOpsReleaseParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// RollbackAdminOpsReleaseParams defines parameters for RollbackAdminOpsRelease.
+type RollbackAdminOpsReleaseParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ValidateAdminOpsReleaseParams defines parameters for ValidateAdminOpsRelease.
+type ValidateAdminOpsReleaseParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// RunAdminOpsArchiveSyncPlanParams defines parameters for RunAdminOpsArchiveSyncPlan.
+type RunAdminOpsArchiveSyncPlanParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// AcknowledgeAdminOpsMessageBatchParams defines parameters for AcknowledgeAdminOpsMessageBatch.
+type AcknowledgeAdminOpsMessageBatchParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
+	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
 // GetLegacyPushCenterSectionsParams defines parameters for GetLegacyPushCenterSections.
@@ -7403,11 +8348,59 @@ type UpdateTagParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// RunAdminOpsFeishuHourlyReportPlanJSONRequestBody defines body for RunAdminOpsFeishuHourlyReportPlan for application/json ContentType.
+type RunAdminOpsFeishuHourlyReportPlanJSONRequestBody = AdminOpsActionRequest
+
+// SaveAdminOpsFeishuNotificationSettingJSONRequestBody defines body for SaveAdminOpsFeishuNotificationSetting for application/json ContentType.
+type SaveAdminOpsFeishuNotificationSettingJSONRequestBody = AdminOpsNotificationSettingRequest
+
+// ValidateAdminOpsFeishuNotificationPlanJSONRequestBody defines body for ValidateAdminOpsFeishuNotificationPlan for application/json ContentType.
+type ValidateAdminOpsFeishuNotificationPlanJSONRequestBody = AdminOpsActionRequest
+
+// ApproveAdminOpsBroadcastJobJSONRequestBody defines body for ApproveAdminOpsBroadcastJob for application/json ContentType.
+type ApproveAdminOpsBroadcastJobJSONRequestBody = AdminOpsConfirmedActionRequest
+
+// CancelAdminOpsBroadcastJobJSONRequestBody defines body for CancelAdminOpsBroadcastJob for application/json ContentType.
+type CancelAdminOpsBroadcastJobJSONRequestBody = AdminOpsCancelJobRequest
+
 // CreateLegacyChannelJSONRequestBody defines body for CreateLegacyChannel for application/json ContentType.
 type CreateLegacyChannelJSONRequestBody = LegacyChannelWriteRequest
 
 // UpdateLegacyChannelJSONRequestBody defines body for UpdateLegacyChannel for application/json ContentType.
 type UpdateLegacyChannelJSONRequestBody = LegacyChannelWriteRequest
+
+// CheckAdminOpsCategoryJSONRequestBody defines body for CheckAdminOpsCategory for application/json ContentType.
+type CheckAdminOpsCategoryJSONRequestBody = AdminOpsActionRequest
+
+// SetAdminOpsCategoryEnabledJSONRequestBody defines body for SetAdminOpsCategoryEnabled for application/json ContentType.
+type SetAdminOpsCategoryEnabledJSONRequestBody = AdminOpsEnabledRequest
+
+// SetAdminOpsCategorySettingsJSONRequestBody defines body for SetAdminOpsCategorySettings for application/json ContentType.
+type SetAdminOpsCategorySettingsJSONRequestBody = AdminOpsCategorySettingsRequest
+
+// SetAdminOpsPushSchedulerJSONRequestBody defines body for SetAdminOpsPushScheduler for application/json ContentType.
+type SetAdminOpsPushSchedulerJSONRequestBody = AdminOpsEnabledRequest
+
+// SetAdminOpsPushCapabilityJSONRequestBody defines body for SetAdminOpsPushCapability for application/json ContentType.
+type SetAdminOpsPushCapabilityJSONRequestBody = AdminOpsEnabledRequest
+
+// CreateAdminOpsReleaseJSONRequestBody defines body for CreateAdminOpsRelease for application/json ContentType.
+type CreateAdminOpsReleaseJSONRequestBody = AdminOpsCreateReleaseRequest
+
+// PublishAdminOpsReleaseJSONRequestBody defines body for PublishAdminOpsRelease for application/json ContentType.
+type PublishAdminOpsReleaseJSONRequestBody = AdminOpsPublishReleaseRequest
+
+// RollbackAdminOpsReleaseJSONRequestBody defines body for RollbackAdminOpsRelease for application/json ContentType.
+type RollbackAdminOpsReleaseJSONRequestBody = AdminOpsConfirmedActionRequest
+
+// ValidateAdminOpsReleaseJSONRequestBody defines body for ValidateAdminOpsRelease for application/json ContentType.
+type ValidateAdminOpsReleaseJSONRequestBody = AdminOpsActionRequest
+
+// RunAdminOpsArchiveSyncPlanJSONRequestBody defines body for RunAdminOpsArchiveSyncPlan for application/json ContentType.
+type RunAdminOpsArchiveSyncPlanJSONRequestBody = AdminOpsConfirmedActionRequest
+
+// AcknowledgeAdminOpsMessageBatchJSONRequestBody defines body for AcknowledgeAdminOpsMessageBatch for application/json ContentType.
+type AcknowledgeAdminOpsMessageBatchJSONRequestBody = AdminOpsBatchAckRequest
 
 // DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
 type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest
@@ -7555,6 +8548,192 @@ type ReorderTagsJSONRequestBody = ReorderLocalCatalogRequest
 
 // UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
 type UpdateTagJSONRequestBody = UpdateLocalTagNameRequest
+
+// AsAdminOpsCategoryPersisted returns the union data inside the AdminOpsCategoryRead as a AdminOpsCategoryPersisted
+func (t AdminOpsCategoryRead) AsAdminOpsCategoryPersisted() (AdminOpsCategoryPersisted, error) {
+	var body AdminOpsCategoryPersisted
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdminOpsCategoryPersisted overwrites any union data inside the AdminOpsCategoryRead as the provided AdminOpsCategoryPersisted
+func (t *AdminOpsCategoryRead) FromAdminOpsCategoryPersisted(v AdminOpsCategoryPersisted) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdminOpsCategoryPersisted performs a merge with any union data inside the AdminOpsCategoryRead, using the provided AdminOpsCategoryPersisted
+func (t *AdminOpsCategoryRead) MergeAdminOpsCategoryPersisted(v AdminOpsCategoryPersisted) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAdminOpsCategoryFallback returns the union data inside the AdminOpsCategoryRead as a AdminOpsCategoryFallback
+func (t AdminOpsCategoryRead) AsAdminOpsCategoryFallback() (AdminOpsCategoryFallback, error) {
+	var body AdminOpsCategoryFallback
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdminOpsCategoryFallback overwrites any union data inside the AdminOpsCategoryRead as the provided AdminOpsCategoryFallback
+func (t *AdminOpsCategoryRead) FromAdminOpsCategoryFallback(v AdminOpsCategoryFallback) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdminOpsCategoryFallback performs a merge with any union data inside the AdminOpsCategoryRead, using the provided AdminOpsCategoryFallback
+func (t *AdminOpsCategoryRead) MergeAdminOpsCategoryFallback(v AdminOpsCategoryFallback) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AdminOpsCategoryRead) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AdminOpsCategoryRead) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAdminOpsLocalResponseCapabilities0 returns the union data inside the AdminOpsLocalResponse_Capabilities as a AdminOpsLocalResponseCapabilities0
+func (t AdminOpsLocalResponse_Capabilities) AsAdminOpsLocalResponseCapabilities0() (AdminOpsLocalResponseCapabilities0, error) {
+	var body AdminOpsLocalResponseCapabilities0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdminOpsLocalResponseCapabilities0 overwrites any union data inside the AdminOpsLocalResponse_Capabilities as the provided AdminOpsLocalResponseCapabilities0
+func (t *AdminOpsLocalResponse_Capabilities) FromAdminOpsLocalResponseCapabilities0(v AdminOpsLocalResponseCapabilities0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdminOpsLocalResponseCapabilities0 performs a merge with any union data inside the AdminOpsLocalResponse_Capabilities, using the provided AdminOpsLocalResponseCapabilities0
+func (t *AdminOpsLocalResponse_Capabilities) MergeAdminOpsLocalResponseCapabilities0(v AdminOpsLocalResponseCapabilities0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAdminOpsCategorySettings returns the union data inside the AdminOpsLocalResponse_Capabilities as a AdminOpsCategorySettings
+func (t AdminOpsLocalResponse_Capabilities) AsAdminOpsCategorySettings() (AdminOpsCategorySettings, error) {
+	var body AdminOpsCategorySettings
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdminOpsCategorySettings overwrites any union data inside the AdminOpsLocalResponse_Capabilities as the provided AdminOpsCategorySettings
+func (t *AdminOpsLocalResponse_Capabilities) FromAdminOpsCategorySettings(v AdminOpsCategorySettings) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdminOpsCategorySettings performs a merge with any union data inside the AdminOpsLocalResponse_Capabilities, using the provided AdminOpsCategorySettings
+func (t *AdminOpsLocalResponse_Capabilities) MergeAdminOpsCategorySettings(v AdminOpsCategorySettings) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AdminOpsLocalResponse_Capabilities) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AdminOpsLocalResponse_Capabilities) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsAdminOpsCategoryCheckSummary returns the union data inside the AdminOpsLocalResponse_Summary as a AdminOpsCategoryCheckSummary
+func (t AdminOpsLocalResponse_Summary) AsAdminOpsCategoryCheckSummary() (AdminOpsCategoryCheckSummary, error) {
+	var body AdminOpsCategoryCheckSummary
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdminOpsCategoryCheckSummary overwrites any union data inside the AdminOpsLocalResponse_Summary as the provided AdminOpsCategoryCheckSummary
+func (t *AdminOpsLocalResponse_Summary) FromAdminOpsCategoryCheckSummary(v AdminOpsCategoryCheckSummary) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdminOpsCategoryCheckSummary performs a merge with any union data inside the AdminOpsLocalResponse_Summary, using the provided AdminOpsCategoryCheckSummary
+func (t *AdminOpsLocalResponse_Summary) MergeAdminOpsCategoryCheckSummary(v AdminOpsCategoryCheckSummary) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAdminOpsJobSummary returns the union data inside the AdminOpsLocalResponse_Summary as a AdminOpsJobSummary
+func (t AdminOpsLocalResponse_Summary) AsAdminOpsJobSummary() (AdminOpsJobSummary, error) {
+	var body AdminOpsJobSummary
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAdminOpsJobSummary overwrites any union data inside the AdminOpsLocalResponse_Summary as the provided AdminOpsJobSummary
+func (t *AdminOpsLocalResponse_Summary) FromAdminOpsJobSummary(v AdminOpsJobSummary) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAdminOpsJobSummary performs a merge with any union data inside the AdminOpsLocalResponse_Summary, using the provided AdminOpsJobSummary
+func (t *AdminOpsLocalResponse_Summary) MergeAdminOpsJobSummary(v AdminOpsJobSummary) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AdminOpsLocalResponse_Summary) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AdminOpsLocalResponse_Summary) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // AsBindIdentityBound returns the union data inside the BindIdentityResponse as a BindIdentityBound
 func (t BindIdentityResponse) AsBindIdentityBound() (BindIdentityBound, error) {
@@ -8252,12 +9431,48 @@ type ServerInterface interface {
 	// Carry the local read-only channel list into the existing admin shell
 	// (GET /admin/channels)
 	GetLegacyChannelListPage(w http.ResponseWriter, r *http.Request)
+	// Render local AdminOps categories through the closed safe projection
+	// (GET /admin/config)
+	GetAdminOpsConfigPage(w http.ResponseWriter, r *http.Request)
+	// Render local releases through the closed safe projection
+	// (GET /admin/config/releases)
+	GetAdminOpsReleasesPage(w http.ResponseWriter, r *http.Request)
+	// Render the local release creation carrier without secret material
+	// (GET /admin/config/releases/new)
+	GetAdminOpsNewReleasePage(w http.ResponseWriter, r *http.Request)
+	// Render one local release through the closed safe projection
+	// (GET /admin/config/releases/{release_id})
+	GetAdminOpsReleasePage(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID)
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
+	// List CRM-local broadcast plans through the closed job DTO
+	// (GET /api/admin/broadcast-jobs)
+	ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request)
+	// Queue a CRM-local report plan without sending to Feishu
+	// (POST /api/admin/broadcast-jobs/feishu-hourly-report/run)
+	RunAdminOpsFeishuHourlyReportPlan(w http.ResponseWriter, r *http.Request, params RunAdminOpsFeishuHourlyReportPlanParams)
+	// Read only the masked local Feishu notification reference state
+	// (GET /api/admin/broadcast-jobs/notification-settings/feishu)
+	GetAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request)
+	// Save only a local secret reference; never execute the webhook
+	// (PUT /api/admin/broadcast-jobs/notification-settings/feishu)
+	SaveAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request, params SaveAdminOpsFeishuNotificationSettingParams)
+	// Queue only a local validation plan without calling Feishu
+	// (POST /api/admin/broadcast-jobs/notification-settings/feishu/validate)
+	ValidateAdminOpsFeishuNotificationPlan(w http.ResponseWriter, r *http.Request, params ValidateAdminOpsFeishuNotificationPlanParams)
+	// Read one exact CRM-local job through the closed projection
+	// (GET /api/admin/broadcast-jobs/{job_id})
+	GetAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID)
+	// Fail closed because no authoritative local review state exists
+	// (POST /api/admin/broadcast-jobs/{job_id}/approve)
+	ApproveAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params ApproveAdminOpsBroadcastJobParams)
+	// Fail closed because no authoritative local broadcast fact exists
+	// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
+	CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params CancelAdminOpsBroadcastJobParams)
 	// List persisted local channel resources without querying WeCom
 	// (GET /api/admin/channels)
 	ListLegacyChannels(w http.ResponseWriter, r *http.Request, params ListLegacyChannelsParams)
@@ -8273,12 +9488,84 @@ type ServerInterface interface {
 	// List a channel's recent entrants from the closed local Contact projection
 	// (GET /api/admin/channels/{channel_id}/contacts)
 	ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request, channelId int64, params ListLegacyChannelEntrantsParams)
+	// List local configuration categories using a closed settings projection
+	// (GET /api/admin/config/categories)
+	ListAdminOpsCategories(w http.ResponseWriter, r *http.Request)
+	// Read one local category without exposing stored bytes or base64
+	// (GET /api/admin/config/categories/{category_key})
+	GetAdminOpsCategory(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey)
+	// Read a local-only category diagnostic without provider execution
+	// (POST /api/admin/config/categories/{category_key}/check)
+	CheckAdminOpsCategory(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params CheckAdminOpsCategoryParams)
+	// Update the local enabled flag through a route-bound admin command
+	// (PUT /api/admin/config/categories/{category_key}/enabled)
+	SetAdminOpsCategoryEnabled(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params SetAdminOpsCategoryEnabledParams)
+	// Replace the local category settings through the closed allowlist
+	// (PUT /api/admin/config/categories/{category_key}/settings)
+	SetAdminOpsCategorySettings(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params SetAdminOpsCategorySettingsParams)
+	// Read local push gates through the closed category projection
+	// (GET /api/admin/config/push-capabilities)
+	GetAdminOpsPushCapabilities(w http.ResponseWriter, r *http.Request)
+	// Update the local scheduler gate without executing a provider
+	// (PATCH /api/admin/config/push-capabilities/scheduler)
+	SetAdminOpsPushScheduler(w http.ResponseWriter, r *http.Request, params SetAdminOpsPushSchedulerParams)
+	// Update one local push gate without executing a provider
+	// (PATCH /api/admin/config/push-capabilities/{capability_key})
+	SetAdminOpsPushCapability(w http.ResponseWriter, r *http.Request, capabilityKey AdminOpsCapabilityKey, params SetAdminOpsPushCapabilityParams)
+	// List local releases through a closed changes projection
+	// (GET /api/admin/config/releases)
+	ListAdminOpsReleases(w http.ResponseWriter, r *http.Request)
+	// Create a local release using the closed changes allowlist
+	// (POST /api/admin/config/releases)
+	CreateAdminOpsRelease(w http.ResponseWriter, r *http.Request, params CreateAdminOpsReleaseParams)
+	// Read one local release without exposing stored bytes or references
+	// (GET /api/admin/config/releases/{release_id})
+	GetAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID)
+	// Publish local configuration state only
+	// (POST /api/admin/config/releases/{release_id}/publish)
+	PublishAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params PublishAdminOpsReleaseParams)
+	// Roll back local configuration state only
+	// (POST /api/admin/config/releases/{release_id}/rollback)
+	RollbackAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params RollbackAdminOpsReleaseParams)
+	// Return a derived local release comparison without provider execution
+	// (GET /api/admin/config/releases/{release_id}/shadow-compare)
+	CompareAdminOpsReleaseShadow(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID)
+	// Validate one local release without executing external effects
+	// (POST /api/admin/config/releases/{release_id}/validate)
+	ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params ValidateAdminOpsReleaseParams)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
 	// Read one frozen observed execution timeline without asserting a provider receipt
 	// (GET /api/admin/executions/{execution_id})
 	GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string)
+	// List local archive-sync job records through the closed job DTO
+	// (GET /api/admin/jobs/archive-sync)
+	ListAdminOpsArchiveSyncJobs(w http.ResponseWriter, r *http.Request)
+	// Queue a CRM-local archive-sync plan without executing a provider
+	// (POST /api/admin/jobs/archive-sync/run)
+	RunAdminOpsArchiveSyncPlan(w http.ResponseWriter, r *http.Request, params RunAdminOpsArchiveSyncPlanParams)
+	// List local callback-related job records through the closed job DTO
+	// (GET /api/admin/jobs/callbacks)
+	ListAdminOpsCallbackJobs(w http.ResponseWriter, r *http.Request)
+	// List local deferred job records through the closed job DTO
+	// (GET /api/admin/jobs/deferred-jobs)
+	ListAdminOpsDeferredJobs(w http.ResponseWriter, r *http.Request)
+	// List local message-batch acknowledgement plans through the closed job DTO
+	// (GET /api/admin/jobs/message-batches)
+	ListAdminOpsMessageBatchJobs(w http.ResponseWriter, r *http.Request)
+	// Fail closed until an authoritative batch-to-local-job owner mapping exists
+	// (GET /api/admin/jobs/message-batches/{batch_id})
+	GetAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request, batchId AdminOpsBatchID)
+	// Queue a local acknowledgement plan without executing a provider
+	// (POST /api/admin/jobs/message-batches/{batch_id}/ack)
+	AcknowledgeAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request, batchId AdminOpsBatchID, params AcknowledgeAdminOpsMessageBatchParams)
+	// Read local AdminOps job counts without external execution
+	// (GET /api/admin/jobs/summary)
+	GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Request)
+	// List local webhook-plan records without any webhook locator
+	// (GET /api/admin/jobs/webhook-deliveries)
+	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
 	// Read the frozen global Push Center section aggregation without touching a worker or provider
 	// (GET /api/admin/push-center/sections)
 	GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams)
@@ -8576,6 +9863,30 @@ func (_ Unimplemented) GetLegacyChannelListPage(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Render local AdminOps categories through the closed safe projection
+// (GET /admin/config)
+func (_ Unimplemented) GetAdminOpsConfigPage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Render local releases through the closed safe projection
+// (GET /admin/config/releases)
+func (_ Unimplemented) GetAdminOpsReleasesPage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Render the local release creation carrier without secret material
+// (GET /admin/config/releases/new)
+func (_ Unimplemented) GetAdminOpsNewReleasePage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Render one local release through the closed safe projection
+// (GET /admin/config/releases/{release_id})
+func (_ Unimplemented) GetAdminOpsReleasePage(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Carry the safe local execution-runtime observation into the existing admin shell
 // (GET /admin/execution-runtime)
 func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
@@ -8585,6 +9896,54 @@ func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *h
 // List real D01 Automation trigger receipts through the frozen legacy path
 // (GET /api/admin/automation-conversion/agent-runs)
 func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List CRM-local broadcast plans through the closed job DTO
+// (GET /api/admin/broadcast-jobs)
+func (_ Unimplemented) ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Queue a CRM-local report plan without sending to Feishu
+// (POST /api/admin/broadcast-jobs/feishu-hourly-report/run)
+func (_ Unimplemented) RunAdminOpsFeishuHourlyReportPlan(w http.ResponseWriter, r *http.Request, params RunAdminOpsFeishuHourlyReportPlanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read only the masked local Feishu notification reference state
+// (GET /api/admin/broadcast-jobs/notification-settings/feishu)
+func (_ Unimplemented) GetAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Save only a local secret reference; never execute the webhook
+// (PUT /api/admin/broadcast-jobs/notification-settings/feishu)
+func (_ Unimplemented) SaveAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request, params SaveAdminOpsFeishuNotificationSettingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Queue only a local validation plan without calling Feishu
+// (POST /api/admin/broadcast-jobs/notification-settings/feishu/validate)
+func (_ Unimplemented) ValidateAdminOpsFeishuNotificationPlan(w http.ResponseWriter, r *http.Request, params ValidateAdminOpsFeishuNotificationPlanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one exact CRM-local job through the closed projection
+// (GET /api/admin/broadcast-jobs/{job_id})
+func (_ Unimplemented) GetAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Fail closed because no authoritative local review state exists
+// (POST /api/admin/broadcast-jobs/{job_id}/approve)
+func (_ Unimplemented) ApproveAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params ApproveAdminOpsBroadcastJobParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Fail closed because no authoritative local broadcast fact exists
+// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
+func (_ Unimplemented) CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params CancelAdminOpsBroadcastJobParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -8618,6 +9977,96 @@ func (_ Unimplemented) ListLegacyChannelEntrants(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List local configuration categories using a closed settings projection
+// (GET /api/admin/config/categories)
+func (_ Unimplemented) ListAdminOpsCategories(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one local category without exposing stored bytes or base64
+// (GET /api/admin/config/categories/{category_key})
+func (_ Unimplemented) GetAdminOpsCategory(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a local-only category diagnostic without provider execution
+// (POST /api/admin/config/categories/{category_key}/check)
+func (_ Unimplemented) CheckAdminOpsCategory(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params CheckAdminOpsCategoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update the local enabled flag through a route-bound admin command
+// (PUT /api/admin/config/categories/{category_key}/enabled)
+func (_ Unimplemented) SetAdminOpsCategoryEnabled(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params SetAdminOpsCategoryEnabledParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the local category settings through the closed allowlist
+// (PUT /api/admin/config/categories/{category_key}/settings)
+func (_ Unimplemented) SetAdminOpsCategorySettings(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params SetAdminOpsCategorySettingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read local push gates through the closed category projection
+// (GET /api/admin/config/push-capabilities)
+func (_ Unimplemented) GetAdminOpsPushCapabilities(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update the local scheduler gate without executing a provider
+// (PATCH /api/admin/config/push-capabilities/scheduler)
+func (_ Unimplemented) SetAdminOpsPushScheduler(w http.ResponseWriter, r *http.Request, params SetAdminOpsPushSchedulerParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update one local push gate without executing a provider
+// (PATCH /api/admin/config/push-capabilities/{capability_key})
+func (_ Unimplemented) SetAdminOpsPushCapability(w http.ResponseWriter, r *http.Request, capabilityKey AdminOpsCapabilityKey, params SetAdminOpsPushCapabilityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local releases through a closed changes projection
+// (GET /api/admin/config/releases)
+func (_ Unimplemented) ListAdminOpsReleases(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a local release using the closed changes allowlist
+// (POST /api/admin/config/releases)
+func (_ Unimplemented) CreateAdminOpsRelease(w http.ResponseWriter, r *http.Request, params CreateAdminOpsReleaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one local release without exposing stored bytes or references
+// (GET /api/admin/config/releases/{release_id})
+func (_ Unimplemented) GetAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Publish local configuration state only
+// (POST /api/admin/config/releases/{release_id}/publish)
+func (_ Unimplemented) PublishAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params PublishAdminOpsReleaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Roll back local configuration state only
+// (POST /api/admin/config/releases/{release_id}/rollback)
+func (_ Unimplemented) RollbackAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params RollbackAdminOpsReleaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Return a derived local release comparison without provider execution
+// (GET /api/admin/config/releases/{release_id}/shadow-compare)
+func (_ Unimplemented) CompareAdminOpsReleaseShadow(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Validate one local release without executing external effects
+// (POST /api/admin/config/releases/{release_id}/validate)
+func (_ Unimplemented) ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params ValidateAdminOpsReleaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read the frozen observed execution runtime without invoking a worker or provider
 // (GET /api/admin/execution-runtime)
 func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
@@ -8627,6 +10076,60 @@ func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.
 // Read one frozen observed execution timeline without asserting a provider receipt
 // (GET /api/admin/executions/{execution_id})
 func (_ Unimplemented) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local archive-sync job records through the closed job DTO
+// (GET /api/admin/jobs/archive-sync)
+func (_ Unimplemented) ListAdminOpsArchiveSyncJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Queue a CRM-local archive-sync plan without executing a provider
+// (POST /api/admin/jobs/archive-sync/run)
+func (_ Unimplemented) RunAdminOpsArchiveSyncPlan(w http.ResponseWriter, r *http.Request, params RunAdminOpsArchiveSyncPlanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local callback-related job records through the closed job DTO
+// (GET /api/admin/jobs/callbacks)
+func (_ Unimplemented) ListAdminOpsCallbackJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local deferred job records through the closed job DTO
+// (GET /api/admin/jobs/deferred-jobs)
+func (_ Unimplemented) ListAdminOpsDeferredJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local message-batch acknowledgement plans through the closed job DTO
+// (GET /api/admin/jobs/message-batches)
+func (_ Unimplemented) ListAdminOpsMessageBatchJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Fail closed until an authoritative batch-to-local-job owner mapping exists
+// (GET /api/admin/jobs/message-batches/{batch_id})
+func (_ Unimplemented) GetAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request, batchId AdminOpsBatchID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Queue a local acknowledgement plan without executing a provider
+// (POST /api/admin/jobs/message-batches/{batch_id}/ack)
+func (_ Unimplemented) AcknowledgeAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request, batchId AdminOpsBatchID, params AcknowledgeAdminOpsMessageBatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read local AdminOps job counts without external execution
+// (GET /api/admin/jobs/summary)
+func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local webhook-plan records without any webhook locator
+// (GET /api/admin/jobs/webhook-deliveries)
+func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -9229,6 +10732,97 @@ func (siw *ServerInterfaceWrapper) GetLegacyChannelListPage(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// GetAdminOpsConfigPage operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsConfigPage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsConfigPage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsReleasesPage operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsReleasesPage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsReleasesPage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsNewReleasePage operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsNewReleasePage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsNewReleasePage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsReleasePage operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsReleasePage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "release_id" -------------
+	var releaseId AdminOpsReleaseID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "release_id", chi.URLParam(r, "release_id"), &releaseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "release_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsReleasePage(w, r, releaseId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLegacyExecutionRuntimePage operation middleware
 func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
 
@@ -9369,6 +10963,440 @@ func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsBroadcastJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsBroadcastJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunAdminOpsFeishuHourlyReportPlan operation middleware
+func (siw *ServerInterfaceWrapper) RunAdminOpsFeishuHourlyReportPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RunAdminOpsFeishuHourlyReportPlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunAdminOpsFeishuHourlyReportPlan(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsFeishuNotificationSetting operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsFeishuNotificationSetting(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveAdminOpsFeishuNotificationSetting operation middleware
+func (siw *ServerInterfaceWrapper) SaveAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveAdminOpsFeishuNotificationSettingParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveAdminOpsFeishuNotificationSetting(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ValidateAdminOpsFeishuNotificationPlan operation middleware
+func (siw *ServerInterfaceWrapper) ValidateAdminOpsFeishuNotificationPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ValidateAdminOpsFeishuNotificationPlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ValidateAdminOpsFeishuNotificationPlan(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsBroadcastJob operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId AdminOpsJobID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsBroadcastJob(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveAdminOpsBroadcastJob operation middleware
+func (siw *ServerInterfaceWrapper) ApproveAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId AdminOpsJobID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveAdminOpsBroadcastJobParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveAdminOpsBroadcastJob(w, r, jobId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelAdminOpsBroadcastJob operation middleware
+func (siw *ServerInterfaceWrapper) CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId AdminOpsJobID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelAdminOpsBroadcastJobParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelAdminOpsBroadcastJob(w, r, jobId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9663,6 +11691,843 @@ func (siw *ServerInterfaceWrapper) ListLegacyChannelEntrants(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// ListAdminOpsCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsCategories(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsCategories(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsCategory operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "category_key" -------------
+	var categoryKey AdminOpsCategoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "category_key", chi.URLParam(r, "category_key"), &categoryKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category_key", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsCategory(w, r, categoryKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CheckAdminOpsCategory operation middleware
+func (siw *ServerInterfaceWrapper) CheckAdminOpsCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "category_key" -------------
+	var categoryKey AdminOpsCategoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "category_key", chi.URLParam(r, "category_key"), &categoryKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category_key", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CheckAdminOpsCategoryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckAdminOpsCategory(w, r, categoryKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAdminOpsCategoryEnabled operation middleware
+func (siw *ServerInterfaceWrapper) SetAdminOpsCategoryEnabled(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "category_key" -------------
+	var categoryKey AdminOpsCategoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "category_key", chi.URLParam(r, "category_key"), &categoryKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category_key", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetAdminOpsCategoryEnabledParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAdminOpsCategoryEnabled(w, r, categoryKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAdminOpsCategorySettings operation middleware
+func (siw *ServerInterfaceWrapper) SetAdminOpsCategorySettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "category_key" -------------
+	var categoryKey AdminOpsCategoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "category_key", chi.URLParam(r, "category_key"), &categoryKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category_key", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetAdminOpsCategorySettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAdminOpsCategorySettings(w, r, categoryKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsPushCapabilities operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsPushCapabilities(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsPushCapabilities(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAdminOpsPushScheduler operation middleware
+func (siw *ServerInterfaceWrapper) SetAdminOpsPushScheduler(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetAdminOpsPushSchedulerParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAdminOpsPushScheduler(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAdminOpsPushCapability operation middleware
+func (siw *ServerInterfaceWrapper) SetAdminOpsPushCapability(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "capability_key" -------------
+	var capabilityKey AdminOpsCapabilityKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "capability_key", chi.URLParam(r, "capability_key"), &capabilityKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "capability_key", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetAdminOpsPushCapabilityParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAdminOpsPushCapability(w, r, capabilityKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsReleases operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsReleases(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsReleases(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAdminOpsRelease operation middleware
+func (siw *ServerInterfaceWrapper) CreateAdminOpsRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateAdminOpsReleaseParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAdminOpsRelease(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsRelease operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "release_id" -------------
+	var releaseId AdminOpsReleaseID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "release_id", chi.URLParam(r, "release_id"), &releaseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "release_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsRelease(w, r, releaseId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishAdminOpsRelease operation middleware
+func (siw *ServerInterfaceWrapper) PublishAdminOpsRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "release_id" -------------
+	var releaseId AdminOpsReleaseID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "release_id", chi.URLParam(r, "release_id"), &releaseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "release_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PublishAdminOpsReleaseParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishAdminOpsRelease(w, r, releaseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RollbackAdminOpsRelease operation middleware
+func (siw *ServerInterfaceWrapper) RollbackAdminOpsRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "release_id" -------------
+	var releaseId AdminOpsReleaseID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "release_id", chi.URLParam(r, "release_id"), &releaseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "release_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RollbackAdminOpsReleaseParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RollbackAdminOpsRelease(w, r, releaseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompareAdminOpsReleaseShadow operation middleware
+func (siw *ServerInterfaceWrapper) CompareAdminOpsReleaseShadow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "release_id" -------------
+	var releaseId AdminOpsReleaseID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "release_id", chi.URLParam(r, "release_id"), &releaseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "release_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompareAdminOpsReleaseShadow(w, r, releaseId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ValidateAdminOpsRelease operation middleware
+func (siw *ServerInterfaceWrapper) ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "release_id" -------------
+	var releaseId AdminOpsReleaseID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "release_id", chi.URLParam(r, "release_id"), &releaseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "release_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ValidateAdminOpsReleaseParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ValidateAdminOpsRelease(w, r, releaseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLegacyExecutionRuntime operation middleware
 func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
 
@@ -9705,6 +12570,304 @@ func (siw *ServerInterfaceWrapper) GetLegacyExecutionTimeline(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLegacyExecutionTimeline(w, r, executionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsArchiveSyncJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsArchiveSyncJobs(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsArchiveSyncJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunAdminOpsArchiveSyncPlan operation middleware
+func (siw *ServerInterfaceWrapper) RunAdminOpsArchiveSyncPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RunAdminOpsArchiveSyncPlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunAdminOpsArchiveSyncPlan(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsCallbackJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsCallbackJobs(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsCallbackJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsDeferredJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsDeferredJobs(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsDeferredJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsMessageBatchJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsMessageBatchJobs(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsMessageBatchJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsMessageBatch operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "batch_id" -------------
+	var batchId AdminOpsBatchID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batch_id", chi.URLParam(r, "batch_id"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batch_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsMessageBatch(w, r, batchId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcknowledgeAdminOpsMessageBatch operation middleware
+func (siw *ServerInterfaceWrapper) AcknowledgeAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "batch_id" -------------
+	var batchId AdminOpsBatchID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batch_id", chi.URLParam(r, "batch_id"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batch_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcknowledgeAdminOpsMessageBatchParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Admin-Action-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Admin-Action-Token")]; found {
+		var XAdminActionToken AdminOpsActionToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Admin-Action-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Admin-Action-Token", valueList[0], &XAdminActionToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Admin-Action-Token", Err: err})
+			return
+		}
+
+		params.XAdminActionToken = &XAdminActionToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcknowledgeAdminOpsMessageBatch(w, r, batchId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminOpsJobsSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminOpsJobsSummary(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminOpsWebhookDeliveryJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -15735,10 +18898,46 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/admin/channels", wrapper.GetLegacyChannelListPage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/config", wrapper.GetAdminOpsConfigPage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/config/releases", wrapper.GetAdminOpsReleasesPage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/config/releases/new", wrapper.GetAdminOpsNewReleasePage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/config/releases/{release_id}", wrapper.GetAdminOpsReleasePage)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/execution-runtime", wrapper.GetLegacyExecutionRuntimePage)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-jobs", wrapper.ListAdminOpsBroadcastJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/broadcast-jobs/feishu-hourly-report/run", wrapper.RunAdminOpsFeishuHourlyReportPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-jobs/notification-settings/feishu", wrapper.GetAdminOpsFeishuNotificationSetting)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/broadcast-jobs/notification-settings/feishu", wrapper.SaveAdminOpsFeishuNotificationSetting)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/broadcast-jobs/notification-settings/feishu/validate", wrapper.ValidateAdminOpsFeishuNotificationPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-jobs/{job_id}", wrapper.GetAdminOpsBroadcastJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/broadcast-jobs/{job_id}/approve", wrapper.ApproveAdminOpsBroadcastJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/broadcast-jobs/{job_id}/cancel", wrapper.CancelAdminOpsBroadcastJob)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/channels", wrapper.ListLegacyChannels)
@@ -15756,10 +18955,82 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}/contacts", wrapper.ListLegacyChannelEntrants)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/config/categories", wrapper.ListAdminOpsCategories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/config/categories/{category_key}", wrapper.GetAdminOpsCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/config/categories/{category_key}/check", wrapper.CheckAdminOpsCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/config/categories/{category_key}/enabled", wrapper.SetAdminOpsCategoryEnabled)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/config/categories/{category_key}/settings", wrapper.SetAdminOpsCategorySettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/config/push-capabilities", wrapper.GetAdminOpsPushCapabilities)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/admin/config/push-capabilities/scheduler", wrapper.SetAdminOpsPushScheduler)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/admin/config/push-capabilities/{capability_key}", wrapper.SetAdminOpsPushCapability)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/config/releases", wrapper.ListAdminOpsReleases)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/config/releases", wrapper.CreateAdminOpsRelease)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/config/releases/{release_id}", wrapper.GetAdminOpsRelease)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/config/releases/{release_id}/publish", wrapper.PublishAdminOpsRelease)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/config/releases/{release_id}/rollback", wrapper.RollbackAdminOpsRelease)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/config/releases/{release_id}/shadow-compare", wrapper.CompareAdminOpsReleaseShadow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/config/releases/{release_id}/validate", wrapper.ValidateAdminOpsRelease)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/execution-runtime", wrapper.GetLegacyExecutionRuntime)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/executions/{execution_id}", wrapper.GetLegacyExecutionTimeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/archive-sync", wrapper.ListAdminOpsArchiveSyncJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/jobs/archive-sync/run", wrapper.RunAdminOpsArchiveSyncPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/callbacks", wrapper.ListAdminOpsCallbackJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/deferred-jobs", wrapper.ListAdminOpsDeferredJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/message-batches", wrapper.ListAdminOpsMessageBatchJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/message-batches/{batch_id}", wrapper.GetAdminOpsMessageBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/jobs/message-batches/{batch_id}/ack", wrapper.AcknowledgeAdminOpsMessageBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/summary", wrapper.GetAdminOpsJobsSummary)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/push-center/sections", wrapper.GetLegacyPushCenterSections)
@@ -16050,6 +19321,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
+type AdminOpsBlockedRedlineJSONResponse AdminOpsLocalResponse
+
+type AdminOpsLocalAcceptedJSONResponse AdminOpsLocalResponse
+
+type AdminOpsLocalOKJSONResponse AdminOpsLocalResponse
+
 type BadRequestJSONResponse ErrorResponse
 
 type ConflictJSONResponse ErrorResponse
@@ -16143,6 +19420,228 @@ func (response GetLegacyChannelListPage405Response) VisitGetLegacyChannelListPag
 	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
 	w.WriteHeader(405)
 	return nil
+}
+
+type GetAdminOpsConfigPageRequestObject struct {
+}
+
+type GetAdminOpsConfigPageResponseObject interface {
+	VisitGetAdminOpsConfigPageResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsConfigPage200TexthtmlResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetAdminOpsConfigPage200TexthtmlResponse) VisitGetAdminOpsConfigPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/html")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAdminOpsConfigPage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsConfigPage401JSONResponse) VisitGetAdminOpsConfigPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsConfigPage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsConfigPage403JSONResponse) VisitGetAdminOpsConfigPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsConfigPage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsConfigPage503JSONResponse) VisitGetAdminOpsConfigPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasesPageRequestObject struct {
+}
+
+type GetAdminOpsReleasesPageResponseObject interface {
+	VisitGetAdminOpsReleasesPageResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsReleasesPage200TexthtmlResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetAdminOpsReleasesPage200TexthtmlResponse) VisitGetAdminOpsReleasesPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/html")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAdminOpsReleasesPage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsReleasesPage401JSONResponse) VisitGetAdminOpsReleasesPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasesPage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsReleasesPage403JSONResponse) VisitGetAdminOpsReleasesPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasesPage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsReleasesPage503JSONResponse) VisitGetAdminOpsReleasesPageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsNewReleasePageRequestObject struct {
+}
+
+type GetAdminOpsNewReleasePageResponseObject interface {
+	VisitGetAdminOpsNewReleasePageResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsNewReleasePage200TexthtmlResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetAdminOpsNewReleasePage200TexthtmlResponse) VisitGetAdminOpsNewReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/html")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAdminOpsNewReleasePage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsNewReleasePage401JSONResponse) VisitGetAdminOpsNewReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsNewReleasePage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsNewReleasePage403JSONResponse) VisitGetAdminOpsNewReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsNewReleasePage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsNewReleasePage503JSONResponse) VisitGetAdminOpsNewReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasePageRequestObject struct {
+	ReleaseId AdminOpsReleaseID `json:"release_id"`
+}
+
+type GetAdminOpsReleasePageResponseObject interface {
+	VisitGetAdminOpsReleasePageResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsReleasePage200TexthtmlResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetAdminOpsReleasePage200TexthtmlResponse) VisitGetAdminOpsReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/html")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAdminOpsReleasePage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsReleasePage401JSONResponse) VisitGetAdminOpsReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasePage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsReleasePage403JSONResponse) VisitGetAdminOpsReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasePage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetAdminOpsReleasePage404JSONResponse) VisitGetAdminOpsReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleasePage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsReleasePage503JSONResponse) VisitGetAdminOpsReleasePageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetLegacyExecutionRuntimePageRequestObject struct {
@@ -16253,6 +19752,465 @@ func (response ListAutomationTriggerRuns403JSONResponse) VisitListAutomationTrig
 type ListAutomationTriggerRuns503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAutomationTriggerRuns503JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsBroadcastJobsRequestObject struct {
+}
+
+type ListAdminOpsBroadcastJobsResponseObject interface {
+	VisitListAdminOpsBroadcastJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsBroadcastJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsBroadcastJobs401JSONResponse) VisitListAdminOpsBroadcastJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsBroadcastJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsBroadcastJobs403JSONResponse) VisitListAdminOpsBroadcastJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsBroadcastJobs409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response ListAdminOpsBroadcastJobs409JSONResponse) VisitListAdminOpsBroadcastJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsBroadcastJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsBroadcastJobs503JSONResponse) VisitListAdminOpsBroadcastJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsFeishuHourlyReportPlanRequestObject struct {
+	Params RunAdminOpsFeishuHourlyReportPlanParams
+	Body   *RunAdminOpsFeishuHourlyReportPlanJSONRequestBody
+}
+
+type RunAdminOpsFeishuHourlyReportPlanResponseObject interface {
+	VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error
+}
+
+type RunAdminOpsFeishuHourlyReportPlan202JSONResponse struct {
+	AdminOpsLocalAcceptedJSONResponse
+}
+
+func (response RunAdminOpsFeishuHourlyReportPlan202JSONResponse) VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsFeishuHourlyReportPlan400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RunAdminOpsFeishuHourlyReportPlan400JSONResponse) VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsFeishuHourlyReportPlan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RunAdminOpsFeishuHourlyReportPlan401JSONResponse) VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsFeishuHourlyReportPlan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RunAdminOpsFeishuHourlyReportPlan403JSONResponse) VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsFeishuHourlyReportPlan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RunAdminOpsFeishuHourlyReportPlan409JSONResponse) VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsFeishuHourlyReportPlan503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RunAdminOpsFeishuHourlyReportPlan503JSONResponse) VisitRunAdminOpsFeishuHourlyReportPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsFeishuNotificationSettingRequestObject struct {
+}
+
+type GetAdminOpsFeishuNotificationSettingResponseObject interface {
+	VisitGetAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsFeishuNotificationSetting200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response GetAdminOpsFeishuNotificationSetting200JSONResponse) VisitGetAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsFeishuNotificationSetting401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsFeishuNotificationSetting401JSONResponse) VisitGetAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsFeishuNotificationSetting403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsFeishuNotificationSetting403JSONResponse) VisitGetAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsFeishuNotificationSetting503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsFeishuNotificationSetting503JSONResponse) VisitGetAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminOpsFeishuNotificationSettingRequestObject struct {
+	Params SaveAdminOpsFeishuNotificationSettingParams
+	Body   *SaveAdminOpsFeishuNotificationSettingJSONRequestBody
+}
+
+type SaveAdminOpsFeishuNotificationSettingResponseObject interface {
+	VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error
+}
+
+type SaveAdminOpsFeishuNotificationSetting200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response SaveAdminOpsFeishuNotificationSetting200JSONResponse) VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminOpsFeishuNotificationSetting400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SaveAdminOpsFeishuNotificationSetting400JSONResponse) VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminOpsFeishuNotificationSetting401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SaveAdminOpsFeishuNotificationSetting401JSONResponse) VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminOpsFeishuNotificationSetting403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveAdminOpsFeishuNotificationSetting403JSONResponse) VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminOpsFeishuNotificationSetting409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SaveAdminOpsFeishuNotificationSetting409JSONResponse) VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminOpsFeishuNotificationSetting503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SaveAdminOpsFeishuNotificationSetting503JSONResponse) VisitSaveAdminOpsFeishuNotificationSettingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsFeishuNotificationPlanRequestObject struct {
+	Params ValidateAdminOpsFeishuNotificationPlanParams
+	Body   *ValidateAdminOpsFeishuNotificationPlanJSONRequestBody
+}
+
+type ValidateAdminOpsFeishuNotificationPlanResponseObject interface {
+	VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error
+}
+
+type ValidateAdminOpsFeishuNotificationPlan202JSONResponse struct {
+	AdminOpsLocalAcceptedJSONResponse
+}
+
+func (response ValidateAdminOpsFeishuNotificationPlan202JSONResponse) VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsFeishuNotificationPlan400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ValidateAdminOpsFeishuNotificationPlan400JSONResponse) VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsFeishuNotificationPlan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ValidateAdminOpsFeishuNotificationPlan401JSONResponse) VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsFeishuNotificationPlan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ValidateAdminOpsFeishuNotificationPlan403JSONResponse) VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsFeishuNotificationPlan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ValidateAdminOpsFeishuNotificationPlan409JSONResponse) VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsFeishuNotificationPlan503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ValidateAdminOpsFeishuNotificationPlan503JSONResponse) VisitValidateAdminOpsFeishuNotificationPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsBroadcastJobRequestObject struct {
+	JobId AdminOpsJobID `json:"job_id"`
+}
+
+type GetAdminOpsBroadcastJobResponseObject interface {
+	VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsBroadcastJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAdminOpsBroadcastJob400JSONResponse) VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsBroadcastJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsBroadcastJob401JSONResponse) VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsBroadcastJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsBroadcastJob403JSONResponse) VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsBroadcastJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetAdminOpsBroadcastJob404JSONResponse) VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsBroadcastJob409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response GetAdminOpsBroadcastJob409JSONResponse) VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsBroadcastJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsBroadcastJob503JSONResponse) VisitGetAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveAdminOpsBroadcastJobRequestObject struct {
+	JobId  AdminOpsJobID `json:"job_id"`
+	Params ApproveAdminOpsBroadcastJobParams
+	Body   *ApproveAdminOpsBroadcastJobJSONRequestBody
+}
+
+type ApproveAdminOpsBroadcastJobResponseObject interface {
+	VisitApproveAdminOpsBroadcastJobResponse(w http.ResponseWriter) error
+}
+
+type ApproveAdminOpsBroadcastJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ApproveAdminOpsBroadcastJob400JSONResponse) VisitApproveAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveAdminOpsBroadcastJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ApproveAdminOpsBroadcastJob401JSONResponse) VisitApproveAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveAdminOpsBroadcastJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ApproveAdminOpsBroadcastJob403JSONResponse) VisitApproveAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveAdminOpsBroadcastJob409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response ApproveAdminOpsBroadcastJob409JSONResponse) VisitApproveAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ApproveAdminOpsBroadcastJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ApproveAdminOpsBroadcastJob503JSONResponse) VisitApproveAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelAdminOpsBroadcastJobRequestObject struct {
+	JobId  AdminOpsJobID `json:"job_id"`
+	Params CancelAdminOpsBroadcastJobParams
+	Body   *CancelAdminOpsBroadcastJobJSONRequestBody
+}
+
+type CancelAdminOpsBroadcastJobResponseObject interface {
+	VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error
+}
+
+type CancelAdminOpsBroadcastJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CancelAdminOpsBroadcastJob400JSONResponse) VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelAdminOpsBroadcastJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelAdminOpsBroadcastJob401JSONResponse) VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelAdminOpsBroadcastJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelAdminOpsBroadcastJob403JSONResponse) VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelAdminOpsBroadcastJob409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response CancelAdminOpsBroadcastJob409JSONResponse) VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelAdminOpsBroadcastJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CancelAdminOpsBroadcastJob503JSONResponse) VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -16566,6 +20524,895 @@ func (response ListLegacyChannelEntrants503JSONResponse) VisitListLegacyChannelE
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListAdminOpsCategoriesRequestObject struct {
+}
+
+type ListAdminOpsCategoriesResponseObject interface {
+	VisitListAdminOpsCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsCategories200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response ListAdminOpsCategories200JSONResponse) VisitListAdminOpsCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCategories401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsCategories401JSONResponse) VisitListAdminOpsCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCategories403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsCategories403JSONResponse) VisitListAdminOpsCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCategories503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsCategories503JSONResponse) VisitListAdminOpsCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsCategoryRequestObject struct {
+	CategoryKey AdminOpsCategoryKey `json:"category_key"`
+}
+
+type GetAdminOpsCategoryResponseObject interface {
+	VisitGetAdminOpsCategoryResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsCategory200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response GetAdminOpsCategory200JSONResponse) VisitGetAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsCategory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsCategory401JSONResponse) VisitGetAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsCategory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsCategory403JSONResponse) VisitGetAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsCategory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsCategory503JSONResponse) VisitGetAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CheckAdminOpsCategoryRequestObject struct {
+	CategoryKey AdminOpsCategoryKey `json:"category_key"`
+	Params      CheckAdminOpsCategoryParams
+	Body        *CheckAdminOpsCategoryJSONRequestBody
+}
+
+type CheckAdminOpsCategoryResponseObject interface {
+	VisitCheckAdminOpsCategoryResponse(w http.ResponseWriter) error
+}
+
+type CheckAdminOpsCategory200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response CheckAdminOpsCategory200JSONResponse) VisitCheckAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CheckAdminOpsCategory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CheckAdminOpsCategory400JSONResponse) VisitCheckAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CheckAdminOpsCategory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CheckAdminOpsCategory401JSONResponse) VisitCheckAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CheckAdminOpsCategory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CheckAdminOpsCategory403JSONResponse) VisitCheckAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CheckAdminOpsCategory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CheckAdminOpsCategory503JSONResponse) VisitCheckAdminOpsCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategoryEnabledRequestObject struct {
+	CategoryKey AdminOpsCategoryKey `json:"category_key"`
+	Params      SetAdminOpsCategoryEnabledParams
+	Body        *SetAdminOpsCategoryEnabledJSONRequestBody
+}
+
+type SetAdminOpsCategoryEnabledResponseObject interface {
+	VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error
+}
+
+type SetAdminOpsCategoryEnabled200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response SetAdminOpsCategoryEnabled200JSONResponse) VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategoryEnabled400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetAdminOpsCategoryEnabled400JSONResponse) VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategoryEnabled401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetAdminOpsCategoryEnabled401JSONResponse) VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategoryEnabled403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetAdminOpsCategoryEnabled403JSONResponse) VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategoryEnabled409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetAdminOpsCategoryEnabled409JSONResponse) VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategoryEnabled503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SetAdminOpsCategoryEnabled503JSONResponse) VisitSetAdminOpsCategoryEnabledResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategorySettingsRequestObject struct {
+	CategoryKey AdminOpsCategoryKey `json:"category_key"`
+	Params      SetAdminOpsCategorySettingsParams
+	Body        *SetAdminOpsCategorySettingsJSONRequestBody
+}
+
+type SetAdminOpsCategorySettingsResponseObject interface {
+	VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error
+}
+
+type SetAdminOpsCategorySettings200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response SetAdminOpsCategorySettings200JSONResponse) VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategorySettings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetAdminOpsCategorySettings400JSONResponse) VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategorySettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetAdminOpsCategorySettings401JSONResponse) VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategorySettings403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetAdminOpsCategorySettings403JSONResponse) VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategorySettings409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetAdminOpsCategorySettings409JSONResponse) VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsCategorySettings503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SetAdminOpsCategorySettings503JSONResponse) VisitSetAdminOpsCategorySettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsPushCapabilitiesRequestObject struct {
+}
+
+type GetAdminOpsPushCapabilitiesResponseObject interface {
+	VisitGetAdminOpsPushCapabilitiesResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsPushCapabilities200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response GetAdminOpsPushCapabilities200JSONResponse) VisitGetAdminOpsPushCapabilitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsPushCapabilities401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsPushCapabilities401JSONResponse) VisitGetAdminOpsPushCapabilitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsPushCapabilities403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsPushCapabilities403JSONResponse) VisitGetAdminOpsPushCapabilitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsPushCapabilities503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsPushCapabilities503JSONResponse) VisitGetAdminOpsPushCapabilitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushSchedulerRequestObject struct {
+	Params SetAdminOpsPushSchedulerParams
+	Body   *SetAdminOpsPushSchedulerJSONRequestBody
+}
+
+type SetAdminOpsPushSchedulerResponseObject interface {
+	VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error
+}
+
+type SetAdminOpsPushScheduler200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response SetAdminOpsPushScheduler200JSONResponse) VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushScheduler400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetAdminOpsPushScheduler400JSONResponse) VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushScheduler401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetAdminOpsPushScheduler401JSONResponse) VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushScheduler403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetAdminOpsPushScheduler403JSONResponse) VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushScheduler409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetAdminOpsPushScheduler409JSONResponse) VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushScheduler503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SetAdminOpsPushScheduler503JSONResponse) VisitSetAdminOpsPushSchedulerResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushCapabilityRequestObject struct {
+	CapabilityKey AdminOpsCapabilityKey `json:"capability_key"`
+	Params        SetAdminOpsPushCapabilityParams
+	Body          *SetAdminOpsPushCapabilityJSONRequestBody
+}
+
+type SetAdminOpsPushCapabilityResponseObject interface {
+	VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error
+}
+
+type SetAdminOpsPushCapability200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response SetAdminOpsPushCapability200JSONResponse) VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushCapability400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetAdminOpsPushCapability400JSONResponse) VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushCapability401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetAdminOpsPushCapability401JSONResponse) VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushCapability403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetAdminOpsPushCapability403JSONResponse) VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushCapability409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetAdminOpsPushCapability409JSONResponse) VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetAdminOpsPushCapability503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SetAdminOpsPushCapability503JSONResponse) VisitSetAdminOpsPushCapabilityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsReleasesRequestObject struct {
+}
+
+type ListAdminOpsReleasesResponseObject interface {
+	VisitListAdminOpsReleasesResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsReleases200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response ListAdminOpsReleases200JSONResponse) VisitListAdminOpsReleasesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsReleases401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsReleases401JSONResponse) VisitListAdminOpsReleasesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsReleases403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsReleases403JSONResponse) VisitListAdminOpsReleasesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsReleases503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsReleases503JSONResponse) VisitListAdminOpsReleasesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAdminOpsReleaseRequestObject struct {
+	Params CreateAdminOpsReleaseParams
+	Body   *CreateAdminOpsReleaseJSONRequestBody
+}
+
+type CreateAdminOpsReleaseResponseObject interface {
+	VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error
+}
+
+type CreateAdminOpsRelease200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response CreateAdminOpsRelease200JSONResponse) VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAdminOpsRelease400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateAdminOpsRelease400JSONResponse) VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAdminOpsRelease401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateAdminOpsRelease401JSONResponse) VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAdminOpsRelease403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateAdminOpsRelease403JSONResponse) VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAdminOpsRelease409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateAdminOpsRelease409JSONResponse) VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAdminOpsRelease503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateAdminOpsRelease503JSONResponse) VisitCreateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsReleaseRequestObject struct {
+	ReleaseId AdminOpsReleaseID `json:"release_id"`
+}
+
+type GetAdminOpsReleaseResponseObject interface {
+	VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsRelease200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response GetAdminOpsRelease200JSONResponse) VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsRelease400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAdminOpsRelease400JSONResponse) VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsRelease401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsRelease401JSONResponse) VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsRelease403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsRelease403JSONResponse) VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsRelease404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetAdminOpsRelease404JSONResponse) VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsRelease503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsRelease503JSONResponse) VisitGetAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsReleaseRequestObject struct {
+	ReleaseId AdminOpsReleaseID `json:"release_id"`
+	Params    PublishAdminOpsReleaseParams
+	Body      *PublishAdminOpsReleaseJSONRequestBody
+}
+
+type PublishAdminOpsReleaseResponseObject interface {
+	VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error
+}
+
+type PublishAdminOpsRelease200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response PublishAdminOpsRelease200JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsRelease400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PublishAdminOpsRelease400JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsRelease401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PublishAdminOpsRelease401JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsRelease403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PublishAdminOpsRelease403JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsRelease404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PublishAdminOpsRelease404JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsRelease409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PublishAdminOpsRelease409JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PublishAdminOpsRelease503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PublishAdminOpsRelease503JSONResponse) VisitPublishAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsReleaseRequestObject struct {
+	ReleaseId AdminOpsReleaseID `json:"release_id"`
+	Params    RollbackAdminOpsReleaseParams
+	Body      *RollbackAdminOpsReleaseJSONRequestBody
+}
+
+type RollbackAdminOpsReleaseResponseObject interface {
+	VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error
+}
+
+type RollbackAdminOpsRelease200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response RollbackAdminOpsRelease200JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsRelease400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RollbackAdminOpsRelease400JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsRelease401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RollbackAdminOpsRelease401JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsRelease403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RollbackAdminOpsRelease403JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsRelease404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RollbackAdminOpsRelease404JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsRelease409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RollbackAdminOpsRelease409JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RollbackAdminOpsRelease503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RollbackAdminOpsRelease503JSONResponse) VisitRollbackAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompareAdminOpsReleaseShadowRequestObject struct {
+	ReleaseId AdminOpsReleaseID `json:"release_id"`
+}
+
+type CompareAdminOpsReleaseShadowResponseObject interface {
+	VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error
+}
+
+type CompareAdminOpsReleaseShadow200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response CompareAdminOpsReleaseShadow200JSONResponse) VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompareAdminOpsReleaseShadow400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompareAdminOpsReleaseShadow400JSONResponse) VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompareAdminOpsReleaseShadow401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CompareAdminOpsReleaseShadow401JSONResponse) VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompareAdminOpsReleaseShadow403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CompareAdminOpsReleaseShadow403JSONResponse) VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompareAdminOpsReleaseShadow404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CompareAdminOpsReleaseShadow404JSONResponse) VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompareAdminOpsReleaseShadow503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CompareAdminOpsReleaseShadow503JSONResponse) VisitCompareAdminOpsReleaseShadowResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsReleaseRequestObject struct {
+	ReleaseId AdminOpsReleaseID `json:"release_id"`
+	Params    ValidateAdminOpsReleaseParams
+	Body      *ValidateAdminOpsReleaseJSONRequestBody
+}
+
+type ValidateAdminOpsReleaseResponseObject interface {
+	VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error
+}
+
+type ValidateAdminOpsRelease200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response ValidateAdminOpsRelease200JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsRelease400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ValidateAdminOpsRelease400JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsRelease401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ValidateAdminOpsRelease401JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsRelease403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ValidateAdminOpsRelease403JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsRelease404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ValidateAdminOpsRelease404JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsRelease409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ValidateAdminOpsRelease409JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ValidateAdminOpsRelease503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ValidateAdminOpsRelease503JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetLegacyExecutionRuntimeRequestObject struct {
 }
 
@@ -16656,6 +21503,447 @@ func (response GetLegacyExecutionTimeline404JSONResponse) VisitGetLegacyExecutio
 type GetLegacyExecutionTimeline503JSONResponse LegacyExecutionTimelineUnavailable
 
 func (response GetLegacyExecutionTimeline503JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsArchiveSyncJobsRequestObject struct {
+}
+
+type ListAdminOpsArchiveSyncJobsResponseObject interface {
+	VisitListAdminOpsArchiveSyncJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsArchiveSyncJobs200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response ListAdminOpsArchiveSyncJobs200JSONResponse) VisitListAdminOpsArchiveSyncJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsArchiveSyncJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsArchiveSyncJobs401JSONResponse) VisitListAdminOpsArchiveSyncJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsArchiveSyncJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsArchiveSyncJobs403JSONResponse) VisitListAdminOpsArchiveSyncJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsArchiveSyncJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsArchiveSyncJobs503JSONResponse) VisitListAdminOpsArchiveSyncJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsArchiveSyncPlanRequestObject struct {
+	Params RunAdminOpsArchiveSyncPlanParams
+	Body   *RunAdminOpsArchiveSyncPlanJSONRequestBody
+}
+
+type RunAdminOpsArchiveSyncPlanResponseObject interface {
+	VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error
+}
+
+type RunAdminOpsArchiveSyncPlan202JSONResponse struct {
+	AdminOpsLocalAcceptedJSONResponse
+}
+
+func (response RunAdminOpsArchiveSyncPlan202JSONResponse) VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsArchiveSyncPlan400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RunAdminOpsArchiveSyncPlan400JSONResponse) VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsArchiveSyncPlan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RunAdminOpsArchiveSyncPlan401JSONResponse) VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsArchiveSyncPlan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RunAdminOpsArchiveSyncPlan403JSONResponse) VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsArchiveSyncPlan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RunAdminOpsArchiveSyncPlan409JSONResponse) VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RunAdminOpsArchiveSyncPlan503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RunAdminOpsArchiveSyncPlan503JSONResponse) VisitRunAdminOpsArchiveSyncPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCallbackJobsRequestObject struct {
+}
+
+type ListAdminOpsCallbackJobsResponseObject interface {
+	VisitListAdminOpsCallbackJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsCallbackJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsCallbackJobs401JSONResponse) VisitListAdminOpsCallbackJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCallbackJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsCallbackJobs403JSONResponse) VisitListAdminOpsCallbackJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCallbackJobs409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response ListAdminOpsCallbackJobs409JSONResponse) VisitListAdminOpsCallbackJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsCallbackJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsCallbackJobs503JSONResponse) VisitListAdminOpsCallbackJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsDeferredJobsRequestObject struct {
+}
+
+type ListAdminOpsDeferredJobsResponseObject interface {
+	VisitListAdminOpsDeferredJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsDeferredJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsDeferredJobs401JSONResponse) VisitListAdminOpsDeferredJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsDeferredJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsDeferredJobs403JSONResponse) VisitListAdminOpsDeferredJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsDeferredJobs409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response ListAdminOpsDeferredJobs409JSONResponse) VisitListAdminOpsDeferredJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsDeferredJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsDeferredJobs503JSONResponse) VisitListAdminOpsDeferredJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsMessageBatchJobsRequestObject struct {
+}
+
+type ListAdminOpsMessageBatchJobsResponseObject interface {
+	VisitListAdminOpsMessageBatchJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsMessageBatchJobs200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response ListAdminOpsMessageBatchJobs200JSONResponse) VisitListAdminOpsMessageBatchJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsMessageBatchJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsMessageBatchJobs401JSONResponse) VisitListAdminOpsMessageBatchJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsMessageBatchJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsMessageBatchJobs403JSONResponse) VisitListAdminOpsMessageBatchJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsMessageBatchJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsMessageBatchJobs503JSONResponse) VisitListAdminOpsMessageBatchJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsMessageBatchRequestObject struct {
+	BatchId AdminOpsBatchID `json:"batch_id"`
+}
+
+type GetAdminOpsMessageBatchResponseObject interface {
+	VisitGetAdminOpsMessageBatchResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsMessageBatch401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsMessageBatch401JSONResponse) VisitGetAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsMessageBatch403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsMessageBatch403JSONResponse) VisitGetAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsMessageBatch409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response GetAdminOpsMessageBatch409JSONResponse) VisitGetAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsMessageBatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsMessageBatch503JSONResponse) VisitGetAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeAdminOpsMessageBatchRequestObject struct {
+	BatchId AdminOpsBatchID `json:"batch_id"`
+	Params  AcknowledgeAdminOpsMessageBatchParams
+	Body    *AcknowledgeAdminOpsMessageBatchJSONRequestBody
+}
+
+type AcknowledgeAdminOpsMessageBatchResponseObject interface {
+	VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error
+}
+
+type AcknowledgeAdminOpsMessageBatch202JSONResponse struct {
+	AdminOpsLocalAcceptedJSONResponse
+}
+
+func (response AcknowledgeAdminOpsMessageBatch202JSONResponse) VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeAdminOpsMessageBatch400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AcknowledgeAdminOpsMessageBatch400JSONResponse) VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeAdminOpsMessageBatch401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AcknowledgeAdminOpsMessageBatch401JSONResponse) VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeAdminOpsMessageBatch403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AcknowledgeAdminOpsMessageBatch403JSONResponse) VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeAdminOpsMessageBatch409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AcknowledgeAdminOpsMessageBatch409JSONResponse) VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcknowledgeAdminOpsMessageBatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response AcknowledgeAdminOpsMessageBatch503JSONResponse) VisitAcknowledgeAdminOpsMessageBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsJobsSummaryRequestObject struct {
+}
+
+type GetAdminOpsJobsSummaryResponseObject interface {
+	VisitGetAdminOpsJobsSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetAdminOpsJobsSummary200JSONResponse struct{ AdminOpsLocalOKJSONResponse }
+
+func (response GetAdminOpsJobsSummary200JSONResponse) VisitGetAdminOpsJobsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsJobsSummary401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAdminOpsJobsSummary401JSONResponse) VisitGetAdminOpsJobsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsJobsSummary403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAdminOpsJobsSummary403JSONResponse) VisitGetAdminOpsJobsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAdminOpsJobsSummary503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAdminOpsJobsSummary503JSONResponse) VisitGetAdminOpsJobsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsWebhookDeliveryJobsRequestObject struct {
+}
+
+type ListAdminOpsWebhookDeliveryJobsResponseObject interface {
+	VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminOpsWebhookDeliveryJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminOpsWebhookDeliveryJobs401JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsWebhookDeliveryJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminOpsWebhookDeliveryJobs403JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsWebhookDeliveryJobs409JSONResponse struct {
+	AdminOpsBlockedRedlineJSONResponse
+}
+
+func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -22994,12 +28282,48 @@ type StrictServerInterface interface {
 	// Carry the local read-only channel list into the existing admin shell
 	// (GET /admin/channels)
 	GetLegacyChannelListPage(ctx context.Context, request GetLegacyChannelListPageRequestObject) (GetLegacyChannelListPageResponseObject, error)
+	// Render local AdminOps categories through the closed safe projection
+	// (GET /admin/config)
+	GetAdminOpsConfigPage(ctx context.Context, request GetAdminOpsConfigPageRequestObject) (GetAdminOpsConfigPageResponseObject, error)
+	// Render local releases through the closed safe projection
+	// (GET /admin/config/releases)
+	GetAdminOpsReleasesPage(ctx context.Context, request GetAdminOpsReleasesPageRequestObject) (GetAdminOpsReleasesPageResponseObject, error)
+	// Render the local release creation carrier without secret material
+	// (GET /admin/config/releases/new)
+	GetAdminOpsNewReleasePage(ctx context.Context, request GetAdminOpsNewReleasePageRequestObject) (GetAdminOpsNewReleasePageResponseObject, error)
+	// Render one local release through the closed safe projection
+	// (GET /admin/config/releases/{release_id})
+	GetAdminOpsReleasePage(ctx context.Context, request GetAdminOpsReleasePageRequestObject) (GetAdminOpsReleasePageResponseObject, error)
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(ctx context.Context, request GetLegacyExecutionRuntimePageRequestObject) (GetLegacyExecutionRuntimePageResponseObject, error)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
+	// List CRM-local broadcast plans through the closed job DTO
+	// (GET /api/admin/broadcast-jobs)
+	ListAdminOpsBroadcastJobs(ctx context.Context, request ListAdminOpsBroadcastJobsRequestObject) (ListAdminOpsBroadcastJobsResponseObject, error)
+	// Queue a CRM-local report plan without sending to Feishu
+	// (POST /api/admin/broadcast-jobs/feishu-hourly-report/run)
+	RunAdminOpsFeishuHourlyReportPlan(ctx context.Context, request RunAdminOpsFeishuHourlyReportPlanRequestObject) (RunAdminOpsFeishuHourlyReportPlanResponseObject, error)
+	// Read only the masked local Feishu notification reference state
+	// (GET /api/admin/broadcast-jobs/notification-settings/feishu)
+	GetAdminOpsFeishuNotificationSetting(ctx context.Context, request GetAdminOpsFeishuNotificationSettingRequestObject) (GetAdminOpsFeishuNotificationSettingResponseObject, error)
+	// Save only a local secret reference; never execute the webhook
+	// (PUT /api/admin/broadcast-jobs/notification-settings/feishu)
+	SaveAdminOpsFeishuNotificationSetting(ctx context.Context, request SaveAdminOpsFeishuNotificationSettingRequestObject) (SaveAdminOpsFeishuNotificationSettingResponseObject, error)
+	// Queue only a local validation plan without calling Feishu
+	// (POST /api/admin/broadcast-jobs/notification-settings/feishu/validate)
+	ValidateAdminOpsFeishuNotificationPlan(ctx context.Context, request ValidateAdminOpsFeishuNotificationPlanRequestObject) (ValidateAdminOpsFeishuNotificationPlanResponseObject, error)
+	// Read one exact CRM-local job through the closed projection
+	// (GET /api/admin/broadcast-jobs/{job_id})
+	GetAdminOpsBroadcastJob(ctx context.Context, request GetAdminOpsBroadcastJobRequestObject) (GetAdminOpsBroadcastJobResponseObject, error)
+	// Fail closed because no authoritative local review state exists
+	// (POST /api/admin/broadcast-jobs/{job_id}/approve)
+	ApproveAdminOpsBroadcastJob(ctx context.Context, request ApproveAdminOpsBroadcastJobRequestObject) (ApproveAdminOpsBroadcastJobResponseObject, error)
+	// Fail closed because no authoritative local broadcast fact exists
+	// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
+	CancelAdminOpsBroadcastJob(ctx context.Context, request CancelAdminOpsBroadcastJobRequestObject) (CancelAdminOpsBroadcastJobResponseObject, error)
 	// List persisted local channel resources without querying WeCom
 	// (GET /api/admin/channels)
 	ListLegacyChannels(ctx context.Context, request ListLegacyChannelsRequestObject) (ListLegacyChannelsResponseObject, error)
@@ -23015,12 +28339,84 @@ type StrictServerInterface interface {
 	// List a channel's recent entrants from the closed local Contact projection
 	// (GET /api/admin/channels/{channel_id}/contacts)
 	ListLegacyChannelEntrants(ctx context.Context, request ListLegacyChannelEntrantsRequestObject) (ListLegacyChannelEntrantsResponseObject, error)
+	// List local configuration categories using a closed settings projection
+	// (GET /api/admin/config/categories)
+	ListAdminOpsCategories(ctx context.Context, request ListAdminOpsCategoriesRequestObject) (ListAdminOpsCategoriesResponseObject, error)
+	// Read one local category without exposing stored bytes or base64
+	// (GET /api/admin/config/categories/{category_key})
+	GetAdminOpsCategory(ctx context.Context, request GetAdminOpsCategoryRequestObject) (GetAdminOpsCategoryResponseObject, error)
+	// Read a local-only category diagnostic without provider execution
+	// (POST /api/admin/config/categories/{category_key}/check)
+	CheckAdminOpsCategory(ctx context.Context, request CheckAdminOpsCategoryRequestObject) (CheckAdminOpsCategoryResponseObject, error)
+	// Update the local enabled flag through a route-bound admin command
+	// (PUT /api/admin/config/categories/{category_key}/enabled)
+	SetAdminOpsCategoryEnabled(ctx context.Context, request SetAdminOpsCategoryEnabledRequestObject) (SetAdminOpsCategoryEnabledResponseObject, error)
+	// Replace the local category settings through the closed allowlist
+	// (PUT /api/admin/config/categories/{category_key}/settings)
+	SetAdminOpsCategorySettings(ctx context.Context, request SetAdminOpsCategorySettingsRequestObject) (SetAdminOpsCategorySettingsResponseObject, error)
+	// Read local push gates through the closed category projection
+	// (GET /api/admin/config/push-capabilities)
+	GetAdminOpsPushCapabilities(ctx context.Context, request GetAdminOpsPushCapabilitiesRequestObject) (GetAdminOpsPushCapabilitiesResponseObject, error)
+	// Update the local scheduler gate without executing a provider
+	// (PATCH /api/admin/config/push-capabilities/scheduler)
+	SetAdminOpsPushScheduler(ctx context.Context, request SetAdminOpsPushSchedulerRequestObject) (SetAdminOpsPushSchedulerResponseObject, error)
+	// Update one local push gate without executing a provider
+	// (PATCH /api/admin/config/push-capabilities/{capability_key})
+	SetAdminOpsPushCapability(ctx context.Context, request SetAdminOpsPushCapabilityRequestObject) (SetAdminOpsPushCapabilityResponseObject, error)
+	// List local releases through a closed changes projection
+	// (GET /api/admin/config/releases)
+	ListAdminOpsReleases(ctx context.Context, request ListAdminOpsReleasesRequestObject) (ListAdminOpsReleasesResponseObject, error)
+	// Create a local release using the closed changes allowlist
+	// (POST /api/admin/config/releases)
+	CreateAdminOpsRelease(ctx context.Context, request CreateAdminOpsReleaseRequestObject) (CreateAdminOpsReleaseResponseObject, error)
+	// Read one local release without exposing stored bytes or references
+	// (GET /api/admin/config/releases/{release_id})
+	GetAdminOpsRelease(ctx context.Context, request GetAdminOpsReleaseRequestObject) (GetAdminOpsReleaseResponseObject, error)
+	// Publish local configuration state only
+	// (POST /api/admin/config/releases/{release_id}/publish)
+	PublishAdminOpsRelease(ctx context.Context, request PublishAdminOpsReleaseRequestObject) (PublishAdminOpsReleaseResponseObject, error)
+	// Roll back local configuration state only
+	// (POST /api/admin/config/releases/{release_id}/rollback)
+	RollbackAdminOpsRelease(ctx context.Context, request RollbackAdminOpsReleaseRequestObject) (RollbackAdminOpsReleaseResponseObject, error)
+	// Return a derived local release comparison without provider execution
+	// (GET /api/admin/config/releases/{release_id}/shadow-compare)
+	CompareAdminOpsReleaseShadow(ctx context.Context, request CompareAdminOpsReleaseShadowRequestObject) (CompareAdminOpsReleaseShadowResponseObject, error)
+	// Validate one local release without executing external effects
+	// (POST /api/admin/config/releases/{release_id}/validate)
+	ValidateAdminOpsRelease(ctx context.Context, request ValidateAdminOpsReleaseRequestObject) (ValidateAdminOpsReleaseResponseObject, error)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
 	// Read one frozen observed execution timeline without asserting a provider receipt
 	// (GET /api/admin/executions/{execution_id})
 	GetLegacyExecutionTimeline(ctx context.Context, request GetLegacyExecutionTimelineRequestObject) (GetLegacyExecutionTimelineResponseObject, error)
+	// List local archive-sync job records through the closed job DTO
+	// (GET /api/admin/jobs/archive-sync)
+	ListAdminOpsArchiveSyncJobs(ctx context.Context, request ListAdminOpsArchiveSyncJobsRequestObject) (ListAdminOpsArchiveSyncJobsResponseObject, error)
+	// Queue a CRM-local archive-sync plan without executing a provider
+	// (POST /api/admin/jobs/archive-sync/run)
+	RunAdminOpsArchiveSyncPlan(ctx context.Context, request RunAdminOpsArchiveSyncPlanRequestObject) (RunAdminOpsArchiveSyncPlanResponseObject, error)
+	// List local callback-related job records through the closed job DTO
+	// (GET /api/admin/jobs/callbacks)
+	ListAdminOpsCallbackJobs(ctx context.Context, request ListAdminOpsCallbackJobsRequestObject) (ListAdminOpsCallbackJobsResponseObject, error)
+	// List local deferred job records through the closed job DTO
+	// (GET /api/admin/jobs/deferred-jobs)
+	ListAdminOpsDeferredJobs(ctx context.Context, request ListAdminOpsDeferredJobsRequestObject) (ListAdminOpsDeferredJobsResponseObject, error)
+	// List local message-batch acknowledgement plans through the closed job DTO
+	// (GET /api/admin/jobs/message-batches)
+	ListAdminOpsMessageBatchJobs(ctx context.Context, request ListAdminOpsMessageBatchJobsRequestObject) (ListAdminOpsMessageBatchJobsResponseObject, error)
+	// Fail closed until an authoritative batch-to-local-job owner mapping exists
+	// (GET /api/admin/jobs/message-batches/{batch_id})
+	GetAdminOpsMessageBatch(ctx context.Context, request GetAdminOpsMessageBatchRequestObject) (GetAdminOpsMessageBatchResponseObject, error)
+	// Queue a local acknowledgement plan without executing a provider
+	// (POST /api/admin/jobs/message-batches/{batch_id}/ack)
+	AcknowledgeAdminOpsMessageBatch(ctx context.Context, request AcknowledgeAdminOpsMessageBatchRequestObject) (AcknowledgeAdminOpsMessageBatchResponseObject, error)
+	// Read local AdminOps job counts without external execution
+	// (GET /api/admin/jobs/summary)
+	GetAdminOpsJobsSummary(ctx context.Context, request GetAdminOpsJobsSummaryRequestObject) (GetAdminOpsJobsSummaryResponseObject, error)
+	// List local webhook-plan records without any webhook locator
+	// (GET /api/admin/jobs/webhook-deliveries)
+	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
 	// Read the frozen global Push Center section aggregation without touching a worker or provider
 	// (GET /api/admin/push-center/sections)
 	GetLegacyPushCenterSections(ctx context.Context, request GetLegacyPushCenterSectionsRequestObject) (GetLegacyPushCenterSectionsResponseObject, error)
@@ -23361,6 +28757,104 @@ func (sh *strictHandler) GetLegacyChannelListPage(w http.ResponseWriter, r *http
 	}
 }
 
+// GetAdminOpsConfigPage operation middleware
+func (sh *strictHandler) GetAdminOpsConfigPage(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminOpsConfigPageRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsConfigPage(ctx, request.(GetAdminOpsConfigPageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsConfigPage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsConfigPageResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsConfigPageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsReleasesPage operation middleware
+func (sh *strictHandler) GetAdminOpsReleasesPage(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminOpsReleasesPageRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsReleasesPage(ctx, request.(GetAdminOpsReleasesPageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsReleasesPage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsReleasesPageResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsReleasesPageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsNewReleasePage operation middleware
+func (sh *strictHandler) GetAdminOpsNewReleasePage(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminOpsNewReleasePageRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsNewReleasePage(ctx, request.(GetAdminOpsNewReleasePageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsNewReleasePage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsNewReleasePageResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsNewReleasePageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsReleasePage operation middleware
+func (sh *strictHandler) GetAdminOpsReleasePage(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID) {
+	var request GetAdminOpsReleasePageRequestObject
+
+	request.ReleaseId = releaseId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsReleasePage(ctx, request.(GetAdminOpsReleasePageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsReleasePage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsReleasePageResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsReleasePageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLegacyExecutionRuntimePage operation middleware
 func (sh *strictHandler) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
 	var request GetLegacyExecutionRuntimePageRequestObject
@@ -23404,6 +28898,247 @@ func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
 		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsBroadcastJobs operation middleware
+func (sh *strictHandler) ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsBroadcastJobsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsBroadcastJobs(ctx, request.(ListAdminOpsBroadcastJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsBroadcastJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsBroadcastJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsBroadcastJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunAdminOpsFeishuHourlyReportPlan operation middleware
+func (sh *strictHandler) RunAdminOpsFeishuHourlyReportPlan(w http.ResponseWriter, r *http.Request, params RunAdminOpsFeishuHourlyReportPlanParams) {
+	var request RunAdminOpsFeishuHourlyReportPlanRequestObject
+
+	request.Params = params
+
+	var body RunAdminOpsFeishuHourlyReportPlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunAdminOpsFeishuHourlyReportPlan(ctx, request.(RunAdminOpsFeishuHourlyReportPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunAdminOpsFeishuHourlyReportPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunAdminOpsFeishuHourlyReportPlanResponseObject); ok {
+		if err := validResponse.VisitRunAdminOpsFeishuHourlyReportPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsFeishuNotificationSetting operation middleware
+func (sh *strictHandler) GetAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminOpsFeishuNotificationSettingRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsFeishuNotificationSetting(ctx, request.(GetAdminOpsFeishuNotificationSettingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsFeishuNotificationSetting")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsFeishuNotificationSettingResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsFeishuNotificationSettingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveAdminOpsFeishuNotificationSetting operation middleware
+func (sh *strictHandler) SaveAdminOpsFeishuNotificationSetting(w http.ResponseWriter, r *http.Request, params SaveAdminOpsFeishuNotificationSettingParams) {
+	var request SaveAdminOpsFeishuNotificationSettingRequestObject
+
+	request.Params = params
+
+	var body SaveAdminOpsFeishuNotificationSettingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveAdminOpsFeishuNotificationSetting(ctx, request.(SaveAdminOpsFeishuNotificationSettingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveAdminOpsFeishuNotificationSetting")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveAdminOpsFeishuNotificationSettingResponseObject); ok {
+		if err := validResponse.VisitSaveAdminOpsFeishuNotificationSettingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ValidateAdminOpsFeishuNotificationPlan operation middleware
+func (sh *strictHandler) ValidateAdminOpsFeishuNotificationPlan(w http.ResponseWriter, r *http.Request, params ValidateAdminOpsFeishuNotificationPlanParams) {
+	var request ValidateAdminOpsFeishuNotificationPlanRequestObject
+
+	request.Params = params
+
+	var body ValidateAdminOpsFeishuNotificationPlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ValidateAdminOpsFeishuNotificationPlan(ctx, request.(ValidateAdminOpsFeishuNotificationPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ValidateAdminOpsFeishuNotificationPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ValidateAdminOpsFeishuNotificationPlanResponseObject); ok {
+		if err := validResponse.VisitValidateAdminOpsFeishuNotificationPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsBroadcastJob operation middleware
+func (sh *strictHandler) GetAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID) {
+	var request GetAdminOpsBroadcastJobRequestObject
+
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsBroadcastJob(ctx, request.(GetAdminOpsBroadcastJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsBroadcastJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsBroadcastJobResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsBroadcastJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveAdminOpsBroadcastJob operation middleware
+func (sh *strictHandler) ApproveAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params ApproveAdminOpsBroadcastJobParams) {
+	var request ApproveAdminOpsBroadcastJobRequestObject
+
+	request.JobId = jobId
+	request.Params = params
+
+	var body ApproveAdminOpsBroadcastJobJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveAdminOpsBroadcastJob(ctx, request.(ApproveAdminOpsBroadcastJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveAdminOpsBroadcastJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveAdminOpsBroadcastJobResponseObject); ok {
+		if err := validResponse.VisitApproveAdminOpsBroadcastJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelAdminOpsBroadcastJob operation middleware
+func (sh *strictHandler) CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params CancelAdminOpsBroadcastJobParams) {
+	var request CancelAdminOpsBroadcastJobRequestObject
+
+	request.JobId = jobId
+	request.Params = params
+
+	var body CancelAdminOpsBroadcastJobJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelAdminOpsBroadcastJob(ctx, request.(CancelAdminOpsBroadcastJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelAdminOpsBroadcastJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelAdminOpsBroadcastJobResponseObject); ok {
+		if err := validResponse.VisitCancelAdminOpsBroadcastJobResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -23557,6 +29292,460 @@ func (sh *strictHandler) ListLegacyChannelEntrants(w http.ResponseWriter, r *htt
 	}
 }
 
+// ListAdminOpsCategories operation middleware
+func (sh *strictHandler) ListAdminOpsCategories(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsCategoriesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsCategories(ctx, request.(ListAdminOpsCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsCategories")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsCategoriesResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsCategoriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsCategory operation middleware
+func (sh *strictHandler) GetAdminOpsCategory(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey) {
+	var request GetAdminOpsCategoryRequestObject
+
+	request.CategoryKey = categoryKey
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsCategory(ctx, request.(GetAdminOpsCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsCategoryResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CheckAdminOpsCategory operation middleware
+func (sh *strictHandler) CheckAdminOpsCategory(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params CheckAdminOpsCategoryParams) {
+	var request CheckAdminOpsCategoryRequestObject
+
+	request.CategoryKey = categoryKey
+	request.Params = params
+
+	var body CheckAdminOpsCategoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CheckAdminOpsCategory(ctx, request.(CheckAdminOpsCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CheckAdminOpsCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CheckAdminOpsCategoryResponseObject); ok {
+		if err := validResponse.VisitCheckAdminOpsCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAdminOpsCategoryEnabled operation middleware
+func (sh *strictHandler) SetAdminOpsCategoryEnabled(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params SetAdminOpsCategoryEnabledParams) {
+	var request SetAdminOpsCategoryEnabledRequestObject
+
+	request.CategoryKey = categoryKey
+	request.Params = params
+
+	var body SetAdminOpsCategoryEnabledJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAdminOpsCategoryEnabled(ctx, request.(SetAdminOpsCategoryEnabledRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAdminOpsCategoryEnabled")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAdminOpsCategoryEnabledResponseObject); ok {
+		if err := validResponse.VisitSetAdminOpsCategoryEnabledResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAdminOpsCategorySettings operation middleware
+func (sh *strictHandler) SetAdminOpsCategorySettings(w http.ResponseWriter, r *http.Request, categoryKey AdminOpsCategoryKey, params SetAdminOpsCategorySettingsParams) {
+	var request SetAdminOpsCategorySettingsRequestObject
+
+	request.CategoryKey = categoryKey
+	request.Params = params
+
+	var body SetAdminOpsCategorySettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAdminOpsCategorySettings(ctx, request.(SetAdminOpsCategorySettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAdminOpsCategorySettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAdminOpsCategorySettingsResponseObject); ok {
+		if err := validResponse.VisitSetAdminOpsCategorySettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsPushCapabilities operation middleware
+func (sh *strictHandler) GetAdminOpsPushCapabilities(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminOpsPushCapabilitiesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsPushCapabilities(ctx, request.(GetAdminOpsPushCapabilitiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsPushCapabilities")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsPushCapabilitiesResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsPushCapabilitiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAdminOpsPushScheduler operation middleware
+func (sh *strictHandler) SetAdminOpsPushScheduler(w http.ResponseWriter, r *http.Request, params SetAdminOpsPushSchedulerParams) {
+	var request SetAdminOpsPushSchedulerRequestObject
+
+	request.Params = params
+
+	var body SetAdminOpsPushSchedulerJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAdminOpsPushScheduler(ctx, request.(SetAdminOpsPushSchedulerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAdminOpsPushScheduler")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAdminOpsPushSchedulerResponseObject); ok {
+		if err := validResponse.VisitSetAdminOpsPushSchedulerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAdminOpsPushCapability operation middleware
+func (sh *strictHandler) SetAdminOpsPushCapability(w http.ResponseWriter, r *http.Request, capabilityKey AdminOpsCapabilityKey, params SetAdminOpsPushCapabilityParams) {
+	var request SetAdminOpsPushCapabilityRequestObject
+
+	request.CapabilityKey = capabilityKey
+	request.Params = params
+
+	var body SetAdminOpsPushCapabilityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAdminOpsPushCapability(ctx, request.(SetAdminOpsPushCapabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAdminOpsPushCapability")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAdminOpsPushCapabilityResponseObject); ok {
+		if err := validResponse.VisitSetAdminOpsPushCapabilityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsReleases operation middleware
+func (sh *strictHandler) ListAdminOpsReleases(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsReleasesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsReleases(ctx, request.(ListAdminOpsReleasesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsReleases")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsReleasesResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsReleasesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAdminOpsRelease operation middleware
+func (sh *strictHandler) CreateAdminOpsRelease(w http.ResponseWriter, r *http.Request, params CreateAdminOpsReleaseParams) {
+	var request CreateAdminOpsReleaseRequestObject
+
+	request.Params = params
+
+	var body CreateAdminOpsReleaseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAdminOpsRelease(ctx, request.(CreateAdminOpsReleaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAdminOpsRelease")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAdminOpsReleaseResponseObject); ok {
+		if err := validResponse.VisitCreateAdminOpsReleaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsRelease operation middleware
+func (sh *strictHandler) GetAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID) {
+	var request GetAdminOpsReleaseRequestObject
+
+	request.ReleaseId = releaseId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsRelease(ctx, request.(GetAdminOpsReleaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsRelease")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsReleaseResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsReleaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishAdminOpsRelease operation middleware
+func (sh *strictHandler) PublishAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params PublishAdminOpsReleaseParams) {
+	var request PublishAdminOpsReleaseRequestObject
+
+	request.ReleaseId = releaseId
+	request.Params = params
+
+	var body PublishAdminOpsReleaseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishAdminOpsRelease(ctx, request.(PublishAdminOpsReleaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishAdminOpsRelease")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishAdminOpsReleaseResponseObject); ok {
+		if err := validResponse.VisitPublishAdminOpsReleaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RollbackAdminOpsRelease operation middleware
+func (sh *strictHandler) RollbackAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params RollbackAdminOpsReleaseParams) {
+	var request RollbackAdminOpsReleaseRequestObject
+
+	request.ReleaseId = releaseId
+	request.Params = params
+
+	var body RollbackAdminOpsReleaseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RollbackAdminOpsRelease(ctx, request.(RollbackAdminOpsReleaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RollbackAdminOpsRelease")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RollbackAdminOpsReleaseResponseObject); ok {
+		if err := validResponse.VisitRollbackAdminOpsReleaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompareAdminOpsReleaseShadow operation middleware
+func (sh *strictHandler) CompareAdminOpsReleaseShadow(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID) {
+	var request CompareAdminOpsReleaseShadowRequestObject
+
+	request.ReleaseId = releaseId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompareAdminOpsReleaseShadow(ctx, request.(CompareAdminOpsReleaseShadowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompareAdminOpsReleaseShadow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompareAdminOpsReleaseShadowResponseObject); ok {
+		if err := validResponse.VisitCompareAdminOpsReleaseShadowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ValidateAdminOpsRelease operation middleware
+func (sh *strictHandler) ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params ValidateAdminOpsReleaseParams) {
+	var request ValidateAdminOpsReleaseRequestObject
+
+	request.ReleaseId = releaseId
+	request.Params = params
+
+	var body ValidateAdminOpsReleaseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ValidateAdminOpsRelease(ctx, request.(ValidateAdminOpsReleaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ValidateAdminOpsRelease")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ValidateAdminOpsReleaseResponseObject); ok {
+		if err := validResponse.VisitValidateAdminOpsReleaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLegacyExecutionRuntime operation middleware
 func (sh *strictHandler) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
 	var request GetLegacyExecutionRuntimeRequestObject
@@ -23600,6 +29789,243 @@ func (sh *strictHandler) GetLegacyExecutionTimeline(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyExecutionTimelineResponseObject); ok {
 		if err := validResponse.VisitGetLegacyExecutionTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsArchiveSyncJobs operation middleware
+func (sh *strictHandler) ListAdminOpsArchiveSyncJobs(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsArchiveSyncJobsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsArchiveSyncJobs(ctx, request.(ListAdminOpsArchiveSyncJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsArchiveSyncJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsArchiveSyncJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsArchiveSyncJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunAdminOpsArchiveSyncPlan operation middleware
+func (sh *strictHandler) RunAdminOpsArchiveSyncPlan(w http.ResponseWriter, r *http.Request, params RunAdminOpsArchiveSyncPlanParams) {
+	var request RunAdminOpsArchiveSyncPlanRequestObject
+
+	request.Params = params
+
+	var body RunAdminOpsArchiveSyncPlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunAdminOpsArchiveSyncPlan(ctx, request.(RunAdminOpsArchiveSyncPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunAdminOpsArchiveSyncPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunAdminOpsArchiveSyncPlanResponseObject); ok {
+		if err := validResponse.VisitRunAdminOpsArchiveSyncPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsCallbackJobs operation middleware
+func (sh *strictHandler) ListAdminOpsCallbackJobs(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsCallbackJobsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsCallbackJobs(ctx, request.(ListAdminOpsCallbackJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsCallbackJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsCallbackJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsCallbackJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsDeferredJobs operation middleware
+func (sh *strictHandler) ListAdminOpsDeferredJobs(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsDeferredJobsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsDeferredJobs(ctx, request.(ListAdminOpsDeferredJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsDeferredJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsDeferredJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsDeferredJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsMessageBatchJobs operation middleware
+func (sh *strictHandler) ListAdminOpsMessageBatchJobs(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsMessageBatchJobsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsMessageBatchJobs(ctx, request.(ListAdminOpsMessageBatchJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsMessageBatchJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsMessageBatchJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsMessageBatchJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsMessageBatch operation middleware
+func (sh *strictHandler) GetAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request, batchId AdminOpsBatchID) {
+	var request GetAdminOpsMessageBatchRequestObject
+
+	request.BatchId = batchId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsMessageBatch(ctx, request.(GetAdminOpsMessageBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsMessageBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsMessageBatchResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsMessageBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcknowledgeAdminOpsMessageBatch operation middleware
+func (sh *strictHandler) AcknowledgeAdminOpsMessageBatch(w http.ResponseWriter, r *http.Request, batchId AdminOpsBatchID, params AcknowledgeAdminOpsMessageBatchParams) {
+	var request AcknowledgeAdminOpsMessageBatchRequestObject
+
+	request.BatchId = batchId
+	request.Params = params
+
+	var body AcknowledgeAdminOpsMessageBatchJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcknowledgeAdminOpsMessageBatch(ctx, request.(AcknowledgeAdminOpsMessageBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcknowledgeAdminOpsMessageBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcknowledgeAdminOpsMessageBatchResponseObject); ok {
+		if err := validResponse.VisitAcknowledgeAdminOpsMessageBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminOpsJobsSummary operation middleware
+func (sh *strictHandler) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminOpsJobsSummaryRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminOpsJobsSummary(ctx, request.(GetAdminOpsJobsSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminOpsJobsSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminOpsJobsSummaryResponseObject); ok {
+		if err := validResponse.VisitGetAdminOpsJobsSummaryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminOpsWebhookDeliveryJobs operation middleware
+func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminOpsWebhookDeliveryJobsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminOpsWebhookDeliveryJobs(ctx, request.(ListAdminOpsWebhookDeliveryJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminOpsWebhookDeliveryJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
