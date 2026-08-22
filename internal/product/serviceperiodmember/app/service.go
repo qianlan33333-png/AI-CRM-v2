@@ -26,11 +26,10 @@ import (
 )
 
 const (
-	operationAdd           = "service_period_member.add"
-	operationExpire        = "service_period_member.expire"
-	operationRemove        = "service_period_member.remove"
-	operationUpdateFields  = "service_period_member.update_fields"
-	eventTypeMemberChanged = "service_period_member.changed"
+	operationAdd          = "service_period_member.add"
+	operationExpire       = "service_period_member.expire"
+	operationRemove       = "service_period_member.remove"
+	operationUpdateFields = "service_period_member.update_fields"
 )
 
 type Service struct {
@@ -292,6 +291,9 @@ func (service *Service) mutate(ctx context.Context, operation string, actorID in
 		}
 		if !owned {
 			result, err = decodeSnapshot(receipt.ResultSnapshot)
+			if err == nil && !replayMatchesCommand(operation, payload, result) {
+				err = memberport.ErrUnavailable
+			}
 			return err
 		}
 		result, err = mutation(tx, now)
@@ -376,7 +378,7 @@ func (service *Service) appendEvent(ctx context.Context, operation string, actor
 		return memberport.ErrUnavailable
 	}
 	digest := sha256.Sum256([]byte(operation + "\x00" + hex.EncodeToString(keyDigest[:])))
-	_, err = service.events.Append(ctx, eventport.Event{Type: eventTypeMemberChanged, CustomerID: eventport.CustomerID(member.CustomerID), Payload: payload, OccurredAt: now, IdempotencyKey: operation + ":" + hex.EncodeToString(digest[:])})
+	_, err = service.events.Append(ctx, eventport.Event{Type: eventport.EvServicePeriodMemberChanged, CustomerID: eventport.CustomerID(member.CustomerID), Payload: payload, OccurredAt: now, IdempotencyKey: operation + ":" + hex.EncodeToString(digest[:])})
 	return err
 }
 
@@ -472,6 +474,31 @@ func decodeSnapshot(raw []byte) (memberdomain.Member, error) {
 		return memberdomain.Member{}, memberport.ErrUnavailable
 	}
 	return member, nil
+}
+
+func replayMatchesCommand(operation string, payload []byte, member memberdomain.Member) bool {
+	var command commandPayload
+	if json.Unmarshal(payload, &command) != nil || !member.Valid() || member.ServiceProductID != command.ProductID {
+		return false
+	}
+	switch operation {
+	case operationAdd:
+		return member.CustomerID == command.CustomerID && member.Source == command.Source &&
+			member.State == memberdomain.StateActive && member.Version == 1 &&
+			optionalTimeEqual(member.ExpiresAt, command.ExpiresAt) && optionalStringEqual(member.Remark, command.Remark) &&
+			optionalStringEqual(member.Alliance, command.Alliance)
+	case operationExpire:
+		return member.MemberRef == command.MemberRef && member.State == memberdomain.StateExpired &&
+			member.Version == command.ExpectedVersion+1
+	case operationRemove:
+		return member.MemberRef == command.MemberRef && member.State == memberdomain.StateRemoved &&
+			member.Version == command.ExpectedVersion+1
+	case operationUpdateFields:
+		return member.MemberRef == command.MemberRef && member.Version == command.ExpectedVersion+1 &&
+			optionalStringEqual(member.Remark, command.Remark) && optionalStringEqual(member.Alliance, command.Alliance)
+	default:
+		return false
+	}
 }
 
 func validExportColumns(columns []memberport.ExportColumn) bool {

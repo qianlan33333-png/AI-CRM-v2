@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -170,7 +171,7 @@ func TestAddIsOpaqueIdempotentAndAppendsEventInsideTransaction(t *testing.T) {
 	if first.MemberRef != "spm_AAAAAAAAAAAAAAAAAAAAAA" || !reflect.DeepEqual(first, second) {
 		t.Fatalf("opaque/replay mismatch: %#v %#v", first, second)
 	}
-	if store.createCalls != 1 || len(events.events) != 1 || uow.calls != 2 || events.events[0].Type != eventTypeMemberChanged || events.events[0].CustomerID != 9 {
+	if store.createCalls != 1 || len(events.events) != 1 || uow.calls != 2 || events.events[0].Type != eventport.EvServicePeriodMemberChanged || events.events[0].CustomerID != 9 {
 		t.Fatalf("create/events/uow=%d/%d/%d event=%#v", store.createCalls, len(events.events), uow.calls, events.events)
 	}
 	if strings.Contains(string(events.events[0].Payload), "unionid") || strings.Contains(string(events.events[0].Payload), "phone") {
@@ -183,6 +184,113 @@ func TestPaidOrderSourceFailsClosedBeforeTransaction(t *testing.T) {
 	_, err := service.Add(context.Background(), memberport.AddCommand{ServiceProductID: 7, CustomerID: 9, Source: memberdomain.SourcePaidOrder, ActorID: 3, IdempotencyKey: "paid-source-key-001"})
 	if !errors.Is(err, memberport.ErrPaidOrderSourceBlocked) || uow.calls != 0 || store.createCalls != 0 || len(events.events) != 0 {
 		t.Fatalf("err/uow/create/events=%v/%d/%d/%d", err, uow.calls, store.createCalls, len(events.events))
+	}
+}
+
+func TestReplayRejectsCanonicalSnapshotsThatDoNotMatchTheOriginalCommand(t *testing.T) {
+	t.Run("add customer", func(t *testing.T) {
+		service, store, _, _ := fixture(t)
+		command := memberport.AddCommand{ServiceProductID: 7, CustomerID: 9, Source: memberdomain.SourceManual, ActorID: 3, IdempotencyKey: "replay-add-customer-01"}
+		member, err := service.Add(context.Background(), command)
+		if err != nil {
+			t.Fatal(err)
+		}
+		member.CustomerID = 10
+		replaceReceiptSnapshot(t, store, operationAdd, command.IdempotencyKey, member)
+		if _, err = service.Add(context.Background(), command); !errors.Is(err, memberport.ErrUnavailable) {
+			t.Fatalf("replay err=%v", err)
+		}
+	})
+
+	t.Run("add product", func(t *testing.T) {
+		service, store, _, _ := fixture(t)
+		command := memberport.AddCommand{ServiceProductID: 7, CustomerID: 9, Source: memberdomain.SourceManual, ActorID: 3, IdempotencyKey: "replay-add-product-001"}
+		member, err := service.Add(context.Background(), command)
+		if err != nil {
+			t.Fatal(err)
+		}
+		member.ServiceProductID = 8
+		replaceReceiptSnapshot(t, store, operationAdd, command.IdempotencyKey, member)
+		if _, err = service.Add(context.Background(), command); !errors.Is(err, memberport.ErrUnavailable) {
+			t.Fatalf("replay err=%v", err)
+		}
+	})
+
+	t.Run("transition target ref and version", func(t *testing.T) {
+		for _, mutate := range []func(*memberdomain.Member){
+			func(member *memberdomain.Member) {
+				member.State = memberdomain.StateRemoved
+				member.RemovedAt = cloneTime(&member.UpdatedAt)
+			},
+			func(member *memberdomain.Member) { member.MemberRef = "spm_ZZZZZZZZZZZZZZZZZZZZZZ" },
+			func(member *memberdomain.Member) { member.Version++ },
+		} {
+			service, store, _, _ := fixture(t)
+			member := validMember("spm_BBBBBBBBBBBBBBBBBBBBBB", time.Date(2026, 8, 22, 1, 0, 0, 0, time.UTC))
+			store.members[member.MemberRef] = member
+			command := memberport.TransitionCommand{ServiceProductID: 7, MemberRef: member.MemberRef, ExpectedVersion: 1, ActorID: 3, IdempotencyKey: "replay-expire-command-01"}
+			result, err := service.Expire(context.Background(), command)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mutate(&result)
+			replaceReceiptSnapshot(t, store, operationExpire, command.IdempotencyKey, result)
+			if _, err = service.Expire(context.Background(), command); !errors.Is(err, memberport.ErrUnavailable) {
+				t.Fatalf("replay err=%v snapshot=%#v", err, result)
+			}
+		}
+	})
+
+	t.Run("fields value", func(t *testing.T) {
+		service, store, _, _ := fixture(t)
+		member := validMember("spm_CCCCCCCCCCCCCCCCCCCCCC", time.Date(2026, 8, 22, 1, 0, 0, 0, time.UTC))
+		store.members[member.MemberRef] = member
+		remark := "original"
+		command := memberport.UpdateFieldsCommand{ServiceProductID: 7, MemberRef: member.MemberRef, ExpectedVersion: 1, Remark: &remark, ActorID: 3, IdempotencyKey: "replay-fields-command-01"}
+		result, err := service.UpdateFields(context.Background(), command)
+		if err != nil {
+			t.Fatal(err)
+		}
+		changed := "changed"
+		result.Remark = &changed
+		replaceReceiptSnapshot(t, store, operationUpdateFields, command.IdempotencyKey, result)
+		if _, err = service.UpdateFields(context.Background(), command); !errors.Is(err, memberport.ErrUnavailable) {
+			t.Fatalf("replay err=%v", err)
+		}
+	})
+
+	t.Run("remove target", func(t *testing.T) {
+		service, store, _, _ := fixture(t)
+		member := validMember("spm_DDDDDDDDDDDDDDDDDDDDDD", time.Date(2026, 8, 22, 1, 0, 0, 0, time.UTC))
+		store.members[member.MemberRef] = member
+		command := memberport.TransitionCommand{ServiceProductID: 7, MemberRef: member.MemberRef, ExpectedVersion: 1, ActorID: 3, IdempotencyKey: "replay-remove-command-01"}
+		result, err := service.Remove(context.Background(), command)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result.State = memberdomain.StateExpired
+		result.ExpiredAt = cloneTime(&result.UpdatedAt)
+		result.RemovedAt = nil
+		replaceReceiptSnapshot(t, store, operationRemove, command.IdempotencyKey, result)
+		if _, err = service.Remove(context.Background(), command); !errors.Is(err, memberport.ErrUnavailable) {
+			t.Fatalf("replay err=%v", err)
+		}
+	})
+}
+
+func TestAddReplayReturnsOriginalResponseAfterLaterValidTransition(t *testing.T) {
+	service, store, _, _ := fixture(t)
+	add := memberport.AddCommand{ServiceProductID: 7, CustomerID: 9, Source: memberdomain.SourceManual, ActorID: 3, IdempotencyKey: "replay-add-after-expire"}
+	original, err := service.Add(context.Background(), add)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.Expire(context.Background(), memberport.TransitionCommand{ServiceProductID: 7, MemberRef: original.MemberRef, ExpectedVersion: 1, ActorID: 3, IdempotencyKey: "expire-after-add-replay"}); err != nil {
+		t.Fatal(err)
+	}
+	replayed, err := service.Add(context.Background(), add)
+	if err != nil || !reflect.DeepEqual(replayed, original) || store.members[original.MemberRef].State != memberdomain.StateExpired {
+		t.Fatalf("replayed/current/err=%#v/%#v/%v", replayed, store.members[original.MemberRef], err)
 	}
 }
 
@@ -271,6 +379,22 @@ func fixture(t *testing.T) (*Service, *testStore, *testEvents, *testUoW) {
 	service.now = func() time.Time { return time.Date(2026, 8, 23, 2, 0, 0, 0, time.UTC) }
 	service.random = bytes.NewReader(make([]byte, 256))
 	return service, store, events, uow
+}
+
+func replaceReceiptSnapshot(t *testing.T, store *testStore, operation, key string, member memberdomain.Member) {
+	t.Helper()
+	digest := sha256.Sum256([]byte(key))
+	receiptKey := operation + ":" + string(digest[:])
+	receipt, ok := store.receipts[receiptKey]
+	if !ok {
+		t.Fatalf("missing receipt %q", operation)
+	}
+	snapshot, err := json.Marshal(member)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt.ResultSnapshot = snapshot
+	store.receipts[receiptKey] = receipt
 }
 
 func validMember(ref string, updated time.Time) memberdomain.Member {

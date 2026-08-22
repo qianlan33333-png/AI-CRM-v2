@@ -175,6 +175,7 @@ func (handler *Handler) Export(w stdhttp.ResponseWriter, request *stdhttp.Reques
 	}
 	w.Header().Set("Content-Type", result.ContentType)
 	w.Header().Set("Content-Disposition", `attachment; filename="service-period-members.csv"`)
+	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(stdhttp.StatusOK)
 	_, _ = w.Write(result.Body)

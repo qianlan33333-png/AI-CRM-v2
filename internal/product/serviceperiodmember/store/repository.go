@@ -12,10 +12,8 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
 	memberport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/port"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
-
-const memberColumns = `member_ref, service_product_id, customer_id, state, source,
-starts_at, expires_at, expired_at, removed_at, remark, alliance, version, created_at, updated_at`
 
 type Repository struct{}
 
@@ -24,26 +22,20 @@ var _ memberport.Store = (*Repository)(nil)
 func NewRepository() *Repository { return &Repository{} }
 
 func (*Repository) ServiceProductExists(ctx context.Context, productID int64) (bool, error) {
-	if ctx == nil || productID < 1 {
-		return false, memberport.ErrInvalidInput
+	q, err := queries(ctx)
+	if err != nil || productID < 1 {
+		return false, invalidOrUnavailable(err, productID)
 	}
-	var exists bool
-	err := tx(ctx).QueryRow(ctx, `SELECT EXISTS (
-SELECT 1 FROM public.products WHERE id=$1 AND (
-  legacy_admin_projection->>'status'='service_period_enabled' AND legacy_admin_projection->>'enabled'='true'
-  OR legacy_admin_projection->>'status' IN ('service_period_draft','service_period_disabled','service_period_archived')
-     AND legacy_admin_projection->>'enabled'='false'))`, productID).Scan(&exists)
+	exists, err := q.ServicePeriodProductExists(ctx, productID)
 	return exists, classify(err)
 }
 
 func (*Repository) LockServiceProductForMemberAdd(ctx context.Context, productID int64) (bool, error) {
-	if ctx == nil || productID < 1 {
-		return false, memberport.ErrInvalidInput
+	q, err := queries(ctx)
+	if err != nil || productID < 1 {
+		return false, invalidOrUnavailable(err, productID)
 	}
-	var accepted bool
-	err := tx(ctx).QueryRow(ctx, `SELECT true FROM public.products
-WHERE id=$1 AND legacy_admin_projection->>'status'='service_period_enabled'
-  AND legacy_admin_projection->>'enabled'='true' FOR SHARE`, productID).Scan(&accepted)
+	accepted, err := q.LockServiceProductForMemberAdd(ctx, productID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -51,168 +43,227 @@ WHERE id=$1 AND legacy_admin_projection->>'status'='service_period_enabled'
 }
 
 func (*Repository) CustomerExists(ctx context.Context, customerID int64) (bool, error) {
-	if ctx == nil || customerID < 1 {
-		return false, memberport.ErrInvalidInput
+	q, err := queries(ctx)
+	if err != nil || customerID < 1 {
+		return false, invalidOrUnavailable(err, customerID)
 	}
-	var exists bool
-	err := tx(ctx).QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM public.customers WHERE id=$1)`, customerID).Scan(&exists)
+	exists, err := q.ServicePeriodMemberCustomerExists(ctx, customerID)
 	return exists, classify(err)
 }
 
 func (*Repository) Get(ctx context.Context, productID int64, memberRef string) (memberdomain.Member, error) {
-	return get(ctx, `SELECT `+memberColumns+` FROM public.service_period_members WHERE service_product_id=$1 AND member_ref=$2`, productID, memberRef)
+	if productID < 1 || !memberdomain.ValidMemberRef(memberRef) {
+		return memberdomain.Member{}, memberport.ErrInvalidInput
+	}
+	q, err := queries(ctx)
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	row, err := q.GetServicePeriodMember(ctx, productdb.GetServicePeriodMemberParams{ProductID: productID, MemberRef: memberRef})
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	return mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+		row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
 }
 
 func (*Repository) GetForUpdate(ctx context.Context, productID int64, memberRef string) (memberdomain.Member, error) {
-	return get(ctx, `SELECT `+memberColumns+` FROM public.service_period_members WHERE service_product_id=$1 AND member_ref=$2 FOR UPDATE`, productID, memberRef)
+	if productID < 1 || !memberdomain.ValidMemberRef(memberRef) {
+		return memberdomain.Member{}, memberport.ErrInvalidInput
+	}
+	q, err := queries(ctx)
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	row, err := q.LockServicePeriodMember(ctx, productdb.LockServicePeriodMemberParams{ProductID: productID, MemberRef: memberRef})
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	return mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+		row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
 }
 
 func (*Repository) Create(ctx context.Context, record memberport.CreateRecord) (memberdomain.Member, error) {
-	row := tx(ctx).QueryRow(ctx, `INSERT INTO public.service_period_members
-(member_ref,service_product_id,customer_id,state,source,starts_at,expires_at,remark,alliance,version,created_at,updated_at)
-VALUES ($1,$2,$3,'active',$4,$5,$6,$7,$8,1,$9,$9) RETURNING `+memberColumns,
-		record.MemberRef, record.ServiceProductID, record.CustomerID, record.Source, record.StartsAt,
-		record.ExpiresAt, record.Remark, record.Alliance, record.CreatedAt)
-	return scanMember(row)
+	q, err := queries(ctx)
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	row, err := q.CreateServicePeriodMember(ctx, productdb.CreateServicePeriodMemberParams{
+		MemberRef: record.MemberRef, ProductID: record.ServiceProductID, CustomerID: record.CustomerID,
+		Source: string(record.Source), StartsAt: timestamp(record.StartsAt), ExpiresAt: optionalTimestamp(record.ExpiresAt),
+		Remark: optionalText(record.Remark), Alliance: optionalText(record.Alliance), CreatedAt: timestamp(record.CreatedAt),
+	})
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	return mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+		row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
 }
 
 func (*Repository) Transition(ctx context.Context, record memberport.TransitionRecord) (memberdomain.Member, error) {
-	row := tx(ctx).QueryRow(ctx, `UPDATE public.service_period_members SET
-state=$4, expired_at=CASE WHEN $4='expired' THEN $5 ELSE expired_at END,
-removed_at=CASE WHEN $4='removed' THEN $5 ELSE removed_at END,
-version=version+1, updated_at=$5
-WHERE service_product_id=$1 AND member_ref=$2 AND version=$3
-  AND (($4='expired' AND state='active') OR ($4='removed' AND state<>'removed'))
-RETURNING `+memberColumns, record.ServiceProductID, record.MemberRef, record.ExpectedVersion, record.Target, record.TransitionedAt)
-	member, err := scanMember(row)
-	if errors.Is(err, memberport.ErrNotFound) {
+	q, err := queries(ctx)
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	row, err := q.TransitionServicePeriodMember(ctx, productdb.TransitionServicePeriodMemberParams{
+		ProductID: record.ServiceProductID, MemberRef: record.MemberRef, ExpectedVersion: record.ExpectedVersion,
+		TargetState: string(record.Target), TransitionedAt: timestamp(record.TransitionedAt),
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
 		return memberdomain.Member{}, memberport.ErrConflict
 	}
-	return member, err
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	return mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+		row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
 }
 
 func (*Repository) UpdateFields(ctx context.Context, record memberport.UpdateFieldsRecord) (memberdomain.Member, error) {
-	row := tx(ctx).QueryRow(ctx, `UPDATE public.service_period_members SET
-remark=$4, alliance=$5, version=version+1, updated_at=$6
-WHERE service_product_id=$1 AND member_ref=$2 AND version=$3 AND state<>'removed'
-RETURNING `+memberColumns, record.ServiceProductID, record.MemberRef, record.ExpectedVersion,
-		record.Remark, record.Alliance, record.UpdatedAt)
-	member, err := scanMember(row)
-	if errors.Is(err, memberport.ErrNotFound) {
+	q, err := queries(ctx)
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	row, err := q.UpdateServicePeriodMemberFields(ctx, productdb.UpdateServicePeriodMemberFieldsParams{
+		ProductID: record.ServiceProductID, MemberRef: record.MemberRef, ExpectedVersion: record.ExpectedVersion,
+		Remark: optionalText(record.Remark), Alliance: optionalText(record.Alliance), UpdatedAt: timestamp(record.UpdatedAt),
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
 		return memberdomain.Member{}, memberport.ErrConflict
 	}
-	return member, err
+	if err != nil {
+		return memberdomain.Member{}, classify(err)
+	}
+	return mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+		row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
 }
 
 func (*Repository) List(ctx context.Context, query memberport.StoreListQuery) ([]memberdomain.Member, error) {
-	var state, source any
-	if query.State != nil {
-		state = string(*query.State)
-	}
-	if query.Source != nil {
-		source = string(*query.Source)
-	}
-	var updatedAt, memberRef any
-	if query.After != nil {
-		updatedAt, memberRef = query.After.UpdatedAt, query.After.MemberRef
-	}
-	rows, err := tx(ctx).Query(ctx, `SELECT `+memberColumns+` FROM public.service_period_members
-WHERE service_product_id=$1 AND ($2::text IS NULL OR state=$2) AND ($3::text IS NULL OR source=$3)
-  AND ($4::timestamptz IS NULL OR (updated_at,member_ref)<($4,$5::text))
-ORDER BY updated_at DESC, member_ref DESC LIMIT $6`, query.ServiceProductID, state, source, updatedAt, memberRef, query.Limit)
+	q, err := queries(ctx)
 	if err != nil {
 		return nil, classify(err)
 	}
-	defer rows.Close()
-	result := make([]memberdomain.Member, 0, query.Limit)
-	for rows.Next() {
-		member, scanErr := scanMember(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		result = append(result, member)
+	params := productdb.ListServicePeriodMembersParams{ProductID: query.ServiceProductID, RowLimit: int32(query.Limit)}
+	if query.State != nil {
+		params.State = pgtype.Text{String: string(*query.State), Valid: true}
 	}
-	if err = rows.Err(); err != nil {
+	if query.Source != nil {
+		params.Source = pgtype.Text{String: string(*query.Source), Valid: true}
+	}
+	if query.After != nil {
+		params.AfterUpdatedAt = timestamp(query.After.UpdatedAt)
+		params.AfterMemberRef = pgtype.Text{String: query.After.MemberRef, Valid: true}
+	}
+	rows, err := q.ListServicePeriodMembers(ctx, params)
+	if err != nil {
 		return nil, classify(err)
+	}
+	result := make([]memberdomain.Member, len(rows))
+	for index, row := range rows {
+		result[index], err = mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+			row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return result, nil
 }
 
 func (*Repository) ReserveReceipt(ctx context.Context, reservation memberport.ReceiptReservation) (memberport.Receipt, bool, error) {
-	row := tx(ctx).QueryRow(ctx, `INSERT INTO public.service_period_member_operation_receipts
-(operation,actor_scope,key_digest,payload_digest,state,created_at)
-VALUES ($1,$2,$3,$4,'reserved',$5)
-ON CONFLICT (operation,actor_scope,key_digest) DO NOTHING
-RETURNING id,operation,actor_scope,key_digest,payload_digest,state,result_snapshot,created_at`, reservation.Operation,
-		reservation.ActorScope, reservation.KeyDigest[:], reservation.PayloadDigest[:], reservation.CreatedAt)
-	receipt, err := scanReceipt(row)
+	q, err := queries(ctx)
+	if err != nil {
+		return memberport.Receipt{}, false, classify(err)
+	}
+	row, err := q.ReserveServicePeriodMemberReceipt(ctx, productdb.ReserveServicePeriodMemberReceiptParams{
+		Operation: reservation.Operation, ActorScope: reservation.ActorScope, KeyDigest: reservation.KeyDigest[:],
+		PayloadDigest: reservation.PayloadDigest[:], CreatedAt: timestamp(reservation.CreatedAt),
+	})
 	if err == nil {
-		return receipt, true, nil
+		return mapReceipt(row.ID, row.Operation, row.ActorScope, row.KeyDigest, row.PayloadDigest, row.State, row.ResultSnapshot, row.CreatedAt, reservation), true, nil
 	}
-	if !errors.Is(err, memberport.ErrNotFound) {
-		return memberport.Receipt{}, false, err
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return memberport.Receipt{}, false, classify(err)
 	}
-	row = tx(ctx).QueryRow(ctx, `SELECT id,operation,actor_scope,key_digest,payload_digest,state,result_snapshot,created_at
-FROM public.service_period_member_operation_receipts WHERE operation=$1 AND actor_scope=$2 AND key_digest=$3`,
-		reservation.Operation, reservation.ActorScope, reservation.KeyDigest[:])
-	receipt, err = scanReceipt(row)
-	return receipt, false, err
+	existing, err := q.GetServicePeriodMemberReceipt(ctx, productdb.GetServicePeriodMemberReceiptParams{
+		Operation: reservation.Operation, ActorScope: reservation.ActorScope, KeyDigest: reservation.KeyDigest[:],
+	})
+	if err != nil {
+		return memberport.Receipt{}, false, classify(err)
+	}
+	return mapReceipt(existing.ID, existing.Operation, existing.ActorScope, existing.KeyDigest, existing.PayloadDigest,
+		existing.State, existing.ResultSnapshot, existing.CreatedAt, reservation), false, nil
 }
 
 func (*Repository) CompleteReceipt(ctx context.Context, receiptID int64, snapshot json.RawMessage, completedAt time.Time) (memberport.Receipt, error) {
-	row := tx(ctx).QueryRow(ctx, `UPDATE public.service_period_member_operation_receipts
-SET state='completed',result_snapshot=$2,completed_at=$3 WHERE id=$1 AND state='reserved'
-RETURNING id,operation,actor_scope,key_digest,payload_digest,state,result_snapshot,created_at`, receiptID, snapshot, completedAt)
-	return scanReceipt(row)
-}
-
-type scanner interface{ Scan(...any) error }
-
-func get(ctx context.Context, statement string, productID int64, memberRef string) (memberdomain.Member, error) {
-	if ctx == nil || productID < 1 || !memberdomain.ValidMemberRef(memberRef) {
-		return memberdomain.Member{}, memberport.ErrInvalidInput
-	}
-	return scanMember(tx(ctx).QueryRow(ctx, statement, productID, memberRef))
-}
-
-func scanMember(row scanner) (memberdomain.Member, error) {
-	var member memberdomain.Member
-	var state, source string
-	var expiresAt, expiredAt, removedAt pgtype.Timestamptz
-	err := row.Scan(&member.MemberRef, &member.ServiceProductID, &member.CustomerID, &state, &source,
-		&member.StartsAt, &expiresAt, &expiredAt, &removedAt, &member.Remark, &member.Alliance,
-		&member.Version, &member.CreatedAt, &member.UpdatedAt)
-	if err != nil {
-		return memberdomain.Member{}, classify(err)
-	}
-	member.State, member.Source = memberdomain.State(state), memberdomain.Source(source)
-	member.StartsAt, member.CreatedAt, member.UpdatedAt = member.StartsAt.UTC(), member.CreatedAt.UTC(), member.UpdatedAt.UTC()
-	member.ExpiresAt, member.ExpiredAt, member.RemovedAt = optionalTime(expiresAt), optionalTime(expiredAt), optionalTime(removedAt)
-	return member, nil
-}
-
-func scanReceipt(row scanner) (memberport.Receipt, error) {
-	var receipt memberport.Receipt
-	var keyDigest, payloadDigest []byte
-	err := row.Scan(&receipt.ID, &receipt.Operation, &receipt.ActorScope, &keyDigest, &payloadDigest,
-		&receipt.State, &receipt.ResultSnapshot, &receipt.CreatedAt)
+	q, err := queries(ctx)
 	if err != nil {
 		return memberport.Receipt{}, classify(err)
 	}
-	if len(keyDigest) != 32 || len(payloadDigest) != 32 {
-		return memberport.Receipt{}, memberport.ErrUnavailable
+	row, err := q.CompleteServicePeriodMemberReceipt(ctx, productdb.CompleteServicePeriodMemberReceiptParams{
+		ReceiptID: receiptID, ResultSnapshot: snapshot, CompletedAt: timestamp(completedAt),
+	})
+	if err != nil {
+		return memberport.Receipt{}, classify(err)
 	}
-	copy(receipt.KeyDigest[:], keyDigest)
-	copy(receipt.PayloadDigest[:], payloadDigest)
-	return receipt, nil
+	reservation := memberport.ReceiptReservation{Operation: row.Operation, ActorScope: row.ActorScope}
+	return mapReceipt(row.ID, row.Operation, row.ActorScope, row.KeyDigest, row.PayloadDigest, row.State, row.ResultSnapshot, row.CreatedAt, reservation), nil
 }
 
-func tx(ctx context.Context) pgx.Tx {
+func queries(ctx context.Context) (*productdb.Queries, error) {
+	if ctx == nil {
+		return nil, memberport.ErrUnavailable
+	}
 	transaction, err := platformstore.TxFromContext(ctx)
 	if err != nil {
-		return invalidTx{err: err}
+		return nil, err
 	}
-	return transaction
+	return productdb.New(transaction), nil
+}
+
+func mapMember(memberRef string, productID, customerID int64, state, source string, startsAt, expiresAt, expiredAt, removedAt pgtype.Timestamptz, remark, alliance pgtype.Text, version int64, createdAt, updatedAt pgtype.Timestamptz) (memberdomain.Member, error) {
+	if !startsAt.Valid || !createdAt.Valid || !updatedAt.Valid {
+		return memberdomain.Member{}, memberport.ErrUnavailable
+	}
+	return memberdomain.Member{
+		MemberRef: memberRef, ServiceProductID: productID, CustomerID: customerID,
+		State: memberdomain.State(state), Source: memberdomain.Source(source), StartsAt: startsAt.Time.UTC(),
+		ExpiresAt: optionalTime(expiresAt), ExpiredAt: optionalTime(expiredAt), RemovedAt: optionalTime(removedAt),
+		Remark: optionalString(remark), Alliance: optionalString(alliance), Version: version,
+		CreatedAt: createdAt.Time.UTC(), UpdatedAt: updatedAt.Time.UTC(),
+	}, nil
+}
+
+func mapReceipt(id int64, operation, actorScope string, keyDigest, payloadDigest []byte, state string, snapshot []byte, createdAt pgtype.Timestamptz, reservation memberport.ReceiptReservation) memberport.Receipt {
+	receipt := memberport.Receipt{ID: id, ReceiptReservation: reservation, State: state, ResultSnapshot: append(json.RawMessage(nil), snapshot...)}
+	receipt.Operation, receipt.ActorScope = operation, actorScope
+	if len(keyDigest) == 32 {
+		copy(receipt.KeyDigest[:], keyDigest)
+	}
+	if len(payloadDigest) == 32 {
+		copy(receipt.PayloadDigest[:], payloadDigest)
+	}
+	if createdAt.Valid {
+		receipt.CreatedAt = createdAt.Time.UTC()
+	}
+	return receipt
+}
+
+func timestamp(value time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: value.UTC(), Valid: !value.IsZero()}
+}
+
+func optionalTimestamp(value *time.Time) pgtype.Timestamptz {
+	if value == nil {
+		return pgtype.Timestamptz{}
+	}
+	return timestamp(*value)
+}
+
+func optionalText(value *string) pgtype.Text {
+	if value == nil {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: *value, Valid: true}
 }
 
 func optionalTime(value pgtype.Timestamptz) *time.Time {
@@ -221,6 +272,21 @@ func optionalTime(value pgtype.Timestamptz) *time.Time {
 	}
 	result := value.Time.UTC()
 	return &result
+}
+
+func optionalString(value pgtype.Text) *string {
+	if !value.Valid {
+		return nil
+	}
+	result := value.String
+	return &result
+}
+
+func invalidOrUnavailable(err error, id int64) error {
+	if id < 1 {
+		return memberport.ErrInvalidInput
+	}
+	return classify(err)
 }
 
 func classify(err error) error {
@@ -241,21 +307,3 @@ func classify(err error) error {
 	}
 	return errors.Join(memberport.ErrUnavailable, err)
 }
-
-// invalidTx keeps missing transaction failures on the normal repository error
-// path without allowing a pool or implicit cross-transaction fallback.
-type invalidTx struct {
-	pgx.Tx
-	err error
-}
-
-func (transaction invalidTx) QueryRow(context.Context, string, ...any) pgx.Row {
-	return errorRow{transaction.err}
-}
-func (transaction invalidTx) Query(context.Context, string, ...any) (pgx.Rows, error) {
-	return nil, transaction.err
-}
-
-type errorRow struct{ err error }
-
-func (row errorRow) Scan(...any) error { return row.err }

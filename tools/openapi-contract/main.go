@@ -65,6 +65,7 @@ const (
 	p4ExternalEffectsReadonlyEvidence = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
 	p4AIAudienceConfigurationEvidence = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 	p4GroupOpsLocalEvidence           = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
+	p4ServicePeriodMembersEvidence    = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -81,11 +82,18 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"reorderTags":      {"/api/v1/tags/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveSegment":   {"/api/v1/segments/{segment_id}", "DELETE", p4ClassificationPackageEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 
-	"updateProduct":                 {"/api/v1/products/{product_id}", "PUT", p4ProductEntitlementEvidence, "products.write", "human_session", "financial", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"listProductLocalEntitlements":  {"/api/v1/products/{product_id}/local-entitlements", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
-	"grantProductLocalEntitlement":  {"/api/v1/products/{product_id}/local-entitlements", "POST", p4ProductEntitlementEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"getProductLocalEntitlement":    {"/api/v1/product-entitlements/{entitlement_id}", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
-	"revokeProductLocalEntitlement": {"/api/v1/product-entitlements/{entitlement_id}/revoke", "POST", p4ProductEntitlementEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"updateProduct":                   {"/api/v1/products/{product_id}", "PUT", p4ProductEntitlementEvidence, "products.write", "human_session", "financial", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listProductLocalEntitlements":    {"/api/v1/products/{product_id}/local-entitlements", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"grantProductLocalEntitlement":    {"/api/v1/products/{product_id}/local-entitlements", "POST", p4ProductEntitlementEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getProductLocalEntitlement":      {"/api/v1/product-entitlements/{entitlement_id}", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"revokeProductLocalEntitlement":   {"/api/v1/product-entitlements/{entitlement_id}/revoke", "POST", p4ProductEntitlementEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listServicePeriodMembers":        {"/api/admin/service-period-products/{service_product_id}/members", "GET", p4ServicePeriodMembersEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"addServicePeriodMember":          {"/api/admin/service-period-products/{service_product_id}/members", "POST", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"exportServicePeriodMembers":      {"/api/admin/service-period-products/{service_product_id}/members/export", "POST", p4ServicePeriodMembersEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodMember":          {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}", "GET", p4ServicePeriodMembersEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"updateServicePeriodMemberFields": {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/fields", "PUT", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"expireServicePeriodMember":       {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/expire", "POST", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"removeServicePeriodMember":       {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove", "POST", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 
 	"getPublicSurveyDefinition":            {"/api/public/questionnaires/{slug}", "GET", p4SurveyPublicEvidence, "survey.public.read", "public", "public_non_pii", "local_read_model", "none", nil},
 	"submitPublicSurvey":                   {"/api/public/questionnaires/{slug}/submissions", "POST", p4SurveyPublicEvidence, "survey.public.submit", "public", "public_non_pii", "local_command", "none", nil},

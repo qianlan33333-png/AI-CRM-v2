@@ -91,7 +91,7 @@ func TestExportSetsFixedSafeDownloadHeaders(t *testing.T) {
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 	handler.Export(response, request, 7)
-	if response.Code != stdhttp.StatusOK || response.Header().Get("Content-Disposition") != `attachment; filename="service-period-members.csv"` || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Body.String() != "member_ref\n" {
+	if response.Code != stdhttp.StatusOK || response.Header().Get("Content-Disposition") != `attachment; filename="service-period-members.csv"` || response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Body.String() != "member_ref\n" {
 		t.Fatalf("status/headers/body=%d/%v/%q", response.Code, response.Header(), response.Body.String())
 	}
 }

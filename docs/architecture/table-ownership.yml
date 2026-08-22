@@ -131,12 +131,14 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
       product_catalog_counters: exact_legacy_total_without_catalog_scan
       product_operation_receipts: transaction_scoped_create_idempotency_receipts
+      service_period_members: local_OneID_membership_facts_with_opaque_member_reference_and_no_external_identifiers
+      service_period_member_operation_receipts: actor_scoped_transactional_member_mutation_idempotency_receipts
 
   coupon:
     package: internal/coupon
