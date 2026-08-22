@@ -5,6 +5,222 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface CloudCampaignError {
+  /** @minLength 1 */
+  code: string;
+}
+
+export interface CloudCampaignProjection {
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+  real_send: boolean;
+  runtime_executed: boolean;
+}
+
+export type CloudCampaignApprovalStatus =
+  (typeof CloudCampaignApprovalStatus)[keyof typeof CloudCampaignApprovalStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignApprovalStatus = {
+  draft: "draft",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export type CloudCampaignRuntimeStatus =
+  (typeof CloudCampaignRuntimeStatus)[keyof typeof CloudCampaignRuntimeStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignRuntimeStatus = {
+  idle: "idle",
+  planned: "planned",
+  paused: "paused",
+} as const;
+
+export interface CloudCampaign {
+  /**
+   * @minLength 1
+   * @maxLength 96
+   */
+  campaign_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  name: string;
+  approval_status: CloudCampaignApprovalStatus;
+  runtime_status: CloudCampaignRuntimeStatus;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CloudCampaignStep {
+  /** @minimum 1 */
+  step_index: number;
+  /** @minimum 0 */
+  delay_minutes: number;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  content: string;
+}
+
+export interface CloudCampaignPlan {
+  /** @minimum 1 */
+  plan_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 96
+   */
+  campaign_code: string;
+  /** @minimum 1 */
+  campaign_version: number;
+  /** @minimum 0 */
+  step_count: number;
+  created_at: string;
+}
+
+export type CloudCampaignCommandOperation =
+  (typeof CloudCampaignCommandOperation)[keyof typeof CloudCampaignCommandOperation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignCommandOperation = {
+  start: "start",
+  batch_start: "batch_start",
+} as const;
+
+export interface CloudCampaignCommand {
+  /** @minimum 1 */
+  command_id: number;
+  operation: CloudCampaignCommandOperation;
+  /**
+   * @minLength 1
+   * @maxLength 96
+   */
+  campaign_code: string;
+  /** @minimum 1 */
+  plan_id: number;
+  real_send: boolean;
+  runtime_executed: boolean;
+  created_at: string;
+}
+
+export type CloudCampaignListResponseAllOf = {
+  /** @maxItems 100 */
+  items: CloudCampaign[];
+};
+
+export type CloudCampaignListResponse = CloudCampaignProjection &
+  CloudCampaignListResponseAllOf;
+
+export type CloudCampaignDetailResponseAllOf = {
+  campaign: CloudCampaign;
+  /** @maxItems 100 */
+  steps: CloudCampaignStep[];
+};
+
+export type CloudCampaignDetailResponse = CloudCampaignProjection &
+  CloudCampaignDetailResponseAllOf;
+
+export type CloudCampaignMutationResponseAllOf = {
+  campaign: CloudCampaign;
+  plan?: CloudCampaignPlan;
+  command?: CloudCampaignCommand;
+};
+
+export type CloudCampaignMutationResponse = CloudCampaignProjection &
+  CloudCampaignMutationResponseAllOf;
+
+export type CloudCampaignDeleteResponseAllOf = {
+  /**
+   * @minLength 1
+   * @maxLength 96
+   */
+  campaign_code: string;
+  deleted: boolean;
+};
+
+export type CloudCampaignDeleteResponse = CloudCampaignProjection &
+  CloudCampaignDeleteResponseAllOf;
+
+export interface CloudCampaignBatchStartItem {
+  /**
+   * @minLength 1
+   * @maxLength 96
+   */
+  campaign_code: string;
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export type CloudCampaignBatchStartResponseAllOf = {
+  /** @maxItems 100 */
+  started: CloudCampaignMutationResponse[];
+  /** @maxItems 100 */
+  skipped: CloudCampaignBatchStartItem[];
+  /** @maxItems 100 */
+  failed: CloudCampaignBatchStartItem[];
+};
+
+export type CloudCampaignBatchStartResponse = CloudCampaignProjection &
+  CloudCampaignBatchStartResponseAllOf;
+
+export interface CloudCampaignVersionRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface CloudCampaignStepCreateRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /** @minimum 0 */
+  delay_minutes: number;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  content: string;
+}
+
+export type CloudCampaignStepUpdateRequest =
+  | (unknown & {
+      /** @minimum 1 */
+      expected_version: number;
+      /** @minimum 0 */
+      delay_minutes?: number;
+      /**
+       * @minLength 1
+       * @maxLength 4000
+       */
+      content?: string;
+    })
+  | (unknown & {
+      /** @minimum 1 */
+      expected_version: number;
+      /** @minimum 0 */
+      delay_minutes?: number;
+      /**
+       * @minLength 1
+       * @maxLength 4000
+       */
+      content?: string;
+    });
+
+export interface CloudCampaignBatchStartRequest {
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  campaigns: CloudCampaignBatchStartItem[];
+}
+
 export interface AIAudienceProjection {
   local_projection: boolean;
   real_external_call_executed: boolean;
@@ -31622,4 +31838,947 @@ export const activateAIAudiencePackage = async (
     status: res.status,
     headers: res.headers,
   } as activateAIAudiencePackageResponse;
+};
+
+export type listCloudCampaignsResponse200 = {
+  data: CloudCampaignListResponse;
+  status: 200;
+};
+
+export type listCloudCampaignsResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type listCloudCampaignsResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type listCloudCampaignsResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type listCloudCampaignsResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type listCloudCampaignsResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type listCloudCampaignsResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type listCloudCampaignsResponseSuccess =
+  listCloudCampaignsResponse200 & {
+    headers: Headers;
+  };
+export type listCloudCampaignsResponseError = (
+  | listCloudCampaignsResponse400
+  | listCloudCampaignsResponse401
+  | listCloudCampaignsResponse403
+  | listCloudCampaignsResponse404
+  | listCloudCampaignsResponse409
+  | listCloudCampaignsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCloudCampaignsResponse =
+  listCloudCampaignsResponseSuccess | listCloudCampaignsResponseError;
+
+export const getListCloudCampaignsUrl = () => {
+  return `/api/admin/cloud-orchestrator/campaigns`;
+};
+
+export const listCloudCampaigns = async (
+  options?: RequestInit,
+): Promise<listCloudCampaignsResponse> => {
+  const res = await fetch(getListCloudCampaignsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCloudCampaignsResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCloudCampaignsResponse;
+};
+
+export type batchStartCloudCampaignsResponse200 = {
+  data: CloudCampaignBatchStartResponse;
+  status: 200;
+};
+
+export type batchStartCloudCampaignsResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type batchStartCloudCampaignsResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type batchStartCloudCampaignsResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type batchStartCloudCampaignsResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type batchStartCloudCampaignsResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type batchStartCloudCampaignsResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type batchStartCloudCampaignsResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type batchStartCloudCampaignsResponseSuccess =
+  batchStartCloudCampaignsResponse200 & {
+    headers: Headers;
+  };
+export type batchStartCloudCampaignsResponseError = (
+  | batchStartCloudCampaignsResponse400
+  | batchStartCloudCampaignsResponse401
+  | batchStartCloudCampaignsResponse403
+  | batchStartCloudCampaignsResponse404
+  | batchStartCloudCampaignsResponse409
+  | batchStartCloudCampaignsResponse422
+  | batchStartCloudCampaignsResponse503
+) & {
+  headers: Headers;
+};
+
+export type batchStartCloudCampaignsResponse =
+  | batchStartCloudCampaignsResponseSuccess
+  | batchStartCloudCampaignsResponseError;
+
+export const getBatchStartCloudCampaignsUrl = () => {
+  return `/api/admin/cloud-orchestrator/campaigns/batch-start`;
+};
+
+export const batchStartCloudCampaigns = async (
+  cloudCampaignBatchStartRequest: CloudCampaignBatchStartRequest,
+  options?: RequestInit,
+): Promise<batchStartCloudCampaignsResponse> => {
+  const res = await fetch(getBatchStartCloudCampaignsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignBatchStartRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: batchStartCloudCampaignsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as batchStartCloudCampaignsResponse;
+};
+
+export type getCloudCampaignResponse200 = {
+  data: CloudCampaignDetailResponse;
+  status: 200;
+};
+
+export type getCloudCampaignResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type getCloudCampaignResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type getCloudCampaignResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type getCloudCampaignResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type getCloudCampaignResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type getCloudCampaignResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type getCloudCampaignResponseSuccess = getCloudCampaignResponse200 & {
+  headers: Headers;
+};
+export type getCloudCampaignResponseError = (
+  | getCloudCampaignResponse400
+  | getCloudCampaignResponse401
+  | getCloudCampaignResponse403
+  | getCloudCampaignResponse404
+  | getCloudCampaignResponse409
+  | getCloudCampaignResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCloudCampaignResponse =
+  getCloudCampaignResponseSuccess | getCloudCampaignResponseError;
+
+export const getGetCloudCampaignUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}`;
+};
+
+export const getCloudCampaign = async (
+  campaignCode: string,
+  options?: RequestInit,
+): Promise<getCloudCampaignResponse> => {
+  const res = await fetch(getGetCloudCampaignUrl(campaignCode), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudCampaignResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudCampaignResponse;
+};
+
+export type deleteCloudCampaignResponse200 = {
+  data: CloudCampaignDeleteResponse;
+  status: 200;
+};
+
+export type deleteCloudCampaignResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type deleteCloudCampaignResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type deleteCloudCampaignResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type deleteCloudCampaignResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type deleteCloudCampaignResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type deleteCloudCampaignResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type deleteCloudCampaignResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type deleteCloudCampaignResponseSuccess =
+  deleteCloudCampaignResponse200 & {
+    headers: Headers;
+  };
+export type deleteCloudCampaignResponseError = (
+  | deleteCloudCampaignResponse400
+  | deleteCloudCampaignResponse401
+  | deleteCloudCampaignResponse403
+  | deleteCloudCampaignResponse404
+  | deleteCloudCampaignResponse409
+  | deleteCloudCampaignResponse422
+  | deleteCloudCampaignResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteCloudCampaignResponse =
+  deleteCloudCampaignResponseSuccess | deleteCloudCampaignResponseError;
+
+export const getDeleteCloudCampaignUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}`;
+};
+
+export const deleteCloudCampaign = async (
+  campaignCode: string,
+  cloudCampaignVersionRequest: CloudCampaignVersionRequest,
+  options?: RequestInit,
+): Promise<deleteCloudCampaignResponse> => {
+  const res = await fetch(getDeleteCloudCampaignUrl(campaignCode), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteCloudCampaignResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteCloudCampaignResponse;
+};
+
+export type addCloudCampaignStepResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type addCloudCampaignStepResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type addCloudCampaignStepResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type addCloudCampaignStepResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type addCloudCampaignStepResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type addCloudCampaignStepResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type addCloudCampaignStepResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type addCloudCampaignStepResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type addCloudCampaignStepResponseSuccess =
+  addCloudCampaignStepResponse200 & {
+    headers: Headers;
+  };
+export type addCloudCampaignStepResponseError = (
+  | addCloudCampaignStepResponse400
+  | addCloudCampaignStepResponse401
+  | addCloudCampaignStepResponse403
+  | addCloudCampaignStepResponse404
+  | addCloudCampaignStepResponse409
+  | addCloudCampaignStepResponse422
+  | addCloudCampaignStepResponse503
+) & {
+  headers: Headers;
+};
+
+export type addCloudCampaignStepResponse =
+  addCloudCampaignStepResponseSuccess | addCloudCampaignStepResponseError;
+
+export const getAddCloudCampaignStepUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/steps`;
+};
+
+export const addCloudCampaignStep = async (
+  campaignCode: string,
+  cloudCampaignStepCreateRequest: CloudCampaignStepCreateRequest,
+  options?: RequestInit,
+): Promise<addCloudCampaignStepResponse> => {
+  const res = await fetch(getAddCloudCampaignStepUrl(campaignCode), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignStepCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: addCloudCampaignStepResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as addCloudCampaignStepResponse;
+};
+
+export type updateCloudCampaignStepResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type updateCloudCampaignStepResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type updateCloudCampaignStepResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type updateCloudCampaignStepResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type updateCloudCampaignStepResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type updateCloudCampaignStepResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type updateCloudCampaignStepResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type updateCloudCampaignStepResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type updateCloudCampaignStepResponseSuccess =
+  updateCloudCampaignStepResponse200 & {
+    headers: Headers;
+  };
+export type updateCloudCampaignStepResponseError = (
+  | updateCloudCampaignStepResponse400
+  | updateCloudCampaignStepResponse401
+  | updateCloudCampaignStepResponse403
+  | updateCloudCampaignStepResponse404
+  | updateCloudCampaignStepResponse409
+  | updateCloudCampaignStepResponse422
+  | updateCloudCampaignStepResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateCloudCampaignStepResponse =
+  updateCloudCampaignStepResponseSuccess | updateCloudCampaignStepResponseError;
+
+export const getUpdateCloudCampaignStepUrl = (
+  campaignCode: string,
+  stepIndex: number,
+) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/steps/${stepIndex}`;
+};
+
+export const updateCloudCampaignStep = async (
+  campaignCode: string,
+  stepIndex: number,
+  cloudCampaignStepUpdateRequest: CloudCampaignStepUpdateRequest,
+  options?: RequestInit,
+): Promise<updateCloudCampaignStepResponse> => {
+  const res = await fetch(
+    getUpdateCloudCampaignStepUrl(campaignCode, stepIndex),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(cloudCampaignStepUpdateRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateCloudCampaignStepResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateCloudCampaignStepResponse;
+};
+
+export type deleteCloudCampaignStepResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type deleteCloudCampaignStepResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type deleteCloudCampaignStepResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type deleteCloudCampaignStepResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type deleteCloudCampaignStepResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type deleteCloudCampaignStepResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type deleteCloudCampaignStepResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type deleteCloudCampaignStepResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type deleteCloudCampaignStepResponseSuccess =
+  deleteCloudCampaignStepResponse200 & {
+    headers: Headers;
+  };
+export type deleteCloudCampaignStepResponseError = (
+  | deleteCloudCampaignStepResponse400
+  | deleteCloudCampaignStepResponse401
+  | deleteCloudCampaignStepResponse403
+  | deleteCloudCampaignStepResponse404
+  | deleteCloudCampaignStepResponse409
+  | deleteCloudCampaignStepResponse422
+  | deleteCloudCampaignStepResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteCloudCampaignStepResponse =
+  deleteCloudCampaignStepResponseSuccess | deleteCloudCampaignStepResponseError;
+
+export const getDeleteCloudCampaignStepUrl = (
+  campaignCode: string,
+  stepIndex: number,
+) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/steps/${stepIndex}`;
+};
+
+export const deleteCloudCampaignStep = async (
+  campaignCode: string,
+  stepIndex: number,
+  cloudCampaignVersionRequest: CloudCampaignVersionRequest,
+  options?: RequestInit,
+): Promise<deleteCloudCampaignStepResponse> => {
+  const res = await fetch(
+    getDeleteCloudCampaignStepUrl(campaignCode, stepIndex),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(cloudCampaignVersionRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteCloudCampaignStepResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteCloudCampaignStepResponse;
+};
+
+export type approveCloudCampaignResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type approveCloudCampaignResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type approveCloudCampaignResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type approveCloudCampaignResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type approveCloudCampaignResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type approveCloudCampaignResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type approveCloudCampaignResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type approveCloudCampaignResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type approveCloudCampaignResponseSuccess =
+  approveCloudCampaignResponse200 & {
+    headers: Headers;
+  };
+export type approveCloudCampaignResponseError = (
+  | approveCloudCampaignResponse400
+  | approveCloudCampaignResponse401
+  | approveCloudCampaignResponse403
+  | approveCloudCampaignResponse404
+  | approveCloudCampaignResponse409
+  | approveCloudCampaignResponse422
+  | approveCloudCampaignResponse503
+) & {
+  headers: Headers;
+};
+
+export type approveCloudCampaignResponse =
+  approveCloudCampaignResponseSuccess | approveCloudCampaignResponseError;
+
+export const getApproveCloudCampaignUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/approve`;
+};
+
+export const approveCloudCampaign = async (
+  campaignCode: string,
+  cloudCampaignVersionRequest: CloudCampaignVersionRequest,
+  options?: RequestInit,
+): Promise<approveCloudCampaignResponse> => {
+  const res = await fetch(getApproveCloudCampaignUrl(campaignCode), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveCloudCampaignResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as approveCloudCampaignResponse;
+};
+
+export type startCloudCampaignResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type startCloudCampaignResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type startCloudCampaignResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type startCloudCampaignResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type startCloudCampaignResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type startCloudCampaignResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type startCloudCampaignResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type startCloudCampaignResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type startCloudCampaignResponseSuccess =
+  startCloudCampaignResponse200 & {
+    headers: Headers;
+  };
+export type startCloudCampaignResponseError = (
+  | startCloudCampaignResponse400
+  | startCloudCampaignResponse401
+  | startCloudCampaignResponse403
+  | startCloudCampaignResponse404
+  | startCloudCampaignResponse409
+  | startCloudCampaignResponse422
+  | startCloudCampaignResponse503
+) & {
+  headers: Headers;
+};
+
+export type startCloudCampaignResponse =
+  startCloudCampaignResponseSuccess | startCloudCampaignResponseError;
+
+export const getStartCloudCampaignUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/start`;
+};
+
+export const startCloudCampaign = async (
+  campaignCode: string,
+  cloudCampaignVersionRequest: CloudCampaignVersionRequest,
+  options?: RequestInit,
+): Promise<startCloudCampaignResponse> => {
+  const res = await fetch(getStartCloudCampaignUrl(campaignCode), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startCloudCampaignResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as startCloudCampaignResponse;
+};
+
+export type rejectCloudCampaignResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type rejectCloudCampaignResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type rejectCloudCampaignResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type rejectCloudCampaignResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type rejectCloudCampaignResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type rejectCloudCampaignResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type rejectCloudCampaignResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type rejectCloudCampaignResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type rejectCloudCampaignResponseSuccess =
+  rejectCloudCampaignResponse200 & {
+    headers: Headers;
+  };
+export type rejectCloudCampaignResponseError = (
+  | rejectCloudCampaignResponse400
+  | rejectCloudCampaignResponse401
+  | rejectCloudCampaignResponse403
+  | rejectCloudCampaignResponse404
+  | rejectCloudCampaignResponse409
+  | rejectCloudCampaignResponse422
+  | rejectCloudCampaignResponse503
+) & {
+  headers: Headers;
+};
+
+export type rejectCloudCampaignResponse =
+  rejectCloudCampaignResponseSuccess | rejectCloudCampaignResponseError;
+
+export const getRejectCloudCampaignUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/reject`;
+};
+
+export const rejectCloudCampaign = async (
+  campaignCode: string,
+  cloudCampaignVersionRequest: CloudCampaignVersionRequest,
+  options?: RequestInit,
+): Promise<rejectCloudCampaignResponse> => {
+  const res = await fetch(getRejectCloudCampaignUrl(campaignCode), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: rejectCloudCampaignResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as rejectCloudCampaignResponse;
+};
+
+export type pauseCloudCampaignResponse200 = {
+  data: CloudCampaignMutationResponse;
+  status: 200;
+};
+
+export type pauseCloudCampaignResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type pauseCloudCampaignResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type pauseCloudCampaignResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type pauseCloudCampaignResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type pauseCloudCampaignResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type pauseCloudCampaignResponse422 = {
+  data: CloudCampaignError;
+  status: 422;
+};
+
+export type pauseCloudCampaignResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type pauseCloudCampaignResponseSuccess =
+  pauseCloudCampaignResponse200 & {
+    headers: Headers;
+  };
+export type pauseCloudCampaignResponseError = (
+  | pauseCloudCampaignResponse400
+  | pauseCloudCampaignResponse401
+  | pauseCloudCampaignResponse403
+  | pauseCloudCampaignResponse404
+  | pauseCloudCampaignResponse409
+  | pauseCloudCampaignResponse422
+  | pauseCloudCampaignResponse503
+) & {
+  headers: Headers;
+};
+
+export type pauseCloudCampaignResponse =
+  pauseCloudCampaignResponseSuccess | pauseCloudCampaignResponseError;
+
+export const getPauseCloudCampaignUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/pause`;
+};
+
+export const pauseCloudCampaign = async (
+  campaignCode: string,
+  cloudCampaignVersionRequest: CloudCampaignVersionRequest,
+  options?: RequestInit,
+): Promise<pauseCloudCampaignResponse> => {
+  const res = await fetch(getPauseCloudCampaignUrl(campaignCode), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: pauseCloudCampaignResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as pauseCloudCampaignResponse;
 };
