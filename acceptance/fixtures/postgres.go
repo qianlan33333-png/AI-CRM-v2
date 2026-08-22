@@ -24,6 +24,7 @@ const (
 	F01PublicDatabaseName          = "aicrm_test_f01public"
 	AutomationAgentsABDatabaseName = "aicrm_test_automation_agents_ab"
 	AdminOpsABDatabaseName         = "aicrm_test_adminops_ab"
+	C01ChannelDatabaseName         = "aicrm_test_c01_channel"
 	advisoryLockKey                = int64(0x414943524d503230)
 )
 
@@ -81,7 +82,7 @@ func ValidateDatabaseURL(databaseURL string) error {
 // ValidateDatabaseURLForDatabase accepts only named, locally-created
 // acceptance databases on the dedicated loopback PostgreSQL service.
 func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
-	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName {
+	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName {
 		return ErrUnsafeDatabaseURL
 	}
 	parsed, err := url.Parse(databaseURL)
