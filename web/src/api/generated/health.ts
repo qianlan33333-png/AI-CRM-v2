@@ -2980,25 +2980,6 @@ export interface LegacyInternalEventItem {
   deliveries: LegacyInternalEventDelivery[];
 }
 
-export interface LegacyOutboundFailure {
-  /**
-   * @minLength 1
-   * @maxLength 64
-   */
-  kind: string;
-  /** @maxLength 256 */
-  code: string;
-}
-
-export interface LegacyOutboundProviderReceipt {
-  /**
-   * @minLength 1
-   * @maxLength 512
-   */
-  message_id: string;
-  confirmed_at: string;
-}
-
 export type LegacyOutboundQueueJobKind =
   (typeof LegacyOutboundQueueJobKind)[keyof typeof LegacyOutboundQueueJobKind];
 
@@ -3030,6 +3011,24 @@ export const LegacyOutboundJobStatus = {
   cancelled: "cancelled",
 } as const;
 
+export type LegacyOutboundJobFailureClass =
+  (typeof LegacyOutboundJobFailureClass)[keyof typeof LegacyOutboundJobFailureClass];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobFailureClass = {
+  none: "none",
+  local_failure: "local_failure",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export type LegacyOutboundJobDeliverySemantics =
+  (typeof LegacyOutboundJobDeliverySemantics)[keyof typeof LegacyOutboundJobDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOutboundJob {
   /** @minimum 1 */
   job_id: number;
@@ -3046,9 +3045,13 @@ export interface LegacyOutboundJob {
   status: LegacyOutboundJobStatus;
   /** @minimum 0 */
   attempt_count: number;
-  failure?: LegacyOutboundFailure;
-  provider_receipt?: LegacyOutboundProviderReceipt;
+  failure_present: boolean;
+  failure_class: LegacyOutboundJobFailureClass;
+  provider_receipt_present: boolean;
   delivery_proven: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundJobDeliverySemantics;
   queue_job: LegacyOutboundQueueJob;
   created_at: string;
   status_updated_at: string;
@@ -3067,6 +3070,24 @@ export const LegacyOutboundAttemptState = {
   outcome_unknown: "outcome_unknown",
 } as const;
 
+export type LegacyOutboundAttemptFailureClass =
+  (typeof LegacyOutboundAttemptFailureClass)[keyof typeof LegacyOutboundAttemptFailureClass];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundAttemptFailureClass = {
+  none: "none",
+  local_failure: "local_failure",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export type LegacyOutboundAttemptDeliverySemantics =
+  (typeof LegacyOutboundAttemptDeliverySemantics)[keyof typeof LegacyOutboundAttemptDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundAttemptDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOutboundAttempt {
   /** @minimum 1 */
   attempt_id: number;
@@ -3081,8 +3102,13 @@ export interface LegacyOutboundAttempt {
   /** @minimum 1 */
   max_attempts: number;
   state: LegacyOutboundAttemptState;
-  failure?: LegacyOutboundFailure;
-  provider_receipt?: LegacyOutboundProviderReceipt;
+  failure_present: boolean;
+  failure_class: LegacyOutboundAttemptFailureClass;
+  provider_receipt_present: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundAttemptDeliverySemantics;
   dispatch_started_at?: string;
   completed_at?: string;
 }
@@ -3127,6 +3153,14 @@ export const LegacyOutboundControlReceiptTaskStatus = {
   cancelled: "cancelled",
 } as const;
 
+export type LegacyOutboundControlReceiptDeliverySemantics =
+  (typeof LegacyOutboundControlReceiptDeliverySemantics)[keyof typeof LegacyOutboundControlReceiptDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundControlReceiptDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOutboundControlReceipt {
   /** @minimum 1 */
   receipt_id: number;
@@ -3143,6 +3177,11 @@ export interface LegacyOutboundControlReceipt {
   event_id: number;
   task_status: LegacyOutboundControlReceiptTaskStatus;
   completed_at: string;
+  provider_receipt_present: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundControlReceiptDeliverySemantics;
 }
 
 export type LegacyOutboundJobListResponseSourceStatus =
@@ -3151,6 +3190,14 @@ export type LegacyOutboundJobListResponseSourceStatus =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyOutboundJobListResponseSourceStatus = {
   v2_outbound_service: "v2_outbound_service",
+} as const;
+
+export type LegacyOutboundJobListResponseDeliverySemantics =
+  (typeof LegacyOutboundJobListResponseDeliverySemantics)[keyof typeof LegacyOutboundJobListResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobListResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
 } as const;
 
 export interface LegacyOutboundJobListResponse {
@@ -3172,6 +3219,35 @@ export interface LegacyOutboundJobListResponse {
   offset: number;
   source_status: LegacyOutboundJobListResponseSourceStatus;
   fallback_used: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundJobListResponseDeliverySemantics;
+}
+
+export type LegacyOutboundJobDetailResponseSourceStatus =
+  (typeof LegacyOutboundJobDetailResponseSourceStatus)[keyof typeof LegacyOutboundJobDetailResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobDetailResponseSourceStatus = {
+  v2_outbound_service: "v2_outbound_service",
+} as const;
+
+export type LegacyOutboundJobDetailResponseDeliverySemantics =
+  (typeof LegacyOutboundJobDetailResponseDeliverySemantics)[keyof typeof LegacyOutboundJobDetailResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobDetailResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
+export interface LegacyOutboundJobDetailResponse {
+  ok: boolean;
+  job: LegacyOutboundJob;
+  source_status: LegacyOutboundJobDetailResponseSourceStatus;
+  fallback_used: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundJobDetailResponseDeliverySemantics;
 }
 
 export type LegacyOutboundJobReconciliationResponseSourceStatus =
@@ -3182,6 +3258,14 @@ export const LegacyOutboundJobReconciliationResponseSourceStatus = {
   v2_outbound_service: "v2_outbound_service",
 } as const;
 
+export type LegacyOutboundJobReconciliationResponseDeliverySemantics =
+  (typeof LegacyOutboundJobReconciliationResponseDeliverySemantics)[keyof typeof LegacyOutboundJobReconciliationResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundJobReconciliationResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOutboundJobReconciliationResponse {
   ok: boolean;
   job: LegacyOutboundJob;
@@ -3189,6 +3273,9 @@ export interface LegacyOutboundJobReconciliationResponse {
   control_receipts: LegacyOutboundControlReceipt[];
   source_status: LegacyOutboundJobReconciliationResponseSourceStatus;
   fallback_used: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundJobReconciliationResponseDeliverySemantics;
 }
 
 export type LegacyOutboundCancelReceiptOperation =
@@ -3224,6 +3311,14 @@ export const LegacyOutboundCancelReceiptTaskStatus = {
   cancelled: "cancelled",
 } as const;
 
+export type LegacyOutboundCancelReceiptDeliverySemantics =
+  (typeof LegacyOutboundCancelReceiptDeliverySemantics)[keyof typeof LegacyOutboundCancelReceiptDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelReceiptDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOutboundCancelReceipt {
   /** @minimum 1 */
   receipt_id: number;
@@ -3240,6 +3335,75 @@ export interface LegacyOutboundCancelReceipt {
   event_id: number;
   task_status: LegacyOutboundCancelReceiptTaskStatus;
   completed_at: string;
+  provider_receipt_present: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundCancelReceiptDeliverySemantics;
+}
+
+export type LegacyOutboundRetryReceiptOperation =
+  (typeof LegacyOutboundRetryReceiptOperation)[keyof typeof LegacyOutboundRetryReceiptOperation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryReceiptOperation = {
+  manual_retry: "manual_retry",
+} as const;
+
+export type LegacyOutboundRetryReceiptState =
+  (typeof LegacyOutboundRetryReceiptState)[keyof typeof LegacyOutboundRetryReceiptState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryReceiptState = {
+  completed: "completed",
+} as const;
+
+export type LegacyOutboundRetryReceiptJobKind =
+  (typeof LegacyOutboundRetryReceiptJobKind)[keyof typeof LegacyOutboundRetryReceiptJobKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryReceiptJobKind = {
+  outbound_enqueue_one: "outbound_enqueue_one",
+  outbound_enqueue_batch_task: "outbound_enqueue_batch_task",
+} as const;
+
+export type LegacyOutboundRetryReceiptTaskStatus =
+  (typeof LegacyOutboundRetryReceiptTaskStatus)[keyof typeof LegacyOutboundRetryReceiptTaskStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryReceiptTaskStatus = {
+  pending: "pending",
+} as const;
+
+export type LegacyOutboundRetryReceiptDeliverySemantics =
+  (typeof LegacyOutboundRetryReceiptDeliverySemantics)[keyof typeof LegacyOutboundRetryReceiptDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryReceiptDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
+export interface LegacyOutboundRetryReceipt {
+  /** @minimum 1 */
+  receipt_id: number;
+  /** @minimum 1 */
+  task_id: number;
+  operation: LegacyOutboundRetryReceiptOperation;
+  state: LegacyOutboundRetryReceiptState;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  river_job_id: number;
+  job_kind: LegacyOutboundRetryReceiptJobKind;
+  /** @minimum 1 */
+  event_id: number;
+  task_status: LegacyOutboundRetryReceiptTaskStatus;
+  completed_at: string;
+  provider_receipt_present: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundRetryReceiptDeliverySemantics;
 }
 
 export type LegacyOutboundCancelResponseSourceStatus =
@@ -3250,11 +3414,48 @@ export const LegacyOutboundCancelResponseSourceStatus = {
   v2_outbound_cancel_service: "v2_outbound_cancel_service",
 } as const;
 
+export type LegacyOutboundCancelResponseDeliverySemantics =
+  (typeof LegacyOutboundCancelResponseDeliverySemantics)[keyof typeof LegacyOutboundCancelResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundCancelResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOutboundCancelResponse {
   ok: boolean;
   control_receipt: LegacyOutboundCancelReceipt;
   source_status: LegacyOutboundCancelResponseSourceStatus;
   fallback_used: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundCancelResponseDeliverySemantics;
+}
+
+export type LegacyOutboundRetryResponseSourceStatus =
+  (typeof LegacyOutboundRetryResponseSourceStatus)[keyof typeof LegacyOutboundRetryResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryResponseSourceStatus = {
+  v2_outbound_manual_retry_service: "v2_outbound_manual_retry_service",
+} as const;
+
+export type LegacyOutboundRetryResponseDeliverySemantics =
+  (typeof LegacyOutboundRetryResponseDeliverySemantics)[keyof typeof LegacyOutboundRetryResponseDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOutboundRetryResponseDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
+export interface LegacyOutboundRetryResponse {
+  ok: boolean;
+  control_receipt: LegacyOutboundRetryReceipt;
+  source_status: LegacyOutboundRetryResponseSourceStatus;
+  fallback_used: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOutboundRetryResponseDeliverySemantics;
 }
 
 export type LegacyInternalEventListResponseRegistryId =
@@ -33344,6 +33545,81 @@ export const listLegacyOutboundJobs = async (
 };
 
 /**
+ * @summary Read one owner-scoped local outbound task without exposing provider identifiers or delivery proof
+ */
+export type getLegacyOutboundJobResponse200 = {
+  data: LegacyOutboundJobDetailResponse;
+  status: 200;
+};
+
+export type getLegacyOutboundJobResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyOutboundJobResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyOutboundJobResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyOutboundJobResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyOutboundJobResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyOutboundJobResponseSuccess =
+  getLegacyOutboundJobResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyOutboundJobResponseError = (
+  | getLegacyOutboundJobResponse400
+  | getLegacyOutboundJobResponse401
+  | getLegacyOutboundJobResponse403
+  | getLegacyOutboundJobResponse404
+  | getLegacyOutboundJobResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyOutboundJobResponse =
+  getLegacyOutboundJobResponseSuccess | getLegacyOutboundJobResponseError;
+
+export const getGetLegacyOutboundJobUrl = (jobId: number) => {
+  return `/api/admin/push-center/jobs/${jobId}`;
+};
+
+export const getLegacyOutboundJob = async (
+  jobId: number,
+  options?: RequestInit,
+): Promise<getLegacyOutboundJobResponse> => {
+  const res = await fetch(getGetLegacyOutboundJobUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyOutboundJobResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyOutboundJobResponse;
+};
+
+/**
  * @summary Reconcile persisted local attempts and local control receipts without a provider call
  */
 export type getLegacyOutboundJobReconciliationResponse200 = {
@@ -33498,6 +33774,87 @@ export const cancelLegacyOutboundJob = async (
     status: res.status,
     headers: res.headers,
   } as cancelLegacyOutboundJobResponse;
+};
+
+/**
+ * @summary Create one next-generation local retry job without executing or proving provider delivery
+ */
+export type retryLegacyOutboundJobResponse202 = {
+  data: LegacyOutboundRetryResponse;
+  status: 202;
+};
+
+export type retryLegacyOutboundJobResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type retryLegacyOutboundJobResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type retryLegacyOutboundJobResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type retryLegacyOutboundJobResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type retryLegacyOutboundJobResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type retryLegacyOutboundJobResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type retryLegacyOutboundJobResponseSuccess =
+  retryLegacyOutboundJobResponse202 & {
+    headers: Headers;
+  };
+export type retryLegacyOutboundJobResponseError = (
+  | retryLegacyOutboundJobResponse400
+  | retryLegacyOutboundJobResponse401
+  | retryLegacyOutboundJobResponse403
+  | retryLegacyOutboundJobResponse404
+  | retryLegacyOutboundJobResponse409
+  | retryLegacyOutboundJobResponse503
+) & {
+  headers: Headers;
+};
+
+export type retryLegacyOutboundJobResponse =
+  retryLegacyOutboundJobResponseSuccess | retryLegacyOutboundJobResponseError;
+
+export const getRetryLegacyOutboundJobUrl = (jobId: number) => {
+  return `/api/admin/push-center/jobs/${jobId}/retry`;
+};
+
+export const retryLegacyOutboundJob = async (
+  jobId: number,
+  options?: RequestInit,
+): Promise<retryLegacyOutboundJobResponse> => {
+  const res = await fetch(getRetryLegacyOutboundJobUrl(jobId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: retryLegacyOutboundJobResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as retryLegacyOutboundJobResponse;
 };
 
 /**

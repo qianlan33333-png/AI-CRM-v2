@@ -392,6 +392,10 @@ func (stub *legacyAuthStub) Authorize(_ context.Context, principal authport.Prin
 		(capability == authport.CapabilityCustomersRead || capability == authport.CapabilityOutboundRead) && principal.StaffID != nil {
 		return authport.Authorization{Capability: capability, Scope: authport.ScopeOwnerStaff, OwnerStaffID: *principal.StaffID}, nil
 	}
+	if principal.Role == authport.RoleOps &&
+		(capability == authport.CapabilityOutboundRead || capability == authport.CapabilityOutboundControl) {
+		return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
+	}
 	return authport.Authorization{}, authport.ErrUnauthorized
 }
 

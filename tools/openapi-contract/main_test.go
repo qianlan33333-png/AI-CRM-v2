@@ -349,6 +349,31 @@ func TestRejectsUnsafeContractMutations(t *testing.T) {
 			doc.Paths.Value("/api/admin/push-center/jobs/{job_id}/cancel").Post.Extensions["x-legacy-mapping-ids"] = []string{"LEGACY-API-0416"}
 			reject(t, doc, ids)
 		},
+		"outbound job exposes a provider receipt object": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyOutboundJob"].Value.Properties["provider_receipt"] = doc.Components.Schemas["LegacyOutboundQueueJob"]
+			reject(t, doc, ids)
+		},
+		"outbound job claims delivery proof": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyOutboundJob"].Value.Properties["delivery_proven"].Value.Enum = []any{true}
+			reject(t, doc, ids)
+		},
+		"outbound failure class widens to provider text": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Components.Schemas["LegacyOutboundAttempt"].Value.Properties["failure_class"].Value.Enum = append(doc.Components.Schemas["LegacyOutboundAttempt"].Value.Properties["failure_class"].Value.Enum, "provider_raw")
+			reject(t, doc, ids)
+		},
+		"outbound retry loses its closed local receipt": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/jobs/{job_id}/retry").Post.Responses.Delete("202")
+			reject(t, doc, ids)
+		},
+		"outbound detail widens sales scope": func(t *testing.T) {
+			doc, ids := fresh(t)
+			doc.Paths.Value("/api/admin/push-center/jobs/{job_id}").Get.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global", "sales": "global"}
+			reject(t, doc, ids)
+		},
 		"browser JWT substitution": func(t *testing.T) {
 			doc, ids := fresh(t)
 			scheme := doc.Components.SecuritySchemes["AdminSession"].Value
