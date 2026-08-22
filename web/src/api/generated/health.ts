@@ -5,6 +5,337 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type RadarStatus = (typeof RadarStatus)[keyof typeof RadarStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarStatus = {
+  draft: "draft",
+  enabled: "enabled",
+  disabled: "disabled",
+} as const;
+
+export type RadarStatusFilter =
+  (typeof RadarStatusFilter)[keyof typeof RadarStatusFilter];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarStatusFilter = {
+  all: "all",
+  draft: "draft",
+  enabled: "enabled",
+  disabled: "disabled",
+} as const;
+
+export type RadarSort = (typeof RadarSort)[keyof typeof RadarSort];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarSort = {
+  updated_desc: "updated_desc",
+  created_desc: "created_desc",
+  name_asc: "name_asc",
+} as const;
+
+export interface RadarLink {
+  /** @minimum 1 */
+  link_id: number;
+  /** @pattern ^rd_[A-Za-z0-9_-]{22}$ */
+  public_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   * @pattern ^https://
+   */
+  destination_url: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  cover_image_id: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  attachment_id: number | null;
+  status: RadarStatus;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RadarLinkResponse {
+  link: RadarLink;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface RadarLinkPage {
+  /** @maxItems 100 */
+  items: RadarLink[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  status_filter: RadarStatusFilter;
+  sort: RadarSort;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type RadarLinkCreateRequestExpectedVersion =
+  (typeof RadarLinkCreateRequestExpectedVersion)[keyof typeof RadarLinkCreateRequestExpectedVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarLinkCreateRequestExpectedVersion = {
+  NUMBER_0: 0,
+} as const;
+
+export interface RadarLinkCreateRequest {
+  expected_version: RadarLinkCreateRequestExpectedVersion;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   * @pattern ^https://
+   */
+  destination_url: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  cover_image_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  attachment_id?: number | null;
+}
+
+export interface RadarLinkUpdateRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title?: string;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   * @pattern ^https://
+   */
+  destination_url?: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  cover_image_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  attachment_id?: number | null;
+}
+
+export interface RadarVersionRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface RadarShareProjection {
+  /** @minimum 1 */
+  link_id: number;
+  /** @pattern ^rd_[A-Za-z0-9_-]{22}$ */
+  public_code: string;
+  status: RadarStatus;
+  /** @pattern ^/r/rd_[A-Za-z0-9_-]{22}$ */
+  share_path: string;
+  /** @pattern ^/r/rd_[A-Za-z0-9_-]{22}$ */
+  qr_payload: string;
+  local_projection: boolean;
+  public_route_ready: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type RadarOptionDefaultsInitialStatus =
+  (typeof RadarOptionDefaultsInitialStatus)[keyof typeof RadarOptionDefaultsInitialStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionDefaultsInitialStatus = {
+  draft: "draft",
+} as const;
+
+export type RadarOptionDefaultsLimit =
+  (typeof RadarOptionDefaultsLimit)[keyof typeof RadarOptionDefaultsLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionDefaultsLimit = {
+  NUMBER_20: 20,
+} as const;
+
+export interface RadarOptionDefaults {
+  initial_status: RadarOptionDefaultsInitialStatus;
+  status_filter: RadarStatusFilter;
+  sort: RadarSort;
+  limit: RadarOptionDefaultsLimit;
+}
+
+export type RadarOptionLimitsNameRunes =
+  (typeof RadarOptionLimitsNameRunes)[keyof typeof RadarOptionLimitsNameRunes];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsNameRunes = {
+  NUMBER_120: 120,
+} as const;
+
+export type RadarOptionLimitsTitleRunes =
+  (typeof RadarOptionLimitsTitleRunes)[keyof typeof RadarOptionLimitsTitleRunes];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsTitleRunes = {
+  NUMBER_200: 200,
+} as const;
+
+export type RadarOptionLimitsDestinationUrlBytes =
+  (typeof RadarOptionLimitsDestinationUrlBytes)[keyof typeof RadarOptionLimitsDestinationUrlBytes];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsDestinationUrlBytes = {
+  NUMBER_2048: 2048,
+} as const;
+
+export type RadarOptionLimitsListLimitMinimum =
+  (typeof RadarOptionLimitsListLimitMinimum)[keyof typeof RadarOptionLimitsListLimitMinimum];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsListLimitMinimum = {
+  NUMBER_1: 1,
+} as const;
+
+export type RadarOptionLimitsListLimitMaximum =
+  (typeof RadarOptionLimitsListLimitMaximum)[keyof typeof RadarOptionLimitsListLimitMaximum];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsListLimitMaximum = {
+  NUMBER_100: 100,
+} as const;
+
+export type RadarOptionLimitsListOffsetMaximum =
+  (typeof RadarOptionLimitsListOffsetMaximum)[keyof typeof RadarOptionLimitsListOffsetMaximum];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsListOffsetMaximum = {
+  NUMBER_1000000: 1000000,
+} as const;
+
+export type RadarOptionLimitsRequestBodyBytes =
+  (typeof RadarOptionLimitsRequestBodyBytes)[keyof typeof RadarOptionLimitsRequestBodyBytes];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsRequestBodyBytes = {
+  NUMBER_65536: 65536,
+} as const;
+
+export type RadarOptionLimitsIdempotencyKeyBytesMinimum =
+  (typeof RadarOptionLimitsIdempotencyKeyBytesMinimum)[keyof typeof RadarOptionLimitsIdempotencyKeyBytesMinimum];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsIdempotencyKeyBytesMinimum = {
+  NUMBER_16: 16,
+} as const;
+
+export type RadarOptionLimitsIdempotencyKeyBytesMaximum =
+  (typeof RadarOptionLimitsIdempotencyKeyBytesMaximum)[keyof typeof RadarOptionLimitsIdempotencyKeyBytesMaximum];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionLimitsIdempotencyKeyBytesMaximum = {
+  NUMBER_128: 128,
+} as const;
+
+export interface RadarOptionLimits {
+  name_runes: RadarOptionLimitsNameRunes;
+  title_runes: RadarOptionLimitsTitleRunes;
+  destination_url_bytes: RadarOptionLimitsDestinationUrlBytes;
+  list_limit_minimum: RadarOptionLimitsListLimitMinimum;
+  list_limit_maximum: RadarOptionLimitsListLimitMaximum;
+  list_offset_maximum: RadarOptionLimitsListOffsetMaximum;
+  request_body_bytes: RadarOptionLimitsRequestBodyBytes;
+  idempotency_key_bytes_minimum: RadarOptionLimitsIdempotencyKeyBytesMinimum;
+  idempotency_key_bytes_maximum: RadarOptionLimitsIdempotencyKeyBytesMaximum;
+}
+
+export type RadarOptionsDestinationSchemesItem =
+  (typeof RadarOptionsDestinationSchemesItem)[keyof typeof RadarOptionsDestinationSchemesItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarOptionsDestinationSchemesItem = {
+  https: "https",
+} as const;
+
+export interface RadarOptions {
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  statuses: RadarStatus[];
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  status_filters: RadarStatusFilter[];
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  sorts: RadarSort[];
+  defaults: RadarOptionDefaults;
+  limits: RadarOptionLimits;
+  /**
+   * @minItems 1
+   * @maxItems 1
+   */
+  destination_schemes: RadarOptionsDestinationSchemesItem[];
+  local_projection: boolean;
+  public_route_ready: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type ServicePeriodMemberViewState =
   (typeof ServicePeriodMemberViewState)[keyof typeof ServicePeriodMemberViewState];
 
@@ -9074,6 +9405,16 @@ export type ConflictResponse = ErrorResponse;
 export type UnprocessableEntityResponse = ErrorResponse;
 
 /**
+ * The request body exceeds the closed endpoint limit.
+ */
+export type PayloadTooLargeResponse = ErrorResponse;
+
+/**
+ * The request requires application/json.
+ */
+export type UnsupportedMediaTypeResponse = ErrorResponse;
+
+/**
  * A required dependency is unavailable.
  */
 export type ServiceUnavailableResponse = ErrorResponse;
@@ -10225,6 +10566,21 @@ export type ListExternalEffectJobsParams = {
    * @maximum 100
    */
   limit?: number;
+};
+
+export type ListRadarLinksParams = {
+  status?: RadarStatusFilter;
+  sort?: RadarSort;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
 };
 
 /**
@@ -27971,4 +28327,669 @@ export const deleteServicePeriodMemberGridCollaborator = async (
     status: res.status,
     headers: res.headers,
   } as deleteServicePeriodMemberGridCollaboratorResponse;
+};
+
+/**
+ * @summary List bounded CRM-local Radar link facts
+ */
+export type listRadarLinksResponse200 = {
+  data: RadarLinkPage;
+  status: 200;
+};
+
+export type listRadarLinksResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listRadarLinksResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listRadarLinksResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listRadarLinksResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listRadarLinksResponseSuccess = listRadarLinksResponse200 & {
+  headers: Headers;
+};
+export type listRadarLinksResponseError = (
+  | listRadarLinksResponse400
+  | listRadarLinksResponse401
+  | listRadarLinksResponse403
+  | listRadarLinksResponse503
+) & {
+  headers: Headers;
+};
+
+export type listRadarLinksResponse =
+  listRadarLinksResponseSuccess | listRadarLinksResponseError;
+
+export const getListRadarLinksUrl = (params?: ListRadarLinksParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/radar-links?${stringifiedParams}`
+    : `/api/admin/radar-links`;
+};
+
+export const listRadarLinks = async (
+  params?: ListRadarLinksParams,
+  options?: RequestInit,
+): Promise<listRadarLinksResponse> => {
+  const res = await fetch(getListRadarLinksUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRadarLinksResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listRadarLinksResponse;
+};
+
+/**
+ * @summary Create one CRM-local Radar link in draft state
+ */
+export type createRadarLinkResponse201 = {
+  data: RadarLinkResponse;
+  status: 201;
+};
+
+export type createRadarLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createRadarLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createRadarLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createRadarLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createRadarLinkResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type createRadarLinkResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type createRadarLinkResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type createRadarLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createRadarLinkResponseSuccess = createRadarLinkResponse201 & {
+  headers: Headers;
+};
+export type createRadarLinkResponseError = (
+  | createRadarLinkResponse400
+  | createRadarLinkResponse401
+  | createRadarLinkResponse403
+  | createRadarLinkResponse409
+  | createRadarLinkResponse413
+  | createRadarLinkResponse415
+  | createRadarLinkResponse422
+  | createRadarLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type createRadarLinkResponse =
+  createRadarLinkResponseSuccess | createRadarLinkResponseError;
+
+export const getCreateRadarLinkUrl = () => {
+  return `/api/admin/radar-links`;
+};
+
+export const createRadarLink = async (
+  radarLinkCreateRequest: RadarLinkCreateRequest,
+  options?: RequestInit,
+): Promise<createRadarLinkResponse> => {
+  const res = await fetch(getCreateRadarLinkUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(radarLinkCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createRadarLinkResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createRadarLinkResponse;
+};
+
+/**
+ * @summary Read closed local Radar form options and limits
+ */
+export type getRadarLinkOptionsResponse200 = {
+  data: RadarOptions;
+  status: 200;
+};
+
+export type getRadarLinkOptionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getRadarLinkOptionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getRadarLinkOptionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getRadarLinkOptionsResponseSuccess =
+  getRadarLinkOptionsResponse200 & {
+    headers: Headers;
+  };
+export type getRadarLinkOptionsResponseError = (
+  | getRadarLinkOptionsResponse401
+  | getRadarLinkOptionsResponse403
+  | getRadarLinkOptionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getRadarLinkOptionsResponse =
+  getRadarLinkOptionsResponseSuccess | getRadarLinkOptionsResponseError;
+
+export const getGetRadarLinkOptionsUrl = () => {
+  return `/api/admin/radar-links/new/options`;
+};
+
+export const getRadarLinkOptions = async (
+  options?: RequestInit,
+): Promise<getRadarLinkOptionsResponse> => {
+  const res = await fetch(getGetRadarLinkOptionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRadarLinkOptionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRadarLinkOptionsResponse;
+};
+
+/**
+ * @summary Read one CRM-local Radar link
+ */
+export type getRadarLinkResponse200 = {
+  data: RadarLinkResponse;
+  status: 200;
+};
+
+export type getRadarLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getRadarLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getRadarLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getRadarLinkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getRadarLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getRadarLinkResponseSuccess = getRadarLinkResponse200 & {
+  headers: Headers;
+};
+export type getRadarLinkResponseError = (
+  | getRadarLinkResponse400
+  | getRadarLinkResponse401
+  | getRadarLinkResponse403
+  | getRadarLinkResponse404
+  | getRadarLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type getRadarLinkResponse =
+  getRadarLinkResponseSuccess | getRadarLinkResponseError;
+
+export const getGetRadarLinkUrl = (linkId: number) => {
+  return `/api/admin/radar-links/${linkId}`;
+};
+
+export const getRadarLink = async (
+  linkId: number,
+  options?: RequestInit,
+): Promise<getRadarLinkResponse> => {
+  const res = await fetch(getGetRadarLinkUrl(linkId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRadarLinkResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRadarLinkResponse;
+};
+
+/**
+ * @summary Update one CRM-local Radar link with CAS
+ */
+export type updateRadarLinkResponse200 = {
+  data: RadarLinkResponse;
+  status: 200;
+};
+
+export type updateRadarLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateRadarLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateRadarLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateRadarLinkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateRadarLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateRadarLinkResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type updateRadarLinkResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type updateRadarLinkResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type updateRadarLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateRadarLinkResponseSuccess = updateRadarLinkResponse200 & {
+  headers: Headers;
+};
+export type updateRadarLinkResponseError = (
+  | updateRadarLinkResponse400
+  | updateRadarLinkResponse401
+  | updateRadarLinkResponse403
+  | updateRadarLinkResponse404
+  | updateRadarLinkResponse409
+  | updateRadarLinkResponse413
+  | updateRadarLinkResponse415
+  | updateRadarLinkResponse422
+  | updateRadarLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateRadarLinkResponse =
+  updateRadarLinkResponseSuccess | updateRadarLinkResponseError;
+
+export const getUpdateRadarLinkUrl = (linkId: number) => {
+  return `/api/admin/radar-links/${linkId}`;
+};
+
+export const updateRadarLink = async (
+  linkId: number,
+  radarLinkUpdateRequest: RadarLinkUpdateRequest,
+  options?: RequestInit,
+): Promise<updateRadarLinkResponse> => {
+  const res = await fetch(getUpdateRadarLinkUrl(linkId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(radarLinkUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateRadarLinkResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateRadarLinkResponse;
+};
+
+/**
+ * @summary Enable one CRM-local Radar link without publishing a public route
+ */
+export type enableRadarLinkResponse200 = {
+  data: RadarLinkResponse;
+  status: 200;
+};
+
+export type enableRadarLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type enableRadarLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type enableRadarLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type enableRadarLinkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type enableRadarLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type enableRadarLinkResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type enableRadarLinkResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type enableRadarLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type enableRadarLinkResponseSuccess = enableRadarLinkResponse200 & {
+  headers: Headers;
+};
+export type enableRadarLinkResponseError = (
+  | enableRadarLinkResponse400
+  | enableRadarLinkResponse401
+  | enableRadarLinkResponse403
+  | enableRadarLinkResponse404
+  | enableRadarLinkResponse409
+  | enableRadarLinkResponse415
+  | enableRadarLinkResponse422
+  | enableRadarLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type enableRadarLinkResponse =
+  enableRadarLinkResponseSuccess | enableRadarLinkResponseError;
+
+export const getEnableRadarLinkUrl = (linkId: number) => {
+  return `/api/admin/radar-links/${linkId}/enable`;
+};
+
+export const enableRadarLink = async (
+  linkId: number,
+  radarVersionRequest: RadarVersionRequest,
+  options?: RequestInit,
+): Promise<enableRadarLinkResponse> => {
+  const res = await fetch(getEnableRadarLinkUrl(linkId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(radarVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: enableRadarLinkResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as enableRadarLinkResponse;
+};
+
+/**
+ * @summary Disable one CRM-local Radar link
+ */
+export type disableRadarLinkResponse200 = {
+  data: RadarLinkResponse;
+  status: 200;
+};
+
+export type disableRadarLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type disableRadarLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type disableRadarLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type disableRadarLinkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type disableRadarLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type disableRadarLinkResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type disableRadarLinkResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type disableRadarLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type disableRadarLinkResponseSuccess = disableRadarLinkResponse200 & {
+  headers: Headers;
+};
+export type disableRadarLinkResponseError = (
+  | disableRadarLinkResponse400
+  | disableRadarLinkResponse401
+  | disableRadarLinkResponse403
+  | disableRadarLinkResponse404
+  | disableRadarLinkResponse409
+  | disableRadarLinkResponse415
+  | disableRadarLinkResponse422
+  | disableRadarLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type disableRadarLinkResponse =
+  disableRadarLinkResponseSuccess | disableRadarLinkResponseError;
+
+export const getDisableRadarLinkUrl = (linkId: number) => {
+  return `/api/admin/radar-links/${linkId}/disable`;
+};
+
+export const disableRadarLink = async (
+  linkId: number,
+  radarVersionRequest: RadarVersionRequest,
+  options?: RequestInit,
+): Promise<disableRadarLinkResponse> => {
+  const res = await fetch(getDisableRadarLinkUrl(linkId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(radarVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: disableRadarLinkResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as disableRadarLinkResponse;
+};
+
+/**
+ * @summary Read a local share descriptor; no public route or external effect is implied
+ */
+export type getRadarLinkShareProjectionResponse200 = {
+  data: RadarShareProjection;
+  status: 200;
+};
+
+export type getRadarLinkShareProjectionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getRadarLinkShareProjectionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getRadarLinkShareProjectionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getRadarLinkShareProjectionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getRadarLinkShareProjectionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getRadarLinkShareProjectionResponseSuccess =
+  getRadarLinkShareProjectionResponse200 & {
+    headers: Headers;
+  };
+export type getRadarLinkShareProjectionResponseError = (
+  | getRadarLinkShareProjectionResponse400
+  | getRadarLinkShareProjectionResponse401
+  | getRadarLinkShareProjectionResponse403
+  | getRadarLinkShareProjectionResponse404
+  | getRadarLinkShareProjectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getRadarLinkShareProjectionResponse =
+  | getRadarLinkShareProjectionResponseSuccess
+  | getRadarLinkShareProjectionResponseError;
+
+export const getGetRadarLinkShareProjectionUrl = (linkId: number) => {
+  return `/api/admin/radar-links/${linkId}/share`;
+};
+
+export const getRadarLinkShareProjection = async (
+  linkId: number,
+  options?: RequestInit,
+): Promise<getRadarLinkShareProjectionResponse> => {
+  const res = await fetch(getGetRadarLinkShareProjectionUrl(linkId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRadarLinkShareProjectionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRadarLinkShareProjectionResponse;
 };

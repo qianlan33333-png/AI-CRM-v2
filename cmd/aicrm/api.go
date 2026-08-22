@@ -66,6 +66,9 @@ import (
 	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	pushcenterapp "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/app"
 	pushcenterstore "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/store"
+	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
+	radarthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/http"
+	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
@@ -724,6 +727,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	radarService, err := radarapp.NewService(uow, radarstore.NewPostgresRepository(), eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	radarFragment, err := radarthttp.NewRouteFragment(radarService, legacyRadarAuthorizer{}, legacyRadarCSRF{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	memberGridManagementFragment, err := membergrid.NewManagementRouteFragment(memberGridManagementHandler)
 	if err != nil {
 		pool.Close()
@@ -848,6 +861,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.memberGrid = memberGridFragment
 	legacyHandler.memberGridManagement = memberGridManagementFragment
+	legacyHandler.radar = radarFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
@@ -1496,6 +1510,26 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodDelete, membergrid.RoutePrefix + "/{service_product_id}/member-grid/collaborators/{collaborator_id}", authport.CapabilityProductsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.memberGridManagement); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.radar != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, radarthttp.BasePath, authport.CapabilityAdminRead, false},
+				{http.MethodPost, radarthttp.BasePath, authport.CapabilityOperationsManage, true},
+				{http.MethodGet, radarthttp.BasePath + "/new/options", authport.CapabilityAdminRead, false},
+				{http.MethodGet, radarthttp.BasePath + "/{link_id}", authport.CapabilityAdminRead, false},
+				{http.MethodPatch, radarthttp.BasePath + "/{link_id}", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, radarthttp.BasePath + "/{link_id}/enable", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, radarthttp.BasePath + "/{link_id}/disable", authport.CapabilityOperationsManage, true},
+				{http.MethodGet, radarthttp.BasePath + "/{link_id}/share", authport.CapabilityAdminRead, false},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.radar); err != nil {
 					return nil, err
 				}
 			}
