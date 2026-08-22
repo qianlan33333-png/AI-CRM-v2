@@ -92,6 +92,16 @@ func TestJ01PublishFailsClosedForMissingDuplicateExtraTypeCurrencyAndPrice(t *te
 				}
 				return
 			}
+			// The product foreign key may reject a missing target before the
+			// publish-time product revalidation. Both boundaries must leave no
+			// business fact, receipt, or event behind.
+			if tc.name == "missing" && errors.Is(err, couponapp.ErrUnavailable) {
+				var coupons, receipts, events int
+				if e := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM coupons c JOIN coupon_targets t ON t.coupon_id=c.id WHERE t.target_ref=$1),(SELECT count(*) FROM coupon_operation_receipts WHERE actor_scope=$2),(SELECT count(*) FROM event_log WHERE payload->>'actor'=$3 AND event_type='coupon.created')`, tc.refs[0], fmt.Sprintf("admin:%d", cmd.Actor), fmt.Sprint(cmd.Actor)).Scan(&coupons, &receipts, &events); e != nil || coupons != 0 || receipts != 0 || events != 0 {
+					t.Fatalf("create rollback=%d/%d/%d err=%v", coupons, receipts, events, e)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatal(err)
 			}
