@@ -179,6 +179,7 @@ type Handler struct {
 	servicePeriod         http.Handler
 	memberGrid            http.Handler
 	memberGridManagement  http.Handler
+	radar                 http.Handler
 	channelEntrants       http.Handler
 	media                 legacyMediaApplication
 	imageDeletes          legacyImageDeleteApplication

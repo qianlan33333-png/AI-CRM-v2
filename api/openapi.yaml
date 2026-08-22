@@ -5577,6 +5577,198 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links:
+    get:
+      tags: [p4-radar]
+      operationId: listRadarLinks
+      summary: List bounded CRM-local Radar link facts
+      x-legacy-mapping-ids: [LEGACY-API-0445]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/RadarStatusFilter" } }
+        - { name: sort, in: query, required: false, schema: { $ref: "#/components/schemas/RadarSort" } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Local Radar page, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-radar]
+      operationId: createRadarLink
+      summary: Create one CRM-local Radar link in draft state
+      x-legacy-mapping-ids: [LEGACY-API-0446]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkCreateRequest" } } } }
+      responses:
+        "201": { description: Created local Radar link, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/new/options:
+    get:
+      tags: [p4-radar]
+      operationId: getRadarLinkOptions
+      summary: Read closed local Radar form options and limits
+      x-legacy-mapping-ids: [LEGACY-API-0447]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Closed local options, content: { application/json: { schema: { $ref: "#/components/schemas/RadarOptions" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}:
+    parameters:
+      - { name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-radar]
+      operationId: getRadarLink
+      summary: Read one CRM-local Radar link
+      x-legacy-mapping-ids: [LEGACY-API-0453]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: One local Radar link, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p4-radar]
+      operationId: updateRadarLink
+      summary: Update one CRM-local Radar link with CAS
+      x-legacy-mapping-ids: [LEGACY-API-0454]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local Radar link, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}/enable:
+    post:
+      tags: [p4-radar]
+      operationId: enableRadarLink
+      summary: Enable one CRM-local Radar link without publishing a public route
+      x-legacy-mapping-ids: [LEGACY-API-0456]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RadarVersionRequest" } } } }
+      responses:
+        "200": { description: Enabled local state, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}/disable:
+    post:
+      tags: [p4-radar]
+      operationId: disableRadarLink
+      summary: Disable one CRM-local Radar link
+      x-legacy-mapping-ids: [LEGACY-API-0455]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RadarVersionRequest" } } } }
+      responses:
+        "200": { description: Disabled local state, content: { application/json: { schema: { $ref: "#/components/schemas/RadarLinkResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}/share:
+    get:
+      tags: [p4-radar]
+      operationId: getRadarLinkShareProjection
+      summary: Read a local share descriptor; no public route or external effect is implied
+      x-legacy-mapping-ids: [LEGACY-API-0461]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local descriptor only, content: { application/json: { schema: { $ref: "#/components/schemas/RadarShareProjection" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -5765,6 +5957,12 @@ components:
     UnprocessableEntity:
       description: The command violates a field-level validation rule.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    PayloadTooLarge:
+      description: The request body exceeds the closed endpoint limit.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+    UnsupportedMediaType:
+      description: The request requires application/json.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
     ServiceUnavailable:
       description: A required dependency is unavailable.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
@@ -5792,6 +5990,136 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    RadarStatus:
+      type: string
+      enum: [draft, enabled, disabled]
+    RadarStatusFilter:
+      type: string
+      enum: [all, draft, enabled, disabled]
+      default: all
+    RadarSort:
+      type: string
+      enum: [updated_desc, created_desc, name_asc]
+      default: updated_desc
+    RadarLink:
+      type: object
+      additionalProperties: false
+      required: [link_id, public_code, name, title, destination_url, cover_image_id, attachment_id, status, version, created_by, updated_by, created_at, updated_at]
+      properties:
+        link_id: { type: integer, format: int64, minimum: 1 }
+        public_code: { type: string, pattern: '^rd_[A-Za-z0-9_-]{22}$' }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        destination_url: { type: string, format: uri, minLength: 1, maxLength: 2048, pattern: '^https://' }
+        cover_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        attachment_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        status: { $ref: "#/components/schemas/RadarStatus" }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    RadarLinkResponse:
+      type: object
+      additionalProperties: false
+      required: [link, local_projection, real_external_call_executed]
+      properties:
+        link: { $ref: "#/components/schemas/RadarLink" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarLinkPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, offset, has_more, status_filter, sort, local_projection, real_external_call_executed]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/RadarLink" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        status_filter: { $ref: "#/components/schemas/RadarStatusFilter" }
+        sort: { $ref: "#/components/schemas/RadarSort" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarLinkCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, name, title, destination_url]
+      properties:
+        expected_version: { type: integer, format: int64, enum: [0] }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        destination_url: { type: string, format: uri, minLength: 1, maxLength: 2048, pattern: '^https://' }
+        cover_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        attachment_id: { type: integer, format: int64, minimum: 1, nullable: true }
+    RadarLinkUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      minProperties: 2
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        destination_url: { type: string, format: uri, minLength: 1, maxLength: 2048, pattern: '^https://' }
+        cover_image_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        attachment_id: { type: integer, format: int64, minimum: 1, nullable: true }
+    RadarVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    RadarShareProjection:
+      type: object
+      additionalProperties: false
+      required: [link_id, public_code, status, share_path, qr_payload, local_projection, public_route_ready, real_external_call_executed]
+      properties:
+        link_id: { type: integer, format: int64, minimum: 1 }
+        public_code: { type: string, pattern: '^rd_[A-Za-z0-9_-]{22}$' }
+        status: { $ref: "#/components/schemas/RadarStatus" }
+        share_path: { type: string, pattern: '^/r/rd_[A-Za-z0-9_-]{22}$' }
+        qr_payload: { type: string, pattern: '^/r/rd_[A-Za-z0-9_-]{22}$' }
+        local_projection: { type: boolean, enum: [true] }
+        public_route_ready: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarOptionDefaults:
+      type: object
+      additionalProperties: false
+      required: [initial_status, status_filter, sort, limit]
+      properties:
+        initial_status: { allOf: [{ $ref: "#/components/schemas/RadarStatus" }], enum: [draft] }
+        status_filter: { $ref: "#/components/schemas/RadarStatusFilter" }
+        sort: { $ref: "#/components/schemas/RadarSort" }
+        limit: { type: integer, format: int32, enum: [20] }
+    RadarOptionLimits:
+      type: object
+      additionalProperties: false
+      required: [name_runes, title_runes, destination_url_bytes, list_limit_minimum, list_limit_maximum, list_offset_maximum, request_body_bytes, idempotency_key_bytes_minimum, idempotency_key_bytes_maximum]
+      properties:
+        name_runes: { type: integer, enum: [120] }
+        title_runes: { type: integer, enum: [200] }
+        destination_url_bytes: { type: integer, enum: [2048] }
+        list_limit_minimum: { type: integer, format: int32, enum: [1] }
+        list_limit_maximum: { type: integer, format: int32, enum: [100] }
+        list_offset_maximum: { type: integer, format: int32, enum: [1000000] }
+        request_body_bytes: { type: integer, format: int64, enum: [65536] }
+        idempotency_key_bytes_minimum: { type: integer, enum: [16] }
+        idempotency_key_bytes_maximum: { type: integer, enum: [128] }
+    RadarOptions:
+      type: object
+      additionalProperties: false
+      required: [statuses, status_filters, sorts, defaults, limits, destination_schemes, local_projection, public_route_ready, real_external_call_executed]
+      properties:
+        statuses: { type: array, minItems: 3, maxItems: 3, uniqueItems: true, items: { $ref: "#/components/schemas/RadarStatus" } }
+        status_filters: { type: array, minItems: 4, maxItems: 4, uniqueItems: true, items: { $ref: "#/components/schemas/RadarStatusFilter" } }
+        sorts: { type: array, minItems: 3, maxItems: 3, uniqueItems: true, items: { $ref: "#/components/schemas/RadarSort" } }
+        defaults: { $ref: "#/components/schemas/RadarOptionDefaults" }
+        limits: { $ref: "#/components/schemas/RadarOptionLimits" }
+        destination_schemes: { type: array, minItems: 1, maxItems: 1, items: { type: string, enum: [https] } }
+        local_projection: { type: boolean, enum: [true] }
+        public_route_ready: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     ServicePeriodMemberView:
       type: object
       additionalProperties: false

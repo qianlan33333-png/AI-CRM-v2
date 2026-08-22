@@ -215,6 +215,7 @@ var p4ProductLegacyMappings = map[string][]string{
 }
 
 const p4MemberGridManagementEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-MANAGEMENT-2026-08-22"
+const p4RadarEvidence = "P4-RADAR-LOCAL-LIFECYCLE-2026-08-22"
 
 var p4MemberGridManagementOperations = map[string]bool{
 	"createServicePeriodMemberView":             true,
@@ -234,6 +235,19 @@ var p4MemberGridManagementLegacyMappings = map[string][]string{
 	"createServicePeriodMemberGridCollaborator": {"LEGACY-API-0477"},
 	"updateServicePeriodMemberGridCollaborator": {"LEGACY-API-0479"},
 	"deleteServicePeriodMemberGridCollaborator": {"LEGACY-API-0478"},
+}
+
+var p4RadarOperations = map[string]bool{
+	"listRadarLinks": true, "createRadarLink": true, "getRadarLinkOptions": true,
+	"getRadarLink": true, "updateRadarLink": true, "enableRadarLink": true,
+	"disableRadarLink": true, "getRadarLinkShareProjection": true,
+}
+
+var p4RadarLegacyMappings = map[string][]string{
+	"listRadarLinks": {"LEGACY-API-0445"}, "createRadarLink": {"LEGACY-API-0446"},
+	"getRadarLinkOptions": {"LEGACY-API-0447"}, "getRadarLink": {"LEGACY-API-0453"},
+	"updateRadarLink": {"LEGACY-API-0454"}, "disableRadarLink": {"LEGACY-API-0455"},
+	"enableRadarLink": {"LEGACY-API-0456"}, "getRadarLinkShareProjection": {"LEGACY-API-0461"},
 }
 
 var p4MediaOperations = map[string]bool{
@@ -568,6 +582,14 @@ var authorizationContracts = map[string]authorizationContract{
 	"updateServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getServicePeriodMemberGridShareSettings":    {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listRadarLinks":                             {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createRadarLink":                            {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
+	"getRadarLinkOptions":                        {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getRadarLink":                               {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"updateRadarLink":                            {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
+	"enableRadarLink":                            {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
+	"disableRadarLink":                           {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
+	"getRadarLinkShareProjection":                {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -762,7 +784,7 @@ func load(spec, mapping string) (*openapi3.T, mappingInventory, error) {
 func isRunnerDeclaredOperation(operationID string) bool {
 	return p1CandidateOperations[operationID] || p2StageOperations[operationID] ||
 		p3ContactOperations[operationID] || p3IdentityOperations[operationID] || p3SegmentOperations[operationID] ||
-		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4MediaOperations[operationID] ||
+		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
@@ -940,7 +962,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4MemberGridManagement, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4MemberGridManagement, seenP4Radar, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -1106,6 +1128,24 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					op.Extensions["x-aicrm-external-effect"] != "none" ||
 					op.Responses.Value("401") == nil || op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
 					return fmt.Errorf("%s local member-grid boundary drifted", op.OperationID)
+				}
+			} else if p4RadarOperations[op.OperationID] {
+				seenP4Radar[op.OperationID] = true
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4RadarLegacyMappings[op.OperationID]) {
+					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+				read := op.OperationID == "listRadarLinks" || op.OperationID == "getRadarLinkOptions" || op.OperationID == "getRadarLink" || op.OperationID == "getRadarLinkShareProjection"
+				wantCapability, wantCSRF, wantSource := "operations.manage", "required", "local_command"
+				if read {
+					wantCapability, wantCSRF, wantSource = "admin.read", "none", "local_read_model"
+				}
+				if op.Extensions["x-p4-decision-evidence"] != p4RadarEvidence || op.Extensions["x-aicrm-capability"] != wantCapability ||
+					op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != wantCSRF ||
+					op.Extensions["x-aicrm-data-classification"] != "internal" || op.Extensions["x-aicrm-data-source"] != wantSource ||
+					op.Extensions["x-aicrm-external-effect"] != "none" || op.Responses.Value("401") == nil ||
+					op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s local Radar boundary drifted", op.OperationID)
 				}
 			} else if p4MediaOperations[op.OperationID] {
 				seenP4Media[op.OperationID] = true
@@ -1391,7 +1431,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	if len(seenP1) != len(p1CandidateOperations) || len(seenP2) != len(p2StageOperations) ||
 		len(seenP3Contact) != len(p3ContactOperations) || len(seenP3Identity) != len(p3IdentityOperations) || len(seenP3Segment) != len(p3SegmentOperations) ||
-		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4MemberGridManagement) != len(p4MemberGridManagementOperations) || len(seenP4Media) != len(p4MediaOperations) ||
+		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4MemberGridManagement) != len(p4MemberGridManagementOperations) || len(seenP4Radar) != len(p4RadarOperations) || len(seenP4Media) != len(p4MediaOperations) ||
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
@@ -1453,6 +1493,11 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	for id := range p4MemberGridManagementOperations {
 		if !seenP4MemberGridManagement[id] {
 			return fmt.Errorf("missing P4 member-grid management operation: %s", id)
+		}
+	}
+	for id := range p4RadarOperations {
+		if !seenP4Radar[id] {
+			return fmt.Errorf("missing P4 Radar operation: %s", id)
 		}
 	}
 	for id := range p4MediaOperations {
