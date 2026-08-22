@@ -141,6 +141,9 @@ migration-integration:
 		$(GO) run ./acceptance/fixtures/cmd/validate-database-url || exit 2
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
 		"$$MIGRATION_TEST_DATABASE_URL" up
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+		$(GO) test -race -count=1 -timeout=180s ./acceptance/campaign \
+		-args -database-url "$$MIGRATION_TEST_DATABASE_URL"
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
 		"$$MIGRATION_TEST_DATABASE_URL" down
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \

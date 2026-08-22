@@ -184,4 +184,13 @@ read -r final_product_waterline local_lifecycle_column lifecycle_constraint rece
   -run '^TestI01A(Create|DeleteReference|Event|S200K|Storage).*' \
   ./acceptance/product -args -database-url "$database_url"
 
+# This compatibility entry is intentionally followed by historical migrations
+# that still need to roll back below 00058. The only non-draft product values
+# at this point are 00058's deterministic projection-derived values: no local
+# lifecycle command is admitted until the final I01B acceptance entry. Reset
+# that derived test state here; the legacy projections remain untouched and
+# I01B's final fresh upgrade reapplies the migration deterministically.
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "UPDATE public.products SET local_lifecycle='draft' WHERE local_lifecycle <> 'draft'" >/dev/null
+
 printf 'P4-I01A migration compatibility: PASS (28/29/28/29/50/49/50/59, reference FKs and delete-vs-insert concurrency verified, versioned facts make rollback fail closed, Event/Auth/session history preserved)\n'

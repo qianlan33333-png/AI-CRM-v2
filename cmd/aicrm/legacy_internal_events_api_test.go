@@ -81,7 +81,7 @@ func TestLegacyInternalEventDiagnosticsContract(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 		t.Fatal(err)
 	}
-	if !payload.OK || payload.Filters.Status != string(eventport.DeliveryPending) || payload.EventCount != 1 || payload.UndispatchedEventCount != 1 || payload.DeliveryCounts.Pending != 1 || payload.DeliveryCounts.Completed != 0 || len(payload.ConsumerRegistry) != 3 || len(payload.ObservedDomains) != 2 || len(payload.UnobservedDomains) != 3 || payload.RealExternalCallExecuted {
+	if !payload.OK || payload.Filters.Status != string(eventport.DeliveryPending) || payload.EventCount != 1 || payload.UndispatchedEventCount != 1 || payload.DeliveryCounts.Pending != 1 || payload.DeliveryCounts.Completed != 0 || len(payload.ConsumerRegistry) != 4 || len(payload.ObservedDomains) != 2 || len(payload.UnobservedDomains) != 3 || payload.RealExternalCallExecuted {
 		t.Fatalf("payload=%+v", payload)
 	}
 }
@@ -100,7 +100,7 @@ func TestLegacyInternalEventQueryGrammar(t *testing.T) {
 			t.Fatalf("query=%q got=%+v err=%v want=%+v", test.query, got, err, test.want)
 		}
 	}
-	for _, consumer := range []string{eventport.ConsumerAutomationTagTrigger, eventport.ConsumerStatsTagApplied, eventport.ConsumerOperationCycleFact} {
+	for _, consumer := range []string{eventport.ConsumerAutomationTagTrigger, eventport.ConsumerStatsTagApplied, eventport.ConsumerOperationCycleFact, eventport.ConsumerCloudCampaignFact} {
 		query, err := parseLegacyInternalEventQuery("consumer="+consumer, true)
 		if err != nil || query.Consumer != consumer {
 			t.Fatalf("consumer=%q parsed as=%+v err=%v", consumer, query, err)
