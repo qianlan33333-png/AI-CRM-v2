@@ -3257,13 +3257,13 @@ func (e ServicePeriodMemberGridShareSettingsExternalShareSupported) Valid() bool
 
 // Defines values for ServicePeriodMemberGridShareSettingsRealExternalCallExecuted.
 const (
-	False ServicePeriodMemberGridShareSettingsRealExternalCallExecuted = false
+	ServicePeriodMemberGridShareSettingsRealExternalCallExecutedFalse ServicePeriodMemberGridShareSettingsRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsRealExternalCallExecuted enum.
 func (e ServicePeriodMemberGridShareSettingsRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case ServicePeriodMemberGridShareSettingsRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -3632,11 +3632,275 @@ func (e ServicePeriodProductPageOk) Valid() bool {
 
 // Defines values for ServicePeriodProductResponseOk.
 const (
-	True ServicePeriodProductResponseOk = true
+	ServicePeriodProductResponseOkTrue ServicePeriodProductResponseOk = true
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodProductResponseOk enum.
 func (e ServicePeriodProductResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodProductResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardAuditReceiptKey.
+const (
+	SetupWizardAuditReceiptKeyWecomAgentId SetupWizardAuditReceiptKey = "wecom.agent_id"
+	SetupWizardAuditReceiptKeyWecomCorpId  SetupWizardAuditReceiptKey = "wecom.corp_id"
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardAuditReceiptKey enum.
+func (e SetupWizardAuditReceiptKey) Valid() bool {
+	switch e {
+	case SetupWizardAuditReceiptKeyWecomAgentId:
+		return true
+	case SetupWizardAuditReceiptKeyWecomCorpId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardErrorError.
+const (
+	InvalidActionToken     SetupWizardErrorError = "invalid_action_token"
+	InvalidIdempotencyKey  SetupWizardErrorError = "invalid_idempotency_key"
+	InvalidRequest         SetupWizardErrorError = "invalid_request"
+	InvalidSetting         SetupWizardErrorError = "invalid_setting"
+	SecretInputForbidden   SetupWizardErrorError = "secret_input_forbidden"
+	SetupWizardConflict    SetupWizardErrorError = "setup_wizard_conflict"
+	SetupWizardUnavailable SetupWizardErrorError = "setup_wizard_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardErrorError enum.
+func (e SetupWizardErrorError) Valid() bool {
+	switch e {
+	case InvalidActionToken:
+		return true
+	case InvalidIdempotencyKey:
+		return true
+	case InvalidRequest:
+		return true
+	case InvalidSetting:
+		return true
+	case SecretInputForbidden:
+		return true
+	case SetupWizardConflict:
+		return true
+	case SetupWizardUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardErrorOk.
+const (
+	SetupWizardErrorOkFalse SetupWizardErrorOk = false
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardErrorOk enum.
+func (e SetupWizardErrorOk) Valid() bool {
+	switch e {
+	case SetupWizardErrorOkFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardEventReceiptKey.
+const (
+	SetupWizardEventReceiptKeyWecomAgentId SetupWizardEventReceiptKey = "wecom.agent_id"
+	SetupWizardEventReceiptKeyWecomCorpId  SetupWizardEventReceiptKey = "wecom.corp_id"
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardEventReceiptKey enum.
+func (e SetupWizardEventReceiptKey) Valid() bool {
+	switch e {
+	case SetupWizardEventReceiptKeyWecomAgentId:
+		return true
+	case SetupWizardEventReceiptKeyWecomCorpId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardEventReceiptType.
+const (
+	SettingUpdated SetupWizardEventReceiptType = "setting.updated"
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardEventReceiptType enum.
+func (e SetupWizardEventReceiptType) Valid() bool {
+	switch e {
+	case SettingUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardMaskedSettingMasked.
+const (
+	SetupWizardMaskedSettingMaskedTrue SetupWizardMaskedSettingMasked = true
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardMaskedSettingMasked enum.
+func (e SetupWizardMaskedSettingMasked) Valid() bool {
+	switch e {
+	case SetupWizardMaskedSettingMaskedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardReadResponseExternal.
+const (
+	SetupWizardReadResponseExternalFalse SetupWizardReadResponseExternal = false
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardReadResponseExternal enum.
+func (e SetupWizardReadResponseExternal) Valid() bool {
+	switch e {
+	case SetupWizardReadResponseExternalFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardReadResponseLocalOnly.
+const (
+	SetupWizardReadResponseLocalOnlyTrue SetupWizardReadResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardReadResponseLocalOnly enum.
+func (e SetupWizardReadResponseLocalOnly) Valid() bool {
+	switch e {
+	case SetupWizardReadResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardReadResponseOk.
+const (
+	SetupWizardReadResponseOkTrue SetupWizardReadResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardReadResponseOk enum.
+func (e SetupWizardReadResponseOk) Valid() bool {
+	switch e {
+	case SetupWizardReadResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardReadResponseRuntimeApplied.
+const (
+	SetupWizardReadResponseRuntimeAppliedFalse SetupWizardReadResponseRuntimeApplied = false
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardReadResponseRuntimeApplied enum.
+func (e SetupWizardReadResponseRuntimeApplied) Valid() bool {
+	switch e {
+	case SetupWizardReadResponseRuntimeAppliedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardSaveResponseExternal.
+const (
+	SetupWizardSaveResponseExternalFalse SetupWizardSaveResponseExternal = false
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardSaveResponseExternal enum.
+func (e SetupWizardSaveResponseExternal) Valid() bool {
+	switch e {
+	case SetupWizardSaveResponseExternalFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardSaveResponseLocalOnly.
+const (
+	SetupWizardSaveResponseLocalOnlyTrue SetupWizardSaveResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardSaveResponseLocalOnly enum.
+func (e SetupWizardSaveResponseLocalOnly) Valid() bool {
+	switch e {
+	case SetupWizardSaveResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardSaveResponseOk.
+const (
+	SetupWizardSaveResponseOkTrue SetupWizardSaveResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardSaveResponseOk enum.
+func (e SetupWizardSaveResponseOk) Valid() bool {
+	switch e {
+	case SetupWizardSaveResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardSaveResponseRuntimeApplied.
+const (
+	SetupWizardSaveResponseRuntimeAppliedFalse SetupWizardSaveResponseRuntimeApplied = false
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardSaveResponseRuntimeApplied enum.
+func (e SetupWizardSaveResponseRuntimeApplied) Valid() bool {
+	switch e {
+	case SetupWizardSaveResponseRuntimeAppliedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardUnavailableMaskedSettingConfigured.
+const (
+	False SetupWizardUnavailableMaskedSettingConfigured = false
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingConfigured enum.
+func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetupWizardUnavailableMaskedSettingMasked.
+const (
+	True SetupWizardUnavailableMaskedSettingMasked = true
+)
+
+// Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingMasked enum.
+func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 	switch e {
 	case True:
 		return true
@@ -5911,6 +6175,158 @@ type SetCustomerStageRequest struct {
 	StageId *int64 `json:"stage_id"`
 }
 
+// SetupWizardAuditReceipt defines model for SetupWizardAuditReceipt.
+type SetupWizardAuditReceipt struct {
+	Id  int64                      `json:"id"`
+	Key SetupWizardAuditReceiptKey `json:"key"`
+}
+
+// SetupWizardAuditReceiptKey defines model for SetupWizardAuditReceipt.Key.
+type SetupWizardAuditReceiptKey string
+
+// SetupWizardEditableConfigured defines model for SetupWizardEditableConfigured.
+type SetupWizardEditableConfigured struct {
+	WecomAgentId bool `json:"wecom.agent_id"`
+	WecomCorpId  bool `json:"wecom.corp_id"`
+}
+
+// SetupWizardError defines model for SetupWizardError.
+type SetupWizardError struct {
+	Error SetupWizardErrorError `json:"error"`
+	Ok    SetupWizardErrorOk    `json:"ok"`
+}
+
+// SetupWizardErrorError defines model for SetupWizardError.Error.
+type SetupWizardErrorError string
+
+// SetupWizardErrorOk defines model for SetupWizardError.Ok.
+type SetupWizardErrorOk bool
+
+// SetupWizardEventReceipt defines model for SetupWizardEventReceipt.
+type SetupWizardEventReceipt struct {
+	Key  SetupWizardEventReceiptKey  `json:"key"`
+	Type SetupWizardEventReceiptType `json:"type"`
+}
+
+// SetupWizardEventReceiptKey defines model for SetupWizardEventReceipt.Key.
+type SetupWizardEventReceiptKey string
+
+// SetupWizardEventReceiptType defines model for SetupWizardEventReceipt.Type.
+type SetupWizardEventReceiptType string
+
+// SetupWizardMaskedSetting defines model for SetupWizardMaskedSetting.
+type SetupWizardMaskedSetting struct {
+	Configured bool                           `json:"configured"`
+	Masked     SetupWizardMaskedSettingMasked `json:"masked"`
+}
+
+// SetupWizardMaskedSettingMasked defines model for SetupWizardMaskedSetting.Masked.
+type SetupWizardMaskedSettingMasked bool
+
+// SetupWizardMaskedSettings defines model for SetupWizardMaskedSettings.
+type SetupWizardMaskedSettings struct {
+	AiApiKey            SetupWizardUnavailableMaskedSetting `json:"ai.api_key"`
+	WecomCallbackAesKey SetupWizardMaskedSetting            `json:"wecom.callback_aes_key"`
+	WecomCallbackToken  SetupWizardMaskedSetting            `json:"wecom.callback_token"`
+	WecomSecret         SetupWizardMaskedSetting            `json:"wecom.secret"`
+}
+
+// SetupWizardReadEditableSettings defines model for SetupWizardReadEditableSettings.
+type SetupWizardReadEditableSettings struct {
+	// WecomAgentId Zero when the local setting has not been configured.
+	WecomAgentId int64 `json:"wecom.agent_id"`
+
+	// WecomCorpId Empty when the local setting has not been configured.
+	WecomCorpId string `json:"wecom.corp_id"`
+}
+
+// SetupWizardReadResponse defines model for SetupWizardReadResponse.
+type SetupWizardReadResponse struct {
+	AdminActionToken   string                                `json:"admin_action_token"`
+	Editable           SetupWizardReadEditableSettings       `json:"editable"`
+	EditableConfigured SetupWizardEditableConfigured         `json:"editable_configured"`
+	ExpectedDigest     string                                `json:"expected_digest"`
+	External           SetupWizardReadResponseExternal       `json:"external"`
+	LocalOnly          SetupWizardReadResponseLocalOnly      `json:"local_only"`
+	Masked             SetupWizardMaskedSettings             `json:"masked"`
+	Ok                 SetupWizardReadResponseOk             `json:"ok"`
+	RuntimeApplied     SetupWizardReadResponseRuntimeApplied `json:"runtime_applied"`
+}
+
+// SetupWizardReadResponseExternal defines model for SetupWizardReadResponse.External.
+type SetupWizardReadResponseExternal bool
+
+// SetupWizardReadResponseLocalOnly defines model for SetupWizardReadResponse.LocalOnly.
+type SetupWizardReadResponseLocalOnly bool
+
+// SetupWizardReadResponseOk defines model for SetupWizardReadResponse.Ok.
+type SetupWizardReadResponseOk bool
+
+// SetupWizardReadResponseRuntimeApplied defines model for SetupWizardReadResponse.RuntimeApplied.
+type SetupWizardReadResponseRuntimeApplied bool
+
+// SetupWizardReceipt defines model for SetupWizardReceipt.
+type SetupWizardReceipt struct {
+	Audits         []SetupWizardAuditReceipt `json:"audits"`
+	Events         []SetupWizardEventReceipt `json:"events"`
+	IdempotencyKey string                    `json:"idempotency_key"`
+	Replayed       bool                      `json:"replayed"`
+}
+
+// SetupWizardSaveRequest defines model for SetupWizardSaveRequest.
+type SetupWizardSaveRequest struct {
+	AdminActionToken    string `json:"admin_action_token"`
+	AiApiKey            string `json:"ai.api_key"`
+	ExpectedDigest      string `json:"expected_digest"`
+	WecomAgentId        int64  `json:"wecom.agent_id"`
+	WecomCallbackAesKey string `json:"wecom.callback_aes_key"`
+	WecomCallbackToken  string `json:"wecom.callback_token"`
+	WecomCorpId         string `json:"wecom.corp_id"`
+	WecomSecret         string `json:"wecom.secret"`
+}
+
+// SetupWizardSaveResponse defines model for SetupWizardSaveResponse.
+type SetupWizardSaveResponse struct {
+	Config         SetupWizardSnapshot                   `json:"config"`
+	External       SetupWizardSaveResponseExternal       `json:"external"`
+	LocalOnly      SetupWizardSaveResponseLocalOnly      `json:"local_only"`
+	Ok             SetupWizardSaveResponseOk             `json:"ok"`
+	Receipt        SetupWizardReceipt                    `json:"receipt"`
+	RuntimeApplied SetupWizardSaveResponseRuntimeApplied `json:"runtime_applied"`
+}
+
+// SetupWizardSaveResponseExternal defines model for SetupWizardSaveResponse.External.
+type SetupWizardSaveResponseExternal bool
+
+// SetupWizardSaveResponseLocalOnly defines model for SetupWizardSaveResponse.LocalOnly.
+type SetupWizardSaveResponseLocalOnly bool
+
+// SetupWizardSaveResponseOk defines model for SetupWizardSaveResponse.Ok.
+type SetupWizardSaveResponseOk bool
+
+// SetupWizardSaveResponseRuntimeApplied defines model for SetupWizardSaveResponse.RuntimeApplied.
+type SetupWizardSaveResponseRuntimeApplied bool
+
+// SetupWizardSnapshot defines model for SetupWizardSnapshot.
+type SetupWizardSnapshot struct {
+	Editable           SetupWizardReadEditableSettings `json:"editable"`
+	EditableConfigured SetupWizardEditableConfigured   `json:"editable_configured"`
+	ExpectedDigest     string                          `json:"expected_digest"`
+	Masked             SetupWizardMaskedSettings       `json:"masked"`
+}
+
+// SetupWizardUnavailableMaskedSetting defines model for SetupWizardUnavailableMaskedSetting.
+type SetupWizardUnavailableMaskedSetting struct {
+	Configured SetupWizardUnavailableMaskedSettingConfigured `json:"configured"`
+	Masked     SetupWizardUnavailableMaskedSettingMasked     `json:"masked"`
+}
+
+// SetupWizardUnavailableMaskedSettingConfigured defines model for SetupWizardUnavailableMaskedSetting.Configured.
+type SetupWizardUnavailableMaskedSettingConfigured bool
+
+// SetupWizardUnavailableMaskedSettingMasked defines model for SetupWizardUnavailableMaskedSetting.Masked.
+type SetupWizardUnavailableMaskedSettingMasked bool
+
 // Stage defines model for Stage.
 type Stage struct {
 	Config    interface{} `json:"config"`
@@ -6079,6 +6495,9 @@ type QuestionnaireID = int64
 
 // SegmentID defines model for SegmentID.
 type SegmentID = int64
+
+// SetupWizardIdempotencyKey defines model for SetupWizardIdempotencyKey.
+type SetupWizardIdempotencyKey = string
 
 // StageID defines model for StageID.
 type StageID = int64
@@ -6361,6 +6780,15 @@ type UpdateServicePeriodMemberViewParams struct {
 
 	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SaveSetupWizardParams defines parameters for SaveSetupWizard.
+type SaveSetupWizardParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
+	IdempotencyKey SetupWizardIdempotencyKey `json:"Idempotency-Key"`
 }
 
 // DeleteLegacyWechatPayProductParams defines parameters for DeleteLegacyWechatPayProduct.
@@ -6800,6 +7228,9 @@ type DeleteServicePeriodMemberViewJSONRequestBody = VersionedDeleteRequest
 
 // UpdateServicePeriodMemberViewJSONRequestBody defines body for UpdateServicePeriodMemberView for application/json ContentType.
 type UpdateServicePeriodMemberViewJSONRequestBody = ServicePeriodMemberViewUpdateRequest
+
+// SaveSetupWizardJSONRequestBody defines body for SaveSetupWizard for application/json ContentType.
+type SaveSetupWizardJSONRequestBody = SetupWizardSaveRequest
 
 // DeleteLegacyWechatPayProductJSONRequestBody defines body for DeleteLegacyWechatPayProduct for application/json ContentType.
 type DeleteLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
@@ -7680,6 +8111,12 @@ type ServerInterface interface {
 	// Update one saved local member-grid view
 	// (PUT /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
 	UpdateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params UpdateServicePeriodMemberViewParams)
+	// Read the local-only setup-wizard configuration snapshot
+	// (GET /api/admin/setup-wizard)
+	GetSetupWizard(w http.ResponseWriter, r *http.Request)
+	// Atomically save two local setup-wizard settings
+	// (POST /api/admin/setup-wizard)
+	SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
@@ -8073,6 +8510,18 @@ func (_ Unimplemented) DeleteServicePeriodMemberView(w http.ResponseWriter, r *h
 // Update one saved local member-grid view
 // (PUT /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
 func (_ Unimplemented) UpdateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params UpdateServicePeriodMemberViewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the local-only setup-wizard configuration snapshot
+// (GET /api/admin/setup-wizard)
+func (_ Unimplemented) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Atomically save two local setup-wizard settings
+// (POST /api/admin/setup-wizard)
+func (_ Unimplemented) SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -10687,6 +11136,99 @@ func (siw *ServerInterfaceWrapper) UpdateServicePeriodMemberView(w http.Response
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateServicePeriodMemberView(w, r, serviceProductId, viewId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSetupWizard operation middleware
+func (siw *ServerInterfaceWrapper) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSetupWizard(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveSetupWizard operation middleware
+func (siw *ServerInterfaceWrapper) SaveSetupWizard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveSetupWizardParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey SetupWizardIdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveSetupWizard(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -14469,6 +15011,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-views/{view_id}", wrapper.UpdateServicePeriodMemberView)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/setup-wizard", wrapper.GetSetupWizard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/setup-wizard", wrapper.SaveSetupWizard)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
 	})
 	r.Group(func(r chi.Router) {
@@ -16843,6 +17391,121 @@ func (response UpdateServicePeriodMemberView409JSONResponse) VisitUpdateServiceP
 type UpdateServicePeriodMemberView503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response UpdateServicePeriodMemberView503JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSetupWizardRequestObject struct {
+}
+
+type GetSetupWizardResponseObject interface {
+	VisitGetSetupWizardResponse(w http.ResponseWriter) error
+}
+
+type GetSetupWizard200JSONResponse SetupWizardReadResponse
+
+func (response GetSetupWizard200JSONResponse) VisitGetSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSetupWizard400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSetupWizard400JSONResponse) VisitGetSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSetupWizard401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSetupWizard401JSONResponse) VisitGetSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSetupWizard403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSetupWizard403JSONResponse) VisitGetSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSetupWizard503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSetupWizard503JSONResponse) VisitGetSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveSetupWizardRequestObject struct {
+	Params SaveSetupWizardParams
+	Body   *SaveSetupWizardJSONRequestBody
+}
+
+type SaveSetupWizardResponseObject interface {
+	VisitSaveSetupWizardResponse(w http.ResponseWriter) error
+}
+
+type SaveSetupWizard200JSONResponse SetupWizardSaveResponse
+
+func (response SaveSetupWizard200JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveSetupWizard400JSONResponse SetupWizardError
+
+func (response SaveSetupWizard400JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveSetupWizard401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SaveSetupWizard401JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveSetupWizard403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveSetupWizard403JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveSetupWizard409JSONResponse SetupWizardError
+
+func (response SaveSetupWizard409JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveSetupWizard503JSONResponse SetupWizardError
+
+func (response SaveSetupWizard503JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -20995,6 +21658,12 @@ type StrictServerInterface interface {
 	// Update one saved local member-grid view
 	// (PUT /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
 	UpdateServicePeriodMemberView(ctx context.Context, request UpdateServicePeriodMemberViewRequestObject) (UpdateServicePeriodMemberViewResponseObject, error)
+	// Read the local-only setup-wizard configuration snapshot
+	// (GET /api/admin/setup-wizard)
+	GetSetupWizard(ctx context.Context, request GetSetupWizardRequestObject) (GetSetupWizardResponseObject, error)
+	// Atomically save two local setup-wizard settings
+	// (POST /api/admin/setup-wizard)
+	SaveSetupWizard(ctx context.Context, request SaveSetupWizardRequestObject) (SaveSetupWizardResponseObject, error)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
@@ -22222,6 +22891,63 @@ func (sh *strictHandler) UpdateServicePeriodMemberView(w http.ResponseWriter, r 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateServicePeriodMemberViewResponseObject); ok {
 		if err := validResponse.VisitUpdateServicePeriodMemberViewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSetupWizard operation middleware
+func (sh *strictHandler) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
+	var request GetSetupWizardRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSetupWizard(ctx, request.(GetSetupWizardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSetupWizard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSetupWizardResponseObject); ok {
+		if err := validResponse.VisitGetSetupWizardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveSetupWizard operation middleware
+func (sh *strictHandler) SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams) {
+	var request SaveSetupWizardRequestObject
+
+	request.Params = params
+
+	var body SaveSetupWizardJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveSetupWizard(ctx, request.(SaveSetupWizardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveSetupWizard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveSetupWizardResponseObject); ok {
+		if err := validResponse.VisitSaveSetupWizardResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

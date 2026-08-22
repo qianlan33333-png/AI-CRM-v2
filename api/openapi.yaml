@@ -1725,6 +1725,53 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { description: Reused request identifier conflicts with a different settings command., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
         "503": { description: Config projection or command dependency is unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAppSettingsResourceSaveError" } } } }
+  /api/admin/setup-wizard:
+    get:
+      tags: [p4-setup-wizard]
+      operationId: getSetupWizard
+      summary: Read the local-only setup-wizard configuration snapshot
+      x-p4-decision-evidence: P4-SETUP-WIZARD-LOCAL-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local editable values and masked configured-state booleans only., content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardReadResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-setup-wizard]
+      operationId: saveSetupWizard
+      summary: Atomically save two local setup-wizard settings
+      x-p4-decision-evidence: P4-SETUP-WIZARD-LOCAL-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/SetupWizardIdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SetupWizardSaveRequest" }
+      responses:
+        "200": { description: Local transactional save receipt without secret values or external effects., content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardSaveResponse" } } } }
+        "400": { description: "Malformed input, non-empty secret input, or invalid route action token.", content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: CAS or idempotency conflict., content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardError" } } } }
+        "503": { description: Local configuration owner unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardError" } } } }
   /api/admin/automation-conversion/agent-runs:
     get:
       tags: [p4-automation-compat]
@@ -7827,6 +7874,12 @@ components:
       required: true
       description: Stable caller key; reusing it with a different normalized command is a conflict.
       schema: { type: string, minLength: 16, maxLength: 128 }
+    SetupWizardIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
+      schema: { type: string, minLength: 1, maxLength: 200 }
     QuestionnaireID:
       name: questionnaire_id
       in: path
@@ -12931,6 +12984,120 @@ components:
         setting__auth.jwt_secret: { type: string, maxLength: 0, default: "" }
         setting__extension.api_key_pepper: { type: string, maxLength: 0, default: "" }
         setting__gateway.webhook_master_key: { type: string, maxLength: 0, default: "" }
+    SetupWizardMaskedSetting:
+      type: object
+      additionalProperties: false
+      required: [configured, masked]
+      properties:
+        configured: { type: boolean }
+        masked: { type: boolean, enum: [true] }
+    SetupWizardUnavailableMaskedSetting:
+      type: object
+      additionalProperties: false
+      required: [configured, masked]
+      properties:
+        configured: { type: boolean, enum: [false] }
+        masked: { type: boolean, enum: [true] }
+    SetupWizardMaskedSettings:
+      type: object
+      additionalProperties: false
+      required: [wecom.secret, wecom.callback_token, wecom.callback_aes_key, ai.api_key]
+      properties:
+        wecom.secret: { $ref: "#/components/schemas/SetupWizardMaskedSetting" }
+        wecom.callback_token: { $ref: "#/components/schemas/SetupWizardMaskedSetting" }
+        wecom.callback_aes_key: { $ref: "#/components/schemas/SetupWizardMaskedSetting" }
+        ai.api_key: { $ref: "#/components/schemas/SetupWizardUnavailableMaskedSetting", description: "This local configuration owner has no AI provider-key authority." }
+    SetupWizardReadEditableSettings:
+      type: object
+      additionalProperties: false
+      required: [wecom.corp_id, wecom.agent_id]
+      properties:
+        wecom.corp_id: { type: string, maxLength: 256, description: "Empty when the local setting has not been configured." }
+        wecom.agent_id: { type: integer, format: int64, minimum: 0, description: "Zero when the local setting has not been configured." }
+    SetupWizardEditableConfigured:
+      type: object
+      additionalProperties: false
+      required: [wecom.corp_id, wecom.agent_id]
+      properties:
+        wecom.corp_id: { type: boolean }
+        wecom.agent_id: { type: boolean }
+    SetupWizardSnapshot:
+      type: object
+      additionalProperties: false
+      required: [expected_digest, editable, editable_configured, masked]
+      properties:
+        expected_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+        editable: { $ref: "#/components/schemas/SetupWizardReadEditableSettings" }
+        editable_configured: { $ref: "#/components/schemas/SetupWizardEditableConfigured" }
+        masked: { $ref: "#/components/schemas/SetupWizardMaskedSettings" }
+    SetupWizardReadResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, expected_digest, editable, editable_configured, masked, admin_action_token, external, local_only, runtime_applied]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        expected_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+        editable: { $ref: "#/components/schemas/SetupWizardReadEditableSettings" }
+        editable_configured: { $ref: "#/components/schemas/SetupWizardEditableConfigured" }
+        masked: { $ref: "#/components/schemas/SetupWizardMaskedSettings" }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+        external: { type: boolean, enum: [false] }
+        local_only: { type: boolean, enum: [true] }
+        runtime_applied: { type: boolean, enum: [false] }
+    SetupWizardSaveRequest:
+      type: object
+      additionalProperties: false
+      required: [wecom.corp_id, wecom.agent_id, wecom.secret, wecom.callback_token, wecom.callback_aes_key, ai.api_key, expected_digest, admin_action_token]
+      properties:
+        wecom.corp_id: { type: string, minLength: 1, maxLength: 256 }
+        wecom.agent_id: { type: integer, format: int64, minimum: 1 }
+        wecom.secret: { type: string, maxLength: 0, default: "" }
+        wecom.callback_token: { type: string, maxLength: 0, default: "" }
+        wecom.callback_aes_key: { type: string, maxLength: 0, default: "" }
+        ai.api_key: { type: string, maxLength: 0, default: "" }
+        expected_digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    SetupWizardAuditReceipt:
+      type: object
+      additionalProperties: false
+      required: [key, id]
+      properties:
+        key: { type: string, enum: [wecom.corp_id, wecom.agent_id] }
+        id: { type: integer, format: int64, minimum: 1 }
+    SetupWizardEventReceipt:
+      type: object
+      additionalProperties: false
+      required: [key, type]
+      properties:
+        key: { type: string, enum: [wecom.corp_id, wecom.agent_id] }
+        type: { type: string, enum: [setting.updated] }
+    SetupWizardReceipt:
+      type: object
+      additionalProperties: false
+      required: [idempotency_key, replayed, audits, events]
+      properties:
+        idempotency_key: { type: string, minLength: 1, maxLength: 200 }
+        replayed: { type: boolean }
+        audits: { type: array, minItems: 2, maxItems: 2, items: { $ref: "#/components/schemas/SetupWizardAuditReceipt" } }
+        events: { type: array, minItems: 2, maxItems: 2, items: { $ref: "#/components/schemas/SetupWizardEventReceipt" } }
+    SetupWizardSaveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, config, receipt, external, local_only, runtime_applied]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        config: { $ref: "#/components/schemas/SetupWizardSnapshot" }
+        receipt: { $ref: "#/components/schemas/SetupWizardReceipt" }
+        external: { type: boolean, enum: [false] }
+        local_only: { type: boolean, enum: [true] }
+        runtime_applied: { type: boolean, enum: [false] }
+    SetupWizardError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [invalid_request, invalid_action_token, invalid_idempotency_key, secret_input_forbidden, invalid_setting, setup_wizard_conflict, setup_wizard_unavailable] }
     LegacyPushCenterSection:
       type: object
       additionalProperties: false

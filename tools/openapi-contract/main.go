@@ -589,6 +589,10 @@ var p4ConfigSettingsOperations = map[string]bool{
 	"saveLegacyAppSettingsResource": true,
 }
 
+var p4SetupWizardOperations = map[string]bool{
+	"getSetupWizard": true, "saveSetupWizard": true,
+}
+
 var p4DomainVerificationOperations = map[string]bool{
 	"getDomainVerificationFile": true,
 }
@@ -872,6 +876,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"saveLegacyAppSettingsPage":                  {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAppSettingsResource":               {"config.settings.manage", map[string]string{"admin": "global"}},
 	"saveLegacyAppSettingsResource":              {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getSetupWizard":                             {"config.overview.read", map[string]string{"admin": "global"}},
+	"saveSetupWizard":                            {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAdminShell":                        {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyAdminLogoutCompat":                 {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 	"upsertLegacyHXCSendConfig":                  {"operations.manage", map[string]string{"admin": "global"}},
@@ -983,7 +989,7 @@ func isRunnerDeclaredOperation(operationID string) bool {
 		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4ServicePeriodLifecycleOperations[operationID] || p4ServicePeriodMemberGridReadOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4CloudCampaignOperations[operationID] || p4AIAudienceOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
-		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
+		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] || p4SetupWizardOperations[operationID] ||
 		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
 		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID] ||
 		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID)
@@ -1158,7 +1164,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4ServicePeriodLifecycle, seenP4ServicePeriodMemberGridRead, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4ServicePeriodLifecycle, seenP4ServicePeriodMemberGridRead, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4SetupWizard, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -1514,6 +1520,23 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ConfigSettingsLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
+			} else if p4SetupWizardOperations[op.OperationID] {
+				seenP4SetupWizard[op.OperationID] = true
+				read := op.OperationID == "getSetupWizard"
+				capability, csrf, source := "config.settings.manage", "required", "local_command"
+				if read {
+					capability, csrf, source = "config.overview.read", "none", "local_read_model"
+				}
+				if op.Extensions["x-p4-decision-evidence"] != "P4-SETUP-WIZARD-LOCAL-2026-08-23" ||
+					op.Extensions["x-aicrm-capability"] != capability || op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+					op.Extensions["x-aicrm-session-bound-csrf"] != csrf || op.Extensions["x-aicrm-data-classification"] != "internal" ||
+					op.Extensions["x-aicrm-data-source"] != source || op.Extensions["x-aicrm-external-effect"] != "none" ||
+					op.Responses.Value("401") == nil || op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s local setup-wizard contract drifted", op.OperationID)
+				}
+				if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
+					return fmt.Errorf("%s must not replace the frozen legacy HTML carrier", op.OperationID)
+				}
 			} else if p4PushCenterOperations[op.OperationID] {
 				seenP4PushCenter[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
@@ -1702,7 +1725,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
-		len(seenP4ConfigSettings) != len(p4ConfigSettingsOperations) || len(seenP4DomainVerification) != len(p4DomainVerificationOperations) ||
+		len(seenP4ConfigSettings) != len(p4ConfigSettingsOperations) || len(seenP4SetupWizard) != len(p4SetupWizardOperations) || len(seenP4DomainVerification) != len(p4DomainVerificationOperations) ||
 		len(seenP4PushCenter) != len(p4PushCenterOperations) || len(seenP4ExecutionRuntime) != len(p4ExecutionRuntimeOperations) ||
 		len(seenP4AdminShell) != len(p4AdminShellOperations) || len(seenP4LegacyHealth) != len(p4LegacyHealthOperations) || len(seenCanonical) != len(inventory.Candidates) {
 		return errors.New("candidate inventory differs from canonical declarations")
@@ -1835,6 +1858,11 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	for id := range p4ConfigSettingsOperations {
 		if !seenP4ConfigSettings[id] {
 			return fmt.Errorf("missing P4 Config Settings compatibility operation: %s", id)
+		}
+	}
+	for id := range p4SetupWizardOperations {
+		if !seenP4SetupWizard[id] {
+			return fmt.Errorf("missing P4 setup-wizard operation: %s", id)
 		}
 	}
 	for id := range p4DomainVerificationOperations {
@@ -2192,6 +2220,43 @@ func validateConfigSettingsContract(doc *openapi3.T) error {
 	}
 	if resource.Put.Responses.Value("400") == nil || resource.Put.Responses.Value("409") == nil || resource.Put.Responses.Value("503") == nil {
 		return errors.New("P4 Admin Config JSON write lost finite error responses")
+	}
+	wizard := doc.Paths.Value("/api/admin/setup-wizard")
+	if wizard == nil || wizard.Get == nil || wizard.Post == nil || !operationResponseUsesLocalSchema(wizard.Get, "SetupWizardReadResponse") ||
+		!operationRequestUsesLocalSchema(wizard.Post, "SetupWizardSaveRequest") || !operationResponseUsesLocalSchema(wizard.Post, "SetupWizardSaveResponse") {
+		return errors.New("P4 setup-wizard canonical JSON contract is incomplete")
+	}
+	if err := validateRequiredCSRF(wizard.Post); err != nil {
+		return fmt.Errorf("setup-wizard: %w", err)
+	}
+	if wizard.Post.Extensions["x-aicrm-route-bound-action-token"] != "required" || wizard.Post.Responses.Value("400") == nil || wizard.Post.Responses.Value("409") == nil || wizard.Post.Responses.Value("503") == nil {
+		return errors.New("P4 setup-wizard write safety contract drifted")
+	}
+	request := doc.Components.Schemas["SetupWizardSaveRequest"]
+	wizardMasked := doc.Components.Schemas["SetupWizardMaskedSetting"]
+	aiMasked := doc.Components.Schemas["SetupWizardUnavailableMaskedSetting"]
+	snapshot := doc.Components.Schemas["SetupWizardSnapshot"]
+	readResponse := doc.Components.Schemas["SetupWizardReadResponse"]
+	saveResponse := doc.Components.Schemas["SetupWizardSaveResponse"]
+	if request == nil || request.Value == nil || request.Value.AdditionalProperties.Has == nil || *request.Value.AdditionalProperties.Has ||
+		wizardMasked == nil || wizardMasked.Value == nil || wizardMasked.Value.AdditionalProperties.Has == nil || *wizardMasked.Value.AdditionalProperties.Has || !legacyTagBooleanEnum(wizardMasked.Value, "masked", true) {
+		return errors.New("P4 setup-wizard request or masked projection must remain closed")
+	}
+	if snapshot == nil || snapshot.Value == nil || snapshot.Value.Properties["editable_configured"] == nil || snapshot.Value.Properties["editable_configured"].Ref != "#/components/schemas/SetupWizardEditableConfigured" ||
+		readResponse == nil || readResponse.Value == nil || saveResponse == nil || saveResponse.Value == nil ||
+		!legacyTagBooleanEnum(readResponse.Value, "local_only", true) || !legacyTagBooleanEnum(readResponse.Value, "runtime_applied", false) ||
+		!legacyTagBooleanEnum(saveResponse.Value, "local_only", true) || !legacyTagBooleanEnum(saveResponse.Value, "runtime_applied", false) {
+		return errors.New("P4 setup-wizard must expose unconfigured state and fail-closed runtime application")
+	}
+	if aiMasked == nil || aiMasked.Value == nil || aiMasked.Value.AdditionalProperties.Has == nil || *aiMasked.Value.AdditionalProperties.Has ||
+		!legacyTagBooleanEnum(aiMasked.Value, "configured", false) || !legacyTagBooleanEnum(aiMasked.Value, "masked", true) {
+		return errors.New("P4 setup-wizard AI key must remain unavailable and masked")
+	}
+	for _, key := range []string{"wecom.secret", "wecom.callback_token", "wecom.callback_aes_key", "ai.api_key"} {
+		property := request.Value.Properties[key]
+		if property == nil || property.Value == nil || property.Value.MaxLength == nil || *property.Value.MaxLength != 0 {
+			return fmt.Errorf("setup-wizard secret key %s must only accept empty preservation", key)
+		}
 	}
 	return nil
 }

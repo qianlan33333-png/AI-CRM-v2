@@ -10409,6 +10409,178 @@ export interface LegacyAppSettingsSaveForm {
   "setting__gateway.webhook_master_key"?: string;
 }
 
+export interface SetupWizardMaskedSetting {
+  configured: boolean;
+  masked: boolean;
+}
+
+export interface SetupWizardUnavailableMaskedSetting {
+  configured: boolean;
+  masked: boolean;
+}
+
+export interface SetupWizardMaskedSettings {
+  "wecom.secret": SetupWizardMaskedSetting;
+  "wecom.callback_token": SetupWizardMaskedSetting;
+  "wecom.callback_aes_key": SetupWizardMaskedSetting;
+  /** This local configuration owner has no AI provider-key authority. */
+  "ai.api_key": SetupWizardUnavailableMaskedSetting;
+}
+
+export interface SetupWizardReadEditableSettings {
+  /**
+   * Empty when the local setting has not been configured.
+   * @maxLength 256
+   */
+  "wecom.corp_id": string;
+  /**
+   * Zero when the local setting has not been configured.
+   * @minimum 0
+   */
+  "wecom.agent_id": number;
+}
+
+export interface SetupWizardEditableConfigured {
+  "wecom.corp_id": boolean;
+  "wecom.agent_id": boolean;
+}
+
+export interface SetupWizardSnapshot {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expected_digest: string;
+  editable: SetupWizardReadEditableSettings;
+  editable_configured: SetupWizardEditableConfigured;
+  masked: SetupWizardMaskedSettings;
+}
+
+export interface SetupWizardReadResponse {
+  ok: boolean;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expected_digest: string;
+  editable: SetupWizardReadEditableSettings;
+  editable_configured: SetupWizardEditableConfigured;
+  masked: SetupWizardMaskedSettings;
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token: string;
+  external: boolean;
+  local_only: boolean;
+  runtime_applied: boolean;
+}
+
+export interface SetupWizardSaveRequest {
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  "wecom.corp_id": string;
+  /** @minimum 1 */
+  "wecom.agent_id": number;
+  /** @maxLength 0 */
+  "wecom.secret": string;
+  /** @maxLength 0 */
+  "wecom.callback_token": string;
+  /** @maxLength 0 */
+  "wecom.callback_aes_key": string;
+  /** @maxLength 0 */
+  "ai.api_key": string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expected_digest: string;
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  admin_action_token: string;
+}
+
+export type SetupWizardAuditReceiptKey =
+  (typeof SetupWizardAuditReceiptKey)[keyof typeof SetupWizardAuditReceiptKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SetupWizardAuditReceiptKey = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+} as const;
+
+export interface SetupWizardAuditReceipt {
+  key: SetupWizardAuditReceiptKey;
+  /** @minimum 1 */
+  id: number;
+}
+
+export type SetupWizardEventReceiptKey =
+  (typeof SetupWizardEventReceiptKey)[keyof typeof SetupWizardEventReceiptKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SetupWizardEventReceiptKey = {
+  wecomcorp_id: "wecom.corp_id",
+  wecomagent_id: "wecom.agent_id",
+} as const;
+
+export type SetupWizardEventReceiptType =
+  (typeof SetupWizardEventReceiptType)[keyof typeof SetupWizardEventReceiptType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SetupWizardEventReceiptType = {
+  settingupdated: "setting.updated",
+} as const;
+
+export interface SetupWizardEventReceipt {
+  key: SetupWizardEventReceiptKey;
+  type: SetupWizardEventReceiptType;
+}
+
+export interface SetupWizardReceipt {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotency_key: string;
+  replayed: boolean;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  audits: SetupWizardAuditReceipt[];
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  events: SetupWizardEventReceipt[];
+}
+
+export interface SetupWizardSaveResponse {
+  ok: boolean;
+  config: SetupWizardSnapshot;
+  receipt: SetupWizardReceipt;
+  external: boolean;
+  local_only: boolean;
+  runtime_applied: boolean;
+}
+
+export type SetupWizardErrorError =
+  (typeof SetupWizardErrorError)[keyof typeof SetupWizardErrorError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SetupWizardErrorError = {
+  invalid_request: "invalid_request",
+  invalid_action_token: "invalid_action_token",
+  invalid_idempotency_key: "invalid_idempotency_key",
+  secret_input_forbidden: "secret_input_forbidden",
+  invalid_setting: "invalid_setting",
+  setup_wizard_conflict: "setup_wizard_conflict",
+  setup_wizard_unavailable: "setup_wizard_unavailable",
+} as const;
+
+export interface SetupWizardError {
+  ok: boolean;
+  error: SetupWizardErrorError;
+}
+
 export type LegacyPushCenterSectionKey =
   (typeof LegacyPushCenterSectionKey)[keyof typeof LegacyPushCenterSectionKey];
 
@@ -11126,6 +11298,11 @@ export type CSRFTokenParameter = string;
  * Stable caller key; reusing it with a different normalized command is a conflict.
  */
 export type IdempotencyKeyParameter = string;
+
+/**
+ * Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
+ */
+export type SetupWizardIdempotencyKeyParameter = string;
 
 export type GroupOpsLimitParameter = number;
 
@@ -17910,6 +18087,145 @@ export const saveLegacyAppSettingsResource = async (
     status: res.status,
     headers: res.headers,
   } as saveLegacyAppSettingsResourceResponse;
+};
+
+/**
+ * @summary Read the local-only setup-wizard configuration snapshot
+ */
+export type getSetupWizardResponse200 = {
+  data: SetupWizardReadResponse;
+  status: 200;
+};
+
+export type getSetupWizardResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSetupWizardResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSetupWizardResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSetupWizardResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSetupWizardResponseSuccess = getSetupWizardResponse200 & {
+  headers: Headers;
+};
+export type getSetupWizardResponseError = (
+  | getSetupWizardResponse400
+  | getSetupWizardResponse401
+  | getSetupWizardResponse403
+  | getSetupWizardResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSetupWizardResponse =
+  getSetupWizardResponseSuccess | getSetupWizardResponseError;
+
+export const getGetSetupWizardUrl = () => {
+  return `/api/admin/setup-wizard`;
+};
+
+export const getSetupWizard = async (
+  options?: RequestInit,
+): Promise<getSetupWizardResponse> => {
+  const res = await fetch(getGetSetupWizardUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSetupWizardResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSetupWizardResponse;
+};
+
+/**
+ * @summary Atomically save two local setup-wizard settings
+ */
+export type saveSetupWizardResponse200 = {
+  data: SetupWizardSaveResponse;
+  status: 200;
+};
+
+export type saveSetupWizardResponse400 = {
+  data: SetupWizardError;
+  status: 400;
+};
+
+export type saveSetupWizardResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveSetupWizardResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveSetupWizardResponse409 = {
+  data: SetupWizardError;
+  status: 409;
+};
+
+export type saveSetupWizardResponse503 = {
+  data: SetupWizardError;
+  status: 503;
+};
+
+export type saveSetupWizardResponseSuccess = saveSetupWizardResponse200 & {
+  headers: Headers;
+};
+export type saveSetupWizardResponseError = (
+  | saveSetupWizardResponse400
+  | saveSetupWizardResponse401
+  | saveSetupWizardResponse403
+  | saveSetupWizardResponse409
+  | saveSetupWizardResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveSetupWizardResponse =
+  saveSetupWizardResponseSuccess | saveSetupWizardResponseError;
+
+export const getSaveSetupWizardUrl = () => {
+  return `/api/admin/setup-wizard`;
+};
+
+export const saveSetupWizard = async (
+  setupWizardSaveRequest: SetupWizardSaveRequest,
+  options?: RequestInit,
+): Promise<saveSetupWizardResponse> => {
+  const res = await fetch(getSaveSetupWizardUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setupWizardSaveRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveSetupWizardResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveSetupWizardResponse;
 };
 
 /**

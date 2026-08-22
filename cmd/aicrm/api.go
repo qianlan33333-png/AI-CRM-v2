@@ -28,6 +28,7 @@ import (
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
+	confighttp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/http"
 	configstore "github.com/qianlan33333-png/AI-CRM-v2/internal/config/store"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contacthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/http"
@@ -1001,6 +1002,20 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	configRepository := configstore.NewRepository()
 	configManager := configapp.NewManager(uow, configRepository, eventstore.NewAppender())
+	setupWizardService, err := configapp.NewSetupWizardService(configManager, configapp.SetupWizardSecretConfigured{
+		WeComSecret:         config.WeCom.OAuth.Enabled,
+		WeComCallbackToken:  config.WeCom.Callback.Enabled,
+		WeComCallbackAESKey: config.WeCom.Callback.Enabled,
+	})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	setupWizardHandler, err := confighttp.NewHandler(setupWizardService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	settingsService := configapp.NewSettingsCompatibilityService(uow, configRepository, configManager, configapp.SecretConfiguredSnapshot{
 		DatabaseURL: true, WeComSecret: config.WeCom.OAuth.Enabled,
 		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
@@ -1019,6 +1034,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	legacyHandler.setupWizard = setupWizardHandler
 	legacyHandler.legacyTagSync = legacyTagSyncService
 	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.memberGrid = memberGridFragment
@@ -1859,6 +1875,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, legacyConfigChecklistPath, authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ConfigChecklist)},
 			{http.MethodGet, "/setup/wizard", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/setup/wizard/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
+			{http.MethodGet, confighttp.SetupWizardPath, authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.SetupWizard)},
+			{http.MethodPost, confighttp.SetupWizardPath, authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SetupWizard)},
 			{http.MethodGet, "/api/admin/config/api-key", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/api/admin/config/api-key/generate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodPost, "/api/admin/config/api-key/rotate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminOps)},
