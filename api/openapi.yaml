@@ -6333,6 +6333,112 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/cloud-orchestrator/campaigns:
+    get:
+      tags: [p4-cloud-campaign]
+      operationId: listCloudCampaigns
+      x-legacy-mapping-ids: [LEGACY-S07-071]
+      x-aicrm-capability: admin.read
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-external-effect: none
+      responses: { "200": { description: CRM-local campaign list } }
+  /api/admin/cloud-orchestrator/campaigns/batch-start:
+    post:
+      tags: [p4-cloud-campaign]
+      operationId: batchStartCloudCampaigns
+      x-legacy-mapping-ids: [LEGACY-S07-072]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local commands and plans only } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }]
+    get:
+      tags: [p4-cloud-campaign]
+      operationId: getCloudCampaign
+      x-legacy-mapping-ids: [LEGACY-S07-073]
+      x-aicrm-capability: admin.read
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-external-effect: none
+      responses: { "200": { description: CRM-local campaign detail } }
+    delete:
+      tags: [p4-cloud-campaign]
+      operationId: deleteCloudCampaign
+      x-legacy-mapping-ids: [LEGACY-S07-081]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Draft-only local deletion } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/steps:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }]
+    post:
+      tags: [p4-cloud-campaign]
+      operationId: addCloudCampaignStep
+      x-legacy-mapping-ids: [LEGACY-S07-074]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local step added } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/steps/{step_index}:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }
+      - { name: step_index, in: path, required: true, schema: { type: integer, format: int32, minimum: 1 } }
+    patch:
+      tags: [p4-cloud-campaign]
+      operationId: updateCloudCampaignStep
+      x-legacy-mapping-ids: [LEGACY-S07-075]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local step updated } }
+    delete:
+      tags: [p4-cloud-campaign]
+      operationId: deleteCloudCampaignStep
+      x-legacy-mapping-ids: [LEGACY-S07-076]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local step deleted } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/approve:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }]
+    post:
+      tags: [p4-cloud-campaign]
+      operationId: approveCloudCampaign
+      x-legacy-mapping-ids: [LEGACY-S07-077]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local approval state } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/start:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }]
+    post:
+      tags: [p4-cloud-campaign]
+      operationId: startCloudCampaign
+      x-legacy-mapping-ids: [LEGACY-S07-078]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local plan and command only } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/reject:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }]
+    post:
+      tags: [p4-cloud-campaign]
+      operationId: rejectCloudCampaign
+      x-legacy-mapping-ids: [LEGACY-S07-079]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local rejection state } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/pause:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96 } }]
+    post:
+      tags: [p4-cloud-campaign]
+      operationId: pauseCloudCampaign
+      x-legacy-mapping-ids: [LEGACY-S07-080]
+      x-aicrm-capability: operations.manage
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-external-effect: none
+      responses: { "200": { description: Local paused state } }
 components:
   securitySchemes:
     AdminSession:
